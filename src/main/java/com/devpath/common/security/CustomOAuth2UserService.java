@@ -13,10 +13,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,7 +29,6 @@ import java.util.Optional;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private static final String GITHUB_EMAILS_API = "https://api.github.com/user/emails";
-
     private final UserRepository userRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -46,17 +47,18 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             name = loginId;
         }
 
+        // 1. 비공개 이메일인 경우 직접 API 호출해서 가져오기
         if (email == null || email.isBlank()) {
             email = fetchGithubEmail(userRequest.getAccessToken().getTokenValue());
-            log.info("Email from /user/emails: {}", email);
+            log.info("Email fetched from GitHub API: {}", email);
         }
 
         if (email == null || email.isBlank()) {
             throw new OAuth2AuthenticationException("github_email_required");
         }
 
+        // 2. DB 저장 및 회원가입 로직
         Optional<User> optionalUser = userRepository.findByEmail(email);
-
         if (optionalUser.isEmpty()) {
             User newUser = User.builder()
                     .email(email)
@@ -65,11 +67,20 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .build();
             userRepository.save(newUser);
             log.info("New github user auto-signup completed: {}", email);
-        } else {
-            log.info("Existing github user login: {}", email);
         }
 
-        return oAuth2User;
+        // 3. 🚨 중요: SuccessHandler에서 이메일을 꺼낼 수 있도록 Attributes 수정 🚨
+        Map<String, Object> modifiedAttributes = new HashMap<>(attributes);
+        modifiedAttributes.put("email", email);
+
+        String userNameAttributeName = userRequest.getClientRegistration()
+                .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
+
+        return new DefaultOAuth2User(
+                oAuth2User.getAuthorities(),
+                modifiedAttributes,
+                userNameAttributeName
+        );
     }
 
     private String fetchGithubEmail(String accessToken) {
@@ -83,34 +94,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     GITHUB_EMAILS_API,
                     HttpMethod.GET,
                     entity,
-                    new ParameterizedTypeReference<>() {
-                    }
+                    new ParameterizedTypeReference<>() {}
             );
 
             List<Map<String, Object>> emails = response.getBody();
-            if (emails == null || emails.isEmpty()) {
-                return null;
-            }
+            if (emails == null || emails.isEmpty()) return null;
 
-            for (Map<String, Object> item : emails) {
-                boolean primary = Boolean.TRUE.equals(item.get("primary"));
-                boolean verified = Boolean.TRUE.equals(item.get("verified"));
-                String email = (String) item.get("email");
-                if (primary && verified && email != null && !email.isBlank()) {
-                    return email;
-                }
-            }
-
-            for (Map<String, Object> item : emails) {
-                boolean verified = Boolean.TRUE.equals(item.get("verified"));
-                String email = (String) item.get("email");
-                if (verified && email != null && !email.isBlank()) {
-                    return email;
-                }
-            }
-
-            String fallback = (String) emails.get(0).get("email");
-            return (fallback == null || fallback.isBlank()) ? null : fallback;
+            return emails.stream()
+                    .filter(e -> Boolean.TRUE.equals(e.get("primary")) && Boolean.TRUE.equals(e.get("verified")))
+                    .map(e -> (String) e.get("email"))
+                    .findFirst()
+                    .orElseGet(() -> (String) emails.get(0).get("email"));
         } catch (Exception e) {
             log.warn("Failed to fetch github emails API", e);
             return null;
