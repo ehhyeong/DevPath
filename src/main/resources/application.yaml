@@ -21,16 +21,16 @@ spring:
     init:
       mode: always
 
-  # JPA 및 하이버네이트 설정
+  # JPA 및 하이버네이트 설정 (들여쓰기 정렬 완료 ✨)
   jpa:
-     hibernate:
-       ddl-auto: create
-     show-sql: true
-     defer-datasource-initialization: true  # 🔥 [추가할 부분] JPA 테이블 생성 후 data.sql을 실행하라는 핵심 옵션!
-     properties:
-       hibernate:
-         format_sql: true
-         default_batch_fetch_size: 1000
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 1000
 
   # Redis 설정
   data:
@@ -42,3 +42,10 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+# JWT 설정
+jwt:
+  # 256비트 이상의 아주 복잡한 비밀키
+  secret: c3ByaW5nLWJvb3QtZGV2cGF0aC1zZWNyZXQta2V5LXRlc3QtZ2VuZXJhdGUtMjAyNjAyMjQ=
+  access-token-expiration: 3600000 # 1시간 (밀리초)
+  refresh-token-expiration: 1209600000 # 14일 (밀리초)
