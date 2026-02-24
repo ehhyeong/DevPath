@@ -33,6 +33,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Swagger 관련 경로는 로그인 없이 누구나 프리패스
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
+                        // 회원가입, 로그인 경로는 로그인 없이 누구나 접근 가능
+                        .requestMatchers("/api/auth/**").permitAll()
                         // 나머지는 일단 로그인이 필요하다고 설정해둠
                         .anyRequest().authenticated()
                 )
@@ -40,5 +42,10 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+    // 비밀번호를 안전하게 암호화해주는 도구 (BCrypt)
+    @Bean
+    public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
     }
 }
