@@ -1,6 +1,8 @@
 package com.devpath.common.config;
 
+import com.devpath.common.security.CustomOAuth2UserService;
 import com.devpath.common.security.JwtAuthenticationFilter;
+import com.devpath.common.security.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +19,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter; // JWT 검문소 필터 가져오기
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -38,11 +42,16 @@ public class SecurityConfig {
                         // 나머지는 일단 로그인이 필요하다고 설정해둠
                         .anyRequest().authenticated()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService)) // 깃허브에서 정보 가져오기
+                        .successHandler(oAuth2SuccessHandler) // 성공하면 토큰 쥐여주기
+                )
                 // 6. 추가: 기본 로그인 필터가 작동하기 전에, 우리가 만든 JWT 필터가 먼저 토큰을 낚아채서 검사하도록 설정
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
     // 비밀번호를 안전하게 암호화해주는 도구 (BCrypt)
     @Bean
     public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
