@@ -1,75 +1,121 @@
 package com.devpath.common.security;
 
+import com.devpath.common.exception.ErrorCode;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-@Slf4j
 @Component
 public class JwtTokenProvider {
 
+    private static final String TOKEN_TYPE_ACCESS = "ACCESS";
+    private static final String TOKEN_TYPE_REFRESH = "REFRESH";
+
     @Value("${jwt.secret}")
-    private String salt;
+    private String secret;
 
     @Value("${jwt.access-token-expiration}")
     private long accessTokenExpiration;
+
+    @Value("${jwt.refresh-token-expiration}")
+    private long refreshTokenExpiration;
 
     private SecretKey secretKey;
 
     @PostConstruct
     protected void init() {
-        // application.yml의 secret 값을 가져와서 강력한 암호화 키로 변환
-        secretKey = Keys.hmacShaKeyFor(salt.getBytes(StandardCharsets.UTF_8));
+        secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
-    // 1. 유저 정보(이메일, 권한)를 담아 새로운 액세스 토큰 생성
-    public String createAccessToken(String email, String role) {
+    public String createAccessToken(Long userId, String role) {
+        return createToken(userId, role, accessTokenExpiration, TOKEN_TYPE_ACCESS);
+    }
+
+    public String createRefreshToken(Long userId, String role) {
+        return createToken(userId, role, refreshTokenExpiration, TOKEN_TYPE_REFRESH);
+    }
+
+    public TokenClaims parseAccessToken(String token) {
+        return parseAndValidate(token, TOKEN_TYPE_ACCESS);
+    }
+
+    public TokenClaims parseRefreshToken(String token) {
+        return parseAndValidate(token, TOKEN_TYPE_REFRESH);
+    }
+
+    public long getRefreshTokenExpiration() {
+        return refreshTokenExpiration;
+    }
+
+    public long getRemainingValidity(String token) {
+        try {
+            Claims claims = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+            return Math.max(0, claims.getExpiration().getTime() - System.currentTimeMillis());
+        } catch (ExpiredJwtException e) {
+            return 0;
+        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
+            throw new JwtAuthenticationException(ErrorCode.JWT_INVALID);
+        } catch (UnsupportedJwtException e) {
+            throw new JwtAuthenticationException(ErrorCode.JWT_UNSUPPORTED);
+        } catch (IllegalArgumentException e) {
+            throw new JwtAuthenticationException(ErrorCode.JWT_EMPTY);
+        }
+    }
+
+    private String createToken(Long userId, String role, long expirationMillis, String tokenType) {
         Date now = new Date();
-        Date validity = new Date(now.getTime() + accessTokenExpiration);
+        Date expiry = new Date(now.getTime() + expirationMillis);
 
         return Jwts.builder()
-                .subject(email) // 토큰 주인을 이메일로 기록
-                .claim("role", role) // 유저 권한 정보(예: ROLE_LEARNER) 추가
-                .issuedAt(now) // 발행일
-                .expiration(validity) // 만료일
-                .signWith(secretKey) // 비밀키로 서명 쾅!
+                .subject(String.valueOf(userId))
+                .claim("userId", userId)
+                .claim("role", role)
+                .claim("tokenType", tokenType)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(secretKey)
                 .compact();
     }
 
-    // 2. 클라이언트가 가져온 토큰을 뜯어서 이메일 추출
-    public String getEmailFromToken(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey) // 우리 비밀키로 열어봄
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject(); // 아까 넣은 subject(이메일) 꺼내기
+    private TokenClaims parseAndValidate(String token, String expectedTokenType) {
+        try {
+            Claims claims = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+
+            Number userIdNumber = claims.get("userId", Number.class);
+            String role = claims.get("role", String.class);
+            String tokenType = claims.get("tokenType", String.class);
+
+            if (userIdNumber == null || role == null || tokenType == null) {
+                throw new JwtAuthenticationException(ErrorCode.JWT_INVALID);
+            }
+
+            if (!expectedTokenType.equals(tokenType)) {
+                throw new JwtAuthenticationException(ErrorCode.JWT_TYPE_MISMATCH);
+            }
+
+            Long userId = userIdNumber.longValue();
+            return new TokenClaims(userId, role, tokenType);
+        } catch (ExpiredJwtException e) {
+            throw new JwtAuthenticationException(ErrorCode.JWT_EXPIRED);
+        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
+            throw new JwtAuthenticationException(ErrorCode.JWT_INVALID);
+        } catch (UnsupportedJwtException e) {
+            throw new JwtAuthenticationException(ErrorCode.JWT_UNSUPPORTED);
+        } catch (IllegalArgumentException e) {
+            throw new JwtAuthenticationException(ErrorCode.JWT_EMPTY);
+        }
     }
 
-    // 3. 토큰이 위조되었거나 만료되지 않았는지 검증
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
-            return true;
-        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            log.error("잘못된 JWT 서명입니다.");
-        } catch (ExpiredJwtException e) {
-            log.error("만료된 JWT 토큰입니다.");
-        } catch (UnsupportedJwtException e) {
-            log.error("지원되지 않는 JWT 토큰입니다.");
-        } catch (IllegalArgumentException e) {
-            log.error("JWT 토큰이 비어있거나 잘못되었습니다.");
-        }
-        return false;
+    public record TokenClaims(Long userId, String role, String tokenType) {
     }
 }

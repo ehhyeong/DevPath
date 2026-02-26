@@ -43,13 +43,36 @@ public class AuthDto {
     }
 
     @Getter
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    @Schema(description = "토큰 재발급 요청 DTO")
+    public static class ReissueRequest {
+        @Schema(description = "리프레시 토큰")
+        @NotBlank(message = "리프레시 토큰은 필수입니다.")
+        private String refreshToken;
+    }
+
+    @Getter
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    @Schema(description = "로그아웃 요청 DTO")
+    public static class LogoutRequest {
+        @Schema(description = "리프레시 토큰")
+        private String refreshToken;
+    }
+
+    @Getter
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @Schema(description = "인증 토큰 응답 DTO")
     public static class TokenResponse {
-        @Schema(description = "액세스 토큰 (JWT)")
+        @Schema(description = "토큰 타입", example = "Bearer")
+        private String tokenType;
+
+        @Schema(description = "액세스 토큰")
         private String accessToken;
+
+        @Schema(description = "리프레시 토큰")
+        private String refreshToken;
 
         @Schema(description = "사용자 이름")
         private String name;

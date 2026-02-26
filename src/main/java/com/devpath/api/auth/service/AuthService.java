@@ -1,61 +1,119 @@
 package com.devpath.api.auth.service;
 
 import com.devpath.api.auth.dto.AuthDto;
-import com.devpath.domain.user.entity.User;
 import com.devpath.api.user.repository.UserRepository;
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.security.JwtTokenProvider;
+import com.devpath.common.security.TokenRedisService;
+import com.devpath.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final String DEFAULT_ROLE = "ROLE_LEARNER";
+    private static final String TOKEN_TYPE = "Bearer";
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenRedisService tokenRedisService;
 
-    // 회원가입 로직
     @Transactional
     public void signUp(AuthDto.SignUpRequest request) {
-        // 1. 이메일 중복 검사
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("이미 가입된 이메일입니다."); // 전역 예외 처리기가 잡아줌
+            throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
-        // 2. 비밀번호 암호화 및 유저 엔티티 생성
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .name(request.getName())
-                // .role("ROLE_LEARNER") // 엔티티 설계에 따라 기본 권한 부여 (필요 시 주석 해제)
                 .build();
 
-        // 3. DB에 저장
         userRepository.save(user);
     }
 
-    // 로그인 로직
     @Transactional(readOnly = true)
     public AuthDto.TokenResponse login(AuthDto.LoginRequest request) {
-        // 1. 이메일로 유저 찾기
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
-        // 2. 비밀번호 일치 여부 확인
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        // 3. 로그인 성공 시 JWT 액세스 토큰 발급
-        String token = jwtTokenProvider.createAccessToken(user.getEmail(), "ROLE_LEARNER");
+        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_ROLE);
+        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), DEFAULT_ROLE);
+        tokenRedisService.saveRefreshToken(user.getId(), refreshToken, jwtTokenProvider.getRefreshTokenExpiration());
 
-        // 4. Controller에게 DTO 형태로 반환 (Entity 노출 금지 원칙)
         return AuthDto.TokenResponse.builder()
-                .accessToken(token)
+                .tokenType(TOKEN_TYPE)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .name(user.getName())
                 .build();
+    }
+
+    @Transactional
+    public AuthDto.TokenResponse reissue(AuthDto.ReissueRequest request) {
+        String refreshToken = request.getRefreshToken();
+        JwtTokenProvider.TokenClaims claims = jwtTokenProvider.parseRefreshToken(refreshToken);
+
+        String savedRefreshToken = tokenRedisService.getRefreshToken(claims.userId())
+                .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+
+        if (!savedRefreshToken.equals(refreshToken)) {
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_MISMATCH);
+        }
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(claims.userId(), claims.role());
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(claims.userId(), claims.role());
+        tokenRedisService.saveRefreshToken(claims.userId(), newRefreshToken, jwtTokenProvider.getRefreshTokenExpiration());
+
+        String name = userRepository.findById(claims.userId())
+                .map(User::getName)
+                .orElse(null);
+
+        return AuthDto.TokenResponse.builder()
+                .tokenType(TOKEN_TYPE)
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .name(name)
+                .build();
+    }
+
+    @Transactional
+    public void logout(Long userId, String authorizationHeader, String refreshToken) {
+        if (userId == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String accessToken = extractBearerToken(authorizationHeader);
+
+        if (StringUtils.hasText(refreshToken)) {
+            JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
+            if (!userId.equals(refreshClaims.userId())) {
+                throw new CustomException(ErrorCode.REFRESH_TOKEN_MISMATCH);
+            }
+        }
+
+        tokenRedisService.deleteRefreshToken(userId);
+
+        long remaining = jwtTokenProvider.getRemainingValidity(accessToken);
+        tokenRedisService.blacklistAccessToken(accessToken, remaining);
+    }
+
+    private String extractBearerToken(String authorizationHeader) {
+        if (!StringUtils.hasText(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
+            throw new CustomException(ErrorCode.INVALID_AUTH_HEADER);
+        }
+        return authorizationHeader.substring(7);
     }
 }

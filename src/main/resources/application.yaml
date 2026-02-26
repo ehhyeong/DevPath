@@ -1,42 +1,52 @@
-server:
-  port: 8081 # 서버 포트
+﻿server:
+  # 서버 포트 (기본 8082, SERVER_PORT로 덮어씀)
+  port: ${SERVER_PORT:8082}
+  # 프록시 헤더 사용
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: devpath
 
-  # OAuth2 설정
   security:
     oauth2:
       client:
         registration:
           github:
+            # GitHub OAuth 키
             client-id: ${GITHUB_CLIENT_ID}
             client-secret: ${GITHUB_CLIENT_SECRET}
-            # 깃허브에서 가져올 정보 범위 (이메일과 기본 프로필 정보)
             scope:
               - read:user
               - user:email
+          google:
+            # Google OAuth 키
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - email
+              - profile
 
-  # 스프링이 최상단 루트에 있는 .env 파일을 강제로 읽어오도록 지시
   config:
+    # .env 로드
     import: optional:file:.env[.properties]
 
-  # PostgreSQL 설정
   datasource:
+    # Postgres 연결
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:devpath_db}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
 
-  # sql 자동 실행 옵션
   sql:
     init:
+      # 시작 시 SQL 실행
       mode: always
 
-  # JPA 및 하이버네이트 설정 (들여쓰기 정렬 완료 ✨)
   jpa:
     hibernate:
+      # 엔티티 기준 스키마 반영
       ddl-auto: update
     show-sql: true
     defer-datasource-initialization: true
@@ -45,9 +55,9 @@ spring:
         format_sql: true
         default_batch_fetch_size: 1000
 
-  # Redis 설정
   data:
     redis:
+      # Redis 연결
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD}
@@ -56,9 +66,23 @@ logging:
   level:
     org.hibernate.SQL: debug
 
-# JWT 설정
+app:
+  oauth2:
+    # 로그인 후 리다이렉트 URL
+    redirect-url: ${DEVPATH_OAUTH2_REDIRECT_URL:${OAUTH2_REDIRECT_URL:http://localhost:3000/oauth2/redirect}}
+    # OAuth2 허용 Origin
+    allowed-origins: ${DEVPATH_OAUTH2_ALLOWED_ORIGINS:${OAUTH2_ALLOWED_ORIGINS:http://localhost:3000}}
+  security:
+    # HTTPS 강제 여부
+    require-https: ${DEVPATH_REQUIRE_HTTPS:${REQUIRE_HTTPS:false}}
+  cors:
+    # CORS 허용 Origin
+    allowed-origins: ${DEVPATH_CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGINS:http://localhost:3000}}
+
 jwt:
-  # 256비트 이상의 아주 복잡한 비밀키
+  # Base64 HMAC 키
   secret: c3ByaW5nLWJvb3QtZGV2cGF0aC1zZWNyZXQta2V5LXRlc3QtZ2VuZXJhdGUtMjAyNjAyMjQ=
-  access-token-expiration: 3600000 # 1시간 (밀리초)
-  refresh-token-expiration: 1209600000 # 14일 (밀리초)
+  # 3600000ms = 1시간
+  access-token-expiration: 3600000
+  # 1209600000ms = 14일
+  refresh-token-expiration: 1209600000

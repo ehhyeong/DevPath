@@ -21,7 +21,6 @@ import org.springframework.web.client.RestTemplate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -29,6 +28,7 @@ import java.util.Optional;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private static final String GITHUB_EMAILS_API = "https://api.github.com/user/emails";
+
     private final UserRepository userRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -36,8 +36,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         Map<String, Object> attributes = oAuth2User.getAttributes();
-
-        log.info("Github user attributes: {}", attributes);
 
         String email = (String) attributes.get("email");
         String name = (String) attributes.get("name");
@@ -47,40 +45,33 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             name = loginId;
         }
 
-        // 1. 비공개 이메일인 경우 직접 API 호출해서 가져오기
         if (email == null || email.isBlank()) {
             email = fetchGithubEmail(userRequest.getAccessToken().getTokenValue());
-            log.info("Email fetched from GitHub API: {}", email);
         }
 
         if (email == null || email.isBlank()) {
             throw new OAuth2AuthenticationException("github_email_required");
         }
 
-        // 2. DB 저장 및 회원가입 로직
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isEmpty()) {
-            User newUser = User.builder()
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            user = userRepository.save(User.builder()
                     .email(email)
                     .name(name)
                     .password("OAUTH_USER_PASSWORD_DUMMY")
-                    .build();
-            userRepository.save(newUser);
-            log.info("New github user auto-signup completed: {}", email);
+                    .build());
         }
 
-        // 3. 🚨 중요: SuccessHandler에서 이메일을 꺼낼 수 있도록 Attributes 수정 🚨
         Map<String, Object> modifiedAttributes = new HashMap<>(attributes);
         modifiedAttributes.put("email", email);
+        modifiedAttributes.put("userId", user.getId());
 
         String userNameAttributeName = userRequest.getClientRegistration()
-                .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
+                .getProviderDetails()
+                .getUserInfoEndpoint()
+                .getUserNameAttributeName();
 
-        return new DefaultOAuth2User(
-                oAuth2User.getAuthorities(),
-                modifiedAttributes,
-                userNameAttributeName
-        );
+        return new DefaultOAuth2User(oAuth2User.getAuthorities(), modifiedAttributes, userNameAttributeName);
     }
 
     private String fetchGithubEmail(String accessToken) {
@@ -88,17 +79,19 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(accessToken);
             headers.setAccept(List.of(MediaType.valueOf("application/vnd.github+json")));
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
                     GITHUB_EMAILS_API,
                     HttpMethod.GET,
-                    entity,
-                    new ParameterizedTypeReference<>() {}
+                    new HttpEntity<>(headers),
+                    new ParameterizedTypeReference<>() {
+                    }
             );
 
             List<Map<String, Object>> emails = response.getBody();
-            if (emails == null || emails.isEmpty()) return null;
+            if (emails == null || emails.isEmpty()) {
+                return null;
+            }
 
             return emails.stream()
                     .filter(e -> Boolean.TRUE.equals(e.get("primary")) && Boolean.TRUE.equals(e.get("verified")))
