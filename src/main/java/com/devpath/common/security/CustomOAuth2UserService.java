@@ -99,7 +99,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .findFirst()
                     .orElseGet(() -> (String) emails.get(0).get("email"));
         } catch (Exception e) {
-            log.warn("Failed to fetch github emails API", e);
+            log.warn("GitHub 이메일 API 조회에 실패했습니다.", e);
             return null;
         }
     }

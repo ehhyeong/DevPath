@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenProvider {
@@ -78,7 +79,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
-                .claim("userId", userId)
+                .id(UUID.randomUUID().toString())
                 .claim("role", role)
                 .claim("tokenType", tokenType)
                 .issuedAt(now)
@@ -91,11 +92,12 @@ public class JwtTokenProvider {
         try {
             Claims claims = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
 
-            Number userIdNumber = claims.get("userId", Number.class);
+            Long userId = parseUserId(claims);
+            String jti = claims.getId();
             String role = claims.get("role", String.class);
             String tokenType = claims.get("tokenType", String.class);
 
-            if (userIdNumber == null || role == null || tokenType == null) {
+            if (userId == null || jti == null || role == null || tokenType == null) {
                 throw new JwtAuthenticationException(ErrorCode.JWT_INVALID);
             }
 
@@ -103,19 +105,33 @@ public class JwtTokenProvider {
                 throw new JwtAuthenticationException(ErrorCode.JWT_TYPE_MISMATCH);
             }
 
-            Long userId = userIdNumber.longValue();
-            return new TokenClaims(userId, role, tokenType);
+            return new TokenClaims(userId, jti, role, tokenType);
         } catch (ExpiredJwtException e) {
             throw new JwtAuthenticationException(ErrorCode.JWT_EXPIRED);
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
             throw new JwtAuthenticationException(ErrorCode.JWT_INVALID);
         } catch (UnsupportedJwtException e) {
             throw new JwtAuthenticationException(ErrorCode.JWT_UNSUPPORTED);
+        } catch (NumberFormatException e) {
+            throw new JwtAuthenticationException(ErrorCode.JWT_INVALID);
         } catch (IllegalArgumentException e) {
             throw new JwtAuthenticationException(ErrorCode.JWT_EMPTY);
         }
     }
 
-    public record TokenClaims(Long userId, String role, String tokenType) {
+    private Long parseUserId(Claims claims) {
+        String subject = claims.getSubject();
+        if (subject != null) {
+            return Long.parseLong(subject);
+        }
+
+        Number userIdClaim = claims.get("userId", Number.class);
+        if (userIdClaim != null) {
+            return userIdClaim.longValue();
+        }
+        return null;
+    }
+
+    public record TokenClaims(Long userId, String jti, String role, String tokenType) {
     }
 }
