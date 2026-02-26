@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = e.getErrorCode();
         return ResponseEntity
                 .status(errorCode.getStatus())
-                .body(ApiResponse.error(e.getMessage()));
+                .body(ApiResponse.error(errorCode.name(), e.getMessage()));
     }
 
     @ExceptionHandler(JwtAuthenticationException.class)
@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = e.getErrorCode();
         return ResponseEntity
                 .status(errorCode.getStatus())
-                .body(ApiResponse.error(errorCode.getMessage()));
+                .body(ApiResponse.error(errorCode.name(), errorCode.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
-                .body(ApiResponse.error(message));
+                .body(ApiResponse.error(ErrorCode.INVALID_INPUT.name(), message));
     }
 
     @ExceptionHandler(BindException.class)
@@ -52,7 +52,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
-                .body(ApiResponse.error(message));
+                .body(ApiResponse.error(ErrorCode.INVALID_INPUT.name(), message));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(ErrorCode.INVALID_INPUT.getStatus())
-                .body(ApiResponse.error(message));
+                .body(ApiResponse.error(ErrorCode.INVALID_INPUT.name(), message));
     }
 
     @ExceptionHandler(Exception.class)
@@ -72,6 +72,9 @@ public class GlobalExceptionHandler {
         log.error("처리되지 않은 예외가 발생했습니다.", e);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getStatus())
-                .body(ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
+                .body(ApiResponse.error(
+                        ErrorCode.INTERNAL_SERVER_ERROR.name(),
+                        ErrorCode.INTERNAL_SERVER_ERROR.getMessage()
+                ));
     }
 }

@@ -31,6 +31,6 @@ public class ApiAccessDeniedHandler implements AccessDeniedHandler {
         ErrorCode errorCode = ErrorCode.FORBIDDEN;
         response.setStatus(errorCode.getStatus().value());
         response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.error(errorCode.getMessage())));
+        response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.error(errorCode.name(), errorCode.getMessage())));
     }
 }
