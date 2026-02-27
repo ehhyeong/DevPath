@@ -21,3 +21,27 @@ jobs:
 
       - name: Build & Test
         run: ./gradlew clean test build --no-daemon
+
+	- name: Notify Discord (CI result)
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DISCORD_WEBHOOK:-}" ]; then
+            echo "Missing DISCORD_WEBHOOK secret"
+            exit 1
+          fi
+
+          STATUS="${{ job.status }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MSG="CI ${STATUS} | ${{ github.repository }} | branch=${{ github.ref_name }} | sha=${{ github.sha }} | ${RUN_URL}"
+
+          python - <<'PY'
+          import json, os, urllib.request
+          url = os.environ["DISCORD_WEBHOOK"]
+          msg = os.environ["MSG"]
+          data = json.dumps({"content": msg}).encode("utf-8")
+          req = urllib.request.Request(url, data=data, headers={"Content-Type":"application/json"})
+          urllib.request.urlopen(req).read()
+          PY
