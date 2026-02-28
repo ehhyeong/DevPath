@@ -36,8 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 
-# =========================
-# Custom Environments
-# =========================
+# Environments (환경변수 파일 깃허브 업로드 방지)
 .env
+.env.*.env
 .env.*

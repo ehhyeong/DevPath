@@ -7,23 +7,27 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ApiResponse<T> {
-    private String status;
+    private boolean success;
+    private String code;
     private String message;
     private T data;
 
-    public ApiResponse(String status, String message, T data) {
-        this.status = status;
+    public ApiResponse(boolean success, String code, String message, T data) {
+        this.success = success;
+        this.code = code;
         this.message = message;
         this.data = data;
     }
 
-    // 성공했을 때 데이터를 담아서 보내는 메서드
     public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>("SUCCESS", message, data);
+        return new ApiResponse<>(true, null, message, data);
     }
 
-    // 에러가 났을 때 메시지만 보내는 메서드
+    public static <T> ApiResponse<T> error(String code, String message) {
+        return new ApiResponse<>(false, code, message, null);
+    }
+
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>("ERROR", message, null);
+        return new ApiResponse<>(false, null, message, null);
     }
 }
