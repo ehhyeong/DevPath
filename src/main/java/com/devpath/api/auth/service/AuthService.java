@@ -51,7 +51,12 @@ public class AuthService {
 
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_ROLE);
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), DEFAULT_ROLE);
-        tokenRedisService.saveRefreshToken(user.getId(), refreshToken, jwtTokenProvider.getRefreshTokenExpiration());
+        JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
+        tokenRedisService.saveRefreshTokenJti(
+                user.getId(),
+                refreshClaims.jti(),
+                jwtTokenProvider.getRefreshTokenExpiration()
+        );
 
         return AuthDto.TokenResponse.builder()
                 .tokenType(TOKEN_TYPE)
@@ -66,16 +71,29 @@ public class AuthService {
         String refreshToken = request.getRefreshToken();
         JwtTokenProvider.TokenClaims claims = jwtTokenProvider.parseRefreshToken(refreshToken);
 
-        String savedRefreshToken = tokenRedisService.getRefreshToken(claims.userId())
+        if (tokenRedisService.isRefreshJtiBlacklisted(claims.jti())) {
+            tokenRedisService.deleteRefreshToken(claims.userId());
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
+        }
+
+        String activeRefreshJti = tokenRedisService.getRefreshTokenJti(claims.userId())
                 .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
 
-        if (!savedRefreshToken.equals(refreshToken)) {
-            throw new CustomException(ErrorCode.REFRESH_TOKEN_MISMATCH);
+        if (!activeRefreshJti.equals(claims.jti())) {
+            tokenRedisService.deleteRefreshToken(claims.userId());
+            throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
         }
+
+        tokenRedisService.blacklistRefreshJti(claims.jti(), jwtTokenProvider.getRemainingValidity(refreshToken));
 
         String newAccessToken = jwtTokenProvider.createAccessToken(claims.userId(), claims.role());
         String newRefreshToken = jwtTokenProvider.createRefreshToken(claims.userId(), claims.role());
-        tokenRedisService.saveRefreshToken(claims.userId(), newRefreshToken, jwtTokenProvider.getRefreshTokenExpiration());
+        JwtTokenProvider.TokenClaims newRefreshClaims = jwtTokenProvider.parseRefreshToken(newRefreshToken);
+        tokenRedisService.saveRefreshTokenJti(
+                claims.userId(),
+                newRefreshClaims.jti(),
+                jwtTokenProvider.getRefreshTokenExpiration()
+        );
 
         String name = userRepository.findById(claims.userId())
                 .map(User::getName)
@@ -96,18 +114,23 @@ public class AuthService {
         }
 
         String accessToken = extractBearerToken(authorizationHeader);
+        JwtTokenProvider.TokenClaims accessClaims = jwtTokenProvider.parseAccessToken(accessToken);
+        if (!userId.equals(accessClaims.userId())) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
 
         if (StringUtils.hasText(refreshToken)) {
             JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
             if (!userId.equals(refreshClaims.userId())) {
                 throw new CustomException(ErrorCode.REFRESH_TOKEN_MISMATCH);
             }
+            tokenRedisService.blacklistRefreshJti(refreshClaims.jti(), jwtTokenProvider.getRemainingValidity(refreshToken));
         }
 
         tokenRedisService.deleteRefreshToken(userId);
 
         long remaining = jwtTokenProvider.getRemainingValidity(accessToken);
-        tokenRedisService.blacklistAccessToken(accessToken, remaining);
+        tokenRedisService.blacklistAccessJti(accessClaims.jti(), remaining);
     }
 
     private String extractBearerToken(String authorizationHeader) {

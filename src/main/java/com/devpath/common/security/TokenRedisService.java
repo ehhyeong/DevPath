@@ -11,41 +11,58 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TokenRedisService {
 
-    private static final String REFRESH_PREFIX = "refresh:";
-    private static final String BLACKLIST_PREFIX = "blacklist:";
+    private static final String REFRESH_ACTIVE_PREFIX = "refresh:active:";
+    private static final String ACCESS_BLACKLIST_PREFIX = "blacklist:access:";
+    private static final String REFRESH_BLACKLIST_PREFIX = "blacklist:refresh:";
 
     private final StringRedisTemplate stringRedisTemplate;
 
-    public void saveRefreshToken(Long userId, String refreshToken, long ttlMillis) {
+    public void saveRefreshTokenJti(Long userId, String refreshJti, long ttlMillis) {
         stringRedisTemplate.opsForValue()
-                .set(refreshKey(userId), refreshToken, Duration.ofMillis(ttlMillis));
+                .set(refreshActiveKey(userId), refreshJti, Duration.ofMillis(ttlMillis));
     }
 
-    public Optional<String> getRefreshToken(Long userId) {
-        return Optional.ofNullable(stringRedisTemplate.opsForValue().get(refreshKey(userId)));
+    public Optional<String> getRefreshTokenJti(Long userId) {
+        return Optional.ofNullable(stringRedisTemplate.opsForValue().get(refreshActiveKey(userId)));
     }
 
     public void deleteRefreshToken(Long userId) {
-        stringRedisTemplate.delete(refreshKey(userId));
+        stringRedisTemplate.delete(refreshActiveKey(userId));
     }
 
-    public void blacklistAccessToken(String accessToken, long ttlMillis) {
+    public void blacklistAccessJti(String jti, long ttlMillis) {
         if (ttlMillis <= 0) {
             return;
         }
         stringRedisTemplate.opsForValue()
-                .set(blacklistKey(accessToken), "1", Duration.ofMillis(ttlMillis));
+                .set(accessBlacklistKey(jti), "1", Duration.ofMillis(ttlMillis));
     }
 
-    public boolean isBlacklisted(String accessToken) {
-        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(blacklistKey(accessToken)));
+    public boolean isAccessJtiBlacklisted(String jti) {
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(accessBlacklistKey(jti)));
     }
 
-    private String refreshKey(Long userId) {
-        return REFRESH_PREFIX + userId;
+    public void blacklistRefreshJti(String jti, long ttlMillis) {
+        if (ttlMillis <= 0) {
+            return;
+        }
+        stringRedisTemplate.opsForValue()
+                .set(refreshBlacklistKey(jti), "1", Duration.ofMillis(ttlMillis));
     }
 
-    private String blacklistKey(String accessToken) {
-        return BLACKLIST_PREFIX + accessToken;
+    public boolean isRefreshJtiBlacklisted(String jti) {
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(refreshBlacklistKey(jti)));
+    }
+
+    private String refreshActiveKey(Long userId) {
+        return REFRESH_ACTIVE_PREFIX + userId;
+    }
+
+    private String accessBlacklistKey(String jti) {
+        return ACCESS_BLACKLIST_PREFIX + jti;
+    }
+
+    private String refreshBlacklistKey(String jti) {
+        return REFRESH_BLACKLIST_PREFIX + jti;
     }
 }

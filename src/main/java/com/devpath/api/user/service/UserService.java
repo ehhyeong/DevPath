@@ -53,6 +53,6 @@ public class UserService {
             userTechStackRepository.saveAll(techStacks);
         }
 
-        log.info("Profile setup completed. userId={}", userId);
+        log.info("프로필 설정이 완료되었습니다. 사용자ID={}", userId);
     }
 }
