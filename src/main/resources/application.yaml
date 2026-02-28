@@ -1,5 +1,5 @@
 ﻿server:
-  # 서버 포트 (기본 8082, SERVER_PORT로 덮어씀)
+  # 서버 포트 (기본 8082, SERVER_PORT로 덮어씀) test중
   port: ${SERVER_PORT:8082}
   # 프록시 헤더 사용
   forward-headers-strategy: framework
