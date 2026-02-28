@@ -71,4 +71,8 @@ public class UserProfile {
         this.githubUrl = githubUrl;
         this.blogUrl = blogUrl;
     }
+    public void updateOnboardingProfile(String bio, String phone) {
+        this.bio = bio;
+        this.phone = phone;
+    }
 }
