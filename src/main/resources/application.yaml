@@ -82,7 +82,5 @@ app:
 jwt:
   # Base64 HMAC 키
   secret: c3ByaW5nLWJvb3QtZGV2cGF0aC1zZWNyZXQta2V5LXRlc3QtZ2VuZXJhdGUtMjAyNjAyMjQ=
-  # 3600000ms = 1시간
-  access-token-expiration: 3600000
-  # 1209600000ms = 14일
-  refresh-token-expiration: 1209600000
+  access-token-expiration: 3600000 # 3600000ms = 1시간
+  refresh-token-expiration: 1209600000 # 1209600000ms = 14일
