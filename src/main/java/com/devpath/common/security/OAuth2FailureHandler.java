@@ -44,10 +44,10 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         }
 
         Throwable cause = exception.getCause();
-        log.error("OAuth2 login failed. code={}, description={}, cause={}",
+        log.error("OAuth2 로그인에 실패했습니다. code={}, description={}, cause={}",
                 errorCode,
                 errorDescription,
-                cause == null ? "none" : cause.getMessage(),
+                cause == null ? "없음" : cause.getMessage(),
                 exception);
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

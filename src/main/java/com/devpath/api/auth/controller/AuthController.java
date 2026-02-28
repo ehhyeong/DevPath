@@ -37,7 +37,7 @@ public class AuthController {
     }
 
     @Operation(summary = "토큰 재발급")
-    @PostMapping("/reissue")
+    @PostMapping({"/reissue", "/refresh"})
     public ApiResponse<AuthDto.TokenResponse> reissue(@Valid @RequestBody AuthDto.ReissueRequest request) {
         AuthDto.TokenResponse response = authService.reissue(request);
         return ApiResponse.success("토큰이 재발급되었습니다.", response);
