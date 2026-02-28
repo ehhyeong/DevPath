@@ -5,6 +5,19 @@ spring:
   application:
     name: devpath
 
+  # OAuth2 설정
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            # 깃허브에서 가져올 정보 범위 (이메일과 기본 프로필 정보)
+            scope:
+              - read:user
+              - user:email
+
   # 스프링이 최상단 루트에 있는 .env 파일을 강제로 읽어오도록 지시
   config:
     import: optional:file:.env[.properties]
