@@ -1,28 +1,35 @@
 package com.devpath.domain.user.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
-@Table(name = "tags")
+@Table(name = "tags") // 테이블명 명시
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Tag {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "tag_id")
-    private Long id;
+    private Long tagId;
 
-    // 태그 이름 (예: Java, Spring Boot, MySQL)
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, unique = true)
     private String name;
 
-    @Builder
-    public Tag(String name) {
+    private String category;
+
+    @Builder.Default
+    @Column(name = "is_official")
+    private Boolean isOfficial = true;
+
+    public void updateTag(String name, String category) {
         this.name = name;
+        this.category = category;
+    }
+    public void updateTagInfo(String name, String category) {
+        this.name = name;
+        this.category = category;
     }
 }
