@@ -28,6 +28,11 @@ public enum ErrorCode {
     ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵을 찾을 수 없습니다."),
     CUSTOM_ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "내 로드맵을 찾을 수 없습니다."),
     ROADMAP_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵 노드를 찾을 수 없습니다."),
+    CUSTOM_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 노드를 찾을 수 없습니다."),
+    
+    // 태그 검증 관련 에러
+    INSUFFICIENT_TAGS(HttpStatus.BAD_REQUEST, "노드 클리어에 필요한 태그가 부족합니다."),
+    NODE_ALREADY_CLEARED(HttpStatus.BAD_REQUEST, "이미 클리어한 노드입니다."),
 
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
