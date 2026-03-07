@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List; // [추가] List 임포트
 
 public class RoadmapDto {
 
@@ -38,5 +39,29 @@ public class RoadmapDto {
 
         @Schema(description = "생성 일시")
         private LocalDateTime createdAt;
+    }
+
+    // [추가] 로드맵 상세(트리) 응답 DTO
+    @Getter
+    @Builder
+    @Schema(description = "오피셜 로드맵 상세(트리) 응답 DTO")
+    public static class DetailResponse {
+        @Schema(description = "로드맵 ID", example = "1")
+        private Long roadmapId;
+
+        @Schema(description = "로드맵 제목", example = "백엔드 마스터 로드맵")
+        private String title;
+
+        @Schema(description = "로드맵 설명")
+        private String description;
+
+        @Schema(description = "공식 로드맵 여부", example = "true")
+        private Boolean isOfficial;
+
+        @Schema(description = "생성 일시")
+        private LocalDateTime createdAt;
+
+        @Schema(description = "로드맵에 속한 세부 노드 리스트 (정렬됨)")
+        private List<RoadmapNodeDto.Response> nodes;
     }
 }
