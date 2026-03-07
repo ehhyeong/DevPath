@@ -40,7 +40,7 @@ public class CustomRoadmapCopyService {
     private final OfficialRoadmapReader officialRoadmapReader;
 
     /**
-     * ✅ B-3: 공식 로드맵을 유저 전용 커스텀 로드맵으로 딥카피(노드 + 선행조건)하여 DB에 저장한다.
+     * B-3: 공식 로드맵을 유저 전용 커스텀 로드맵으로 딥카피(노드 + 선행조건)하여 DB에 저장한다.
      * - A가 오피셜 데이터(data.sql)를 올린 뒤에야 end-to-end로 성공한다.
      */
     @Transactional
