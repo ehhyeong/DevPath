@@ -4,8 +4,8 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 @Getter
-// 서비스 전반에서 공통으로 사용하는 에러 코드
 public enum ErrorCode {
+
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "잘못된 요청 입력입니다."),
     INVALID_AUTH_HEADER(HttpStatus.BAD_REQUEST, "인증 헤더 형식이 올바르지 않습니다."),
 
@@ -26,12 +26,16 @@ public enum ErrorCode {
     REFRESH_TOKEN_REUSED(HttpStatus.UNAUTHORIZED, "리프레시 토큰 재사용이 감지되어 세션이 폐기되었습니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 리소스를 찾을 수 없습니다."),
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다."),
+
+    ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵을 찾을 수 없습니다."),
+    CUSTOM_ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "내 로드맵을 찾을 수 없습니다."),
+    ROADMAP_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵 노드를 찾을 수 없습니다."),
+
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus status;
     private final String message;
 
-    // HTTP 상태 코드와 기본 메시지를 함께 보관
     ErrorCode(HttpStatus status, String message) {
         this.status = status;
         this.message = message;

@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+// Spring Security 인증/인가 정책을 구성하는 설정
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -29,8 +30,9 @@ public class SecurityConfig {
     private final ApiAuthenticationEntryPoint apiAuthenticationEntryPoint;
     private final ApiAccessDeniedHandler apiAccessDeniedHandler;
 
+    // 보안 필터 체인(JWT, OAuth2, 인가 규칙) 설정
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -60,6 +62,7 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // 비밀번호 해시 인코더 등록
     @Bean
     public org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
         return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();

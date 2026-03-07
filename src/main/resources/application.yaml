@@ -8,6 +8,10 @@ spring:
   application:
     name: devpath
 
+  # 개발 환경 profile 활성화 (InMemoryOfficialRoadmapReader 사용)
+  profiles:
+    active: local
+
   security:
     oauth2:
       client:
