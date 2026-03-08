@@ -20,100 +20,111 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AdminService {
 
-    private final TagRepository tagRepository;
-    private final RoadmapRepository roadmapRepository;
-    private final UserRepository userRepository;
-    private final UserTechStackRepository userTechStackRepository;
-    private final NodeRequiredTagRepository nodeRequiredTagRepository;
+  private final TagRepository tagRepository;
+  private final RoadmapRepository roadmapRepository;
+  private final UserRepository userRepository;
+  private final UserTechStackRepository userTechStackRepository;
+  private final NodeRequiredTagRepository nodeRequiredTagRepository;
 
-    @Transactional
-    public TagDto.Response createTag(TagDto.CreateRequest request) {
-        if (tagRepository.findByName(request.getName()).isPresent()) {
-            throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
-        }
-
-        Tag tag = Tag.builder()
-                .name(request.getName())
-                .category(request.getCategory())
-                .build();
-
-        return toTagResponse(tagRepository.save(tag));
+  @Transactional
+  public TagDto.Response createTag(TagDto.CreateRequest request) {
+    if (tagRepository.findByName(request.getName()).isPresent()) {
+      throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
     }
 
-    @Transactional
-    public TagDto.Response updateTag(Long tagId, TagDto.CreateRequest request) {
-        Tag tag = tagRepository.findById(tagId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    Tag tag = Tag.builder().name(request.getName()).category(request.getCategory()).build();
 
-        tagRepository.findByName(request.getName())
-                .filter(foundTag -> !foundTag.getTagId().equals(tagId))
-                .ifPresent(foundTag -> {
-                    throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
-                });
+    return toTagResponse(tagRepository.save(tag));
+  }
 
-        tag.updateTagInfo(request.getName(), request.getCategory());
-        return toTagResponse(tag);
-    }
+  @Transactional
+  public TagDto.Response updateTag(Long tagId, TagDto.CreateRequest request) {
+    Tag tag =
+        tagRepository
+            .findById(tagId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-    @Transactional
-    public void deleteTag(Long tagId) {
-        Tag tag = tagRepository.findById(tagId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    tagRepository
+        .findByName(request.getName())
+        .filter(foundTag -> !foundTag.getTagId().equals(tagId))
+        .ifPresent(
+            foundTag -> {
+              throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
+            });
 
-        userTechStackRepository.deleteAllByTagId(tagId);
-        nodeRequiredTagRepository.deleteAllByTagId(tagId);
-        tagRepository.delete(tag);
-    }
+    tag.updateTagInfo(request.getName(), request.getCategory());
+    return toTagResponse(tag);
+  }
 
-    @Transactional
-    public RoadmapDto.Response createOfficialRoadmap(RoadmapDto.CreateRequest request, Long adminId) {
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+  @Transactional
+  public void deleteTag(Long tagId) {
+    Tag tag =
+        tagRepository
+            .findById(tagId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        Roadmap roadmap = Roadmap.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .creator(admin)
-                .isOfficial(true)
-                .isDeleted(false)
-                .build();
+    userTechStackRepository.deleteAllByTagId(tagId);
+    nodeRequiredTagRepository.deleteAllByTagId(tagId);
+    tagRepository.delete(tag);
+  }
 
-        return toRoadmapResponse(roadmapRepository.save(roadmap));
-    }
+  @Transactional
+  public RoadmapDto.Response createOfficialRoadmap(RoadmapDto.CreateRequest request, Long adminId) {
+    User admin =
+        userRepository
+            .findById(adminId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-    @Transactional
-    public RoadmapDto.Response updateOfficialRoadmap(Long roadmapId, RoadmapDto.CreateRequest request) {
-        Roadmap roadmap = roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    Roadmap roadmap =
+        Roadmap.builder()
+            .title(request.getTitle())
+            .description(request.getDescription())
+            .creator(admin)
+            .isOfficial(true)
+            .isDeleted(false)
+            .build();
 
-        roadmap.updateInfo(request.getTitle(), request.getDescription());
-        return toRoadmapResponse(roadmap);
-    }
+    return toRoadmapResponse(roadmapRepository.save(roadmap));
+  }
 
-    @Transactional
-    public void deleteOfficialRoadmap(Long roadmapId) {
-        Roadmap roadmap = roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+  @Transactional
+  public RoadmapDto.Response updateOfficialRoadmap(
+      Long roadmapId, RoadmapDto.CreateRequest request) {
+    Roadmap roadmap =
+        roadmapRepository
+            .findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        roadmap.deleteRoadmap();
-    }
+    roadmap.updateInfo(request.getTitle(), request.getDescription());
+    return toRoadmapResponse(roadmap);
+  }
 
-    private TagDto.Response toTagResponse(Tag tag) {
-        return TagDto.Response.builder()
-                .tagId(tag.getTagId())
-                .name(tag.getName())
-                .category(tag.getCategory())
-                .isOfficial(tag.getIsOfficial())
-                .build();
-    }
+  @Transactional
+  public void deleteOfficialRoadmap(Long roadmapId) {
+    Roadmap roadmap =
+        roadmapRepository
+            .findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-    private RoadmapDto.Response toRoadmapResponse(Roadmap roadmap) {
-        return RoadmapDto.Response.builder()
-                .roadmapId(roadmap.getRoadmapId())
-                .title(roadmap.getTitle())
-                .description(roadmap.getDescription())
-                .isOfficial(roadmap.getIsOfficial())
-                .createdAt(roadmap.getCreatedAt())
-                .build();
-    }
+    roadmap.deleteRoadmap();
+  }
+
+  private TagDto.Response toTagResponse(Tag tag) {
+    return TagDto.Response.builder()
+        .tagId(tag.getTagId())
+        .name(tag.getName())
+        .category(tag.getCategory())
+        .isOfficial(tag.getIsOfficial())
+        .build();
+  }
+
+  private RoadmapDto.Response toRoadmapResponse(Roadmap roadmap) {
+    return RoadmapDto.Response.builder()
+        .roadmapId(roadmap.getRoadmapId())
+        .title(roadmap.getTitle())
+        .description(roadmap.getDescription())
+        .isOfficial(roadmap.getIsOfficial())
+        .createdAt(roadmap.getCreatedAt())
+        .build();
+  }
 }

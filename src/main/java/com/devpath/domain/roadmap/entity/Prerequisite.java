@@ -10,16 +10,16 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Prerequisite {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "prerequisite_id")
-    private Long prerequisiteId;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "prerequisite_id")
+  private Long prerequisiteId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "node_id", nullable = false)
-    private RoadmapNode node;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "node_id", nullable = false)
+  private RoadmapNode node;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pre_node_id", nullable = false)
-    private RoadmapNode preNode;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "pre_node_id", nullable = false)
+  private RoadmapNode preNode;
 }

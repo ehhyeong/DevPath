@@ -17,126 +17,126 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private static final String DEFAULT_ROLE = "ROLE_LEARNER";
-    private static final String TOKEN_TYPE = "Bearer";
+  private static final String DEFAULT_ROLE = "ROLE_LEARNER";
+  private static final String TOKEN_TYPE = "Bearer";
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final TokenRedisService tokenRedisService;
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final JwtTokenProvider jwtTokenProvider;
+  private final TokenRedisService tokenRedisService;
 
-    @Transactional
-    public void signUp(AuthDto.SignUpRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
-        }
-
-        User user = User.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .name(request.getName())
-                .build();
-
-        userRepository.save(user);
+  @Transactional
+  public void signUp(AuthDto.SignUpRequest request) {
+    if (userRepository.existsByEmail(request.getEmail())) {
+      throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
     }
 
-    @Transactional(readOnly = true)
-    public AuthDto.TokenResponse login(AuthDto.LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
+    User user =
+        User.builder()
+            .email(request.getEmail())
+            .password(passwordEncoder.encode(request.getPassword()))
+            .name(request.getName())
+            .build();
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
-        }
+    userRepository.save(user);
+  }
 
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_ROLE);
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), DEFAULT_ROLE);
-        JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
-        tokenRedisService.saveRefreshTokenJti(
-                user.getId(),
-                refreshClaims.jti(),
-                jwtTokenProvider.getRefreshTokenExpiration()
-        );
+  @Transactional(readOnly = true)
+  public AuthDto.TokenResponse login(AuthDto.LoginRequest request) {
+    User user =
+        userRepository
+            .findByEmail(request.getEmail())
+            .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
-        return AuthDto.TokenResponse.builder()
-                .tokenType(TOKEN_TYPE)
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .name(user.getName())
-                .build();
+    if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+      throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
     }
 
-    @Transactional
-    public AuthDto.TokenResponse reissue(AuthDto.ReissueRequest request) {
-        String refreshToken = request.getRefreshToken();
-        JwtTokenProvider.TokenClaims claims = jwtTokenProvider.parseRefreshToken(refreshToken);
+    String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_ROLE);
+    String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), DEFAULT_ROLE);
+    JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
+    tokenRedisService.saveRefreshTokenJti(
+        user.getId(), refreshClaims.jti(), jwtTokenProvider.getRefreshTokenExpiration());
 
-        if (tokenRedisService.isRefreshJtiBlacklisted(claims.jti())) {
-            tokenRedisService.deleteRefreshToken(claims.userId());
-            throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
-        }
+    return AuthDto.TokenResponse.builder()
+        .tokenType(TOKEN_TYPE)
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
+        .name(user.getName())
+        .build();
+  }
 
-        String activeRefreshJti = tokenRedisService.getRefreshTokenJti(claims.userId())
-                .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+  @Transactional
+  public AuthDto.TokenResponse reissue(AuthDto.ReissueRequest request) {
+    String refreshToken = request.getRefreshToken();
+    JwtTokenProvider.TokenClaims claims = jwtTokenProvider.parseRefreshToken(refreshToken);
 
-        if (!activeRefreshJti.equals(claims.jti())) {
-            tokenRedisService.deleteRefreshToken(claims.userId());
-            throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
-        }
-
-        tokenRedisService.blacklistRefreshJti(claims.jti(), jwtTokenProvider.getRemainingValidity(refreshToken));
-
-        String newAccessToken = jwtTokenProvider.createAccessToken(claims.userId(), claims.role());
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(claims.userId(), claims.role());
-        JwtTokenProvider.TokenClaims newRefreshClaims = jwtTokenProvider.parseRefreshToken(newRefreshToken);
-        tokenRedisService.saveRefreshTokenJti(
-                claims.userId(),
-                newRefreshClaims.jti(),
-                jwtTokenProvider.getRefreshTokenExpiration()
-        );
-
-        String name = userRepository.findById(claims.userId())
-                .map(User::getName)
-                .orElse(null);
-
-        return AuthDto.TokenResponse.builder()
-                .tokenType(TOKEN_TYPE)
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .name(name)
-                .build();
+    if (tokenRedisService.isRefreshJtiBlacklisted(claims.jti())) {
+      tokenRedisService.deleteRefreshToken(claims.userId());
+      throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
     }
 
-    @Transactional
-    public void logout(Long userId, String authorizationHeader, String refreshToken) {
-        if (userId == null) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
+    String activeRefreshJti =
+        tokenRedisService
+            .getRefreshTokenJti(claims.userId())
+            .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
 
-        String accessToken = extractBearerToken(authorizationHeader);
-        JwtTokenProvider.TokenClaims accessClaims = jwtTokenProvider.parseAccessToken(accessToken);
-        if (!userId.equals(accessClaims.userId())) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-
-        if (StringUtils.hasText(refreshToken)) {
-            JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
-            if (!userId.equals(refreshClaims.userId())) {
-                throw new CustomException(ErrorCode.REFRESH_TOKEN_MISMATCH);
-            }
-            tokenRedisService.blacklistRefreshJti(refreshClaims.jti(), jwtTokenProvider.getRemainingValidity(refreshToken));
-        }
-
-        tokenRedisService.deleteRefreshToken(userId);
-
-        long remaining = jwtTokenProvider.getRemainingValidity(accessToken);
-        tokenRedisService.blacklistAccessJti(accessClaims.jti(), remaining);
+    if (!activeRefreshJti.equals(claims.jti())) {
+      tokenRedisService.deleteRefreshToken(claims.userId());
+      throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
     }
 
-    private String extractBearerToken(String authorizationHeader) {
-        if (!StringUtils.hasText(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
-            throw new CustomException(ErrorCode.INVALID_AUTH_HEADER);
-        }
-        return authorizationHeader.substring(7);
+    tokenRedisService.blacklistRefreshJti(
+        claims.jti(), jwtTokenProvider.getRemainingValidity(refreshToken));
+
+    String newAccessToken = jwtTokenProvider.createAccessToken(claims.userId(), claims.role());
+    String newRefreshToken = jwtTokenProvider.createRefreshToken(claims.userId(), claims.role());
+    JwtTokenProvider.TokenClaims newRefreshClaims =
+        jwtTokenProvider.parseRefreshToken(newRefreshToken);
+    tokenRedisService.saveRefreshTokenJti(
+        claims.userId(), newRefreshClaims.jti(), jwtTokenProvider.getRefreshTokenExpiration());
+
+    String name = userRepository.findById(claims.userId()).map(User::getName).orElse(null);
+
+    return AuthDto.TokenResponse.builder()
+        .tokenType(TOKEN_TYPE)
+        .accessToken(newAccessToken)
+        .refreshToken(newRefreshToken)
+        .name(name)
+        .build();
+  }
+
+  @Transactional
+  public void logout(Long userId, String authorizationHeader, String refreshToken) {
+    if (userId == null) {
+      throw new CustomException(ErrorCode.UNAUTHORIZED);
     }
+
+    String accessToken = extractBearerToken(authorizationHeader);
+    JwtTokenProvider.TokenClaims accessClaims = jwtTokenProvider.parseAccessToken(accessToken);
+    if (!userId.equals(accessClaims.userId())) {
+      throw new CustomException(ErrorCode.UNAUTHORIZED);
+    }
+
+    if (StringUtils.hasText(refreshToken)) {
+      JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
+      if (!userId.equals(refreshClaims.userId())) {
+        throw new CustomException(ErrorCode.REFRESH_TOKEN_MISMATCH);
+      }
+      tokenRedisService.blacklistRefreshJti(
+          refreshClaims.jti(), jwtTokenProvider.getRemainingValidity(refreshToken));
+    }
+
+    tokenRedisService.deleteRefreshToken(userId);
+
+    long remaining = jwtTokenProvider.getRemainingValidity(accessToken);
+    tokenRedisService.blacklistAccessJti(accessClaims.jti(), remaining);
+  }
+
+  private String extractBearerToken(String authorizationHeader) {
+    if (!StringUtils.hasText(authorizationHeader) || !authorizationHeader.startsWith("Bearer ")) {
+      throw new CustomException(ErrorCode.INVALID_AUTH_HEADER);
+    }
+    return authorizationHeader.substring(7);
+  }
 }
