@@ -2,6 +2,7 @@ package com.devpath.domain.roadmap.repository;
 
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,4 +29,8 @@ public interface NodeRequiredTagRepository extends JpaRepository<NodeRequiredTag
             "JOIN nrt.tag t " +
             "WHERE nrt.node.id = :nodeId")
     List<String> findTagNamesByNodeId(@Param("nodeId") Long nodeId);
+
+    @Modifying
+    @Query("DELETE FROM NodeRequiredTag nrt WHERE nrt.tag.tagId = :tagId")
+    void deleteAllByTagId(@Param("tagId") Long tagId);
 }

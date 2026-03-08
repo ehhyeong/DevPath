@@ -49,4 +49,9 @@ public class Roadmap {
     public void deleteRoadmap() {
         this.isDeleted = true;
     }
+
+    public void updateInfo(String title, String description) {
+        this.title = title;
+        this.description = description;
+    }
 }
