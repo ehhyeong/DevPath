@@ -12,10 +12,13 @@ import com.devpath.domain.roadmap.port.OfficialRoadmapSnapshot;
 import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
+import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
+import com.devpath.domain.roadmap.service.TagValidationService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
+import com.devpath.domain.user.repository.UserTechStackRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +41,9 @@ public class CustomRoadmapCopyService {
     private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
 
     private final OfficialRoadmapReader officialRoadmapReader;
+    private final TagValidationService tagValidationService;
+    private final UserTechStackRepository userTechStackRepository;
+    private final NodeRequiredTagRepository nodeRequiredTagRepository;
 
     /**
      * B-3: 공식 로드맵을 유저 전용 커스텀 로드맵으로 딥카피(노드 + 선행조건)하여 DB에 저장한다.
@@ -78,14 +84,27 @@ public class CustomRoadmapCopyService {
         Map<Long, RoadmapNode> originalNodeMap = originalNodes.stream()
                 .collect(Collectors.toMap(RoadmapNode::getNodeId, Function.identity()));
 
+        List<String> userTags = userTechStackRepository.findTagNamesByUserId(userId);
+
         // 3) CustomRoadmapNode bulk insert
         List<CustomRoadmapNode> customNodesToSave = snapshot.nodes().stream()
                 .sorted(Comparator.comparing(OfficialRoadmapSnapshot.NodeItem::orderIndex,
                         Comparator.nullsLast(Integer::compareTo)))
-                .map(n -> CustomRoadmapNode.builder()
-                        .customRoadmap(customRoadmap)
-                        .originalNode(originalNodeMap.get(n.nodeId()))
-                        .build())
+                .map(n -> {
+                    RoadmapNode originalNode = originalNodeMap.get(n.nodeId());
+                    CustomRoadmapNode customNode = CustomRoadmapNode.builder()
+                            .customRoadmap(customRoadmap)
+                            .originalNode(originalNode)
+                            .build();
+
+                    List<String> requiredTags = nodeRequiredTagRepository.findTagNamesByNodeId(originalNode.getNodeId());
+                    if (requiredTags != null && !requiredTags.isEmpty()
+                            && tagValidationService.validateTags(requiredTags, userTags)) {
+                        customNode.complete();
+                    }
+
+                    return customNode;
+                })
                 .toList();
 
         List<CustomRoadmapNode> savedCustomNodes = customRoadmapNodeRepository.saveAll(customNodesToSave);
