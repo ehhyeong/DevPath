@@ -1,15 +1,15 @@
 package com.devpath.api.admin.service;
 
 import com.devpath.api.user.dto.RoadmapDto;
-import com.devpath.api.user.repository.RoadmapRepository;
 import com.devpath.api.user.dto.TagDto;
-import com.devpath.api.user.repository.TagRepository;
-import com.devpath.api.user.repository.UserRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.Roadmap;
+import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.repository.TagRepository;
+import com.devpath.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

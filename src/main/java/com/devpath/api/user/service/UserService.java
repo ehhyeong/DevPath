@@ -1,16 +1,16 @@
 package com.devpath.api.user.service;
 
 import com.devpath.api.user.dto.UserProfileSetupRequest;
-import com.devpath.api.user.repository.TagRepository;
-import com.devpath.api.user.repository.UserProfileRepository;
-import com.devpath.api.user.repository.UserRepository;
-import com.devpath.api.user.repository.UserTechStackRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.entity.UserTechStack;
+import com.devpath.domain.user.repository.TagRepository;
+import com.devpath.domain.user.repository.UserProfileRepository;
+import com.devpath.domain.user.repository.UserRepository;
+import com.devpath.domain.user.repository.UserTechStackRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

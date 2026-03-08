@@ -1,8 +1,5 @@
 package com.devpath.api.roadmap.service;
 
-import com.devpath.api.roadmap.repository.RoadmapNodeRepository;
-import com.devpath.api.roadmap.repository.RoadmapRepository;
-import com.devpath.api.user.repository.UserRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
@@ -15,7 +12,10 @@ import com.devpath.domain.roadmap.port.OfficialRoadmapSnapshot;
 import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
+import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
+import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,7 +76,7 @@ public class CustomRoadmapCopyService {
         }
 
         Map<Long, RoadmapNode> originalNodeMap = originalNodes.stream()
-                .collect(Collectors.toMap(RoadmapNode::getId, Function.identity()));
+                .collect(Collectors.toMap(RoadmapNode::getNodeId, Function.identity()));
 
         // 3) CustomRoadmapNode bulk insert
         List<CustomRoadmapNode> customNodesToSave = snapshot.nodes().stream()
@@ -93,7 +93,7 @@ public class CustomRoadmapCopyService {
         // 4) Map<originalNodeId, savedCustomNode> 만들기
         Map<Long, CustomRoadmapNode> customNodeByOriginalId = new HashMap<>();
         for (CustomRoadmapNode cn : savedCustomNodes) {
-            customNodeByOriginalId.put(cn.getOriginalNode().getId(), cn);
+            customNodeByOriginalId.put(cn.getOriginalNode().getNodeId(), cn);
         }
 
         // 5) 선행조건(edge)을 커스텀으로 변환하여 저장

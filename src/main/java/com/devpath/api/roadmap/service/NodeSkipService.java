@@ -1,6 +1,5 @@
 package com.devpath.api.roadmap.service;
 
-import com.devpath.api.user.repository.UserTechStackRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
@@ -8,6 +7,7 @@ import com.devpath.domain.roadmap.entity.CustomRoadmapNode.NodeStatus;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.service.TagValidationService;
+import com.devpath.domain.user.repository.UserTechStackRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +49,7 @@ public class NodeSkipService {
         }
 
         // 3. 원본 노드의 필수 태그 조회
-        Long originalNodeId = customNode.getOriginalNode().getId();
+        Long originalNodeId = customNode.getOriginalNode().getNodeId();
         List<String> requiredTags = nodeRequiredTagRepository.findTagNamesByNodeId(originalNodeId);
 
         // 4. 유저가 보유한 태그 조회

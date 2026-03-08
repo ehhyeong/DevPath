@@ -59,7 +59,7 @@ public class MyRoadmapDto {
         public static Item from(CustomRoadmap entity) {
             return Item.builder()
                     .customRoadmapId(entity.getId())
-                    .originalRoadmapId(entity.getOriginalRoadmap().getId())
+                    .originalRoadmapId(entity.getOriginalRoadmap().getRoadmapId())
                     .title(entity.getTitle())
                     .createdAt(entity.getCreatedAt())
                     .build();

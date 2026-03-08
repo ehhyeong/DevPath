@@ -1,12 +1,12 @@
 package com.devpath.api.auth.service;
 
 import com.devpath.api.auth.dto.AuthDto;
-import com.devpath.api.user.repository.UserRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.security.JwtTokenProvider;
 import com.devpath.common.security.TokenRedisService;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

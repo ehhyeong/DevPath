@@ -2,11 +2,11 @@ package com.devpath.api.user.service;
 
 import com.devpath.api.user.dto.RoadmapDto;
 import com.devpath.api.user.dto.RoadmapNodeDto;
-import com.devpath.api.user.repository.RoadmapNodeRepository;
-import com.devpath.api.user.repository.RoadmapRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.Roadmap;
+import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
+import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

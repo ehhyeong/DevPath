@@ -1,7 +1,7 @@
 package com.devpath.common.security;
 
-import com.devpath.api.user.repository.UserRepository;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;

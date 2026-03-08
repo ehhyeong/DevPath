@@ -1,6 +1,5 @@
 package com.devpath.api.roadmap.service;
 
-import com.devpath.api.user.repository.UserRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
@@ -8,6 +7,7 @@ import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
