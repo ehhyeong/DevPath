@@ -32,6 +32,10 @@ public class Roadmap {
   private Boolean isOfficial = true;
 
   @Builder.Default
+  @Column(name = "is_public", columnDefinition = "boolean default true")
+  private Boolean isPublic = true;
+
+  @Builder.Default
   @Column(name = "is_deleted")
   private Boolean isDeleted = false;
 
@@ -40,6 +44,9 @@ public class Roadmap {
 
   @PrePersist
   protected void onCreate() {
+    if (this.isPublic == null) {
+      this.isPublic = true;
+    }
     this.createdAt = LocalDateTime.now();
   }
 

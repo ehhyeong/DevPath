@@ -81,6 +81,7 @@ public class AdminService {
             .description(request.getDescription())
             .creator(admin)
             .isOfficial(true)
+            .isPublic(true)
             .isDeleted(false)
             .build();
 

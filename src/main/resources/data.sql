@@ -38,11 +38,12 @@ INSERT INTO tags (name, category, is_official) VALUES ('Node.js', 'Backend', TRU
 INSERT INTO tags (name, category, is_official) VALUES ('TypeScript', 'Frontend', TRUE) ON CONFLICT (name) DO NOTHING;
 INSERT INTO tags (name, category, is_official) VALUES ('Tailwind CSS', 'Frontend', TRUE) ON CONFLICT (name) DO NOTHING;
 
-INSERT INTO roadmaps (creator_id, title, description, is_official, is_deleted, created_at)
+INSERT INTO roadmaps (creator_id, title, description, is_official, is_public, is_deleted, created_at)
 SELECT
     u.user_id,
     'Backend Master Roadmap',
     'Official DevPath roadmap covering Java, Spring Boot, JPA, and security.',
+    TRUE,
     TRUE,
     FALSE,
     CURRENT_TIMESTAMP
