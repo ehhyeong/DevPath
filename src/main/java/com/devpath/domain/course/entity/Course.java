@@ -90,4 +90,53 @@ public class Course {
   @UpdateTimestamp
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
+
+  // 강의의 기본 정보를 수정한다.
+  public void updateBasicInfo(
+      String title,
+      String subtitle,
+      String description,
+      Integer price,
+      Integer discountPrice,
+      CourseDifficulty difficulty) {
+    this.title = title;
+    this.subtitle = subtitle;
+    this.description = description;
+    this.price = price;
+    this.discountPrice = discountPrice;
+    this.difficulty = difficulty;
+  }
+
+  // 강의의 상태를 변경한다.
+  public void changeStatus(CourseStatus status) {
+    this.status = status;
+  }
+
+  // 강의의 선수지식을 전체 교체한다.
+  public void replacePrerequisites(List<String> prerequisites) {
+    this.prerequisites.clear();
+
+    if (prerequisites != null && !prerequisites.isEmpty()) {
+      this.prerequisites.addAll(prerequisites);
+    }
+  }
+
+  // 강의의 직무 연관성을 전체 교체한다.
+  public void replaceJobRelevance(List<String> jobRelevance) {
+    this.jobRelevance.clear();
+
+    if (jobRelevance != null && !jobRelevance.isEmpty()) {
+      this.jobRelevance.addAll(jobRelevance);
+    }
+  }
+
+  // 강의 썸네일 정보를 수정한다.
+  public void updateThumbnail(String thumbnailUrl) {
+    this.thumbnailUrl = thumbnailUrl;
+  }
+
+  // 강의 트레일러 정보를 수정한다.
+  public void updateTrailer(String trailerUrl) {
+    this.trailerUrl = trailerUrl;
+  }
 }

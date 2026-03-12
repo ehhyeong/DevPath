@@ -58,4 +58,23 @@ public class Lesson {
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
+
+  // 레슨의 기본 정보를 수정한다.
+  public void updateInfo(
+      String title,
+      LessonType lessonType,
+      String videoAssetKey,
+      Integer durationSeconds,
+      Boolean previewable) {
+    this.title = title;
+    this.lessonType = lessonType;
+    this.videoAssetKey = videoAssetKey;
+    this.durationSeconds = durationSeconds;
+    this.previewable = previewable;
+  }
+
+  // 레슨의 정렬 순서를 변경한다.
+  public void changeSortOrder(Integer sortOrder) {
+    this.sortOrder = sortOrder;
+  }
 }

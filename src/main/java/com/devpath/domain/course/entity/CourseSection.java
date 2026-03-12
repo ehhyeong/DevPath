@@ -37,4 +37,14 @@ public class CourseSection {
 
   @Column(name = "section_order", nullable = false)
   private Integer sortOrder;
+
+  // 섹션의 기본 정보를 수정한다.
+  public void updateInfo(String title) {
+    this.title = title;
+  }
+
+  // 섹션의 정렬 순서를 변경한다.
+  public void changeSortOrder(Integer sortOrder) {
+    this.sortOrder = sortOrder;
+  }
 }
