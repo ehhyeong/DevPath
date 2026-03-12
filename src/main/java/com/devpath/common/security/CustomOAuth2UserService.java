@@ -1,6 +1,7 @@
 package com.devpath.common.security;
 
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.entity.UserRole;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +25,6 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-// OAuth2(GitHub) 사용자 정보를 조회해 서비스 사용자로 매핑
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
   private static final String GITHUB_EMAILS_API = "https://api.github.com/user/emails";
@@ -32,7 +32,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
   private final UserRepository userRepository;
   private final RestTemplate restTemplate = new RestTemplate();
 
-  // OAuth2 사용자 정보를 로드하고 회원 조회/생성 후 인증 속성 구성
   @Override
   public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
     OAuth2User oAuth2User = super.loadUser(userRequest);
@@ -58,12 +57,18 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     if (user == null) {
       user =
           userRepository.save(
-              User.builder().email(email).name(name).password("OAUTH_USER_PASSWORD_DUMMY").build());
+              User.builder()
+                  .email(email)
+                  .name(name)
+                  .password("OAUTH_USER_PASSWORD_DUMMY")
+                  .role(UserRole.ROLE_LEARNER)
+                  .build());
     }
 
     Map<String, Object> modifiedAttributes = new HashMap<>(attributes);
     modifiedAttributes.put("email", email);
     modifiedAttributes.put("userId", user.getId());
+    modifiedAttributes.put("role", user.getRole().name());
 
     String userNameAttributeName =
         userRequest
@@ -76,7 +81,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         oAuth2User.getAuthorities(), modifiedAttributes, userNameAttributeName);
   }
 
-  // GitHub 이메일 API에서 primary + verified 이메일 우선 조회
   private String fetchGithubEmail(String accessToken) {
     try {
       HttpHeaders headers = new HttpHeaders();
@@ -102,7 +106,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
           .findFirst()
           .orElseGet(() -> (String) emails.getFirst().get("email"));
     } catch (Exception e) {
-      log.warn("GitHub 이메일 API 조회에 실패했습니다.", e);
+      log.warn("GitHub email lookup failed.", e);
       return null;
     }
   }

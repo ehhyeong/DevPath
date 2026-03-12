@@ -1,6 +1,14 @@
 package com.devpath.domain.user.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -21,13 +29,15 @@ public class UserProfile {
   @Column(name = "profile_id")
   private Long id;
 
-  // 🔥 핵심: User와 1:1 관계 (무조건 LAZY 로딩)
   @OneToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false, unique = true)
   private User user;
 
   @Column(name = "profile_image", length = 500)
   private String profileImage;
+
+  @Column(name = "channel_name", length = 120)
+  private String channelName;
 
   @Column(columnDefinition = "TEXT")
   private String bio;
@@ -56,6 +66,7 @@ public class UserProfile {
   public UserProfile(
       User user,
       String profileImage,
+      String channelName,
       String bio,
       String phone,
       LocalDate dateOfBirth,
@@ -63,6 +74,7 @@ public class UserProfile {
       String blogUrl) {
     this.user = user;
     this.profileImage = profileImage;
+    this.channelName = channelName;
     this.bio = bio;
     this.phone = phone;
     this.dateOfBirth = dateOfBirth;
@@ -70,10 +82,11 @@ public class UserProfile {
     this.blogUrl = blogUrl;
   }
 
-  // 프로필 정보 수정 비즈니스 메서드
-  public void updateProfile(String bio, String profileImage, String githubUrl, String blogUrl) {
+  public void updateProfile(
+      String bio, String profileImage, String channelName, String githubUrl, String blogUrl) {
     this.bio = bio;
     this.profileImage = profileImage;
+    this.channelName = channelName;
     this.githubUrl = githubUrl;
     this.blogUrl = blogUrl;
   }
