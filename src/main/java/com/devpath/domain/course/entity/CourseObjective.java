@@ -22,7 +22,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class CourseObjective {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "objective_id")
@@ -44,19 +43,5 @@ public class CourseObjective {
 
   public void changeDisplayOrder(Integer displayOrder) {
     this.displayOrder = displayOrder;
-  @Column(nullable = false, length = 255)
-  private String content;
-
-  @Column(name = "sort_order", nullable = false)
-  private Integer sortOrder;
-
-  // 강의 목표 내용을 수정한다.
-  public void updateObjectiveText(String objectiveText) {
-    this.content = objectiveText;
-  }
-
-  // 강의 목표 표시 순서를 변경한다.
-  public void changeDisplayOrder(Integer displayOrder) {
-    this.sortOrder = displayOrder;
   }
 }

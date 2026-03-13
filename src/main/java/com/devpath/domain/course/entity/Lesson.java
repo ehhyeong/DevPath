@@ -11,13 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "lessons")
@@ -26,7 +24,6 @@ import org.hibernate.annotations.CreationTimestamp;
 @AllArgsConstructor
 @Builder
 public class Lesson {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "lesson_id")
@@ -54,18 +51,6 @@ public class Lesson {
 
   @Column(name = "thumbnail_url")
   private String thumbnailUrl;
-  @Column(nullable = false, length = 150)
-  private String title;
-
-  @Enumerated(EnumType.STRING)
-  @Column(name = "lesson_type", nullable = false, length = 30)
-  private LessonType lessonType;
-
-  @Column(name = "lesson_order", nullable = false)
-  private Integer sortOrder;
-
-  @Column(nullable = false)
-  private Boolean previewable;
 
   @Column(name = "duration_seconds")
   private Integer durationSeconds;
@@ -100,28 +85,6 @@ public class Lesson {
     this.isPublished = isPublished;
   }
 
-  @Column(name = "video_asset_key", length = 255)
-  private String videoAssetKey;
-
-  @CreationTimestamp
-  @Column(name = "created_at", updatable = false)
-  private LocalDateTime createdAt;
-
-  // 레슨의 기본 정보를 수정한다.
-  public void updateInfo(
-      String title,
-      LessonType lessonType,
-      String videoAssetKey,
-      Integer durationSeconds,
-      Boolean previewable) {
-    this.title = title;
-    this.lessonType = lessonType;
-    this.videoAssetKey = videoAssetKey;
-    this.durationSeconds = durationSeconds;
-    this.previewable = previewable;
-  }
-
-  // 레슨의 정렬 순서를 변경한다.
   public void changeSortOrder(Integer sortOrder) {
     this.sortOrder = sortOrder;
   }

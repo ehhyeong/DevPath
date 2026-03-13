@@ -2,10 +2,7 @@ package com.devpath.domain.course.entity;
 
 public enum CourseStatus {
   DRAFT,
+  IN_REVIEW,
   PUBLISHED,
-  PENDING_REVIEW,
-  PUBLISHED,
-  PRIVATE,
-  REJECTED,
   ARCHIVED
 }

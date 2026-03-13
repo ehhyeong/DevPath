@@ -22,7 +22,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class CourseTargetAudience {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "target_audience_id")
@@ -44,19 +43,5 @@ public class CourseTargetAudience {
 
   public void changeDisplayOrder(Integer displayOrder) {
     this.displayOrder = displayOrder;
-  @Column(nullable = false, length = 255)
-  private String content;
-
-  @Column(name = "sort_order", nullable = false)
-  private Integer sortOrder;
-
-  // 강의 수강 대상 설명을 수정한다.
-  public void updateAudienceDescription(String audienceDescription) {
-    this.content = audienceDescription;
-  }
-
-  // 강의 수강 대상 표시 순서를 변경한다.
-  public void changeDisplayOrder(Integer displayOrder) {
-    this.sortOrder = displayOrder;
   }
 }
