@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,11 +19,17 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "course_tag_maps")
+@Table(
+    name = "course_tag_maps",
+    uniqueConstraints = {
+      @UniqueConstraint(name = "uk_course_tag_map_course_tag", columnNames = {"course_id", "tag_id"})
+    })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 public class CourseTagMap {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "course_tag_map_id")

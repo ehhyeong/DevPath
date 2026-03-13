@@ -1,6 +1,13 @@
 package com.devpath.domain.user.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -10,9 +17,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
-@Table(name = "users") // SQL의 users 테이블과 매핑
+@Table(name = "users")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // 기본 생성자 접근 제어로 무분별한 생성 방지
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
   @Id
@@ -29,6 +36,10 @@ public class User {
   @Column(nullable = false, length = 100)
   private String name;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "role_name", nullable = false, length = 50)
+  private UserRole role;
+
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
@@ -41,23 +52,21 @@ public class User {
   private LocalDateTime lastLoginAt;
 
   @Column(name = "is_active", nullable = false)
-  private Boolean isActive = true; // 논리적 삭제(Soft Delete)를 위한 플래그
+  private Boolean isActive = true;
 
-  // Setter 대신 의미 있는 비즈니스 메서드 사용 (팀 코딩 규칙)
   @Builder
-  public User(String email, String password, String name) {
+  public User(String email, String password, String name, UserRole role) {
     this.email = email;
     this.password = password;
     this.name = name;
+    this.role = role == null ? UserRole.ROLE_LEARNER : role;
     this.isActive = true;
   }
 
-  // 로그인 시간 업데이트 메서드
   public void updateLastLoginAt() {
     this.lastLoginAt = LocalDateTime.now();
   }
 
-  // 계정 비활성화 (회원 탈퇴 시 물리적 삭제 대신 사용)
   public void deactivate() {
     this.isActive = false;
   }

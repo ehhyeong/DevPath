@@ -5,4 +5,8 @@ public enum LessonType {
   QUIZ,
   ASSIGNMENT,
   DOCUMENT
+  SLIDE,
+  CODE,
+  REFERENCE,
+  QUIZ
 }

@@ -20,8 +20,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-  private static final String DEFAULT_ROLE = "ROLE_LEARNER";
-
   private final JwtTokenProvider jwtTokenProvider;
   private final TokenRedisService tokenRedisService;
 
@@ -39,9 +37,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     Map<String, Object> attributes = oAuth2User.getAttributes();
 
     Long userId = extractUserId(attributes.get("userId"));
+    String role = extractRole(attributes.get("role"));
 
-    String accessToken = jwtTokenProvider.createAccessToken(userId, DEFAULT_ROLE);
-    String refreshToken = jwtTokenProvider.createRefreshToken(userId, DEFAULT_ROLE);
+    String accessToken = jwtTokenProvider.createAccessToken(userId, role);
+    String refreshToken = jwtTokenProvider.createRefreshToken(userId, role);
     JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
     tokenRedisService.saveRefreshTokenJti(
         userId, refreshClaims.jti(), jwtTokenProvider.getRefreshTokenExpiration());
@@ -54,7 +53,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             .build()
             .toUriString();
 
-    log.info("OAuth2 로그인 성공 후 리다이렉트합니다. userId={}, target={}", userId, targetUrl);
+    log.info("OAuth2 login success. userId={}, target={}", userId, targetUrl);
     getRedirectStrategy().sendRedirect(request, response, targetUrl);
   }
 
@@ -62,6 +61,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     if (userIdValue instanceof Number number) {
       return number.longValue();
     }
-    throw new ServletException("OAuth2 userId 속성이 누락되었습니다.");
+    throw new ServletException("OAuth2 userId attribute is missing.");
+  }
+
+  private String extractRole(Object roleValue) throws ServletException {
+    if (roleValue instanceof String role && !role.isBlank()) {
+      return role;
+    }
+    throw new ServletException("OAuth2 role attribute is missing.");
   }
 }

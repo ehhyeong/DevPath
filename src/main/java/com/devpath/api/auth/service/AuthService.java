@@ -6,6 +6,7 @@ import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.security.JwtTokenProvider;
 import com.devpath.common.security.TokenRedisService;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.entity.UserRole;
 import com.devpath.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +18,6 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class AuthService {
 
-  private static final String DEFAULT_ROLE = "ROLE_LEARNER";
   private static final String TOKEN_TYPE = "Bearer";
 
   private final UserRepository userRepository;
@@ -36,6 +36,7 @@ public class AuthService {
             .email(request.getEmail())
             .password(passwordEncoder.encode(request.getPassword()))
             .name(request.getName())
+            .role(UserRole.ROLE_LEARNER)
             .build();
 
     userRepository.save(user);
@@ -52,8 +53,9 @@ public class AuthService {
       throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
     }
 
-    String accessToken = jwtTokenProvider.createAccessToken(user.getId(), DEFAULT_ROLE);
-    String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), DEFAULT_ROLE);
+    String roleName = user.getRole().name();
+    String accessToken = jwtTokenProvider.createAccessToken(user.getId(), roleName);
+    String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), roleName);
     JwtTokenProvider.TokenClaims refreshClaims = jwtTokenProvider.parseRefreshToken(refreshToken);
     tokenRedisService.saveRefreshTokenJti(
         user.getId(), refreshClaims.jti(), jwtTokenProvider.getRefreshTokenExpiration());
