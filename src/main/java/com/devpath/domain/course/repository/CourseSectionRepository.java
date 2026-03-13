@@ -5,6 +5,11 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface CourseSectionRepository extends JpaRepository<CourseSection, Long> {
+  List<CourseSection> findAllByCourseCourseIdOrderBySortOrderAsc(Long courseId);
+
+  Optional<CourseSection> findBySectionIdAndCourseInstructorId(Long sectionId, Long instructorId);
+
 // 섹션 조회와 강사 소유권 검증을 담당한다.
 public interface CourseSectionRepository extends JpaRepository<CourseSection, Long> {
 

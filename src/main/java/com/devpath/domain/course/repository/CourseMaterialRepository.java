@@ -5,6 +5,12 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, Long> {
+  List<CourseMaterial> findAllByLessonLessonIdOrderBySortOrderAsc(Long lessonId);
+
+  Optional<CourseMaterial> findByMaterialIdAndLessonSectionCourseInstructorId(
+      Long materialId, Long instructorId);
+
 // 레슨 자료 조회와 삭제를 담당한다.
 public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, Long> {
 

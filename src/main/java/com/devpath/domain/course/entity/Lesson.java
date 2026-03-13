@@ -36,6 +36,24 @@ public class Lesson {
   @JoinColumn(name = "section_id", nullable = false)
   private CourseSection section;
 
+  @Column(nullable = false)
+  private String title;
+
+  @Column(columnDefinition = "TEXT")
+  private String description;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "lesson_type")
+  private LessonType lessonType;
+
+  @Column(name = "video_url")
+  private String videoUrl;
+
+  @Column(name = "video_asset_key")
+  private String videoAssetKey;
+
+  @Column(name = "thumbnail_url")
+  private String thumbnailUrl;
   @Column(nullable = false, length = 150)
   private String title;
 
@@ -51,6 +69,36 @@ public class Lesson {
 
   @Column(name = "duration_seconds")
   private Integer durationSeconds;
+
+  @Column(name = "is_preview")
+  private Boolean isPreview;
+
+  @Column(name = "is_published")
+  private Boolean isPublished;
+
+  @Column(name = "sort_order")
+  private Integer sortOrder;
+
+  public void updateInfo(
+      String title,
+      String description,
+      LessonType lessonType,
+      String videoUrl,
+      String videoAssetKey,
+      String thumbnailUrl,
+      Integer durationSeconds,
+      Boolean isPreview,
+      Boolean isPublished) {
+    this.title = title;
+    this.description = description;
+    this.lessonType = lessonType;
+    this.videoUrl = videoUrl;
+    this.videoAssetKey = videoAssetKey;
+    this.thumbnailUrl = thumbnailUrl;
+    this.durationSeconds = durationSeconds;
+    this.isPreview = isPreview;
+    this.isPublished = isPublished;
+  }
 
   @Column(name = "video_asset_key", length = 255)
   private String videoAssetKey;

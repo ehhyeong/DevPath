@@ -5,6 +5,11 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface LessonRepository extends JpaRepository<Lesson, Long> {
+  List<Lesson> findAllBySectionSectionIdOrderBySortOrderAsc(Long sectionId);
+
+  Optional<Lesson> findByLessonIdAndSectionCourseInstructorId(Long lessonId, Long instructorId);
+
 // 레슨 조회와 강사 소유권 검증을 담당한다.
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
 

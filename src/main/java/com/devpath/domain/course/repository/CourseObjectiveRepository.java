@@ -4,6 +4,9 @@ import com.devpath.domain.course.entity.CourseObjective;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface CourseObjectiveRepository extends JpaRepository<CourseObjective, Long> {
+  List<CourseObjective> findAllByCourseCourseIdOrderByDisplayOrderAsc(Long courseId);
+
 // 강의 목표 조회와 삭제를 담당한다.
 public interface CourseObjectiveRepository extends JpaRepository<CourseObjective, Long> {
 

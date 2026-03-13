@@ -4,6 +4,9 @@ import com.devpath.domain.course.entity.Course;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface CourseRepository extends JpaRepository<Course, Long> {
+  Optional<Course> findByCourseIdAndInstructorId(Long courseId, Long instructorId);
+
 // 강의 소유권 검증과 강의 조회를 담당한다.
 public interface CourseRepository extends JpaRepository<Course, Long> {
 

@@ -32,6 +32,30 @@ public class CourseSection {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
+  @Column(nullable = false)
+  private String title;
+
+  @Column(columnDefinition = "TEXT")
+  private String description;
+
+  @Column(name = "sort_order")
+  private Integer sortOrder;
+
+  @Column(name = "is_published")
+  private Boolean isPublished;
+
+  public void updateInfo(String title, String description) {
+    this.title = title;
+    this.description = description;
+  }
+
+  public void changeSortOrder(Integer sortOrder) {
+    this.sortOrder = sortOrder;
+  }
+
+  public void changePublished(Boolean isPublished) {
+    this.isPublished = isPublished;
+  }
   @Column(nullable = false, length = 150)
   private String title;
 

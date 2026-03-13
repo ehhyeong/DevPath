@@ -18,6 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "course_tag_maps")
 @Table(
     name = "course_tag_maps",
     uniqueConstraints = {

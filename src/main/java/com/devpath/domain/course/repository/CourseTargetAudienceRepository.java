@@ -4,6 +4,10 @@ import com.devpath.domain.course.entity.CourseTargetAudience;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface CourseTargetAudienceRepository
+    extends JpaRepository<CourseTargetAudience, Long> {
+  List<CourseTargetAudience> findAllByCourseCourseIdOrderByDisplayOrderAsc(Long courseId);
+
 // 강의 수강 대상 조회와 삭제를 담당한다.
 public interface CourseTargetAudienceRepository
     extends JpaRepository<CourseTargetAudience, Long> {

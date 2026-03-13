@@ -13,6 +13,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -42,6 +45,9 @@ public class Course {
   @JoinColumn(name = "instructor_id", nullable = false)
   private User instructor;
 
+  @Column(nullable = false)
+  private String title;
+
   @Column(nullable = false, length = 200)
   private String title;
 
@@ -50,6 +56,62 @@ public class Course {
 
   @Column(columnDefinition = "TEXT")
   private String description;
+
+  @Column(precision = 10, scale = 2)
+  private BigDecimal price;
+
+  @Column(name = "original_price", precision = 10, scale = 2)
+  private BigDecimal originalPrice;
+
+  private String currency;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "difficulty_level")
+  private CourseDifficultyLevel difficultyLevel;
+
+  private String language;
+
+  @Column(name = "has_certificate")
+  private Boolean hasCertificate;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  @Builder.Default
+  private CourseStatus status = CourseStatus.DRAFT;
+
+  @Column(name = "published_at")
+  private LocalDateTime publishedAt;
+
+  @Column(name = "thumbnail_url")
+  private String thumbnailUrl;
+
+  @Column(name = "intro_video_url")
+  private String introVideoUrl;
+
+  @Column(name = "video_asset_key")
+  private String videoAssetKey;
+
+  @Column(name = "duration_seconds")
+  private Integer durationSeconds;
+
+  @ElementCollection
+  @CollectionTable(name = "course_prerequisites", joinColumns = @JoinColumn(name = "course_id"))
+  @Column(name = "prerequisite")
+  @Builder.Default
+  private List<String> prerequisites = new ArrayList<>();
+
+  @ElementCollection
+  @CollectionTable(name = "course_job_relevance", joinColumns = @JoinColumn(name = "course_id"))
+  @Column(name = "job_relevance")
+  @Builder.Default
+  private List<String> jobRelevance = new ArrayList<>();
+
+  @PrePersist
+  protected void onCreate() {
+    if (this.status == null) {
+      this.status = CourseStatus.DRAFT;
+    }
+  }
 
   @Column(name = "thumbnail_url", length = 500)
   private String thumbnailUrl;
@@ -96,6 +158,12 @@ public class Course {
       String title,
       String subtitle,
       String description,
+      BigDecimal price,
+      BigDecimal originalPrice,
+      String currency,
+      CourseDifficultyLevel difficultyLevel,
+      String language,
+      Boolean hasCertificate) {
       Integer price,
       Integer discountPrice,
       CourseDifficulty difficulty) {
@@ -103,6 +171,26 @@ public class Course {
     this.subtitle = subtitle;
     this.description = description;
     this.price = price;
+    this.originalPrice = originalPrice;
+    this.currency = currency;
+    this.difficultyLevel = difficultyLevel;
+    this.language = language;
+    this.hasCertificate = hasCertificate;
+  }
+
+  public void changeStatus(CourseStatus status) {
+    this.status = status;
+
+    if (status == CourseStatus.PUBLISHED && this.publishedAt == null) {
+      this.publishedAt = LocalDateTime.now();
+    }
+  }
+
+  public void replacePrerequisites(List<String> prerequisites) {
+    if (this.prerequisites == null) {
+      this.prerequisites = new ArrayList<>();
+    }
+
     this.discountPrice = discountPrice;
     this.difficulty = difficulty;
   }
@@ -121,6 +209,11 @@ public class Course {
     }
   }
 
+  public void replaceJobRelevance(List<String> jobRelevance) {
+    if (this.jobRelevance == null) {
+      this.jobRelevance = new ArrayList<>();
+    }
+
   // 강의의 직무 연관성을 전체 교체한다.
   public void replaceJobRelevance(List<String> jobRelevance) {
     this.jobRelevance.clear();
@@ -135,6 +228,10 @@ public class Course {
     this.thumbnailUrl = thumbnailUrl;
   }
 
+  public void updateTrailer(String trailerUrl, String videoAssetKey, Integer durationSeconds) {
+    this.introVideoUrl = trailerUrl;
+    this.videoAssetKey = videoAssetKey;
+    this.durationSeconds = durationSeconds;
   // 강의 트레일러 정보를 수정한다.
   public void updateTrailer(String trailerUrl) {
     this.trailerUrl = trailerUrl;

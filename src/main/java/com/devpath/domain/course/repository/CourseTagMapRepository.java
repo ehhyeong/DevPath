@@ -4,6 +4,9 @@ import com.devpath.domain.course.entity.CourseTagMap;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+public interface CourseTagMapRepository extends JpaRepository<CourseTagMap, Long> {
+  List<CourseTagMap> findAllByCourseCourseId(Long courseId);
+
 // 강의-태그 매핑 조회와 삭제를 담당한다.
 public interface CourseTagMapRepository extends JpaRepository<CourseTagMap, Long> {
 

@@ -32,6 +32,18 @@ public class CourseObjective {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
+  @Column(name = "objective_text", nullable = false)
+  private String objectiveText;
+
+  @Column(name = "display_order")
+  private Integer displayOrder;
+
+  public void updateObjectiveText(String objectiveText) {
+    this.objectiveText = objectiveText;
+  }
+
+  public void changeDisplayOrder(Integer displayOrder) {
+    this.displayOrder = displayOrder;
   @Column(nullable = false, length = 255)
   private String content;
 

@@ -32,6 +32,18 @@ public class CourseTargetAudience {
   @JoinColumn(name = "course_id", nullable = false)
   private Course course;
 
+  @Column(name = "audience_description", nullable = false)
+  private String audienceDescription;
+
+  @Column(name = "display_order")
+  private Integer displayOrder;
+
+  public void updateAudienceDescription(String audienceDescription) {
+    this.audienceDescription = audienceDescription;
+  }
+
+  public void changeDisplayOrder(Integer displayOrder) {
+    this.displayOrder = displayOrder;
   @Column(nullable = false, length = 255)
   private String content;
 
