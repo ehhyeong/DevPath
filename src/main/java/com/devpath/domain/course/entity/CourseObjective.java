@@ -37,4 +37,14 @@ public class CourseObjective {
 
   @Column(name = "sort_order", nullable = false)
   private Integer sortOrder;
+
+  // 강의 목표 내용을 수정한다.
+  public void updateObjectiveText(String objectiveText) {
+    this.content = objectiveText;
+  }
+
+  // 강의 목표 표시 순서를 변경한다.
+  public void changeDisplayOrder(Integer displayOrder) {
+    this.sortOrder = displayOrder;
+  }
 }

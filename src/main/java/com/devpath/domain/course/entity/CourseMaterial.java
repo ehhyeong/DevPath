@@ -52,4 +52,13 @@ public class CourseMaterial {
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
+
+  // 레슨 자료 정보를 수정한다.
+  public void updateMetadata(
+      MaterialType materialType, String title, String materialUrl, String originalFileName) {
+    this.materialType = materialType;
+    this.title = title;
+    this.materialUrl = materialUrl;
+    this.originalFileName = originalFileName;
+  }
 }
