@@ -38,7 +38,7 @@ public class CourseSection {
   private String description;
 
   @Column(name = "sort_order")
-  private Integer sortOrder;
+  private Integer orderIndex;
 
   @Column(name = "is_published")
   private Boolean isPublished;
@@ -48,8 +48,12 @@ public class CourseSection {
     this.description = description;
   }
 
+  public void changeOrderIndex(Integer orderIndex) {
+    this.orderIndex = orderIndex;
+  }
+
   public void changeSortOrder(Integer sortOrder) {
-    this.sortOrder = sortOrder;
+    this.orderIndex = sortOrder;
   }
 
   public void changePublished(Boolean isPublished) {

@@ -44,22 +44,26 @@ public class CourseMaterial {
   private String originalFileName;
 
   @Column(name = "sort_order")
-  private Integer sortOrder;
+  private Integer displayOrder;
 
   public void updateMetadata(
       String materialType,
       String materialUrl,
       String assetKey,
       String originalFileName,
-      Integer sortOrder) {
+      Integer displayOrder) {
     this.materialType = materialType;
     this.materialUrl = materialUrl;
     this.assetKey = assetKey;
     this.originalFileName = originalFileName;
-    this.sortOrder = sortOrder;
+    this.displayOrder = displayOrder;
+  }
+
+  public void changeDisplayOrder(Integer displayOrder) {
+    this.displayOrder = displayOrder;
   }
 
   public void changeSortOrder(Integer sortOrder) {
-    this.sortOrder = sortOrder;
+    this.displayOrder = sortOrder;
   }
 }

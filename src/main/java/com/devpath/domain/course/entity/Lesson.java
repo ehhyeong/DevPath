@@ -47,7 +47,10 @@ public class Lesson {
   private String videoUrl;
 
   @Column(name = "video_asset_key")
-  private String videoAssetKey;
+  private String videoId;
+
+  @Column(name = "video_provider")
+  private String videoProvider;
 
   @Column(name = "thumbnail_url")
   private String thumbnailUrl;
@@ -62,7 +65,30 @@ public class Lesson {
   private Boolean isPublished;
 
   @Column(name = "sort_order")
-  private Integer sortOrder;
+  private Integer orderIndex;
+
+  public void updateInfo(
+      String title,
+      String description,
+      LessonType lessonType,
+      String videoId,
+      String videoUrl,
+      String videoProvider,
+      String thumbnailUrl,
+      Integer durationSeconds,
+      Boolean isPreview,
+      Boolean isPublished) {
+    this.title = title;
+    this.description = description;
+    this.lessonType = lessonType;
+    this.videoId = videoId;
+    this.videoUrl = videoUrl;
+    this.videoProvider = videoProvider;
+    this.thumbnailUrl = thumbnailUrl;
+    this.durationSeconds = durationSeconds;
+    this.isPreview = isPreview;
+    this.isPublished = isPublished;
+  }
 
   public void updateInfo(
       String title,
@@ -78,7 +104,8 @@ public class Lesson {
     this.description = description;
     this.lessonType = lessonType;
     this.videoUrl = videoUrl;
-    this.videoAssetKey = videoAssetKey;
+    this.videoId = videoAssetKey;
+    this.videoProvider = null;
     this.thumbnailUrl = thumbnailUrl;
     this.durationSeconds = durationSeconds;
     this.isPreview = isPreview;
@@ -86,6 +113,10 @@ public class Lesson {
   }
 
   public void changeSortOrder(Integer sortOrder) {
-    this.sortOrder = sortOrder;
+    this.orderIndex = sortOrder;
+  }
+
+  public void changeOrderIndex(Integer orderIndex) {
+    this.orderIndex = orderIndex;
   }
 }
