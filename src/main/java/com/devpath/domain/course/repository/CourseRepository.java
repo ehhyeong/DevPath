@@ -15,6 +15,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
   List<Course> findByStatus(CourseStatus status);
 
+  Optional<Course> findByCourseIdAndStatus(Long courseId, CourseStatus status);
+
   // Loads the most recent published courses for an instructor channel.
   List<Course> findTop4ByInstructorIdAndStatusOrderByPublishedAtDescCourseIdDesc(
       Long instructorId, CourseStatus status);
