@@ -6,13 +6,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import java.util.List;
+import lombok.Builder;
 import lombok.Getter;
 
-// 강사용 레슨 생성, 수정, 순서 변경 DTO를 제공한다.
+// DTOs for instructor lesson create/update/order/prerequisite APIs.
 public class InstructorLessonDto {
 
-  // 레슨 생성 요청 DTO다.
   @Getter
   @Schema(description = "레슨 생성 요청 DTO")
   public static class CreateLessonRequest {
@@ -40,7 +41,9 @@ public class InstructorLessonDto {
     @Schema(description = "영상 제공자", example = "r2")
     private String videoProvider;
 
-    @Schema(description = "썸네일 URL", example = "https://cdn.devpath.com/lessons/thumbnails/video-1.png")
+    @Schema(
+        description = "썸네일 URL",
+        example = "https://cdn.devpath.com/lessons/thumbnails/video-1.png")
     private String thumbnailUrl;
 
     @PositiveOrZero(message = "레슨 길이는 0 이상이어야 합니다.")
@@ -61,7 +64,6 @@ public class InstructorLessonDto {
     private Boolean isPublished;
   }
 
-  // 레슨 수정 요청 DTO다.
   @Getter
   @Schema(description = "레슨 수정 요청 DTO")
   public static class UpdateLessonRequest {
@@ -70,7 +72,9 @@ public class InstructorLessonDto {
     @Schema(description = "레슨 제목", example = "JWT 인증 필터 심화 구현")
     private String title;
 
-    @Schema(description = "레슨 설명", example = "JWT 인증 필터와 SecurityContext 저장 흐름을 심화 학습합니다.")
+    @Schema(
+        description = "레슨 설명",
+        example = "JWT 인증 필터와 SecurityContext 저장 흐름을 심화 학습합니다.")
     private String description;
 
     @NotBlank(message = "레슨 유형은 필수입니다.")
@@ -89,7 +93,9 @@ public class InstructorLessonDto {
     @Schema(description = "영상 제공자", example = "r2")
     private String videoProvider;
 
-    @Schema(description = "썸네일 URL", example = "https://cdn.devpath.com/lessons/thumbnails/video-2.png")
+    @Schema(
+        description = "썸네일 URL",
+        example = "https://cdn.devpath.com/lessons/thumbnails/video-2.png")
     private String thumbnailUrl;
 
     @PositiveOrZero(message = "레슨 길이는 0 이상이어야 합니다.")
@@ -105,7 +111,6 @@ public class InstructorLessonDto {
     private Boolean isPublished;
   }
 
-  // 레슨 순서 일괄 변경 요청 DTO다.
   @Getter
   @Schema(description = "레슨 순서 일괄 변경 요청 DTO")
   public static class UpdateLessonOrderRequest {
@@ -120,7 +125,6 @@ public class InstructorLessonDto {
     private List<LessonOrderItem> lessonOrders;
   }
 
-  // 레슨 순서 변경 항목 DTO다.
   @Getter
   @Schema(description = "레슨 순서 변경 항목 DTO")
   public static class LessonOrderItem {
@@ -133,5 +137,28 @@ public class InstructorLessonDto {
     @PositiveOrZero(message = "레슨 순서는 0 이상이어야 합니다.")
     @Schema(description = "변경할 순서", example = "1")
     private Integer orderIndex;
+  }
+
+  // Replaces the entire prerequisite set for a lesson in one request.
+  @Getter
+  @Schema(description = "레슨 선행 조건 전체 교체 요청 DTO")
+  public static class UpdateLessonPrerequisitesRequest {
+
+    @NotNull(message = "선행 조건 레슨 ID 목록은 필수입니다.")
+    @Size(max = 20, message = "선행 조건은 최대 20개까지 설정할 수 있습니다.")
+    @Schema(description = "선행 조건 레슨 ID 목록. 빈 배열이면 전체 해제", example = "[11, 12, 13]")
+    private List<Long> prerequisiteLessonIds;
+  }
+
+  @Getter
+  @Builder
+  @Schema(description = "레슨 선행 조건 전체 교체 응답 DTO")
+  public static class UpdateLessonPrerequisitesResponse {
+
+    @Schema(description = "대상 레슨 ID", example = "21")
+    private Long lessonId;
+
+    @Schema(description = "저장된 선행 조건 레슨 ID 목록", example = "[11, 12, 13]")
+    private List<Long> prerequisiteLessonIds;
   }
 }

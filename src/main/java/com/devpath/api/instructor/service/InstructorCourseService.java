@@ -15,6 +15,7 @@ import com.devpath.domain.course.entity.CourseStatus;
 import com.devpath.domain.course.entity.CourseTagMap;
 import com.devpath.domain.course.entity.CourseTargetAudience;
 import com.devpath.domain.course.entity.Lesson;
+import com.devpath.domain.course.entity.LessonPrerequisite;
 import com.devpath.domain.course.entity.LessonType;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
 import com.devpath.domain.course.repository.CourseObjectiveRepository;
@@ -22,12 +23,14 @@ import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.CourseTargetAudienceRepository;
+import com.devpath.domain.course.repository.LessonPrerequisiteRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.repository.TagRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -38,7 +41,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 강사용 강의/커리큘럼 관리 비즈니스 로직을 처리한다.
+// Handles instructor-owned course, section, lesson, and lesson asset mutations.
 @Service
 @RequiredArgsConstructor
 public class InstructorCourseService {
@@ -49,12 +52,12 @@ public class InstructorCourseService {
   private final CourseRepository courseRepository;
   private final CourseSectionRepository courseSectionRepository;
   private final LessonRepository lessonRepository;
+  private final LessonPrerequisiteRepository lessonPrerequisiteRepository;
   private final CourseMaterialRepository courseMaterialRepository;
   private final CourseObjectiveRepository courseObjectiveRepository;
   private final CourseTargetAudienceRepository courseTargetAudienceRepository;
   private final CourseTagMapRepository courseTagMapRepository;
 
-  // 강사가 새 강의를 생성한다.
   @Transactional
   public Long createCourse(Long instructorId, InstructorCourseDto.CreateCourseRequest request) {
     validateAuthenticatedUser(instructorId);
@@ -79,7 +82,6 @@ public class InstructorCourseService {
     return savedCourse.getCourseId();
   }
 
-  // 강사가 자신의 강의 기본 정보를 수정한다.
   @Transactional
   public void updateCourse(
       Long instructorId, Long courseId, InstructorCourseDto.UpdateCourseRequest request) {
@@ -98,7 +100,6 @@ public class InstructorCourseService {
         request.getHasCertificate());
   }
 
-  // 강사가 자신의 강의 상태를 변경한다.
   @Transactional
   public void updateCourseStatus(
       Long instructorId, Long courseId, InstructorCourseDto.UpdateStatusRequest request) {
@@ -108,7 +109,6 @@ public class InstructorCourseService {
     course.changeStatus(toCourseStatus(request.getStatus()));
   }
 
-  // 강사가 자신의 강의를 삭제한다.
   @Transactional
   public void deleteCourse(Long instructorId, Long courseId) {
     validateAuthenticatedUser(instructorId);
@@ -118,7 +118,6 @@ public class InstructorCourseService {
     courseRepository.delete(course);
   }
 
-  // 특정 강의에 섹션을 추가한다.
   @Transactional
   public Long createSection(
       Long instructorId, Long courseId, InstructorSectionDto.CreateSectionRequest request) {
@@ -139,7 +138,6 @@ public class InstructorCourseService {
     return savedSection.getSectionId();
   }
 
-  // 강사가 자신의 섹션을 수정한다.
   @Transactional
   public void updateSection(
       Long instructorId, Long sectionId, InstructorSectionDto.UpdateSectionRequest request) {
@@ -151,16 +149,17 @@ public class InstructorCourseService {
     section.changePublished(request.getIsPublished());
   }
 
-  // 강사가 자신의 섹션을 삭제한다.
   @Transactional
   public void deleteSection(Long instructorId, Long sectionId) {
     validateAuthenticatedUser(instructorId);
 
     CourseSection section = getOwnedSection(instructorId, sectionId);
-
-    // 섹션 삭제 전 하위 레슨과 자료를 먼저 정리한다.
     List<Lesson> lessons =
         lessonRepository.findAllBySectionSectionIdOrderByOrderIndexAsc(section.getSectionId());
+    List<Long> lessonIds = lessons.stream().map(Lesson::getLessonId).toList();
+
+    // Remove prerequisite links first so lesson deletes never hit FK conflicts.
+    deleteLessonPrerequisiteLinks(lessonIds);
 
     for (Lesson lesson : lessons) {
       List<CourseMaterial> materials =
@@ -179,7 +178,6 @@ public class InstructorCourseService {
     courseSectionRepository.delete(section);
   }
 
-  // 특정 섹션에 레슨을 추가한다.
   @Transactional
   public Long createLesson(
       Long instructorId, Long sectionId, InstructorLessonDto.CreateLessonRequest request) {
@@ -207,7 +205,6 @@ public class InstructorCourseService {
     return savedLesson.getLessonId();
   }
 
-  // 강사가 자신의 레슨을 수정한다.
   @Transactional
   public void updateLesson(
       Long instructorId, Long lessonId, InstructorLessonDto.UpdateLessonRequest request) {
@@ -227,14 +224,60 @@ public class InstructorCourseService {
         request.getIsPublished());
   }
 
-  // 강사가 자신의 레슨을 삭제한다.
+  @Transactional
+  public InstructorLessonDto.UpdateLessonPrerequisitesResponse updateLessonPrerequisites(
+      Long instructorId,
+      Long lessonId,
+      InstructorLessonDto.UpdateLessonPrerequisitesRequest request) {
+    validateAuthenticatedUser(instructorId);
+
+    Lesson lesson = getOwnedLesson(instructorId, lessonId);
+    LinkedHashSet<Long> uniquePrerequisiteLessonIds =
+        new LinkedHashSet<>(request.getPrerequisiteLessonIds());
+
+    if (uniquePrerequisiteLessonIds.size() != request.getPrerequisiteLessonIds().size()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    if (uniquePrerequisiteLessonIds.contains(null) || uniquePrerequisiteLessonIds.contains(lessonId)) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    List<Lesson> prerequisiteLessons =
+        loadValidPrerequisiteLessons(instructorId, lesson, uniquePrerequisiteLessonIds);
+
+    lessonPrerequisiteRepository.deleteAllByLessonLessonId(lessonId);
+
+    if (!prerequisiteLessons.isEmpty()) {
+      List<LessonPrerequisite> lessonPrerequisites =
+          prerequisiteLessons.stream()
+              .map(
+                  prerequisiteLesson ->
+                      LessonPrerequisite.builder()
+                          .lesson(lesson)
+                          .prerequisiteLesson(prerequisiteLesson)
+                          .build())
+              .toList();
+
+      lessonPrerequisiteRepository.saveAll(lessonPrerequisites);
+    }
+
+    return InstructorLessonDto.UpdateLessonPrerequisitesResponse.builder()
+        .lessonId(lessonId)
+        .prerequisiteLessonIds(new ArrayList<>(uniquePrerequisiteLessonIds))
+        .build();
+  }
+
   @Transactional
   public void deleteLesson(Long instructorId, Long lessonId) {
     validateAuthenticatedUser(instructorId);
 
     Lesson lesson = getOwnedLesson(instructorId, lessonId);
 
-    // 레슨 삭제 전 첨부 자료를 먼저 정리한다.
+    // Delete both incoming and outgoing links before removing the lesson itself.
+    lessonPrerequisiteRepository.deleteAllByLessonLessonIdOrPrerequisiteLessonLessonId(
+        lessonId, lessonId);
+
     List<CourseMaterial> materials =
         courseMaterialRepository.findAllByLessonLessonIdOrderByDisplayOrderAsc(lessonId);
 
@@ -245,14 +288,12 @@ public class InstructorCourseService {
     lessonRepository.delete(lesson);
   }
 
-  // 동일 섹션 내 레슨 순서를 일괄 변경한다.
   @Transactional
   public void updateLessonOrder(
       Long instructorId, InstructorLessonDto.UpdateLessonOrderRequest request) {
     validateAuthenticatedUser(instructorId);
 
     CourseSection section = getOwnedSection(instructorId, request.getSectionId());
-
     List<Lesson> lessons =
         lessonRepository.findAllBySectionSectionIdOrderByOrderIndexAsc(section.getSectionId());
 
@@ -261,14 +302,12 @@ public class InstructorCourseService {
     Map<Long, Lesson> lessonMap =
         lessons.stream().collect(Collectors.toMap(Lesson::getLessonId, Function.identity()));
 
-    // 요청으로 들어온 순서 값으로 레슨의 orderIndex를 일괄 변경한다.
     for (InstructorLessonDto.LessonOrderItem item : request.getLessonOrders()) {
       Lesson lesson = lessonMap.get(item.getLessonId());
       lesson.changeOrderIndex(item.getOrderIndex());
     }
   }
 
-  // 강의의 선수지식, 직무 연관성, 태그를 전체 교체한다.
   @Transactional
   public void updateCourseMetadata(
       Long instructorId, Long courseId, InstructorCourseDto.UpdateMetadataRequest request) {
@@ -280,7 +319,6 @@ public class InstructorCourseService {
     replaceCourseTags(course, request.getTagIds());
   }
 
-  // 강의 목표를 bulk replace 방식으로 저장한다.
   @Transactional
   public void replaceObjectives(
       Long instructorId, Long courseId, InstructorCourseDto.ReplaceObjectivesRequest request) {
@@ -302,7 +340,6 @@ public class InstructorCourseService {
     courseObjectiveRepository.saveAll(objectives);
   }
 
-  // 강의 수강 대상을 bulk replace 방식으로 저장한다.
   @Transactional
   public void replaceTargetAudiences(
       Long instructorId,
@@ -326,7 +363,6 @@ public class InstructorCourseService {
     courseTargetAudienceRepository.saveAll(targetAudiences);
   }
 
-  // 레슨 첨부 자료 메타데이터를 저장한다.
   @Transactional
   public Long createMaterial(
       Long instructorId, Long lessonId, InstructorMaterialDto.CreateMaterialRequest request) {
@@ -334,7 +370,6 @@ public class InstructorCourseService {
 
     Lesson lesson = getOwnedLesson(instructorId, lessonId);
 
-    // 현재 엔티티에는 fileSize 컬럼이 없어 저장하지 않는다.
     CourseMaterial material =
         CourseMaterial.builder()
             .lesson(lesson)
@@ -349,7 +384,6 @@ public class InstructorCourseService {
     return savedMaterial.getMaterialId();
   }
 
-  // 강의 썸네일 메타데이터를 저장한다.
   @Transactional
   public void uploadThumbnail(
       Long instructorId, Long courseId, InstructorCourseDto.UploadThumbnailRequest request) {
@@ -359,7 +393,6 @@ public class InstructorCourseService {
     course.updateThumbnail(request.getThumbnailUrl());
   }
 
-  // 강의 트레일러 메타데이터를 저장한다.
   @Transactional
   public void uploadTrailer(
       Long instructorId, Long courseId, InstructorCourseDto.UploadTrailerRequest request) {
@@ -370,7 +403,6 @@ public class InstructorCourseService {
         request.getTrailerUrl(), request.getVideoAssetKey(), request.getDurationSeconds());
   }
 
-  // 현재 로그인한 사용자 존재 여부를 검증한다.
   private void validateAuthenticatedUser(Long instructorId) {
     if (instructorId == null) {
       throw new CustomException(ErrorCode.UNAUTHORIZED);
@@ -381,7 +413,6 @@ public class InstructorCourseService {
     }
   }
 
-  // 현재 로그인한 강사가 자신의 강의만 수정할 수 있도록 검증한다.
   private Course getOwnedCourse(Long instructorId, Long courseId) {
     return courseRepository
         .findByCourseIdAndInstructorId(courseId, instructorId)
@@ -394,7 +425,6 @@ public class InstructorCourseService {
             });
   }
 
-  // 현재 로그인한 강사가 자신의 섹션만 수정할 수 있도록 검증한다.
   private CourseSection getOwnedSection(Long instructorId, Long sectionId) {
     return courseSectionRepository
         .findBySectionIdAndCourseInstructorId(sectionId, instructorId)
@@ -407,7 +437,6 @@ public class InstructorCourseService {
             });
   }
 
-  // 현재 로그인한 강사가 자신의 레슨만 수정할 수 있도록 검증한다.
   private Lesson getOwnedLesson(Long instructorId, Long lessonId) {
     return lessonRepository
         .findByLessonIdAndSectionCourseInstructorId(lessonId, instructorId)
@@ -420,16 +449,13 @@ public class InstructorCourseService {
             });
   }
 
-  // 동일 섹션의 레슨만 순서 변경 대상으로 들어왔는지 검증한다.
   private void validateLessonOrders(
       List<Lesson> lessons, InstructorLessonDto.UpdateLessonOrderRequest request) {
     if (lessons.isEmpty()) {
       throw new CustomException(ErrorCode.RESOURCE_NOT_FOUND);
     }
 
-    Set<Long> actualLessonIds =
-        lessons.stream().map(Lesson::getLessonId).collect(Collectors.toSet());
-
+    Set<Long> actualLessonIds = lessons.stream().map(Lesson::getLessonId).collect(Collectors.toSet());
     Set<Long> requestedLessonIds =
         request.getLessonOrders().stream()
             .map(InstructorLessonDto.LessonOrderItem::getLessonId)
@@ -440,7 +466,6 @@ public class InstructorCourseService {
       throw new CustomException(ErrorCode.INVALID_INPUT);
     }
 
-    // 중복 순서 번호를 방지한다.
     Set<Integer> requestedOrderIndexes = new HashSet<>();
     for (InstructorLessonDto.LessonOrderItem item : request.getLessonOrders()) {
       if (!requestedOrderIndexes.add(item.getOrderIndex())) {
@@ -449,7 +474,6 @@ public class InstructorCourseService {
     }
   }
 
-  // 강의 생성 시 선택한 태그를 강의-태그 매핑으로 대체한다.
   private void replaceCourseTags(Course course, List<Long> tagIds) {
     List<Tag> tags = tagRepository.findAllById(tagIds);
 
@@ -461,16 +485,20 @@ public class InstructorCourseService {
 
     List<CourseTagMap> mappings =
         tags.stream()
-            .map(
-                tag ->
-                    CourseTagMap.builder().course(course).tag(tag).proficiencyLevel(3).build())
+            .map(tag -> CourseTagMap.builder().course(course).tag(tag).proficiencyLevel(3).build())
             .toList();
 
     courseTagMapRepository.saveAll(mappings);
   }
 
-  // 강의 삭제 시 하위 엔티티를 순서대로 정리한다.
   private void deleteCourseChildren(Long courseId) {
+    List<Long> lessonIds =
+        lessonRepository.findAllBySectionCourseCourseId(courseId).stream()
+            .map(Lesson::getLessonId)
+            .toList();
+
+    deleteLessonPrerequisiteLinks(lessonIds);
+
     courseMaterialRepository.deleteAllByLessonSectionCourseCourseId(courseId);
     lessonRepository.deleteAllBySectionCourseCourseId(courseId);
     courseSectionRepository.deleteAllByCourseCourseId(courseId);
@@ -479,7 +507,54 @@ public class InstructorCourseService {
     courseTagMapRepository.deleteAllByCourseCourseId(courseId);
   }
 
-  // 문자열 상태값을 강의 상태 enum으로 변환한다.
+  // Restricts prerequisites to owned lessons from the same course as the target lesson.
+  private List<Lesson> loadValidPrerequisiteLessons(
+      Long instructorId, Lesson targetLesson, LinkedHashSet<Long> prerequisiteLessonIds) {
+    if (prerequisiteLessonIds.isEmpty()) {
+      return List.of();
+    }
+
+    List<Lesson> lessons =
+        lessonRepository.findAllByLessonIdInAndSectionCourseInstructorId(
+            new ArrayList<>(prerequisiteLessonIds), instructorId);
+
+    if (lessons.size() != prerequisiteLessonIds.size()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    Long targetCourseId = targetLesson.getSection().getCourse().getCourseId();
+    boolean hasDifferentCourseLesson =
+        lessons.stream()
+            .anyMatch(lesson -> !targetCourseId.equals(lesson.getSection().getCourse().getCourseId()));
+
+    if (hasDifferentCourseLesson) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    Map<Long, Lesson> lessonMap =
+        lessons.stream().collect(Collectors.toMap(Lesson::getLessonId, Function.identity()));
+
+    return prerequisiteLessonIds.stream()
+        .map(
+            prerequisiteLessonId -> {
+              Lesson prerequisiteLesson = lessonMap.get(prerequisiteLessonId);
+              if (prerequisiteLesson == null) {
+                throw new CustomException(ErrorCode.INVALID_INPUT);
+              }
+              return prerequisiteLesson;
+            })
+        .toList();
+  }
+
+  private void deleteLessonPrerequisiteLinks(List<Long> lessonIds) {
+    if (lessonIds == null || lessonIds.isEmpty()) {
+      return;
+    }
+
+    lessonPrerequisiteRepository.deleteAllByLessonLessonIdInOrPrerequisiteLessonLessonIdIn(
+        lessonIds, lessonIds);
+  }
+
   private CourseStatus toCourseStatus(String status) {
     try {
       return CourseStatus.valueOf(status.toUpperCase(Locale.ROOT));
@@ -488,7 +563,6 @@ public class InstructorCourseService {
     }
   }
 
-  // 문자열 난이도값을 강의 난이도 enum으로 변환한다.
   private CourseDifficultyLevel toDifficultyLevel(String difficultyLevel) {
     if (difficultyLevel == null || difficultyLevel.isBlank()) {
       return null;
@@ -501,7 +575,6 @@ public class InstructorCourseService {
     }
   }
 
-  // 문자열 레슨 유형값을 enum으로 변환한다.
   private LessonType toLessonType(String lessonType) {
     try {
       return LessonType.valueOf(lessonType.toUpperCase(Locale.ROOT));

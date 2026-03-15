@@ -1,16 +1,20 @@
 package com.devpath.api.instructor.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
 import com.devpath.api.instructor.dto.InstructorCourseDto;
 import com.devpath.api.instructor.dto.InstructorLessonDto;
 import com.devpath.api.instructor.dto.InstructorMaterialDto;
 import com.devpath.api.instructor.dto.InstructorSectionDto;
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
+import com.devpath.domain.course.repository.LessonPrerequisiteRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
@@ -55,6 +59,7 @@ class InstructorCourseServiceIntegrationTest {
   @Autowired private CourseRepository courseRepository;
   @Autowired private CourseSectionRepository courseSectionRepository;
   @Autowired private LessonRepository lessonRepository;
+  @Autowired private LessonPrerequisiteRepository lessonPrerequisiteRepository;
   @Autowired private CourseMaterialRepository courseMaterialRepository;
   @Autowired private CourseTagMapRepository courseTagMapRepository;
 
@@ -243,6 +248,93 @@ class InstructorCourseServiceIntegrationTest {
     assertThat(courseTagMapRepository.findAllByCourseCourseId(courseId)).isEmpty();
   }
 
+  @Test
+  @DisplayName("레슨 선행 조건을 저장하고 레슨 삭제 시 함께 정리한다")
+  void updateLessonPrerequisitesAndCleanupOnLessonDelete() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+    Long sectionId =
+        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+
+    Long lessonId1 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+    Long lessonId2 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+    Long lessonId3 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest3());
+
+    instructorCourseService.updateLessonPrerequisites(
+        instructorId, lessonId3, updateLessonPrerequisitesRequest(List.of(lessonId1, lessonId2)));
+    flushAndClear();
+
+    assertThat(
+            lessonPrerequisiteRepository.findAllByLessonLessonIdOrderByLessonPrerequisiteIdAsc(
+                lessonId3))
+        .extracting(link -> link.getPrerequisiteLesson().getLessonId())
+        .containsExactly(lessonId1, lessonId2);
+
+    instructorCourseService.deleteLesson(instructorId, lessonId1);
+    flushAndClear();
+
+    assertThat(
+            lessonPrerequisiteRepository.findAllByLessonLessonIdOrderByLessonPrerequisiteIdAsc(
+                lessonId3))
+        .extracting(link -> link.getPrerequisiteLesson().getLessonId())
+        .containsExactly(lessonId2);
+  }
+
+  @Test
+  @DisplayName("레슨 선행 조건은 자기 자신, 중복, 다른 강의 레슨을 허용하지 않는다")
+  void updateLessonPrerequisitesRejectsInvalidCases() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+    Long sectionId =
+        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+
+    Long lessonId1 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+    Long lessonId2 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+    Long lessonId3 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest3());
+
+    Long otherCourseId =
+        instructorCourseService.createCourse(instructorId, createSecondCourseRequest());
+    Long otherSectionId =
+        instructorCourseService.createSection(instructorId, otherCourseId, createSecondSectionRequest());
+    Long otherLessonId =
+        instructorCourseService.createLesson(
+            instructorId, otherSectionId, createOtherCourseLessonRequest());
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.updateLessonPrerequisites(
+                    instructorId,
+                    lessonId3,
+                    updateLessonPrerequisitesRequest(List.of(lessonId1, lessonId1))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.updateLessonPrerequisites(
+                    instructorId,
+                    lessonId3,
+                    updateLessonPrerequisitesRequest(List.of(lessonId3))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.updateLessonPrerequisites(
+                    instructorId,
+                    lessonId3,
+                    updateLessonPrerequisitesRequest(List.of(lessonId2, otherLessonId))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+  }
+
   private InstructorCourseDto.CreateCourseRequest createCourseRequest() {
     InstructorCourseDto.CreateCourseRequest request = new InstructorCourseDto.CreateCourseRequest();
     ReflectionTestUtils.setField(request, "title", "Spring Security 완전 정복");
@@ -318,6 +410,78 @@ class InstructorCourseServiceIntegrationTest {
     ReflectionTestUtils.setField(request, "orderIndex", 2);
     ReflectionTestUtils.setField(request, "isPreview", true);
     ReflectionTestUtils.setField(request, "isPublished", true);
+    return request;
+  }
+
+  private InstructorLessonDto.CreateLessonRequest createLessonRequest3() {
+    InstructorLessonDto.CreateLessonRequest request = new InstructorLessonDto.CreateLessonRequest();
+    ReflectionTestUtils.setField(request, "title", "Lesson prerequisite setup");
+    ReflectionTestUtils.setField(
+        request,
+        "description",
+        "Creates a third lesson that receives prerequisite links during the test.");
+    ReflectionTestUtils.setField(request, "lessonType", "video");
+    ReflectionTestUtils.setField(request, "videoId", "video-asset-003");
+    ReflectionTestUtils.setField(request, "videoUrl", "https://cdn.devpath.com/lessons/video-3.mp4");
+    ReflectionTestUtils.setField(request, "videoProvider", "r2");
+    ReflectionTestUtils.setField(
+        request, "thumbnailUrl", "https://cdn.devpath.com/lessons/thumbnails/video-3.png");
+    ReflectionTestUtils.setField(request, "durationSeconds", 600);
+    ReflectionTestUtils.setField(request, "orderIndex", 3);
+    ReflectionTestUtils.setField(request, "isPreview", false);
+    ReflectionTestUtils.setField(request, "isPublished", true);
+    return request;
+  }
+
+  private InstructorCourseDto.CreateCourseRequest createSecondCourseRequest() {
+    InstructorCourseDto.CreateCourseRequest request = new InstructorCourseDto.CreateCourseRequest();
+    ReflectionTestUtils.setField(request, "title", "Second backend course");
+    ReflectionTestUtils.setField(request, "subtitle", "Used to validate cross-course prerequisites");
+    ReflectionTestUtils.setField(
+        request,
+        "description",
+        "Creates a different course so prerequisite validation can reject foreign lessons.");
+    ReflectionTestUtils.setField(request, "price", new BigDecimal("49000"));
+    ReflectionTestUtils.setField(request, "originalPrice", new BigDecimal("59000"));
+    ReflectionTestUtils.setField(request, "currency", "KRW");
+    ReflectionTestUtils.setField(request, "difficultyLevel", "beginner");
+    ReflectionTestUtils.setField(request, "language", "ko");
+    ReflectionTestUtils.setField(request, "hasCertificate", false);
+    ReflectionTestUtils.setField(request, "tagIds", List.of(javaTagId, jpaTagId));
+    return request;
+  }
+
+  private InstructorSectionDto.CreateSectionRequest createSecondSectionRequest() {
+    InstructorSectionDto.CreateSectionRequest request = new InstructorSectionDto.CreateSectionRequest();
+    ReflectionTestUtils.setField(request, "title", "Section 1. Other course");
+    ReflectionTestUtils.setField(request, "description", "Section used for foreign lesson validation.");
+    ReflectionTestUtils.setField(request, "orderIndex", 1);
+    ReflectionTestUtils.setField(request, "isPublished", true);
+    return request;
+  }
+
+  private InstructorLessonDto.CreateLessonRequest createOtherCourseLessonRequest() {
+    InstructorLessonDto.CreateLessonRequest request = new InstructorLessonDto.CreateLessonRequest();
+    ReflectionTestUtils.setField(request, "title", "Other course lesson");
+    ReflectionTestUtils.setField(request, "description", "Lesson that belongs to a different course.");
+    ReflectionTestUtils.setField(request, "lessonType", "video");
+    ReflectionTestUtils.setField(request, "videoId", "video-asset-004");
+    ReflectionTestUtils.setField(request, "videoUrl", "https://cdn.devpath.com/lessons/video-4.mp4");
+    ReflectionTestUtils.setField(request, "videoProvider", "r2");
+    ReflectionTestUtils.setField(
+        request, "thumbnailUrl", "https://cdn.devpath.com/lessons/thumbnails/video-4.png");
+    ReflectionTestUtils.setField(request, "durationSeconds", 420);
+    ReflectionTestUtils.setField(request, "orderIndex", 1);
+    ReflectionTestUtils.setField(request, "isPreview", false);
+    ReflectionTestUtils.setField(request, "isPublished", true);
+    return request;
+  }
+
+  private InstructorLessonDto.UpdateLessonPrerequisitesRequest updateLessonPrerequisitesRequest(
+      List<Long> prerequisiteLessonIds) {
+    InstructorLessonDto.UpdateLessonPrerequisitesRequest request =
+        new InstructorLessonDto.UpdateLessonPrerequisitesRequest();
+    ReflectionTestUtils.setField(request, "prerequisiteLessonIds", prerequisiteLessonIds);
     return request;
   }
 

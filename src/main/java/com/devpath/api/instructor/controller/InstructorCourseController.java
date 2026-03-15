@@ -24,8 +24,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// 강사용 강의 및 커리큘럼 메타데이터 관리 API를 제공한다.
-@Tag(name = "강사용 강의 API", description = "강사가 자신의 강의와 부가 메타데이터를 관리하는 API")
+// Instructor APIs for managing owned courses, sections, lessons, and lesson assets.
+@Tag(name = "강사용 강의 API", description = "강사가 자신의 강의와 부가 데이터를 관리하는 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/instructor")
@@ -34,7 +34,6 @@ public class InstructorCourseController {
   private final InstructorCourseService instructorCourseService;
   private final InstructorCourseQueryService instructorCourseQueryService;
 
-  // 강사가 새 강의를 생성한다.
   @Operation(summary = "강의 생성")
   @PostMapping("/courses")
   public ApiResponse<Long> createCourse(
@@ -44,7 +43,6 @@ public class InstructorCourseController {
     return ApiResponse.success("강의가 생성되었습니다.", courseId);
   }
 
-  // 강사가 자신의 강의 상세 정보를 조회한다.
   @Operation(summary = "강의 상세 조회")
   @GetMapping("/courses/{courseId}")
   public ApiResponse<CourseDetailResponse> getCourseDetail(
@@ -54,7 +52,6 @@ public class InstructorCourseController {
     return ApiResponse.success("강의 상세 정보를 조회했습니다.", response);
   }
 
-  // 강사가 자신의 강의 기본 정보를 수정한다.
   @Operation(summary = "강의 수정")
   @PutMapping("/courses/{courseId}")
   public ApiResponse<Void> updateCourse(
@@ -65,7 +62,6 @@ public class InstructorCourseController {
     return ApiResponse.success("강의가 수정되었습니다.", null);
   }
 
-  // 강사가 자신의 강의를 삭제한다.
   @Operation(summary = "강의 삭제")
   @DeleteMapping("/courses/{courseId}")
   public ApiResponse<Void> deleteCourse(
@@ -75,7 +71,6 @@ public class InstructorCourseController {
     return ApiResponse.success("강의가 삭제되었습니다.", null);
   }
 
-  // 강사가 자신의 강의 상태를 변경한다.
   @Operation(summary = "강의 상태 변경")
   @PatchMapping("/courses/{courseId}/status")
   public ApiResponse<Void> updateCourseStatus(
@@ -86,7 +81,6 @@ public class InstructorCourseController {
     return ApiResponse.success("강의 상태가 변경되었습니다.", null);
   }
 
-  // 강사가 특정 강의에 섹션을 추가한다.
   @Operation(summary = "섹션 생성")
   @PostMapping("/courses/{courseId}/sections")
   public ApiResponse<Long> createSection(
@@ -97,7 +91,6 @@ public class InstructorCourseController {
     return ApiResponse.success("섹션이 생성되었습니다.", sectionId);
   }
 
-  // 강사가 자신의 섹션을 수정한다.
   @Operation(summary = "섹션 수정")
   @PutMapping("/sections/{sectionId}")
   public ApiResponse<Void> updateSection(
@@ -108,7 +101,6 @@ public class InstructorCourseController {
     return ApiResponse.success("섹션이 수정되었습니다.", null);
   }
 
-  // 강사가 자신의 섹션을 삭제한다.
   @Operation(summary = "섹션 삭제")
   @DeleteMapping("/sections/{sectionId}")
   public ApiResponse<Void> deleteSection(
@@ -118,7 +110,6 @@ public class InstructorCourseController {
     return ApiResponse.success("섹션이 삭제되었습니다.", null);
   }
 
-  // 강사가 특정 섹션에 레슨을 추가한다.
   @Operation(summary = "레슨 생성")
   @PostMapping("/sections/{sectionId}/lessons")
   public ApiResponse<Long> createLesson(
@@ -129,7 +120,6 @@ public class InstructorCourseController {
     return ApiResponse.success("레슨이 생성되었습니다.", lessonId);
   }
 
-  // 강사가 자신의 레슨을 수정한다.
   @Operation(summary = "레슨 수정")
   @PutMapping("/lessons/{lessonId}")
   public ApiResponse<Void> updateLesson(
@@ -140,7 +130,19 @@ public class InstructorCourseController {
     return ApiResponse.success("레슨이 수정되었습니다.", null);
   }
 
-  // 강사가 자신의 레슨을 삭제한다.
+  // This endpoint overwrites the prerequisite list so the client does not manage diffs.
+  @Operation(summary = "레슨 선행 조건 전체 교체")
+  @PutMapping("/lessons/{lessonId}/prerequisites")
+  public ApiResponse<InstructorLessonDto.UpdateLessonPrerequisitesResponse>
+      updateLessonPrerequisites(
+          @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+          @PathVariable Long lessonId,
+          @Valid @RequestBody InstructorLessonDto.UpdateLessonPrerequisitesRequest request) {
+    InstructorLessonDto.UpdateLessonPrerequisitesResponse response =
+        instructorCourseService.updateLessonPrerequisites(userId, lessonId, request);
+    return ApiResponse.success("레슨 선행 조건이 저장되었습니다.", response);
+  }
+
   @Operation(summary = "레슨 삭제")
   @DeleteMapping("/lessons/{lessonId}")
   public ApiResponse<Void> deleteLesson(
@@ -150,7 +152,6 @@ public class InstructorCourseController {
     return ApiResponse.success("레슨이 삭제되었습니다.", null);
   }
 
-  // 강사가 동일 섹션 내 레슨 순서를 일괄 변경한다.
   @Operation(summary = "레슨 순서 변경")
   @PatchMapping("/lessons/order")
   public ApiResponse<Void> updateLessonOrder(
@@ -160,7 +161,6 @@ public class InstructorCourseController {
     return ApiResponse.success("레슨 순서가 변경되었습니다.", null);
   }
 
-  // 강사의 강의 메타데이터를 전체 교체한다.
   @Operation(summary = "강의 메타데이터 수정")
   @PatchMapping("/courses/{courseId}/metadata")
   public ApiResponse<Void> updateCourseMetadata(
@@ -171,7 +171,6 @@ public class InstructorCourseController {
     return ApiResponse.success("강의 메타데이터가 수정되었습니다.", null);
   }
 
-  // 강의 목표를 전체 교체한다.
   @Operation(summary = "강의 목표 전체 교체")
   @PostMapping("/courses/{courseId}/objectives")
   public ApiResponse<Void> replaceObjectives(
@@ -182,7 +181,6 @@ public class InstructorCourseController {
     return ApiResponse.success("강의 목표가 저장되었습니다.", null);
   }
 
-  // 강의 수강 대상을 전체 교체한다.
   @Operation(summary = "강의 수강 대상 전체 교체")
   @PostMapping("/courses/{courseId}/target-audiences")
   public ApiResponse<Void> replaceTargetAudiences(
@@ -193,7 +191,6 @@ public class InstructorCourseController {
     return ApiResponse.success("강의 수강 대상이 저장되었습니다.", null);
   }
 
-  // 레슨 첨부 자료 메타데이터를 저장한다.
   @Operation(summary = "레슨 자료 등록")
   @PostMapping("/lessons/{lessonId}/materials")
   public ApiResponse<Long> createMaterial(
@@ -201,10 +198,9 @@ public class InstructorCourseController {
       @PathVariable Long lessonId,
       @Valid @RequestBody InstructorMaterialDto.CreateMaterialRequest request) {
     Long materialId = instructorCourseService.createMaterial(userId, lessonId, request);
-    return ApiResponse.success("레슨 자료가 저장되었습니다.", materialId);
+    return ApiResponse.success("레슨 자료가 등록되었습니다.", materialId);
   }
 
-  // 강의 썸네일 메타데이터를 저장한다.
   @Operation(summary = "강의 썸네일 등록")
   @PostMapping("/courses/{courseId}/thumbnail")
   public ApiResponse<Void> uploadThumbnail(
@@ -212,10 +208,9 @@ public class InstructorCourseController {
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorCourseDto.UploadThumbnailRequest request) {
     instructorCourseService.uploadThumbnail(userId, courseId, request);
-    return ApiResponse.success("강의 썸네일이 저장되었습니다.", null);
+    return ApiResponse.success("강의 썸네일이 등록되었습니다.", null);
   }
 
-  // 강의 트레일러 메타데이터를 저장한다.
   @Operation(summary = "강의 트레일러 등록")
   @PostMapping("/courses/{courseId}/trailer")
   public ApiResponse<Void> uploadTrailer(
@@ -223,6 +218,6 @@ public class InstructorCourseController {
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorCourseDto.UploadTrailerRequest request) {
     instructorCourseService.uploadTrailer(userId, courseId, request);
-    return ApiResponse.success("강의 트레일러가 저장되었습니다.", null);
+    return ApiResponse.success("강의 트레일러가 등록되었습니다.", null);
   }
 }
