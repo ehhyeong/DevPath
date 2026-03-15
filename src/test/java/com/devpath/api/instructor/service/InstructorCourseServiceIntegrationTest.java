@@ -216,10 +216,14 @@ class InstructorCourseServiceIntegrationTest {
     assertThat(detail.getVideoAssetKey()).isEqualTo("courses/trailers/course-1.mp4");
     assertThat(detail.getDurationSeconds()).isEqualTo(95);
     assertThat(detail.getInstructor()).isNotNull();
+    assertThat(detail.getInstructor().getInstructorId()).isEqualTo(instructorId);
     assertThat(detail.getInstructor().getChannelName()).isEqualTo("Test Backend Lab");
     assertThat(detail.getInstructor().getProfileImage())
         .isEqualTo("/images/profiles/test-instructor.png");
+    assertThat(detail.getInstructor().getHeadline()).isNotBlank();
     assertThat(detail.getInstructor().getSpecialties()).containsExactlyInAnyOrder("Java", "Spring Boot");
+    assertThat(detail.getInstructor().getChannelApiPath())
+        .isEqualTo("/api/instructors/" + instructorId + "/channel");
     assertThat(detail.getNews()).isEmpty();
     assertThat(detail.getSections()).hasSize(1);
     assertThat(detail.getSections().get(0).getLessons()).hasSize(2);
