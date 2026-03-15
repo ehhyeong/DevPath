@@ -35,15 +35,21 @@ public enum ErrorCode {
   WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "찜한 강의를 찾을 수 없습니다."),
   ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 내역을 찾을 수 없습니다."),
 
+  // 로드맵 관련
   ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵을 찾을 수 없습니다."),
   CUSTOM_ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "내 로드맵을 찾을 수 없습니다."),
   CUSTOM_ROADMAP_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 해당 오피셜 로드맵을 복사했습니다."),
   ROADMAP_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵 노드를 찾을 수 없습니다."),
   CUSTOM_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 노드를 찾을 수 없습니다."),
 
-  // 태그 검증 관련 에러
+  // 태그 검증 관련
   INSUFFICIENT_TAGS(HttpStatus.BAD_REQUEST, "노드 클리어에 필요한 태그가 부족합니다."),
   NODE_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료한 노드입니다."),
+
+  // 진단 퀴즈 관련
+  QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "진단 퀴즈를 찾을 수 없습니다."),
+  QUIZ_ALREADY_TAKEN(HttpStatus.CONFLICT, "이미 해당 로드맵의 진단 퀴즈를 수행했습니다."),
+  QUIZ_ALREADY_SUBMITTED(HttpStatus.BAD_REQUEST, "이미 제출된 퀴즈입니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
