@@ -48,17 +48,31 @@ class SwaggerSmokeIntegrationTest {
     mockMvc
         .perform(get("/v3/api-docs"))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.paths['/api/instructor/courses/{courseId}']").exists())
         .andExpect(
             jsonPath("$.paths['/api/instructor/courses/{courseId}/announcements']").exists())
         .andExpect(
             jsonPath("$.paths['/api/instructor/courses/{courseId}/node-classifications']").exists())
         .andExpect(
             jsonPath("$.paths['/api/instructor/courses/{courseId}/node-coverages']").exists())
+        .andExpect(jsonPath("$.paths['/api/instructors/{instructorId}/profile']").exists())
+        .andExpect(jsonPath("$.paths['/api/instructors/{instructorId}/channel']").exists())
         .andExpect(jsonPath("$.paths['/api/courses/{courseId}/news']").exists());
   }
 
   @Test
   void seededCourseApisRespondWithSampleData() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/instructor/courses/{courseId}", courseId)
+                .with(authentication(instructorAuthentication())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.courseId").value(courseId))
+        .andExpect(jsonPath("$.data.instructor.instructorId").value(instructorId))
+        .andExpect(jsonPath("$.data.instructor.channelApiPath").value("/api/instructors/" + instructorId + "/channel"))
+        .andExpect(jsonPath("$.data.instructor.headline").isNotEmpty());
+
     mockMvc
         .perform(
             get("/api/instructor/courses/{courseId}/announcements", courseId)
@@ -90,6 +104,20 @@ class SwaggerSmokeIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.length()").value(greaterThanOrEqualTo(2)));
+
+    mockMvc
+        .perform(get("/api/instructors/{instructorId}/profile", instructorId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.instructorId").value(instructorId))
+        .andExpect(jsonPath("$.data.headline").isNotEmpty());
+
+    mockMvc
+        .perform(get("/api/instructors/{instructorId}/channel", instructorId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.profile.instructorId").value(instructorId))
+        .andExpect(jsonPath("$.data.featuredCourses.length()").value(greaterThanOrEqualTo(1)));
   }
 
   private UsernamePasswordAuthenticationToken instructorAuthentication() {

@@ -831,6 +831,104 @@ class InstructorCourseServiceIntegrationTest {
         .containsExactly("Java", "JPA");
   }
 
+  @Test
+  @DisplayName("다른 강사는 강의 하위 리소스와 공지 및 노드 조회 API에 접근할 수 없다")
+  void ownershipValidationRejectsDifferentInstructor() {
+    User otherInstructor =
+        userRepository.save(
+            User.builder()
+                .email("other-instructor@devpath.com")
+                .password("encoded-password")
+                .name("Other Instructor")
+                .role(UserRole.ROLE_INSTRUCTOR)
+                .build());
+    Long otherInstructorId = otherInstructor.getId();
+
+    Long courseId =
+        instructorCourseService.createCourse(instructorId, createNodeClassificationCourseRequest());
+    Long sectionId =
+        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+    Long lessonId =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+    Long announcementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, courseId, createNormalAnnouncementRequest());
+    flushAndClear();
+
+    assertThatThrownBy(
+            () -> instructorCourseQueryService.getCourseDetail(otherInstructorId, courseId))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.createSection(
+                    otherInstructorId, courseId, createSectionRequest()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.createLesson(
+                    otherInstructorId, sectionId, createLessonRequest2()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.updateLessonPrerequisites(
+                    otherInstructorId, lessonId, updateLessonPrerequisitesRequest(List.of())))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncement(
+                    otherInstructorId, announcementId, updateNormalAnnouncementRequest()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncementPin(
+                    otherInstructorId,
+                    courseId,
+                    announcementId,
+                    updateAnnouncementPinRequest(true)))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncementDisplayOrder(
+                    otherInstructorId,
+                    courseId,
+                    updateAnnouncementOrderRequest(List.of(announcementOrderItem(announcementId, 0)))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorNodeClassificationQueryService.getAutoClassifications(
+                    otherInstructorId, courseId))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () -> instructorNodeCoverageQueryService.getNodeCoverages(otherInstructorId, courseId))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+  }
+
   private InstructorCourseDto.CreateCourseRequest createCourseRequest() {
     InstructorCourseDto.CreateCourseRequest request = new InstructorCourseDto.CreateCourseRequest();
     ReflectionTestUtils.setField(request, "title", "Spring Security 완전 정복");

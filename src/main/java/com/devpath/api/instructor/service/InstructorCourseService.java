@@ -27,6 +27,7 @@ import com.devpath.domain.course.repository.CourseTargetAudienceRepository;
 import com.devpath.domain.course.repository.LessonPrerequisiteRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.user.entity.Tag;
+import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.TagRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.ArrayList;
@@ -64,10 +65,14 @@ public class InstructorCourseService {
   @Transactional
   public Long createCourse(Long instructorId, InstructorCourseDto.CreateCourseRequest request) {
     validateAuthenticatedUser(instructorId);
+    User instructor =
+        userRepository
+            .findById(instructorId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
     Course course =
         Course.builder()
-            .instructorId(instructorId)
+            .instructor(instructor)
             .title(request.getTitle())
             .subtitle(request.getSubtitle())
             .description(request.getDescription())

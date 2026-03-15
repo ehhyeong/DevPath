@@ -279,8 +279,9 @@ class PublicInstructorQueryServiceIntegrationTest {
       String subtitle,
       String thumbnailUrl,
       LocalDateTime publishedAt) {
+    User instructor = userRepository.findById(instructorId).orElseThrow();
     return Course.builder()
-        .instructorId(instructorId)
+        .instructor(instructor)
         .title(title)
         .subtitle(subtitle)
         .thumbnailUrl(thumbnailUrl)
@@ -290,8 +291,9 @@ class PublicInstructorQueryServiceIntegrationTest {
   }
 
   private Course draftCourse(Long instructorId, String title, String subtitle, String thumbnailUrl) {
+    User instructor = userRepository.findById(instructorId).orElseThrow();
     return Course.builder()
-        .instructorId(instructorId)
+        .instructor(instructor)
         .title(title)
         .subtitle(subtitle)
         .thumbnailUrl(thumbnailUrl)

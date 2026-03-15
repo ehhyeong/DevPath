@@ -12,6 +12,9 @@ import com.devpath.domain.course.entity.CourseAnnouncementType;
 import com.devpath.domain.course.entity.CourseStatus;
 import com.devpath.domain.course.repository.CourseAnnouncementRepository;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.entity.UserRole;
+import com.devpath.domain.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -38,6 +41,7 @@ class PublicCourseNewsQueryServiceIntegrationTest {
   @Autowired private PublicCourseNewsQueryService publicCourseNewsQueryService;
   @Autowired private CourseRepository courseRepository;
   @Autowired private CourseAnnouncementRepository courseAnnouncementRepository;
+  @Autowired private UserRepository userRepository;
   @Autowired private EntityManager entityManager;
 
   private Long publishedCourseId;
@@ -46,11 +50,19 @@ class PublicCourseNewsQueryServiceIntegrationTest {
   @BeforeEach
   void setUp() {
     LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
+    User instructor =
+        userRepository.save(
+            User.builder()
+                .email("public-news-instructor@devpath.com")
+                .password("encoded-password")
+                .name("Public News Instructor")
+                .role(UserRole.ROLE_INSTRUCTOR)
+                .build());
 
     Course publishedCourse =
         courseRepository.save(
             Course.builder()
-                .instructorId(7L)
+                .instructor(instructor)
                 .title("Published Security Course")
                 .subtitle("Public news tab")
                 .status(CourseStatus.PUBLISHED)
@@ -60,7 +72,7 @@ class PublicCourseNewsQueryServiceIntegrationTest {
     Course draftCourse =
         courseRepository.save(
             Course.builder()
-                .instructorId(7L)
+                .instructor(instructor)
                 .title("Draft Security Course")
                 .subtitle("Hidden news tab")
                 .status(CourseStatus.DRAFT)

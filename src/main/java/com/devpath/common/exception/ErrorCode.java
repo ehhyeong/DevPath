@@ -9,7 +9,7 @@ public enum ErrorCode {
   INVALID_AUTH_HEADER(HttpStatus.BAD_REQUEST, "인증 헤더 형식이 올바르지 않습니다."),
   ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 존재하는 데이터입니다."),
 
-  EMAIL_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 가입된 이메일입니다."),
+  EMAIL_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 가입한 이메일입니다."),
   USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
   TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "태그를 찾을 수 없습니다."),
   INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
@@ -24,35 +24,29 @@ public enum ErrorCode {
   JWT_TYPE_MISMATCH(HttpStatus.UNAUTHORIZED, "토큰 타입이 올바르지 않습니다."),
   REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "저장된 리프레시 토큰이 없습니다."),
   REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 일치하지 않습니다."),
-  REFRESH_TOKEN_REUSED(HttpStatus.UNAUTHORIZED, "리프레시 토큰 재사용이 감지되어 세션이 폐기되었습니다."),
+  REFRESH_TOKEN_REUSED(HttpStatus.UNAUTHORIZED, "리프레시 토큰 재사용이 감지되어 세션을 만료했습니다."),
   RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 리소스를 찾을 수 없습니다."),
   DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다."),
-    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "강의를 찾을 수 없습니다."),
   INVALID_COURSE_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 강의 상태입니다."),
   INVALID_COURSE_DIFFICULTY_LEVEL(HttpStatus.BAD_REQUEST, "유효하지 않은 강의 난이도입니다."),
 
-  // 강의 관련
   COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "강의를 찾을 수 없습니다."),
   WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "찜한 강의를 찾을 수 없습니다."),
-  ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 내역을 찾을 수 없습니다."),
+  ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 이력을 찾을 수 없습니다."),
 
-  // 로드맵 관련
   ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵을 찾을 수 없습니다."),
-  CUSTOM_ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "내 로드맵을 찾을 수 없습니다."),
-  CUSTOM_ROADMAP_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 해당 오피셜 로드맵을 복사했습니다."),
+  CUSTOM_ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 로드맵을 찾을 수 없습니다."),
+  CUSTOM_ROADMAP_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 해당 스킬의 로드맵을 복사했습니다."),
   ROADMAP_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵 노드를 찾을 수 없습니다."),
   CUSTOM_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 노드를 찾을 수 없습니다."),
 
-  // 태그 검증 관련
-  INSUFFICIENT_TAGS(HttpStatus.BAD_REQUEST, "노드 클리어에 필요한 태그가 부족합니다."),
-  NODE_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료한 노드입니다."),
+  INSUFFICIENT_TAGS(HttpStatus.BAD_REQUEST, "노드 진입에 필요한 태그가 부족합니다."),
+  NODE_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료된 노드입니다."),
 
-  // 진단 퀴즈 관련
   QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "진단 퀴즈를 찾을 수 없습니다."),
   QUIZ_ALREADY_TAKEN(HttpStatus.CONFLICT, "이미 해당 로드맵의 진단 퀴즈를 수행했습니다."),
   QUIZ_ALREADY_SUBMITTED(HttpStatus.BAD_REQUEST, "이미 제출된 퀴즈입니다."),
 
-  // 추천 관련
   RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 정보를 찾을 수 없습니다."),
   RECOMMENDATION_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 추천입니다."),
   RECOMMENDATION_EXPIRED(HttpStatus.BAD_REQUEST, "만료된 추천입니다."),
