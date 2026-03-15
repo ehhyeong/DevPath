@@ -16,6 +16,11 @@ public interface NodeRecommendationRepository extends JpaRepository<NodeRecommen
     List<NodeRecommendation> findByUser_IdAndRoadmap_RoadmapIdAndStatus(
             Long userId, Long roadmapId, RecommendationStatus status);
 
+    java.util.Optional<NodeRecommendation> findByRecommendationIdAndUser_Id(
+            Long recommendationId,
+            Long userId
+    );
+
     @Query("SELECT nr FROM NodeRecommendation nr " +
            "WHERE nr.user.id = :userId " +
            "AND nr.roadmap.roadmapId = :roadmapId " +

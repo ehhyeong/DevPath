@@ -4,17 +4,19 @@ import com.devpath.api.common.dto.CourseDetailResponse;
 import com.devpath.api.common.dto.CourseListItemResponse;
 import com.devpath.api.learner.service.LearnerCourseService;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.domain.course.entity.Course;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Tag(name = "Learner - Course", description = "학습자 강의 조회 API")
+@Tag(name = "Learner - Course", description = "?숈뒿??媛뺤쓽 議고쉶 API")
 @RestController
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor
@@ -22,63 +24,20 @@ public class LearnerCourseController {
 
     private final LearnerCourseService learnerCourseService;
 
-    /**
-     * 강의 목록 조회
-     */
-    @Operation(summary = "강의 목록 조회", description = "전체 강의 목록을 조회합니다.")
+    @Operation(summary = "媛뺤쓽 紐⑸줉 議고쉶", description = "?꾩껜 媛뺤쓽 紐⑸줉??議고쉶?⑸땲??")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CourseListItemResponse>>> getCourseList() {
-        List<Course> courses = learnerCourseService.getCourseList();
-
-        List<CourseListItemResponse> response = courses.stream()
-                .map(course -> CourseListItemResponse.builder()
-                        .courseId(course.getCourseId())
-                        .title(course.getTitle())
-                        .thumbnailUrl(course.getThumbnailUrl())
-                        .instructorName(course.getInstructor().getName())
-                        .price(course.getPrice() != null ? course.getPrice().intValue() : null)
-                        .discountPrice(course.getOriginalPrice() != null ? course.getOriginalPrice().intValue() : null)
-                        .status(course.getStatus())
-                        // TODO: isBookmarked, isEnrolled, tags 등은 추후 구현
-                        .isBookmarked(false)
-                        .isEnrolled(false)
-                        .build())
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(ApiResponse.ok(response));
+    public ResponseEntity<ApiResponse<List<CourseListItemResponse>>> getCourseList(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(learnerCourseService.getCourseList(userId)));
     }
 
-    /**
-     * 강의 상세 조회
-     */
-    @Operation(summary = "강의 상세 조회", description = "강의 ID로 상세 정보를 조회합니다.")
+    @Operation(summary = "媛뺤쓽 ?곸꽭 議고쉶", description = "媛뺤쓽 ID濡??곸꽭 ?뺣낫瑜?議고쉶?⑸땲??")
     @GetMapping("/{courseId}")
     public ResponseEntity<ApiResponse<CourseDetailResponse>> getCourseDetail(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
             @PathVariable Long courseId
     ) {
-        Course course = learnerCourseService.getCourseDetail(courseId);
-
-        CourseDetailResponse response = CourseDetailResponse.builder()
-                .courseId(course.getCourseId())
-                .title(course.getTitle())
-                .subtitle(course.getSubtitle())
-                .description(course.getDescription())
-                .status(course.getStatus().name())
-                .price(course.getPrice())
-                .originalPrice(course.getOriginalPrice())
-                .currency(course.getCurrency())
-                .difficultyLevel(course.getDifficultyLevel() != null ? course.getDifficultyLevel().name() : null)
-                .language(course.getLanguage())
-                .hasCertificate(course.getHasCertificate())
-                .thumbnailUrl(course.getThumbnailUrl())
-                .introVideoUrl(course.getIntroVideoUrl())
-                .videoAssetKey(course.getVideoAssetKey())
-                .durationSeconds(course.getDurationSeconds())
-                .prerequisites(course.getPrerequisites())
-                .jobRelevance(course.getJobRelevance())
-                // TODO: sections, objectives, targetAudiences, tags, instructor, news 등은 추후 구현
-                .build();
-
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        return ResponseEntity.ok(ApiResponse.ok(learnerCourseService.getCourseDetail(userId, courseId)));
     }
 }
