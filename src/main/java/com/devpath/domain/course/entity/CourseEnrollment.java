@@ -3,6 +3,7 @@ package com.devpath.domain.course.entity;
 import com.devpath.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,6 +27,8 @@ import java.time.LocalDateTime;
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class CourseEnrollment {
 
     @Id
@@ -43,8 +46,7 @@ public class CourseEnrollment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
-    private EnrollmentStatus status = EnrollmentStatus.ACTIVE;
+    private EnrollmentStatus status;
 
     @Column(name = "enrolled_at", nullable = false, updatable = false)
     private LocalDateTime enrolledAt;
@@ -53,19 +55,10 @@ public class CourseEnrollment {
     private LocalDateTime completedAt;
 
     @Column(name = "progress_percentage")
-    @Builder.Default
-    private Integer progressPercentage = 0;
+    private Integer progressPercentage;
 
     @Column(name = "last_accessed_at")
     private LocalDateTime lastAccessedAt;
-
-    @Builder
-    public CourseEnrollment(User user, Course course) {
-        this.user = user;
-        this.course = course;
-        this.status = EnrollmentStatus.ACTIVE;
-        this.progressPercentage = 0;
-    }
 
     @PrePersist
     protected void onCreate() {

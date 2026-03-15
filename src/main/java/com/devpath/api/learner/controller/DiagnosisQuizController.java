@@ -39,7 +39,7 @@ public class DiagnosisQuizController {
 
         DiagnosisQuizDto.QuizResponse response = DiagnosisQuizDto.QuizResponse.from(quiz);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     /**
@@ -62,7 +62,7 @@ public class DiagnosisQuizController {
 
         DiagnosisQuizDto.QuizResultResponse response = DiagnosisQuizDto.QuizResultResponse.from(result);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     /**
@@ -80,7 +80,7 @@ public class DiagnosisQuizController {
 
         DiagnosisQuizDto.QuizResultResponse response = DiagnosisQuizDto.QuizResultResponse.from(result);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     /**
@@ -98,6 +98,6 @@ public class DiagnosisQuizController {
 
         DiagnosisQuizDto.QuizResultResponse response = DiagnosisQuizDto.QuizResultResponse.from(result);
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

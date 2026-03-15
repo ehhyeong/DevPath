@@ -4,6 +4,7 @@ import com.devpath.domain.course.entity.CourseWishlist;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class CourseWishlistDto {
@@ -19,7 +20,7 @@ public class CourseWishlistDto {
         private String courseTitle;
         private String instructorName;
         private String thumbnailUrl;
-        private Integer price;
+        private BigDecimal price;
         private LocalDateTime addedAt;
 
         public static WishlistResponse from(CourseWishlist wishlist) {

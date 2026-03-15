@@ -49,7 +49,11 @@ public class NodeRecommendationService {
 
         // TODO: 실제 AI 로직으로 추천 노드 생성
         // 임시: 로드맵의 임의 노드 2개 추천
-        List<RoadmapNode> allNodes = roadmapNodeRepository.findByRoadmap_RoadmapId(roadmapId);
+        // roadmapNodeRepository에서 roadmap으로 조회하는 메서드가 없으므로 roadmap 객체로 조회
+        Roadmap roadmapEntity = roadmapRepository.findById(roadmapId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NOT_FOUND));
+        
+        List<RoadmapNode> allNodes = roadmapNodeRepository.findByRoadmap(roadmapEntity);
         List<NodeRecommendation> recommendations = new ArrayList<>();
 
         LocalDateTime expiresAt = LocalDateTime.now().plusDays(7); // 7일 후 만료

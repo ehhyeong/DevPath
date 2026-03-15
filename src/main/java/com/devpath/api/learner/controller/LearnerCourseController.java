@@ -45,7 +45,7 @@ public class LearnerCourseController {
                         .build())
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     /**
@@ -79,6 +79,6 @@ public class LearnerCourseController {
                 // TODO: sections, objectives, targetAudiences, tags, instructor, news 등은 추후 구현
                 .build();
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

@@ -4,7 +4,9 @@ import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
 import com.devpath.domain.roadmap.entity.Roadmap;
+import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
+import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.repository.TagRepository;
@@ -31,6 +33,7 @@ public class SkillCheckService {
     private final UserRepository userRepository;
     private final RoadmapRepository roadmapRepository;
     private final NodeRequiredTagRepository nodeRequiredTagRepository;
+    private final RoadmapNodeRepository roadmapNodeRepository;
 
     /**
      * 로드맵 필수 스킬 추천
@@ -43,11 +46,12 @@ public class SkillCheckService {
         // 사용자가 이미 보유한 스킬
         List<String> userSkills = userTechStackRepository.findTagNamesByUserId(userId);
 
-        // 로드맵의 모든 노드에서 필요한 태그 추출
-        List<NodeRequiredTag> requiredTags = nodeRequiredTagRepository
-                .findByRoadmapNode_Roadmap_RoadmapId(roadmapId);
-
-        Set<String> allRequiredSkills = requiredTags.stream()
+        // 로드맵의 모든 노드 조회
+        List<RoadmapNode> roadmapNodes = roadmapNodeRepository.findByRoadmap(roadmap);
+        
+        // 각 노드의 필수 태그 수집
+        Set<String> allRequiredSkills = roadmapNodes.stream()
+                .flatMap(node -> nodeRequiredTagRepository.findByRoadmapNode(node).stream())
                 .map(nrt -> nrt.getTag().getName())
                 .collect(Collectors.toSet());
 

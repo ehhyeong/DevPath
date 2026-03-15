@@ -35,7 +35,7 @@ public class CourseWishlistController {
         courseWishlistService.addToWishlist(userId, courseId);
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(CourseWishlistDto.AddWishlistResponse.of(courseId)));
+                .body(ApiResponse.ok(CourseWishlistDto.AddWishlistResponse.of(courseId)));
     }
 
     /**
@@ -49,7 +49,7 @@ public class CourseWishlistController {
     ) {
         courseWishlistService.removeFromWishlist(userId, courseId);
 
-        return ResponseEntity.ok(ApiResponse.success(CourseWishlistDto.RemoveWishlistResponse.of(courseId)));
+        return ResponseEntity.ok(ApiResponse.ok(CourseWishlistDto.RemoveWishlistResponse.of(courseId)));
     }
 
     /**
@@ -66,6 +66,6 @@ public class CourseWishlistController {
                 .map(CourseWishlistDto.WishlistResponse::from)
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }
