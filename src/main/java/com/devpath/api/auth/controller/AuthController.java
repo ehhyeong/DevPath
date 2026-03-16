@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "1. 인증 API", description = "회원가입, 로그인, 재발급, 로그아웃")
+@Tag(name = "인증 API", description = "회원가입, 로그인, 재발급, 로그아웃")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

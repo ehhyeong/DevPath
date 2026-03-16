@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Node Skip", description = "노드 스킵 API")
+@Tag(name = "노드 스킵", description = "노드 스킵 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/my-roadmaps/nodes")

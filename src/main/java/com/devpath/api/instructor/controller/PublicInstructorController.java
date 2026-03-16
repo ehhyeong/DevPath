@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 // Public API for loading instructor profile and channel summaries.
-@Tag(name = "Public Instructor API", description = "강사 공개 프로필/채널 조회 API")
+@Tag(name = "공개 강사 API", description = "강사 공개 프로필/채널 조회 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/instructors")
