@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Admin - Policy & Mapping Governance", description = "관리자 정책 및 강의-노드 매핑 API")
+@Tag(name = "관리자 정책 및 매핑", description = "관리자 정책 및 강의-노드 매핑 API")
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor

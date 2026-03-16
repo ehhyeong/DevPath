@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Tag(name = "Learner - Course Enrollment", description = "학습자 수강 신청 API")
+@Tag(name = "학습자 수강 신청", description = "학습자 수강 신청 API")
 @RestController
 @RequestMapping("/api/me/enrollments")
 @RequiredArgsConstructor

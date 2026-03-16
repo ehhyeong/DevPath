@@ -66,13 +66,13 @@ class SwaggerSmokeIntegrationTest {
                 .value("AI 추천 노드 생성"))
         .andExpect(jsonPath("$.paths['/api/me/skills/check'].post.summary").value("보유 스킬 등록"))
         .andExpect(
-            jsonPath("$.tags[?(@.name=='Learner - Course')].description")
+            jsonPath("$.tags[?(@.name=='학습자 강의 조회')].description")
                 .value(hasItem("학습자 강의 조회 API")))
         .andExpect(
-            jsonPath("$.tags[?(@.name=='학습자 - 노드 추천')].description")
+            jsonPath("$.tags[?(@.name=='학습자 노드 추천')].description")
                 .value(hasItem("AI 기반 로드맵 노드 추천 관리 API")))
         .andExpect(
-            jsonPath("$.tags[?(@.name=='학습자 - 스킬 체크')].description")
+            jsonPath("$.tags[?(@.name=='학습자 스킬 체크')].description")
                 .value(hasItem("학습자의 보유 스킬 관리 및 로드맵 추천 API")));
   }
 

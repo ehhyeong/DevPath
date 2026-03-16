@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/roadmaps")
 @RequiredArgsConstructor
-@Tag(name = "Roadmap API", description = "공통 오피셜 로드맵 조회 API (비회원/일반유저 공통)")
+@Tag(name = "로드맵 API", description = "공통 오피셜 로드맵 조회 API (비회원/일반유저 공통)")
 public class RoadmapController {
 
   private final RoadmapService roadmapService;

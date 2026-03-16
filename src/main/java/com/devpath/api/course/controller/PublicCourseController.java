@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 // 공개 강의 조회 API를 제공한다.
-@Tag(name = "Public Course API", description = "공개 강의 조회 API")
+@Tag(name = "공개 강의 API", description = "공개 강의 조회 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/courses")

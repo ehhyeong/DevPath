@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/me")
 @RequiredArgsConstructor
-@Tag(name = "학습자 - 노드 추천", description = "AI 기반 로드맵 노드 추천 관리 API")
+@Tag(name = "학습자 노드 추천", description = "AI 기반 로드맵 노드 추천 관리 API")
 public class NodeRecommendationController {
 
     private final NodeRecommendationService nodeRecommendationService;

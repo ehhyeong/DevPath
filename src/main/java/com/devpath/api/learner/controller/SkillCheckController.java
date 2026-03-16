@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/me")
 @RequiredArgsConstructor
-@Tag(name = "학습자 - 스킬 체크", description = "학습자의 보유 스킬 관리 및 로드맵 추천 API")
+@Tag(name = "학습자 스킬 체크", description = "학습자의 보유 스킬 관리 및 로드맵 추천 API")
 public class SkillCheckController {
 
     private final SkillCheckService skillCheckService;

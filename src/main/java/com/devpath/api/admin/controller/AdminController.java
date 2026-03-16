@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@Tag(name = "Admin API", description = "관리자 전용 데이터 관리 API (오피셜 로드맵)")
+@Tag(name = "관리자 API", description = "관리자 전용 데이터 관리 API (오피셜 로드맵)")
 // 관리자 전용 기능을 제공하는 컨트롤러
 public class AdminController {
 
