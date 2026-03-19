@@ -1,16 +1,30 @@
 package com.devpath.api.instructor.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
+import com.devpath.api.instructor.dto.InstructorAnnouncementDto;
 import com.devpath.api.instructor.dto.InstructorCourseDto;
 import com.devpath.api.instructor.dto.InstructorLessonDto;
 import com.devpath.api.instructor.dto.InstructorMaterialDto;
+import com.devpath.api.instructor.dto.InstructorNodeClassificationDto;
+import com.devpath.api.instructor.dto.InstructorNodeCoverageDto;
 import com.devpath.api.instructor.dto.InstructorSectionDto;
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.course.entity.Course;
+import com.devpath.domain.roadmap.entity.NodeRequiredTag;
+import com.devpath.domain.roadmap.entity.Roadmap;
+import com.devpath.domain.roadmap.entity.RoadmapNode;
+import com.devpath.domain.roadmap.service.TagValidationService;
+import com.devpath.domain.course.entity.CourseNodeMapping;
+import com.devpath.domain.course.repository.CourseAnnouncementRepository;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
+import com.devpath.domain.course.repository.LessonPrerequisiteRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
@@ -41,11 +55,24 @@ import org.springframework.test.util.ReflectionTestUtils;
       "spring.jpa.defer-datasource-initialization=false"
     })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-@Import({InstructorCourseService.class, InstructorCourseQueryService.class})
+@Import({
+  InstructorCourseService.class,
+  InstructorCourseQueryService.class,
+  InstructorAnnouncementService.class,
+  InstructorAnnouncementQueryService.class,
+  InstructorNodeClassificationQueryService.class,
+  InstructorNodeCoverageQueryService.class,
+  TagValidationService.class
+})
 class InstructorCourseServiceIntegrationTest {
 
   @Autowired private InstructorCourseService instructorCourseService;
   @Autowired private InstructorCourseQueryService instructorCourseQueryService;
+  @Autowired private InstructorAnnouncementService instructorAnnouncementService;
+  @Autowired private InstructorAnnouncementQueryService instructorAnnouncementQueryService;
+  @Autowired
+  private InstructorNodeClassificationQueryService instructorNodeClassificationQueryService;
+  @Autowired private InstructorNodeCoverageQueryService instructorNodeCoverageQueryService;
 
   @Autowired private UserRepository userRepository;
   @Autowired private UserProfileRepository userProfileRepository;
@@ -53,8 +80,10 @@ class InstructorCourseServiceIntegrationTest {
   @Autowired private TagRepository tagRepository;
 
   @Autowired private CourseRepository courseRepository;
+  @Autowired private CourseAnnouncementRepository courseAnnouncementRepository;
   @Autowired private CourseSectionRepository courseSectionRepository;
   @Autowired private LessonRepository lessonRepository;
+  @Autowired private LessonPrerequisiteRepository lessonPrerequisiteRepository;
   @Autowired private CourseMaterialRepository courseMaterialRepository;
   @Autowired private CourseTagMapRepository courseTagMapRepository;
 
@@ -65,6 +94,7 @@ class InstructorCourseServiceIntegrationTest {
   private Long springBootTagId;
   private Long jpaTagId;
   private Long springSecurityTagId;
+  private Long jwtTagId;
 
   @BeforeEach
   void setUp() {
@@ -102,11 +132,14 @@ class InstructorCourseServiceIntegrationTest {
     Tag springSecurityTag =
         tagRepository.save(
             Tag.builder().name("Spring Security").category("Backend").isOfficial(true).build());
+    Tag jwtTag =
+        tagRepository.save(Tag.builder().name("JWT").category("Backend").isOfficial(true).build());
 
     javaTagId = javaTag.getTagId();
     springBootTagId = springBootTag.getTagId();
     jpaTagId = jpaTag.getTagId();
     springSecurityTagId = springSecurityTag.getTagId();
+    jwtTagId = jwtTag.getTagId();
 
     userTechStackRepository.save(UserTechStack.builder().user(instructor).tag(javaTag).build());
     userTechStackRepository.save(
@@ -211,10 +244,14 @@ class InstructorCourseServiceIntegrationTest {
     assertThat(detail.getVideoAssetKey()).isEqualTo("courses/trailers/course-1.mp4");
     assertThat(detail.getDurationSeconds()).isEqualTo(95);
     assertThat(detail.getInstructor()).isNotNull();
+    assertThat(detail.getInstructor().getInstructorId()).isEqualTo(instructorId);
     assertThat(detail.getInstructor().getChannelName()).isEqualTo("Test Backend Lab");
     assertThat(detail.getInstructor().getProfileImage())
         .isEqualTo("/images/profiles/test-instructor.png");
+    assertThat(detail.getInstructor().getHeadline()).isNotBlank();
     assertThat(detail.getInstructor().getSpecialties()).containsExactlyInAnyOrder("Java", "Spring Boot");
+    assertThat(detail.getInstructor().getChannelApiPath())
+        .isEqualTo("/api/instructors/" + instructorId + "/channel");
     assertThat(detail.getNews()).isEmpty();
     assertThat(detail.getSections()).hasSize(1);
     assertThat(detail.getSections().get(0).getLessons()).hasSize(2);
@@ -232,15 +269,690 @@ class InstructorCourseServiceIntegrationTest {
     assertThat(lessonWithMaterial.getMaterials().get(0).getOriginalFileName())
         .isEqualTo("week1-slide.pdf");
 
+    Long announcementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, courseId, createNormalAnnouncementRequest());
+
+    Course course = courseRepository.findById(courseId).orElseThrow();
+    User instructor = userRepository.findById(instructorId).orElseThrow();
+    Roadmap roadmap =
+        entityManager.merge(
+            Roadmap.builder()
+                .title("Deletion validation roadmap")
+                .description("Ensures course-node mappings are cleaned up with the course.")
+                .creator(instructor)
+                .isOfficial(true)
+                .isPublic(true)
+                .isDeleted(false)
+                .build());
+    RoadmapNode mappedNode =
+        entityManager.merge(
+            RoadmapNode.builder()
+                .roadmap(roadmap)
+                .title("Mapped node")
+                .content("Mapped node content")
+                .nodeType("CONCEPT")
+                .sortOrder(1)
+                .build());
+    entityManager.persist(CourseNodeMapping.builder().course(course).node(mappedNode).build());
+    flushAndClear();
+
     instructorCourseService.deleteCourse(instructorId, courseId);
     flushAndClear();
 
     assertThat(courseRepository.findById(courseId)).isEmpty();
+    assertThat(courseAnnouncementRepository.findById(announcementId)).isEmpty();
     assertThat(courseSectionRepository.findAllByCourseCourseIdOrderByOrderIndexAsc(courseId)).isEmpty();
     assertThat(lessonRepository.findAllBySectionSectionIdOrderByOrderIndexAsc(sectionId)).isEmpty();
     assertThat(courseMaterialRepository.findAllByLessonLessonIdOrderByDisplayOrderAsc(lessonId1))
         .isEmpty();
     assertThat(courseTagMapRepository.findAllByCourseCourseId(courseId)).isEmpty();
+    assertThat(countRowsByCourseId("course_node_mappings", courseId)).isZero();
+    assertThat(countRowsByCourseId("course_prerequisites", courseId)).isZero();
+    assertThat(countRowsByCourseId("course_job_relevance", courseId)).isZero();
+  }
+
+  @Test
+  @DisplayName("레슨 선행 조건을 저장하고 레슨 삭제 시 함께 정리한다")
+  void updateLessonPrerequisitesAndCleanupOnLessonDelete() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+    Long sectionId =
+        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+
+    Long lessonId1 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+    Long lessonId2 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+    Long lessonId3 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest3());
+
+    instructorCourseService.updateLessonPrerequisites(
+        instructorId, lessonId3, updateLessonPrerequisitesRequest(List.of(lessonId1, lessonId2)));
+    flushAndClear();
+
+    assertThat(
+            lessonPrerequisiteRepository.findAllByLessonLessonIdOrderByLessonPrerequisiteIdAsc(
+                lessonId3))
+        .extracting(link -> link.getPrerequisiteLesson().getLessonId())
+        .containsExactly(lessonId1, lessonId2);
+
+    instructorCourseService.deleteLesson(instructorId, lessonId1);
+    flushAndClear();
+
+    assertThat(
+            lessonPrerequisiteRepository.findAllByLessonLessonIdOrderByLessonPrerequisiteIdAsc(
+                lessonId3))
+        .extracting(link -> link.getPrerequisiteLesson().getLessonId())
+        .containsExactly(lessonId2);
+  }
+
+  @Test
+  @DisplayName("레슨 선행 조건은 자기 자신, 중복, 다른 강의 레슨을 허용하지 않는다")
+  void updateLessonPrerequisitesRejectsInvalidCases() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+    Long sectionId =
+        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+
+    Long lessonId1 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+    Long lessonId2 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+    Long lessonId3 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest3());
+
+    Long otherCourseId =
+        instructorCourseService.createCourse(instructorId, createSecondCourseRequest());
+    Long otherSectionId =
+        instructorCourseService.createSection(instructorId, otherCourseId, createSecondSectionRequest());
+    Long otherLessonId =
+        instructorCourseService.createLesson(
+            instructorId, otherSectionId, createOtherCourseLessonRequest());
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.updateLessonPrerequisites(
+                    instructorId,
+                    lessonId3,
+                    updateLessonPrerequisitesRequest(List.of(lessonId1, lessonId1))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.updateLessonPrerequisites(
+                    instructorId,
+                    lessonId3,
+                    updateLessonPrerequisitesRequest(List.of(lessonId3))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.updateLessonPrerequisites(
+                    instructorId,
+                    lessonId3,
+                    updateLessonPrerequisitesRequest(List.of(lessonId2, otherLessonId))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  @DisplayName("강의 공지를 생성 조회 수정 삭제한다")
+  void announcementCrudFlow() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+
+    Long announcementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, courseId, createEventAnnouncementRequest());
+    flushAndClear();
+
+    assertThat(courseAnnouncementRepository.findById(announcementId)).isPresent();
+
+    List<InstructorAnnouncementDto.AnnouncementSummaryResponse> announcements =
+        instructorAnnouncementQueryService.getAnnouncements(instructorId, courseId);
+
+    assertThat(announcements).hasSize(1);
+    assertThat(announcements.get(0).getAnnouncementId()).isEqualTo(announcementId);
+    assertThat(announcements.get(0).getType()).isEqualTo("EVENT");
+    assertThat(announcements.get(0).getEventBannerText()).isEqualTo("3월 한정 오프라인 특강 모집");
+    assertThat(announcements.get(0).getEventLink())
+        .isEqualTo("https://devpath.com/events/security-special");
+    assertThat(announcements.get(0).getTitle()).isEqualTo("Spring Security 강의 업데이트 안내");
+
+    InstructorAnnouncementDto.AnnouncementDetailResponse detail =
+        instructorAnnouncementQueryService.getAnnouncementDetail(instructorId, announcementId);
+
+    assertThat(detail.getAnnouncementId()).isEqualTo(announcementId);
+    assertThat(detail.getCourseId()).isEqualTo(courseId);
+    assertThat(detail.getType()).isEqualTo("EVENT");
+    assertThat(detail.getContent()).isEqualTo("3강과 4강 자료가 추가되었습니다.");
+    assertThat(detail.getPinned()).isTrue();
+    assertThat(detail.getEventBannerText()).isEqualTo("3월 한정 오프라인 특강 모집");
+    assertThat(detail.getEventLink()).isEqualTo("https://devpath.com/events/security-special");
+
+    instructorAnnouncementService.updateAnnouncement(
+        instructorId, announcementId, updateNormalAnnouncementRequest());
+    flushAndClear();
+
+    InstructorAnnouncementDto.AnnouncementDetailResponse updatedDetail =
+        instructorAnnouncementQueryService.getAnnouncementDetail(instructorId, announcementId);
+
+    assertThat(updatedDetail.getType()).isEqualTo("NORMAL");
+    assertThat(updatedDetail.getTitle()).isEqualTo("Spring Security 강의 소식");
+    assertThat(updatedDetail.getContent()).isEqualTo("실습 예제가 최신 버전 기준으로 수정되었습니다.");
+    assertThat(updatedDetail.getPinned()).isTrue();
+    assertThat(updatedDetail.getDisplayOrder()).isEqualTo(1);
+    assertThat(updatedDetail.getEventBannerText()).isNull();
+    assertThat(updatedDetail.getEventLink()).isNull();
+
+    instructorAnnouncementService.deleteAnnouncement(instructorId, announcementId);
+    flushAndClear();
+
+    assertThat(courseAnnouncementRepository.findById(announcementId)).isEmpty();
+  }
+
+  @Test
+  @DisplayName("이벤트 공지 validation을 위반하면 저장하지 않는다")
+  void announcementValidationRejectsInvalidCases() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.createAnnouncement(
+                    instructorId, courseId, createInvalidEventRequestWithoutBanner()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.createAnnouncement(
+                    instructorId, courseId, createInvalidEventRequestWithoutLink()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.createAnnouncement(
+                    instructorId, courseId, createInvalidEventRequestWithoutExposure()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.createAnnouncement(
+                    instructorId, courseId, createInvalidEventRequestWithUnsupportedUrl()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.createAnnouncement(
+                    instructorId, courseId, createInvalidNormalRequestWithEventFields()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.createAnnouncement(
+                    instructorId, courseId, createInvalidRequestWithReversedExposurePeriod()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  @DisplayName("강의 공지 고정 여부와 노출 순서를 변경한다")
+  void announcementPinAndOrderFlow() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+
+    Long firstAnnouncementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, courseId, createEventAnnouncementRequest());
+    Long secondAnnouncementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, courseId, createNormalAnnouncementRequest());
+    flushAndClear();
+
+    instructorAnnouncementService.updateAnnouncementPin(
+        instructorId, courseId, secondAnnouncementId, updateAnnouncementPinRequest(true));
+    instructorAnnouncementService.updateAnnouncementDisplayOrder(
+        instructorId,
+        courseId,
+        updateAnnouncementOrderRequest(
+            List.of(
+                announcementOrderItem(firstAnnouncementId, 2),
+                announcementOrderItem(secondAnnouncementId, 1))));
+    flushAndClear();
+
+    List<InstructorAnnouncementDto.AnnouncementSummaryResponse> announcements =
+        instructorAnnouncementQueryService.getAnnouncements(instructorId, courseId);
+
+    assertThat(announcements).hasSize(2);
+    assertThat(announcements.get(0).getAnnouncementId()).isEqualTo(secondAnnouncementId);
+    assertThat(announcements.get(0).getPinned()).isTrue();
+    assertThat(announcements.get(0).getDisplayOrder()).isEqualTo(1);
+    assertThat(announcements.get(1).getAnnouncementId()).isEqualTo(firstAnnouncementId);
+    assertThat(announcements.get(1).getPinned()).isTrue();
+    assertThat(announcements.get(1).getDisplayOrder()).isEqualTo(2);
+  }
+
+  @Test
+  @DisplayName("강의 공지 순서 변경 요청이 현재 공지 목록과 다르면 실패한다")
+  void announcementOrderRejectsInvalidCases() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+    Long otherCourseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+
+    Long firstAnnouncementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, courseId, createEventAnnouncementRequest());
+    Long secondAnnouncementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, courseId, createNormalAnnouncementRequest());
+    Long foreignAnnouncementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, otherCourseId, createNormalAnnouncementRequest());
+    flushAndClear();
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncementDisplayOrder(
+                    instructorId,
+                    courseId,
+                    updateAnnouncementOrderRequest(
+                        List.of(
+                            announcementOrderItem(firstAnnouncementId, 0),
+                            announcementOrderItem(foreignAnnouncementId, 1)))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncementDisplayOrder(
+                    instructorId,
+                    courseId,
+                    updateAnnouncementOrderRequest(
+                        List.of(
+                            announcementOrderItem(firstAnnouncementId, 0),
+                            announcementOrderItem(firstAnnouncementId, 1)))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncementDisplayOrder(
+                    instructorId,
+                    courseId,
+                    updateAnnouncementOrderRequest(
+                        List.of(
+                            announcementOrderItem(firstAnnouncementId, 1),
+                            announcementOrderItem(secondAnnouncementId, 1)))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.INVALID_INPUT);
+  }
+
+  @Test
+  @DisplayName("강의 태그가 노드 필수 태그를 모두 포함하면 자동 분류 preview를 반환한다")
+  void getAutoClassificationsReturnsFullyMatchedNodesOnly() {
+    Long courseId =
+        instructorCourseService.createCourse(instructorId, createNodeClassificationCourseRequest());
+
+    User instructor = userRepository.findById(instructorId).orElseThrow();
+
+    Roadmap publicRoadmap =
+        Roadmap.builder()
+            .title("백엔드 Spring 로드맵")
+            .description("태그 기반 자동 분류 테스트용")
+            .creator(instructor)
+            .isOfficial(true)
+            .isPublic(true)
+            .isDeleted(false)
+            .build();
+    entityManager.persist(publicRoadmap);
+
+    Roadmap privateRoadmap =
+        Roadmap.builder()
+            .title("비공개 로드맵")
+            .description("조회 제외 테스트용")
+            .creator(instructor)
+            .isOfficial(true)
+            .isPublic(false)
+            .isDeleted(false)
+            .build();
+    entityManager.persist(privateRoadmap);
+
+    RoadmapNode matchedConceptNode =
+        RoadmapNode.builder()
+            .roadmap(publicRoadmap)
+            .title("Spring Security")
+            .content("매칭되어야 하는 노드")
+            .nodeType("CONCEPT")
+            .sortOrder(4)
+            .build();
+    entityManager.persist(matchedConceptNode);
+
+    RoadmapNode matchedPracticeNode =
+        RoadmapNode.builder()
+            .roadmap(publicRoadmap)
+            .title("JWT 인증")
+            .content("매칭되어야 하는 실습 노드")
+            .nodeType("PRACTICE")
+            .sortOrder(5)
+            .build();
+    entityManager.persist(matchedPracticeNode);
+
+    RoadmapNode missingTagNode =
+        RoadmapNode.builder()
+            .roadmap(publicRoadmap)
+            .title("고급 Java 보안")
+            .content("Java 태그가 없어 제외되어야 하는 노드")
+            .nodeType("CONCEPT")
+            .sortOrder(6)
+            .build();
+    entityManager.persist(missingTagNode);
+
+    RoadmapNode noRequiredTagNode =
+        RoadmapNode.builder()
+            .roadmap(publicRoadmap)
+            .title("필수 태그 없는 노드")
+            .content("필수 태그가 없어 제외되어야 하는 노드")
+            .nodeType("CONCEPT")
+            .sortOrder(7)
+            .build();
+    entityManager.persist(noRequiredTagNode);
+
+    RoadmapNode privateRoadmapNode =
+        RoadmapNode.builder()
+            .roadmap(privateRoadmap)
+            .title("비공개 로드맵 노드")
+            .content("로드맵 공개 조건으로 제외되어야 하는 노드")
+            .nodeType("CONCEPT")
+            .sortOrder(1)
+            .build();
+    entityManager.persist(privateRoadmapNode);
+
+    Tag springBootTag = tagRepository.findById(springBootTagId).orElseThrow();
+    Tag springSecurityTag = tagRepository.findById(springSecurityTagId).orElseThrow();
+    Tag jwtTag = tagRepository.findById(jwtTagId).orElseThrow();
+    Tag javaTag = tagRepository.findById(javaTagId).orElseThrow();
+
+    entityManager.persist(NodeRequiredTag.builder().node(matchedConceptNode).tag(springBootTag).build());
+    entityManager.persist(
+        NodeRequiredTag.builder().node(matchedConceptNode).tag(springSecurityTag).build());
+    entityManager.persist(NodeRequiredTag.builder().node(matchedConceptNode).tag(jwtTag).build());
+
+    entityManager.persist(NodeRequiredTag.builder().node(matchedPracticeNode).tag(jwtTag).build());
+    entityManager.persist(
+        NodeRequiredTag.builder().node(matchedPracticeNode).tag(springSecurityTag).build());
+
+    entityManager.persist(NodeRequiredTag.builder().node(missingTagNode).tag(javaTag).build());
+    entityManager.persist(NodeRequiredTag.builder().node(missingTagNode).tag(jwtTag).build());
+
+    entityManager.persist(NodeRequiredTag.builder().node(privateRoadmapNode).tag(jwtTag).build());
+    entityManager.persist(
+        NodeRequiredTag.builder().node(privateRoadmapNode).tag(springSecurityTag).build());
+
+    flushAndClear();
+
+    InstructorNodeClassificationDto.AutoClassificationResponse response =
+        instructorNodeClassificationQueryService.getAutoClassifications(instructorId, courseId);
+
+    assertThat(response.getCourseId()).isEqualTo(courseId);
+    assertThat(response.getCourseTitle()).isEqualTo("Spring Security 완전 정복");
+    assertThat(response.getCourseTags())
+        .containsExactly("JWT", "Spring Boot", "Spring Security");
+    assertThat(response.getTotalMatchedNodes()).isEqualTo(2);
+    assertThat(response.getMatchedNodes()).hasSize(2);
+    assertThat(response.getMatchedNodes())
+        .extracting(InstructorNodeClassificationDto.MatchedNodeItem::getNodeTitle)
+        .containsExactly("Spring Security", "JWT 인증");
+    assertThat(response.getMatchedNodes().get(0).getRequiredTags())
+        .containsExactly("Spring Boot", "Spring Security", "JWT");
+    assertThat(response.getMatchedNodes().get(1).getRequiredTags())
+        .containsExactly("JWT", "Spring Security");
+  }
+
+  @Test
+  @DisplayName("강의 노드 태그 커버리지는 후보 노드 전체를 비교용으로 반환한다")
+  void getNodeCoveragesReturnsCoverageForAllCandidateNodes() {
+    Long courseId =
+        instructorCourseService.createCourse(instructorId, createNodeClassificationCourseRequest());
+
+    User instructor = userRepository.findById(instructorId).orElseThrow();
+
+    Roadmap publicRoadmap =
+        Roadmap.builder()
+            .title("Backend Spring Roadmap")
+            .description("Coverage test roadmap")
+            .creator(instructor)
+            .isOfficial(true)
+            .isPublic(true)
+            .isDeleted(false)
+            .build();
+    entityManager.persist(publicRoadmap);
+
+    Roadmap privateRoadmap =
+        Roadmap.builder()
+            .title("Private Roadmap")
+            .description("Should not be included")
+            .creator(instructor)
+            .isOfficial(true)
+            .isPublic(false)
+            .isDeleted(false)
+            .build();
+    entityManager.persist(privateRoadmap);
+
+    RoadmapNode fullMatchNode =
+        RoadmapNode.builder()
+            .roadmap(publicRoadmap)
+            .title("Spring Security")
+            .content("Fully matched node")
+            .nodeType("CONCEPT")
+            .sortOrder(4)
+            .build();
+    entityManager.persist(fullMatchNode);
+
+    RoadmapNode partialMatchNode =
+        RoadmapNode.builder()
+            .roadmap(publicRoadmap)
+            .title("JPA Practice")
+            .content("Partially matched node")
+            .nodeType("PRACTICE")
+            .sortOrder(5)
+            .build();
+    entityManager.persist(partialMatchNode);
+
+    RoadmapNode noMatchNode =
+        RoadmapNode.builder()
+            .roadmap(publicRoadmap)
+            .title("Java Advanced")
+            .content("No matched tags")
+            .nodeType("CONCEPT")
+            .sortOrder(6)
+            .build();
+    entityManager.persist(noMatchNode);
+
+    RoadmapNode noRequiredTagNode =
+        RoadmapNode.builder()
+            .roadmap(publicRoadmap)
+            .title("No Required Tags")
+            .content("Should be excluded")
+            .nodeType("CONCEPT")
+            .sortOrder(7)
+            .build();
+    entityManager.persist(noRequiredTagNode);
+
+    RoadmapNode privateRoadmapNode =
+        RoadmapNode.builder()
+            .roadmap(privateRoadmap)
+            .title("Private Node")
+            .content("Should be excluded")
+            .nodeType("CONCEPT")
+            .sortOrder(1)
+            .build();
+    entityManager.persist(privateRoadmapNode);
+
+    Tag springBootTag = tagRepository.findById(springBootTagId).orElseThrow();
+    Tag springSecurityTag = tagRepository.findById(springSecurityTagId).orElseThrow();
+    Tag jwtTag = tagRepository.findById(jwtTagId).orElseThrow();
+    Tag javaTag = tagRepository.findById(javaTagId).orElseThrow();
+    Tag jpaTag = tagRepository.findById(jpaTagId).orElseThrow();
+
+    entityManager.persist(NodeRequiredTag.builder().node(fullMatchNode).tag(springBootTag).build());
+    entityManager.persist(
+        NodeRequiredTag.builder().node(fullMatchNode).tag(springSecurityTag).build());
+    entityManager.persist(NodeRequiredTag.builder().node(fullMatchNode).tag(jwtTag).build());
+
+    entityManager.persist(
+        NodeRequiredTag.builder().node(partialMatchNode).tag(springSecurityTag).build());
+    entityManager.persist(NodeRequiredTag.builder().node(partialMatchNode).tag(jpaTag).build());
+
+    entityManager.persist(NodeRequiredTag.builder().node(noMatchNode).tag(javaTag).build());
+    entityManager.persist(NodeRequiredTag.builder().node(noMatchNode).tag(jpaTag).build());
+
+    entityManager.persist(NodeRequiredTag.builder().node(privateRoadmapNode).tag(jwtTag).build());
+    entityManager.persist(
+        NodeRequiredTag.builder().node(privateRoadmapNode).tag(springSecurityTag).build());
+
+    flushAndClear();
+
+    InstructorNodeCoverageDto.NodeCoverageResponse response =
+        instructorNodeCoverageQueryService.getNodeCoverages(instructorId, courseId);
+
+    assertThat(response.getCourseId()).isEqualTo(courseId);
+    assertThat(response.getCourseTags())
+        .containsExactly("JWT", "Spring Boot", "Spring Security");
+    assertThat(response.getTotalNodes()).isEqualTo(3);
+    assertThat(response.getNodeCoverages()).hasSize(3);
+    assertThat(response.getNodeCoverages())
+        .extracting(InstructorNodeCoverageDto.NodeCoverageItem::getNodeTitle)
+        .containsExactly("Spring Security", "JPA Practice", "Java Advanced");
+
+    assertThat(response.getNodeCoverages().get(0).getCoveragePercent())
+        .isEqualByComparingTo("100.0");
+    assertThat(response.getNodeCoverages().get(0).getMatchedTags())
+        .containsExactly("Spring Boot", "Spring Security", "JWT");
+    assertThat(response.getNodeCoverages().get(0).getMissingTags()).isEmpty();
+
+    assertThat(response.getNodeCoverages().get(1).getCoveragePercent())
+        .isEqualByComparingTo("50.0");
+    assertThat(response.getNodeCoverages().get(1).getMatchedTags())
+        .containsExactly("Spring Security");
+    assertThat(response.getNodeCoverages().get(1).getMissingTags()).containsExactly("JPA");
+
+    assertThat(response.getNodeCoverages().get(2).getCoveragePercent())
+        .isEqualByComparingTo("0.0");
+    assertThat(response.getNodeCoverages().get(2).getMatchedTags()).isEmpty();
+    assertThat(response.getNodeCoverages().get(2).getMissingTags())
+        .containsExactly("Java", "JPA");
+  }
+
+  @Test
+  @DisplayName("다른 강사는 강의 하위 리소스와 공지 및 노드 조회 API에 접근할 수 없다")
+  void ownershipValidationRejectsDifferentInstructor() {
+    User otherInstructor =
+        userRepository.save(
+            User.builder()
+                .email("other-instructor@devpath.com")
+                .password("encoded-password")
+                .name("Other Instructor")
+                .role(UserRole.ROLE_INSTRUCTOR)
+                .build());
+    Long otherInstructorId = otherInstructor.getId();
+
+    Long courseId =
+        instructorCourseService.createCourse(instructorId, createNodeClassificationCourseRequest());
+    Long sectionId =
+        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+    Long lessonId =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+    Long announcementId =
+        instructorAnnouncementService.createAnnouncement(
+            instructorId, courseId, createNormalAnnouncementRequest());
+    flushAndClear();
+
+    assertThatThrownBy(
+            () -> instructorCourseQueryService.getCourseDetail(otherInstructorId, courseId))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.createSection(
+                    otherInstructorId, courseId, createSectionRequest()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.createLesson(
+                    otherInstructorId, sectionId, createLessonRequest2()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorCourseService.updateLessonPrerequisites(
+                    otherInstructorId, lessonId, updateLessonPrerequisitesRequest(List.of())))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncement(
+                    otherInstructorId, announcementId, updateNormalAnnouncementRequest()))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncementPin(
+                    otherInstructorId,
+                    courseId,
+                    announcementId,
+                    updateAnnouncementPinRequest(true)))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorAnnouncementService.updateAnnouncementDisplayOrder(
+                    otherInstructorId,
+                    courseId,
+                    updateAnnouncementOrderRequest(List.of(announcementOrderItem(announcementId, 0)))))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () ->
+                instructorNodeClassificationQueryService.getAutoClassifications(
+                    otherInstructorId, courseId))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
+
+    assertThatThrownBy(
+            () -> instructorNodeCoverageQueryService.getNodeCoverages(otherInstructorId, courseId))
+        .isInstanceOf(CustomException.class)
+        .extracting("errorCode")
+        .isEqualTo(ErrorCode.FORBIDDEN);
   }
 
   private InstructorCourseDto.CreateCourseRequest createCourseRequest() {
@@ -255,6 +967,22 @@ class InstructorCourseServiceIntegrationTest {
     ReflectionTestUtils.setField(request, "language", "ko");
     ReflectionTestUtils.setField(request, "hasCertificate", true);
     ReflectionTestUtils.setField(request, "tagIds", List.of(javaTagId, springBootTagId));
+    return request;
+  }
+
+  private InstructorCourseDto.CreateCourseRequest createNodeClassificationCourseRequest() {
+    InstructorCourseDto.CreateCourseRequest request = new InstructorCourseDto.CreateCourseRequest();
+    ReflectionTestUtils.setField(request, "title", "Spring Security 완전 정복");
+    ReflectionTestUtils.setField(request, "subtitle", "JWT, Spring Boot, Security 집중 과정");
+    ReflectionTestUtils.setField(request, "description", "자동 노드 분류 preview 테스트용 강의");
+    ReflectionTestUtils.setField(request, "price", new BigDecimal("99000"));
+    ReflectionTestUtils.setField(request, "originalPrice", new BigDecimal("129000"));
+    ReflectionTestUtils.setField(request, "currency", "KRW");
+    ReflectionTestUtils.setField(request, "difficultyLevel", "intermediate");
+    ReflectionTestUtils.setField(request, "language", "ko");
+    ReflectionTestUtils.setField(request, "hasCertificate", true);
+    ReflectionTestUtils.setField(
+        request, "tagIds", List.of(jwtTagId, springBootTagId, springSecurityTagId));
     return request;
   }
 
@@ -318,6 +1046,211 @@ class InstructorCourseServiceIntegrationTest {
     ReflectionTestUtils.setField(request, "orderIndex", 2);
     ReflectionTestUtils.setField(request, "isPreview", true);
     ReflectionTestUtils.setField(request, "isPublished", true);
+    return request;
+  }
+
+  private InstructorLessonDto.CreateLessonRequest createLessonRequest3() {
+    InstructorLessonDto.CreateLessonRequest request = new InstructorLessonDto.CreateLessonRequest();
+    ReflectionTestUtils.setField(request, "title", "Lesson prerequisite setup");
+    ReflectionTestUtils.setField(
+        request,
+        "description",
+        "Creates a third lesson that receives prerequisite links during the test.");
+    ReflectionTestUtils.setField(request, "lessonType", "video");
+    ReflectionTestUtils.setField(request, "videoId", "video-asset-003");
+    ReflectionTestUtils.setField(request, "videoUrl", "https://cdn.devpath.com/lessons/video-3.mp4");
+    ReflectionTestUtils.setField(request, "videoProvider", "r2");
+    ReflectionTestUtils.setField(
+        request, "thumbnailUrl", "https://cdn.devpath.com/lessons/thumbnails/video-3.png");
+    ReflectionTestUtils.setField(request, "durationSeconds", 600);
+    ReflectionTestUtils.setField(request, "orderIndex", 3);
+    ReflectionTestUtils.setField(request, "isPreview", false);
+    ReflectionTestUtils.setField(request, "isPublished", true);
+    return request;
+  }
+
+  private InstructorCourseDto.CreateCourseRequest createSecondCourseRequest() {
+    InstructorCourseDto.CreateCourseRequest request = new InstructorCourseDto.CreateCourseRequest();
+    ReflectionTestUtils.setField(request, "title", "Second backend course");
+    ReflectionTestUtils.setField(request, "subtitle", "Used to validate cross-course prerequisites");
+    ReflectionTestUtils.setField(
+        request,
+        "description",
+        "Creates a different course so prerequisite validation can reject foreign lessons.");
+    ReflectionTestUtils.setField(request, "price", new BigDecimal("49000"));
+    ReflectionTestUtils.setField(request, "originalPrice", new BigDecimal("59000"));
+    ReflectionTestUtils.setField(request, "currency", "KRW");
+    ReflectionTestUtils.setField(request, "difficultyLevel", "beginner");
+    ReflectionTestUtils.setField(request, "language", "ko");
+    ReflectionTestUtils.setField(request, "hasCertificate", false);
+    ReflectionTestUtils.setField(request, "tagIds", List.of(javaTagId, jpaTagId));
+    return request;
+  }
+
+  private InstructorAnnouncementDto.CreateAnnouncementRequest createEventAnnouncementRequest() {
+    InstructorAnnouncementDto.CreateAnnouncementRequest request =
+        new InstructorAnnouncementDto.CreateAnnouncementRequest();
+    ReflectionTestUtils.setField(request, "type", "event");
+    ReflectionTestUtils.setField(request, "title", "Spring Security 강의 업데이트 안내");
+    ReflectionTestUtils.setField(request, "content", "3강과 4강 자료가 추가되었습니다.");
+    ReflectionTestUtils.setField(request, "pinned", true);
+    ReflectionTestUtils.setField(request, "displayOrder", 0);
+    ReflectionTestUtils.setField(
+        request, "publishedAt", java.time.LocalDateTime.of(2026, 3, 16, 10, 0, 0));
+    ReflectionTestUtils.setField(
+        request, "exposureStartAt", java.time.LocalDateTime.of(2026, 3, 16, 10, 0, 0));
+    ReflectionTestUtils.setField(
+        request, "exposureEndAt", java.time.LocalDateTime.of(2026, 3, 30, 23, 59, 59));
+    ReflectionTestUtils.setField(request, "eventBannerText", "3월 한정 오프라인 특강 모집");
+    ReflectionTestUtils.setField(
+        request, "eventLink", "https://devpath.com/events/security-special");
+    return request;
+  }
+
+  private InstructorAnnouncementDto.CreateAnnouncementRequest createNormalAnnouncementRequest() {
+    InstructorAnnouncementDto.CreateAnnouncementRequest request =
+        new InstructorAnnouncementDto.CreateAnnouncementRequest();
+    ReflectionTestUtils.setField(request, "type", "normal");
+    ReflectionTestUtils.setField(request, "title", "Spring Security 강의 소식");
+    ReflectionTestUtils.setField(request, "content", "실습 예제가 최신 버전 기준으로 수정되었습니다.");
+    ReflectionTestUtils.setField(request, "pinned", false);
+    ReflectionTestUtils.setField(request, "displayOrder", 1);
+    ReflectionTestUtils.setField(
+        request, "publishedAt", java.time.LocalDateTime.of(2026, 3, 16, 11, 0, 0));
+    ReflectionTestUtils.setField(request, "exposureStartAt", null);
+    ReflectionTestUtils.setField(request, "exposureEndAt", null);
+    ReflectionTestUtils.setField(request, "eventBannerText", null);
+    ReflectionTestUtils.setField(request, "eventLink", null);
+    return request;
+  }
+
+  private InstructorAnnouncementDto.UpdateAnnouncementPinRequest updateAnnouncementPinRequest(
+      boolean pinned) {
+    InstructorAnnouncementDto.UpdateAnnouncementPinRequest request =
+        new InstructorAnnouncementDto.UpdateAnnouncementPinRequest();
+    ReflectionTestUtils.setField(request, "pinned", pinned);
+    return request;
+  }
+
+  private InstructorAnnouncementDto.UpdateAnnouncementOrderRequest updateAnnouncementOrderRequest(
+      List<InstructorAnnouncementDto.AnnouncementOrderItem> announcementOrders) {
+    InstructorAnnouncementDto.UpdateAnnouncementOrderRequest request =
+        new InstructorAnnouncementDto.UpdateAnnouncementOrderRequest();
+    ReflectionTestUtils.setField(request, "announcementOrders", announcementOrders);
+    return request;
+  }
+
+  private InstructorAnnouncementDto.AnnouncementOrderItem announcementOrderItem(
+      Long announcementId, int displayOrder) {
+    InstructorAnnouncementDto.AnnouncementOrderItem item =
+        new InstructorAnnouncementDto.AnnouncementOrderItem();
+    ReflectionTestUtils.setField(item, "announcementId", announcementId);
+    ReflectionTestUtils.setField(item, "displayOrder", displayOrder);
+    return item;
+  }
+
+  private InstructorAnnouncementDto.UpdateAnnouncementRequest updateNormalAnnouncementRequest() {
+    InstructorAnnouncementDto.UpdateAnnouncementRequest request =
+        new InstructorAnnouncementDto.UpdateAnnouncementRequest();
+    ReflectionTestUtils.setField(request, "type", "normal");
+    ReflectionTestUtils.setField(request, "title", "Spring Security 강의 소식");
+    ReflectionTestUtils.setField(request, "content", "실습 예제가 최신 버전 기준으로 수정되었습니다.");
+    ReflectionTestUtils.setField(request, "pinned", true);
+    ReflectionTestUtils.setField(request, "displayOrder", 1);
+    ReflectionTestUtils.setField(
+        request, "publishedAt", java.time.LocalDateTime.of(2026, 3, 16, 11, 0, 0));
+    ReflectionTestUtils.setField(
+        request, "exposureStartAt", java.time.LocalDateTime.of(2026, 3, 16, 11, 0, 0));
+    ReflectionTestUtils.setField(
+        request, "exposureEndAt", java.time.LocalDateTime.of(2026, 3, 31, 23, 59, 59));
+    ReflectionTestUtils.setField(request, "eventBannerText", null);
+    ReflectionTestUtils.setField(request, "eventLink", null);
+    return request;
+  }
+
+  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidEventRequestWithoutBanner() {
+    InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
+    ReflectionTestUtils.setField(request, "eventBannerText", null);
+    return request;
+  }
+
+  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidEventRequestWithoutLink() {
+    InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
+    ReflectionTestUtils.setField(request, "eventLink", null);
+    return request;
+  }
+
+  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidEventRequestWithoutExposure() {
+    InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
+    ReflectionTestUtils.setField(request, "exposureStartAt", null);
+    ReflectionTestUtils.setField(request, "exposureEndAt", null);
+    return request;
+  }
+
+  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidEventRequestWithUnsupportedUrl() {
+    InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
+    ReflectionTestUtils.setField(request, "eventLink", "ftp://devpath.com/events/security-special");
+    return request;
+  }
+
+  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidNormalRequestWithEventFields() {
+    InstructorAnnouncementDto.CreateAnnouncementRequest request =
+        new InstructorAnnouncementDto.CreateAnnouncementRequest();
+    ReflectionTestUtils.setField(request, "type", "normal");
+    ReflectionTestUtils.setField(request, "title", "Spring Security 媛뺤쓽 ?뚯떇");
+    ReflectionTestUtils.setField(request, "content", "?ㅼ뒿 ?덉젣媛 理쒖떊 踰꾩쟾 湲곗??쇰줈 ?섏젙?섏뿀?듬땲??");
+    ReflectionTestUtils.setField(request, "pinned", true);
+    ReflectionTestUtils.setField(request, "displayOrder", 1);
+    ReflectionTestUtils.setField(
+        request, "publishedAt", java.time.LocalDateTime.of(2026, 3, 16, 10, 0, 0));
+    ReflectionTestUtils.setField(request, "exposureStartAt", null);
+    ReflectionTestUtils.setField(request, "exposureEndAt", null);
+    ReflectionTestUtils.setField(request, "eventBannerText", "허용되지 않는 배너");
+    ReflectionTestUtils.setField(
+        request, "eventLink", "https://devpath.com/events/security-special");
+    return request;
+  }
+
+  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidRequestWithReversedExposurePeriod() {
+    InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
+    ReflectionTestUtils.setField(
+        request, "exposureStartAt", java.time.LocalDateTime.of(2026, 3, 31, 23, 59, 59));
+    ReflectionTestUtils.setField(
+        request, "exposureEndAt", java.time.LocalDateTime.of(2026, 3, 16, 10, 0, 0));
+    return request;
+  }
+
+  private InstructorSectionDto.CreateSectionRequest createSecondSectionRequest() {
+    InstructorSectionDto.CreateSectionRequest request = new InstructorSectionDto.CreateSectionRequest();
+    ReflectionTestUtils.setField(request, "title", "Section 1. Other course");
+    ReflectionTestUtils.setField(request, "description", "Section used for foreign lesson validation.");
+    ReflectionTestUtils.setField(request, "orderIndex", 1);
+    ReflectionTestUtils.setField(request, "isPublished", true);
+    return request;
+  }
+
+  private InstructorLessonDto.CreateLessonRequest createOtherCourseLessonRequest() {
+    InstructorLessonDto.CreateLessonRequest request = new InstructorLessonDto.CreateLessonRequest();
+    ReflectionTestUtils.setField(request, "title", "Other course lesson");
+    ReflectionTestUtils.setField(request, "description", "Lesson that belongs to a different course.");
+    ReflectionTestUtils.setField(request, "lessonType", "video");
+    ReflectionTestUtils.setField(request, "videoId", "video-asset-004");
+    ReflectionTestUtils.setField(request, "videoUrl", "https://cdn.devpath.com/lessons/video-4.mp4");
+    ReflectionTestUtils.setField(request, "videoProvider", "r2");
+    ReflectionTestUtils.setField(
+        request, "thumbnailUrl", "https://cdn.devpath.com/lessons/thumbnails/video-4.png");
+    ReflectionTestUtils.setField(request, "durationSeconds", 420);
+    ReflectionTestUtils.setField(request, "orderIndex", 1);
+    ReflectionTestUtils.setField(request, "isPreview", false);
+    ReflectionTestUtils.setField(request, "isPublished", true);
+    return request;
+  }
+
+  private InstructorLessonDto.UpdateLessonPrerequisitesRequest updateLessonPrerequisitesRequest(
+      List<Long> prerequisiteLessonIds) {
+    InstructorLessonDto.UpdateLessonPrerequisitesRequest request =
+        new InstructorLessonDto.UpdateLessonPrerequisitesRequest();
+    ReflectionTestUtils.setField(request, "prerequisiteLessonIds", prerequisiteLessonIds);
     return request;
   }
 
@@ -390,6 +1323,16 @@ class InstructorCourseServiceIntegrationTest {
     ReflectionTestUtils.setField(request, "fileSize", 1048576);
     ReflectionTestUtils.setField(request, "displayOrder", 0);
     return request;
+  }
+
+  private int countRowsByCourseId(String tableName, Long courseId) {
+    Number count =
+        (Number)
+            entityManager
+                .createNativeQuery("select count(*) from " + tableName + " where course_id = :courseId")
+                .setParameter("courseId", courseId)
+                .getSingleResult();
+    return count.intValue();
   }
 
   private void flushAndClear() {

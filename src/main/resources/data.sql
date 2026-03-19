@@ -1,3 +1,6 @@
+ALTER TABLE user_profiles
+    ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT TRUE;
+
 INSERT INTO roles (role_name, description)
 SELECT 'ROLE_LEARNER', 'General learner'
 WHERE NOT EXISTS (
@@ -71,7 +74,18 @@ UPDATE users
 SET password = '$2a$10$RcdWJBwl.kuttYmqm/BN..6aZKeLNlq9DiNFHbZgZxfTzzNDD33o2'
 WHERE email IN ('learner@devpath.com', 'instructor@devpath.com', 'admin@devpath.com');
 
-INSERT INTO user_profiles (user_id, profile_image, channel_name, bio, phone, github_url, blog_url, created_at, updated_at)
+INSERT INTO user_profiles (
+    user_id,
+    profile_image,
+    channel_name,
+    bio,
+    phone,
+    github_url,
+    blog_url,
+    is_public,
+    created_at,
+    updated_at
+)
 SELECT
     u.user_id,
     '/images/profiles/instructor-hong.png',
@@ -80,6 +94,7 @@ SELECT
     '010-0000-0001',
     'https://github.com/instructor-hong',
     'https://blog.devpath.com/hong',
+    TRUE,
     NOW(),
     NOW()
 FROM users u
@@ -90,7 +105,18 @@ WHERE u.email = 'instructor@devpath.com'
       WHERE up.user_id = u.user_id
   );
 
-INSERT INTO user_profiles (user_id, profile_image, channel_name, bio, phone, github_url, blog_url, created_at, updated_at)
+INSERT INTO user_profiles (
+    user_id,
+    profile_image,
+    channel_name,
+    bio,
+    phone,
+    github_url,
+    blog_url,
+    is_public,
+    created_at,
+    updated_at
+)
 SELECT
     u.user_id,
     '/images/profiles/admin-park.png',
@@ -99,6 +125,7 @@ SELECT
     '010-0000-0002',
     'https://github.com/admin-park',
     'https://blog.devpath.com/admin',
+    TRUE,
     NOW(),
     NOW()
 FROM users u
@@ -854,4 +881,148 @@ WHERE c.title = 'JPA Practical Design'
       FROM course_tag_maps ctm
       WHERE ctm.course_id = c.course_id
         AND ctm.tag_id = t.tag_id
+  );
+
+INSERT INTO tags (name, category, is_official)
+SELECT 'JWT', 'Backend', TRUE
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM tags
+    WHERE name = 'JWT'
+);
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT n.node_id, t.tag_id
+FROM roadmap_nodes n, tags t
+WHERE n.title = 'Security and JWT'
+  AND t.name = 'Spring Security'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags req
+      WHERE req.node_id = n.node_id
+        AND req.tag_id = t.tag_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT n.node_id, t.tag_id
+FROM roadmap_nodes n, tags t
+WHERE n.title = 'Security and JWT'
+  AND t.name = 'JWT'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags req
+      WHERE req.node_id = n.node_id
+        AND req.tag_id = t.tag_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT n.node_id, t.tag_id
+FROM roadmap_nodes n, tags t
+WHERE n.title = 'Docker Deployment Basics'
+  AND t.name = 'Docker'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags req
+      WHERE req.node_id = n.node_id
+        AND req.tag_id = t.tag_id
+  );
+
+INSERT INTO course_tag_maps (course_id, tag_id, proficiency_level)
+SELECT c.course_id, t.tag_id, 3
+FROM courses c, tags t
+WHERE c.title = 'Spring Boot Intro'
+  AND t.name = 'Spring Security'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_tag_maps ctm
+      WHERE ctm.course_id = c.course_id
+        AND ctm.tag_id = t.tag_id
+  );
+
+INSERT INTO course_tag_maps (course_id, tag_id, proficiency_level)
+SELECT c.course_id, t.tag_id, 3
+FROM courses c, tags t
+WHERE c.title = 'Spring Boot Intro'
+  AND t.name = 'JWT'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_tag_maps ctm
+      WHERE ctm.course_id = c.course_id
+        AND ctm.tag_id = t.tag_id
+  );
+
+INSERT INTO course_announcements (
+    course_id,
+    announcement_type,
+    title,
+    content,
+    is_pinned,
+    display_order,
+    published_at,
+    exposure_start_at,
+    exposure_end_at,
+    event_banner_text,
+    event_link,
+    created_at,
+    updated_at
+)
+SELECT
+    c.course_id,
+    'EVENT',
+    'Offline security special event',
+    'Join the offline Spring Security special lecture and Q&A session.',
+    TRUE,
+    0,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    TIMESTAMP '2099-12-31 23:59:59',
+    'March offline special lecture',
+    'https://devpath.com/events/security-special',
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+FROM courses c
+WHERE c.title = 'Spring Boot Intro'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_announcements ca
+      WHERE ca.course_id = c.course_id
+        AND ca.title = 'Offline security special event'
+  );
+
+INSERT INTO course_announcements (
+    course_id,
+    announcement_type,
+    title,
+    content,
+    is_pinned,
+    display_order,
+    published_at,
+    exposure_start_at,
+    exposure_end_at,
+    event_banner_text,
+    event_link,
+    created_at,
+    updated_at
+)
+SELECT
+    c.course_id,
+    'NORMAL',
+    'Course material update',
+    'The latest Spring Boot Intro materials and examples have been updated.',
+    FALSE,
+    1,
+    CURRENT_TIMESTAMP,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+FROM courses c
+WHERE c.title = 'Spring Boot Intro'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_announcements ca
+      WHERE ca.course_id = c.course_id
+        AND ca.title = 'Course material update'
   );

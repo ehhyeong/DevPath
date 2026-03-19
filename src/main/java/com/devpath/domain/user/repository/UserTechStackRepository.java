@@ -17,4 +17,8 @@ public interface UserTechStackRepository extends JpaRepository<UserTechStack, Lo
   @Modifying
   @Query("DELETE FROM UserTechStack uts WHERE uts.tag.tagId = :tagId")
   void deleteAllByTagId(@Param("tagId") Long tagId);
+
+  List<UserTechStack> findAllByTagTagId(Long tagId);
+
+  boolean existsByUser_IdAndTag_TagId(Long userId, Long tagId);
 }

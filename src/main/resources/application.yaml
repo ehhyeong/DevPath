@@ -67,6 +67,11 @@ logging:
   level:
     org.hibernate.SQL: debug
 
+springdoc:
+  swagger-ui:
+    disable-swagger-default-url: true
+    urls-primary-name: 학습자
+
 app:
   oauth2:
     # 로그인 후 리다이렉트 URL

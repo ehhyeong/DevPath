@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Custom Roadmap", description = "학습자 커스텀 로드맵 API")
+@Tag(name = "커스텀 로드맵", description = "학습자 커스텀 로드맵 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/my-roadmaps")

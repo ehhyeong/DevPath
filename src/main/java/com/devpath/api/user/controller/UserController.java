@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "User API", description = "유저 프로필 및 온보딩 관련 API")
+@Tag(name = "유저 API", description = "유저 프로필 및 온보딩 관련 API")
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor

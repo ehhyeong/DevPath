@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+// Stores public-facing profile details for a user account.
 @Entity
 @Table(name = "user_profiles")
 @Getter
@@ -54,6 +55,10 @@ public class UserProfile {
   @Column(name = "blog_url", length = 500)
   private String blogUrl;
 
+  // Public instructor lookups only expose profiles that opt in to visibility.
+  @Column(name = "is_public", nullable = false, columnDefinition = "boolean default true")
+  private Boolean isPublic;
+
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
@@ -71,7 +76,8 @@ public class UserProfile {
       String phone,
       LocalDate dateOfBirth,
       String githubUrl,
-      String blogUrl) {
+      String blogUrl,
+      Boolean isPublic) {
     this.user = user;
     this.profileImage = profileImage;
     this.channelName = channelName;
@@ -80,6 +86,7 @@ public class UserProfile {
     this.dateOfBirth = dateOfBirth;
     this.githubUrl = githubUrl;
     this.blogUrl = blogUrl;
+    this.isPublic = isPublic == null ? Boolean.TRUE : isPublic;
   }
 
   public void updateProfile(
@@ -94,5 +101,9 @@ public class UserProfile {
   public void updateOnboardingProfile(String bio, String phone) {
     this.bio = bio;
     this.phone = phone;
+  }
+
+  public void changePublicVisibility(Boolean isPublic) {
+    this.isPublic = Boolean.TRUE.equals(isPublic);
   }
 }

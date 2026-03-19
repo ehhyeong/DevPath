@@ -26,6 +26,9 @@ class BaselineSeedDataIntegrationTest {
     assertThat(count("roadmaps")).isGreaterThanOrEqualTo(2);
     assertThat(count("roadmap_nodes")).isGreaterThanOrEqualTo(6);
     assertThat(count("tags")).isGreaterThanOrEqualTo(10);
+    assertThat(count("node_required_tags")).isGreaterThanOrEqualTo(6);
+    assertThat(count("course_tag_maps")).isGreaterThanOrEqualTo(5);
+    assertThat(count("course_announcements")).isGreaterThanOrEqualTo(2);
   }
 
   private Integer count(String tableName) {

@@ -55,6 +55,10 @@ public class SecurityConfig {
                     // [추가] 공통 로드맵 조회 API는 누구나 접근 가능하도록 허용
                     .requestMatchers(HttpMethod.GET, "/api/roadmaps/**")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/courses/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/instructors/**")
+                    .permitAll()
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/instructor/**")

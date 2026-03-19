@@ -10,40 +10,47 @@ import org.springframework.data.repository.query.Param;
 
 public interface NodeRequiredTagRepository extends JpaRepository<NodeRequiredTag, Long> {
 
-  /**
-   * 특정 노드의 모든 필수 태그 조회
-   *
-   * @param nodeId 노드 ID
-   * @return 해당 노드의 필수 태그 리스트
-   */
   @Query(
-      "SELECT nrt FROM NodeRequiredTag nrt "
-          + "JOIN FETCH nrt.tag "
-          + "WHERE nrt.node.id = :nodeId")
+      """
+            select nrt
+            from NodeRequiredTag nrt
+            join fetch nrt.tag
+            where nrt.node.nodeId = :nodeId
+            order by nrt.id asc
+            """)
   List<NodeRequiredTag> findAllByNodeId(@Param("nodeId") Long nodeId);
 
-  /**
-   * 특정 노드의 필수 태그 이름 리스트 조회 (검증용)
-   *
-   * @param nodeId 노드 ID
-   * @return 태그 이름 리스트
-   */
   @Query(
-      "SELECT t.name FROM NodeRequiredTag nrt " + "JOIN nrt.tag t " + "WHERE nrt.node.id = :nodeId")
+      """
+            select t.name
+            from NodeRequiredTag nrt
+            join nrt.tag t
+            where nrt.node.nodeId = :nodeId
+            order by t.name asc
+            """)
   List<String> findTagNamesByNodeId(@Param("nodeId") Long nodeId);
 
   @Query(
       """
-            SELECT nrt.node.nodeId AS nodeId, t.name AS tagName
-            FROM NodeRequiredTag nrt
-            JOIN nrt.tag t
-            WHERE nrt.node.nodeId IN :nodeIds
+            select nrt.node.nodeId as nodeId, t.name as tagName
+            from NodeRequiredTag nrt
+            join nrt.tag t
+            where nrt.node.nodeId in :nodeIds
+            order by nrt.node.nodeId asc, nrt.id asc
             """)
   List<NodeRequiredTagNameProjection> findTagNamesByNodeIds(
       @Param("nodeIds") Collection<Long> nodeIds);
 
+  List<NodeRequiredTag> findAllByTagTagId(Long tagId);
+
+  boolean existsByNodeNodeIdAndTagTagId(Long nodeId, Long tagId);
+
   @Modifying
-  @Query("DELETE FROM NodeRequiredTag nrt WHERE nrt.tag.tagId = :tagId")
+  @Query("delete from NodeRequiredTag nrt where nrt.node.nodeId = :nodeId")
+  void deleteAllByNodeId(@Param("nodeId") Long nodeId);
+
+  @Modifying
+  @Query("delete from NodeRequiredTag nrt where nrt.tag.tagId = :tagId")
   void deleteAllByTagId(@Param("tagId") Long tagId);
 
   interface NodeRequiredTagNameProjection {
