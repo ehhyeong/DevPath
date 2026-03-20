@@ -12,8 +12,11 @@ import com.devpath.domain.learning.repository.TilDraftRepository;
 import com.devpath.domain.learning.repository.TimestampNoteRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -113,5 +116,34 @@ public class TilService {
                 .build();
 
         return TilResponse.from(tilDraftRepository.save(til));
+    }
+
+    // TIL 본문의 마크다운 헤더(#, ##, ###)를 파싱하여 목차 JSON 문자열을 생성하고 저장한다.
+    // 목차 형식: [{"level":1,"title":"제목","anchor":"제목"},...]
+    @Transactional
+    public TilResponse generateTableOfContents(Long userId, Long tilId) {
+        TilDraft til = tilDraftRepository.findByIdAndUserIdAndIsDeletedFalse(tilId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.TIL_NOT_FOUND));
+
+        String toc = buildTableOfContents(til.getContent());
+        til.updateTableOfContents(toc);
+
+        return TilResponse.from(til);
+    }
+
+    // 마크다운 헤더 파싱 후 JSON 배열 문자열로 반환하는 내부 유틸 메서드
+    private String buildTableOfContents(String content) {
+        Pattern pattern = Pattern.compile("^(#{1,3})\\s+(.+)$", Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(content);
+
+        List<String> entries = new ArrayList<>();
+        while (matcher.find()) {
+            int level = matcher.group(1).length();
+            String title = matcher.group(2).trim();
+            String anchor = title.toLowerCase().replaceAll("[^a-z0-9가-힣\\s]", "").trim().replaceAll("\\s+", "-");
+            entries.add(String.format("{\"level\":%d,\"title\":\"%s\",\"anchor\":\"%s\"}", level, title, anchor));
+        }
+
+        return "[" + String.join(",", entries) + "]";
     }
 }

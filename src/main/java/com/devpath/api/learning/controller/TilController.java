@@ -68,4 +68,13 @@ public class TilController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(tilService.convertFromNotes(userId, request)));
     }
+
+    @Operation(summary = "TIL 자동 목차화", description = "TIL 본문의 마크다운 헤더(#, ##, ###)를 파싱하여 목차를 자동 생성합니다.")
+    @PostMapping("/{tilId}/toc")
+    public ResponseEntity<ApiResponse<TilResponse>> generateTableOfContents(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long tilId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(tilService.generateTableOfContents(userId, tilId)));
+    }
 }
