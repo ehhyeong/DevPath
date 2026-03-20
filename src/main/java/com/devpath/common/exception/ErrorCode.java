@@ -33,6 +33,7 @@ public enum ErrorCode {
   COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "강의를 찾을 수 없습니다."),
   LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "레슨을 찾을 수 없습니다."),
   LESSON_PROGRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "학습 진도 정보를 찾을 수 없습니다."),
+  TIMESTAMP_NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "타임스탬프 노트를 찾을 수 없습니다."),
   WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "찜한 강의를 찾을 수 없습니다."),
   ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 이력을 찾을 수 없습니다."),
 
