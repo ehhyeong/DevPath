@@ -54,6 +54,7 @@ public enum ErrorCode {
   RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 정보를 찾을 수 없습니다."),
   RECOMMENDATION_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 추천입니다."),
   RECOMMENDATION_EXPIRED(HttpStatus.BAD_REQUEST, "만료된 추천입니다."),
+  SUPPLEMENT_RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "보강 노드 추천을 찾을 수 없습니다."),
 
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "질문을 찾을 수 없습니다."),
