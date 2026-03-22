@@ -8,6 +8,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
+// Response DTOs follow the same nested-class style as the existing learning APIs.
 public class OcrResponse {
 
     @Getter

@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/learning")
 @RequiredArgsConstructor
+// OCR routes stay under the existing learning API namespace.
 public class OcrController {
 
     private final OcrService ocrService;

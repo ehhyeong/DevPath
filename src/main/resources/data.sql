@@ -1,3 +1,4 @@
+-- OCR schema backfill for environments that already have ocr_results rows.
 ALTER TABLE ocr_results
     ADD COLUMN IF NOT EXISTS source_image_url VARCHAR(500);
 
@@ -13,6 +14,7 @@ ALTER TABLE ocr_results
 ALTER TABLE ocr_results
     ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
 
+-- Fill defaults before tightening the new non-null columns.
 UPDATE ocr_results
 SET source_image_url = COALESCE(source_image_url, '')
 WHERE source_image_url IS NULL;

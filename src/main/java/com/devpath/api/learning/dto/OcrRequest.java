@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// Learning request DTOs stay grouped in a single wrapper class.
 public class OcrRequest {
 
     @Getter

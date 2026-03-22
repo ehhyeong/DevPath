@@ -24,6 +24,7 @@ public class OcrService {
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
 
+    // This phase persists a mock OCR result so the API contract can stabilize first.
     @Transactional
     public OcrResponse.Detail extractText(Long userId, Long lessonId, OcrRequest.Extract request) {
         User user = userRepository.findById(userId)
@@ -111,6 +112,7 @@ public class OcrService {
     }
 
     private String buildTimestampMappings(Integer frameTimestampSecond, String extractedText) {
+        // A compact JSON string is enough until mappings need richer querying.
         return "[{\"second\":" + frameTimestampSecond + ",\"text\":\"" + escapeJson(extractedText) + "\"}]";
     }
 

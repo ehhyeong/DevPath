@@ -23,6 +23,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Table(name = "ocr_results")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+// One OCR row is tied to a single lesson frame for one learner.
 public class OcrResult {
 
     @Id
@@ -96,6 +97,7 @@ public class OcrResult {
             String timestampMappings,
             Double confidence
     ) {
+        // Completion stores both the raw text and the search-friendly projection.
         this.extractedText = extractedText;
         this.searchableNormalizedText = searchableNormalizedText;
         this.timestampMappings = timestampMappings;
