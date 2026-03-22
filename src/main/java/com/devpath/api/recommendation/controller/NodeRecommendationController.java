@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/me")
 @RequiredArgsConstructor
-@Tag(name = "추천 보강 노드", description = "로드맵 보강 노드 추천 관리 API")
+@Tag(name = "학습자 노드 추천", description = "AI 기반 로드맵 노드 추천 관리 API")
 public class NodeRecommendationController {
 
     private final NodeRecommendationService nodeRecommendationService;
@@ -36,13 +36,14 @@ public class NodeRecommendationController {
 
     @PostMapping("/roadmaps/{roadmapId}/recommendations/init")
     @Operation(
-            summary = "보강 노드 후보 생성",
-            description = "학습 진행, 노트, OCR, TIL 신호와 태그 적합도를 함께 반영해 추천 후보를 생성합니다."
+            summary = "AI 추천 노드 생성",
+            description = "학습 진행, 노트, OCR, TIL 신호와 보유 태그를 반영해 추천 후보를 생성합니다."
     )
     public ResponseEntity<ApiResponse<NodeRecommendationDto.GenerateRecommendationsResponse>> generateRecommendations(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
             @Parameter(description = "Roadmap ID") @PathVariable Long roadmapId
     ) {
+        // 한글 주석: Swagger 요약 문구와 실제 추천 생성 엔드포인트 의미를 일치시킨다.
         List<NodeRecommendation> recommendations = nodeRecommendationService.generateRecommendations(userId, roadmapId);
         NodeRecommendationDto.GenerateRecommendationsResponse response =
                 NodeRecommendationDto.GenerateRecommendationsResponse.from(roadmapId, recommendations);
@@ -52,8 +53,8 @@ public class NodeRecommendationController {
 
     @GetMapping("/roadmaps/{roadmapId}/recommendations")
     @Operation(
-            summary = "보강 노드 추천 목록 조회",
-            description = "로드맵별 추천 목록을 조회합니다. pendingOnly=true 이면 PENDING 상태만 반환합니다."
+            summary = "보강 추천 목록 조회",
+            description = "로드맵 기준 추천 목록을 조회합니다. pendingOnly=true 이면 PENDING 상태만 반환합니다."
     )
     public ResponseEntity<ApiResponse<NodeRecommendationDto.RoadmapRecommendationsResponse>> getRecommendations(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
@@ -98,7 +99,7 @@ public class NodeRecommendationController {
     }
 
     @PatchMapping("/recommendations/{recommendationId}/accept")
-    @Operation(summary = "추천 수락", description = "추천 노드를 수락해 커스텀 로드맵에 반영합니다.")
+    @Operation(summary = "추천 수락", description = "추천 노드를 수락하고 커스텀 로드맵에 반영합니다.")
     public ResponseEntity<ApiResponse<NodeRecommendationDto.ProcessRecommendationResponse>> acceptRecommendation(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
             @Parameter(description = "Recommendation ID") @PathVariable Long recommendationId

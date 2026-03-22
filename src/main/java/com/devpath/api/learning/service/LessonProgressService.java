@@ -10,6 +10,7 @@ import com.devpath.domain.learning.entity.LessonProgress;
 import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,33 +30,43 @@ public class LessonProgressService {
     }
 
     @Transactional
-    public LessonProgressResponse saveProgress(Long userId, Long lessonId,
-            LessonProgressRequest.SaveProgress request) {
+    public LessonProgressResponse saveProgress(
+            Long userId,
+            Long lessonId,
+            LessonProgressRequest.SaveProgress request
+    ) {
         LessonProgress progress = getOrCreateLessonProgress(userId, lessonId);
         progress.updateProgress(request.getProgressPercent(), request.getProgressSeconds());
         return LessonProgressResponse.from(progress);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LessonProgressResponse getProgress(Long userId, Long lessonId) {
         LessonProgress progress = getOrCreateLessonProgress(userId, lessonId);
         return LessonProgressResponse.from(progress);
     }
 
     private LessonProgress getOrCreateLessonProgress(Long userId, Long lessonId) {
-        return lessonProgressRepository.findByUserIdAndLessonLessonId(userId, lessonId)
-                .orElseGet(() -> {
-                    Lesson lesson = lessonRepository.findById(lessonId)
-                            .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
-                    User user = userRepository.findById(userId)
-                            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        return findLessonProgress(userId, lessonId)
+                .orElseGet(() -> createLessonProgress(userId, lessonId));
+    }
 
-                    return lessonProgressRepository.save(
-                            LessonProgress.builder()
-                                    .user(user)
-                                    .lesson(lesson)
-                                    .build()
-                    );
-                });
+    private Optional<LessonProgress> findLessonProgress(Long userId, Long lessonId) {
+        return lessonProgressRepository.findByUserIdAndLessonLessonId(userId, lessonId);
+    }
+
+    private LessonProgress createLessonProgress(Long userId, Long lessonId) {
+        // 한글 주석: 최초 조회에서도 기본 progress 레코드를 만들 수 있어 쓰기 트랜잭션으로 분리한다.
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return lessonProgressRepository.save(
+                LessonProgress.builder()
+                        .user(user)
+                        .lesson(lesson)
+                        .build()
+        );
     }
 }
