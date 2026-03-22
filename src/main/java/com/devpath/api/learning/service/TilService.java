@@ -118,6 +118,20 @@ public class TilService {
         return TilResponse.from(tilDraftRepository.save(til));
     }
 
+    // 외부 블로그 발행 (stub)
+    // 실제 외부 블로그 API 연동은 추후 구현 예정이며, 현재는 발행 상태와 URL만 업데이트한다.
+    @Transactional
+    public TilResponse publishToExternalBlog(Long userId, Long tilId) {
+        TilDraft til = tilDraftRepository.findByIdAndUserIdAndIsDeletedFalse(tilId, userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.TIL_NOT_FOUND));
+
+        // stub: 실제 발행 대신 상태를 PUBLISHED로 변경하고 임시 URL을 생성한다.
+        String stubUrl = "https://devpath.blog/" + userId + "/til/" + tilId;
+        til.publish(stubUrl);
+
+        return TilResponse.from(til);
+    }
+
     // TIL 본문의 마크다운 헤더(#, ##, ###)를 파싱하여 목차 JSON 문자열을 생성하고 저장한다.
     // 목차 형식: [{"level":1,"title":"제목","anchor":"제목"},...]
     @Transactional

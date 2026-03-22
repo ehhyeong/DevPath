@@ -69,6 +69,15 @@ public class TilController {
                 .body(ApiResponse.ok(tilService.convertFromNotes(userId, request)));
     }
 
+    @Operation(summary = "외부 블로그 발행", description = "작성한 TIL을 외부 블로그에 발행합니다. (현재 stub 구현)")
+    @PostMapping("/{tilId}/publish")
+    public ResponseEntity<ApiResponse<TilResponse>> publishToExternalBlog(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long tilId
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(tilService.publishToExternalBlog(userId, tilId)));
+    }
+
     @Operation(summary = "TIL 자동 목차화", description = "TIL 본문의 마크다운 헤더(#, ##, ###)를 파싱하여 목차를 자동 생성합니다.")
     @PostMapping("/{tilId}/toc")
     public ResponseEntity<ApiResponse<TilResponse>> generateTableOfContents(
