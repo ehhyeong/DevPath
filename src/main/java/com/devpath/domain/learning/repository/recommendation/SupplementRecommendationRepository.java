@@ -1,16 +1,13 @@
 package com.devpath.domain.learning.repository.recommendation;
 
-import com.devpath.domain.learning.entity.recommendation.RecommendationStatus;
 import com.devpath.domain.learning.entity.recommendation.SupplementRecommendation;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SupplementRecommendationRepository extends JpaRepository<SupplementRecommendation, Long> {
 
-    // 특정 학습자의 특정 상태 추천 목록을 최신순으로 조회한다.
-    List<SupplementRecommendation> findByUserIdAndStatusOrderByCreatedAtDesc(
-            Long userId, RecommendationStatus status);
+    List<SupplementRecommendation> findAllByUserIdOrderByCreatedAtDesc(Long userId);
 
-    // 특정 학습자의 전체 추천 목록을 최신순으로 조회한다.
-    List<SupplementRecommendation> findByUserIdOrderByCreatedAtDesc(Long userId);
+    Optional<SupplementRecommendation> findTopByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(Long userId, Long nodeId);
 }

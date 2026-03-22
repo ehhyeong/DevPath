@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "supplement_recommendations")
@@ -31,45 +32,69 @@ public class SupplementRecommendation {
     @Column(name = "recommendation_id")
     private Long id;
 
-    // 추천 대상 학습자와의 연관관계다.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // 보강 대상으로 추천된 로드맵 노드와의 연관관계다.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "node_id", nullable = false)
     private RoadmapNode roadmapNode;
 
-    // AI가 생성한 추천 사유를 저장한다.
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
-    // 학습자가 추천을 수락/거절했는지 여부를 나타낸다.
+    @Column(name = "priority")
+    private Integer priority;
+
+    @Column(name = "coverage_percent")
+    private Double coveragePercent;
+
+    @Column(name = "missing_tag_count")
+    private Integer missingTagCount;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private RecommendationStatus status = RecommendationStatus.PENDING;
 
-    // 생성 시각을 자동 저장한다.
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @Builder
-    public SupplementRecommendation(User user, RoadmapNode roadmapNode, String reason) {
+    public SupplementRecommendation(
+            User user,
+            RoadmapNode roadmapNode,
+            String reason,
+            Integer priority,
+            Double coveragePercent,
+            Integer missingTagCount,
+            RecommendationStatus status
+    ) {
         this.user = user;
         this.roadmapNode = roadmapNode;
         this.reason = reason;
-        this.status = RecommendationStatus.PENDING;
+        this.priority = priority;
+        this.coveragePercent = coveragePercent;
+        this.missingTagCount = missingTagCount;
+        this.status = status == null ? RecommendationStatus.PENDING : status;
     }
 
-    // 학습자가 추천을 수락 처리한다.
     public void approve() {
         this.status = RecommendationStatus.APPROVED;
     }
 
-    // 학습자가 추천을 거절 처리한다.
     public void reject() {
         this.status = RecommendationStatus.REJECTED;
+    }
+
+    public void updateMetrics(Integer priority, Double coveragePercent, Integer missingTagCount, String reason) {
+        this.priority = priority;
+        this.coveragePercent = coveragePercent;
+        this.missingTagCount = missingTagCount;
+        this.reason = reason;
     }
 }

@@ -37,15 +37,13 @@ public class NodeRecommendationController {
     @PostMapping("/roadmaps/{roadmapId}/recommendations/init")
     @Operation(
             summary = "AI 추천 노드 생성",
-            description = "진단 퀴즈 결과를 바탕으로 AI가 추천하는 보강/심화 노드를 생성합니다. 기존 PENDING 상태 추천은 만료 처리합니다."
+            description = "진단 퀴즈 결과를 바탕으로 AI가 추천하는 보강/심화 노드를 생성합니다. 기존 PENDING 상태 추천은 만료 처리하고 변경 이력과 리스크 경고를 함께 기록합니다."
     )
     public ResponseEntity<ApiResponse<NodeRecommendationDto.GenerateRecommendationsResponse>> generateRecommendations(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
             @Parameter(description = "로드맵 ID") @PathVariable Long roadmapId
     ) {
-        List<NodeRecommendation> recommendations =
-                nodeRecommendationService.generateRecommendations(userId, roadmapId);
-
+        List<NodeRecommendation> recommendations = nodeRecommendationService.generateRecommendations(userId, roadmapId);
         NodeRecommendationDto.GenerateRecommendationsResponse response =
                 NodeRecommendationDto.GenerateRecommendationsResponse.from(roadmapId, recommendations);
 
@@ -62,6 +60,8 @@ public class NodeRecommendationController {
             @Parameter(description = "로드맵 ID") @PathVariable Long roadmapId,
             @Parameter(description = "PENDING 상태만 조회 여부") @RequestParam(defaultValue = "true") Boolean pendingOnly
     ) {
+        nodeRecommendationService.processExpiredRecommendations(userId, roadmapId);
+
         Roadmap roadmap = roadmapRepository.findById(roadmapId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NOT_FOUND));
 
@@ -72,9 +72,11 @@ public class NodeRecommendationController {
         long pendingCount = recommendations.stream()
                 .filter(r -> r.getStatus() == RecommendationStatus.PENDING)
                 .count();
+
         long acceptedCount = recommendations.stream()
                 .filter(r -> r.getStatus() == RecommendationStatus.ACCEPTED)
                 .count();
+
         long rejectedCount = recommendations.stream()
                 .filter(r -> r.getStatus() == RecommendationStatus.REJECTED)
                 .count();
@@ -100,7 +102,7 @@ public class NodeRecommendationController {
     @PatchMapping("/recommendations/{recommendationId}/accept")
     @Operation(
             summary = "추천 수락",
-            description = "AI가 추천한 노드를 수락합니다. 수락 시 해당 노드가 사용자의 커스텀 로드맵에 추가됩니다."
+            description = "AI가 추천한 노드를 수락합니다. 수락 시 해당 노드가 사용자의 커스텀 로드맵에 추가되고 상태 변경 이력이 기록됩니다."
     )
     public ResponseEntity<ApiResponse<NodeRecommendationDto.ProcessRecommendationResponse>> acceptRecommendation(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
@@ -120,7 +122,7 @@ public class NodeRecommendationController {
     @PatchMapping("/recommendations/{recommendationId}/reject")
     @Operation(
             summary = "추천 거절",
-            description = "AI가 추천한 노드를 거절합니다. 거절된 추천은 로드맵에 추가되지 않습니다."
+            description = "AI가 추천한 노드를 거절합니다. 거절된 추천은 로드맵에 추가되지 않고 상태 변경 이력이 기록됩니다."
     )
     public ResponseEntity<ApiResponse<NodeRecommendationDto.ProcessRecommendationResponse>> rejectRecommendation(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
@@ -140,7 +142,7 @@ public class NodeRecommendationController {
     @PatchMapping("/recommendations/{recommendationId}/expire")
     @Operation(
             summary = "추천 만료 처리",
-            description = "추천을 수동으로 만료 처리합니다."
+            description = "추천을 수동으로 만료 처리하고 상태 변경 이력을 기록합니다."
     )
     public ResponseEntity<ApiResponse<NodeRecommendationDto.ProcessRecommendationResponse>> expireRecommendation(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,

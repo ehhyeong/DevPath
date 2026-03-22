@@ -1,5 +1,6 @@
 package com.devpath.domain.learning.entity.recommendation;
 
+import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,33 +29,49 @@ public class RecommendationHistory {
     @Column(name = "history_id")
     private Long id;
 
-    // 이력의 대상 학습자와의 연관관계다.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // 변경 이전 추천 상태를 문자열로 저장한다.
+    @Column(name = "recommendation_id")
+    private Long recommendationId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "node_id")
+    private RoadmapNode roadmapNode;
+
     @Column(name = "before_status", length = 30)
     private String beforeStatus;
 
-    // 변경 이후 추천 상태를 문자열로 저장한다.
     @Column(name = "after_status", length = 30)
     private String afterStatus;
 
-    // 변경이 발생한 노드명 또는 추천 컨텍스트를 저장한다.
+    @Column(name = "action_type", nullable = false, length = 30)
+    private String actionType;
+
     @Column(name = "context", columnDefinition = "TEXT")
     private String context;
 
-    // 이력 생성 시각을 자동 저장한다.
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @Builder
-    public RecommendationHistory(User user, String beforeStatus, String afterStatus, String context) {
+    public RecommendationHistory(
+            User user,
+            Long recommendationId,
+            RoadmapNode roadmapNode,
+            String beforeStatus,
+            String afterStatus,
+            String actionType,
+            String context
+    ) {
         this.user = user;
+        this.recommendationId = recommendationId;
+        this.roadmapNode = roadmapNode;
         this.beforeStatus = beforeStatus;
         this.afterStatus = afterStatus;
+        this.actionType = actionType;
         this.context = context;
     }
 }

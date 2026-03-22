@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RecommendationHistoryRepository extends JpaRepository<RecommendationHistory, Long> {
 
-    // 특정 학습자의 추천 변경 이력을 최신순으로 조회한다.
-    List<RecommendationHistory> findByUserIdOrderByCreatedAtDesc(Long userId);
+    List<RecommendationHistory> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+
+    List<RecommendationHistory> findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(Long userId, Long nodeId);
+
+    List<RecommendationHistory> findAllByUserIdAndRecommendationIdOrderByCreatedAtDesc(Long userId, Long recommendationId);
 }
