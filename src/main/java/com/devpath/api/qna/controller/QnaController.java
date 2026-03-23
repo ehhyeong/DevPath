@@ -1,5 +1,7 @@
 package com.devpath.api.qna.controller;
 
+import com.devpath.api.qna.dto.AnswerCreateRequest;
+import com.devpath.api.qna.dto.AnswerResponse;
 import com.devpath.api.qna.dto.QuestionCreateRequest;
 import com.devpath.api.qna.dto.QuestionDetailResponse;
 import com.devpath.api.qna.dto.QuestionSummaryResponse;
@@ -13,6 +15,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,6 +56,33 @@ public class QnaController {
             @PathVariable Long questionId
     ) {
         QuestionDetailResponse response = qnaService.getQuestionDetail(questionId);
+        return ApiResponse.ok(response);
+    }
+
+    @PostMapping("/questions/{questionId}/answers")
+    @Operation(summary = "답변 등록", description = "특정 질문에 답변을 등록합니다.")
+    public ApiResponse<AnswerResponse> createAnswer(
+            @Parameter(description = "답변 작성 사용자 ID", example = "2")
+            @RequestParam Long userId,
+            @Parameter(description = "질문 ID", example = "10")
+            @PathVariable Long questionId,
+            @Valid @RequestBody AnswerCreateRequest request
+    ) {
+        AnswerResponse response = qnaService.createAnswer(userId, questionId, request);
+        return ApiResponse.ok(response);
+    }
+
+    @PatchMapping("/questions/{questionId}/answers/{answerId}/adopt")
+    @Operation(summary = "답변 채택", description = "질문 작성자만 특정 답변을 채택할 수 있습니다.")
+    public ApiResponse<QuestionDetailResponse> adoptAnswer(
+            @Parameter(description = "채택 요청 사용자 ID", example = "1")
+            @RequestParam Long userId,
+            @Parameter(description = "질문 ID", example = "10")
+            @PathVariable Long questionId,
+            @Parameter(description = "답변 ID", example = "30")
+            @PathVariable Long answerId
+    ) {
+        QuestionDetailResponse response = qnaService.adoptAnswer(userId, questionId, answerId);
         return ApiResponse.ok(response);
     }
 

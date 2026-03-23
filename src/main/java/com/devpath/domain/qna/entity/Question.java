@@ -87,6 +87,11 @@ public class Question {
         this.viewCount++;
     }
 
+    // 이미 채택된 답변이 있는지 확인한다.
+    public boolean hasAdoptedAnswer() {
+        return this.adoptedAnswerId != null;
+    }
+
     // 채택된 답변 ID를 질문에 반영한다.
     public void adoptAnswer(Long answerId) {
         this.adoptedAnswerId = answerId;

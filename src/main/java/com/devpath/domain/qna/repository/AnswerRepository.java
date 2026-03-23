@@ -12,4 +12,7 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     // 삭제되지 않은 답변만 단건 조회한다.
     Optional<Answer> findByIdAndIsDeletedFalse(Long answerId);
+
+    // 특정 질문에 속한 삭제되지 않은 답변만 조회한다.
+    Optional<Answer> findByQuestion_IdAndIdAndIsDeletedFalse(Long questionId, Long answerId);
 }
