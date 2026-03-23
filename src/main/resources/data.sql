@@ -1165,3 +1165,63 @@ WHERE c.title = 'Spring Boot Intro'
       WHERE ca.course_id = c.course_id
         AND ca.title = 'Course material update'
   );
+
+INSERT INTO qna_question_templates
+    (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
+SELECT 'DEBUGGING', '버그/에러 질문', '에러 로그와 재현 조건을 중심으로 질문하는 템플릿입니다.',
+       '에러 로그, 재현 단계, 기대 결과, 실제 결과를 순서대로 적어주세요.', 1, TRUE, NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM qna_question_templates
+    WHERE template_type = 'DEBUGGING'
+);
+
+INSERT INTO qna_question_templates
+    (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
+SELECT 'IMPLEMENTATION', '구현 질문', '기능 구현 방식이나 설계 방향을 묻는 템플릿입니다.',
+       '현재 구조, 목표 기능, 고민 중인 선택지를 함께 적어주세요.', 2, TRUE, NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM qna_question_templates
+    WHERE template_type = 'IMPLEMENTATION'
+);
+
+INSERT INTO qna_question_templates
+    (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
+SELECT 'CODE_REVIEW', '코드 리뷰 질문', '작성한 코드에 대한 개선점이나 리팩토링 의견을 받는 템플릿입니다.',
+       '핵심 코드, 현재 우려사항, 성능/보안/가독성 관점을 함께 적어주세요.', 3, TRUE, NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM qna_question_templates
+    WHERE template_type = 'CODE_REVIEW'
+);
+
+INSERT INTO qna_question_templates
+    (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
+SELECT 'CAREER', '커리어 질문', '취업, 포트폴리오, 이직, 기술 선택 관련 질문 템플릿입니다.',
+       '현재 상황, 목표 포지션, 보유 경험, 고민 포인트를 적어주세요.', 4, TRUE, NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM qna_question_templates
+    WHERE template_type = 'CAREER'
+);
+
+INSERT INTO qna_question_templates
+    (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
+SELECT 'STUDY', '학습 질문', '학습 순서나 개념 이해를 묻는 템플릿입니다.',
+       '현재 이해한 내용과 막히는 지점을 함께 적어주세요.', 5, TRUE, NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM qna_question_templates
+    WHERE template_type = 'STUDY'
+);
+
+INSERT INTO qna_question_templates
+    (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
+SELECT 'PROJECT', '프로젝트 질문', '프로젝트 구조, 협업, 배포, 운영 관련 질문 템플릿입니다.',
+       '프로젝트 배경, 현재 구조, 발생 중인 문제를 적어주세요.', 6, TRUE, NOW(), NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM qna_question_templates
+    WHERE template_type = 'PROJECT'
+);

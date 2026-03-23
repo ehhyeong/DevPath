@@ -1,11 +1,17 @@
 package com.devpath.domain.community.repository;
 
-import com.devpath.domain.community.entity.Post;
 import com.devpath.domain.community.entity.CommunityCategory;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.devpath.domain.community.entity.Post;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface PostRepository extends JpaRepository<Post, Long> {
-    // 삭제되지 않은 게시글만 카테고리별로 조회
+public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificationExecutor<Post> {
+
     List<Post> findByCategoryAndIsDeletedFalseOrderByCreatedAtDesc(CommunityCategory category);
+
+    Optional<Post> findByIdAndIsDeletedFalse(Long postId);
+
+    List<Post> findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
 }
