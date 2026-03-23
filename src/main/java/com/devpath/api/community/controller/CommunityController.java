@@ -1,6 +1,7 @@
 package com.devpath.api.community.controller;
 
 import com.devpath.api.community.dto.MyPostResponse;
+import com.devpath.api.community.dto.PostPageResponse;
 import com.devpath.api.community.dto.PostRequest;
 import com.devpath.api.community.dto.PostResponse;
 import com.devpath.api.community.dto.PostUpdateRequest;
@@ -43,13 +44,26 @@ public class CommunityController {
     }
 
     @GetMapping
-    @Operation(summary = "카테고리별 게시글 목록 조회", description = "특정 카테고리의 게시글을 최신순으로 조회합니다.")
-    public ApiResponse<List<PostResponse>> getPosts(
+    @Operation(
+            summary = "게시글 목록 조회",
+            description = "카테고리, 작성자, 키워드 조건으로 게시글을 조회하고 latest / popular / mostViewed 정렬을 지원합니다."
+    )
+    public ApiResponse<PostPageResponse> getPosts(
             @Parameter(description = "게시판 카테고리", example = "TECH_SHARE")
-            @RequestParam CommunityCategory category
+            @RequestParam(required = false) CommunityCategory category,
+            @Parameter(description = "특정 작성자 ID", example = "1")
+            @RequestParam(required = false) Long authorId,
+            @Parameter(description = "제목/내용 검색 키워드", example = "spring")
+            @RequestParam(required = false) String keyword,
+            @Parameter(description = "정렬 기준: latest, popular, mostViewed", example = "latest")
+            @RequestParam(defaultValue = "latest") String sort,
+            @Parameter(description = "페이지 번호", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기", example = "10")
+            @RequestParam(defaultValue = "10") int size
     ) {
-        List<PostResponse> responses = communityService.getPostsByCategory(category);
-        return ApiResponse.ok(responses);
+        PostPageResponse response = communityService.searchPosts(category, authorId, keyword, sort, page, size);
+        return ApiResponse.ok(response);
     }
 
     @GetMapping("/{postId}")
