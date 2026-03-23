@@ -14,5 +14,7 @@ public interface TimestampNoteRepository extends JpaRepository<TimestampNote, Lo
 
     long countByUserIdAndIsDeletedFalse(Long userId);
 
+    long countByUserIdAndLessonLessonIdAndIsDeletedFalse(Long userId, Long lessonId);
+
     Optional<TimestampNote> findByIdAndUserIdAndIsDeletedFalse(Long noteId, Long userId);
 }

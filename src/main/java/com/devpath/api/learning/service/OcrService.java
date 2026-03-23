@@ -4,6 +4,7 @@ import com.devpath.api.learning.dto.OcrRequest;
 import com.devpath.api.learning.dto.OcrResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.common.provider.OcrProvider;
 import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.learning.entity.ocr.OcrResult;
@@ -13,6 +14,7 @@ import com.devpath.domain.user.repository.UserRepository;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +25,11 @@ public class OcrService {
     private final OcrResultRepository ocrResultRepository;
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
+    private final OcrProvider ocrProvider;
 
-    // This phase persists a mock OCR result so the API contract can stabilize first.
+    @Value("${ocr.allow-source-text-fallback:true}")
+    private boolean allowSourceTextFallback;
+
     @Transactional
     public OcrResponse.Detail extractText(Long userId, Long lessonId, OcrRequest.Extract request) {
         User user = userRepository.findById(userId)
@@ -41,17 +46,18 @@ public class OcrService {
                 .status("REQUESTED")
                 .build();
 
-        String extractedText = buildMockExtractedText(lesson, request);
-        String searchableNormalizedText = normalize(extractedText);
-        String timestampMappings = buildTimestampMappings(request.getFrameTimestampSecond(), extractedText);
-        Double confidence = 0.97D;
-
-        ocrResult.markCompleted(
-                extractedText,
-                searchableNormalizedText,
-                timestampMappings,
-                confidence
-        );
+        try {
+            OcrProvider.OcrResult providerResult = ocrProvider.extractTextFromImageUrl(request.getSourceImageUrl());
+            applyProviderResult(ocrResult, request, providerResult);
+        } catch (CustomException e) {
+            if (canUseHintFallback(request)) {
+                applyHintFallback(ocrResult, request);
+            } else {
+                ocrResult.markFailed();
+                ocrResultRepository.save(ocrResult);
+                throw e;
+            }
+        }
 
         OcrResult saved = ocrResultRepository.save(ocrResult);
         return OcrResponse.Detail.from(saved);
@@ -71,7 +77,7 @@ public class OcrService {
                 .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
 
         if (keyword == null || keyword.isBlank()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT, "검색어는 비어 있을 수 없습니다.");
+            throw new CustomException(ErrorCode.INVALID_INPUT, "검색어는 비워 둘 수 없습니다.");
         }
 
         List<OcrResult> results = ocrResultRepository
@@ -95,12 +101,49 @@ public class OcrService {
         return OcrResponse.MappingResult.of(lessonId, results);
     }
 
-    private String buildMockExtractedText(Lesson lesson, OcrRequest.Extract request) {
-        if (request.getSourceTextHint() != null && !request.getSourceTextHint().isBlank()) {
-            return request.getSourceTextHint().trim();
+    private void applyProviderResult(OcrResult ocrResult, OcrRequest.Extract request, OcrProvider.OcrResult providerResult) {
+        String extractedText = resolveExtractedText(providerResult);
+        if (extractedText.isBlank()) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "OCR 서버가 빈 텍스트를 반환했습니다.");
         }
 
-        return lesson.getTitle() + " 화면에서 추출된 OCR 텍스트입니다.";
+        ocrResult.markCompleted(
+                extractedText,
+                normalize(extractedText),
+                buildTimestampMappings(request.getFrameTimestampSecond(), providerResult.getLines(), extractedText),
+                providerResult.getConfidence() == null ? 0.0D : providerResult.getConfidence()
+        );
+    }
+
+    private boolean canUseHintFallback(OcrRequest.Extract request) {
+        return allowSourceTextFallback
+                && request.getSourceTextHint() != null
+                && !request.getSourceTextHint().isBlank();
+    }
+
+    private void applyHintFallback(OcrResult ocrResult, OcrRequest.Extract request) {
+        // 한글 주석: 외부 OCR 서버가 실패한 경우에만 명시적 힌트 텍스트를 fallback으로 쓴다.
+        String extractedText = request.getSourceTextHint().trim();
+        ocrResult.markCompleted(
+                extractedText,
+                normalize(extractedText),
+                buildTimestampMappings(request.getFrameTimestampSecond(), List.of(extractedText), extractedText),
+                0.97D
+        );
+    }
+
+    private String resolveExtractedText(OcrProvider.OcrResult providerResult) {
+        if (providerResult.getText() != null && !providerResult.getText().isBlank()) {
+            return providerResult.getText().trim();
+        }
+        if (providerResult.getLines() != null && !providerResult.getLines().isEmpty()) {
+            return providerResult.getLines().stream()
+                    .filter(line -> line != null && !line.isBlank())
+                    .map(String::trim)
+                    .reduce((left, right) -> left + "\n" + right)
+                    .orElse("");
+        }
+        return "";
     }
 
     private String normalize(String value) {
@@ -111,9 +154,23 @@ public class OcrService {
                         .toLowerCase(Locale.ROOT);
     }
 
-    private String buildTimestampMappings(Integer frameTimestampSecond, String extractedText) {
-        // A compact JSON string is enough until mappings need richer querying.
-        return "[{\"second\":" + frameTimestampSecond + ",\"text\":\"" + escapeJson(extractedText) + "\"}]";
+    private String buildTimestampMappings(Integer frameTimestampSecond, List<String> lines, String extractedText) {
+        List<String> mappingLines = (lines == null || lines.isEmpty()) ? List.of(extractedText) : lines;
+        StringBuilder builder = new StringBuilder("[");
+
+        for (int index = 0; index < mappingLines.size(); index++) {
+            if (index > 0) {
+                builder.append(",");
+            }
+            builder.append("{\"second\":")
+                    .append(frameTimestampSecond)
+                    .append(",\"text\":\"")
+                    .append(escapeJson(mappingLines.get(index)))
+                    .append("\"}");
+        }
+
+        builder.append("]");
+        return builder.toString();
     }
 
     private String escapeJson(String value) {

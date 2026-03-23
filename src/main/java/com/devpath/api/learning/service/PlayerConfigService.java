@@ -23,10 +23,12 @@ public class PlayerConfigService {
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public PlayerConfigResponse getPlayerConfig(Long userId, Long lessonId) {
-        LessonProgress progress = getOrCreateLessonProgress(userId, lessonId);
-        return PlayerConfigResponse.from(progress);
+        validateLessonExists(lessonId);
+        return findLessonProgress(userId, lessonId)
+                .map(PlayerConfigResponse::from)
+                .orElseGet(() -> PlayerConfigResponse.defaultForLesson(lessonId));
     }
 
     @Transactional
@@ -61,11 +63,8 @@ public class PlayerConfigService {
     }
 
     private LessonProgress createLessonProgress(Long userId, Long lessonId) {
-        // 한글 주석: 플레이어 설정 조회도 최초 접근 시 기본 설정 row를 생성할 수 있다.
-        Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = validateUser(userId);
+        Lesson lesson = validateLessonExists(lessonId);
 
         return lessonProgressRepository.save(
                 LessonProgress.builder()
@@ -73,5 +72,15 @@ public class PlayerConfigService {
                         .lesson(lesson)
                         .build()
         );
+    }
+
+    private User validateUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private Lesson validateLessonExists(Long lessonId) {
+        return lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
     }
 }

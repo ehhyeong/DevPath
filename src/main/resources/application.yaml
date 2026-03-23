@@ -90,3 +90,20 @@ jwt:
   secret: c3ByaW5nLWJvb3QtZGV2cGF0aC1zZWNyZXQta2V5LXRlc3QtZ2VuZXJhdGUtMjAyNjAyMjQ=
   access-token-expiration: 3600000 # 3600000ms = 1시간
   refresh-token-expiration: 1209600000 # 1209600000ms = 14일
+
+ocr:
+  server:
+    # 외부 OCR 서버 주소
+    url: ${OCR_SERVER_URL:http://localhost:5000}
+  # sourceTextHint를 로컬/테스트 fallback으로 허용할지 여부
+  allow-source-text-fallback: ${OCR_ALLOW_SOURCE_TEXT_FALLBACK:true}
+
+blog:
+  publish:
+    # 로컬/테스트에서만 MOCK provider를 명시적으로 허용
+    allow-mock-provider: ${BLOG_PUBLISH_ALLOW_MOCK_PROVIDER:true}
+    providers:
+      devto:
+        # DEV.to article create API
+        api-url: ${DEVTO_API_URL:https://dev.to/api/articles}
+        api-key: ${DEVTO_API_KEY:}

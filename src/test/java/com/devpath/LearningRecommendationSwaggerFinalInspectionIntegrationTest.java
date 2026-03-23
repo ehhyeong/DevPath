@@ -57,8 +57,14 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
             select min(l.lesson_id)
             from lessons l
             join course_materials cm on cm.lesson_id = l.lesson_id
+            where not exists (
+              select 1
+              from lesson_progress lp
+              where lp.user_id = ? and lp.lesson_id = l.lesson_id
+            )
             """,
-            Long.class);
+            Long.class,
+            learnerId);
     roadmapId =
         jdbcTemplate.queryForObject(
             "select roadmap_id from roadmaps where title = ?",

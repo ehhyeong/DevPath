@@ -18,4 +18,6 @@ public interface OcrResultRepository extends JpaRepository<OcrResult, Long> {
     );
 
     long countByUserId(Long userId);
+
+    long countByUserIdAndLessonLessonId(Long userId, Long lessonId);
 }

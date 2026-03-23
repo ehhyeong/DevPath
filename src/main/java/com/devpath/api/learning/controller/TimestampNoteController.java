@@ -79,7 +79,7 @@ public class TimestampNoteController {
             @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId,
             @Parameter(description = "노트 ID", example = "1") @PathVariable Long noteId
     ) {
-        timestampNoteService.deleteNote(userId, noteId);
+        timestampNoteService.deleteNote(userId, lessonId, noteId);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }

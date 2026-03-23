@@ -40,10 +40,12 @@ public class LessonProgressService {
         return LessonProgressResponse.from(progress);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public LessonProgressResponse getProgress(Long userId, Long lessonId) {
-        LessonProgress progress = getOrCreateLessonProgress(userId, lessonId);
-        return LessonProgressResponse.from(progress);
+        validateLessonExists(lessonId);
+        return findLessonProgress(userId, lessonId)
+                .map(LessonProgressResponse::from)
+                .orElseGet(() -> LessonProgressResponse.defaultForLesson(lessonId));
     }
 
     private LessonProgress getOrCreateLessonProgress(Long userId, Long lessonId) {
@@ -56,11 +58,8 @@ public class LessonProgressService {
     }
 
     private LessonProgress createLessonProgress(Long userId, Long lessonId) {
-        // 한글 주석: 최초 조회에서도 기본 progress 레코드를 만들 수 있어 쓰기 트랜잭션으로 분리한다.
-        Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = validateUser(userId);
+        Lesson lesson = validateLessonExists(lessonId);
 
         return lessonProgressRepository.save(
                 LessonProgress.builder()
@@ -68,5 +67,15 @@ public class LessonProgressService {
                         .lesson(lesson)
                         .build()
         );
+    }
+
+    private User validateUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    private Lesson validateLessonExists(Long lessonId) {
+        return lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
     }
 }

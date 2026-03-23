@@ -19,4 +19,6 @@ public interface TilDraftRepository extends JpaRepository<TilDraft, Long> {
     long countByUserIdAndIsDeletedFalse(Long userId);
 
     long countByUserIdAndStatusAndIsDeletedFalse(Long userId, TilDraftStatus status);
+
+    long countByUserIdAndLessonLessonIdAndIsDeletedFalse(Long userId, Long lessonId);
 }

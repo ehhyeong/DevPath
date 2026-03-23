@@ -56,9 +56,7 @@ public class TimestampNoteService {
                 .findByIdAndUserIdAndIsDeletedFalse(noteId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND));
 
-        if (!note.getLesson().getLessonId().equals(lessonId)) {
-            throw new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND);
-        }
+        validateLessonScope(note, lessonId);
 
         note.updateContent(
                 resolveTimestampSecond(request.getTimestampSecond(), request.getTimestampText()),
@@ -69,15 +67,22 @@ public class TimestampNoteService {
     }
 
     @Transactional
-    public void deleteNote(Long userId, Long noteId) {
+    public void deleteNote(Long userId, Long lessonId, Long noteId) {
         TimestampNote note = timestampNoteRepository
                 .findByIdAndUserIdAndIsDeletedFalse(noteId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND));
 
+        // 한글 주석: 삭제도 수정과 동일하게 lessonId 범위를 검증해 path semantics를 맞춘다.
+        validateLessonScope(note, lessonId);
         note.delete();
     }
 
-    // 숫자 초가 들어오면 그대로 정규화하고 문자열이 오면 형식을 해석해 초 단위로 바꾼다.
+    private void validateLessonScope(TimestampNote note, Long lessonId) {
+        if (!note.getLesson().getLessonId().equals(lessonId)) {
+            throw new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND);
+        }
+    }
+
     private Integer resolveTimestampSecond(Integer timestampSecond, String timestampText) {
         if (timestampText != null && !timestampText.isBlank()) {
             return parseTimestampText(timestampText);
@@ -85,7 +90,6 @@ public class TimestampNoteService {
         return normalizeTimestampSecond(timestampSecond);
     }
 
-    // 음수나 null 입력은 저장하지 않도록 0으로 보정한다.
     private Integer normalizeTimestampSecond(Integer timestampSecond) {
         if (timestampSecond == null || timestampSecond < 0) {
             return 0;
@@ -93,7 +97,6 @@ public class TimestampNoteService {
         return timestampSecond;
     }
 
-    // 숫자 초, mm:ss, hh:mm:ss 세 가지 형식을 지원한다.
     private Integer parseTimestampText(String timestampText) {
         String normalizedText = timestampText == null ? "" : timestampText.trim();
 
