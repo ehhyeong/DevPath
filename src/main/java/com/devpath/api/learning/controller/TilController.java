@@ -78,8 +78,6 @@ public class TilController {
                 .body(ApiResponse.ok(tilService.convertFromNotes(userId, request)));
     }
 
-    // 기존 request body 없는 publish API를 body 기반 계약으로 변경한다.
-    // 중복 @Operation 을 제거하고 외부 블로그 발행 설명만 유지한다.
     @Operation(summary = "외부 블로그 발행", description = "작성한 TIL을 외부 블로그에 발행합니다.")
     @PostMapping("/{tilId}/publish")
     public ResponseEntity<ApiResponse<TilPublishResponse>> publishToExternalBlog(

@@ -128,8 +128,6 @@ public class TilService {
         String normalizedPlatform = normalizePlatform(request.getPlatform());
         BlogPublishProvider provider = findBlogPublishProvider(normalizedPlatform);
         BlogPublishResult publishResult = provider.publish(normalizedPlatform, request);
-
-        // 한글 주석: 실제 provider가 반환한 URL만 엔티티에 반영하고 서비스 내부 stub URL은 더 이상 만들지 않는다.
         til.publish(publishResult.publishedUrl());
 
         return TilPublishResponse.builder()

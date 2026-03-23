@@ -84,10 +84,15 @@ public class TimestampNoteService {
     }
 
     private Integer resolveTimestampSecond(Integer timestampSecond, String timestampText) {
+        if (timestampSecond != null) {
+            return normalizeTimestampSecond(timestampSecond);
+        }
+
         if (timestampText != null && !timestampText.isBlank()) {
             return parseTimestampText(timestampText);
         }
-        return normalizeTimestampSecond(timestampSecond);
+
+        return 0;
     }
 
     private Integer normalizeTimestampSecond(Integer timestampSecond) {
