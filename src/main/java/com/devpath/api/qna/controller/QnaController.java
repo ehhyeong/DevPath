@@ -10,8 +10,12 @@ import com.devpath.api.qna.dto.QuestionTemplateResponse;
 import com.devpath.api.qna.service.QnaService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerDocConstants;
+import com.devpath.common.swagger.SwaggerErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -38,6 +42,19 @@ public class QnaController {
 
     @PostMapping("/questions")
     @Operation(summary = "질문 등록", description = "질문 템플릿과 난이도를 선택해 새로운 질문을 등록합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "질문 등록 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 또는 비활성 템플릿 타입",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
+    })
     public ApiResponse<QuestionDetailResponse> createQuestion(
             @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
             @RequestParam Long userId,
@@ -49,6 +66,9 @@ public class QnaController {
 
     @GetMapping("/questions")
     @Operation(summary = "질문 목록 조회", description = "삭제되지 않은 질문 목록을 최신순으로 조회합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "질문 목록 조회 성공")
+    })
     public ApiResponse<List<QuestionSummaryResponse>> getQuestions() {
         List<QuestionSummaryResponse> responses = qnaService.getQuestions();
         return ApiResponse.ok(responses);
@@ -56,6 +76,14 @@ public class QnaController {
 
     @GetMapping("/questions/{questionId}")
     @Operation(summary = "질문 상세 조회", description = "질문 상세와 답변 목록을 조회하고 조회수를 1 증가시킵니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "질문 상세 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "질문을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
+    })
     public ApiResponse<QuestionDetailResponse> getQuestionDetail(
             @Parameter(description = "질문 ID입니다.", example = "1")
             @PathVariable Long questionId
@@ -66,6 +94,14 @@ public class QnaController {
 
     @GetMapping("/questions/duplicate-suggestions")
     @Operation(summary = "중복 질문 추천 조회", description = "질문 제목을 기준으로 유사한 기존 질문 목록을 추천합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "중복 질문 추천 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 제목",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
+    })
     public ApiResponse<List<DuplicateQuestionSuggestionResponse>> getDuplicateSuggestions(
             @Parameter(description = "중복 여부를 확인할 질문 제목입니다.", example = "Spring Boot에서 JWT 필터가 두 번 실행됩니다.")
             @RequestParam String title
@@ -76,6 +112,19 @@ public class QnaController {
 
     @PostMapping("/questions/{questionId}/answers")
     @Operation(summary = "답변 등록", description = "특정 질문에 답변을 등록합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "답변 등록 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자 또는 질문을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
+    })
     public ApiResponse<AnswerResponse> createAnswer(
             @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
             @RequestParam Long userId,
@@ -89,6 +138,24 @@ public class QnaController {
 
     @PatchMapping("/questions/{questionId}/answers/{answerId}/adopt")
     @Operation(summary = "답변 채택", description = "질문 작성자만 특정 답변을 채택할 수 있습니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "답변 채택 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "이미 채택된 질문이거나 자신의 답변 채택 시도",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "질문 작성자가 아님",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "질문 또는 답변을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
+    })
     public ApiResponse<QuestionDetailResponse> adoptAnswer(
             @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
             @RequestParam Long userId,
@@ -103,6 +170,9 @@ public class QnaController {
 
     @GetMapping("/templates")
     @Operation(summary = "질문 템플릿 조회", description = "질문 작성 시 사용할 수 있는 활성화된 템플릿 목록을 조회합니다.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "질문 템플릿 조회 성공")
+    })
     public ApiResponse<List<QuestionTemplateResponse>> getQuestionTemplates() {
         List<QuestionTemplateResponse> responses = qnaService.getQuestionTemplates();
         return ApiResponse.ok(responses);

@@ -1,6 +1,7 @@
 package com.devpath.api.qna.dto;
 
 import com.devpath.domain.qna.entity.Question;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,7 +46,10 @@ public class QuestionDetailResponse {
     @Schema(description = "질문 수정 일시", example = "2026-03-23T18:05:00")
     private LocalDateTime updatedAt;
 
-    @Schema(description = "답변 목록")
+    @ArraySchema(
+            arraySchema = @Schema(description = "답변 목록"),
+            schema = @Schema(implementation = AnswerResponse.class)
+    )
     private List<AnswerResponse> answers;
 
     // 질문 엔티티와 답변 목록을 상세 응답 DTO로 변환한다.

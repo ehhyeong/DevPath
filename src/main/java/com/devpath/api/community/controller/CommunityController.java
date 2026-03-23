@@ -8,11 +8,13 @@ import com.devpath.api.community.dto.PostUpdateRequest;
 import com.devpath.api.community.service.CommunityService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerDocConstants;
+import com.devpath.common.swagger.SwaggerErrorResponse;
 import com.devpath.domain.community.entity.CommunityCategory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -40,14 +42,18 @@ public class CommunityController {
 
     @PostMapping
     @Operation(summary = "게시글 작성", description = "커뮤니티에 새로운 글을 작성합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "게시글 작성 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "게시글 작성 성공",
-                    content = @Content(schema = @Schema(implementation = PostResponse.class))
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
     })
     public ApiResponse<PostResponse> createPost(
             @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
@@ -63,13 +69,13 @@ public class CommunityController {
             summary = "게시글 목록 조회",
             description = "카테고리, 작성자, 키워드, 정렬 기준(latest/popular/mostViewed), 페이지 정보를 조합해 게시글 목록을 조회합니다."
     )
-    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "게시글 목록 조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "게시글 목록 조회 성공",
-                    content = @Content(schema = @Schema(implementation = PostPageResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 정렬 조건 또는 요청 파라미터")
+                    responseCode = "400",
+                    description = "잘못된 정렬 조건 또는 요청 파라미터",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
     })
     public ApiResponse<PostPageResponse> getPosts(
             @Parameter(description = SwaggerDocConstants.COMMUNITY_CATEGORY_DESCRIPTION, example = "TECH_SHARE")
@@ -96,13 +102,13 @@ public class CommunityController {
 
     @GetMapping("/{postId}")
     @Operation(summary = "게시글 상세 조회", description = "게시글 상세 정보를 조회하고 조회수를 1 증가시킵니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "게시글 상세 조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "게시글 상세 조회 성공",
-                    content = @Content(schema = @Schema(implementation = PostResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+                    responseCode = "404",
+                    description = "게시글을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
     })
     public ApiResponse<PostResponse> getPostDetail(
             @Parameter(description = "게시글 ID입니다.", example = "10")
@@ -114,14 +120,23 @@ public class CommunityController {
 
     @PutMapping("/{postId}")
     @Operation(summary = "게시글 수정", description = "작성자 본인만 게시글을 수정할 수 있습니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "게시글 수정 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "게시글 수정 성공",
-                    content = @Content(schema = @Schema(implementation = PostResponse.class))
+                    responseCode = "400",
+                    description = "잘못된 요청",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
             ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "수정 권한 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "수정 권한 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "게시글을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
     })
     public ApiResponse<PostResponse> updatePost(
             @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
@@ -136,10 +151,18 @@ public class CommunityController {
 
     @DeleteMapping("/{postId}")
     @Operation(summary = "게시글 삭제", description = "작성자 본인만 게시글을 삭제할 수 있습니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+    @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "게시글 삭제 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "삭제 권한 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글을 찾을 수 없음")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "삭제 권한 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "게시글을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
     })
     public ApiResponse<Void> deletePost(
             @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
@@ -153,13 +176,13 @@ public class CommunityController {
 
     @GetMapping("/me")
     @Operation(summary = "내 게시글 목록 조회", description = "특정 사용자가 작성한 게시글 목록을 최신순으로 조회합니다.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponses(value = {
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "내 게시글 목록 조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "내 게시글 목록 조회 성공",
-                    content = @Content(schema = @Schema(implementation = MyPostResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
+            )
     })
     public ApiResponse<List<MyPostResponse>> getMyPosts(
             @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")

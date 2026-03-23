@@ -1,5 +1,6 @@
 package com.devpath.api.community.dto;
 
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import lombok.Builder;
@@ -10,7 +11,10 @@ import lombok.Getter;
 @Schema(description = "게시글 페이지 응답 DTO")
 public class PostPageResponse {
 
-    @Schema(description = "게시글 목록")
+    @ArraySchema(
+            arraySchema = @Schema(description = "게시글 목록"),
+            schema = @Schema(implementation = PostResponse.class)
+    )
     private List<PostResponse> content;
 
     @Schema(description = "현재 페이지 번호", example = "0")

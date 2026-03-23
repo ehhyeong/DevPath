@@ -1,5 +1,6 @@
 package com.devpath.api.community.dto;
 
+import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.domain.community.entity.CommunityCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -14,7 +15,11 @@ import lombok.NoArgsConstructor;
 public class PostUpdateRequest {
 
     @NotNull(message = "카테고리는 필수입니다.")
-    @Schema(description = "게시판 카테고리", example = "TECH_SHARE")
+    @Schema(
+            description = SwaggerDocConstants.COMMUNITY_CATEGORY_DESCRIPTION,
+            example = "TECH_SHARE",
+            allowableValues = {"TECH_SHARE", "CAREER", "FREE"}
+    )
     private CommunityCategory category;
 
     @NotBlank(message = "제목을 입력해주세요.")
