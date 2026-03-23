@@ -1,21 +1,34 @@
 package com.devpath.domain.community.entity;
 
 import com.devpath.domain.user.entity.User;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "community_posts")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // 무분별한 객체 생성 방지
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY) // 지연 로딩 필수 (N+1 방지)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
@@ -30,10 +43,11 @@ public class Post {
     private String content;
 
     private int viewCount = 0;
+
     private int likeCount = 0;
 
     @Column(name = "is_deleted")
-    private boolean isDeleted = false; // Soft Delete 플래그
+    private boolean isDeleted = false;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -49,7 +63,6 @@ public class Post {
         this.content = content;
     }
 
-    // 비즈니스 메서드 (Setter 대체)
     public void updatePost(String title, String content, CommunityCategory category) {
         this.title = title;
         this.content = content;
@@ -57,12 +70,22 @@ public class Post {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // 조회수 증가 비즈니스 로직
     public void incrementViewCount() {
         this.viewCount++;
     }
 
-    // Soft Delete 처리 로직
+    public void incrementLikeCount() {
+        this.likeCount++;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void decrementLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
+        this.updatedAt = LocalDateTime.now();
+    }
+
     public void deletePost() {
         this.isDeleted = true;
         this.updatedAt = LocalDateTime.now();
