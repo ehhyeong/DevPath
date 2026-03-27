@@ -24,7 +24,7 @@ public enum ErrorCode {
   JWT_TYPE_MISMATCH(HttpStatus.UNAUTHORIZED, "토큰 타입이 올바르지 않습니다."),
   REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "저장된 리프레시 토큰이 없습니다."),
   REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 일치하지 않습니다."),
-  REFRESH_TOKEN_REUSED(HttpStatus.UNAUTHORIZED, "리프레시 토큰 재사용이 감지되어 세션을 만료했습니다."),
+  REFRESH_TOKEN_REUSED(HttpStatus.UNAUTHORIZED, "리프레시 토큰 재사용이 감지되어 세션이 만료되었습니다."),
   RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 리소스를 찾을 수 없습니다."),
   DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "이미 존재하는 리소스입니다."),
   INVALID_COURSE_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 강의 상태입니다."),
@@ -40,7 +40,7 @@ public enum ErrorCode {
 
   ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵을 찾을 수 없습니다."),
   CUSTOM_ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 로드맵을 찾을 수 없습니다."),
-  CUSTOM_ROADMAP_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 해당 스킬의 로드맵을 복사했습니다."),
+  CUSTOM_ROADMAP_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 해당 사용자의 로드맵을 복사했습니다."),
   ROADMAP_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "로드맵 노드를 찾을 수 없습니다."),
   CUSTOM_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 노드를 찾을 수 없습니다."),
 
@@ -58,13 +58,22 @@ public enum ErrorCode {
   RISK_WARNING_NOT_FOUND(HttpStatus.NOT_FOUND, "리스크 경고를 찾을 수 없습니다."),
   OCR_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "OCR 결과를 찾을 수 없습니다."),
 
-    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
-    QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "질문을 찾을 수 없습니다."),
-    ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "답변을 찾을 수 없습니다."),
-    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
-    UNAUTHORIZED_ACTION(HttpStatus.FORBIDDEN, "해당 작업을 수행할 권한이 없습니다."),
-    ALREADY_ADOPTED(HttpStatus.BAD_REQUEST, "이미 채택된 답변이 존재합니다."),
-    CANNOT_ADOPT_OWN_ANSWER(HttpStatus.BAD_REQUEST, "자신의 답변은 채택할 수 없습니다."),
+  POST_NOT_FOUND(HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
+  QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "질문을 찾을 수 없습니다."),
+  ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "답변을 찾을 수 없습니다."),
+  COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
+  UNAUTHORIZED_ACTION(HttpStatus.FORBIDDEN, "해당 작업을 수행할 권한이 없습니다."),
+  ALREADY_ADOPTED(HttpStatus.BAD_REQUEST, "이미 채택된 답변이 존재합니다."),
+  CANNOT_ADOPT_OWN_ANSWER(HttpStatus.BAD_REQUEST, "자신의 답변은 채택할 수 없습니다."),
+
+  NODE_CLEARANCE_NOT_FOUND(HttpStatus.NOT_FOUND, "노드 클리어 정보를 찾을 수 없습니다."),
+  PROOF_CONDITION_NOT_MET(HttpStatus.BAD_REQUEST, "Proof 발급 조건을 만족하지 못했습니다."),
+  PROOF_CARD_ALREADY_ISSUED(HttpStatus.CONFLICT, "이미 Proof Card가 발급된 노드입니다."),
+  CERTIFICATE_NOT_FOUND(HttpStatus.NOT_FOUND, "증명서를 찾을 수 없습니다."),
+  SHARE_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "공유 링크를 찾을 수 없습니다."),
+  RECOMMENDATION_CHANGE_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 변경 정보를 찾을 수 없습니다."),
+  LEARNING_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, "학습 자동화 룰을 찾을 수 없습니다."),
+  LEARNING_METRIC_NOT_FOUND(HttpStatus.NOT_FOUND, "학습 지표 정보를 찾을 수 없습니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 

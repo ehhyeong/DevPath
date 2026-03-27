@@ -36,13 +36,24 @@ public class LessonProgressService {
             LessonProgressRequest.SaveProgress request
     ) {
         LessonProgress progress = getOrCreateLessonProgress(userId, lessonId);
-        progress.updateProgress(request.getProgressPercent(), request.getProgressSeconds());
+        Lesson lesson = validateLessonExists(lessonId);
+
+        int normalizedProgressPercent = normalizeProgressPercent(request.getProgressPercent());
+        int normalizedProgressSeconds = normalizeProgressSeconds(
+                request.getProgressSeconds(),
+                lesson.getDurationSeconds(),
+                normalizedProgressPercent
+        );
+
+        progress.updateProgress(normalizedProgressPercent, normalizedProgressSeconds);
+
         return LessonProgressResponse.from(progress);
     }
 
     @Transactional(readOnly = true)
     public LessonProgressResponse getProgress(Long userId, Long lessonId) {
         validateLessonExists(lessonId);
+
         return findLessonProgress(userId, lessonId)
                 .map(LessonProgressResponse::from)
                 .orElseGet(() -> LessonProgressResponse.defaultForLesson(lessonId));
@@ -77,5 +88,23 @@ public class LessonProgressService {
     private Lesson validateLessonExists(Long lessonId) {
         return lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+    }
+
+    private int normalizeProgressPercent(Integer progressPercent) {
+        return Math.max(0, Math.min(progressPercent, 100));
+    }
+
+    private int normalizeProgressSeconds(Integer progressSeconds, Integer durationSeconds, int progressPercent) {
+        int normalizedProgressSeconds = Math.max(progressSeconds, 0);
+
+        if (progressPercent >= 100 && durationSeconds != null && durationSeconds > 0) {
+            return durationSeconds;
+        }
+
+        if (durationSeconds == null || durationSeconds <= 0) {
+            return normalizedProgressSeconds;
+        }
+
+        return Math.min(normalizedProgressSeconds, durationSeconds);
     }
 }
