@@ -1,4 +1,4 @@
-package com.devpath.api.review.entity;
+package com.devpath.api.instructor.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -12,35 +12,25 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "review")
+@Table(name = "review_reply")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @EntityListeners(AuditingEntityListener.class)
-public class Review {
+public class ReviewReply {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private Long courseId;
+    private Long reviewId;
 
     @Column(nullable = false)
-    private Long learnerId;
+    private Long instructorId;
 
-    @Column(nullable = false)
-    private Integer rating;
-
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
-
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private ReviewStatus status = ReviewStatus.UNANSWERED;
-
-    @Builder.Default
-    private Boolean isHidden = false;
 
     @Builder.Default
     private Boolean isDeleted = false;
@@ -51,22 +41,11 @@ public class Review {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    @Column(name = "issue_tags_raw")
-    private String issueTagsRaw;
-
-    public void changeStatus(ReviewStatus status) {
-        this.status = status;
+    public void updateContent(String content) {
+        this.content = content;
     }
 
-    public void hide() {
-        this.isHidden = true;
-    }
-
-    public void resolveReport() {
-        this.isHidden = false;
-    }
-
-    public void updateIssueTags(String issueTagsRaw) {
-        this.issueTagsRaw = issueTagsRaw;
+    public void delete() {
+        this.isDeleted = true;
     }
 }
