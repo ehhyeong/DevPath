@@ -349,6 +349,7 @@ public class AdminPolicyAndMappingService {
 
   @Transactional(readOnly = true)
   public List<CourseNodeMappingCandidateResponse> getMappingCandidatesSimple() {
+    // TODO: 추후 AI 기반 태그 매칭 알고리즘 연동 예정
     MappingCandidatesResponse existing = getMappingCandidates();
     return existing.getCourses().stream()
         .map(item -> CourseNodeMappingCandidateResponse.builder()
@@ -382,6 +383,7 @@ public class AdminPolicyAndMappingService {
 
   @Transactional(readOnly = true)
   public com.devpath.api.admin.dto.governance.SystemPolicyResponse getSystemPoliciesSimple() {
+    // TODO: refundPolicyDays, maxCoursePrice DB 연동 예정
     SystemSetting setting = systemSettingRepository.findTopByOrderBySettingIdAsc().orElse(null);
     Integer platformFeeRate = setting != null
         ? setting.getPlatformFeeRate().intValue() : 20;
