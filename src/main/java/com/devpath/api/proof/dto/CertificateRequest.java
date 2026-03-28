@@ -7,17 +7,6 @@ import lombok.NoArgsConstructor;
 // Certificate 요청 DTO 모음
 public class CertificateRequest {
 
-    // 증명서 발급 요청 DTO
-    @Getter
-    @NoArgsConstructor
-    @Schema(description = "증명서 발급 요청 DTO")
-    public static class Issue {
-
-        // Proof Card ID
-        @Schema(description = "Proof Card ID", example = "1")
-        private Long proofCardId;
-    }
-
     // 증명서 다운로드 요청 DTO
     @Getter
     @NoArgsConstructor

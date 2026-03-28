@@ -290,7 +290,7 @@ public class NodeClearanceEvaluator {
             ReasonResult.builder()
                 .reasonType(ClearanceReasonType.PROOF_ELIGIBLE)
                 .satisfied(proofEligible)
-                .detailMessage(proofEligible ? "Proof 발급 가능 상태입니다." : "Proof 발급 조건이 아직 충족되지 않았습니다.")
+                .detailMessage(proofEligible ? "Proof Card 발급 가능 상태입니다." : "Proof Card 발급 조건이 아직 충족되지 않았습니다.")
                 .build()
         );
 

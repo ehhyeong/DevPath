@@ -3,6 +3,7 @@ package com.devpath.api.learning.service;
 import com.devpath.api.learning.component.NodeClearanceEvaluator;
 import com.devpath.api.learning.dto.NodeClearanceRequest;
 import com.devpath.api.learning.dto.NodeClearanceResponse;
+import com.devpath.api.proof.service.ProofCardService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
@@ -23,17 +24,33 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Node Clearance 서비스
 @Service
 @RequiredArgsConstructor
 public class NodeClearanceService {
 
+    // Node Clearance 저장소
     private final NodeClearanceRepository nodeClearanceRepository;
+
+    // Node Clearance Reason 저장소
     private final NodeClearanceReasonRepository nodeClearanceReasonRepository;
+
+    // Node Clearance 평가기
     private final NodeClearanceEvaluator nodeClearanceEvaluator;
+
+    // Proof Card 서비스
+    private final ProofCardService proofCardService;
+
+    // 유저 저장소
     private final UserRepository userRepository;
+
+    // 로드맵 저장소
     private final RoadmapRepository roadmapRepository;
+
+    // 로드맵 노드 저장소
     private final RoadmapNodeRepository roadmapNodeRepository;
 
+    // 로드맵의 노드 클리어를 재계산한다.
     @Transactional
     public List<NodeClearanceResponse.Detail> recalculate(Long userId, NodeClearanceRequest.Recalculate request) {
         validateUser(userId);
@@ -62,14 +79,16 @@ public class NodeClearanceService {
             .toList();
     }
 
-    @Transactional
+    // 특정 노드 클리어 상세를 조회한다.
+    @Transactional(readOnly = true)
     public NodeClearanceResponse.Detail getNodeClearance(Long userId, Long nodeId) {
         return nodeClearanceRepository.findByUserIdAndNodeNodeId(userId, nodeId)
             .map(this::toDetail)
             .orElseGet(() -> synchronizeNodeClearance(userId, nodeId));
     }
 
-    @Transactional
+    // 노드 클리어 목록을 조회한다.
+    @Transactional(readOnly = true)
     public List<NodeClearanceResponse.Detail> getNodeClearances(Long userId, Long roadmapId) {
         if (roadmapId == null) {
             return nodeClearanceRepository.findAllByUserIdOrderByLastCalculatedAtDesc(userId)
@@ -110,7 +129,8 @@ public class NodeClearanceService {
         return results;
     }
 
-    @Transactional
+    // 특정 노드 클리어 근거 목록을 조회한다.
+    @Transactional(readOnly = true)
     public List<NodeClearanceResponse.ReasonDetail> getNodeClearanceReasons(Long userId, Long nodeId) {
         NodeClearance clearance = ensureNodeClearance(userId, nodeId);
 
@@ -120,7 +140,8 @@ public class NodeClearanceService {
             .toList();
     }
 
-    @Transactional
+    // 특정 노드의 Proof 발급 가능 여부를 점검한다.
+    @Transactional(readOnly = true)
     public NodeClearanceResponse.ProofCheck proofCheck(Long userId, Long nodeId) {
         NodeClearance clearance = ensureNodeClearance(userId, nodeId);
         List<NodeClearanceResponse.ReasonDetail> reasons = nodeClearanceReasonRepository
@@ -136,6 +157,7 @@ public class NodeClearanceService {
             .build();
     }
 
+    // 특정 노드 클리어를 계산 후 저장한다.
     @Transactional
     public NodeClearanceResponse.Detail synchronizeNodeClearance(Long userId, Long nodeId) {
         User user = validateUser(userId);
@@ -175,9 +197,14 @@ public class NodeClearanceService {
                 .toList()
         );
 
+        if (evaluationResult.isProofEligible()) {
+            proofCardService.issueIfEligible(userId, nodeId);
+        }
+
         return toDetail(savedNodeClearance);
     }
 
+    // 저장된 노드 클리어가 없으면 즉시 계산한다.
     private NodeClearance ensureNodeClearance(Long userId, Long nodeId) {
         return nodeClearanceRepository.findByUserIdAndNodeNodeId(userId, nodeId)
             .orElseGet(() -> {
@@ -187,11 +214,13 @@ public class NodeClearanceService {
             });
     }
 
+    // 유저 존재 여부를 검증한다.
     private User validateUser(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
+    // Node Clearance 엔티티를 상세 응답으로 변환한다.
     private NodeClearanceResponse.Detail toDetail(NodeClearance nodeClearance) {
         return NodeClearanceResponse.Detail.builder()
             .nodeId(nodeClearance.getNode().getNodeId())
@@ -209,6 +238,7 @@ public class NodeClearanceService {
             .build();
     }
 
+    // Node Clearance Reason 엔티티를 응답으로 변환한다.
     private NodeClearanceResponse.ReasonDetail toReasonDetail(NodeClearanceReason nodeClearanceReason) {
         return NodeClearanceResponse.ReasonDetail.builder()
             .reasonType(nodeClearanceReason.getReasonType())

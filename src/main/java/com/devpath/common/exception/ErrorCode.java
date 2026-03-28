@@ -74,6 +74,7 @@ public enum ErrorCode {
   RECOMMENDATION_CHANGE_NOT_FOUND(HttpStatus.NOT_FOUND, "추천 변경 정보를 찾을 수 없습니다."),
   LEARNING_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, "학습 자동화 룰을 찾을 수 없습니다."),
   LEARNING_METRIC_NOT_FOUND(HttpStatus.NOT_FOUND, "학습 지표 정보를 찾을 수 없습니다."),
+  PROOF_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "Proof Card를 찾을 수 없습니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 

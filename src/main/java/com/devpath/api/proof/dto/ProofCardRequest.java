@@ -14,7 +14,7 @@ public class ProofCardRequest {
     public static class Issue {
 
         // 로드맵 노드 ID
-        @Schema(description = "로드맵 노드 ID", example = "1")
+        @Schema(description = "로드맵 노드 ID", example = "10")
         private Long nodeId;
     }
 }

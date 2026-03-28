@@ -1,6 +1,7 @@
 package com.devpath.api.proof.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -16,5 +17,9 @@ public class ProofCardShareRequest {
         // Proof Card ID
         @Schema(description = "Proof Card ID", example = "1")
         private Long proofCardId;
+
+        // 만료 시각
+        @Schema(description = "만료 시각", example = "2026-04-27T23:59:59")
+        private LocalDateTime expiresAt;
     }
 }
