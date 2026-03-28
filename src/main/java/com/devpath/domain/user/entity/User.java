@@ -70,4 +70,16 @@ public class User {
   public void deactivate() {
     this.isActive = false;
   }
+
+  public void restrict() {
+    this.isActive = false;
+  }
+
+  public void restore() {
+    this.isActive = true;
+  }
+
+  public void withdraw() {
+    this.isActive = false;
+  }
 }
