@@ -39,4 +39,8 @@ public class Settlement {
 
     @CreatedDate
     private LocalDateTime createdAt;
+
+    public void hold() {
+        this.status = SettlementStatus.HELD;
+    }
 }

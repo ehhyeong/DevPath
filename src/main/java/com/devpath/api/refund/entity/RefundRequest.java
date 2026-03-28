@@ -42,4 +42,14 @@ public class RefundRequest {
     private LocalDateTime requestedAt;
 
     private LocalDateTime processedAt;
+
+    public void approve() {
+        this.status = RefundStatus.APPROVED;
+        this.processedAt = LocalDateTime.now();
+    }
+
+    public void reject() {
+        this.status = RefundStatus.REJECTED;
+        this.processedAt = LocalDateTime.now();
+    }
 }
