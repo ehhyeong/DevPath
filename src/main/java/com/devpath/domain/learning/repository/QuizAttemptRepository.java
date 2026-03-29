@@ -17,6 +17,11 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
         Long learnerId
     );
 
+    boolean existsByQuizIdAndLearnerIdAndCompletedAtIsNotNullAndIsPassedTrueAndIsDeletedFalse(
+        Long quizId,
+        Long learnerId
+    );
+
     List<QuizAttempt> findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(Long learnerId);
 
     @Query("""

@@ -5,12 +5,15 @@ import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.learning.entity.Assignment;
+import com.devpath.domain.learning.entity.Quiz;
 import com.devpath.domain.learning.entity.Submission;
 import com.devpath.domain.learning.entity.SubmissionStatus;
 import com.devpath.domain.learning.entity.clearance.ClearanceReasonType;
 import com.devpath.domain.learning.entity.clearance.ClearanceStatus;
 import com.devpath.domain.learning.repository.AssignmentRepository;
 import com.devpath.domain.learning.repository.LessonProgressRepository;
+import com.devpath.domain.learning.repository.QuizAttemptRepository;
+import com.devpath.domain.learning.repository.QuizRepository;
 import com.devpath.domain.learning.repository.SubmissionRepository;
 import com.devpath.domain.roadmap.entity.NodeCompletionRule;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
@@ -61,6 +64,10 @@ public class NodeClearanceEvaluator {
 
     // 과제 제출 저장소다.
     private final SubmissionRepository submissionRepository;
+
+    private final QuizRepository quizRepository;
+
+    private final QuizAttemptRepository quizAttemptRepository;
 
     // 노드 완료 규칙 저장소다.
     private final NodeCompletionRuleRepository nodeCompletionRuleRepository;
@@ -166,7 +173,29 @@ public class NodeClearanceEvaluator {
             return true;
         }
 
-        return false;
+        List<Quiz> quizzes = quizRepository.findAllByRoadmapNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(nodeId)
+            .stream()
+            .filter(quiz -> Boolean.TRUE.equals(quiz.getIsActive()))
+            .filter(quiz -> Boolean.TRUE.equals(quiz.getIsPublished()))
+            .toList();
+
+        if (quizzes.isEmpty()) {
+            return false;
+        }
+
+        for (Quiz quiz : quizzes) {
+            boolean passed = quizAttemptRepository
+                .existsByQuizIdAndLearnerIdAndCompletedAtIsNotNullAndIsPassedTrueAndIsDeletedFalse(
+                    quiz.getId(),
+                    userId
+                );
+
+            if (!passed) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // 과제 통과 여부를 계산한다.
