@@ -1,5 +1,6 @@
 package com.devpath.api.admin.controller;
 
+import com.devpath.api.admin.dto.permission.InstructorGradeUpdateRequest;
 import com.devpath.api.admin.dto.permission.RoleCreateRequest;
 import com.devpath.api.admin.dto.permission.RoleResponse;
 import com.devpath.api.admin.dto.permission.UserPermissionResponse;
@@ -45,5 +46,14 @@ public class AdminPermissionController {
     @GetMapping("/users/{userId}")
     public ApiResponse<UserPermissionResponse> getUserPermission(@PathVariable Long userId) {
         return ApiResponse.success("사용자 권한을 조회했습니다.", adminPermissionService.getUserPermission(userId));
+    }
+
+    @Operation(summary = "강사 등급 변경", description = "강사 등급(JUNIOR/SENIOR/EXPERT 등) 변경")
+    @PatchMapping("/users/{userId}/role")
+    public ApiResponse<Void> changeInstructorGrade(
+            @PathVariable Long userId,
+            @RequestBody @Valid InstructorGradeUpdateRequest request) {
+        adminPermissionService.changeInstructorGrade(userId, request);
+        return ApiResponse.success("강사 등급이 변경되었습니다.", null);
     }
 }

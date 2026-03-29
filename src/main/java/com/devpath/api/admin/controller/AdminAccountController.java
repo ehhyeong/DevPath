@@ -75,6 +75,16 @@ public class AdminAccountController {
         return ApiResponse.success("탈퇴 처리가 완료되었습니다.", null);
     }
 
+    @Operation(summary = "강사 가입 승인")
+    @PatchMapping("/{userId}/approve-instructor")
+    public ApiResponse<Void> approveInstructor(
+            @PathVariable Long userId,
+            @RequestBody @Valid AccountStatusUpdateRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long adminId) {
+        adminAccountService.approveInstructor(userId, adminId, request);
+        return ApiResponse.success("강사 가입이 승인되었습니다.", null);
+    }
+
     @Operation(summary = "계정 처리 로그 조회", description = "처리 사유/처리자/처리시간 포함")
     @GetMapping("/{userId}/logs")
     public ApiResponse<List<AccountLogResponse>> getAccountLogs(@PathVariable Long userId) {

@@ -87,6 +87,18 @@ public class AdminAccountService {
                 .build());
     }
 
+    public void approveInstructor(Long userId, Long adminId, AccountStatusUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        user.approveInstructor();
+        accountLogRepository.save(AccountLog.builder()
+                .targetUserId(userId)
+                .adminId(adminId)
+                .logType(AccountLogType.APPROVE_INSTRUCTOR)
+                .reason(request.getReason())
+                .build());
+    }
+
     @Transactional(readOnly = true)
     public List<AccountLogResponse> getAccountLogs(Long userId) {
         return accountLogRepository.findByTargetUserIdOrderByProcessedAtDesc(userId).stream()
