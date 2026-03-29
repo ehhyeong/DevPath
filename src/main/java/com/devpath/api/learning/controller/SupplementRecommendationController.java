@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Learner - Supplement Recommendation", description = "Supplement recommendation API")
+@Tag(name = "Learner - Supplement Recommendation", description = "보강 추천 후보 생성 및 상태 관리 API")
 @RestController
 @RequestMapping("/api/learning/supplement-recommendations")
 @RequiredArgsConstructor

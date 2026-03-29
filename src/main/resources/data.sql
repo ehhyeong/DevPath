@@ -1621,3 +1621,50 @@ SELECT 1, 'STUDY_GROUP', '새로운 스터디 팀원이 매칭되었습니다!',
 INSERT INTO dashboard_snapshot (learner_id, snapshot_date, total_study_hours, completed_nodes)
 SELECT 1, CURRENT_DATE, 45, 12
     WHERE NOT EXISTS (SELECT 1 FROM dashboard_snapshot WHERE learner_id = 1 AND snapshot_date = CURRENT_DATE);
+
+-- ========================================
+-- 10. A SEED
+-- Learning Automation / Metrics
+-- owner: A
+-- ========================================
+
+INSERT INTO learning_automation_rules (
+    rule_key,
+    rule_name,
+    description,
+    rule_value,
+    priority,
+    rule_status,
+    created_at,
+    updated_at
+) VALUES
+('PROOF_CARD_AUTO_ISSUE', 'Proof Card 자동 발급', '노드 클리어 시 Proof Card를 자동 발급합니다.', 'true', 100, 'ENABLED', NOW(), NOW()),
+('PROOF_CARD_MANUAL_ISSUE', 'Proof Card 수동 발급', '사용자 수동 Proof Card 발급 API 허용 여부입니다.', 'true', 90, 'ENABLED', NOW(), NOW()),
+('RECOMMENDATION_CHANGE_ENABLED', '추천 변경 활성화', '추천 변경 제안 기능 활성화 여부입니다.', 'true', 80, 'ENABLED', NOW(), NOW()),
+('RECOMMENDATION_CHANGE_MAX_LIMIT', '추천 변경 최대 개수', '추천 변경 제안 생성 최대 개수입니다.', '5', 70, 'ENABLED', NOW(), NOW()),
+('SUPPLEMENT_RECOMMENDATION_ENABLED', '보강 추천 활성화', '보강 추천 생성 기능 활성화 여부입니다.', 'true', 60, 'ENABLED', NOW(), NOW());
+
+INSERT INTO automation_monitor_snapshots (
+    monitor_key,
+    monitor_status,
+    snapshot_value,
+    snapshot_message,
+    measured_at,
+    created_at
+) VALUES
+('PROOF_CARD_AUTO_ISSUE', 'HEALTHY', 1.0, '자동 발급 룰이 활성화되어 있습니다.', NOW(), NOW()),
+('PROOF_CARD_MANUAL_ISSUE', 'HEALTHY', 1.0, '수동 발급 룰이 활성화되어 있습니다.', NOW(), NOW()),
+('RECOMMENDATION_CHANGE_ENABLED', 'HEALTHY', 1.0, '추천 변경 룰이 활성화되어 있습니다.', NOW(), NOW()),
+('SUPPLEMENT_RECOMMENDATION_ENABLED', 'HEALTHY', 1.0, '보강 추천 룰이 활성화되어 있습니다.', NOW(), NOW());
+
+INSERT INTO learning_metric_samples (
+    metric_type,
+    metric_label,
+    metric_value,
+    sampled_at,
+    created_at
+) VALUES
+('OVERVIEW', 'clearanceRate', 87.50, NOW(), NOW()),
+('COMPLETION_RATE', 'roadmapCompletionRate', 42.80, NOW(), NOW()),
+('AVERAGE_WATCH_TIME', 'averageLearningDurationSeconds', 1380.00, NOW(), NOW()),
+('QUIZ_STATS', 'quizQualityScore', 79.40, NOW(), NOW());

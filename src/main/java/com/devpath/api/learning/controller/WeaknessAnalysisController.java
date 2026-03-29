@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Learner - Weakness Analysis", description = "Diagnosis-based weakness analysis API")
+@Tag(name = "Learner - Weakness Analysis", description = "진단 퀴즈 기반 취약점 분석 결과 조회 API")
 @RestController
 @RequestMapping("/api/learning/weakness-analysis")
 @RequiredArgsConstructor

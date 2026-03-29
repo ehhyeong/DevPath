@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Learner - Recommendation Risk Warning", description = "Existing recommendation risk warning API")
+@Tag(name = "Learner - Recommendation Risk Warning", description = "기존 추천 난이도 및 리스크 경고 조회 API")
 @RestController
 @RequestMapping("/api/recommendations/risk-warnings")
 @RequiredArgsConstructor

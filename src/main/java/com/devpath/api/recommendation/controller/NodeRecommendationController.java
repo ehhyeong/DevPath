@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/me")
 @RequiredArgsConstructor
-@Tag(name = "Learner - Node Recommendation", description = "Existing roadmap node recommendation API")
+@Tag(name = "Learner - Node Recommendation", description = "기존 로드맵 노드 추천 관리 API")
 public class NodeRecommendationController {
 
     private final NodeRecommendationService nodeRecommendationService;
@@ -36,8 +36,8 @@ public class NodeRecommendationController {
 
     @PostMapping("/roadmaps/{roadmapId}/recommendations/init")
     @Operation(
-        summary = "Generate existing recommendation candidates",
-        description = "Generates roadmap recommendation candidates on the existing recommendation axis."
+        summary = "기존 추천 후보 생성",
+        description = "로드맵 기준 기존 추천 후보를 생성합니다. Recommendation Change API와 별도 축으로 유지됩니다."
     )
     public ResponseEntity<ApiResponse<NodeRecommendationDto.GenerateRecommendationsResponse>> generateRecommendations(
         @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
@@ -52,8 +52,8 @@ public class NodeRecommendationController {
 
     @GetMapping("/roadmaps/{roadmapId}/recommendations")
     @Operation(
-        summary = "Get existing recommendations",
-        description = "Returns existing roadmap recommendations separately from recommendation changes."
+        summary = "기존 추천 목록 조회",
+        description = "로드맵 기준 기존 추천 목록을 조회합니다. Recommendation Change 목록과 역할이 분리됩니다."
     )
     public ResponseEntity<ApiResponse<NodeRecommendationDto.RoadmapRecommendationsResponse>> getRecommendations(
         @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
@@ -99,7 +99,7 @@ public class NodeRecommendationController {
     }
 
     @PatchMapping("/recommendations/{recommendationId}/accept")
-    @Operation(summary = "Accept existing recommendation", description = "Accepts an existing recommendation.")
+    @Operation(summary = "기존 추천 수락", description = "기존 추천 노드를 수락합니다.")
     public ResponseEntity<ApiResponse<NodeRecommendationDto.ProcessRecommendationResponse>> acceptRecommendation(
         @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
         @Parameter(description = "Recommendation id") @PathVariable Long recommendationId
@@ -117,7 +117,7 @@ public class NodeRecommendationController {
     }
 
     @PatchMapping("/recommendations/{recommendationId}/reject")
-    @Operation(summary = "Reject existing recommendation", description = "Rejects an existing recommendation.")
+    @Operation(summary = "기존 추천 거절", description = "기존 추천 노드를 거절합니다.")
     public ResponseEntity<ApiResponse<NodeRecommendationDto.ProcessRecommendationResponse>> rejectRecommendation(
         @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
         @Parameter(description = "Recommendation id") @PathVariable Long recommendationId
@@ -135,7 +135,7 @@ public class NodeRecommendationController {
     }
 
     @PatchMapping("/recommendations/{recommendationId}/expire")
-    @Operation(summary = "Expire existing recommendation", description = "Manually expires an existing recommendation.")
+    @Operation(summary = "기존 추천 만료 처리", description = "기존 추천 노드를 수동으로 만료 처리합니다.")
     public ResponseEntity<ApiResponse<NodeRecommendationDto.ProcessRecommendationResponse>> expireRecommendation(
         @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
         @Parameter(description = "Recommendation id") @PathVariable Long recommendationId

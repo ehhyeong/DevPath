@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Learner - Recommendation History", description = "Existing recommendation transition history API")
+@Tag(name = "Learner - Recommendation History", description = "기존 추천 상태 전이 이력 조회 API")
 @RestController
 @RequestMapping("/api/recommendations/history")
 @RequiredArgsConstructor

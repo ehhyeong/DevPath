@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Learner - TIL", description = "TIL draft, conversion, retrieval, and publish API")
+@Tag(name = "Learner - TIL", description = "TIL 초안 저장, 노트 변환, 조회, 외부 블로그 발행 API")
 @RestController
 @RequestMapping("/api/learning/til")
 @RequiredArgsConstructor
