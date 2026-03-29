@@ -7,10 +7,12 @@ import com.devpath.api.recommendation.dto.RecommendationChangeRequest;
 import com.devpath.api.recommendation.dto.RecommendationChangeResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChange;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChangeStatus;
 import com.devpath.domain.learning.entity.recommendation.RecommendationHistory;
 import com.devpath.domain.learning.entity.recommendation.SupplementRecommendation;
+import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationChangeRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
@@ -30,6 +32,7 @@ public class RecommendationChangeService {
     private final RecommendationHistoryRepository recommendationHistoryRepository;
     private final UserRepository userRepository;
     private final RoadmapRepository roadmapRepository;
+    private final LearningAutomationRuleRepository learningAutomationRuleRepository;
     private final SupplementRecommendationService supplementRecommendationService;
     private final RecommendationHistoryService recommendationHistoryService;
     private final RiskWarningService riskWarningService;
@@ -41,14 +44,18 @@ public class RecommendationChangeService {
         Long userId,
         RecommendationChangeRequest.Suggestion request
     ) {
+        if (!isRuleEnabled("RECOMMENDATION_CHANGE_ENABLED", true)) {
+            throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
+        }
+
         User user = validateUser(userId);
 
         if (request.getRoadmapId() != null) {
-            roadmapRepository.findByRoadmapIdAndIsDeletedFalse(request.getRoadmapId())
+            roadmapRepository.findById(request.getRoadmapId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NOT_FOUND));
         }
 
-        int limit = request.getLimit() == null || request.getLimit() <= 0 ? 5 : request.getLimit();
+        int limit = resolveSuggestionLimit(request.getLimit());
         long tilSignalCount = tilService.getTilSignalCountForRecommendationChange(userId);
         boolean weaknessSignal = weaknessAnalysisService.hasLatestAnalysisSignalForRecommendationChange(userId);
         long riskWarningCount = riskWarningService.getUnacknowledgedWarningCountForRecommendationChange(userId);
@@ -251,6 +258,33 @@ public class RecommendationChangeService {
                 .context(recommendationChange.getContextSummary())
                 .build()
         );
+    }
+
+    // 룰 활성 여부를 조회한다.
+    private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
+        return learningAutomationRuleRepository.findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
+            .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
+            .orElse(defaultValue);
+    }
+
+    // 추천 변경 제안 최대 개수를 계산한다.
+    private int resolveSuggestionLimit(Integer requestLimit) {
+        int requestedLimit = requestLimit == null || requestLimit <= 0 ? 5 : requestLimit;
+
+        return learningAutomationRuleRepository.findTopByRuleKeyOrderByPriorityDescIdDesc("RECOMMENDATION_CHANGE_MAX_LIMIT")
+            .map(rule -> parsePositiveInt(rule.getRuleValue(), requestedLimit))
+            .map(configuredLimit -> Math.min(requestedLimit, configuredLimit))
+            .orElse(requestedLimit);
+    }
+
+    // 양의 정수 문자열을 파싱한다.
+    private int parsePositiveInt(String value, int defaultValue) {
+        try {
+            int parsed = Integer.parseInt(value);
+            return parsed > 0 ? parsed : defaultValue;
+        } catch (NumberFormatException exception) {
+            return defaultValue;
+        }
     }
 
     private User validateUser(Long userId) {

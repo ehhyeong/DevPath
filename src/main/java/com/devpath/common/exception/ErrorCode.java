@@ -75,6 +75,8 @@ public enum ErrorCode {
   LEARNING_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, "학습 자동화 룰을 찾을 수 없습니다."),
   LEARNING_METRIC_NOT_FOUND(HttpStatus.NOT_FOUND, "학습 지표 정보를 찾을 수 없습니다."),
   PROOF_CARD_NOT_FOUND(HttpStatus.NOT_FOUND, "Proof Card를 찾을 수 없습니다."),
+  DUPLICATE_LEARNING_RULE(HttpStatus.CONFLICT, "동일한 학습 자동화 룰이 이미 존재합니다."),
+  LEARNING_RULE_DISABLED(HttpStatus.BAD_REQUEST, "비활성화된 학습 자동화 룰입니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 

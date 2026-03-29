@@ -4,21 +4,28 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// Admin Learning Rule 요청 DTO 모음
+// Admin learning rule request DTOs.
 public class AdminLearningRuleRequest {
 
-    // 학습 자동화 룰 생성/수정 요청 DTO
+    // Request DTO for creating or updating a learning automation rule.
     @Getter
     @NoArgsConstructor
-    @Schema(description = "학습 자동화 룰 생성/수정 요청 DTO")
+    @Schema(description = "Learning automation rule create or update request")
     public static class Upsert {
 
-        // 룰 이름
-        @Schema(description = "룰 이름", example = "노드 클리어 자동 판정 룰")
+        @Schema(description = "Rule key", example = "PROOF_CARD_AUTO_ISSUE")
+        private String ruleKey;
+
+        @Schema(description = "Rule name", example = "Proof Card auto issue")
         private String ruleName;
 
-        // 룰 설명
-        @Schema(description = "룰 설명", example = "레슨 진도율, 퀴즈, 과제 조건을 기준으로 노드를 판정합니다.")
+        @Schema(description = "Rule description", example = "Automatically issues a proof card when a node is cleared.")
         private String description;
+
+        @Schema(description = "Rule value", example = "true")
+        private String ruleValue;
+
+        @Schema(description = "Priority", example = "100")
+        private Integer priority;
     }
 }

@@ -9,6 +9,7 @@ import com.devpath.domain.course.entity.CourseNodeMapping;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.learning.entity.LessonProgress;
+import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.recommendation.RecommendationHistory;
 import com.devpath.domain.learning.entity.recommendation.RecommendationStatus;
 import com.devpath.domain.learning.entity.recommendation.RiskWarning;
@@ -16,6 +17,7 @@ import com.devpath.domain.learning.entity.recommendation.SupplementRecommendatio
 import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.TilDraftRepository;
 import com.devpath.domain.learning.repository.TimestampNoteRepository;
+import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.ocr.OcrResultRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
 import com.devpath.domain.learning.repository.recommendation.RiskWarningRepository;
@@ -55,9 +57,14 @@ public class SupplementRecommendationService {
     private final TimestampNoteRepository timestampNoteRepository;
     private final TilDraftRepository tilDraftRepository;
     private final OcrResultRepository ocrResultRepository;
+    private final LearningAutomationRuleRepository learningAutomationRuleRepository;
 
     @Transactional
     public SupplementRecommendationResponse createRecommendation(Long userId, Long nodeId, String reason) {
+        if (!isRuleEnabled("SUPPLEMENT_RECOMMENDATION_ENABLED", true)) {
+            throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
+        }
+
         User user = validateUser(userId);
         ResolvedCandidate candidate = resolveCandidate(userId, nodeId);
         String finalReason = resolveReason(candidate, reason);
@@ -467,6 +474,13 @@ public class SupplementRecommendationService {
                             .build()
             );
         }
+    }
+
+    // 룰 활성 여부를 조회한다.
+    private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
+        return learningAutomationRuleRepository.findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
+                .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
+                .orElse(defaultValue);
     }
 
     private User validateUser(Long userId) {

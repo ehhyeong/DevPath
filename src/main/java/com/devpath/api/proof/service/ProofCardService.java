@@ -5,10 +5,12 @@ import com.devpath.api.proof.dto.ProofCardRequest;
 import com.devpath.api.proof.dto.ProofCardResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.entity.proof.ProofCard;
 import com.devpath.domain.learning.entity.proof.ProofCardStatus;
 import com.devpath.domain.learning.entity.proof.ProofCardTag;
+import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
@@ -32,6 +34,7 @@ public class ProofCardService {
 
     // Node Clearance 저장소다.
     private final NodeClearanceRepository nodeClearanceRepository;
+    private final LearningAutomationRuleRepository learningAutomationRuleRepository;
 
     // Proof Card 조립기다.
     private final ProofCardAssembler proofCardAssembler;
@@ -39,6 +42,10 @@ public class ProofCardService {
     // Proof Card를 발급한다.
     @Transactional
     public ProofCardResponse.Detail issue(Long userId, ProofCardRequest.Issue request) {
+        if (!isRuleEnabled("PROOF_CARD_MANUAL_ISSUE", true)) {
+            throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
+        }
+
         return issueIfEligible(userId, request.getNodeId());
     }
 
@@ -195,5 +202,12 @@ public class ProofCardService {
         }
 
         return tagItemMap;
+    }
+
+    // 룰 활성 여부를 조회한다.
+    private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
+        return learningAutomationRuleRepository.findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
+            .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
+            .orElse(defaultValue);
     }
 }
