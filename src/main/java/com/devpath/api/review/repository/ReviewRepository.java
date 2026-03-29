@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
+
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByCourseIdAndIsDeletedFalse(Long courseId);
@@ -20,4 +21,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("SELECT COUNT(r) FROM Review r WHERE r.courseId IN (SELECT c.courseId FROM Course c WHERE c.instructorId = :instructorId) AND r.isDeleted = false AND r.status = :status")
     long countByInstructorIdAndStatus(@Param("instructorId") Long instructorId, @Param("status") ReviewStatus status);
+
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.courseId IN (SELECT c.courseId FROM Course c WHERE c.instructorId = :instructorId) AND r.isDeleted = false")
+    Double findAverageRatingByInstructorId(@Param("instructorId") Long instructorId);
+
+    @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.courseId IN (SELECT c.courseId FROM Course c WHERE c.instructorId = :instructorId) AND r.isDeleted = false GROUP BY r.rating")
+    List<Object[]> findRatingDistributionByInstructorId(@Param("instructorId") Long instructorId);
 }
