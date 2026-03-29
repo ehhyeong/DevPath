@@ -14,22 +14,27 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/me/dashboard")
 @RequiredArgsConstructor
-@Tag(name = "Learner - Dashboard", description = "학습자 대시보드 통계 API")
+@Tag(name = "Learner Dashboard", description = "학습자 대시보드 API")
 public class LearnerDashboardController {
 
     private final LearnerDashboardService dashboardService;
 
     @GetMapping("/summary")
-    @Operation(summary = "대시보드 요약 통계", description = "총 학습 시간, 클리어 노드 수 등을 반환합니다.")
-    public ApiResponse<DashboardSummaryResponse> getSummary(
-            @RequestParam(defaultValue = "1") Long learnerId) {
+    @Operation(summary = "대시보드 요약 조회", description = "학습 시간, 완료 노드 수, 스트릭 등의 요약 정보를 조회합니다.")
+    public ApiResponse<DashboardSummaryResponse> getSummary(@RequestParam(defaultValue = "1") Long learnerId) {
         return ApiResponse.ok(dashboardService.getSummary(learnerId));
     }
 
     @GetMapping("/heatmap")
-    @Operation(summary = "학습 활동 히트맵", description = "일자별 학습 활동 레벨(잔디)을 반환합니다.")
-    public ApiResponse<List<HeatmapResponse>> getHeatmap(
-            @RequestParam(defaultValue = "1") Long learnerId) {
+    @Operation(summary = "학습 히트맵 조회", description = "최근 학습 활동에 대한 히트맵 데이터를 조회합니다.")
+    public ApiResponse<List<HeatmapResponse>> getHeatmap(@RequestParam(defaultValue = "1") Long learnerId) {
         return ApiResponse.ok(dashboardService.getHeatmap(learnerId));
+    }
+
+    // 누락되었던 API 추가
+    @GetMapping("/study-group")
+    @Operation(summary = "내 스터디 그룹 요약", description = "대시보드에서 내가 속한 스터디 그룹 정보를 조회합니다.")
+    public ApiResponse<Object> getDashboardStudyGroup(@RequestParam(defaultValue = "1") Long learnerId) {
+        return ApiResponse.ok(dashboardService.getDashboardStudyGroup(learnerId));
     }
 }
