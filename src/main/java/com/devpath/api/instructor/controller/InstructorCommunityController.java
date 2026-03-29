@@ -80,6 +80,24 @@ public class InstructorCommunityController {
         return ApiResponse.success("대댓글이 등록되었습니다.", instructorCommunityService.addReply(commentId, userId, request));
     }
 
+    @Operation(summary = "댓글 수정")
+    @PutMapping("/comments/{commentId}")
+    public ApiResponse<CommunityCommentResponse> updateComment(
+            @PathVariable Long commentId,
+            @RequestBody @Valid CommunityCommentRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+        return ApiResponse.success("댓글이 수정되었습니다.", instructorCommunityService.updateComment(userId, commentId, request));
+    }
+
+    @Operation(summary = "댓글 삭제")
+    @DeleteMapping("/comments/{commentId}")
+    public ApiResponse<Void> deleteComment(
+            @PathVariable Long commentId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+        instructorCommunityService.deleteComment(userId, commentId);
+        return ApiResponse.success("댓글이 삭제되었습니다.", null);
+    }
+
     @Operation(summary = "게시글 좋아요 toggle")
     @PostMapping("/posts/{postId}/likes")
     public ApiResponse<Void> togglePostLike(

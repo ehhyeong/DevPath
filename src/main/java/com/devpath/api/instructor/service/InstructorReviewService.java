@@ -14,7 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -75,6 +77,28 @@ public class InstructorReviewService {
                 .unansweredCount(unansweredCount)
                 .unsatisfiedCount(unsatisfiedCount)
                 .answerRate(answerRate)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public ReviewSummaryResponse getReviewSummary(Long instructorId) {
+        long totalReviews = reviewRepository.countByInstructorId(instructorId);
+        long unansweredCount = reviewRepository.countByInstructorIdAndStatus(instructorId, ReviewStatus.UNANSWERED);
+        Double avgRating = reviewRepository.findAverageRatingByInstructorId(instructorId);
+        double averageRating = avgRating == null ? 0.0 : Math.round(avgRating * 10.0) / 10.0;
+
+        List<Object[]> rawDistribution = reviewRepository.findRatingDistributionByInstructorId(instructorId);
+        Map<Integer, Long> ratingDistribution = new LinkedHashMap<>();
+        for (int i = 1; i <= 5; i++) ratingDistribution.put(i, 0L);
+        for (Object[] row : rawDistribution) {
+            ratingDistribution.put((Integer) row[0], (Long) row[1]);
+        }
+
+        return ReviewSummaryResponse.builder()
+                .totalReviews(totalReviews)
+                .averageRating(averageRating)
+                .unansweredCount(unansweredCount)
+                .ratingDistribution(ratingDistribution)
                 .build();
     }
 

@@ -85,6 +85,25 @@ public class InstructorCommunityService {
         return CommunityCommentResponse.from(saved);
     }
 
+    public CommunityCommentResponse updateComment(Long userId, Long commentId, CommunityCommentRequest request) {
+        InstructorComment comment = commentRepository.findByIdAndIsDeletedFalse(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (!comment.getAuthorId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACTION);
+        }
+        comment.updateContent(request.getContent());
+        return CommunityCommentResponse.from(comment);
+    }
+
+    public void deleteComment(Long userId, Long commentId) {
+        InstructorComment comment = commentRepository.findByIdAndIsDeletedFalse(commentId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (!comment.getAuthorId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACTION);
+        }
+        comment.delete();
+    }
+
     public CommunityCommentResponse addReply(Long commentId, Long authorId, CommunityCommentRequest request) {
         InstructorComment parent = commentRepository.findByIdAndIsDeletedFalse(commentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));

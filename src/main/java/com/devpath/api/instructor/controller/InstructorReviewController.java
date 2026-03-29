@@ -68,6 +68,13 @@ public class InstructorReviewController {
         return ApiResponse.success("이슈 태그가 추가되었습니다.", null);
     }
 
+    @Operation(summary = "채널별 수강평 집계 조회", description = "평균 평점, 총 리뷰 수, 별점 분포, 미답변 수 반환")
+    @GetMapping("/summary")
+    public ApiResponse<ReviewSummaryResponse> getReviewSummary(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+        return ApiResponse.success("집계 조회 성공", instructorReviewService.getReviewSummary(userId));
+    }
+
     @Operation(summary = "리뷰 helpful 집계 조회", description = "답변률, 상태별 건수 반환")
     @GetMapping("/helpful")
     public ApiResponse<ReviewHelpfulResponse> getHelpfulStats(

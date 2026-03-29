@@ -1,5 +1,6 @@
 package com.devpath.api.admin.service;
 
+import com.devpath.api.admin.dto.permission.InstructorGradeUpdateRequest;
 import com.devpath.api.admin.dto.permission.RoleCreateRequest;
 import com.devpath.api.admin.dto.permission.RoleResponse;
 import com.devpath.api.admin.dto.permission.UserPermissionResponse;
@@ -51,5 +52,11 @@ public class AdminPermissionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
         return UserPermissionResponse.from(user);
+    }
+
+    public void changeInstructorGrade(Long userId, InstructorGradeUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        user.changeInstructorGrade(request.getGrade());
     }
 }

@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -54,6 +55,13 @@ public class User {
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "instructor_status", length = 20)
+  private InstructorStatus instructorStatus;
+
+  @Column(name = "instructor_grade", length = 20)
+  private String instructorGrade;
+
   @Builder
   public User(String email, String password, String name, UserRole role) {
     this.email = email;
@@ -81,5 +89,13 @@ public class User {
 
   public void withdraw() {
     this.isActive = false;
+  }
+
+  public void approveInstructor() {
+    this.instructorStatus = InstructorStatus.APPROVED;
+  }
+
+  public void changeInstructorGrade(String grade) {
+    this.instructorGrade = grade;
   }
 }

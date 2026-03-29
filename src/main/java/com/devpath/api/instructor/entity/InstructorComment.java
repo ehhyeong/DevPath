@@ -44,6 +44,10 @@ public class InstructorComment {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
     public void delete() {
         this.isDeleted = true;
     }
