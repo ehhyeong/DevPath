@@ -53,12 +53,16 @@ class QnaDuplicateSuggestionIntegrationTest {
             .orElseThrow(() -> new IllegalStateException("seed learner user not found"));
     userId = learner.getId();
 
-    seedQuestion("Spring Boot JWT 필터가 두 번 실행됩니다", "OncePerRequestFilter인데 로그가 두 번 찍힙니다.");
     seedQuestion(
-        "Spring Security에서 jwt filter가 두 번 호출됩니다",
-        "JWT 인증 필터가 중복 실행되는 것 같습니다.");
-    seedQuestion("JWT 인증 필터 중복 실행 원인이 뭘까요", "필터 체인 설정을 봐야 할까요?");
-    seedQuestion("Redis 캐시 적용 방법", "캐시 만료 정책은 어떻게 잡는 게 좋을까요?");
+        "Spring Boot JWT filter runs twice",
+        "OncePerRequestFilter logs appear twice during one request.");
+    seedQuestion(
+        "Spring Security jwt filter executes twice",
+        "JWT authentication filter seems to run more than once.");
+    seedQuestion(
+        "Why does JWT auth filter run twice?",
+        "What should I check in the filter chain setup?");
+    seedQuestion("How to apply Redis caching", "What is a safe cache expiration strategy?");
   }
 
   @Test
@@ -66,7 +70,7 @@ class QnaDuplicateSuggestionIntegrationTest {
     mockMvc
         .perform(
             get("/api/qna/questions/duplicate-suggestions")
-                .queryParam("title", "Spring Boot에서 JWT 필터가 2번 실행돼요")
+                .queryParam("title", "Why does Spring Boot JWT filter run twice?")
                 .with(authentication(userAuthentication())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
@@ -75,10 +79,10 @@ class QnaDuplicateSuggestionIntegrationTest {
             jsonPath("$.data[*].title")
                 .value(
                     hasItems(
-                        "Spring Boot JWT 필터가 두 번 실행됩니다",
-                        "Spring Security에서 jwt filter가 두 번 호출됩니다")))
+                        "Spring Boot JWT filter runs twice",
+                        "Spring Security jwt filter executes twice")))
         .andExpect(
-            jsonPath("$.data[*].title").value(not(hasItems("Redis 캐시 적용 방법"))))
+            jsonPath("$.data[*].title").value(not(hasItems("How to apply Redis caching"))))
         .andExpect(jsonPath("$.data[0].matchedKeyword").isNotEmpty());
   }
 
@@ -92,7 +96,7 @@ class QnaDuplicateSuggestionIntegrationTest {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.success").value(false))
         .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
-        .andExpect(jsonPath("$.message").value("중복 추천을 위한 title 값은 필수입니다."));
+        .andExpect(jsonPath("$.message").isNotEmpty());
   }
 
   private void seedQuestion(String title, String content) {

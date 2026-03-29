@@ -3,16 +3,19 @@ package com.devpath.api.admin.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.devpath.api.admin.dto.NodeGovernanceRequests.UpdateCompletionRule;
-import com.devpath.api.admin.dto.NodeGovernanceRequests.UpdateNodeType;
-import com.devpath.api.admin.dto.NodeGovernanceRequests.UpdatePrerequisites;
-import com.devpath.api.admin.dto.NodeGovernanceRequests.UpdateRequiredTags;
 import com.devpath.api.admin.dto.PolicyGovernanceRequests.UpdateNodeMapping;
 import com.devpath.api.admin.dto.PolicyGovernanceRequests.UpdateStreamingPolicy;
 import com.devpath.api.admin.dto.PolicyGovernanceRequests.UpdateSystemPolicy;
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.CourseMappingCandidateItem;
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.MappingCandidatesResponse;
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.SystemPolicyResponse;
+import com.devpath.api.admin.dto.governance.CourseApproveRequest;
+import com.devpath.api.admin.dto.governance.CourseRejectRequest;
+import com.devpath.api.admin.dto.governance.NodeCompletionRuleRequest;
+import com.devpath.api.admin.dto.governance.NodePrerequisitesRequest;
+import com.devpath.api.admin.dto.governance.NodeRequiredTagsRequest;
+import com.devpath.api.admin.dto.governance.NodeTypeRequest;
+import com.devpath.api.admin.dto.governance.TagMergeRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -95,13 +98,15 @@ class AdminGovernanceServiceIntegrationTest {
 
     assertThat(adminCourseGovernanceService.getPendingCourses()).hasSize(1);
 
-    adminCourseGovernanceService.approveCourse(course.getCourseId());
+    adminCourseGovernanceService.approveCourse(
+        course.getCourseId(), courseApproveRequest("Approved for publication"));
     flushAndClear();
 
     assertThat(courseRepository.findById(course.getCourseId())).get().extracting(Course::getStatus)
         .isEqualTo(CourseStatus.PUBLISHED);
 
-    adminCourseGovernanceService.rejectCourse(course.getCourseId());
+    adminCourseGovernanceService.rejectCourse(
+        course.getCourseId(), courseRejectRequest("Needs more work"));
     flushAndClear();
 
     assertThat(courseRepository.findById(course.getCourseId())).get().extracting(Course::getStatus)
@@ -116,7 +121,7 @@ class AdminGovernanceServiceIntegrationTest {
     RoadmapNode node = saveNode(saveOfficialRoadmap("Backend Roadmap"), "Security Node", "CONCEPT", 1);
 
     adminNodeGovernanceService.updateRequiredTags(
-        node.getNodeId(), updateRequiredTagsRequest(List.of(springBoot.getTagId(), springSecurity.getTagId())));
+        node.getNodeId(), updateRequiredTagsRequest(List.of(springBoot.getName(), springSecurity.getName())));
     flushAndClear();
 
     assertThat(nodeRequiredTagRepository.findTagNamesByNodeId(node.getNodeId()))
@@ -190,9 +195,9 @@ class AdminGovernanceServiceIntegrationTest {
     RoadmapNode node = saveNode(saveOfficialRoadmap("Completion Rule Roadmap"), "JWT", "PRACTICE", 1);
 
     adminNodeGovernanceService.updateCompletionRule(
-        node.getNodeId(), updateCompletionRuleRequest("tag_coverage", "100"));
+        node.getNodeId(), updateCompletionRuleRequest("tag_coverage", 100));
     adminNodeGovernanceService.updateCompletionRule(
-        node.getNodeId(), updateCompletionRuleRequest("quiz_pass", "80"));
+        node.getNodeId(), updateCompletionRuleRequest("quiz_pass", 80));
     flushAndClear();
 
     NodeCompletionRule rule = nodeCompletionRuleRepository.findByNodeNodeId(node.getNodeId()).orElseThrow();
@@ -372,28 +377,41 @@ class AdminGovernanceServiceIntegrationTest {
         .isEqualTo(ErrorCode.INVALID_INPUT);
   }
 
-  private UpdateRequiredTags updateRequiredTagsRequest(List<Long> tagIds) {
-    UpdateRequiredTags request = newInstance(UpdateRequiredTags.class);
-    ReflectionTestUtils.setField(request, "tagIds", tagIds);
+  private CourseApproveRequest courseApproveRequest(String reason) {
+    CourseApproveRequest request = newInstance(CourseApproveRequest.class);
+    ReflectionTestUtils.setField(request, "reason", reason);
     return request;
   }
 
-  private UpdateNodeType updateNodeTypeRequest(String nodeType) {
-    UpdateNodeType request = newInstance(UpdateNodeType.class);
+  private CourseRejectRequest courseRejectRequest(String reason) {
+    CourseRejectRequest request = newInstance(CourseRejectRequest.class);
+    ReflectionTestUtils.setField(request, "reason", reason);
+    return request;
+  }
+
+  private NodeRequiredTagsRequest updateRequiredTagsRequest(List<String> requiredTags) {
+    NodeRequiredTagsRequest request = newInstance(NodeRequiredTagsRequest.class);
+    ReflectionTestUtils.setField(request, "requiredTags", requiredTags);
+    return request;
+  }
+
+  private NodeTypeRequest updateNodeTypeRequest(String nodeType) {
+    NodeTypeRequest request = newInstance(NodeTypeRequest.class);
     ReflectionTestUtils.setField(request, "nodeType", nodeType);
     return request;
   }
 
-  private UpdatePrerequisites updatePrerequisitesRequest(List<Long> prerequisiteNodeIds) {
-    UpdatePrerequisites request = newInstance(UpdatePrerequisites.class);
+  private NodePrerequisitesRequest updatePrerequisitesRequest(List<Long> prerequisiteNodeIds) {
+    NodePrerequisitesRequest request = newInstance(NodePrerequisitesRequest.class);
     ReflectionTestUtils.setField(request, "prerequisiteNodeIds", prerequisiteNodeIds);
     return request;
   }
 
-  private UpdateCompletionRule updateCompletionRuleRequest(String criteriaType, String criteriaValue) {
-    UpdateCompletionRule request = newInstance(UpdateCompletionRule.class);
-    ReflectionTestUtils.setField(request, "criteriaType", criteriaType);
-    ReflectionTestUtils.setField(request, "criteriaValue", criteriaValue);
+  private NodeCompletionRuleRequest updateCompletionRuleRequest(
+      String completionRuleDescription, Integer requiredProgressRate) {
+    NodeCompletionRuleRequest request = newInstance(NodeCompletionRuleRequest.class);
+    ReflectionTestUtils.setField(request, "completionRuleDescription", completionRuleDescription);
+    ReflectionTestUtils.setField(request, "requiredProgressRate", requiredProgressRate);
     return request;
   }
 
@@ -418,11 +436,9 @@ class AdminGovernanceServiceIntegrationTest {
     return request;
   }
 
-  private com.devpath.api.admin.dto.TagGovernanceRequests.MergeTags mergeTagsRequest(
-      Long sourceTagId, Long targetTagId) {
-    com.devpath.api.admin.dto.TagGovernanceRequests.MergeTags request =
-        newInstance(com.devpath.api.admin.dto.TagGovernanceRequests.MergeTags.class);
-    ReflectionTestUtils.setField(request, "sourceTagId", sourceTagId);
+  private TagMergeRequest mergeTagsRequest(Long sourceTagId, Long targetTagId) {
+    TagMergeRequest request = newInstance(TagMergeRequest.class);
+    ReflectionTestUtils.setField(request, "sourceTagIds", List.of(sourceTagId));
     ReflectionTestUtils.setField(request, "targetTagId", targetTagId);
     return request;
   }

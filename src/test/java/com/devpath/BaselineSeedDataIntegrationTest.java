@@ -10,6 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     properties = {
+      "spring.datasource.url=jdbc:h2:mem:baseline-seed-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE",
       "spring.sql.init.mode=always",
       "spring.jpa.defer-datasource-initialization=true"
     })

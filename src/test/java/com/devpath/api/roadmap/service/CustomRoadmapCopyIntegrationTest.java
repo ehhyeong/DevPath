@@ -35,12 +35,17 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
+@SpringBootTest(
+    properties = {
+      "spring.datasource.url=jdbc:h2:mem:custom-roadmap-copy-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE"
+    })
 @ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class CustomRoadmapCopyIntegrationTest {
 
   @Autowired private CustomRoadmapCopyService customRoadmapCopyService;
@@ -60,16 +65,6 @@ class CustomRoadmapCopyIntegrationTest {
   @AfterEach
   void tearDown() {
     reset(officialRoadmapReader);
-    customNodePrerequisiteRepository.deleteAll();
-    customRoadmapNodeRepository.deleteAll();
-    customRoadmapRepository.deleteAll();
-    nodeRequiredTagRepository.deleteAll();
-    prerequisiteRepository.deleteAll();
-    userTechStackRepository.deleteAll();
-    roadmapNodeRepository.deleteAll();
-    roadmapRepository.deleteAll();
-    tagRepository.deleteAll();
-    userRepository.deleteAll();
   }
 
   @Test
