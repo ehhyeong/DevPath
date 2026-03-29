@@ -229,7 +229,7 @@ SELECT
     u.user_id,
     '/images/profiles/instructor-hong.png',
     'Hong Backend Lab',
-    'Spring Boot? ?ㅻТ 諛깆뿏???ㅺ퀎瑜?以묒떖?쇰줈 媛뺤쓽?섎뒗 媛뺤궗?낅땲??',
+    'Spring Boot?? ??肉??꾩룄??굢????釉붋濡㏓ご?繞벿살탳???怨쀬Ŧ ?띠룆踰???濡ル츎 ?띠룆踰→쾮???낅퉵??',
     '010-0000-0001',
     'https://github.com/instructor-hong',
     'https://blog.devpath.com/hong',
@@ -260,7 +260,7 @@ SELECT
     u.user_id,
     '/images/profiles/admin-park.png',
     'DevPath Admin',
-    '肄섑뀗痢?寃?섏? ?쒓렇 嫄곕쾭?뚯뒪瑜??대떦?⑸땲??',
+    '?袁⑷섰???럹??롪틵???? ??蹂μ쟽 濾곌쑨?↑떋???裕????????紐껊퉵??',
     '010-0000-0002',
     'https://github.com/admin-park',
     'https://blog.devpath.com/admin',
@@ -1168,8 +1168,8 @@ WHERE c.title = 'Spring Boot Intro'
 
 INSERT INTO qna_question_templates
     (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
-SELECT 'DEBUGGING', '버그/에러 질문', '에러 로그와 재현 조건을 중심으로 질문하는 템플릿입니다.',
-       '에러 로그, 재현 단계, 기대 결과, 실제 결과를 순서대로 적어주세요.', 1, TRUE, NOW(), NOW()
+SELECT 'DEBUGGING', '甕곌쑨???癒?쑎 筌욌뜄揆', '?癒?쑎 嚥≪뮄??? ????鈺곌퀗援??餓λ쵐???곗쨮 筌욌뜄揆??롫뮉 ??쀫탣?깆슦???덈뼄.',
+       '?癒?쑎 嚥≪뮄?? ??????ｍ? 疫꿸퀡? 野껉퀗?? ??쇱젫 野껉퀗?든몴???뽮퐣??嚥??怨몃선雅뚯눘苑??', 1, TRUE, NOW(), NOW()
 WHERE NOT EXISTS (
     SELECT 1
     FROM qna_question_templates
@@ -1178,8 +1178,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO qna_question_templates
     (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
-SELECT 'IMPLEMENTATION', '구현 질문', '기능 구현 방식이나 설계 방향을 묻는 템플릿입니다.',
-       '현재 구조, 목표 기능, 고민 중인 선택지를 함께 적어주세요.', 2, TRUE, NOW(), NOW()
+SELECT 'IMPLEMENTATION', '?닌뗭겱 筌욌뜄揆', '疫꿸퀡???닌뗭겱 獄쎻뫗???援???블?獄쎻뫚堉???얠궠????쀫탣?깆슦???덈뼄.',
+       '?袁⑹삺 ?닌듼? 筌뤴뫚紐?疫꿸퀡?? ?⑥쥓? 餓λ쵐???醫뤾문筌왖????ｍ뜞 ?怨몃선雅뚯눘苑??', 2, TRUE, NOW(), NOW()
 WHERE NOT EXISTS (
     SELECT 1
     FROM qna_question_templates
@@ -1188,8 +1188,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO qna_question_templates
     (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
-SELECT 'CODE_REVIEW', '코드 리뷰 질문', '작성한 코드에 대한 개선점이나 리팩토링 의견을 받는 템플릿입니다.',
-       '핵심 코드, 현재 우려사항, 성능/보안/가독성 관점을 함께 적어주세요.', 3, TRUE, NOW(), NOW()
+SELECT 'CODE_REVIEW', '?꾨뗀諭??귐됰윮 筌욌뜄揆', '?臾믨쉐???꾨뗀諭??????揶쏆뮇苑?癒?뵠???귐뗫솯?醫딆춦 ??띻퍍??獄쏆룆????쀫탣?깆슦???덈뼄.',
+       '???뼎 ?꾨뗀諭? ?袁⑹삺 ?怨뺤젻??鍮? ?源낅뮟/癰귣똻釉?揶쎛??녾쉐 ?온?癒?뱽 ??ｍ뜞 ?怨몃선雅뚯눘苑??', 3, TRUE, NOW(), NOW()
 WHERE NOT EXISTS (
     SELECT 1
     FROM qna_question_templates
@@ -1198,8 +1198,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO qna_question_templates
     (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
-SELECT 'CAREER', '커리어 질문', '취업, 포트폴리오, 이직, 기술 선택 관련 질문 템플릿입니다.',
-       '현재 상황, 목표 포지션, 보유 경험, 고민 포인트를 적어주세요.', 4, TRUE, NOW(), NOW()
+SELECT 'CAREER', '?뚣끇???筌욌뜄揆', '?띯뫁毓? ???????? ??곸춦, 疫꿸퀣???醫뤾문 ?온??筌욌뜄揆 ??쀫탣?깆슦???덈뼄.',
+       '?袁⑹삺 ?怨뱀넺, 筌뤴뫚紐?????? 癰귣똻? 野껋?肉? ?⑥쥓? ????紐? ?怨몃선雅뚯눘苑??', 4, TRUE, NOW(), NOW()
 WHERE NOT EXISTS (
     SELECT 1
     FROM qna_question_templates
@@ -1208,8 +1208,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO qna_question_templates
     (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
-SELECT 'STUDY', '학습 질문', '학습 순서나 개념 이해를 묻는 템플릿입니다.',
-       '현재 이해한 내용과 막히는 지점을 함께 적어주세요.', 5, TRUE, NOW(), NOW()
+SELECT 'STUDY', '??덈뮸 筌욌뜄揆', '??덈뮸 ??뽮퐣??揶쏆뮆????꾨퉸???얠궠????쀫탣?깆슦???덈뼄.',
+       '?袁⑹삺 ??꾨퉸????곸뒠??筌띾맪???筌왖?癒?뱽 ??ｍ뜞 ?怨몃선雅뚯눘苑??', 5, TRUE, NOW(), NOW()
 WHERE NOT EXISTS (
     SELECT 1
     FROM qna_question_templates
@@ -1218,8 +1218,8 @@ WHERE NOT EXISTS (
 
 INSERT INTO qna_question_templates
     (template_type, name, description, guide_example, sort_order, is_active, created_at, updated_at)
-SELECT 'PROJECT', '프로젝트 질문', '프로젝트 구조, 협업, 배포, 운영 관련 질문 템플릿입니다.',
-       '프로젝트 배경, 현재 구조, 발생 중인 문제를 적어주세요.', 6, TRUE, NOW(), NOW()
+SELECT 'PROJECT', '?袁⑥쨮??븍뱜 筌욌뜄揆', '?袁⑥쨮??븍뱜 ?닌듼? ?臾믩씜, 獄쏄퀬猷? ??곸겫 ?온??筌욌뜄揆 ??쀫탣?깆슦???덈뼄.',
+       '?袁⑥쨮??븍뱜 獄쏄퀗瑗? ?袁⑹삺 ?닌듼? 獄쏆뮇源?餓λ쵐???얜챷?ｇ몴??怨몃선雅뚯눘苑??', 6, TRUE, NOW(), NOW()
 WHERE NOT EXISTS (
     SELECT 1
     FROM qna_question_templates
@@ -1227,101 +1227,101 @@ WHERE NOT EXISTS (
 );
 
 -- ===========================
--- B 담당 샘플 데이터
+-- B ??????묐탣 ?怨쀬뵠??
 -- ===========================
 
--- [1] review (5건)
+-- [1] review (5椰?
 INSERT INTO review (course_id, learner_id, rating, content, status, is_hidden, is_deleted, issue_tags_raw, created_at, updated_at)
-SELECT c.course_id, u.user_id, 5, '강의 내용이 너무 좋아요! 핵심 개념을 쉽게 설명해줘서 많은 도움이 되었습니다.', 'ANSWERED', FALSE, FALSE, NULL, '2026-01-20 00:00:00', '2026-01-20 00:00:00'
+SELECT c.course_id, u.user_id, 5, '揶쏅벡????곸뒠????댭??ル뿭釉?? ???뼎 揶쏆뮆?????꾩쓺 ??살구??곸㉭??筌띾‘? ?袁?????뤿???щ빍??', 'ANSWERED', FALSE, FALSE, NULL, '2026-01-20 00:00:00', '2026-01-20 00:00:00'
 FROM courses c, users u
 WHERE c.title = 'Spring Boot Intro' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = '강의 내용이 너무 좋아요! 핵심 개념을 쉽게 설명해줘서 많은 도움이 되었습니다.');
+  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = '揶쏅벡????곸뒠????댭??ル뿭釉?? ???뼎 揶쏆뮆?????꾩쓺 ??살구??곸㉭??筌띾‘? ?袁?????뤿???щ빍??');
 
 INSERT INTO review (course_id, learner_id, rating, content, status, is_hidden, is_deleted, issue_tags_raw, created_at, updated_at)
-SELECT c.course_id, u.user_id, 4, 'JPA 실전 패턴이 정말 유용했습니다. 다만 QueryDSL 부분이 조금 더 상세했으면 좋겠어요.', 'UNANSWERED', FALSE, FALSE, NULL, '2026-01-22 00:00:00', '2026-01-22 00:00:00'
+SELECT c.course_id, u.user_id, 4, 'JPA ??쇱읈 ???쉘???類ｌ춾 ?醫롮뒠??됰뮸??덈뼄. ??살춸 QueryDSL ?봔?브쑴??鈺곌퀗?????怨멸쉭??됱몵筌??ル뿪荑??곸뒄.', 'UNANSWERED', FALSE, FALSE, NULL, '2026-01-22 00:00:00', '2026-01-22 00:00:00'
 FROM courses c, users u
 WHERE c.title = 'JPA Practical Design' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = 'JPA 실전 패턴이 정말 유용했습니다. 다만 QueryDSL 부분이 조금 더 상세했으면 좋겠어요.');
+  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = 'JPA ??쇱읈 ???쉘???類ｌ춾 ?醫롮뒠??됰뮸??덈뼄. ??살춸 QueryDSL ?봔?브쑴??鈺곌퀗?????怨멸쉭??됱몵筌??ル뿪荑??곸뒄.');
 
 INSERT INTO review (course_id, learner_id, rating, content, status, is_hidden, is_deleted, issue_tags_raw, created_at, updated_at)
-SELECT c.course_id, u.user_id, 3, '설명은 이해하기 쉬우나 실습 예제가 좀 더 다양했으면 좋겠습니다.', 'ANSWERED', FALSE, FALSE, NULL, '2026-01-25 00:00:00', '2026-01-25 00:00:00'
+SELECT c.course_id, u.user_id, 3, '??살구?? ??꾨퉸??띾┛ ???????쇰뮸 ??됱젫揶쎛 ?ヂ ????쇰펶??됱몵筌??ル뿪荑??щ빍??', 'ANSWERED', FALSE, FALSE, NULL, '2026-01-25 00:00:00', '2026-01-25 00:00:00'
 FROM courses c, users u
 WHERE c.title = 'Spring Boot Intro' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = '설명은 이해하기 쉬우나 실습 예제가 좀 더 다양했으면 좋겠습니다.');
+  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = '??살구?? ??꾨퉸??띾┛ ???????쇰뮸 ??됱젫揶쎛 ?ヂ ????쇰펶??됱몵筌??ル뿪荑??щ빍??');
 
 INSERT INTO review (course_id, learner_id, rating, content, status, is_hidden, is_deleted, issue_tags_raw, created_at, updated_at)
-SELECT c.course_id, u.user_id, 5, 'N+1 문제 해결 방법을 실제 프로젝트에 바로 적용할 수 있었습니다. 강력 추천합니다!', 'UNANSWERED', FALSE, FALSE, NULL, '2026-01-28 00:00:00', '2026-01-28 00:00:00'
+SELECT c.course_id, u.user_id, 5, 'N+1 ?얜챷????욧퍙 獄쎻뫖苡????쇱젫 ?袁⑥쨮??븍뱜??獄쏅뗀以??怨몄뒠??????됰???щ빍?? 揶쏅베???곕뗄荑??몃빍??', 'UNANSWERED', FALSE, FALSE, NULL, '2026-01-28 00:00:00', '2026-01-28 00:00:00'
 FROM courses c, users u
 WHERE c.title = 'JPA Practical Design' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = 'N+1 문제 해결 방법을 실제 프로젝트에 바로 적용할 수 있었습니다. 강력 추천합니다!');
+  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = 'N+1 ?얜챷????욧퍙 獄쎻뫖苡????쇱젫 ?袁⑥쨮??븍뱜??獄쏅뗀以??怨몄뒠??????됰???щ빍?? 揶쏅베???곕뗄荑??몃빍??');
 
 INSERT INTO review (course_id, learner_id, rating, content, status, is_hidden, is_deleted, issue_tags_raw, created_at, updated_at)
-SELECT c.course_id, u.user_id, 2, '강의 내용은 좋지만 설명 속도가 너무 빨라서 따라가기 어려웠습니다.', 'UNSATISFIED', FALSE, FALSE, NULL, '2026-02-01 00:00:00', '2026-02-01 00:00:00'
+SELECT c.course_id, u.user_id, 2, '揶쏅벡????곸뒠?? ?ル뿭?筌???살구 ??얜즲揶쎛 ??댭???뫀????怨뺤뵬揶쎛疫?????醫롫뮸??덈뼄.', 'UNSATISFIED', FALSE, FALSE, NULL, '2026-02-01 00:00:00', '2026-02-01 00:00:00'
 FROM courses c, users u
 WHERE c.title = 'Spring Boot Intro' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = '강의 내용은 좋지만 설명 속도가 너무 빨라서 따라가기 어려웠습니다.');
+  AND NOT EXISTS (SELECT 1 FROM review r WHERE r.content = '揶쏅벡????곸뒠?? ?ル뿭?筌???살구 ??얜즲揶쎛 ??댭???뫀????怨뺤뵬揶쎛疫?????醫롫뮸??덈뼄.');
 
--- [2] review_reply (3건)
+-- [2] review_reply (3椰?
 INSERT INTO review_reply (review_id, instructor_id, content, is_deleted, created_at, updated_at)
-SELECT r.id, u.user_id, '소중한 리뷰 감사합니다! 앞으로도 더 좋은 강의로 보답하겠습니다. 궁금한 점은 언제든지 질문해 주세요.', FALSE, '2026-01-21 00:00:00', '2026-01-21 00:00:00'
+SELECT r.id, u.user_id, '???㉦???귐됰윮 揶쏅Ŋ沅??몃빍?? ??롮몵嚥≪뮆猷????ル뿭? 揶쏅벡?썸에?癰귣????띿퓢??щ빍?? 亦낃낫????癒? ?紐꾩젫?醫? 筌욌뜄揆??雅뚯눘苑??', FALSE, '2026-01-21 00:00:00', '2026-01-21 00:00:00'
 FROM review r, users u
-WHERE r.content = '강의 내용이 너무 좋아요! 핵심 개념을 쉽게 설명해줘서 많은 도움이 되었습니다.'
+WHERE r.content = '揶쏅벡????곸뒠????댭??ル뿭釉?? ???뼎 揶쏆뮆?????꾩쓺 ??살구??곸㉭??筌띾‘? ?袁?????뤿???щ빍??'
   AND u.email = 'instructor@devpath.com'
   AND NOT EXISTS (SELECT 1 FROM review_reply rr WHERE rr.review_id = r.id AND rr.instructor_id = u.user_id);
 
 INSERT INTO review_reply (review_id, instructor_id, content, is_deleted, created_at, updated_at)
-SELECT r.id, u.user_id, '피드백 감사합니다. 말씀하신 실습 예제 부분을 보완하여 곧 업데이트하겠습니다. 다음 업데이트를 기대해 주세요!', FALSE, '2026-01-26 00:00:00', '2026-01-26 00:00:00'
+SELECT r.id, u.user_id, '??곕굡獄?揶쏅Ŋ沅??몃빍?? 筌띾Ŋ???뤿뻿 ??쇰뮸 ??됱젫 ?봔?브쑴??癰귣똻???뤿연 ????낅쑓??꾨뱜??띿퓢??щ빍?? ??쇱벉 ??낅쑓??꾨뱜??疫꿸퀡???雅뚯눘苑??', FALSE, '2026-01-26 00:00:00', '2026-01-26 00:00:00'
 FROM review r, users u
-WHERE r.content = '설명은 이해하기 쉬우나 실습 예제가 좀 더 다양했으면 좋겠습니다.'
+WHERE r.content = '??살구?? ??꾨퉸??띾┛ ???????쇰뮸 ??됱젫揶쎛 ?ヂ ????쇰펶??됱몵筌??ル뿪荑??щ빍??'
   AND u.email = 'instructor@devpath.com'
   AND NOT EXISTS (SELECT 1 FROM review_reply rr WHERE rr.review_id = r.id AND rr.instructor_id = u.user_id);
 
 INSERT INTO review_reply (review_id, instructor_id, content, is_deleted, created_at, updated_at)
-SELECT r.id, u.user_id, '강의 속도에 대한 솔직한 피드백 감사드립니다. 설명 속도를 조절한 개정판을 준비 중입니다. 불편을 드려 죄송합니다.', FALSE, '2026-02-02 00:00:00', '2026-02-02 00:00:00'
+SELECT r.id, u.user_id, '揶쏅벡????얜즲???????遺우춦????곕굡獄?揶쏅Ŋ沅??뺚뵲??덈뼄. ??살구 ??얜즲??鈺곌퀣???揶쏆뮇??癒?뱽 餓Β??餓λ쵐???덈뼄. ?븍뜇?????뺤젻 雅뚭쑴???몃빍??', FALSE, '2026-02-02 00:00:00', '2026-02-02 00:00:00'
 FROM review r, users u
-WHERE r.content = '강의 내용은 좋지만 설명 속도가 너무 빨라서 따라가기 어려웠습니다.'
+WHERE r.content = '揶쏅벡????곸뒠?? ?ル뿭?筌???살구 ??얜즲揶쎛 ??댭???뫀????怨뺤뵬揶쎛疫?????醫롫뮸??덈뼄.'
   AND u.email = 'instructor@devpath.com'
   AND NOT EXISTS (SELECT 1 FROM review_reply rr WHERE rr.review_id = r.id AND rr.instructor_id = u.user_id);
 
--- [3] review_template (3건)
+-- [3] review_template (3椰?
 INSERT INTO review_template (instructor_id, title, content, is_deleted, created_at, updated_at)
-SELECT u.user_id, '감사 인사', '수강해 주셔서 진심으로 감사드립니다. 좋은 리뷰는 강의를 더욱 발전시키는 큰 원동력이 됩니다. 앞으로도 최고의 강의로 보답하겠습니다!', FALSE, '2026-01-15 00:00:00', '2026-01-15 00:00:00'
+SELECT u.user_id, '揶쏅Ŋ沅??紐꾧텢', '??띿뺏??雅뚯눘???筌욊쑴???곗쨮 揶쏅Ŋ沅??뺚뵲??덈뼄. ?ル뿭? ?귐됰윮??揶쏅벡?썹몴??遺우뒮 獄쏆뮇???쀪텕?????癒?짗?關????몃빍?? ??롮몵嚥≪뮆猷?筌ㅼ뮄???揶쏅벡?썸에?癰귣????띿퓢??щ빍??', FALSE, '2026-01-15 00:00:00', '2026-01-15 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM review_template rt WHERE rt.title = '감사 인사' AND rt.instructor_id = u.user_id);
+  AND NOT EXISTS (SELECT 1 FROM review_template rt WHERE rt.title = '揶쏅Ŋ沅??紐꾧텢' AND rt.instructor_id = u.user_id);
 
 INSERT INTO review_template (instructor_id, title, content, is_deleted, created_at, updated_at)
-SELECT u.user_id, '개선 약속', '소중한 피드백 감사합니다. 말씀해 주신 부분을 꼼꼼히 검토하여 더 나은 강의로 업데이트하겠습니다. 지속적인 관심과 응원 부탁드립니다.', FALSE, '2026-01-15 00:00:00', '2026-01-15 00:00:00'
+SELECT u.user_id, '揶쏆뮇苑???뚮꺗', '???㉦????곕굡獄?揶쏅Ŋ沅??몃빍?? 筌띾Ŋ???雅뚯눘???봔?브쑴???쀬눊???野꺜?醫뤿릭??????? 揶쏅벡?썸에???낅쑓??꾨뱜??띿퓢??щ빍?? 筌왖??우읅???온?????臾믪뜚 ?봔?怨룸굡?깆럥???', FALSE, '2026-01-15 00:00:00', '2026-01-15 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM review_template rt WHERE rt.title = '개선 약속' AND rt.instructor_id = u.user_id);
+  AND NOT EXISTS (SELECT 1 FROM review_template rt WHERE rt.title = '揶쏆뮇苑???뚮꺗' AND rt.instructor_id = u.user_id);
 
 INSERT INTO review_template (instructor_id, title, content, is_deleted, created_at, updated_at)
-SELECT u.user_id, '질문 유도', '강의를 수강해 주셔서 감사합니다. 학습 중 궁금한 점이 있으시면 Q&A 게시판을 통해 질문해 주세요. 최대한 빠르게 답변드리겠습니다!', FALSE, '2026-01-15 00:00:00', '2026-01-15 00:00:00'
+SELECT u.user_id, '筌욌뜄揆 ?醫딅즲', '揶쏅벡?썹몴???띿뺏??雅뚯눘???揶쏅Ŋ沅??몃빍?? ??덈뮸 餓?亦낃낫????癒?뵠 ??됱몵??뺛늺 Q&A 野껊슣??癒?뱽 ???퉸 筌욌뜄揆??雅뚯눘苑?? 筌ㅼ뮆?????쥓?ㅵ칰??????뺚봺野껋쥙???덈뼄!', FALSE, '2026-01-15 00:00:00', '2026-01-15 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM review_template rt WHERE rt.title = '질문 유도' AND rt.instructor_id = u.user_id);
+  AND NOT EXISTS (SELECT 1 FROM review_template rt WHERE rt.title = '筌욌뜄揆 ?醫딅즲' AND rt.instructor_id = u.user_id);
 
--- [4] refund_request (3건)
+-- [4] refund_request (3椰?
 INSERT INTO refund_request (learner_id, course_id, reason, status, is_deleted, requested_at, processed_at)
-SELECT u.user_id, c.course_id, '강의 품질 불만족', 'PENDING', FALSE, '2026-02-05 00:00:00', NULL
+SELECT u.user_id, c.course_id, '揶쏅벡????됱춳 ?븍뜄彛붻??, 'PENDING', FALSE, '2026-02-05 00:00:00', NULL
 FROM users u, courses c
 WHERE u.email = 'learner@devpath.com' AND c.title = 'Spring Boot Intro'
-  AND NOT EXISTS (SELECT 1 FROM refund_request rr WHERE rr.reason = '강의 품질 불만족' AND rr.learner_id = u.user_id AND rr.course_id = c.course_id);
+  AND NOT EXISTS (SELECT 1 FROM refund_request rr WHERE rr.reason = '揶쏅벡????됱춳 ?븍뜄彛붻?? AND rr.learner_id = u.user_id AND rr.course_id = c.course_id);
 
 INSERT INTO refund_request (learner_id, course_id, reason, status, is_deleted, requested_at, processed_at)
-SELECT u.user_id, c.course_id, '중복 수강', 'APPROVED', FALSE, '2026-02-08 00:00:00', '2026-02-10 00:00:00'
+SELECT u.user_id, c.course_id, '餓λ쵎????띿뺏', 'APPROVED', FALSE, '2026-02-08 00:00:00', '2026-02-10 00:00:00'
 FROM users u, courses c
 WHERE u.email = 'learner@devpath.com' AND c.title = 'JPA Practical Design'
-  AND NOT EXISTS (SELECT 1 FROM refund_request rr WHERE rr.reason = '중복 수강' AND rr.learner_id = u.user_id AND rr.course_id = c.course_id);
+  AND NOT EXISTS (SELECT 1 FROM refund_request rr WHERE rr.reason = '餓λ쵎????띿뺏' AND rr.learner_id = u.user_id AND rr.course_id = c.course_id);
 
 INSERT INTO refund_request (learner_id, course_id, reason, status, is_deleted, requested_at, processed_at)
-SELECT u.user_id, c.course_id, '개인 사정', 'REJECTED', FALSE, '2026-02-12 00:00:00', '2026-02-13 00:00:00'
+SELECT u.user_id, c.course_id, '揶쏆뮇??????, 'REJECTED', FALSE, '2026-02-12 00:00:00', '2026-02-13 00:00:00'
 FROM users u, courses c
 WHERE u.email = 'learner@devpath.com' AND c.title = 'Spring Boot Intro'
-  AND NOT EXISTS (SELECT 1 FROM refund_request rr WHERE rr.reason = '개인 사정' AND rr.learner_id = u.user_id AND rr.course_id = c.course_id);
+  AND NOT EXISTS (SELECT 1 FROM refund_request rr WHERE rr.reason = '揶쏆뮇?????? AND rr.learner_id = u.user_id AND rr.course_id = c.course_id);
 
--- [5] settlement (3건)
+-- [5] settlement (3椰?
 INSERT INTO settlement (instructor_id, amount, status, is_deleted, settled_at, created_at)
 SELECT u.user_id, 690000, 'COMPLETED', FALSE, '2026-01-31 00:00:00', '2026-01-31 00:00:00'
 FROM users u
@@ -1340,7 +1340,7 @@ FROM users u
 WHERE u.email = 'instructor@devpath.com'
   AND NOT EXISTS (SELECT 1 FROM settlement s WHERE s.instructor_id = u.user_id AND s.amount = 1980000 AND s.created_at = '2026-02-28 00:00:00');
 
--- [6] coupon (2건)
+-- [6] coupon (2椰?
 INSERT INTO coupon (instructor_id, coupon_code, discount_type, discount_value, target_course_id, max_usage_count, usage_count, expires_at, is_deleted, created_at)
 SELECT u.user_id, 'HELLO2026', 'RATE', 30, NULL, 100, 45, '2026-02-28 23:59:59', FALSE, '2026-01-20 00:00:00'
 FROM users u
@@ -1353,7 +1353,7 @@ FROM users u, courses c
 WHERE u.email = 'instructor@devpath.com' AND c.title = 'Spring Boot Intro'
   AND NOT EXISTS (SELECT 1 FROM coupon cp WHERE cp.coupon_code = 'JAVA_LAUNCH');
 
--- [7] promotion (2건)
+-- [7] promotion (2椰?
 INSERT INTO promotion (instructor_id, course_id, promotion_type, discount_rate, start_at, end_at, is_active, is_deleted, created_at)
 SELECT u.user_id, c.course_id, 'TIMESALE', 20, '2026-02-01 00:00:00', '2026-02-07 23:59:59', TRUE, FALSE, '2026-01-30 00:00:00'
 FROM users u, courses c
@@ -1366,155 +1366,155 @@ FROM users u, courses c
 WHERE u.email = 'instructor@devpath.com' AND c.title = 'JPA Practical Design'
   AND NOT EXISTS (SELECT 1 FROM promotion p WHERE p.course_id = c.course_id AND p.promotion_type = 'GENERAL' AND p.start_at = '2026-02-15 00:00:00');
 
--- [8] notice (3건)
+-- [8] notice (3椰?
 INSERT INTO notice (author_id, title, content, is_pinned, is_deleted, created_at, updated_at)
-SELECT u.user_id, '서비스 점검 안내', '안녕하세요, DevPath입니다. 서비스 품질 향상을 위해 2026년 2월 15일 오전 2시부터 4시까지 서비스 점검이 진행됩니다. 점검 시간 동안에는 강의 수강 및 Q&A 이용이 일시적으로 제한될 수 있습니다. 이용에 불편을 드려 죄송합니다.', TRUE, FALSE, '2026-02-10 00:00:00', '2026-02-10 00:00:00'
+SELECT u.user_id, '??뺥돩???癒? ??덇땀', '??덈??뤾쉭?? DevPath??낅빍?? ??뺥돩????됱춳 ?關湲???袁る퉸 2026??2??15????쇱읈 2?????4??볧돱筌왖 ??뺥돩???癒???筌욊쑵六??몃빍?? ?癒? ??볦퍢 ??덈툧?癒?뮉 揶쏅벡????띿뺏 獄?Q&A ??곸뒠????깅뻻?怨몄몵嚥???쀫립??????됰뮸??덈뼄. ??곸뒠???븍뜇?????뺤젻 雅뚭쑴???몃빍??', TRUE, FALSE, '2026-02-10 00:00:00', '2026-02-10 00:00:00'
 FROM users u
 WHERE u.email = 'admin@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM notice n WHERE n.title = '서비스 점검 안내');
+  AND NOT EXISTS (SELECT 1 FROM notice n WHERE n.title = '??뺥돩???癒? ??덇땀');
 
 INSERT INTO notice (author_id, title, content, is_pinned, is_deleted, created_at, updated_at)
-SELECT u.user_id, '개인정보처리방침 개정 안내', '개인정보 보호법 개정에 따라 DevPath의 개인정보처리방침이 2026년 3월 1일부로 변경됩니다. 주요 변경 내용은 수집 항목 일부 조정 및 보유 기간 명확화입니다. 변경된 방침은 서비스 하단에서 확인하실 수 있습니다.', FALSE, FALSE, '2026-02-20 00:00:00', '2026-02-20 00:00:00'
+SELECT u.user_id, '揶쏆뮇??類ｋ궖筌ｌ꼶?곮쳸?밸쵟 揶쏆뮇????덇땀', '揶쏆뮇??類ｋ궖 癰귣똾?뉓린?揶쏆뮇????怨뺤뵬 DevPath??揶쏆뮇??類ｋ궖筌ｌ꼶?곮쳸?밸쵟??2026??3??1???嚥?癰궰野껋럥留??덈뼄. 雅뚯눘??癰궰野???곸뒠?? ??륁춿 ??????? 鈺곌퀣??獄?癰귣똻? 疫꿸퀗而?筌뤿굟??遺우뿯??덈뼄. 癰궰野껋럥留?獄쎻뫗臾?? ??뺥돩????롫뼊?癒?퐣 ?類ㅼ뵥??뤿뼄 ????됰뮸??덈뼄.', FALSE, FALSE, '2026-02-20 00:00:00', '2026-02-20 00:00:00'
 FROM users u
 WHERE u.email = 'admin@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM notice n WHERE n.title = '개인정보처리방침 개정 안내');
+  AND NOT EXISTS (SELECT 1 FROM notice n WHERE n.title = '揶쏆뮇??類ｋ궖筌ｌ꼶?곮쳸?밸쵟 揶쏆뮇????덇땀');
 
 INSERT INTO notice (author_id, title, content, is_pinned, is_deleted, created_at, updated_at)
-SELECT u.user_id, '신규 기능 출시 안내', 'DevPath에 새로운 기능이 추가되었습니다! 이번 업데이트에서는 강사 채널 구독 기능, 쿠폰 적용 기능, AI 기반 학습 경로 추천 기능이 출시되었습니다. 새로운 기능을 통해 더욱 효율적인 학습 경험을 즐겨보세요.', FALSE, FALSE, '2026-03-01 00:00:00', '2026-03-01 00:00:00'
+SELECT u.user_id, '?醫됲뇣 疫꿸퀡???곗뮇????덇땀', 'DevPath????덉쨮??疫꿸퀡????곕떽???뤿???щ빍?? ??苡???낅쑓??꾨뱜?癒?퐣??揶쏅벡沅?筌?쑬瑗??닌됰즴 疫꿸퀡?? ?묒쥚猷??怨몄뒠 疫꿸퀡?? AI 疫꿸퀡而???덈뮸 野껋럥以??곕뗄荑?疫꿸퀡????곗뮇???뤿???щ빍?? ??덉쨮??疫꿸퀡??????퉸 ?遺우뒮 ??μ몛?怨몄뵥 ??덈뮸 野껋?肉??筌앸Þ爰쇠퉪?곴쉭??', FALSE, FALSE, '2026-03-01 00:00:00', '2026-03-01 00:00:00'
 FROM users u
 WHERE u.email = 'admin@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM notice n WHERE n.title = '신규 기능 출시 안내');
+  AND NOT EXISTS (SELECT 1 FROM notice n WHERE n.title = '?醫됲뇣 疫꿸퀡???곗뮇????덇땀');
 
--- [9] admin_role (3건)
+-- [9] admin_role (3椰?
 INSERT INTO admin_role (role_name, description, is_deleted, created_at, updated_at)
-SELECT 'SUPER_ADMIN', '모든 시스템 기능에 대한 최고 권한을 보유하며 사용자 권한 관리, 시스템 설정 변경, 데이터 접근 전반을 담당합니다.', FALSE, '2026-01-01 00:00:00', '2026-01-01 00:00:00'
+SELECT 'SUPER_ADMIN', '筌뤴뫀諭???뽯뮞??疫꿸퀡???????筌ㅼ뮄??亦낅슦釉??癰귣똻???렽??????亦낅슦釉??온?? ??뽯뮞????쇱젟 癰궰野? ?怨쀬뵠???臾롫젏 ?袁⑥뺘???????몃빍??', FALSE, '2026-01-01 00:00:00', '2026-01-01 00:00:00'
 WHERE NOT EXISTS (SELECT 1 FROM admin_role ar WHERE ar.role_name = 'SUPER_ADMIN');
 
 INSERT INTO admin_role (role_name, description, is_deleted, created_at, updated_at)
-SELECT 'CONTENT_MANAGER', '강의 콘텐츠 검수, 승인, 반려 및 태그 거버넌스를 담당합니다. 사용자 데이터 접근 권한은 없습니다.', FALSE, '2026-01-01 00:00:00', '2026-01-01 00:00:00'
+SELECT 'CONTENT_MANAGER', '揶쏅벡???꾩꼹?쀯㎘?野꺜?? ?諭?? 獄쏆꼶??獄???볥젃 椰꾧퀡苡???뮞???????몃빍?? ??????怨쀬뵠???臾롫젏 亦낅슦釉?? ??곷뮸??덈뼄.', FALSE, '2026-01-01 00:00:00', '2026-01-01 00:00:00'
 WHERE NOT EXISTS (SELECT 1 FROM admin_role ar WHERE ar.role_name = 'CONTENT_MANAGER');
 
 INSERT INTO admin_role (role_name, description, is_deleted, created_at, updated_at)
-SELECT 'CS_MANAGER', '환불 요청 처리, 사용자 문의 응대 및 신고 콘텐츠 모니터링을 담당합니다.', FALSE, '2026-01-01 00:00:00', '2026-01-01 00:00:00'
+SELECT 'CS_MANAGER', '??롰뀑 ?遺욧퍕 筌ｌ꼶?? ??????얜챷???臾? 獄??醫됲??꾩꼹?쀯㎘?筌뤴뫀??怨뺤춦???????몃빍??', FALSE, '2026-01-01 00:00:00', '2026-01-01 00:00:00'
 WHERE NOT EXISTS (SELECT 1 FROM admin_role ar WHERE ar.role_name = 'CS_MANAGER');
 
--- [10] instructor_post (5건)
+-- [10] instructor_post (5椰?
 INSERT INTO instructor_post (instructor_id, title, content, post_type, like_count, comment_count, is_deleted, created_at, updated_at)
-SELECT u.user_id, '[공지] 수강생 여러분께 드리는 안내', '안녕하세요, 강사입니다. 이번 달부터 매주 토요일 오후 2시에 라이브 Q&A 세션을 진행합니다. 수강생 여러분의 많은 참여 바랍니다!', 'NOTICE', 0, 0, FALSE, '2026-01-15 00:00:00', '2026-01-15 00:00:00'
+SELECT u.user_id, '[?⑤벊?] ??띿뺏??????겫袁㏉뜞 ??뺚봺????덇땀', '??덈??뤾쉭?? 揶쏅벡沅??낅빍?? ??苡??????筌띲끉竊??醫롮뒄????쎌뜎 2??뽯퓠 ??깆뵠??Q&A ?紐꾨??筌욊쑵六??몃빍?? ??띿뺏??????겫袁⑹벥 筌띾‘? 筌〓챷肉?獄쏅뗀???덈뼄!', 'NOTICE', 0, 0, FALSE, '2026-01-15 00:00:00', '2026-01-15 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = '[공지] 수강생 여러분께 드리는 안내');
+  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = '[?⑤벊?] ??띿뺏??????겫袁㏉뜞 ??뺚봺????덇땀');
 
 INSERT INTO instructor_post (instructor_id, title, content, post_type, like_count, comment_count, is_deleted, created_at, updated_at)
-SELECT u.user_id, 'Spring Boot와 JPA를 함께 사용할 때 주의할 점', 'Spring Boot 프로젝트에서 JPA를 사용할 때 가장 흔히 겪는 문제는 N+1 문제입니다. FetchType.LAZY를 기본으로 설정하고, 필요한 경우 fetch join을 활용하는 습관을 들이세요. 오늘도 즐거운 학습 되세요!', 'GENERAL', 0, 0, FALSE, '2026-01-20 00:00:00', '2026-01-20 00:00:00'
+SELECT u.user_id, 'Spring Boot?? JPA????ｍ뜞 ???????雅뚯눘?????, 'Spring Boot ?袁⑥쨮??븍뱜?癒?퐣 JPA?????????揶쎛???酉??野껁굥???얜챷???N+1 ?얜챷???낅빍?? FetchType.LAZY??疫꿸퀡???곗쨮 ??쇱젟??랁? ?袁⑹뒄??野껋럩??fetch join????뽰뒠??롫뮉 ???????쇱뵠?紐꾩뒄. ??삳뮎??筌앸Þ援????덈뮸 ??뤾쉭??', 'GENERAL', 0, 0, FALSE, '2026-01-20 00:00:00', '2026-01-20 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = 'Spring Boot와 JPA를 함께 사용할 때 주의할 점');
+  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = 'Spring Boot?? JPA????ｍ뜞 ???????雅뚯눘?????);
 
 INSERT INTO instructor_post (instructor_id, title, content, post_type, like_count, comment_count, is_deleted, created_at, updated_at)
-SELECT u.user_id, '백엔드 개발자가 꼭 알아야 할 HTTP 상태 코드 정리', '200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error... REST API 설계에서 자주 사용되는 HTTP 상태 코드를 정리해 보았습니다. 실무에서 적절한 상태 코드를 반환하는 것이 얼마나 중요한지 느껴보세요.', 'GENERAL', 0, 0, FALSE, '2026-01-25 00:00:00', '2026-01-25 00:00:00'
+SELECT u.user_id, '獄쏄퉮肉??揶쏆뮆而?癒? ?????툡????HTTP ?怨밴묶 ?꾨뗀諭??類ｂ봺', '200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 500 Internal Server Error... REST API ??블?癒?퐣 ?癒?폒 ?????롫뮉 HTTP ?怨밴묶 ?꾨뗀諭띄몴??類ｂ봺??癰귣똻釉??щ빍?? ??뿅?癒?퐣 ?怨몄쟿???怨밴묶 ?꾨뗀諭띄몴?獄쏆꼹???롫뮉 野껉퍔????곗춳??餓λ쵐???? ?癒?벰癰귣똻苑??', 'GENERAL', 0, 0, FALSE, '2026-01-25 00:00:00', '2026-01-25 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = '백엔드 개발자가 꼭 알아야 할 HTTP 상태 코드 정리');
+  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = '獄쏄퉮肉??揶쏆뮆而?癒? ?????툡????HTTP ?怨밴묶 ?꾨뗀諭??類ｂ봺');
 
 INSERT INTO instructor_post (instructor_id, title, content, post_type, like_count, comment_count, is_deleted, created_at, updated_at)
-SELECT u.user_id, 'Docker 컨테이너로 개발 환경 통일하기', '팀 프로젝트에서 "내 컴퓨터에서는 되는데..."라는 말, 이제는 하지 마세요. Docker Compose로 개발 환경을 코드로 관리하면 팀원 모두가 동일한 환경에서 개발할 수 있습니다. Spring Boot + PostgreSQL Docker Compose 설정 방법을 공유합니다.', 'GENERAL', 0, 0, FALSE, '2026-02-03 00:00:00', '2026-02-03 00:00:00'
+SELECT u.user_id, 'Docker ?뚢뫂???瑗ユ에?揶쏆뮆而???띻펾 ???뵬??띾┛', '?? ?袁⑥쨮??븍뱜?癒?퐣 "???뚮똾踰?怨쀫퓠??뺣뮉 ??롫뮉??.."??곕뮉 筌? ??곸젫????? 筌띾뜆苑?? Docker Compose嚥?揶쏆뮆而???띻펾???꾨뗀諭뜻에??온?귐뗫릭筌?????筌뤴뫀紐℡첎? ??덉뵬????띻펾?癒?퐣 揶쏆뮆而??????됰뮸??덈뼄. Spring Boot + PostgreSQL Docker Compose ??쇱젟 獄쎻뫖苡???⑤벊???몃빍??', 'GENERAL', 0, 0, FALSE, '2026-02-03 00:00:00', '2026-02-03 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = 'Docker 컨테이너로 개발 환경 통일하기');
+  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = 'Docker ?뚢뫂???瑗ユ에?揶쏆뮆而???띻펾 ???뵬??띾┛');
 
 INSERT INTO instructor_post (instructor_id, title, content, post_type, like_count, comment_count, is_deleted, created_at, updated_at)
-SELECT u.user_id, 'JWT 인증 구현 시 보안을 위해 반드시 지켜야 할 사항', 'JWT를 구현할 때 Refresh Token은 반드시 HttpOnly Cookie에 저장하세요. Access Token은 만료 시간을 짧게(15분~1시간) 설정하고, 민감한 정보는 절대 Payload에 포함하지 마세요. 보안은 처음부터 올바르게 설계해야 합니다.', 'GENERAL', 0, 0, FALSE, '2026-02-10 00:00:00', '2026-02-10 00:00:00'
+SELECT u.user_id, 'JWT ?紐꾩쵄 ?닌뗭겱 ??癰귣똻釉???袁る퉸 獄쏆꼶諭??筌왖?녹뮇鍮?????鍮?, 'JWT???닌뗭겱????Refresh Token?? 獄쏆꼶諭??HttpOnly Cookie?????館釉?紐꾩뒄. Access Token?? 筌띾슢利???볦퍢??筌욁룓苡?15??1??볦퍢) ??쇱젟??랁? 沃섏눊而???類ｋ궖????? Payload????釉??? 筌띾뜆苑?? 癰귣똻釉?? 筌ｌ꼷?ч겫?????而?몴?우쓺 ??블??곷튊 ??몃빍??', 'GENERAL', 0, 0, FALSE, '2026-02-10 00:00:00', '2026-02-10 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = 'JWT 인증 구현 시 보안을 위해 반드시 지켜야 할 사항');
+  AND NOT EXISTS (SELECT 1 FROM instructor_post ip WHERE ip.title = 'JWT ?紐꾩쵄 ?닌뗭겱 ??癰귣똻釉???袁る퉸 獄쏆꼶諭??筌왖?녹뮇鍮?????鍮?);
 
--- [11] instructor_comment (5건)
+-- [11] instructor_comment (5椰?
 INSERT INTO instructor_comment (post_id, author_id, parent_comment_id, content, like_count, is_deleted, created_at)
-SELECT ip.id, u.user_id, NULL, '라이브 Q&A 세션 정말 기대됩니다! 꼭 참여하겠습니다.', 0, FALSE, '2026-01-16 00:00:00'
+SELECT ip.id, u.user_id, NULL, '??깆뵠??Q&A ?紐꾨??類ｌ춾 疫꿸퀡???몃빍?? ??筌〓챷肉??띿퓢??щ빍??', 0, FALSE, '2026-01-16 00:00:00'
 FROM instructor_post ip, users u
-WHERE ip.title = '[공지] 수강생 여러분께 드리는 안내' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = '라이브 Q&A 세션 정말 기대됩니다! 꼭 참여하겠습니다.');
-
-INSERT INTO instructor_comment (post_id, author_id, parent_comment_id, content, like_count, is_deleted, created_at)
-SELECT ip.id, u.user_id, NULL, '강사님 덕분에 N+1 문제를 드디어 이해했어요. fetch join 예시가 정말 도움이 됐습니다!', 0, FALSE, '2026-01-21 00:00:00'
-FROM instructor_post ip, users u
-WHERE ip.title = 'Spring Boot와 JPA를 함께 사용할 때 주의할 점' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = '강사님 덕분에 N+1 문제를 드디어 이해했어요. fetch join 예시가 정말 도움이 됐습니다!');
+WHERE ip.title = '[?⑤벊?] ??띿뺏??????겫袁㏉뜞 ??뺚봺????덇땀' AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = '??깆뵠??Q&A ?紐꾨??類ｌ춾 疫꿸퀡???몃빍?? ??筌〓챷肉??띿퓢??щ빍??');
 
 INSERT INTO instructor_comment (post_id, author_id, parent_comment_id, content, like_count, is_deleted, created_at)
-SELECT ip.id, u.user_id, NULL, 'HTTP 상태 코드 정리 감사합니다. 면접 준비할 때 자주 참고하겠습니다!', 0, FALSE, '2026-01-26 00:00:00'
+SELECT ip.id, u.user_id, NULL, '揶쏅벡沅???類ｍ뀋??N+1 ?얜챷?ｇ몴???뺣탵????꾨퉸??됰선?? fetch join ??됰뻻揶쎛 ?類ｌ춾 ?袁????癒?뮸??덈뼄!', 0, FALSE, '2026-01-21 00:00:00'
 FROM instructor_post ip, users u
-WHERE ip.title = '백엔드 개발자가 꼭 알아야 할 HTTP 상태 코드 정리' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = 'HTTP 상태 코드 정리 감사합니다. 면접 준비할 때 자주 참고하겠습니다!');
+WHERE ip.title = 'Spring Boot?? JPA????ｍ뜞 ???????雅뚯눘????? AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = '揶쏅벡沅???類ｍ뀋??N+1 ?얜챷?ｇ몴???뺣탵????꾨퉸??됰선?? fetch join ??됰뻻揶쎛 ?類ｌ춾 ?袁????癒?뮸??덈뼄!');
 
 INSERT INTO instructor_comment (post_id, author_id, parent_comment_id, content, like_count, is_deleted, created_at)
-SELECT ip.id, u.user_id, NULL, 'Docker Compose 예시 코드도 공유해 주시면 좋겠어요! 개인 프로젝트에 적용해보고 싶습니다.', 0, FALSE, '2026-02-04 00:00:00'
+SELECT ip.id, u.user_id, NULL, 'HTTP ?怨밴묶 ?꾨뗀諭??類ｂ봺 揶쏅Ŋ沅??몃빍?? 筌롫똻??餓Β??쑵釉????癒?폒 筌〓㈇???띿퓢??щ빍??', 0, FALSE, '2026-01-26 00:00:00'
 FROM instructor_post ip, users u
-WHERE ip.title = 'Docker 컨테이너로 개발 환경 통일하기' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = 'Docker Compose 예시 코드도 공유해 주시면 좋겠어요! 개인 프로젝트에 적용해보고 싶습니다.');
+WHERE ip.title = '獄쏄퉮肉??揶쏆뮆而?癒? ?????툡????HTTP ?怨밴묶 ?꾨뗀諭??類ｂ봺' AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = 'HTTP ?怨밴묶 ?꾨뗀諭??類ｂ봺 揶쏅Ŋ沅??몃빍?? 筌롫똻??餓Β??쑵釉????癒?폒 筌〓㈇???띿퓢??щ빍??');
 
 INSERT INTO instructor_comment (post_id, author_id, parent_comment_id, content, like_count, is_deleted, created_at)
-SELECT ip.id, u.user_id, NULL, 'JWT Refresh Token을 HttpOnly Cookie에 저장하는 방법을 다음 강의에서 자세히 다뤄주시면 좋겠습니다!', 0, FALSE, '2026-02-11 00:00:00'
+SELECT ip.id, u.user_id, NULL, 'Docker Compose ??됰뻻 ?꾨뗀諭???⑤벊???雅뚯눘?놅쭖??ル뿪荑??곸뒄! 揶쏆뮇???袁⑥쨮??븍뱜???怨몄뒠???ユ???좊뮸??덈뼄.', 0, FALSE, '2026-02-04 00:00:00'
 FROM instructor_post ip, users u
-WHERE ip.title = 'JWT 인증 구현 시 보안을 위해 반드시 지켜야 할 사항' AND u.email = 'learner@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = 'JWT Refresh Token을 HttpOnly Cookie에 저장하는 방법을 다음 강의에서 자세히 다뤄주시면 좋겠습니다!');
+WHERE ip.title = 'Docker ?뚢뫂???瑗ユ에?揶쏆뮆而???띻펾 ???뵬??띾┛' AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = 'Docker Compose ??됰뻻 ?꾨뗀諭???⑤벊???雅뚯눘?놅쭖??ル뿪荑??곸뒄! 揶쏆뮇???袁⑥쨮??븍뱜???怨몄뒠???ユ???좊뮸??덈뼄.');
 
--- qna_questions (qna_answer_draft 외래키 참조용)
+INSERT INTO instructor_comment (post_id, author_id, parent_comment_id, content, like_count, is_deleted, created_at)
+SELECT ip.id, u.user_id, NULL, 'JWT Refresh Token??HttpOnly Cookie?????館釉??獄쎻뫖苡????쇱벉 揶쏅벡??癒?퐣 ?癒?쉭????살Ø雅뚯눘?놅쭖??ル뿪荑??щ빍??', 0, FALSE, '2026-02-11 00:00:00'
+FROM instructor_post ip, users u
+WHERE ip.title = 'JWT ?紐꾩쵄 ?닌뗭겱 ??癰귣똻釉???袁る퉸 獄쏆꼶諭??筌왖?녹뮇鍮?????鍮? AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (SELECT 1 FROM instructor_comment ic WHERE ic.post_id = ip.id AND ic.content = 'JWT Refresh Token??HttpOnly Cookie?????館釉??獄쎻뫖苡????쇱벉 揶쏅벡??癒?퐣 ?癒?쉭????살Ø雅뚯눘?놅쭖??ル뿪荑??щ빍??');
+
+-- qna_questions (qna_answer_draft ?紐껋삋??筌〓챷???
 INSERT INTO qna_questions (user_id, template_type, difficulty, title, content, adopted_answer_id, course_id, lecture_timestamp, qna_status, view_count, is_deleted, created_at, updated_at)
-SELECT u.user_id, 'DEBUGGING', 'EASY', 'Spring Boot 실행 시 BeanCreationException이 발생합니다', '스프링 부트 애플리케이션을 실행하면 BeanCreationException: Error creating bean with name 오류가 발생합니다. 의존성 주입 설정은 맞게 한 것 같은데 어디서 문제가 생기는 걸까요?', NULL, c.course_id, NULL, 'UNANSWERED', 0, FALSE, '2026-02-05 00:00:00', '2026-02-05 00:00:00'
+SELECT u.user_id, 'DEBUGGING', 'EASY', 'Spring Boot ??쎈뻬 ??BeanCreationException??獄쏆뮇源??몃빍??, '??쎈늄筌??봔???醫뤿탣?귐???곷????쎈뻬??롢늺 BeanCreationException: Error creating bean with name ??살첒揶쎛 獄쏆뮇源??몃빍?? ??뤵??雅뚯눘????쇱젟?? 筌띿쉳苡???野?揶쏆늿?????逾???얜챷?ｅ첎? ??룸┛??椰꾨㈇???', NULL, c.course_id, NULL, 'UNANSWERED', 0, FALSE, '2026-02-05 00:00:00', '2026-02-05 00:00:00'
 FROM users u, courses c
 WHERE u.email = 'learner@devpath.com' AND c.title = 'Spring Boot Intro'
-  AND NOT EXISTS (SELECT 1 FROM qna_questions q WHERE q.title = 'Spring Boot 실행 시 BeanCreationException이 발생합니다');
+  AND NOT EXISTS (SELECT 1 FROM qna_questions q WHERE q.title = 'Spring Boot ??쎈뻬 ??BeanCreationException??獄쏆뮇源??몃빍??);
 
 INSERT INTO qna_questions (user_id, template_type, difficulty, title, content, adopted_answer_id, course_id, lecture_timestamp, qna_status, view_count, is_deleted, created_at, updated_at)
-SELECT u.user_id, 'IMPLEMENTATION', 'MEDIUM', 'JPA 연관관계 설정 시 무한 루프 문제', 'JPA에서 양방향 연관관계를 설정하면 toString()이나 JSON 직렬화 시 무한 루프가 발생합니다. @JsonIgnore나 @JsonManagedReference 중 어떤 방식을 쓰는 것이 더 좋을까요?', NULL, c.course_id, NULL, 'UNANSWERED', 0, FALSE, '2026-02-08 00:00:00', '2026-02-08 00:00:00'
+SELECT u.user_id, 'IMPLEMENTATION', 'MEDIUM', 'JPA ?怨??온????쇱젟 ???얜똾釉??룐뫂遊??얜챷??, 'JPA?癒?퐣 ?臾먭컩???怨??온?④쑬? ??쇱젟??롢늺 toString()??援?JSON 筌욊낮??????얜똾釉??룐뫂遊썲첎? 獄쏆뮇源??몃빍?? @JsonIgnore??@JsonManagedReference 餓???堉?獄쎻뫗????怨뺣뮉 野껉퍔?????ル뿭?ｆ틦??뒄?', NULL, c.course_id, NULL, 'UNANSWERED', 0, FALSE, '2026-02-08 00:00:00', '2026-02-08 00:00:00'
 FROM users u, courses c
 WHERE u.email = 'learner@devpath.com' AND c.title = 'JPA Practical Design'
-  AND NOT EXISTS (SELECT 1 FROM qna_questions q WHERE q.title = 'JPA 연관관계 설정 시 무한 루프 문제');
+  AND NOT EXISTS (SELECT 1 FROM qna_questions q WHERE q.title = 'JPA ?怨??온????쇱젟 ???얜똾釉??룐뫂遊??얜챷??);
 
--- [12] qna_answer_draft (2건)
+-- [12] qna_answer_draft (2椰?
 INSERT INTO qna_answer_draft (question_id, instructor_id, draft_content, is_deleted, saved_at, updated_at)
-SELECT q.question_id, u.user_id, 'BeanCreationException은 주로 순환 의존성이나 빈 등록 실패로 발생합니다. @Component, @Service 어노테이션이 누락되지 않았는지 확인하시고, 생성자 주입을 사용하는 경우 순환 참조가 없는지 점검해보세요. 스택 트레이스에서 Caused by 부분을 자세히 보시면 정확한 원인을 찾으실 수 있습니다.', FALSE, '2026-02-06 00:00:00', '2026-02-06 00:00:00'
+SELECT q.question_id, u.user_id, 'BeanCreationException?? 雅뚯눖以???쀬넎 ??뤵?源놁뵠?????源낆쨯 ??쎈솭嚥?獄쏆뮇源??몃빍?? @Component, @Service ??????뵠??륁뵠 ?袁⑥뵭??? ??녿릭?遺? ?類ㅼ뵥??뤿뻻?? ??밴쉐??雅뚯눘????????롫뮉 野껋럩????쀬넎 筌〓챷?쒎첎? ??용뮉筌왖 ?癒?????紐꾩뒄. ??쎄문 ?紐껋쟿??곷뮞?癒?퐣 Caused by ?봔?브쑴???癒?쉭??癰귣똻?놅쭖??類μ넇???癒?뵥??筌≪뼚???????됰뮸??덈뼄.', FALSE, '2026-02-06 00:00:00', '2026-02-06 00:00:00'
 FROM qna_questions q, users u
-WHERE q.title = 'Spring Boot 실행 시 BeanCreationException이 발생합니다' AND u.email = 'instructor@devpath.com'
+WHERE q.title = 'Spring Boot ??쎈뻬 ??BeanCreationException??獄쏆뮇源??몃빍?? AND u.email = 'instructor@devpath.com'
   AND NOT EXISTS (SELECT 1 FROM qna_answer_draft d WHERE d.question_id = q.question_id AND d.instructor_id = u.user_id);
 
 INSERT INTO qna_answer_draft (question_id, instructor_id, draft_content, is_deleted, saved_at, updated_at)
-SELECT q.question_id, u.user_id, '양방향 연관관계에서의 무한 루프는 DTO 변환으로 가장 깔끔하게 해결할 수 있습니다. Entity를 직접 반환하지 말고 ResponseDTO로 변환하면 직렬화 시 무한 루프 자체가 발생하지 않습니다. 꼭 Entity를 직렬화해야 한다면 @JsonIgnore보다 @JsonManagedReference/@JsonBackReference 조합을 권장합니다.', FALSE, '2026-02-09 00:00:00', '2026-02-09 00:00:00'
+SELECT q.question_id, u.user_id, '?臾먭컩???怨??온?④쑴肉??뽰벥 ?얜똾釉??룐뫂遊??DTO 癰궰??륁몵嚥?揶쎛??繹먮뗀嫄??띿쓺 ??욧퍙??????됰뮸??덈뼄. Entity??筌욊낯??獄쏆꼹???? 筌띾Þ??ResponseDTO嚥?癰궰??묐릭筌?筌욊낮??????얜똾釉??룐뫂遊??癒?퍥揶쎛 獄쏆뮇源??? ??녿뮸??덈뼄. ??Entity??筌욊낮??酉鍮????뺣뼄筌?@JsonIgnore癰귣???@JsonManagedReference/@JsonBackReference 鈺곌퀬鍮??亦낅슣???몃빍??', FALSE, '2026-02-09 00:00:00', '2026-02-09 00:00:00'
 FROM qna_questions q, users u
-WHERE q.title = 'JPA 연관관계 설정 시 무한 루프 문제' AND u.email = 'instructor@devpath.com'
+WHERE q.title = 'JPA ?怨??온????쇱젟 ???얜똾釉??룐뫂遊??얜챷?? AND u.email = 'instructor@devpath.com'
   AND NOT EXISTS (SELECT 1 FROM qna_answer_draft d WHERE d.question_id = q.question_id AND d.instructor_id = u.user_id);
 
--- [13] qna_template (3건)
+-- [13] qna_template (3椰?
 INSERT INTO qna_template (instructor_id, title, content, is_deleted, created_at, updated_at)
-SELECT u.user_id, '환경설정 공통 답변', '환경설정 관련 문제는 대부분 의존성 버전 충돌, 포트 충돌, 또는 application.properties 설정 오류에서 발생합니다. 먼저 pom.xml 또는 build.gradle의 의존성 버전을 확인하시고, 공식 문서에서 권장하는 버전 조합을 사용하고 있는지 체크해 보세요.', FALSE, '2026-01-10 00:00:00', '2026-01-10 00:00:00'
+SELECT u.user_id, '??띻펾??쇱젟 ?⑤벏?????', '??띻펾??쇱젟 ?온???얜챷??????봔????뤵??甕곌쑴???겸뫖猷? ?????겸뫖猷? ?癒?뮉 application.properties ??쇱젟 ??살첒?癒?퐣 獄쏆뮇源??몃빍?? ?믪눘? pom.xml ?癒?뮉 build.gradle????뤵??甕곌쑴????類ㅼ뵥??뤿뻻?? ?⑤벊???얜챷苑?癒?퐣 亦낅슣???롫뮉 甕곌쑴??鈺곌퀬鍮???????랁???덈뮉筌왖 筌ｋ똾寃??癰귣똻苑??', FALSE, '2026-01-10 00:00:00', '2026-01-10 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM qna_template qt WHERE qt.title = '환경설정 공통 답변' AND qt.instructor_id = u.user_id);
+  AND NOT EXISTS (SELECT 1 FROM qna_template qt WHERE qt.title = '??띻펾??쇱젟 ?⑤벏?????' AND qt.instructor_id = u.user_id);
 
 INSERT INTO qna_template (instructor_id, title, content, is_deleted, created_at, updated_at)
-SELECT u.user_id, 'N+1 문제 공통 답변', 'N+1 문제는 JPA에서 매우 자주 발생하는 성능 이슈입니다. 해결 방법으로는 1) JPQL fetch join 사용, 2) @EntityGraph 활용, 3) Batch Size 설정이 있습니다. 연관 엔티티를 자주 함께 조회한다면 fetch join을 기본으로 사용하고, 단순 지연 로딩이 필요한 경우에는 BatchSize로 쿼리 수를 최적화하세요.', FALSE, '2026-01-10 00:00:00', '2026-01-10 00:00:00'
+SELECT u.user_id, 'N+1 ?얜챷???⑤벏?????', 'N+1 ?얜챷???JPA?癒?퐣 筌띲끉???癒?폒 獄쏆뮇源??롫뮉 ?源낅뮟 ??곷뭼??낅빍?? ??욧퍙 獄쎻뫖苡??곗쨮??1) JPQL fetch join ???? 2) @EntityGraph ??뽰뒠, 3) Batch Size ??쇱젟????됰뮸??덈뼄. ?怨? ?酉??怨? ?癒?폒 ??ｍ뜞 鈺곌퀬???뺣뼄筌?fetch join??疫꿸퀡???곗쨮 ?????랁? ??λ떄 筌왖??嚥≪뮆逾???袁⑹뒄??野껋럩??癒?뮉 BatchSize嚥??묒눖????? 筌ㅼ뮇??酉釉?紐꾩뒄.', FALSE, '2026-01-10 00:00:00', '2026-01-10 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM qna_template qt WHERE qt.title = 'N+1 문제 공통 답변' AND qt.instructor_id = u.user_id);
+  AND NOT EXISTS (SELECT 1 FROM qna_template qt WHERE qt.title = 'N+1 ?얜챷???⑤벏?????' AND qt.instructor_id = u.user_id);
 
 INSERT INTO qna_template (instructor_id, title, content, is_deleted, created_at, updated_at)
-SELECT u.user_id, '에러 해결 가이드', '에러를 해결할 때는 다음 순서로 접근해 보세요: 1) 에러 메시지의 핵심 키워드를 그대로 검색, 2) 스택 트레이스에서 내 코드가 포함된 첫 번째 줄 확인, 3) 최근 변경한 코드 롤백 후 재현 여부 확인, 4) 공식 문서 및 GitHub Issues 참고. 에러 메시지 전체를 공유해 주시면 더 빠르게 도움드릴 수 있습니다.', FALSE, '2026-01-10 00:00:00', '2026-01-10 00:00:00'
+SELECT u.user_id, '?癒?쑎 ??욧퍙 揶쎛??諭?, '?癒?쑎????욧퍙?????뮉 ??쇱벉 ??뽮퐣嚥??臾롫젏??癰귣똻苑?? 1) ?癒?쑎 筌롫뗄?놅쭪??????뼎 ??쇱뜖??? 域밸챶?嚥?野꺜?? 2) ??쎄문 ?紐껋쟿??곷뮞?癒?퐣 ???꾨뗀諭뜹첎? ??釉??筌?甕곕뜆??餓??類ㅼ뵥, 3) 筌ㅼ뮄??癰궰野껋?釉??꾨뗀諭?嚥▲끇媛?????????? ?類ㅼ뵥, 4) ?⑤벊???얜챷苑?獄?GitHub Issues 筌〓㈇?? ?癒?쑎 筌롫뗄?놅쭪? ?袁⑷퍥???⑤벊???雅뚯눘?놅쭖?????쥓?ㅵ칰??袁???뺚뵭 ????됰뮸??덈뼄.', FALSE, '2026-01-10 00:00:00', '2026-01-10 00:00:00'
 FROM users u
 WHERE u.email = 'instructor@devpath.com'
-  AND NOT EXISTS (SELECT 1 FROM qna_template qt WHERE qt.title = '에러 해결 가이드' AND qt.instructor_id = u.user_id);
--- 스터디 그룹
+  AND NOT EXISTS (SELECT 1 FROM qna_template qt WHERE qt.title = '?癒?쑎 ??욧퍙 揶쎛??諭? AND qt.instructor_id = u.user_id);
+-- ??쎄숲??域밸챶竊?
 INSERT INTO study_group (name, description, status, max_members, is_deleted, created_at)
-SELECT 'Spring Boot 마스터 스터디', '매주 주말 온라인으로 진행하는 백엔드 스터디입니다.', 'RECRUITING', 6, false, CURRENT_TIMESTAMP
-    WHERE NOT EXISTS (SELECT 1 FROM study_group WHERE name = 'Spring Boot 마스터 스터디');
+SELECT 'Spring Boot 筌띾뜆?????쎄숲??, '筌띲끉竊?雅뚯눖彛???ㅼ뵬?紐꾩몵嚥?筌욊쑵六??롫뮉 獄쏄퉮肉????쎄숲?遺우뿯??덈뼄.', 'RECRUITING', 6, false, CURRENT_TIMESTAMP
+    WHERE NOT EXISTS (SELECT 1 FROM study_group WHERE name = 'Spring Boot 筌띾뜆?????쎄숲??);
 
 INSERT INTO study_group (name, description, status, max_members, is_deleted, created_at)
-SELECT 'React 클론 코딩 스터디', 'React와 Tailwind를 활용한 프론트엔드 집중 스터디', 'IN_PROGRESS', 4, false, CURRENT_TIMESTAMP
-    WHERE NOT EXISTS (SELECT 1 FROM study_group WHERE name = 'React 클론 코딩 스터디');
+SELECT 'React ??以??꾨뗀逾???쎄숲??, 'React?? Tailwind????뽰뒠???袁⑥쨴?紐꾨퓦??筌욌쵐夷???쎄숲??, 'IN_PROGRESS', 4, false, CURRENT_TIMESTAMP
+    WHERE NOT EXISTS (SELECT 1 FROM study_group WHERE name = 'React ??以??꾨뗀逾???쎄숲??);
 
--- 스터디 그룹 멤버 (가정: COMMON BASE의 learner_id 1, 2 존재)
--- (study_group ID 1과 2가 존재한다고 가정)
+-- ??쎄숲??域밸챶竊?筌롢끇苡?(揶쎛?? COMMON BASE??learner_id 1, 2 鈺곕똻??
+-- (study_group ID 1??2揶쎛 鈺곕똻???뺣뼄??揶쎛??
 INSERT INTO study_group_member (group_id, learner_id, join_status, joined_at)
 SELECT 1, 1, 'APPROVED', CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM study_group_member WHERE group_id = 1 AND learner_id = 1);
@@ -1527,7 +1527,7 @@ INSERT INTO study_group_member (group_id, learner_id, join_status, joined_at)
 SELECT 2, 1, 'APPROVED', CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM study_group_member WHERE group_id = 2 AND learner_id = 1);
 
--- 플래너 목표
+-- ???삋??筌뤴뫚紐?
 INSERT INTO learner_goal (learner_id, goal_type, target_value, is_active)
 SELECT 1, 'WEEKLY_NODE_CLEAR', 3, true
     WHERE NOT EXISTS (SELECT 1 FROM learner_goal WHERE learner_id = 1 AND goal_type = 'WEEKLY_NODE_CLEAR');
@@ -1536,7 +1536,7 @@ INSERT INTO learner_goal (learner_id, goal_type, target_value, is_active)
 SELECT 2, 'WEEKLY_STUDY_TIME', 10, true
     WHERE NOT EXISTS (SELECT 1 FROM learner_goal WHERE learner_id = 2 AND goal_type = 'WEEKLY_STUDY_TIME');
 
--- 스트릭 (잔디) - Unique 제약조건 방어
+-- ??쎈뱜??(?遺얜탵) - Unique ??뽯튋鈺곌퀗援?獄쎻뫗堉?
 INSERT INTO streak (learner_id, current_streak, longest_streak, last_study_date)
 SELECT 1, 5, 14, CURRENT_DATE - INTERVAL '1 day'
 WHERE NOT EXISTS (SELECT 1 FROM streak WHERE learner_id = 1);
@@ -1545,23 +1545,23 @@ INSERT INTO streak (learner_id, current_streak, longest_streak, last_study_date)
 SELECT 2, 0, 7, CURRENT_DATE - INTERVAL '3 day'
 WHERE NOT EXISTS (SELECT 1 FROM streak WHERE learner_id = 2);
 
--- 프로젝트
+-- ?袁⑥쨮??븍뱜
 INSERT INTO project (name, description, status, is_deleted, created_at)
-SELECT 'DevPath 클론 코딩', 'React와 Spring Boot를 활용한 플랫폼 개발', 'PREPARING', false, CURRENT_TIMESTAMP
-    WHERE NOT EXISTS (SELECT 1 FROM project WHERE name = 'DevPath 클론 코딩');
+SELECT 'DevPath ??以??꾨뗀逾?, 'React?? Spring Boot????뽰뒠?????삸??揶쏆뮆而?, 'PREPARING', false, CURRENT_TIMESTAMP
+    WHERE NOT EXISTS (SELECT 1 FROM project WHERE name = 'DevPath ??以??꾨뗀逾?);
 
 INSERT INTO project (name, description, status, is_deleted, created_at)
-SELECT 'AI 챗봇 서비스', 'OpenAI API를 활용한 맞춤형 멘토링 챗봇', 'IN_PROGRESS', false, CURRENT_TIMESTAMP
-    WHERE NOT EXISTS (SELECT 1 FROM project WHERE name = 'AI 챗봇 서비스');
+SELECT 'AI 筌?ロ겦 ??뺥돩??, 'OpenAI API????뽰뒠??筌띿쉸???筌롮꼹?쀯쭕?筌?ロ겦', 'IN_PROGRESS', false, CURRENT_TIMESTAMP
+    WHERE NOT EXISTS (SELECT 1 FROM project WHERE name = 'AI 筌?ロ겦 ??뺥돩??);
 
--- 프로젝트 아이디어 게시판
+-- ?袁⑥쨮??븍뱜 ?袁⑹뵠?遺용선 野껊슣???
 INSERT INTO project_idea_post (author_id, title, content, status, is_deleted, created_at)
-SELECT 1, 'Spring Boot 기반 커머스 API 만들 분?', '백엔드 위주로 진행할 예정입니다.', 'PUBLISHED', false, CURRENT_TIMESTAMP
-    WHERE NOT EXISTS (SELECT 1 FROM project_idea_post WHERE title = 'Spring Boot 기반 커머스 API 만들 분?');
+SELECT 1, 'Spring Boot 疫꿸퀡而??뚣끇???API 筌띾슢諭???', '獄쏄퉮肉???袁⑼폒嚥?筌욊쑵六????됱젟??낅빍??', 'PUBLISHED', false, CURRENT_TIMESTAMP
+    WHERE NOT EXISTS (SELECT 1 FROM project_idea_post WHERE title = 'Spring Boot 疫꿸퀡而??뚣끇???API 筌띾슢諭???');
 
 -- ========================================
--- PostgreSQL Sequence 보정 처리 (매우 중요)
--- 명시적으로 ID를 넣거나 더미 데이터를 삽입한 후, 시퀀스를 동기화해 주어야 이후 POST 요청 시 ID 중복 에러가 나지 않습니다.
+-- PostgreSQL Sequence 癰귣똻??筌ｌ꼶??(筌띲끉??餓λ쵐??
+-- 筌뤿굞??怨몄몵嚥?ID???節딄탢???遺? ?怨쀬뵠?怨? ??뚯뿯???? ??쀂???? ??녿┛?酉鍮?雅뚯눘堉????꾩뜎 POST ?遺욧퍕 ??ID 餓λ쵎???癒?쑎揶쎛 ??? ??녿뮸??덈뼄.
 -- ========================================
 SELECT setval('study_group_id_seq', (SELECT COALESCE(MAX(id), 1) FROM study_group));
 SELECT setval('study_group_member_id_seq', (SELECT COALESCE(MAX(id), 1) FROM study_group_member));
@@ -1570,20 +1570,20 @@ SELECT setval('streak_id_seq', (SELECT COALESCE(MAX(id), 1) FROM streak));
 SELECT setval('project_id_seq', (SELECT COALESCE(MAX(id), 1) FROM project));
 SELECT setval('project_idea_post_id_seq', (SELECT COALESCE(MAX(id), 1) FROM project_idea_post));
 -- ==========================================
--- [추가분] 누락된 C 파트 심화 도메인 더미 데이터 (실제 엔티티 구조 100% 반영)
+-- [?곕떽??? ?袁⑥뵭??C ??곕뱜 ?????袁⑥컭???遺? ?怨쀬뵠??(??쇱젫 ?酉????닌듼?100% 獄쏆꼷??
 -- ==========================================
 
--- 1. 스터디 매칭 (Study Match) - requester_id, receiver_id, node_id 사용
+-- 1. ??쎄숲??筌띲끉臾?(Study Match) - requester_id, receiver_id, node_id ????
 INSERT INTO study_match (requester_id, receiver_id, node_id, status, created_at)
 SELECT 1, 2, 101, 'ACCEPTED', CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM study_match WHERE requester_id = 1 AND receiver_id = 2 AND node_id = 101);
 
--- 2. 플래너: 주간 플랜 (Weekly Plan) - plan_content 사용
+-- 2. ???삋?? 雅뚯눊而????삏 (Weekly Plan) - plan_content ????
 INSERT INTO weekly_plan (learner_id, plan_content, status, created_at)
-SELECT 1, '이번 주 목표: Spring Security 인증 필터 완벽 이해 및 적용', 'IN_PROGRESS', CURRENT_TIMESTAMP
+SELECT 1, '??苡?雅?筌뤴뫚紐? Spring Security ?紐꾩쵄 ?袁り숲 ?袁④펾 ??꾨퉸 獄??怨몄뒠', 'IN_PROGRESS', CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM weekly_plan WHERE learner_id = 1);
 
--- 3. 프로젝트: 모집 역할 (Project Role)
+-- 3. ?袁⑥쨮??븍뱜: 筌뤴뫁彛???釉?(Project Role)
 INSERT INTO project_role (project_id, role_type, required_count)
 SELECT 1, 'BACKEND', 2
     WHERE NOT EXISTS (SELECT 1 FROM project_role WHERE project_id = 1 AND role_type = 'BACKEND');
@@ -1592,32 +1592,32 @@ INSERT INTO project_role (project_id, role_type, required_count)
 SELECT 1, 'FRONTEND', 2
     WHERE NOT EXISTS (SELECT 1 FROM project_role WHERE project_id = 1 AND role_type = 'FRONTEND');
 
--- 4. 프로젝트: 참여 팀원 (Project Member)
+-- 4. ?袁⑥쨮??븍뱜: 筌〓챷肉?????(Project Member)
 INSERT INTO project_member (project_id, learner_id, role_type, joined_at)
 SELECT 1, 1, 'LEADER', CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM project_member WHERE project_id = 1 AND learner_id = 1);
 
--- 5. 프로젝트: 초대 내역 (Project Invitation)
+-- 5. ?袁⑥쨮??븍뱜: ?λ뜄? ??곷열 (Project Invitation)
 INSERT INTO project_invitation (project_id, inviter_id, invitee_id, status, created_at)
 SELECT 1, 1, 3, 'PENDING', CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM project_invitation WHERE project_id = 1 AND invitee_id = 3);
 
--- 6. 멘토링: 지원 내역 (Mentoring Application)
+-- 6. 筌롮꼹?쀯쭕? 筌왖????곷열 (Mentoring Application)
 INSERT INTO mentoring_application (project_id, mentor_id, message, status, created_at)
-SELECT 1, 5, '백엔드 아키텍처 리뷰 부탁드립니다!', 'PENDING', CURRENT_TIMESTAMP
+SELECT 1, 5, '獄쏄퉮肉???袁り텕??우퓗 ?귐됰윮 ?봔?怨룸굡?깆럥???', 'PENDING', CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM mentoring_application WHERE project_id = 1 AND mentor_id = 5);
 
--- 7. 학습 증명: 제출 내역 (Project Proof Submission)
+-- 7. ??덈뮸 筌앹빖梨? ??뽱뀱 ??곷열 (Project Proof Submission)
 INSERT INTO project_proof_submission (project_id, submitter_id, proof_card_ref_id, submitted_at)
 SELECT 1, 1, 'PROOF-2026-ABC123X', CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM project_proof_submission WHERE project_id = 1 AND submitter_id = 1);
 
--- 8. 알림 (Learner Notification)
+-- 8. ???뵝 (Learner Notification)
 INSERT INTO learner_notification (learner_id, type, message, is_read, created_at)
-SELECT 1, 'STUDY_GROUP', '새로운 스터디 팀원이 매칭되었습니다!', false, CURRENT_TIMESTAMP
+SELECT 1, 'STUDY_GROUP', '??덉쨮????쎄숲?????癒?뵠 筌띲끉臾??뤿???щ빍??', false, CURRENT_TIMESTAMP
     WHERE NOT EXISTS (SELECT 1 FROM learner_notification WHERE learner_id = 1 AND type = 'STUDY_GROUP');
 
--- 9. 대시보드 스냅샷 (Dashboard Snapshot) - completed_nodes 사용
+-- 9. ????뺣궖????산퉬??(Dashboard Snapshot) - completed_nodes ????
 INSERT INTO dashboard_snapshot (learner_id, snapshot_date, total_study_hours, completed_nodes)
 SELECT 1, CURRENT_DATE, 45, 12
     WHERE NOT EXISTS (SELECT 1 FROM dashboard_snapshot WHERE learner_id = 1 AND snapshot_date = CURRENT_DATE);
@@ -1644,8 +1644,8 @@ INSERT INTO quizzes (
     created_at,
     updated_at
 ) VALUES
-(10901, 1, 'Java Basics 핵심 퀴즈', 'Java Basics 노드 학습 확인용 퀴즈입니다.', 'MANUAL', 10, TRUE, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
-(10902, 2, 'HTTP Fundamentals 핵심 퀴즈', 'HTTP Fundamentals 노드 학습 확인용 퀴즈입니다.', 'MANUAL', 10, TRUE, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day');
+(10901, 1, 'Java Basics ???뼎 ??곸グ', 'Java Basics ?紐껊굡 ??덈뮸 ?類ㅼ뵥????곸グ??낅빍??', 'MANUAL', 10, TRUE, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
+(10902, 2, 'HTTP Fundamentals ???뼎 ??곸グ', 'HTTP Fundamentals ?紐껊굡 ??덈뮸 ?類ㅼ뵥????곸グ??낅빍??', 'MANUAL', 10, TRUE, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day');
 
 INSERT INTO assignments (
     assignment_id,
@@ -1667,10 +1667,10 @@ INSERT INTO assignments (
     created_at,
     updated_at
 ) VALUES
-(11901, 1, 'Java Basics 실습 과제', '기본 문법과 객체지향 기초를 정리하는 과제입니다.', 'URL', NOW() - INTERVAL '4 day', NULL, TRUE, FALSE, FALSE, 'GitHub 저장소 URL을 제출합니다.', 100, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
-(11902, 2, 'HTTP Fundamentals 정리 과제', 'HTTP 메서드와 상태 코드를 정리하는 과제입니다.', 'URL', NOW() - INTERVAL '1 day', NULL, TRUE, FALSE, FALSE, 'GitHub 저장소 URL을 제출합니다.', 100, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day');
+(11901, 1, 'Java Basics ??쇰뮸 ?⑥눘??, '疫꿸퀡???얜챶苡욘?揶쏆빘猿쒙쭪???疫꿸퀣?밭몴??類ｂ봺??롫뮉 ?⑥눘???낅빍??', 'URL', NOW() - INTERVAL '4 day', NULL, TRUE, FALSE, FALSE, 'GitHub ???關??URL????뽱뀱??몃빍??', 100, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
+(11902, 2, 'HTTP Fundamentals ?類ｂ봺 ?⑥눘??, 'HTTP 筌롫뗄苑??? ?怨밴묶 ?꾨뗀諭띄몴??類ｂ봺??롫뮉 ?⑥눘???낅빍??', 'URL', NOW() - INTERVAL '1 day', NULL, TRUE, FALSE, FALSE, 'GitHub ???關??URL????뽱뀱??몃빍??', 100, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day');
 
--- lesson_progress 완료/미완료
+-- lesson_progress ?袁⑥┷/沃섎챷?욜뙴?
 INSERT INTO lesson_progress (
     progress_id,
     user_id,
@@ -1689,7 +1689,7 @@ INSERT INTO lesson_progress (
 (10003, 2, 1, 100, 780, 1.0, FALSE, TRUE, NOW() - INTERVAL '3 day', NOW() - INTERVAL '8 day', NOW() - INTERVAL '3 day'),
 (10004, 2, 3, 40, 440, 1.0, FALSE, FALSE, NOW() - INTERVAL '1 day', NOW() - INTERVAL '4 day', NOW() - INTERVAL '1 day');
 
--- quiz_attempts 통과/실패
+-- quiz_attempts ???궢/??쎈솭
 INSERT INTO quiz_attempts (
     attempt_id,
     quiz_id,
@@ -1709,7 +1709,7 @@ INSERT INTO quiz_attempts (
 (11002, 10902, 1, 4, 10, NOW() - INTERVAL '2 day' - INTERVAL '8 minute', NOW() - INTERVAL '2 day', 480, FALSE, 1, NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day', FALSE),
 (11003, 10901, 2, 8, 10, NOW() - INTERVAL '3 day' - INTERVAL '9 minute', NOW() - INTERVAL '3 day', 540, TRUE, 1, NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day', FALSE);
 
--- assignment_submissions 제출/미제출/통과
+-- assignment_submissions ??뽱뀱/沃섎챷?ｇ빊????궢
 INSERT INTO assignment_submissions (
     submission_id,
     assignment_id,
@@ -1743,9 +1743,9 @@ INSERT INTO timestamp_notes (
     updated_at,
     is_deleted
 ) VALUES
-(13001, 1, 1, 120, 'DI와 IoC 차이를 다시 정리했다.', NOW() - INTERVAL '6 day', NOW() - INTERVAL '6 day', FALSE),
-(13002, 1, 2, 420, 'Bean lifecycle callback 흐름을 다시 봤다.', NOW() - INTERVAL '5 day', NOW() - INTERVAL '5 day', FALSE),
-(13003, 2, 3, 300, '연관관계 매핑 전략 비교 포인트를 메모했다.', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day', FALSE);
+(13001, 1, 1, 120, 'DI?? IoC 筌△뫁?좂몴???쇰뻻 ?類ｂ봺??덈뼄.', NOW() - INTERVAL '6 day', NOW() - INTERVAL '6 day', FALSE),
+(13002, 1, 2, 420, 'Bean lifecycle callback ?癒?カ????쇰뻻 ?듽끇??', NOW() - INTERVAL '5 day', NOW() - INTERVAL '5 day', FALSE),
+(13003, 2, 3, 300, '?怨??온??筌띲끋釉??袁⑥셽 ??쑨??????紐? 筌롫뗀???덈뼄.', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day', FALSE);
 
 INSERT INTO til_drafts (
     til_id,
@@ -1759,9 +1759,9 @@ INSERT INTO til_drafts (
     updated_at,
     is_deleted
 ) VALUES
-(14001, 1, 1, 'Spring IoC와 DI 정리', 'DI, IoC, BeanContainer 흐름을 정리했다.', 'PUBLISHED', 'https://velog.io/@devpath/ioc-di', NOW() - INTERVAL '5 day', NOW() - INTERVAL '5 day', FALSE),
-(14002, 1, 2, 'Bean 생명주기 정리', 'Bean 생성과 소멸 콜백 시점을 정리했다.', 'DRAFT', NULL, NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day', FALSE),
-(14003, 2, 3, 'JPA 연관관계 매핑 메모', '일대다와 다대일 매핑 차이를 정리했다.', 'PUBLISHED', 'https://velog.io/@devpath/jpa-mapping', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day', FALSE);
+(14001, 1, 1, 'Spring IoC?? DI ?類ｂ봺', 'DI, IoC, BeanContainer ?癒?カ???類ｂ봺??덈뼄.', 'PUBLISHED', 'https://velog.io/@devpath/ioc-di', NOW() - INTERVAL '5 day', NOW() - INTERVAL '5 day', FALSE),
+(14002, 1, 2, 'Bean ??몄구雅뚯눊由??類ｂ봺', 'Bean ??밴쉐?????늾 ?꾩뮆媛???뽰젎???類ｂ봺??덈뼄.', 'DRAFT', NULL, NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day', FALSE),
+(14003, 2, 3, 'JPA ?怨??온??筌띲끋釉?筌롫뗀??, '?????? ?????筌띲끋釉?筌△뫁?좂몴??類ｂ봺??덈뼄.', 'PUBLISHED', 'https://velog.io/@devpath/jpa-mapping', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day', FALSE);
 
 -- supplement_recommendation
 INSERT INTO supplement_recommendations (
@@ -1776,9 +1776,9 @@ INSERT INTO supplement_recommendations (
     created_at,
     updated_at
 ) VALUES
-(15001, 1, 2, 'HTTP 기초 보강이 필요해 추천이 생성되었습니다.', 90, 52.0, 2, 'PENDING', NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day'),
-(15002, 1, 3, 'Spring Boot 기본기 보강 추천이 승인되었습니다.', 85, 71.0, 1, 'APPROVED', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(15003, 2, 2, 'HTTP 요청/응답 흐름 복습 추천이 생성되었습니다.', 80, 58.0, 2, 'PENDING', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day');
+(15001, 1, 2, 'HTTP 疫꿸퀣??癰귣떯而???袁⑹뒄???곕뗄荑????밴쉐??뤿???щ빍??', 90, 52.0, 2, 'PENDING', NOW() - INTERVAL '2 day', NOW() - INTERVAL '2 day'),
+(15002, 1, 3, 'Spring Boot 疫꿸퀡??묾?癰귣떯而??곕뗄荑???諭???뤿???щ빍??', 85, 71.0, 1, 'APPROVED', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(15003, 2, 2, 'HTTP ?遺욧퍕/?臾먮뼗 ?癒?カ 癰귣벊???곕뗄荑????밴쉐??뤿???щ빍??', 80, 58.0, 2, 'PENDING', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day');
 
 -- node_clearance / reason
 INSERT INTO node_clearances (
@@ -1810,14 +1810,14 @@ INSERT INTO node_clearance_reasons (
     detail_message,
     created_at
 ) VALUES
-(16101, 16001, 'LESSON_COMPLETION', TRUE, '레슨 완강률: 100.00%', NOW() - INTERVAL '4 day'),
-(16102, 16001, 'REQUIRED_TAGS', TRUE, '필수 태그를 모두 보유하고 있습니다.', NOW() - INTERVAL '4 day'),
-(16103, 16001, 'QUIZ_PASS', TRUE, '퀴즈 조건을 만족했습니다.', NOW() - INTERVAL '4 day'),
-(16104, 16001, 'ASSIGNMENT_PASS', TRUE, '과제 조건을 만족했습니다.', NOW() - INTERVAL '4 day'),
-(16105, 16001, 'PROOF_ELIGIBLE', TRUE, 'Proof Card 발급 가능 상태입니다.', NOW() - INTERVAL '4 day'),
-(16106, 16002, 'LESSON_COMPLETION', FALSE, '레슨 완강률: 65.00%', NOW() - INTERVAL '2 day'),
+(16101, 16001, 'LESSON_COMPLETION', TRUE, '??됰뮣 ?袁㏃뺏?? 100.00%', NOW() - INTERVAL '4 day'),
+(16102, 16001, 'REQUIRED_TAGS', TRUE, '?袁⑸땾 ??볥젃??筌뤴뫀紐?癰귣똻???랁???됰뮸??덈뼄.', NOW() - INTERVAL '4 day'),
+(16103, 16001, 'QUIZ_PASS', TRUE, '??곸グ 鈺곌퀗援??筌띾슣???됰뮸??덈뼄.', NOW() - INTERVAL '4 day'),
+(16104, 16001, 'ASSIGNMENT_PASS', TRUE, '?⑥눘??鈺곌퀗援??筌띾슣???됰뮸??덈뼄.', NOW() - INTERVAL '4 day'),
+(16105, 16001, 'PROOF_ELIGIBLE', TRUE, 'Proof Card 獄쏆뮄??揶쎛???怨밴묶??낅빍??', NOW() - INTERVAL '4 day'),
+(16106, 16002, 'LESSON_COMPLETION', FALSE, '??됰뮣 ?袁㏃뺏?? 65.00%', NOW() - INTERVAL '2 day'),
 (16107, 16002, 'MISSING_TAGS', FALSE, 'HTTP', NOW() - INTERVAL '2 day'),
-(16108, 16002, 'PROOF_ELIGIBLE', FALSE, 'Proof Card 발급 조건이 아직 충족되지 않았습니다.', NOW() - INTERVAL '2 day');
+(16108, 16002, 'PROOF_ELIGIBLE', FALSE, 'Proof Card 獄쏆뮄??鈺곌퀗援???袁⑹춦 ?겸뫗???? ??녿릭??щ빍??', NOW() - INTERVAL '2 day');
 
 -- proof_card / certificate / share / download_history
 INSERT INTO proof_cards (
@@ -1832,8 +1832,8 @@ INSERT INTO proof_cards (
     created_at,
     updated_at
 ) VALUES
-(17001, 1, 1, 16001, 'Java Basics Proof Card', 'Java Basics 노드의 학습 완료 및 검증 조건 충족 결과를 증명합니다.', 'ISSUED', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day'),
-(17002, 2, 1, 16003, 'Java Basics Proof Card', 'Java Basics 노드의 학습 완료 및 검증 조건 충족 결과를 증명합니다.', 'ISSUED', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day');
+(17001, 1, 1, 16001, 'Java Basics Proof Card', 'Java Basics ?紐껊굡????덈뮸 ?袁⑥┷ 獄?野꺜筌?鈺곌퀗援??겸뫗??野껉퀗?든몴?筌앹빖梨??몃빍??', 'ISSUED', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day', NOW() - INTERVAL '4 day'),
+(17002, 2, 1, 16003, 'Java Basics Proof Card', 'Java Basics ?紐껊굡????덈뮸 ?袁⑥┷ 獄?野꺜筌?鈺곌퀗援??겸뫗??野껉퀗?든몴?筌앹빖梨??몃빍??', 'ISSUED', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day', NOW() - INTERVAL '3 day');
 
 INSERT INTO proof_card_tags (
     proof_card_tag_id,
@@ -1880,8 +1880,8 @@ INSERT INTO certificate_download_histories (
     download_reason,
     downloaded_at
 ) VALUES
-(17401, 17301, 1, '포트폴리오 제출', NOW() - INTERVAL '2 day'),
-(17402, 17301, 1, '이력 정리', NOW() - INTERVAL '1 day');
+(17401, 17301, 1, '??????????뽱뀱', NOW() - INTERVAL '2 day'),
+(17402, 17301, 1, '?????類ｂ봺', NOW() - INTERVAL '1 day');
 
 -- learning_history_share_link
 INSERT INTO learning_history_share_links (
@@ -1895,9 +1895,9 @@ INSERT INTO learning_history_share_links (
     created_at,
     updated_at
 ) VALUES
-(17501, 1, 'history-share-token-17501', 'Learner Kim 학습 이력', NOW() + INTERVAL '30 day', 5, TRUE, NOW() - INTERVAL '2 day', NOW() - INTERVAL '1 day');
+(17501, 1, 'history-share-token-17501', 'Learner Kim ??덈뮸 ????, NOW() + INTERVAL '30 day', 5, TRUE, NOW() - INTERVAL '2 day', NOW() - INTERVAL '1 day');
 
--- recommendation_change 샘플
+-- recommendation_change ??묐탣
 INSERT INTO recommendation_changes (
     recommendation_change_id,
     user_id,
@@ -1913,9 +1913,9 @@ INSERT INTO recommendation_changes (
     created_at,
     updated_at
 ) VALUES
-(18001, 1, 2, 15001, '부족 태그와 최근 학습 기록을 반영한 추천입니다.', 'tilCount=2, weaknessSignal=true, warningCount=1, historyCount=1', 'SUGGESTED', 'UNDECIDED', NOW() - INTERVAL '1 day', NULL, NULL, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(18002, 1, 3, 15002, '퀴즈 실패 이력을 반영해 후속 노드 추천을 조정했습니다.', 'tilCount=2, weaknessSignal=true, warningCount=1, historyCount=2', 'APPLIED', 'APPLIED', NOW() - INTERVAL '12 hour', NOW() - INTERVAL '6 hour', NULL, NOW() - INTERVAL '12 hour', NOW() - INTERVAL '6 hour'),
-(18003, 2, 2, 15003, '보강 추천 우선순위를 조정한 제안입니다.', 'tilCount=1, weaknessSignal=false, warningCount=0, historyCount=0', 'IGNORED', 'IGNORED', NOW() - INTERVAL '10 hour', NULL, NOW() - INTERVAL '4 hour', NOW() - INTERVAL '10 hour', NOW() - INTERVAL '4 hour');
+(18001, 1, 2, 15001, '?봔鈺???볥젃?? 筌ㅼ뮄????덈뮸 疫꿸퀡以??獄쏆꼷????곕뗄荑??낅빍??', 'tilCount=2, weaknessSignal=true, warningCount=1, historyCount=1', 'SUGGESTED', 'UNDECIDED', NOW() - INTERVAL '1 day', NULL, NULL, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(18002, 1, 3, 15002, '??곸グ ??쎈솭 ?????獄쏆꼷????袁⑸꺗 ?紐껊굡 ?곕뗄荑??鈺곌퀣???됰뮸??덈뼄.', 'tilCount=2, weaknessSignal=true, warningCount=1, historyCount=2', 'APPLIED', 'APPLIED', NOW() - INTERVAL '12 hour', NOW() - INTERVAL '6 hour', NULL, NOW() - INTERVAL '12 hour', NOW() - INTERVAL '6 hour'),
+(18003, 2, 2, 15003, '癰귣떯而??곕뗄荑??怨쀪퐨??뽰맄??鈺곌퀣?????뽯툧??낅빍??', 'tilCount=1, weaknessSignal=false, warningCount=0, historyCount=0', 'IGNORED', 'IGNORED', NOW() - INTERVAL '10 hour', NULL, NOW() - INTERVAL '4 hour', NOW() - INTERVAL '10 hour', NOW() - INTERVAL '4 hour');
 
 -- learning_rule / metric_sample
 INSERT INTO learning_automation_rules (
@@ -1929,11 +1929,11 @@ INSERT INTO learning_automation_rules (
     created_at,
     updated_at
 ) VALUES
-(19001, 'PROOF_CARD_AUTO_ISSUE', 'Proof Card 자동 발급', '노드 클리어 시 Proof Card를 자동 발급합니다.', 'true', 100, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
-(19002, 'PROOF_CARD_MANUAL_ISSUE', 'Proof Card 수동 발급', '수동 발급 API 허용 여부입니다.', 'true', 90, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
-(19003, 'RECOMMENDATION_CHANGE_ENABLED', '추천 변경 활성화', '추천 변경 제안 기능 활성화 여부입니다.', 'true', 80, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
-(19004, 'RECOMMENDATION_CHANGE_MAX_LIMIT', '추천 변경 최대 개수', '추천 변경 제안 최대 개수입니다.', '5', 70, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
-(19005, 'SUPPLEMENT_RECOMMENDATION_ENABLED', '보강 추천 활성화', '보강 추천 생성 기능 활성화 여부입니다.', 'true', 60, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day');
+(19001, 'PROOF_CARD_AUTO_ISSUE', 'Proof Card ?癒?짗 獄쏆뮄??, '?紐껊굡 ???????Proof Card???癒?짗 獄쏆뮄???몃빍??', 'true', 100, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
+(19002, 'PROOF_CARD_MANUAL_ISSUE', 'Proof Card ??롫짗 獄쏆뮄??, '??롫짗 獄쏆뮄??API ??됱뒠 ?????낅빍??', 'true', 90, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
+(19003, 'RECOMMENDATION_CHANGE_ENABLED', '?곕뗄荑?癰궰野???뽮쉐??, '?곕뗄荑?癰궰野???뽯툧 疫꿸퀡????뽮쉐???????낅빍??', 'true', 80, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
+(19004, 'RECOMMENDATION_CHANGE_MAX_LIMIT', '?곕뗄荑?癰궰野?筌ㅼ뮆? 揶쏆뮇??, '?곕뗄荑?癰궰野???뽯툧 筌ㅼ뮆? 揶쏆뮇???낅빍??', '5', 70, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day'),
+(19005, 'SUPPLEMENT_RECOMMENDATION_ENABLED', '癰귣떯而??곕뗄荑???뽮쉐??, '癰귣떯而??곕뗄荑???밴쉐 疫꿸퀡????뽮쉐???????낅빍??', 'true', 60, 'ENABLED', NOW() - INTERVAL '7 day', NOW() - INTERVAL '7 day');
 
 INSERT INTO automation_monitor_snapshots (
     automation_monitor_snapshot_id,
@@ -1944,10 +1944,10 @@ INSERT INTO automation_monitor_snapshots (
     measured_at,
     created_at
 ) VALUES
-(19101, 'PROOF_CARD_AUTO_ISSUE', 'HEALTHY', 1.0, '자동 발급 룰이 활성화되어 있습니다.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(19102, 'PROOF_CARD_MANUAL_ISSUE', 'HEALTHY', 1.0, '수동 발급 룰이 활성화되어 있습니다.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(19103, 'RECOMMENDATION_CHANGE_ENABLED', 'HEALTHY', 1.0, '추천 변경 룰이 활성화되어 있습니다.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
-(19104, 'SUPPLEMENT_RECOMMENDATION_ENABLED', 'HEALTHY', 1.0, '보강 추천 룰이 활성화되어 있습니다.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day');
+(19101, 'PROOF_CARD_AUTO_ISSUE', 'HEALTHY', 1.0, '?癒?짗 獄쏆뮄???룰퀣????뽮쉐?遺얜┷????됰뮸??덈뼄.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(19102, 'PROOF_CARD_MANUAL_ISSUE', 'HEALTHY', 1.0, '??롫짗 獄쏆뮄???룰퀣????뽮쉐?遺얜┷????됰뮸??덈뼄.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(19103, 'RECOMMENDATION_CHANGE_ENABLED', 'HEALTHY', 1.0, '?곕뗄荑?癰궰野??룰퀣????뽮쉐?遺얜┷????됰뮸??덈뼄.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+(19104, 'SUPPLEMENT_RECOMMENDATION_ENABLED', 'HEALTHY', 1.0, '癰귣떯而??곕뗄荑??룰퀣????뽮쉐?遺얜┷????됰뮸??덈뼄.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day');
 
 INSERT INTO learning_metric_samples (
     learning_metric_sample_id,
@@ -1962,7 +1962,7 @@ INSERT INTO learning_metric_samples (
 (19203, 'AVERAGE_WATCH_TIME', 'averageLearningDurationSeconds', 1380.00, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
 (19204, 'QUIZ_STATS', 'quizQualityScore', 79.40, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day');
 
--- 시퀀스 보정
+-- ??쀂???癰귣똻??
 SELECT setval(pg_get_serial_sequence('quizzes', 'quiz_id'), COALESCE((SELECT MAX(quiz_id) FROM quizzes), 1), true);
 SELECT setval(pg_get_serial_sequence('assignments', 'assignment_id'), COALESCE((SELECT MAX(assignment_id) FROM assignments), 1), true);
 SELECT setval(pg_get_serial_sequence('lesson_progress', 'progress_id'), COALESCE((SELECT MAX(progress_id) FROM lesson_progress), 1), true);
@@ -1983,3 +1983,968 @@ SELECT setval(pg_get_serial_sequence('recommendation_changes', 'recommendation_c
 SELECT setval(pg_get_serial_sequence('learning_automation_rules', 'learning_automation_rule_id'), COALESCE((SELECT MAX(learning_automation_rule_id) FROM learning_automation_rules), 1), true);
 SELECT setval(pg_get_serial_sequence('automation_monitor_snapshots', 'automation_monitor_snapshot_id'), COALESCE((SELECT MAX(automation_monitor_snapshot_id) FROM automation_monitor_snapshots), 1), true);
 SELECT setval(pg_get_serial_sequence('learning_metric_samples', 'learning_metric_sample_id'), COALESCE((SELECT MAX(learning_metric_sample_id) FROM learning_metric_samples), 1), true);
+
+-- =====================================================
+-- A SEED START
+-- ?숈뒿 ?먮룞??+ Proof Card + ?숈뒿 ?대젰 + 異붿쿇 蹂寃?+ ?숈뒿 遺꾩꽍
+-- =====================================================
+
+-- A scenario base
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order)
+SELECT r.roadmap_id, 'A Swagger Clear Node', 'A ?꾩슜 Swagger 寃利앹슜 ?대━???몃뱶?낅땲??', 'CONCEPT', 101
+FROM roadmaps r
+WHERE r.title = 'Backend Master Roadmap'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM roadmap_nodes n
+      WHERE n.roadmap_id = r.roadmap_id
+        AND n.title = 'A Swagger Clear Node'
+  );
+
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order)
+SELECT r.roadmap_id, 'A Swagger Gap Node', 'A ?꾩슜 Swagger 寃利앹슜 誘명겢由ъ뼱 ?몃뱶?낅땲??', 'PRACTICE', 102
+FROM roadmaps r
+WHERE r.title = 'Backend Master Roadmap'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM roadmap_nodes n
+      WHERE n.roadmap_id = r.roadmap_id
+        AND n.title = 'A Swagger Gap Node'
+  );
+
+INSERT INTO node_completion_rules (node_id, criteria_type, criteria_value, created_at, updated_at)
+SELECT n.node_id, 'LESSON_QUIZ_ASSIGNMENT', 'lesson,quiz,assignment', NOW() - INTERVAL '8' DAY, NOW() - INTERVAL '8' DAY
+FROM roadmap_nodes n
+WHERE n.title = 'A Swagger Clear Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_completion_rules r
+      WHERE r.node_id = n.node_id
+  );
+
+INSERT INTO node_completion_rules (node_id, criteria_type, criteria_value, created_at, updated_at)
+SELECT n.node_id, 'LESSON_QUIZ_ASSIGNMENT', 'lesson,quiz,assignment', NOW() - INTERVAL '8' DAY, NOW() - INTERVAL '8' DAY
+FROM roadmap_nodes n
+WHERE n.title = 'A Swagger Gap Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_completion_rules r
+      WHERE r.node_id = n.node_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT n.node_id, t.tag_id
+FROM roadmap_nodes n, tags t
+WHERE n.title = 'A Swagger Clear Node'
+  AND t.name = 'Java'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags req
+      WHERE req.node_id = n.node_id
+        AND req.tag_id = t.tag_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT n.node_id, t.tag_id
+FROM roadmap_nodes n, tags t
+WHERE n.title = 'A Swagger Gap Node'
+  AND t.name = 'Spring Security'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags req
+      WHERE req.node_id = n.node_id
+        AND req.tag_id = t.tag_id
+  );
+
+INSERT INTO courses (
+    instructor_id,
+    title,
+    subtitle,
+    description,
+    thumbnail_url,
+    intro_video_url,
+    video_asset_key,
+    duration_seconds,
+    price,
+    original_price,
+    currency,
+    difficulty_level,
+    language,
+    has_certificate,
+    status,
+    published_at
+)
+SELECT
+    u.user_id,
+    'A Java Proof Course',
+    'A ?꾩슜 ?대━??寃利?肄붿뒪',
+    'A Clear Node???곌껐?섎뒗 ?⑥씪 ?덉뒯 肄붿뒪?낅땲??',
+    '/images/courses/a-java-proof.png',
+    'https://cdn.devpath.com/courses/a-java-proof.mp4',
+    'asset-a-java-proof',
+    1800,
+    0.00,
+    0.00,
+    'KRW',
+    'BEGINNER',
+    'ko',
+    TRUE,
+    'PUBLISHED',
+    NOW() - INTERVAL '10' DAY
+FROM users u
+WHERE u.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM courses c
+      WHERE c.title = 'A Java Proof Course'
+  );
+
+INSERT INTO courses (
+    instructor_id,
+    title,
+    subtitle,
+    description,
+    thumbnail_url,
+    intro_video_url,
+    video_asset_key,
+    duration_seconds,
+    price,
+    original_price,
+    currency,
+    difficulty_level,
+    language,
+    has_certificate,
+    status,
+    published_at
+)
+SELECT
+    u.user_id,
+    'A Gap Recovery Course',
+    'A ?꾩슜 誘명넻怨?寃利?肄붿뒪',
+    'A Gap Node???곌껐?섎뒗 誘몄셿猷?肄붿뒪?낅땲??',
+    '/images/courses/a-gap-recovery.png',
+    'https://cdn.devpath.com/courses/a-gap-recovery.mp4',
+    'asset-a-gap-recovery',
+    2100,
+    0.00,
+    0.00,
+    'KRW',
+    'BEGINNER',
+    'ko',
+    TRUE,
+    'PUBLISHED',
+    NOW() - INTERVAL '9' DAY
+FROM users u
+WHERE u.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM courses c
+      WHERE c.title = 'A Gap Recovery Course'
+  );
+
+INSERT INTO course_sections (course_id, title, description, sort_order, is_published)
+SELECT c.course_id, 'A Clear Section', '?대━??寃利앹슜 ?뱀뀡', 1, TRUE
+FROM courses c
+WHERE c.title = 'A Java Proof Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_sections cs
+      WHERE cs.course_id = c.course_id
+        AND cs.sort_order = 1
+  );
+
+INSERT INTO course_sections (course_id, title, description, sort_order, is_published)
+SELECT c.course_id, 'A Gap Section', '誘명겢由ъ뼱 寃利앹슜 ?뱀뀡', 1, TRUE
+FROM courses c
+WHERE c.title = 'A Gap Recovery Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_sections cs
+      WHERE cs.course_id = c.course_id
+        AND cs.sort_order = 1
+  );
+
+INSERT INTO lessons (
+    section_id,
+    title,
+    description,
+    lesson_type,
+    video_url,
+    video_asset_key,
+    video_provider,
+    thumbnail_url,
+    duration_seconds,
+    is_preview,
+    is_published,
+    sort_order
+)
+SELECT
+    cs.section_id,
+    'A Clear Lesson',
+    '?대━???몃뱶???꾨즺 ?덉뒯',
+    'VIDEO',
+    'https://cdn.devpath.com/lessons/a-clear-lesson.mp4',
+    'asset-a-clear-lesson',
+    'MUX',
+    '/images/lessons/a-clear-lesson.png',
+    900,
+    FALSE,
+    TRUE,
+    1
+FROM course_sections cs
+JOIN courses c ON c.course_id = cs.course_id
+WHERE c.title = 'A Java Proof Course'
+  AND cs.sort_order = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lessons l
+      WHERE l.section_id = cs.section_id
+        AND l.sort_order = 1
+  );
+
+INSERT INTO lessons (
+    section_id,
+    title,
+    description,
+    lesson_type,
+    video_url,
+    video_asset_key,
+    video_provider,
+    thumbnail_url,
+    duration_seconds,
+    is_preview,
+    is_published,
+    sort_order
+)
+SELECT
+    cs.section_id,
+    'A Gap Lesson',
+    '誘명겢由ъ뼱 ?몃뱶??誘몄셿猷??덉뒯',
+    'VIDEO',
+    'https://cdn.devpath.com/lessons/a-gap-lesson.mp4',
+    'asset-a-gap-lesson',
+    'MUX',
+    '/images/lessons/a-gap-lesson.png',
+    900,
+    FALSE,
+    TRUE,
+    1
+FROM course_sections cs
+JOIN courses c ON c.course_id = cs.course_id
+WHERE c.title = 'A Gap Recovery Course'
+  AND cs.sort_order = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lessons l
+      WHERE l.section_id = cs.section_id
+        AND l.sort_order = 1
+  );
+
+INSERT INTO course_node_mappings (course_id, node_id, created_at)
+SELECT c.course_id, n.node_id, NOW() - INTERVAL '8' DAY
+FROM courses c, roadmap_nodes n
+WHERE c.title = 'A Java Proof Course'
+  AND n.title = 'A Swagger Clear Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_node_mappings m
+      WHERE m.course_id = c.course_id
+        AND m.node_id = n.node_id
+  );
+
+INSERT INTO course_node_mappings (course_id, node_id, created_at)
+SELECT c.course_id, n.node_id, NOW() - INTERVAL '8' DAY
+FROM courses c, roadmap_nodes n
+WHERE c.title = 'A Gap Recovery Course'
+  AND n.title = 'A Swagger Gap Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_node_mappings m
+      WHERE m.course_id = c.course_id
+        AND m.node_id = n.node_id
+  );
+
+INSERT INTO course_enrollments (
+    user_id,
+    course_id,
+    status,
+    enrolled_at,
+    completed_at,
+    progress_percentage,
+    last_accessed_at
+)
+SELECT u.user_id, c.course_id, 'COMPLETED', NOW() - INTERVAL '7' DAY, NOW() - INTERVAL '2' DAY, 100, NOW() - INTERVAL '1' DAY
+FROM users u, courses c
+WHERE u.email = 'learner@devpath.com'
+  AND c.title = 'A Java Proof Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_enrollments e
+      WHERE e.user_id = u.user_id
+        AND e.course_id = c.course_id
+  );
+
+INSERT INTO course_enrollments (
+    user_id,
+    course_id,
+    status,
+    enrolled_at,
+    completed_at,
+    progress_percentage,
+    last_accessed_at
+)
+SELECT u.user_id, c.course_id, 'ACTIVE', NOW() - INTERVAL '7' DAY, NULL, 40, NOW() - INTERVAL '5' HOUR
+FROM users u, courses c
+WHERE u.email = 'learner@devpath.com'
+  AND c.title = 'A Gap Recovery Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_enrollments e
+      WHERE e.user_id = u.user_id
+        AND e.course_id = c.course_id
+  );
+
+-- 1. lesson_progress
+-- ?꾨즺/誘몄셿猷?耳?댁뒪
+INSERT INTO lesson_progress (
+    user_id,
+    lesson_id,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at,
+    created_at,
+    updated_at
+)
+SELECT u.user_id, l.lesson_id, 100, 900, 1.0, FALSE, TRUE, NOW() - INTERVAL '2' DAY, NOW() - INTERVAL '7' DAY, NOW() - INTERVAL '2' DAY
+FROM users u, lessons l
+WHERE u.email = 'learner@devpath.com'
+  AND l.title = 'A Clear Lesson'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lesson_progress lp
+      WHERE lp.user_id = u.user_id
+        AND lp.lesson_id = l.lesson_id
+  );
+
+INSERT INTO lesson_progress (
+    user_id,
+    lesson_id,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at,
+    created_at,
+    updated_at
+)
+SELECT u.user_id, l.lesson_id, 40, 360, 1.25, FALSE, FALSE, NOW() - INTERVAL '5' HOUR, NOW() - INTERVAL '6' DAY, NOW() - INTERVAL '5' HOUR
+FROM users u, lessons l
+WHERE u.email = 'learner@devpath.com'
+  AND l.title = 'A Gap Lesson'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lesson_progress lp
+      WHERE lp.user_id = u.user_id
+        AND lp.lesson_id = l.lesson_id
+  );
+
+-- 2. quiz_attempt ?먮뒗 quiz_submission
+-- ?듦낵/?ㅽ뙣 耳?댁뒪
+INSERT INTO quizzes (
+    node_id,
+    title,
+    description,
+    quiz_type,
+    total_score,
+    is_published,
+    is_active,
+    expose_answer,
+    expose_explanation,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT n.node_id, 'A Clear Node Quiz', 'A Clear Node ?듦낵 寃利앹슜 ?댁쫰?낅땲??', 'MANUAL', 10, TRUE, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7' DAY, NOW() - INTERVAL '7' DAY
+FROM roadmap_nodes n
+WHERE n.title = 'A Swagger Clear Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quizzes q
+      WHERE q.node_id = n.node_id
+        AND q.title = 'A Clear Node Quiz'
+  );
+
+INSERT INTO quizzes (
+    node_id,
+    title,
+    description,
+    quiz_type,
+    total_score,
+    is_published,
+    is_active,
+    expose_answer,
+    expose_explanation,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT n.node_id, 'A Gap Node Quiz', 'A Gap Node ?ㅽ뙣 寃利앹슜 ?댁쫰?낅땲??', 'MANUAL', 10, TRUE, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7' DAY, NOW() - INTERVAL '7' DAY
+FROM roadmap_nodes n
+WHERE n.title = 'A Swagger Gap Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quizzes q
+      WHERE q.node_id = n.node_id
+        AND q.title = 'A Gap Node Quiz'
+  );
+
+INSERT INTO quiz_attempts (
+    quiz_id,
+    learner_id,
+    score,
+    max_score,
+    started_at,
+    completed_at,
+    time_spent_seconds,
+    is_passed,
+    attempt_number,
+    created_at,
+    updated_at,
+    is_deleted
+)
+SELECT q.quiz_id, u.user_id, 9, 10, NOW() - INTERVAL '2' DAY - INTERVAL '10' MINUTE, NOW() - INTERVAL '2' DAY, 600, TRUE, 1, NOW() - INTERVAL '2' DAY, NOW() - INTERVAL '2' DAY, FALSE
+FROM quizzes q, users u
+WHERE q.title = 'A Clear Node Quiz'
+  AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_attempts qa
+      WHERE qa.quiz_id = q.quiz_id
+        AND qa.learner_id = u.user_id
+        AND qa.attempt_number = 1
+  );
+
+INSERT INTO quiz_attempts (
+    quiz_id,
+    learner_id,
+    score,
+    max_score,
+    started_at,
+    completed_at,
+    time_spent_seconds,
+    is_passed,
+    attempt_number,
+    created_at,
+    updated_at,
+    is_deleted
+)
+SELECT q.quiz_id, u.user_id, 4, 10, NOW() - INTERVAL '1' DAY - INTERVAL '8' MINUTE, NOW() - INTERVAL '1' DAY, 480, FALSE, 1, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '1' DAY, FALSE
+FROM quizzes q, users u
+WHERE q.title = 'A Gap Node Quiz'
+  AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_attempts qa
+      WHERE qa.quiz_id = q.quiz_id
+        AND qa.learner_id = u.user_id
+        AND qa.attempt_number = 1
+  );
+
+-- 3. submission
+-- ?쒖텧/誘몄젣異??듦낵 耳?댁뒪
+INSERT INTO assignments (
+    node_id,
+    title,
+    description,
+    submission_type,
+    due_at,
+    allowed_file_formats,
+    readme_required,
+    test_required,
+    lint_required,
+    submission_rule_description,
+    total_score,
+    is_published,
+    is_active,
+    allow_late_submission,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT n.node_id, 'A Clear Assignment', 'Proof Card 諛쒓툒 媛??耳?댁뒪 寃利앹슜 怨쇱젣?낅땲??', 'URL', NOW() + INTERVAL '3' DAY, NULL, TRUE, TRUE, FALSE, 'GitHub ??μ냼 URL???쒖텧?⑸땲??', 100, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7' DAY, NOW() - INTERVAL '7' DAY
+FROM roadmap_nodes n
+WHERE n.title = 'A Swagger Clear Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignments a
+      WHERE a.node_id = n.node_id
+        AND a.title = 'A Clear Assignment'
+  );
+
+INSERT INTO assignments (
+    node_id,
+    title,
+    description,
+    submission_type,
+    due_at,
+    allowed_file_formats,
+    readme_required,
+    test_required,
+    lint_required,
+    submission_rule_description,
+    total_score,
+    is_published,
+    is_active,
+    allow_late_submission,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT n.node_id, 'A Failed Assignment', '?쒖텧?덉?留?誘명넻怨?耳?댁뒪 寃利앹슜 怨쇱젣?낅땲??', 'URL', NOW() + INTERVAL '3' DAY, NULL, TRUE, TRUE, TRUE, 'GitHub ??μ냼 URL???쒖텧?⑸땲??', 100, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7' DAY, NOW() - INTERVAL '7' DAY
+FROM roadmap_nodes n
+WHERE n.title = 'A Swagger Gap Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignments a
+      WHERE a.node_id = n.node_id
+        AND a.title = 'A Failed Assignment'
+  );
+
+INSERT INTO assignments (
+    node_id,
+    title,
+    description,
+    submission_type,
+    due_at,
+    allowed_file_formats,
+    readme_required,
+    test_required,
+    lint_required,
+    submission_rule_description,
+    total_score,
+    is_published,
+    is_active,
+    allow_late_submission,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT n.node_id, 'A Missing Assignment', '誘몄젣異?耳?댁뒪 寃利앹슜 怨쇱젣?낅땲??', 'URL', NOW() + INTERVAL '4' DAY, NULL, FALSE, FALSE, FALSE, 'GitHub ??μ냼 URL???쒖텧?⑸땲??', 100, TRUE, TRUE, TRUE, FALSE, NOW() - INTERVAL '7' DAY, NOW() - INTERVAL '7' DAY
+FROM roadmap_nodes n
+WHERE n.title = 'A Swagger Gap Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignments a
+      WHERE a.node_id = n.node_id
+        AND a.title = 'A Missing Assignment'
+  );
+
+INSERT INTO assignment_submissions (
+    assignment_id,
+    learner_id,
+    submission_status,
+    submission_url,
+    is_late,
+    submitted_at,
+    graded_at,
+    total_score,
+    readme_passed,
+    test_passed,
+    lint_passed,
+    file_format_passed,
+    created_at,
+    updated_at,
+    is_deleted
+)
+SELECT a.assignment_id, u.user_id, 'GRADED', 'https://github.com/example/a-clear-assignment', FALSE, NOW() - INTERVAL '2' DAY, NOW() - INTERVAL '1' DAY, 95, TRUE, TRUE, TRUE, TRUE, NOW() - INTERVAL '2' DAY, NOW() - INTERVAL '1' DAY, FALSE
+FROM assignments a, users u
+WHERE a.title = 'A Clear Assignment'
+  AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignment_submissions s
+      WHERE s.assignment_id = a.assignment_id
+        AND s.learner_id = u.user_id
+  );
+
+INSERT INTO assignment_submissions (
+    assignment_id,
+    learner_id,
+    submission_status,
+    submission_url,
+    is_late,
+    submitted_at,
+    graded_at,
+    total_score,
+    readme_passed,
+    test_passed,
+    lint_passed,
+    file_format_passed,
+    created_at,
+    updated_at,
+    is_deleted
+)
+SELECT a.assignment_id, u.user_id, 'GRADED', 'https://github.com/example/a-failed-assignment', FALSE, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '12' HOUR, 0, FALSE, FALSE, FALSE, TRUE, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '12' HOUR, FALSE
+FROM assignments a, users u
+WHERE a.title = 'A Failed Assignment'
+  AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignment_submissions s
+      WHERE s.assignment_id = a.assignment_id
+        AND s.learner_id = u.user_id
+  );
+
+-- 4. til / timestamp_note
+INSERT INTO timestamp_notes (
+    user_id,
+    lesson_id,
+    timestamp_second,
+    content,
+    created_at,
+    updated_at,
+    is_deleted
+)
+SELECT u.user_id, l.lesson_id, 120, 'A Clear Lesson?먯꽌 Proof 議곌굔???ㅼ떆 ?뺤씤?덈떎.', NOW() - INTERVAL '2' DAY, NOW() - INTERVAL '2' DAY, FALSE
+FROM users u, lessons l
+WHERE u.email = 'learner@devpath.com'
+  AND l.title = 'A Clear Lesson'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM timestamp_notes tn
+      WHERE tn.user_id = u.user_id
+        AND tn.lesson_id = l.lesson_id
+        AND tn.timestamp_second = 120
+  );
+
+INSERT INTO timestamp_notes (
+    user_id,
+    lesson_id,
+    timestamp_second,
+    content,
+    created_at,
+    updated_at,
+    is_deleted
+)
+SELECT u.user_id, l.lesson_id, 240, 'A Gap Lesson?먯꽌 鍮좎쭊 ?쒓렇? 怨쇱젣 ?곹깭瑜?硫붾え?덈떎.', NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '1' DAY, FALSE
+FROM users u, lessons l
+WHERE u.email = 'learner@devpath.com'
+  AND l.title = 'A Gap Lesson'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM timestamp_notes tn
+      WHERE tn.user_id = u.user_id
+        AND tn.lesson_id = l.lesson_id
+        AND tn.timestamp_second = 240
+  );
+
+INSERT INTO til_drafts (
+    user_id,
+    lesson_id,
+    title,
+    content,
+    status,
+    published_url,
+    created_at,
+    updated_at,
+    is_deleted
+)
+SELECT u.user_id, l.lesson_id, 'A Clear Node TIL', 'NodeClearance? Proof Card 諛쒓툒 議곌굔???뺣━?덈떎.', 'PUBLISHED', 'https://velog.io/@devpath/a-clear-proof', NOW() - INTERVAL '2' DAY, NOW() - INTERVAL '2' DAY, FALSE
+FROM users u, lessons l
+WHERE u.email = 'learner@devpath.com'
+  AND l.title = 'A Clear Lesson'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM til_drafts td
+      WHERE td.user_id = u.user_id
+        AND td.title = 'A Clear Node TIL'
+  );
+
+INSERT INTO til_drafts (
+    user_id,
+    lesson_id,
+    title,
+    content,
+    status,
+    published_url,
+    created_at,
+    updated_at,
+    is_deleted
+)
+SELECT u.user_id, l.lesson_id, 'A Gap Node TIL', '遺議??쒓렇? 怨쇱젣 誘명넻怨??먯씤???뺣━?덈떎.', 'DRAFT', NULL, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '1' DAY, FALSE
+FROM users u, lessons l
+WHERE u.email = 'learner@devpath.com'
+  AND l.title = 'A Gap Lesson'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM til_drafts td
+      WHERE td.user_id = u.user_id
+        AND td.title = 'A Gap Node TIL'
+  );
+
+-- 5. supplement_recommendation
+INSERT INTO supplement_recommendations (
+    user_id,
+    node_id,
+    reason,
+    priority,
+    coverage_percent,
+    missing_tag_count,
+    status,
+    created_at,
+    updated_at
+)
+SELECT u.user_id, n.node_id, 'Spring Security ?쒓렇媛 遺議깊빐 蹂닿컯 ?숈뒿??異붿쿇?⑸땲??', 95, 35.00, 1, 'PENDING', NOW() - INTERVAL '12' HOUR, NOW() - INTERVAL '12' HOUR
+FROM users u, roadmap_nodes n
+WHERE u.email = 'learner@devpath.com'
+  AND n.title = 'A Swagger Gap Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM supplement_recommendations sr
+      WHERE sr.user_id = u.user_id
+        AND sr.node_id = n.node_id
+  );
+
+-- 6. proof_card / certificate / share_link / download_history
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT u.user_id, n.node_id, 'CLEARED', 100.00, TRUE, 0, TRUE, TRUE, TRUE, TRUE, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '1' DAY
+FROM users u, roadmap_nodes n
+WHERE u.email = 'learner@devpath.com'
+  AND n.title = 'A Swagger Clear Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = n.node_id
+  );
+
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT u.user_id, n.node_id, 'NOT_CLEARED', 0.00, FALSE, 1, FALSE, FALSE, FALSE, FALSE, NULL, NOW() - INTERVAL '12' HOUR, NOW() - INTERVAL '12' HOUR, NOW() - INTERVAL '12' HOUR
+FROM users u, roadmap_nodes n
+WHERE u.email = 'learner@devpath.com'
+  AND n.title = 'A Swagger Gap Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = n.node_id
+  );
+
+INSERT INTO proof_cards (
+    user_id,
+    node_id,
+    node_clearance_id,
+    title,
+    description,
+    proof_card_status,
+    issued_at,
+    created_at,
+    updated_at
+)
+SELECT u.user_id, n.node_id, nc.node_clearance_id, 'A Clear Node Proof Card', 'A Clear Node??NodeClearance? Proof 諛쒓툒 媛???곹깭瑜?利앸챸?⑸땲??', 'ISSUED', NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '1' DAY
+FROM users u
+JOIN roadmap_nodes n ON n.title = 'A Swagger Clear Node'
+JOIN node_clearances nc ON nc.user_id = u.user_id AND nc.node_id = n.node_id
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM proof_cards pc
+      WHERE pc.user_id = u.user_id
+        AND pc.node_id = n.node_id
+  );
+
+INSERT INTO proof_card_tags (
+    proof_card_id,
+    tag_id,
+    skill_evidence_type
+)
+SELECT pc.proof_card_id, t.tag_id, 'VERIFIED'
+FROM proof_cards pc
+JOIN roadmap_nodes n ON n.node_id = pc.node_id,
+     tags t
+WHERE n.title = 'A Swagger Clear Node'
+  AND t.name = 'Java'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM proof_card_tags pt
+      WHERE pt.proof_card_id = pc.proof_card_id
+        AND pt.tag_id = t.tag_id
+        AND pt.skill_evidence_type = 'VERIFIED'
+  );
+
+INSERT INTO proof_card_shares (
+    proof_card_id,
+    share_token,
+    share_status,
+    expires_at,
+    access_count,
+    created_at,
+    updated_at
+)
+SELECT pc.proof_card_id, 'proof-share-token-a-21101', 'ACTIVE', NOW() + INTERVAL '30' DAY, 3, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '6' HOUR
+FROM proof_cards pc
+JOIN roadmap_nodes n ON n.node_id = pc.node_id
+WHERE n.title = 'A Swagger Clear Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM proof_card_shares ps
+      WHERE ps.share_token = 'proof-share-token-a-21101'
+  );
+
+INSERT INTO certificates (
+    proof_card_id,
+    certificate_number,
+    certificate_status,
+    issued_at,
+    pdf_file_name,
+    pdf_generated_at,
+    last_downloaded_at,
+    created_at,
+    updated_at
+)
+SELECT pc.proof_card_id, 'CERT-20260330-A1001', 'PDF_READY', NOW() - INTERVAL '1' DAY, 'certificate-CERT-20260330-A1001.pdf', NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '12' HOUR, NOW() - INTERVAL '1' DAY, NOW() - INTERVAL '12' HOUR
+FROM proof_cards pc
+JOIN roadmap_nodes n ON n.node_id = pc.node_id
+WHERE n.title = 'A Swagger Clear Node'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM certificates c
+      WHERE c.proof_card_id = pc.proof_card_id
+  );
+
+INSERT INTO certificate_download_histories (
+    certificate_id,
+    downloaded_by,
+    download_reason,
+    downloaded_at
+)
+SELECT c.certificate_id, u.user_id, 'A Swagger 寃利??ㅼ슫濡쒕뱶', NOW() - INTERVAL '12' HOUR
+FROM certificates c, users u
+WHERE c.certificate_number = 'CERT-20260330-A1001'
+  AND u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM certificate_download_histories h
+      WHERE h.certificate_id = c.certificate_id
+        AND h.download_reason = 'A Swagger 寃利??ㅼ슫濡쒕뱶'
+  );
+
+INSERT INTO learning_history_share_links (
+    user_id,
+    share_token,
+    title,
+    expires_at,
+    access_count,
+    is_active,
+    created_at,
+    updated_at
+)
+SELECT u.user_id, 'history-share-token-a-21151', 'A Swagger Learning History', NOW() + INTERVAL '14' DAY, 1, TRUE, NOW() - INTERVAL '8' HOUR, NOW() - INTERVAL '8' HOUR
+FROM users u
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learning_history_share_links l
+      WHERE l.share_token = 'history-share-token-a-21151'
+  );
+
+-- 7. learning_rule / metric_sample
+INSERT INTO learning_automation_rules (
+    rule_key,
+    rule_name,
+    description,
+    rule_value,
+    priority,
+    rule_status,
+    created_at,
+    updated_at
+)
+SELECT 'A_SWAGGER_HISTORY_REFRESH', 'A Swagger History Refresh', 'A ?꾩슜 寃利앹슜 ?쒖꽦 猷곗엯?덈떎.', 'true', 40, 'ENABLED', NOW() - INTERVAL '2' DAY, NOW() - INTERVAL '2' DAY
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM learning_automation_rules r
+    WHERE r.rule_key = 'A_SWAGGER_HISTORY_REFRESH'
+);
+
+INSERT INTO learning_automation_rules (
+    rule_key,
+    rule_name,
+    description,
+    rule_value,
+    priority,
+    rule_status,
+    created_at,
+    updated_at
+)
+SELECT 'A_SWAGGER_PROOF_LOCK', 'A Swagger Proof Lock', 'A ?꾩슜 寃利앹슜 鍮꾪솢??猷곗엯?덈떎.', 'false', 30, 'DISABLED', NOW() - INTERVAL '2' DAY, NOW() - INTERVAL '2' DAY
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM learning_automation_rules r
+    WHERE r.rule_key = 'A_SWAGGER_PROOF_LOCK'
+);
+
+INSERT INTO learning_metric_samples (
+    metric_type,
+    metric_label,
+    metric_value,
+    sampled_at,
+    created_at
+)
+SELECT 'OVERVIEW', 'aSwaggerClearanceRate', 50.00, NOW() - INTERVAL '6' HOUR, NOW() - INTERVAL '6' HOUR
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM learning_metric_samples s
+    WHERE s.metric_label = 'aSwaggerClearanceRate'
+);
+
+INSERT INTO learning_metric_samples (
+    metric_type,
+    metric_label,
+    metric_value,
+    sampled_at,
+    created_at
+)
+SELECT 'QUIZ_STATS', 'aSwaggerQuizQuality', 65.00, NOW() - INTERVAL '6' HOUR, NOW() - INTERVAL '6' HOUR
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM learning_metric_samples s
+    WHERE s.metric_label = 'aSwaggerQuizQuality'
+);
+
+-- =====================================================
+-- A SEED END
+-- =====================================================
