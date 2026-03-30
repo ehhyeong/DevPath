@@ -40,6 +40,10 @@ public class InstructorMarketingService {
     }
 
     public void createPromotion(Long instructorId, PromotionCreateRequest request) {
+        if (request.getEndAt() != null && request.getStartAt() != null
+                && !request.getEndAt().isAfter(request.getStartAt())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
         Promotion promotion = Promotion.builder()
                 .instructorId(instructorId)
                 .courseId(request.getCourseId())
@@ -53,7 +57,7 @@ public class InstructorMarketingService {
 
     public void updatePromotionStatus(Long courseId, Long instructorId, PromotionStatusUpdateRequest request) {
         Promotion promotion = promotionRepository.findByIdAndIsDeletedFalse(courseId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PROMOTION_NOT_FOUND));
         promotion.updateStatus(request.getIsActive());
     }
 

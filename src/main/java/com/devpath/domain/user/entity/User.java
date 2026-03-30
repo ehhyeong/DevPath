@@ -1,5 +1,7 @@
 package com.devpath.domain.user.entity;
 
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,6 +58,10 @@ public class User {
   private Boolean isActive = true;
 
   @Enumerated(EnumType.STRING)
+  @Column(name = "account_status", length = 20)
+  private AccountStatus accountStatus = AccountStatus.ACTIVE;
+
+  @Enumerated(EnumType.STRING)
   @Column(name = "instructor_status", length = 20)
   private InstructorStatus instructorStatus;
 
@@ -75,20 +81,27 @@ public class User {
     this.lastLoginAt = LocalDateTime.now();
   }
 
-  public void deactivate() {
+  public void restrict() {
+    if (this.accountStatus == AccountStatus.RESTRICTED) {
+      throw new CustomException(ErrorCode.ACCOUNT_ALREADY_RESTRICTED);
+    }
     this.isActive = false;
+    this.accountStatus = AccountStatus.RESTRICTED;
   }
 
-  public void restrict() {
+  public void deactivate() {
     this.isActive = false;
+    this.accountStatus = AccountStatus.DEACTIVATED;
   }
 
   public void restore() {
     this.isActive = true;
+    this.accountStatus = AccountStatus.ACTIVE;
   }
 
   public void withdraw() {
     this.isActive = false;
+    this.accountStatus = AccountStatus.WITHDRAWN;
   }
 
   public void approveInstructor() {

@@ -78,6 +78,21 @@ public enum ErrorCode {
   DUPLICATE_LEARNING_RULE(HttpStatus.CONFLICT, "동일한 학습 자동화 룰이 이미 존재합니다."),
   LEARNING_RULE_DISABLED(HttpStatus.BAD_REQUEST, "비활성화된 학습 자동화 룰입니다."),
 
+  REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다."),
+  REVIEW_ALREADY_HIDDEN(HttpStatus.BAD_REQUEST, "이미 숨김 처리된 리뷰입니다."),
+  REFUND_NOT_FOUND(HttpStatus.NOT_FOUND, "환불 요청을 찾을 수 없습니다."),
+  REFUND_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 환불 요청입니다."),
+  SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "정산 내역을 찾을 수 없습니다."),
+  SETTLEMENT_NOT_PENDING(HttpStatus.BAD_REQUEST, "PENDING 상태의 정산만 처리할 수 있습니다."),
+  ACCOUNT_ALREADY_RESTRICTED(HttpStatus.BAD_REQUEST, "이미 제한된 계정입니다."),
+  ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "계정을 찾을 수 없습니다."),
+  NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),
+  QNA_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "QnA 질문을 찾을 수 없습니다."),
+  QNA_ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "QnA 답변을 찾을 수 없습니다."),
+  COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
+  PROMOTION_NOT_FOUND(HttpStatus.NOT_FOUND, "프로모션을 찾을 수 없습니다."),
+  INVALID_STATUS_TRANSITION(HttpStatus.BAD_REQUEST, "유효하지 않은 상태 전이입니다."),
+
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
   private final HttpStatus status;

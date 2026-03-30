@@ -18,13 +18,13 @@ public class AdminRefundService {
 
     public void approveRefund(Long refundId, Long adminId, RefundProcessRequest request) {
         RefundRequest refundRequest = refundRepository.findByIdAndIsDeletedFalse(refundId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.REFUND_NOT_FOUND));
         refundRequest.approve();
     }
 
     public void rejectRefund(Long refundId, Long adminId, RefundProcessRequest request) {
         RefundRequest refundRequest = refundRepository.findByIdAndIsDeletedFalse(refundId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.REFUND_NOT_FOUND));
         refundRequest.reject();
     }
 }

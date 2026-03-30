@@ -3,6 +3,7 @@ package com.devpath.api.instructor.service;
 import com.devpath.api.instructor.dto.revenue.RevenueResponse;
 import com.devpath.api.instructor.dto.revenue.SettlementResponse;
 import com.devpath.api.settlement.entity.Settlement;
+import com.devpath.api.settlement.entity.SettlementStatus;
 import com.devpath.api.settlement.repository.SettlementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,11 @@ public class InstructorRevenueService {
                 .mapToLong(Settlement::getAmount)
                 .sum();
 
-        long netRevenue = Math.round(totalRevenue * (1 - PLATFORM_FEE_RATE));
+        long completedRevenue = settlements.stream()
+                .filter(s -> s.getStatus() == SettlementStatus.COMPLETED)
+                .mapToLong(Settlement::getAmount)
+                .sum();
+        long netRevenue = Math.round(completedRevenue * (1 - PLATFORM_FEE_RATE));
 
         List<RevenueResponse.TransactionItem> recentTransactions = settlements.stream()
                 .map(s -> RevenueResponse.TransactionItem.builder()

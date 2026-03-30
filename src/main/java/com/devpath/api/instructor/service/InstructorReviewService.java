@@ -30,6 +30,9 @@ public class InstructorReviewService {
 
     public ReviewReplyResponse createReply(Long reviewId, Long instructorId, ReviewReplyRequest request) {
         getActiveReview(reviewId);
+        if (!reviewReplyRepository.findByReviewIdAndIsDeletedFalse(reviewId).isEmpty()) {
+            throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
+        }
         ReviewReply reply = ReviewReply.builder()
                 .reviewId(reviewId)
                 .instructorId(instructorId)

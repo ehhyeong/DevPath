@@ -118,4 +118,10 @@ public class Question {
         this.qnaStatus = status;
         this.updatedAt = LocalDateTime.now();
     }
+
+    // 질문을 답변 완료 상태로 변경한다.
+    public void markAsAnswered() {
+        this.qnaStatus = QuestionStatus.ANSWERED.name();
+        this.updatedAt = LocalDateTime.now();
+    }
 }

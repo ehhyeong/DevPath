@@ -50,9 +50,9 @@ public class InstructorCommunityController {
     @Operation(summary = "채널 게시글 목록 조회", description = "정렬(sort=latest/popular), 타입(type=NOTICE/GENERAL) 필터 지원")
     @GetMapping("/posts")
     public ApiResponse<List<CommunityPostResponse>> getPosts(
-            @RequestParam Long instructorId,
-            @RequestParam(defaultValue = "latest") String sort,
-            @RequestParam(required = false) String type) {
+            @Parameter(description = "강사 채널 ID") @RequestParam Long instructorId,
+            @Parameter(description = "정렬 기준 (latest/popular)") @RequestParam(defaultValue = "latest") String sort,
+            @Parameter(description = "게시글 타입 필터 (NOTICE/GENERAL)") @RequestParam(required = false) String type) {
         return ApiResponse.success("게시글 목록 조회 성공", instructorCommunityService.getPosts(instructorId, sort, type));
     }
 
@@ -118,7 +118,7 @@ public class InstructorCommunityController {
 
     @Operation(summary = "채널 커뮤니티 집계 조회")
     @GetMapping("/summary")
-    public ApiResponse<CommunitySummaryResponse> getSummary(@RequestParam Long instructorId) {
+    public ApiResponse<CommunitySummaryResponse> getSummary(@Parameter(description = "강사 채널 ID") @RequestParam Long instructorId) {
         return ApiResponse.success("집계 조회 성공", instructorCommunityService.getSummary(instructorId));
     }
 }

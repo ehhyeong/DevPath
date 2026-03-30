@@ -39,6 +39,7 @@ public class AdminTagGovernanceService {
 
         tagRepository
                 .findByName(name)
+                .filter(existingTag -> !Boolean.TRUE.equals(existingTag.getIsDeleted()))
                 .ifPresent(existingTag -> {
                     throw new CustomException(ErrorCode.ALREADY_EXISTS);
                 });
@@ -69,6 +70,7 @@ public class AdminTagGovernanceService {
     @Transactional(readOnly = true)
     public List<TagResponse> getTags() {
         return tagRepository.findAll().stream()
+                .filter(tag -> !Boolean.TRUE.equals(tag.getIsDeleted()))
                 .sorted(Comparator.comparing(Tag::getName))
                 .map(TagResponse::from)
                 .collect(Collectors.toList());
@@ -96,14 +98,14 @@ public class AdminTagGovernanceService {
             moveUserTechStacks(sourceTag, targetTag);
             moveNodeRequiredTags(sourceTag, targetTag);
 
-            tagRepository.delete(sourceTag);
+            sourceTag.softDelete();
         }
     }
 
     @Transactional(readOnly = true)
     public TagGuideResponse getTagGuide() {
         List<TagResponse> standardTags = tagRepository.findAll().stream()
-                .filter(tag -> Boolean.TRUE.equals(tag.getIsOfficial()))
+                .filter(tag -> Boolean.TRUE.equals(tag.getIsOfficial()) && !Boolean.TRUE.equals(tag.getIsDeleted()))
                 .sorted(Comparator.comparing(Tag::getName))
                 .map(TagResponse::from)
                 .collect(Collectors.toList());

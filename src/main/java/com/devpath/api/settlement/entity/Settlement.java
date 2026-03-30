@@ -1,5 +1,7 @@
 package com.devpath.api.settlement.entity;
 
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -43,6 +45,9 @@ public class Settlement {
     private LocalDateTime createdAt;
 
     public void hold() {
+        if (this.status != SettlementStatus.PENDING) {
+            throw new CustomException(ErrorCode.SETTLEMENT_NOT_PENDING);
+        }
         this.status = SettlementStatus.HELD;
     }
 }

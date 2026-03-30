@@ -69,7 +69,9 @@ public class InstructorQnaInboxService {
                 .user(instructor)
                 .content(request.getContent())
                 .build();
-        return QnaAnswerResponse.from(answerRepository.save(answer));
+        QnaAnswerResponse response = QnaAnswerResponse.from(answerRepository.save(answer));
+        question.markAsAnswered();
+        return response;
     }
 
     public QnaAnswerResponse updateAnswer(Long questionId, Long answerId, Long instructorId, QnaAnswerRequest request) {

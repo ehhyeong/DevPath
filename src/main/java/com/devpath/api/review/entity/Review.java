@@ -1,5 +1,7 @@
 package com.devpath.api.review.entity;
 
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -56,11 +58,19 @@ public class Review {
     @Column(name = "issue_tags_raw")
     private String issueTagsRaw;
 
-    public void changeStatus(ReviewStatus status) {
-        this.status = status;
+    public void changeStatus(ReviewStatus newStatus) {
+        boolean valid = (this.status == ReviewStatus.UNANSWERED)
+                || (this.status == ReviewStatus.ANSWERED && newStatus == ReviewStatus.UNSATISFIED);
+        if (!valid) {
+            throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+        this.status = newStatus;
     }
 
     public void hide() {
+        if (Boolean.TRUE.equals(this.isHidden)) {
+            throw new CustomException(ErrorCode.REVIEW_ALREADY_HIDDEN);
+        }
         this.isHidden = true;
     }
 

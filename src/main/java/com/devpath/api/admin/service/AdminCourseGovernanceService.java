@@ -33,6 +33,9 @@ public class AdminCourseGovernanceService {
     public void approveCourse(Long courseId, CourseApproveRequest request) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+        if (course.getStatus() != CourseStatus.IN_REVIEW) {
+            throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
         course.approve();
     }
 
@@ -40,6 +43,9 @@ public class AdminCourseGovernanceService {
     public void rejectCourse(Long courseId, CourseRejectRequest request) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+        if (course.getStatus() != CourseStatus.IN_REVIEW) {
+            throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
         course.reject();
     }
 }

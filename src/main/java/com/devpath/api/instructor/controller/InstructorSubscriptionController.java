@@ -42,7 +42,7 @@ public class InstructorSubscriptionController {
     @PatchMapping("/{channelId}/notification")
     public ApiResponse<Void> updateNotification(
             @PathVariable Long channelId,
-            @RequestParam boolean notificationEnabled,
+            @Parameter(description = "알림 활성화 여부") @RequestParam boolean notificationEnabled,
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
         instructorSubscriptionService.updateNotification(channelId, userId, notificationEnabled);
         return ApiResponse.success("알림 설정이 변경되었습니다.", null);

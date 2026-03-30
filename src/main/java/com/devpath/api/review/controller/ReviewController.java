@@ -5,6 +5,7 @@ import com.devpath.api.review.dto.ReviewResponse;
 import com.devpath.api.review.service.ReviewService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class ReviewController {
     @Operation(summary = "강의별 리뷰 목록 조회")
     @GetMapping
     public ApiResponse<List<ReviewResponse>> getReviewsByCourse(
-            @RequestParam Long courseId) {
+            @Parameter(description = "강의 ID") @RequestParam Long courseId) {
         return ApiResponse.success("리뷰 목록 조회 성공", reviewService.getReviewsByCourse(courseId));
     }
 

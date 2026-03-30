@@ -54,6 +54,9 @@ public class InstructorCommunicationService {
     public DmRoomResponse getDmRoom(Long roomId, Long instructorId) {
         DmRoom dmRoom = dmRoomRepository.findByIdAndIsDeletedFalse(roomId)
                 .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (!dmRoom.getInstructorId().equals(instructorId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACTION);
+        }
         return DmRoomResponse.from(dmRoom);
     }
 }

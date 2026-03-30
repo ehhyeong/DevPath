@@ -50,13 +50,13 @@ public class AdminPermissionService {
     @Transactional(readOnly = true)
     public UserPermissionResponse getUserPermission(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
         return UserPermissionResponse.from(user);
     }
 
     public void changeInstructorGrade(Long userId, InstructorGradeUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
         user.changeInstructorGrade(request.getGrade());
     }
 }

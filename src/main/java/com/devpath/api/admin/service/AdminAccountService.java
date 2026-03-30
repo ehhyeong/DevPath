@@ -35,13 +35,13 @@ public class AdminAccountService {
     @Transactional(readOnly = true)
     public AccountDetailResponse getAccount(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
         return AccountDetailResponse.from(user);
     }
 
     public void restrictAccount(Long userId, Long adminId, AccountStatusUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
         user.restrict();
         accountLogRepository.save(AccountLog.builder()
                 .targetUserId(userId)
@@ -53,7 +53,7 @@ public class AdminAccountService {
 
     public void deactivateAccount(Long userId, Long adminId, AccountStatusUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
         user.deactivate();
         accountLogRepository.save(AccountLog.builder()
                 .targetUserId(userId)
@@ -65,7 +65,7 @@ public class AdminAccountService {
 
     public void restoreAccount(Long userId, Long adminId, AccountStatusUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
         user.restore();
         accountLogRepository.save(AccountLog.builder()
                 .targetUserId(userId)
@@ -77,7 +77,7 @@ public class AdminAccountService {
 
     public void withdrawAccount(Long userId, Long adminId, AccountStatusUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
         user.withdraw();
         accountLogRepository.save(AccountLog.builder()
                 .targetUserId(userId)
@@ -89,7 +89,7 @@ public class AdminAccountService {
 
     public void approveInstructor(Long userId, Long adminId, AccountStatusUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
         user.approveInstructor();
         accountLogRepository.save(AccountLog.builder()
                 .targetUserId(userId)

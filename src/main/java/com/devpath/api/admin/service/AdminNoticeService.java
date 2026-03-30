@@ -32,7 +32,7 @@ public class AdminNoticeService {
 
     public NoticeResponse updateNotice(Long noticeId, Long adminId, NoticeCreateRequest request) {
         Notice notice = noticeRepository.findByIdAndIsDeletedFalse(noticeId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTICE_NOT_FOUND));
         notice.update(request.getTitle(), request.getContent(),
                 request.getIsPinned() != null ? request.getIsPinned() : false);
         return NoticeResponse.from(notice);
@@ -40,7 +40,7 @@ public class AdminNoticeService {
 
     public void deleteNotice(Long noticeId, Long adminId) {
         Notice notice = noticeRepository.findByIdAndIsDeletedFalse(noticeId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTICE_NOT_FOUND));
         notice.delete();
     }
 
@@ -54,7 +54,7 @@ public class AdminNoticeService {
     @Transactional(readOnly = true)
     public NoticeResponse getNotice(Long noticeId) {
         Notice notice = noticeRepository.findByIdAndIsDeletedFalse(noticeId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOTICE_NOT_FOUND));
         return NoticeResponse.from(notice);
     }
 }

@@ -1,5 +1,7 @@
 package com.devpath.api.refund.entity;
 
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -46,11 +48,17 @@ public class RefundRequest {
     private LocalDateTime processedAt;
 
     public void approve() {
+        if (this.status != RefundStatus.PENDING) {
+            throw new CustomException(ErrorCode.REFUND_ALREADY_PROCESSED);
+        }
         this.status = RefundStatus.APPROVED;
         this.processedAt = LocalDateTime.now();
     }
 
     public void reject() {
+        if (this.status != RefundStatus.PENDING) {
+            throw new CustomException(ErrorCode.REFUND_ALREADY_PROCESSED);
+        }
         this.status = RefundStatus.REJECTED;
         this.processedAt = LocalDateTime.now();
     }

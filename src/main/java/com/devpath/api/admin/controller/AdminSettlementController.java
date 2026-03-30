@@ -33,7 +33,7 @@ public class AdminSettlementController {
     @Operation(summary = "환불 보증기간 기준 정산 가능 여부 계산", description = "환불 요청 ID 기반으로 7일 보증기간 경과 여부 반환")
     @GetMapping("/eligibility")
     public ApiResponse<SettlementEligibilityResponse> checkEligibility(
-            @RequestParam Long refundRequestId) {
+            @Parameter(description = "환불 요청 ID") @RequestParam Long refundRequestId) {
         return ApiResponse.success("정산 가능 여부를 조회했습니다.", adminSettlementService.checkEligibility(refundRequestId));
     }
 }

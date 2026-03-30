@@ -24,7 +24,7 @@ public class InstructorQnaInboxController {
     @Operation(summary = "QnA Inbox 목록 조회", description = "status 파라미터로 미답변/답변완료 필터")
     @GetMapping
     public ApiResponse<List<QnaInboxResponse>> getInbox(
-            @RequestParam(required = false) String status,
+            @Parameter(description = "QnA 상태 필터 (UNANSWERED/ANSWERED)") @RequestParam(required = false) String status,
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
         return ApiResponse.success("QnA Inbox 조회 성공", instructorQnaInboxService.getInbox(userId, status));
     }

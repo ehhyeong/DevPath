@@ -24,6 +24,14 @@ public class Tag {
   @Column(name = "is_official")
   private Boolean isOfficial = true;
 
+  @Builder.Default
+  @Column(name = "is_deleted", nullable = false)
+  private Boolean isDeleted = false;
+
+  public void softDelete() {
+    this.isDeleted = true;
+  }
+
   public void updateTag(String name, String category) {
     this.name = name;
     this.category = category;
