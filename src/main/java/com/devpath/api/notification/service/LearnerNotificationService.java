@@ -1,14 +1,14 @@
 package com.devpath.api.notification.service;
 
 import com.devpath.api.notification.dto.NotificationResponse;
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.notification.entity.LearnerNotification;
 import com.devpath.domain.notification.repository.LearnerNotificationRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,13 +20,14 @@ public class LearnerNotificationService {
     public List<NotificationResponse> getMyNotifications(Long learnerId) {
         return notificationRepository.findAllByLearnerIdOrderByCreatedAtDesc(learnerId).stream()
                 .map(this::convertToDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional
-    public void markAsRead(Long notificationId) {
-        LearnerNotification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("알림을 찾을 수 없습니다."));
+    public void markAsRead(Long learnerId, Long notificationId) {
+        LearnerNotification notification = notificationRepository.findByIdAndLearnerId(notificationId, learnerId)
+                .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED_ACTION, "본인의 알림만 읽음 처리할 수 있습니다."));
+
         notification.markAsRead();
     }
 

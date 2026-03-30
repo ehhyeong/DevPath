@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/me/streaks")
 @RequiredArgsConstructor
-@Tag(name = "Learner Streak", description = "학습자 스트릭 관리 API")
+@Tag(name = "Learner - Streak", description = "학습자 스트릭 관리 API")
 public class LearnerStreakController {
 
     private final LearnerStreakService learnerStreakService;
@@ -28,12 +28,12 @@ public class LearnerStreakController {
         return ApiResponse.ok(learnerStreakService.refreshStreak(learnerId));
     }
 
-    // 누락되었던 API 추가
     @PostMapping("/recovery-plans")
     @Operation(summary = "스트릭 복구 계획 생성", description = "끊긴 스트릭을 복구하기 위한 계획을 제출합니다.")
-    public ApiResponse<Object> createRecoveryPlan(
+    public ApiResponse<String> createRecoveryPlan(
             @RequestParam(defaultValue = "1") Long learnerId,
-            @RequestBody String planDetails) {
+            @RequestBody String planDetails
+    ) {
         return ApiResponse.ok(learnerStreakService.createRecoveryPlan(learnerId, planDetails));
     }
 }

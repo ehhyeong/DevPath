@@ -10,7 +10,15 @@ public interface StudyGroupMemberRepository extends JpaRepository<StudyGroupMemb
 
     Optional<StudyGroupMember> findByStudyGroupIdAndLearnerId(Long studyGroupId, Long learnerId);
 
+    Optional<StudyGroupMember> findByStudyGroupIdAndLearnerIdAndJoinStatus(
+            Long studyGroupId,
+            Long learnerId,
+            StudyGroupJoinStatus joinStatus
+    );
+
     Optional<StudyGroupMember> findByIdAndStudyGroupId(Long id, Long studyGroupId);
+
+    long countByStudyGroupIdAndJoinStatus(Long studyGroupId, StudyGroupJoinStatus joinStatus);
 
     List<StudyGroupMember> findAllByLearnerIdAndJoinStatusOrderByJoinedAtDesc(
             Long learnerId,
