@@ -57,7 +57,7 @@ public class InstructorMarketingService {
 
     public void updatePromotionStatus(Long courseId, Long instructorId, PromotionStatusUpdateRequest request) {
         Promotion promotion = promotionRepository.findByIdAndIsDeletedFalse(courseId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.PROMOTION_NOT_FOUND));
         promotion.updateStatus(request.getIsActive());
     }
 
