@@ -2,6 +2,7 @@ package com.devpath.api.instructor.controller;
 
 import com.devpath.api.instructor.dto.community.CommunityCommentRequest;
 import com.devpath.api.instructor.dto.community.CommunityCommentResponse;
+import com.devpath.api.instructor.dto.community.CommunityPostDetailResponse;
 import com.devpath.api.instructor.dto.community.CommunityPostRequest;
 import com.devpath.api.instructor.dto.community.CommunityPostResponse;
 import com.devpath.api.instructor.dto.community.CommunitySummaryResponse;
@@ -85,8 +86,8 @@ public class InstructorCommunityController {
 
     @Operation(summary = "채널 게시글 상세 조회")
     @GetMapping("/posts/{postId}")
-    public ApiResponse<CommunityPostResponse> getPost(@PathVariable Long postId) {
-        return ApiResponse.success("게시글 조회 성공", instructorCommunityService.getPost(postId));
+    public ApiResponse<CommunityPostDetailResponse> getPost(@PathVariable Long postId) {
+        return ApiResponse.success("게시글 조회 성공", instructorCommunityService.getPostDetail(postId));
     }
 
     @Operation(summary = "댓글 등록")

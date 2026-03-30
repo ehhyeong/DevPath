@@ -1,7 +1,9 @@
 package com.devpath.api.instructor.service;
 
+import com.devpath.api.instructor.dto.community.CommunityCommentDetailResponse;
 import com.devpath.api.instructor.dto.community.CommunityCommentRequest;
 import com.devpath.api.instructor.dto.community.CommunityCommentResponse;
+import com.devpath.api.instructor.dto.community.CommunityPostDetailResponse;
 import com.devpath.api.instructor.dto.community.CommunityPostRequest;
 import com.devpath.api.instructor.dto.community.CommunityPostResponse;
 import com.devpath.api.instructor.dto.community.CommunitySummaryResponse;
@@ -16,8 +18,11 @@ import com.devpath.api.instructor.repository.InstructorPostRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -92,8 +97,35 @@ public class InstructorCommunityService {
     }
 
     @Transactional(readOnly = true)
-    public CommunityPostResponse getPost(Long postId) {
-        return CommunityPostResponse.from(getActivePost(postId));
+    public CommunityPostDetailResponse getPostDetail(Long postId) {
+        InstructorPost post = getActivePost(postId);
+        List<InstructorComment> comments = commentRepository.findByPostIdAndIsDeletedFalseOrderByCreatedAtAsc(postId);
+
+        Map<Long, CommunityCommentDetailResponse> indexed = new LinkedHashMap<>();
+        List<CommunityCommentDetailResponse> roots = new ArrayList<>();
+
+        for (InstructorComment comment : comments) {
+            indexed.put(comment.getId(), CommunityCommentDetailResponse.from(comment));
+        }
+
+        for (InstructorComment comment : comments) {
+            CommunityCommentDetailResponse current = indexed.get(comment.getId());
+
+            if (comment.getParentCommentId() == null) {
+                roots.add(current);
+                continue;
+            }
+
+            CommunityCommentDetailResponse parent = indexed.get(comment.getParentCommentId());
+            if (parent == null) {
+                roots.add(current);
+                continue;
+            }
+
+            parent.addReply(current);
+        }
+
+        return CommunityPostDetailResponse.from(post, roots);
     }
 
     public CommunityCommentResponse addComment(Long postId, Long authorId, CommunityCommentRequest request) {
@@ -252,7 +284,6 @@ public class InstructorCommunityService {
         }
     }
 
-    // Only latest/popular are accepted as sort values.
     private String normalizeSort(String sort) {
         String normalized = sort == null ? "latest" : sort.trim().toLowerCase(Locale.ROOT);
         if (!normalized.equals("latest") && !normalized.equals("popular")) {
@@ -261,7 +292,6 @@ public class InstructorCommunityService {
         return normalized;
     }
 
-    // Only NOTICE/GENERAL are accepted for community post types.
     private String normalizePostType(String postType) {
         String normalized = normalizeOptionalPostType(postType);
         return normalized == null ? "GENERAL" : normalized;
