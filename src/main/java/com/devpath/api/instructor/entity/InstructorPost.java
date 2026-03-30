@@ -1,16 +1,21 @@
 package com.devpath.api.instructor.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "instructor_post")
@@ -67,10 +72,17 @@ public class InstructorPost {
     }
 
     public void decrementLikeCount() {
-        if (this.likeCount > 0) this.likeCount--;
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 
     public void incrementCommentCount() {
         this.commentCount++;
+    }
+
+    // Prevent comment count from drifting below zero during cascading deletes.
+    public void decrementCommentCount(int count) {
+        this.commentCount = Math.max(0, this.commentCount - count);
     }
 }
