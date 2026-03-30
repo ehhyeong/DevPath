@@ -7,7 +7,6 @@ import com.devpath.api.review.repository.ReviewRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,26 +19,31 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
 
     public ReviewResponse createReview(ReviewRequest request, Long learnerId) {
+        if (reviewRepository.existsByCourseIdAndLearnerIdAndIsDeletedFalse(request.getCourseId(), learnerId)) {
+            throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
+        }
+
         Review review = Review.builder()
                 .courseId(request.getCourseId())
                 .learnerId(learnerId)
                 .rating(request.getRating())
                 .content(request.getContent())
                 .build();
-        Review saved = reviewRepository.save(review);
-        return ReviewResponse.from(saved);
+
+        return ReviewResponse.from(reviewRepository.save(review));
     }
 
     @Transactional(readOnly = true)
     public List<ReviewResponse> getReviewsByCourse(Long courseId) {
-        return reviewRepository.findByCourseIdAndIsDeletedFalse(courseId).stream()
+        return reviewRepository.findByCourseIdAndIsDeletedFalseAndIsHiddenFalseOrderByCreatedAtDesc(courseId)
+                .stream()
                 .map(ReviewResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public ReviewResponse getReview(Long reviewId) {
-        Review review = reviewRepository.findByIdAndIsDeletedFalse(reviewId)
+        Review review = reviewRepository.findByIdAndIsDeletedFalseAndIsHiddenFalse(reviewId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         return ReviewResponse.from(review);
