@@ -43,7 +43,14 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
           and lp.isCompleted = true
         """)
     long countCompletedLessonsByUserIdAndCourseIds(
-        @Param("userId") Long userId,
-        @Param("courseIds") Collection<Long> courseIds
+            @Param("userId") Long userId,
+            @Param("courseIds") Collection<Long> courseIds
     );
+
+    @Query("""
+            select coalesce(sum(lp.progressSeconds), 0)
+            from LessonProgress lp
+            where lp.user.id = :learnerId
+            """)
+    Long sumProgressSecondsByLearnerId(@Param("learnerId") Long learnerId);
 }

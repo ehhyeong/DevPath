@@ -11,14 +11,16 @@ public interface NodeClearanceRepository extends JpaRepository<NodeClearance, Lo
     Optional<NodeClearance> findByUserIdAndNodeNodeId(Long userId, Long nodeId);
 
     List<NodeClearance> findAllByUserIdAndNodeRoadmapRoadmapIdOrderByNodeSortOrderAscNodeNodeIdAsc(
-        Long userId,
-        Long roadmapId
+            Long userId,
+            Long roadmapId
     );
 
     List<NodeClearance> findAllByUserIdOrderByLastCalculatedAtDesc(Long userId);
 
     List<NodeClearance> findAllByUserIdAndClearanceStatusOrderByClearedAtDesc(
-        Long userId,
-        ClearanceStatus clearanceStatus
+            Long userId,
+            ClearanceStatus clearanceStatus
     );
+
+    long countByUserIdAndClearanceStatus(Long userId, ClearanceStatus clearanceStatus);
 }
