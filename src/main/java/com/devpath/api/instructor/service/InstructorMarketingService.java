@@ -5,8 +5,10 @@ import com.devpath.api.instructor.dto.marketing.CouponCreateRequest;
 import com.devpath.api.instructor.dto.marketing.CouponResponse;
 import com.devpath.api.instructor.dto.marketing.PromotionCreateRequest;
 import com.devpath.api.instructor.dto.marketing.PromotionStatusUpdateRequest;
+import com.devpath.api.instructor.entity.ConversionStat;
 import com.devpath.api.instructor.entity.Coupon;
 import com.devpath.api.instructor.entity.Promotion;
+import com.devpath.api.instructor.repository.ConversionStatRepository;
 import com.devpath.api.instructor.repository.CouponRepository;
 import com.devpath.api.instructor.repository.PromotionRepository;
 import com.devpath.common.exception.CustomException;
@@ -23,6 +25,7 @@ public class InstructorMarketingService {
 
     private final CouponRepository couponRepository;
     private final PromotionRepository promotionRepository;
+    private final ConversionStatRepository conversionStatRepository;
 
     public CouponResponse createCoupon(Long instructorId, CouponCreateRequest request) {
         String couponCode = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -52,23 +55,50 @@ public class InstructorMarketingService {
                 .startAt(request.getStartAt())
                 .endAt(request.getEndAt())
                 .build();
+
         promotionRepository.save(promotion);
     }
 
     public void updatePromotionStatus(Long courseId, Long instructorId, PromotionStatusUpdateRequest request) {
         Promotion promotion = promotionRepository.findByIdAndIsDeletedFalse(courseId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PROMOTION_NOT_FOUND));
+
         promotion.updateStatus(request.getStatus());
     }
 
     @Transactional(readOnly = true)
     public ConversionResponse getConversions(Long instructorId) {
+        return conversionStatRepository.findTopByInstructorIdOrderByCalculatedAtDesc(instructorId)
+                .map(this::toConversionResponse)
+                .orElseGet(() -> ConversionResponse.builder()
+                        .totalVisitors(0L)
+                        .totalSignups(0L)
+                        .totalPurchases(0L)
+                        .signupRate(0.0)
+                        .purchaseRate(0.0)
+                        .build());
+    }
+
+    // 저장된 통계를 응답 DTO로 변환하면서 비율을 계산한다.
+    private ConversionResponse toConversionResponse(ConversionStat stat) {
+        long totalVisitors = stat.getTotalVisitors();
+        long totalSignups = stat.getTotalSignups();
+        long totalPurchases = stat.getTotalPurchases();
+
+        double signupRate = totalVisitors == 0
+                ? 0.0
+                : Math.round((totalSignups * 100.0 / totalVisitors) * 100.0) / 100.0;
+
+        double purchaseRate = totalVisitors == 0
+                ? 0.0
+                : Math.round((totalPurchases * 100.0 / totalVisitors) * 100.0) / 100.0;
+
         return ConversionResponse.builder()
-                .totalVisitors(1200L)
-                .totalSignups(340L)
-                .totalPurchases(87L)
-                .signupRate(28.3)
-                .purchaseRate(7.25)
+                .totalVisitors(totalVisitors)
+                .totalSignups(totalSignups)
+                .totalPurchases(totalPurchases)
+                .signupRate(signupRate)
+                .purchaseRate(purchaseRate)
                 .build();
     }
 }
