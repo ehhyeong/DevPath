@@ -17,12 +17,13 @@ public class InstructorSubscriptionService {
     private final InstructorSubscriptionRepository subscriptionRepository;
 
     public SubscriptionResponse subscribe(Long channelId, Long learnerId) {
+        subscriptionRepository.findByChannelIdAndLearnerIdAndIsDeletedFalse(channelId, learnerId)
+                .ifPresent(s -> { throw new CustomException(ErrorCode.DUPLICATE_RESOURCE); });
         InstructorSubscription subscription = InstructorSubscription.builder()
                 .channelId(channelId)
                 .learnerId(learnerId)
                 .build();
-        InstructorSubscription saved = subscriptionRepository.save(subscription);
-        return SubscriptionResponse.from(saved);
+        return SubscriptionResponse.from(subscriptionRepository.save(subscription));
     }
 
     public void unsubscribe(Long channelId, Long learnerId) {
