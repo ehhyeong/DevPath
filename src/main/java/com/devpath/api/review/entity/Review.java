@@ -68,6 +68,9 @@ public class Review {
     }
 
     public void hide() {
+        if (Boolean.TRUE.equals(this.isHidden)) {
+            throw new CustomException(ErrorCode.REVIEW_ALREADY_HIDDEN);
+        }
         this.isHidden = true;
     }
 
