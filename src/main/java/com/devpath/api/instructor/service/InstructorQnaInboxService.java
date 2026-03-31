@@ -23,7 +23,6 @@ import com.devpath.domain.qna.repository.QuestionRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,15 +46,29 @@ public class InstructorQnaInboxService {
 
         return questions.stream()
                 .map(QnaInboxResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public void updateStatus(Long questionId, Long instructorId, QnaStatusUpdateRequest request) {
-        Question question = getActiveQuestion(questionId);
+        Question question = getManagedQuestion(questionId, instructorId);
+        boolean hasPublishedAnswer = answerRepository.findFirstByQuestionIdAndIsDeletedFalse(questionId).isPresent();
+
+        // published answer 없이 ANSWERED로 바꾸는 상태 꼬임을 막는다.
+        if (request.getStatus() == QnaStatus.ANSWERED && !hasPublishedAnswer) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+
+        // published answer가 남아 있는데 UNANSWERED로 내리면 timeline과 실제 데이터가 어긋난다.
+        if (request.getStatus() == QnaStatus.UNANSWERED && hasPublishedAnswer) {
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        }
+
         question.updateQnaStatus(request.getStatus());
     }
 
     public QnaDraftResponse saveDraft(Long questionId, Long instructorId, QnaDraftRequest request) {
+        getManagedQuestion(questionId, instructorId);
+
         QnaAnswerDraft draft = draftRepository
                 .findByQuestionIdAndInstructorIdAndIsDeletedFalse(questionId, instructorId)
                 .orElse(null);
@@ -63,18 +76,26 @@ public class InstructorQnaInboxService {
         if (draft != null) {
             draft.updateDraft(request.getDraftContent());
         } else {
-            draft = draftRepository.save(QnaAnswerDraft.builder()
-                    .questionId(questionId)
-                    .instructorId(instructorId)
-                    .draftContent(request.getDraftContent())
-                    .build());
+            draft = draftRepository.save(
+                    QnaAnswerDraft.builder()
+                            .questionId(questionId)
+                            .instructorId(instructorId)
+                            .draftContent(request.getDraftContent())
+                            .build()
+            );
         }
 
         return QnaDraftResponse.from(draft);
     }
 
     public QnaAnswerResponse createAnswer(Long questionId, Long instructorId, QnaAnswerRequest request) {
-        Question question = getActiveQuestion(questionId);
+        Question question = getManagedQuestion(questionId, instructorId);
+
+        // 운영 정책상 질문당 published answer는 1개만 허용하고, 이후 수정은 update API로 처리한다.
+        if (answerRepository.findFirstByQuestionIdAndIsDeletedFalse(questionId).isPresent()) {
+            throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
+        }
+
         User instructor = userRepository.findById(instructorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -84,12 +105,19 @@ public class InstructorQnaInboxService {
                 .content(request.getContent())
                 .build();
 
-        QnaAnswerResponse response = QnaAnswerResponse.from(answerRepository.save(answer));
+        Answer saved = answerRepository.save(answer);
+
+        draftRepository.findByQuestionIdAndInstructorIdAndIsDeletedFalse(questionId, instructorId)
+                .ifPresent(QnaAnswerDraft::deleteDraft);
+
         question.markAsAnswered();
-        return response;
+
+        return QnaAnswerResponse.from(saved);
     }
 
     public QnaAnswerResponse updateAnswer(Long questionId, Long answerId, Long instructorId, QnaAnswerRequest request) {
+        getManagedQuestion(questionId, instructorId);
+
         Answer answer = answerRepository.findByQuestion_IdAndIdAndIsDeletedFalse(questionId, answerId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ANSWER_NOT_FOUND));
 
@@ -98,17 +126,21 @@ public class InstructorQnaInboxService {
         }
 
         answer.updateContent(request.getContent());
+
+        // published answer를 직접 수정한 뒤에는 오래된 draft를 남기지 않는다.
+        draftRepository.findByQuestionIdAndInstructorIdAndIsDeletedFalse(questionId, instructorId)
+                .ifPresent(QnaAnswerDraft::deleteDraft);
+
         return QnaAnswerResponse.from(answer);
     }
 
     @Transactional(readOnly = true)
     public QnaTimelineResponse getTimeline(Long questionId, Long instructorId) {
-        Question question = getActiveQuestion(questionId);
-        List<QnaAnswerResponse> answers = answerRepository
-                .findAllByQuestionIdAndIsDeletedFalseOrderByCreatedAtAsc(questionId)
-                .stream()
+        Question question = getManagedQuestion(questionId, instructorId);
+
+        QnaAnswerResponse publishedAnswer = answerRepository.findFirstByQuestionIdAndIsDeletedFalse(questionId)
                 .map(QnaAnswerResponse::from)
-                .collect(Collectors.toList());
+                .orElse(null);
 
         QnaDraftResponse draft = draftRepository
                 .findByQuestionIdAndInstructorIdAndIsDeletedFalse(questionId, instructorId)
@@ -117,7 +149,7 @@ public class InstructorQnaInboxService {
 
         return QnaTimelineResponse.builder()
                 .question(QnaInboxResponse.from(question))
-                .answers(answers)
+                .publishedAnswer(publishedAnswer)
                 .draft(draft)
                 .lectureTitle(question.getTitle())
                 .lectureTimestamp(question.getLectureTimestamp())
@@ -139,7 +171,7 @@ public class InstructorQnaInboxService {
         return templateRepository.findByInstructorIdAndIsDeletedFalse(instructorId)
                 .stream()
                 .map(QnaTemplateResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public QnaTemplateResponse updateTemplate(Long templateId, Long instructorId, QnaTemplateRequest request) {
@@ -153,9 +185,16 @@ public class InstructorQnaInboxService {
         template.delete();
     }
 
-    private Question getActiveQuestion(Long questionId) {
-        return questionRepository.findByIdAndIsDeletedFalse(questionId)
-                .orElseThrow(() -> new CustomException(ErrorCode.QUESTION_NOT_FOUND));
+    // 질문이 존재하더라도 담당 강사 강의 소속이 아니면 접근을 막는다.
+    private Question getManagedQuestion(Long questionId, Long instructorId) {
+        return questionRepository.findManagedQuestionByInstructorId(questionId, instructorId)
+                .orElseGet(() -> {
+                    if (questionRepository.findByIdAndIsDeletedFalse(questionId).isPresent()) {
+                        throw new CustomException(ErrorCode.UNAUTHORIZED_ACTION);
+                    }
+
+                    throw new CustomException(ErrorCode.QUESTION_NOT_FOUND);
+                });
     }
 
     private QnaTemplate getActiveTemplate(Long templateId, Long instructorId) {

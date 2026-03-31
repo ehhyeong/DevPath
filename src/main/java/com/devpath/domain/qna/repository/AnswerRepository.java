@@ -15,4 +15,7 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     // 특정 질문에 속한 삭제되지 않은 답변만 조회한다.
     Optional<Answer> findByQuestion_IdAndIdAndIsDeletedFalse(Long questionId, Long answerId);
+
+    // 운영 정책상 published answer는 질문당 1개만 유지한다.
+    Optional<Answer> findFirstByQuestionIdAndIsDeletedFalse(Long questionId);
 }
