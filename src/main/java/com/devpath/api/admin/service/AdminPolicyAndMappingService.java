@@ -385,13 +385,18 @@ public class AdminPolicyAndMappingService {
   public com.devpath.api.admin.dto.governance.SystemPolicyResponse getSystemPoliciesSimple() {
     // TODO: refundPolicyDays, maxCoursePrice DB 연동 예정
     SystemSetting setting = systemSettingRepository.findTopByOrderBySettingIdAsc().orElse(null);
-    Integer platformFeeRate = setting != null
-        ? setting.getPlatformFeeRate().intValue() : 20;
+    Integer platformFeeRate =
+        setting != null ? setting.getPlatformFeeRate().intValue() : 20;
+
+    // 이번 단계에서는 DB 스키마 확장 없이 기본 응답값만 안정적으로 유지한다.
+    Integer refundPolicyDays = 7;
+    Long maxCoursePrice = 0L;
+
     return com.devpath.api.admin.dto.governance.SystemPolicyResponse.builder()
         .platformFeeRate(platformFeeRate)
-        .refundPolicyDays(7)
-        .maxCoursePrice(null)
-        .updatedAt(null)
+        .refundPolicyDays(refundPolicyDays)
+        .maxCoursePrice(maxCoursePrice)
+        .updatedAt(setting == null ? null : setting.getUpdatedAt())
         .build();
   }
 
