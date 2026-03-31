@@ -5,13 +5,11 @@ import com.devpath.api.instructor.dto.revenue.SettlementResponse;
 import com.devpath.api.settlement.entity.Settlement;
 import com.devpath.api.settlement.entity.SettlementStatus;
 import com.devpath.api.settlement.repository.SettlementRepository;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,45 +21,87 @@ public class InstructorRevenueService {
     private final SettlementRepository settlementRepository;
 
     public RevenueResponse getRevenue(Long instructorId) {
-        List<Settlement> settlements = settlementRepository.findByInstructorIdAndIsDeletedFalse(instructorId);
+        List<Settlement> settlements = settlementRepository.findByInstructorIdAndIsDeletedFalseOrderByCreatedAtDesc(
+                instructorId
+        );
 
         long totalRevenue = settlements.stream()
                 .mapToLong(Settlement::getAmount)
                 .sum();
 
-        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime startOfMonth = LocalDateTime.now()
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+
         long monthlyRevenue = settlements.stream()
-                .filter(s -> s.getSettledAt() != null && s.getSettledAt().isAfter(startOfMonth))
+                .filter(settlement -> settlement.getSettledAt() != null
+                        && !settlement.getSettledAt().isBefore(startOfMonth))
                 .mapToLong(Settlement::getAmount)
                 .sum();
 
         long completedRevenue = settlements.stream()
-                .filter(s -> s.getStatus() == SettlementStatus.COMPLETED)
+                .filter(settlement -> settlement.getStatus() == SettlementStatus.COMPLETED)
                 .mapToLong(Settlement::getAmount)
                 .sum();
+
+        long pendingSettlementAmount = settlements.stream()
+                .filter(settlement -> settlement.getStatus() == SettlementStatus.PENDING)
+                .mapToLong(Settlement::getAmount)
+                .sum();
+
+        long heldSettlementAmount = settlements.stream()
+                .filter(settlement -> settlement.getStatus() == SettlementStatus.HELD)
+                .mapToLong(Settlement::getAmount)
+                .sum();
+
         long netRevenue = Math.round(completedRevenue * (1 - PLATFORM_FEE_RATE));
 
         List<RevenueResponse.TransactionItem> recentTransactions = settlements.stream()
-                .map(s -> RevenueResponse.TransactionItem.builder()
-                        .courseId(null)
-                        .amount(s.getAmount())
-                        .settledAt(s.getSettledAt())
-                        .status(s.getStatus().name())
+                .limit(10)
+                .map(settlement -> RevenueResponse.TransactionItem.builder()
+                        .settlementId(settlement.getId())
+                        .amount(settlement.getAmount())
+                        .settledAt(settlement.getSettledAt())
+                        .status(settlement.getStatus().name())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         return RevenueResponse.builder()
                 .totalRevenue(totalRevenue)
                 .monthlyRevenue(monthlyRevenue)
                 .platformFeeRate(PLATFORM_FEE_RATE)
                 .netRevenue(netRevenue)
+                .pendingSettlementCount(
+                        settlementRepository.countByInstructorIdAndStatusAndIsDeletedFalse(
+                                instructorId,
+                                SettlementStatus.PENDING
+                        )
+                )
+                .heldSettlementCount(
+                        settlementRepository.countByInstructorIdAndStatusAndIsDeletedFalse(
+                                instructorId,
+                                SettlementStatus.HELD
+                        )
+                )
+                .completedSettlementCount(
+                        settlementRepository.countByInstructorIdAndStatusAndIsDeletedFalse(
+                                instructorId,
+                                SettlementStatus.COMPLETED
+                        )
+                )
+                .pendingSettlementAmount(pendingSettlementAmount)
+                .heldSettlementAmount(heldSettlementAmount)
                 .recentTransactions(recentTransactions)
                 .build();
     }
 
     public List<SettlementResponse> getSettlements(Long instructorId) {
-        return settlementRepository.findByInstructorIdAndIsDeletedFalse(instructorId).stream()
+        return settlementRepository.findByInstructorIdAndIsDeletedFalseOrderByCreatedAtDesc(instructorId)
+                .stream()
                 .map(SettlementResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 }
