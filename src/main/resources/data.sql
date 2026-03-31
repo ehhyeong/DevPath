@@ -2534,6 +2534,1039 @@ SELECT setval('mentoring_application_id_seq', (SELECT COALESCE(MAX(id), 1) FROM 
 SELECT setval('project_idea_post_id_seq', (SELECT COALESCE(MAX(id), 1) FROM project_idea_post));
 SELECT setval('project_proof_submission_id_seq', (SELECT COALESCE(MAX(id), 1) FROM project_proof_submission));
 
+-- ========================================
+-- A SECTION LEARNING AUTOMATION / PROOF / HISTORY
+-- ========================================
+INSERT INTO quizzes (
+    question,
+    answer,
+    options,
+    node_id,
+    title,
+    description,
+    quiz_type,
+    total_score,
+    is_published,
+    is_active,
+    expose_answer,
+    expose_explanation,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    'Which statement best describes dependency injection in Spring?',
+    'Spring manages object wiring for application components.',
+    'Constructor injection,Field injection,Manual new object creation,Random bean discovery',
+    rn.node_id,
+    'Spring Boot Intro Checkpoint Quiz',
+    'Checkpoint quiz for the Java Basics roadmap node.',
+    'MANUAL',
+    100,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    FALSE,
+    TIMESTAMP '2026-03-28 20:50:00',
+    TIMESTAMP '2026-03-28 20:50:00'
+FROM roadmap_nodes rn
+JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+WHERE r.title = 'Backend Master Roadmap'
+  AND rn.title = 'Java Basics'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quizzes q
+      WHERE q.title = 'Spring Boot Intro Checkpoint Quiz'
+        AND q.node_id = rn.node_id
+  );
+
+INSERT INTO assignments (
+    node_id,
+    title,
+    description,
+    submission_type,
+    due_at,
+    allowed_file_formats,
+    readme_required,
+    test_required,
+    lint_required,
+    submission_rule_description,
+    total_score,
+    is_published,
+    is_active,
+    allow_late_submission,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    rn.node_id,
+    'Spring Boot Intro Practice Submission',
+    'Practice submission for the HTTP Fundamentals roadmap node.',
+    'MULTIPLE',
+    TIMESTAMP '2026-04-05 23:59:59',
+    'md,txt,zip',
+    TRUE,
+    TRUE,
+    TRUE,
+    'Submit a README, test result summary, and repository URL.',
+    100,
+    TRUE,
+    TRUE,
+    FALSE,
+    FALSE,
+    TIMESTAMP '2026-03-28 21:00:00',
+    TIMESTAMP '2026-03-28 21:00:00'
+FROM roadmap_nodes rn
+JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+WHERE r.title = 'Backend Master Roadmap'
+  AND rn.title = 'HTTP Fundamentals'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignments a
+      WHERE a.title = 'Spring Boot Intro Practice Submission'
+        AND a.node_id = rn.node_id
+  );
+
+INSERT INTO lesson_progress (
+    user_id,
+    lesson_id,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    100,
+    1800,
+    1.25,
+    TRUE,
+    TRUE,
+    TIMESTAMP '2026-03-28 21:10:00',
+    TIMESTAMP '2026-03-28 21:10:00',
+    TIMESTAMP '2026-03-28 21:10:00'
+FROM users u
+JOIN lessons l ON l.title = 'Understanding DI and IoC'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lesson_progress lp
+      WHERE lp.user_id = u.user_id
+        AND lp.lesson_id = l.lesson_id
+  );
+
+INSERT INTO lesson_progress (
+    user_id,
+    lesson_id,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    45,
+    640,
+    1.00,
+    FALSE,
+    FALSE,
+    TIMESTAMP '2026-03-29 20:25:00',
+    TIMESTAMP '2026-03-29 20:25:00',
+    TIMESTAMP '2026-03-29 20:25:00'
+FROM users u
+JOIN lessons l ON l.title = 'Entity relationships and mapping'
+WHERE u.email = 'learner2@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lesson_progress lp
+      WHERE lp.user_id = u.user_id
+        AND lp.lesson_id = l.lesson_id
+  );
+
+INSERT INTO quiz_attempts (
+    quiz_id,
+    learner_id,
+    score,
+    max_score,
+    started_at,
+    completed_at,
+    time_spent_seconds,
+    is_passed,
+    attempt_number,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    u.user_id,
+    90,
+    100,
+    TIMESTAMP '2026-03-28 21:20:00',
+    TIMESTAMP '2026-03-28 21:27:00',
+    420,
+    TRUE,
+    1,
+    FALSE,
+    TIMESTAMP '2026-03-28 21:20:00',
+    TIMESTAMP '2026-03-28 21:27:00'
+FROM quizzes q
+JOIN users u ON u.email = 'learner@devpath.com'
+WHERE q.title = 'Spring Boot Intro Checkpoint Quiz'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_attempts qa
+      WHERE qa.quiz_id = q.quiz_id
+        AND qa.learner_id = u.user_id
+        AND qa.attempt_number = 1
+        AND qa.is_deleted = FALSE
+  );
+
+INSERT INTO quiz_attempts (
+    quiz_id,
+    learner_id,
+    score,
+    max_score,
+    started_at,
+    completed_at,
+    time_spent_seconds,
+    is_passed,
+    attempt_number,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    u.user_id,
+    40,
+    100,
+    TIMESTAMP '2026-03-29 20:30:00',
+    TIMESTAMP '2026-03-29 20:36:00',
+    360,
+    FALSE,
+    1,
+    FALSE,
+    TIMESTAMP '2026-03-29 20:30:00',
+    TIMESTAMP '2026-03-29 20:36:00'
+FROM quizzes q
+JOIN users u ON u.email = 'learner2@devpath.com'
+WHERE q.title = 'Spring Boot Intro Checkpoint Quiz'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_attempts qa
+      WHERE qa.quiz_id = q.quiz_id
+        AND qa.learner_id = u.user_id
+        AND qa.attempt_number = 1
+        AND qa.is_deleted = FALSE
+  );
+
+INSERT INTO assignment_submissions (
+    assignment_id,
+    learner_id,
+    grader_id,
+    submission_text,
+    submission_url,
+    is_late,
+    submission_status,
+    submitted_at,
+    graded_at,
+    readme_passed,
+    test_passed,
+    lint_passed,
+    file_format_passed,
+    quality_score,
+    total_score,
+    individual_feedback,
+    common_feedback,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    a.assignment_id,
+    lu.user_id,
+    iu.user_id,
+    'Final practice submission with README, test summary, and deployment notes.',
+    'https://github.com/devpath-samples/spring-boot-intro-final',
+    FALSE,
+    'GRADED',
+    TIMESTAMP '2026-03-28 22:10:00',
+    TIMESTAMP '2026-03-28 23:00:00',
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    96,
+    95,
+    'Requirements are complete and the automated checks are stable.',
+    'README quality and test coverage are both strong.',
+    FALSE,
+    TIMESTAMP '2026-03-28 22:10:00',
+    TIMESTAMP '2026-03-28 23:00:00'
+FROM assignments a
+JOIN users lu ON lu.email = 'learner@devpath.com'
+JOIN users iu ON iu.email = 'instructor@devpath.com'
+WHERE a.title = 'Spring Boot Intro Practice Submission'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignment_submissions s
+      WHERE s.assignment_id = a.assignment_id
+        AND s.learner_id = lu.user_id
+        AND s.is_deleted = FALSE
+  );
+
+INSERT INTO assignment_submissions (
+    assignment_id,
+    learner_id,
+    grader_id,
+    submission_text,
+    submission_url,
+    is_late,
+    submission_status,
+    submitted_at,
+    graded_at,
+    readme_passed,
+    test_passed,
+    lint_passed,
+    file_format_passed,
+    quality_score,
+    total_score,
+    individual_feedback,
+    common_feedback,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    a.assignment_id,
+    lu.user_id,
+    NULL,
+    'Draft submission. README and tests still need work.',
+    NULL,
+    FALSE,
+    'PRECHECK_FAILED',
+    NULL,
+    NULL,
+    FALSE,
+    FALSE,
+    TRUE,
+    TRUE,
+    52,
+    NULL,
+    NULL,
+    NULL,
+    FALSE,
+    TIMESTAMP '2026-03-29 21:10:00',
+    TIMESTAMP '2026-03-29 21:10:00'
+FROM assignments a
+JOIN users lu ON lu.email = 'learner2@devpath.com'
+WHERE a.title = 'Spring Boot Intro Practice Submission'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignment_submissions s
+      WHERE s.assignment_id = a.assignment_id
+        AND s.learner_id = lu.user_id
+        AND s.is_deleted = FALSE
+  );
+
+INSERT INTO til_drafts (
+    user_id,
+    lesson_id,
+    title,
+    content,
+    table_of_contents,
+    status,
+    published_url,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    'Spring Bean Lifecycle Notes',
+    '# Bean lifecycle' || E'\n\n' ||
+    '## Key points' || E'\n' ||
+    '- singleton scope' || E'\n' ||
+    '- initialization callback' || E'\n\n' ||
+    '## Reflection' || E'\n' ||
+    'Understanding the lifecycle makes debugging much faster.',
+    '[{"text":"Bean lifecycle","level":1},{"text":"Key points","level":2},{"text":"Reflection","level":2}]',
+    'PUBLISHED',
+    'https://velog.io/@devpath/bean-lifecycle',
+    FALSE,
+    TIMESTAMP '2026-03-28 22:30:00',
+    TIMESTAMP '2026-03-28 22:45:00'
+FROM users u
+JOIN lessons l ON l.title = 'Understanding DI and IoC'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM til_drafts t
+      WHERE t.user_id = u.user_id
+        AND t.title = 'Spring Bean Lifecycle Notes'
+        AND t.is_deleted = FALSE
+  );
+
+INSERT INTO til_drafts (
+    user_id,
+    lesson_id,
+    title,
+    content,
+    table_of_contents,
+    status,
+    published_url,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    'JPA Mapping Memo',
+    '# Relationship mapping' || E'\n\n' ||
+    '## TODO' || E'\n' ||
+    '- review helper methods' || E'\n' ||
+    '- verify lazy loading behavior',
+    '[{"text":"Relationship mapping","level":1},{"text":"TODO","level":2}]',
+    'DRAFT',
+    NULL,
+    FALSE,
+    TIMESTAMP '2026-03-29 20:50:00',
+    TIMESTAMP '2026-03-29 20:50:00'
+FROM users u
+JOIN lessons l ON l.title = 'Entity relationships and mapping'
+WHERE u.email = 'learner2@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM til_drafts t
+      WHERE t.user_id = u.user_id
+        AND t.title = 'JPA Mapping Memo'
+        AND t.is_deleted = FALSE
+  );
+
+INSERT INTO timestamp_notes (
+    user_id,
+    lesson_id,
+    timestamp_second,
+    content,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    315,
+    'Separate bean registration timing from dependency injection timing.',
+    FALSE,
+    TIMESTAMP '2026-03-28 21:05:00',
+    TIMESTAMP '2026-03-28 21:05:00'
+FROM users u
+JOIN lessons l ON l.title = 'Understanding DI and IoC'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM timestamp_notes n
+      WHERE n.user_id = u.user_id
+        AND n.lesson_id = l.lesson_id
+        AND n.timestamp_second = 315
+        AND n.is_deleted = FALSE
+  );
+
+INSERT INTO timestamp_notes (
+    user_id,
+    lesson_id,
+    timestamp_second,
+    content,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    540,
+    'Recheck when the lazy loading proxy gets initialized.',
+    FALSE,
+    TIMESTAMP '2026-03-29 20:15:00',
+    TIMESTAMP '2026-03-29 20:15:00'
+FROM users u
+JOIN lessons l ON l.title = 'Entity relationships and mapping'
+WHERE u.email = 'learner2@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM timestamp_notes n
+      WHERE n.user_id = u.user_id
+        AND n.lesson_id = l.lesson_id
+        AND n.timestamp_second = 540
+        AND n.is_deleted = FALSE
+  );
+
+INSERT INTO supplement_recommendations (
+    user_id,
+    node_id,
+    reason,
+    priority,
+    coverage_percent,
+    missing_tag_count,
+    status,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    'Additional study is recommended because required tags are still missing.',
+    1,
+    62.5,
+    2,
+    'PENDING',
+    TIMESTAMP '2026-03-29 22:00:00',
+    TIMESTAMP '2026-03-29 22:00:00'
+FROM users u
+JOIN roadmap_nodes rn ON rn.title = 'HTTP Fundamentals'
+JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+WHERE u.email = 'learner2@devpath.com'
+  AND r.title = 'Backend Master Roadmap'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM supplement_recommendations sr
+      WHERE sr.user_id = u.user_id
+        AND sr.node_id = rn.node_id
+  );
+
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    'CLEARED',
+    100.00,
+    TRUE,
+    0,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    TIMESTAMP '2026-03-28 23:05:00',
+    TIMESTAMP '2026-03-28 23:05:00',
+    TIMESTAMP '2026-03-28 23:05:00',
+    TIMESTAMP '2026-03-28 23:05:00'
+FROM users u
+JOIN roadmap_nodes rn ON rn.title = 'Java Basics'
+JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+WHERE u.email = 'learner@devpath.com'
+  AND r.title = 'Backend Master Roadmap'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = rn.node_id
+  );
+
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    'NOT_CLEARED',
+    45.00,
+    FALSE,
+    2,
+    FALSE,
+    FALSE,
+    FALSE,
+    FALSE,
+    NULL,
+    TIMESTAMP '2026-03-29 22:05:00',
+    TIMESTAMP '2026-03-29 22:05:00',
+    TIMESTAMP '2026-03-29 22:05:00'
+FROM users u
+JOIN roadmap_nodes rn ON rn.title = 'HTTP Fundamentals'
+JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+WHERE u.email = 'learner2@devpath.com'
+  AND r.title = 'Backend Master Roadmap'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = rn.node_id
+  );
+
+INSERT INTO proof_cards (
+    user_id,
+    node_id,
+    node_clearance_id,
+    title,
+    description,
+    proof_card_status,
+    issued_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    nc.node_clearance_id,
+    'Spring Boot Intro Node Clear',
+    'Sample proof card for a learner who completed lessons, quiz, and assignment.',
+    'ISSUED',
+    TIMESTAMP '2026-03-28 23:10:00',
+    TIMESTAMP '2026-03-28 23:10:00',
+    TIMESTAMP '2026-03-28 23:10:00'
+FROM node_clearances nc
+JOIN users u ON u.user_id = nc.user_id
+JOIN roadmap_nodes rn ON rn.node_id = nc.node_id
+WHERE u.email = 'learner@devpath.com'
+  AND nc.clearance_status = 'CLEARED'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM proof_cards pc
+      WHERE pc.node_clearance_id = nc.node_clearance_id
+  );
+
+INSERT INTO proof_card_tags (
+    proof_card_id,
+    tag_id,
+    skill_evidence_type
+)
+WITH target_card AS (
+    SELECT pc.proof_card_id
+    FROM proof_cards pc
+    JOIN users u ON u.user_id = pc.user_id
+    WHERE u.email = 'learner@devpath.com'
+    ORDER BY pc.proof_card_id
+    LIMIT 1
+),
+ranked_tags AS (
+    SELECT t.tag_id, ROW_NUMBER() OVER (ORDER BY t.tag_id) AS rn
+    FROM tags t
+    WHERE t.is_deleted = FALSE
+)
+SELECT
+    c.proof_card_id,
+    t.tag_id,
+    'VERIFIED'
+FROM target_card c
+JOIN ranked_tags t ON t.rn = 1
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM proof_card_tags pct
+    WHERE pct.proof_card_id = c.proof_card_id
+      AND pct.tag_id = t.tag_id
+      AND pct.skill_evidence_type = 'VERIFIED'
+);
+
+INSERT INTO proof_card_tags (
+    proof_card_id,
+    tag_id,
+    skill_evidence_type
+)
+WITH target_card AS (
+    SELECT pc.proof_card_id
+    FROM proof_cards pc
+    JOIN users u ON u.user_id = pc.user_id
+    WHERE u.email = 'learner@devpath.com'
+    ORDER BY pc.proof_card_id
+    LIMIT 1
+),
+ranked_tags AS (
+    SELECT t.tag_id, ROW_NUMBER() OVER (ORDER BY t.tag_id) AS rn
+    FROM tags t
+    WHERE t.is_deleted = FALSE
+)
+SELECT
+    c.proof_card_id,
+    t.tag_id,
+    'HELD'
+FROM target_card c
+JOIN ranked_tags t ON t.rn = 2
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM proof_card_tags pct
+    WHERE pct.proof_card_id = c.proof_card_id
+      AND pct.tag_id = t.tag_id
+      AND pct.skill_evidence_type = 'HELD'
+);
+
+INSERT INTO certificates (
+    proof_card_id,
+    certificate_number,
+    certificate_status,
+    issued_at,
+    pdf_file_name,
+    pdf_generated_at,
+    last_downloaded_at,
+    created_at,
+    updated_at
+)
+SELECT
+    pc.proof_card_id,
+    'CERT-20260328-0001',
+    'PDF_READY',
+    TIMESTAMP '2026-03-28 23:20:00',
+    'proof-card-1.pdf',
+    TIMESTAMP '2026-03-28 23:20:00',
+    TIMESTAMP '2026-03-29 09:10:00',
+    TIMESTAMP '2026-03-28 23:20:00',
+    TIMESTAMP '2026-03-29 09:10:00'
+FROM proof_cards pc
+JOIN users u ON u.user_id = pc.user_id
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM certificates c
+      WHERE c.proof_card_id = pc.proof_card_id
+  );
+
+INSERT INTO proof_card_shares (
+    proof_card_id,
+    share_token,
+    share_status,
+    expires_at,
+    access_count,
+    created_at,
+    updated_at
+)
+SELECT
+    pc.proof_card_id,
+    'proof-share-token-a-20260328',
+    'ACTIVE',
+    TIMESTAMP '2026-12-31 23:59:59',
+    3,
+    TIMESTAMP '2026-03-28 23:30:00',
+    TIMESTAMP '2026-03-29 10:00:00'
+FROM proof_cards pc
+JOIN users u ON u.user_id = pc.user_id
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM proof_card_shares ps
+      WHERE ps.share_token = 'proof-share-token-a-20260328'
+  );
+
+INSERT INTO learning_history_share_links (
+    user_id,
+    share_token,
+    title,
+    expires_at,
+    access_count,
+    is_active,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    'learning-history-token-a-20260328',
+    'Learning history share link',
+    TIMESTAMP '2026-12-31 23:59:59',
+    5,
+    TRUE,
+    TIMESTAMP '2026-03-28 23:40:00',
+    TIMESTAMP '2026-03-29 10:05:00'
+FROM users u
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learning_history_share_links l
+      WHERE l.share_token = 'learning-history-token-a-20260328'
+  );
+
+INSERT INTO certificate_download_histories (
+    certificate_id,
+    downloaded_by,
+    download_reason,
+    downloaded_at
+)
+SELECT
+    c.certificate_id,
+    u.user_id,
+    'Downloaded for portfolio attachment.',
+    TIMESTAMP '2026-03-29 09:10:00'
+FROM certificates c
+JOIN proof_cards pc ON pc.proof_card_id = c.proof_card_id
+JOIN users u ON u.email = 'learner@devpath.com'
+WHERE pc.user_id = u.user_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM certificate_download_histories h
+      WHERE h.certificate_id = c.certificate_id
+        AND h.downloaded_by = u.user_id
+        AND h.download_reason = 'Downloaded for portfolio attachment.'
+  );
+
+INSERT INTO learning_automation_rules (
+    rule_key,
+    rule_name,
+    description,
+    rule_value,
+    priority,
+    rule_status,
+    created_at,
+    updated_at
+)
+SELECT
+    'TAG_MATCH_THRESHOLD',
+    'Tag match threshold',
+    'Defines the minimum required tag coverage for automatic recommendation.',
+    '0.80',
+    1,
+    'ENABLED',
+    TIMESTAMP '2026-03-27 10:00:00',
+    TIMESTAMP '2026-03-27 10:00:00'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM learning_automation_rules r
+    WHERE r.rule_key = 'TAG_MATCH_THRESHOLD'
+);
+
+INSERT INTO learning_automation_rules (
+    rule_key,
+    rule_name,
+    description,
+    rule_value,
+    priority,
+    rule_status,
+    created_at,
+    updated_at
+)
+SELECT
+    'NODE_CLEARANCE_REQUIRES_COMPLETION',
+    'Node clearance completion rule',
+    'Requires full lesson completion and evaluation pass for node clearance.',
+    'LESSON_100_AND_EVALUATION_PASS',
+    2,
+    'ENABLED',
+    TIMESTAMP '2026-03-27 10:01:00',
+    TIMESTAMP '2026-03-27 10:01:00'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM learning_automation_rules r
+    WHERE r.rule_key = 'NODE_CLEARANCE_REQUIRES_COMPLETION'
+);
+
+INSERT INTO learning_automation_rules (
+    rule_key,
+    rule_name,
+    description,
+    rule_value,
+    priority,
+    rule_status,
+    created_at,
+    updated_at
+)
+SELECT
+    'SUPPLEMENT_RECOMMENDATION_PRIORITY',
+    'Supplement recommendation priority',
+    'Ranks supplement recommendations by missing tag count and coverage gap.',
+    'MISSING_TAG_COUNT_DESC',
+    3,
+    'ENABLED',
+    TIMESTAMP '2026-03-27 10:02:00',
+    TIMESTAMP '2026-03-27 10:02:00'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM learning_automation_rules r
+    WHERE r.rule_key = 'SUPPLEMENT_RECOMMENDATION_PRIORITY'
+);
+
+INSERT INTO learning_automation_rules (
+    rule_key,
+    rule_name,
+    description,
+    rule_value,
+    priority,
+    rule_status,
+    created_at,
+    updated_at
+)
+SELECT
+    'PROOF_CARD_AUTO_ISSUE',
+    'Proof card auto issue rule',
+    'Issues proof cards only for proof-eligible node clearances.',
+    'PROOF_ELIGIBLE_ONLY',
+    4,
+    'ENABLED',
+    TIMESTAMP '2026-03-27 10:03:00',
+    TIMESTAMP '2026-03-27 10:03:00'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM learning_automation_rules r
+    WHERE r.rule_key = 'PROOF_CARD_AUTO_ISSUE'
+);
+
+INSERT INTO learning_metric_samples (
+    course_id,
+    metric_type,
+    metric_label,
+    metric_value,
+    sampled_at,
+    created_at
+)
+SELECT
+    c.course_id,
+    'COMPLETION_RATE',
+    'Completion rate',
+    78.4,
+    TIMESTAMP '2026-03-30 23:00:00',
+    TIMESTAMP '2026-03-30 23:00:00'
+FROM courses c
+WHERE c.title = 'Spring Boot Intro'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learning_metric_samples s
+      WHERE s.course_id = c.course_id
+        AND s.metric_type = 'COMPLETION_RATE'
+        AND s.metric_label = 'Completion rate'
+        AND s.sampled_at = TIMESTAMP '2026-03-30 23:00:00'
+  );
+
+INSERT INTO learning_metric_samples (
+    course_id,
+    metric_type,
+    metric_label,
+    metric_value,
+    sampled_at,
+    created_at
+)
+SELECT
+    c.course_id,
+    'AVERAGE_WATCH_TIME',
+    'Average watch time',
+    1420.0,
+    TIMESTAMP '2026-03-30 23:00:00',
+    TIMESTAMP '2026-03-30 23:00:00'
+FROM courses c
+WHERE c.title = 'Spring Boot Intro'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learning_metric_samples s
+      WHERE s.course_id = c.course_id
+        AND s.metric_type = 'AVERAGE_WATCH_TIME'
+        AND s.metric_label = 'Average watch time'
+        AND s.sampled_at = TIMESTAMP '2026-03-30 23:00:00'
+  );
+
+INSERT INTO learning_metric_samples (
+    course_id,
+    metric_type,
+    metric_label,
+    metric_value,
+    sampled_at,
+    created_at
+)
+SELECT
+    c.course_id,
+    'QUIZ_STATS',
+    'Average quiz score',
+    65.0,
+    TIMESTAMP '2026-03-30 23:00:00',
+    TIMESTAMP '2026-03-30 23:00:00'
+FROM courses c
+WHERE c.title = 'JPA Practical Design'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learning_metric_samples s
+      WHERE s.course_id = c.course_id
+        AND s.metric_type = 'QUIZ_STATS'
+        AND s.metric_label = 'Average quiz score'
+        AND s.sampled_at = TIMESTAMP '2026-03-30 23:00:00'
+  );
+
+INSERT INTO learning_metric_samples (
+    course_id,
+    metric_type,
+    metric_label,
+    metric_value,
+    sampled_at,
+    created_at
+)
+SELECT
+    c.course_id,
+    'ASSIGNMENT_STATS',
+    'Average assignment score',
+    73.5,
+    TIMESTAMP '2026-03-30 23:00:00',
+    TIMESTAMP '2026-03-30 23:00:00'
+FROM courses c
+WHERE c.title = 'JPA Practical Design'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learning_metric_samples s
+      WHERE s.course_id = c.course_id
+        AND s.metric_type = 'ASSIGNMENT_STATS'
+        AND s.metric_label = 'Average assignment score'
+        AND s.sampled_at = TIMESTAMP '2026-03-30 23:00:00'
+  );
+
+INSERT INTO learning_metric_samples (
+    course_id,
+    metric_type,
+    metric_label,
+    metric_value,
+    sampled_at,
+    created_at
+)
+SELECT
+    c.course_id,
+    'WEAK_POINT',
+    'Weak point ratio',
+    31.2,
+    TIMESTAMP '2026-03-30 23:00:00',
+    TIMESTAMP '2026-03-30 23:00:00'
+FROM courses c
+WHERE c.title = 'JPA Practical Design'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learning_metric_samples s
+      WHERE s.course_id = c.course_id
+        AND s.metric_type = 'WEAK_POINT'
+        AND s.metric_label = 'Weak point ratio'
+        AND s.sampled_at = TIMESTAMP '2026-03-30 23:00:00'
+  );
+
 INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
 SELECT
     'learner4@devpath.com',
