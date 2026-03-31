@@ -3244,10 +3244,10 @@ INSERT INTO certificates (
 )
 SELECT
     pc.proof_card_id,
-    'CERT-20260328-0001',
+    'CERT-20260328-' || LPAD(pc.proof_card_id::text, 4, '0'),
     'PDF_READY',
     TIMESTAMP '2026-03-28 23:20:00',
-    'proof-card-1.pdf',
+    'proof-card-' || pc.proof_card_id::text || '.pdf',
     TIMESTAMP '2026-03-28 23:20:00',
     TIMESTAMP '2026-03-29 09:10:00',
     TIMESTAMP '2026-03-28 23:20:00',
@@ -3255,6 +3255,7 @@ SELECT
 FROM proof_cards pc
 JOIN users u ON u.user_id = pc.user_id
 WHERE u.email = 'learner@devpath.com'
+  AND pc.title = 'Spring Boot Intro Node Clear'
   AND NOT EXISTS (
       SELECT 1
       FROM certificates c
@@ -3281,6 +3282,7 @@ SELECT
 FROM proof_cards pc
 JOIN users u ON u.user_id = pc.user_id
 WHERE u.email = 'learner@devpath.com'
+  AND pc.title = 'Spring Boot Intro Node Clear'
   AND NOT EXISTS (
       SELECT 1
       FROM proof_card_shares ps
@@ -3329,6 +3331,7 @@ FROM certificates c
 JOIN proof_cards pc ON pc.proof_card_id = c.proof_card_id
 JOIN users u ON u.email = 'learner@devpath.com'
 WHERE pc.user_id = u.user_id
+  AND pc.title = 'Spring Boot Intro Node Clear'
   AND NOT EXISTS (
       SELECT 1
       FROM certificate_download_histories h
@@ -4873,6 +4876,309 @@ WHERE u.email = 'learner@devpath.com'
       FROM node_clearances nc
       WHERE nc.user_id = u.user_id
         AND nc.node_id = rn.node_id
+  );
+
+-- ========================================
+-- A-PROOF IDEMPOTENCY BRANCHES
+-- ========================================
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order)
+WITH target_roadmap AS (
+    SELECT r.roadmap_id
+    FROM roadmaps r
+    WHERE COALESCE(r.is_deleted, FALSE) = FALSE
+    ORDER BY COALESCE(r.is_official, FALSE) DESC, r.roadmap_id ASC
+    LIMIT 1
+)
+SELECT
+    tr.roadmap_id,
+    '[A-PROOF-ISSUABLE] Proof card issuable',
+    'Proof-eligible clearance without a proof card for first-issue verification.',
+    'CONCEPT',
+    904
+FROM target_roadmap tr
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM roadmap_nodes rn
+    WHERE rn.title = '[A-PROOF-ISSUABLE] Proof card issuable'
+);
+
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order)
+WITH target_roadmap AS (
+    SELECT r.roadmap_id
+    FROM roadmaps r
+    WHERE COALESCE(r.is_deleted, FALSE) = FALSE
+    ORDER BY COALESCE(r.is_official, FALSE) DESC, r.roadmap_id ASC
+    LIMIT 1
+)
+SELECT
+    tr.roadmap_id,
+    '[A-PROOF-PREISSUED] Proof card preissued',
+    'Preissued proof card and certificate chain for idempotent reuse verification.',
+    'CONCEPT',
+    905
+FROM target_roadmap tr
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM roadmap_nodes rn
+    WHERE rn.title = '[A-PROOF-PREISSUED] Proof card preissued'
+);
+
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    'CLEARED',
+    100.00,
+    TRUE,
+    0,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    TIMESTAMP '2026-03-30 15:00:00',
+    TIMESTAMP '2026-03-30 15:00:00',
+    TIMESTAMP '2026-03-30 15:00:00',
+    TIMESTAMP '2026-03-30 15:00:00'
+FROM users u
+JOIN roadmap_nodes rn ON rn.title = '[A-PROOF-ISSUABLE] Proof card issuable'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = rn.node_id
+  );
+
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    'CLEARED',
+    100.00,
+    TRUE,
+    0,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    TIMESTAMP '2026-03-30 15:05:00',
+    TIMESTAMP '2026-03-30 15:05:00',
+    TIMESTAMP '2026-03-30 15:05:00',
+    TIMESTAMP '2026-03-30 15:05:00'
+FROM users u
+JOIN roadmap_nodes rn ON rn.title = '[A-PROOF-PREISSUED] Proof card preissued'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = rn.node_id
+  );
+
+INSERT INTO proof_cards (
+    user_id,
+    node_id,
+    node_clearance_id,
+    title,
+    description,
+    proof_card_status,
+    issued_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    nc.node_clearance_id,
+    '[A-PROOF-PREISSUED] Proof card',
+    'Preissued proof card for idempotent reuse verification.',
+    'ISSUED',
+    TIMESTAMP '2026-03-30 15:10:00',
+    TIMESTAMP '2026-03-30 15:10:00',
+    TIMESTAMP '2026-03-30 15:10:00'
+FROM node_clearances nc
+JOIN users u ON u.user_id = nc.user_id
+JOIN roadmap_nodes rn ON rn.node_id = nc.node_id
+WHERE u.email = 'learner@devpath.com'
+  AND rn.title = '[A-PROOF-PREISSUED] Proof card preissued'
+  AND nc.proof_eligible = TRUE
+  AND NOT EXISTS (
+      SELECT 1
+      FROM proof_cards pc
+      WHERE pc.node_clearance_id = nc.node_clearance_id
+  );
+
+INSERT INTO proof_card_tags (
+    proof_card_id,
+    tag_id,
+    skill_evidence_type
+)
+WITH target_card AS (
+    SELECT pc.proof_card_id
+    FROM proof_cards pc
+    JOIN roadmap_nodes rn ON rn.node_id = pc.node_id
+    WHERE rn.title = '[A-PROOF-PREISSUED] Proof card preissued'
+    LIMIT 1
+),
+ranked_tags AS (
+    SELECT t.tag_id, ROW_NUMBER() OVER (ORDER BY t.tag_id) AS rn
+    FROM tags t
+    WHERE t.is_deleted = FALSE
+)
+SELECT
+    c.proof_card_id,
+    t.tag_id,
+    'VERIFIED'
+FROM target_card c
+JOIN ranked_tags t ON t.rn = 1
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM proof_card_tags pct
+    WHERE pct.proof_card_id = c.proof_card_id
+      AND pct.tag_id = t.tag_id
+      AND pct.skill_evidence_type = 'VERIFIED'
+);
+
+INSERT INTO proof_card_tags (
+    proof_card_id,
+    tag_id,
+    skill_evidence_type
+)
+WITH target_card AS (
+    SELECT pc.proof_card_id
+    FROM proof_cards pc
+    JOIN roadmap_nodes rn ON rn.node_id = pc.node_id
+    WHERE rn.title = '[A-PROOF-PREISSUED] Proof card preissued'
+    LIMIT 1
+),
+ranked_tags AS (
+    SELECT t.tag_id, ROW_NUMBER() OVER (ORDER BY t.tag_id) AS rn
+    FROM tags t
+    WHERE t.is_deleted = FALSE
+)
+SELECT
+    c.proof_card_id,
+    t.tag_id,
+    'HELD'
+FROM target_card c
+JOIN ranked_tags t ON t.rn = 2
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM proof_card_tags pct
+    WHERE pct.proof_card_id = c.proof_card_id
+      AND pct.tag_id = t.tag_id
+      AND pct.skill_evidence_type = 'HELD'
+);
+
+INSERT INTO certificates (
+    proof_card_id,
+    certificate_number,
+    certificate_status,
+    issued_at,
+    pdf_file_name,
+    pdf_generated_at,
+    last_downloaded_at,
+    created_at,
+    updated_at
+)
+SELECT
+    pc.proof_card_id,
+    'CERT-A-PREISSUED-20260330',
+    'PDF_READY',
+    TIMESTAMP '2026-03-30 15:15:00',
+    'certificate-CERT-A-PREISSUED-20260330.pdf',
+    TIMESTAMP '2026-03-30 15:16:00',
+    TIMESTAMP '2026-03-30 15:20:00',
+    TIMESTAMP '2026-03-30 15:15:00',
+    TIMESTAMP '2026-03-30 15:20:00'
+FROM proof_cards pc
+JOIN roadmap_nodes rn ON rn.node_id = pc.node_id
+WHERE rn.title = '[A-PROOF-PREISSUED] Proof card preissued'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM certificates c
+      WHERE c.proof_card_id = pc.proof_card_id
+  );
+
+INSERT INTO proof_card_shares (
+    proof_card_id,
+    share_token,
+    share_status,
+    expires_at,
+    access_count,
+    created_at,
+    updated_at
+)
+SELECT
+    pc.proof_card_id,
+    'proof-preissued-token-20260330',
+    'ACTIVE',
+    TIMESTAMP '2026-12-31 23:59:59',
+    2,
+    TIMESTAMP '2026-03-30 15:18:00',
+    TIMESTAMP '2026-03-30 15:21:00'
+FROM proof_cards pc
+JOIN roadmap_nodes rn ON rn.node_id = pc.node_id
+WHERE rn.title = '[A-PROOF-PREISSUED] Proof card preissued'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM proof_card_shares ps
+      WHERE ps.share_token = 'proof-preissued-token-20260330'
+  );
+
+INSERT INTO certificate_download_histories (
+    certificate_id,
+    downloaded_by,
+    download_reason,
+    downloaded_at
+)
+SELECT
+    c.certificate_id,
+    u.user_id,
+    'Preissued certificate download verification.',
+    TIMESTAMP '2026-03-30 15:20:00'
+FROM certificates c
+JOIN proof_cards pc ON pc.proof_card_id = c.proof_card_id
+JOIN roadmap_nodes rn ON rn.node_id = pc.node_id
+JOIN users u ON u.email = 'learner@devpath.com'
+WHERE rn.title = '[A-PROOF-PREISSUED] Proof card preissued'
+  AND pc.user_id = u.user_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM certificate_download_histories h
+      WHERE h.certificate_id = c.certificate_id
+        AND h.downloaded_by = u.user_id
+        AND h.download_reason = 'Preissued certificate download verification.'
   );
 
 INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
