@@ -3567,6 +3567,1314 @@ WHERE c.title = 'JPA Practical Design'
         AND s.sampled_at = TIMESTAMP '2026-03-30 23:00:00'
   );
 
+-- ========================================
+-- A-CASE NODE CLEARANCE BRANCHES
+-- ========================================
+INSERT INTO tags (name, category, is_official, is_deleted)
+SELECT 'A_CASE_TAG_JAVA', 'BACKEND', TRUE, FALSE
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM tags
+    WHERE name = 'A_CASE_TAG_JAVA'
+);
+
+INSERT INTO tags (name, category, is_official, is_deleted)
+SELECT 'A_CASE_TAG_SPRING', 'BACKEND', TRUE, FALSE
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM tags
+    WHERE name = 'A_CASE_TAG_SPRING'
+);
+
+INSERT INTO tags (name, category, is_official, is_deleted)
+SELECT 'A_CASE_TAG_DB', 'BACKEND', TRUE, FALSE
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM tags
+    WHERE name = 'A_CASE_TAG_DB'
+);
+
+INSERT INTO user_tech_stacks (user_id, tag_id)
+SELECT u.user_id, t.tag_id
+FROM users u
+JOIN tags t ON t.name = 'A_CASE_TAG_JAVA'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM user_tech_stacks uts
+      WHERE uts.user_id = u.user_id
+        AND uts.tag_id = t.tag_id
+  );
+
+INSERT INTO user_tech_stacks (user_id, tag_id)
+SELECT u.user_id, t.tag_id
+FROM users u
+JOIN tags t ON t.name = 'A_CASE_TAG_SPRING'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM user_tech_stacks uts
+      WHERE uts.user_id = u.user_id
+        AND uts.tag_id = t.tag_id
+  );
+
+INSERT INTO user_tech_stacks (user_id, tag_id)
+SELECT u.user_id, t.tag_id
+FROM users u
+JOIN tags t ON t.name = 'A_CASE_TAG_DB'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM user_tech_stacks uts
+      WHERE uts.user_id = u.user_id
+        AND uts.tag_id = t.tag_id
+  );
+
+INSERT INTO user_tech_stacks (user_id, tag_id)
+SELECT u.user_id, t.tag_id
+FROM users u
+JOIN tags t ON t.name = 'A_CASE_TAG_JAVA'
+WHERE u.email = 'learner2@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM user_tech_stacks uts
+      WHERE uts.user_id = u.user_id
+        AND uts.tag_id = t.tag_id
+  );
+
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order)
+WITH target_roadmap AS (
+    SELECT r.roadmap_id
+    FROM roadmaps r
+    WHERE COALESCE(r.is_deleted, FALSE) = FALSE
+    ORDER BY COALESCE(r.is_official, FALSE) DESC, r.roadmap_id ASC
+    LIMIT 1
+)
+SELECT
+    tr.roadmap_id,
+    '[A-CASE-A] Full pass',
+    'Node for the full-pass clearance branch.',
+    'CONCEPT',
+    901
+FROM target_roadmap tr
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM roadmap_nodes rn
+    WHERE rn.title = '[A-CASE-A] Full pass'
+);
+
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order)
+WITH target_roadmap AS (
+    SELECT r.roadmap_id
+    FROM roadmaps r
+    WHERE COALESCE(r.is_deleted, FALSE) = FALSE
+    ORDER BY COALESCE(r.is_official, FALSE) DESC, r.roadmap_id ASC
+    LIMIT 1
+)
+SELECT
+    tr.roadmap_id,
+    '[A-CASE-B] Missing tag',
+    'Node for the missing-tag clearance branch.',
+    'CONCEPT',
+    902
+FROM target_roadmap tr
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM roadmap_nodes rn
+    WHERE rn.title = '[A-CASE-B] Missing tag'
+);
+
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order)
+WITH target_roadmap AS (
+    SELECT r.roadmap_id
+    FROM roadmaps r
+    WHERE COALESCE(r.is_deleted, FALSE) = FALSE
+    ORDER BY COALESCE(r.is_official, FALSE) DESC, r.roadmap_id ASC
+    LIMIT 1
+)
+SELECT
+    tr.roadmap_id,
+    '[A-CASE-C] Quiz failed',
+    'Node for the quiz-failed clearance branch.',
+    'CONCEPT',
+    903
+FROM target_roadmap tr
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM roadmap_nodes rn
+    WHERE rn.title = '[A-CASE-C] Quiz failed'
+);
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT rn.node_id, t.tag_id
+FROM roadmap_nodes rn
+JOIN tags t ON t.name = 'A_CASE_TAG_JAVA'
+WHERE rn.title = '[A-CASE-A] Full pass'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags nrt
+      WHERE nrt.node_id = rn.node_id
+        AND nrt.tag_id = t.tag_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT rn.node_id, t.tag_id
+FROM roadmap_nodes rn
+JOIN tags t ON t.name = 'A_CASE_TAG_SPRING'
+WHERE rn.title = '[A-CASE-A] Full pass'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags nrt
+      WHERE nrt.node_id = rn.node_id
+        AND nrt.tag_id = t.tag_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT rn.node_id, t.tag_id
+FROM roadmap_nodes rn
+JOIN tags t ON t.name = 'A_CASE_TAG_JAVA'
+WHERE rn.title = '[A-CASE-B] Missing tag'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags nrt
+      WHERE nrt.node_id = rn.node_id
+        AND nrt.tag_id = t.tag_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT rn.node_id, t.tag_id
+FROM roadmap_nodes rn
+JOIN tags t ON t.name = 'A_CASE_TAG_DB'
+WHERE rn.title = '[A-CASE-B] Missing tag'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags nrt
+      WHERE nrt.node_id = rn.node_id
+        AND nrt.tag_id = t.tag_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT rn.node_id, t.tag_id
+FROM roadmap_nodes rn
+JOIN tags t ON t.name = 'A_CASE_TAG_JAVA'
+WHERE rn.title = '[A-CASE-C] Quiz failed'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags nrt
+      WHERE nrt.node_id = rn.node_id
+        AND nrt.tag_id = t.tag_id
+  );
+
+INSERT INTO node_required_tags (node_id, tag_id)
+SELECT rn.node_id, t.tag_id
+FROM roadmap_nodes rn
+JOIN tags t ON t.name = 'A_CASE_TAG_SPRING'
+WHERE rn.title = '[A-CASE-C] Quiz failed'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_required_tags nrt
+      WHERE nrt.node_id = rn.node_id
+        AND nrt.tag_id = t.tag_id
+  );
+
+INSERT INTO node_completion_rules (node_id, criteria_type, criteria_value, created_at, updated_at)
+SELECT
+    rn.node_id,
+    'QUIZ_AND_ASSIGNMENT',
+    'LESSON_100_AND_REQUIRED_TAGS_AND_QUIZ_AND_ASSIGNMENT',
+    TIMESTAMP '2026-03-30 10:00:00',
+    TIMESTAMP '2026-03-30 10:00:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-A] Full pass'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_completion_rules ncr
+      WHERE ncr.node_id = rn.node_id
+  );
+
+INSERT INTO node_completion_rules (node_id, criteria_type, criteria_value, created_at, updated_at)
+SELECT
+    rn.node_id,
+    'QUIZ_AND_ASSIGNMENT',
+    'LESSON_100_AND_REQUIRED_TAGS_AND_QUIZ_AND_ASSIGNMENT',
+    TIMESTAMP '2026-03-30 10:01:00',
+    TIMESTAMP '2026-03-30 10:01:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-B] Missing tag'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_completion_rules ncr
+      WHERE ncr.node_id = rn.node_id
+  );
+
+INSERT INTO node_completion_rules (node_id, criteria_type, criteria_value, created_at, updated_at)
+SELECT
+    rn.node_id,
+    'QUIZ_AND_ASSIGNMENT',
+    'LESSON_100_AND_REQUIRED_TAGS_AND_QUIZ_AND_ASSIGNMENT',
+    TIMESTAMP '2026-03-30 10:02:00',
+    TIMESTAMP '2026-03-30 10:02:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-C] Quiz failed'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_completion_rules ncr
+      WHERE ncr.node_id = rn.node_id
+  );
+
+INSERT INTO courses (
+    instructor_id,
+    title,
+    subtitle,
+    description,
+    price,
+    original_price,
+    currency,
+    difficulty_level,
+    language,
+    has_certificate,
+    status,
+    published_at,
+    duration_seconds
+)
+SELECT
+    iu.user_id,
+    '[A-CASE-A] Node Clearance Course',
+    'Case A only course',
+    'Course used to verify lesson completion, tags, quiz, and assignment pass.',
+    0,
+    0,
+    'KRW',
+    'BEGINNER',
+    'ko',
+    TRUE,
+    'PUBLISHED',
+    TIMESTAMP '2026-03-30 11:00:00',
+    900
+FROM users iu
+WHERE iu.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM courses c
+      WHERE c.title = '[A-CASE-A] Node Clearance Course'
+  );
+
+INSERT INTO courses (
+    instructor_id,
+    title,
+    subtitle,
+    description,
+    price,
+    original_price,
+    currency,
+    difficulty_level,
+    language,
+    has_certificate,
+    status,
+    published_at,
+    duration_seconds
+)
+SELECT
+    iu.user_id,
+    '[A-CASE-B] Tag Missing Course',
+    'Case B only course',
+    'Course used to verify the missing required tag branch.',
+    0,
+    0,
+    'KRW',
+    'BEGINNER',
+    'ko',
+    TRUE,
+    'PUBLISHED',
+    TIMESTAMP '2026-03-30 11:05:00',
+    900
+FROM users iu
+WHERE iu.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM courses c
+      WHERE c.title = '[A-CASE-B] Tag Missing Course'
+  );
+
+INSERT INTO courses (
+    instructor_id,
+    title,
+    subtitle,
+    description,
+    price,
+    original_price,
+    currency,
+    difficulty_level,
+    language,
+    has_certificate,
+    status,
+    published_at,
+    duration_seconds
+)
+SELECT
+    iu.user_id,
+    '[A-CASE-C] Quiz Fail Course',
+    'Case C only course',
+    'Course used to verify the quiz failed branch.',
+    0,
+    0,
+    'KRW',
+    'BEGINNER',
+    'ko',
+    TRUE,
+    'PUBLISHED',
+    TIMESTAMP '2026-03-30 11:10:00',
+    900
+FROM users iu
+WHERE iu.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM courses c
+      WHERE c.title = '[A-CASE-C] Quiz Fail Course'
+  );
+
+INSERT INTO course_sections (course_id, title, description, sort_order, is_published)
+SELECT
+    c.course_id,
+    'SECTION 1',
+    'Case A section',
+    1,
+    TRUE
+FROM courses c
+WHERE c.title = '[A-CASE-A] Node Clearance Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_sections cs
+      WHERE cs.course_id = c.course_id
+        AND cs.title = 'SECTION 1'
+  );
+
+INSERT INTO course_sections (course_id, title, description, sort_order, is_published)
+SELECT
+    c.course_id,
+    'SECTION 1',
+    'Case B section',
+    1,
+    TRUE
+FROM courses c
+WHERE c.title = '[A-CASE-B] Tag Missing Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_sections cs
+      WHERE cs.course_id = c.course_id
+        AND cs.title = 'SECTION 1'
+  );
+
+INSERT INTO course_sections (course_id, title, description, sort_order, is_published)
+SELECT
+    c.course_id,
+    'SECTION 1',
+    'Case C section',
+    1,
+    TRUE
+FROM courses c
+WHERE c.title = '[A-CASE-C] Quiz Fail Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_sections cs
+      WHERE cs.course_id = c.course_id
+        AND cs.title = 'SECTION 1'
+  );
+
+INSERT INTO lessons (
+    section_id,
+    title,
+    description,
+    lesson_type,
+    duration_seconds,
+    is_preview,
+    is_published,
+    sort_order
+)
+SELECT
+    cs.section_id,
+    '[A-CASE-A] LESSON 1',
+    'Case A lesson',
+    'VIDEO',
+    900,
+    FALSE,
+    TRUE,
+    1
+FROM course_sections cs
+JOIN courses c ON c.course_id = cs.course_id
+WHERE c.title = '[A-CASE-A] Node Clearance Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lessons l
+      WHERE l.section_id = cs.section_id
+        AND l.title = '[A-CASE-A] LESSON 1'
+  );
+
+INSERT INTO lessons (
+    section_id,
+    title,
+    description,
+    lesson_type,
+    duration_seconds,
+    is_preview,
+    is_published,
+    sort_order
+)
+SELECT
+    cs.section_id,
+    '[A-CASE-B] LESSON 1',
+    'Case B lesson',
+    'VIDEO',
+    900,
+    FALSE,
+    TRUE,
+    1
+FROM course_sections cs
+JOIN courses c ON c.course_id = cs.course_id
+WHERE c.title = '[A-CASE-B] Tag Missing Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lessons l
+      WHERE l.section_id = cs.section_id
+        AND l.title = '[A-CASE-B] LESSON 1'
+  );
+
+INSERT INTO lessons (
+    section_id,
+    title,
+    description,
+    lesson_type,
+    duration_seconds,
+    is_preview,
+    is_published,
+    sort_order
+)
+SELECT
+    cs.section_id,
+    '[A-CASE-C] LESSON 1',
+    'Case C lesson',
+    'VIDEO',
+    900,
+    FALSE,
+    TRUE,
+    1
+FROM course_sections cs
+JOIN courses c ON c.course_id = cs.course_id
+WHERE c.title = '[A-CASE-C] Quiz Fail Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lessons l
+      WHERE l.section_id = cs.section_id
+        AND l.title = '[A-CASE-C] LESSON 1'
+  );
+
+INSERT INTO course_node_mappings (course_id, node_id, created_at)
+SELECT
+    c.course_id,
+    rn.node_id,
+    TIMESTAMP '2026-03-30 11:30:00'
+FROM courses c
+JOIN roadmap_nodes rn ON rn.title = '[A-CASE-A] Full pass'
+WHERE c.title = '[A-CASE-A] Node Clearance Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_node_mappings cnm
+      WHERE cnm.course_id = c.course_id
+        AND cnm.node_id = rn.node_id
+  );
+
+INSERT INTO course_node_mappings (course_id, node_id, created_at)
+SELECT
+    c.course_id,
+    rn.node_id,
+    TIMESTAMP '2026-03-30 11:31:00'
+FROM courses c
+JOIN roadmap_nodes rn ON rn.title = '[A-CASE-B] Missing tag'
+WHERE c.title = '[A-CASE-B] Tag Missing Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_node_mappings cnm
+      WHERE cnm.course_id = c.course_id
+        AND cnm.node_id = rn.node_id
+  );
+
+INSERT INTO course_node_mappings (course_id, node_id, created_at)
+SELECT
+    c.course_id,
+    rn.node_id,
+    TIMESTAMP '2026-03-30 11:32:00'
+FROM courses c
+JOIN roadmap_nodes rn ON rn.title = '[A-CASE-C] Quiz failed'
+WHERE c.title = '[A-CASE-C] Quiz Fail Course'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM course_node_mappings cnm
+      WHERE cnm.course_id = c.course_id
+        AND cnm.node_id = rn.node_id
+  );
+
+INSERT INTO quizzes (
+    question,
+    answer,
+    options,
+    node_id,
+    title,
+    description,
+    quiz_type,
+    total_score,
+    is_published,
+    is_active,
+    expose_answer,
+    expose_explanation,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    'What must be true for the A-case node to clear?',
+    'Lessons, tags, quiz, and assignment must all pass.',
+    'Only lessons,Lessons and tags,Lessons tags quiz and assignment,Only quiz and assignment',
+    rn.node_id,
+    '[A-CASE-A] QUIZ',
+    'Quiz for the full-pass branch.',
+    'MANUAL',
+    100,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:00:00',
+    TIMESTAMP '2026-03-30 12:00:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-A] Full pass'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quizzes q
+      WHERE q.title = '[A-CASE-A] QUIZ'
+  );
+
+INSERT INTO quizzes (
+    question,
+    answer,
+    options,
+    node_id,
+    title,
+    description,
+    quiz_type,
+    total_score,
+    is_published,
+    is_active,
+    expose_answer,
+    expose_explanation,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    'Why should the B-case node remain uncleared?',
+    'A required tag is still missing.',
+    'No lessons were completed,A required tag is missing,The assignment is absent,The node has no course',
+    rn.node_id,
+    '[A-CASE-B] QUIZ',
+    'Quiz for the missing-tag branch.',
+    'MANUAL',
+    100,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:05:00',
+    TIMESTAMP '2026-03-30 12:05:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-B] Missing tag'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quizzes q
+      WHERE q.title = '[A-CASE-B] QUIZ'
+  );
+
+INSERT INTO quizzes (
+    question,
+    answer,
+    options,
+    node_id,
+    title,
+    description,
+    quiz_type,
+    total_score,
+    is_published,
+    is_active,
+    expose_answer,
+    expose_explanation,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    'Why should the C-case node remain uncleared?',
+    'The quiz was failed even though the tags and assignment passed.',
+    'A tag is missing,The lesson is incomplete,The quiz failed,No assignment exists',
+    rn.node_id,
+    '[A-CASE-C] QUIZ',
+    'Quiz for the quiz-failed branch.',
+    'MANUAL',
+    100,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:10:00',
+    TIMESTAMP '2026-03-30 12:10:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-C] Quiz failed'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quizzes q
+      WHERE q.title = '[A-CASE-C] QUIZ'
+  );
+
+INSERT INTO assignments (
+    node_id,
+    title,
+    description,
+    submission_type,
+    due_at,
+    allowed_file_formats,
+    readme_required,
+    test_required,
+    lint_required,
+    submission_rule_description,
+    total_score,
+    is_published,
+    is_active,
+    allow_late_submission,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    rn.node_id,
+    '[A-CASE-A] ASSIGNMENT',
+    'Assignment for the full-pass branch.',
+    'MULTIPLE',
+    TIMESTAMP '2026-12-31 23:59:59',
+    'zip,pdf',
+    TRUE,
+    TRUE,
+    TRUE,
+    'README, tests, lint, and file format must all pass.',
+    100,
+    TRUE,
+    TRUE,
+    FALSE,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:20:00',
+    TIMESTAMP '2026-03-30 12:20:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-A] Full pass'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignments a
+      WHERE a.title = '[A-CASE-A] ASSIGNMENT'
+  );
+
+INSERT INTO assignments (
+    node_id,
+    title,
+    description,
+    submission_type,
+    due_at,
+    allowed_file_formats,
+    readme_required,
+    test_required,
+    lint_required,
+    submission_rule_description,
+    total_score,
+    is_published,
+    is_active,
+    allow_late_submission,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    rn.node_id,
+    '[A-CASE-B] ASSIGNMENT',
+    'Assignment for the missing-tag branch.',
+    'MULTIPLE',
+    TIMESTAMP '2026-12-31 23:59:59',
+    'zip,pdf',
+    TRUE,
+    TRUE,
+    TRUE,
+    'README, tests, lint, and file format must all pass.',
+    100,
+    TRUE,
+    TRUE,
+    FALSE,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:25:00',
+    TIMESTAMP '2026-03-30 12:25:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-B] Missing tag'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignments a
+      WHERE a.title = '[A-CASE-B] ASSIGNMENT'
+  );
+
+INSERT INTO assignments (
+    node_id,
+    title,
+    description,
+    submission_type,
+    due_at,
+    allowed_file_formats,
+    readme_required,
+    test_required,
+    lint_required,
+    submission_rule_description,
+    total_score,
+    is_published,
+    is_active,
+    allow_late_submission,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    rn.node_id,
+    '[A-CASE-C] ASSIGNMENT',
+    'Assignment for the quiz-failed branch.',
+    'MULTIPLE',
+    TIMESTAMP '2026-12-31 23:59:59',
+    'zip,pdf',
+    TRUE,
+    TRUE,
+    TRUE,
+    'README, tests, lint, and file format must all pass.',
+    100,
+    TRUE,
+    TRUE,
+    FALSE,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:30:00',
+    TIMESTAMP '2026-03-30 12:30:00'
+FROM roadmap_nodes rn
+WHERE rn.title = '[A-CASE-C] Quiz failed'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignments a
+      WHERE a.title = '[A-CASE-C] ASSIGNMENT'
+  );
+
+INSERT INTO lesson_progress (
+    user_id,
+    lesson_id,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    100,
+    900,
+    1.25,
+    TRUE,
+    TRUE,
+    TIMESTAMP '2026-03-30 13:00:00',
+    TIMESTAMP '2026-03-30 13:00:00',
+    TIMESTAMP '2026-03-30 13:00:00'
+FROM users u
+JOIN lessons l ON l.title = '[A-CASE-A] LESSON 1'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lesson_progress lp
+      WHERE lp.user_id = u.user_id
+        AND lp.lesson_id = l.lesson_id
+  );
+
+INSERT INTO lesson_progress (
+    user_id,
+    lesson_id,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    100,
+    900,
+    1.00,
+    FALSE,
+    TRUE,
+    TIMESTAMP '2026-03-30 13:05:00',
+    TIMESTAMP '2026-03-30 13:05:00',
+    TIMESTAMP '2026-03-30 13:05:00'
+FROM users u
+JOIN lessons l ON l.title = '[A-CASE-B] LESSON 1'
+WHERE u.email = 'learner2@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lesson_progress lp
+      WHERE lp.user_id = u.user_id
+        AND lp.lesson_id = l.lesson_id
+  );
+
+INSERT INTO lesson_progress (
+    user_id,
+    lesson_id,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    100,
+    900,
+    1.50,
+    TRUE,
+    TRUE,
+    TIMESTAMP '2026-03-30 13:10:00',
+    TIMESTAMP '2026-03-30 13:10:00',
+    TIMESTAMP '2026-03-30 13:10:00'
+FROM users u
+JOIN lessons l ON l.title = '[A-CASE-C] LESSON 1'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lesson_progress lp
+      WHERE lp.user_id = u.user_id
+        AND lp.lesson_id = l.lesson_id
+  );
+
+INSERT INTO quiz_attempts (
+    quiz_id,
+    learner_id,
+    score,
+    max_score,
+    started_at,
+    completed_at,
+    time_spent_seconds,
+    is_passed,
+    attempt_number,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    u.user_id,
+    95,
+    100,
+    TIMESTAMP '2026-03-30 13:20:00',
+    TIMESTAMP '2026-03-30 13:25:00',
+    300,
+    TRUE,
+    1,
+    FALSE,
+    TIMESTAMP '2026-03-30 13:20:00',
+    TIMESTAMP '2026-03-30 13:25:00'
+FROM quizzes q
+JOIN users u ON u.email = 'learner@devpath.com'
+WHERE q.title = '[A-CASE-A] QUIZ'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_attempts qa
+      WHERE qa.quiz_id = q.quiz_id
+        AND qa.learner_id = u.user_id
+        AND qa.attempt_number = 1
+        AND qa.is_deleted = FALSE
+  );
+
+INSERT INTO quiz_attempts (
+    quiz_id,
+    learner_id,
+    score,
+    max_score,
+    started_at,
+    completed_at,
+    time_spent_seconds,
+    is_passed,
+    attempt_number,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    u.user_id,
+    88,
+    100,
+    TIMESTAMP '2026-03-30 13:26:00',
+    TIMESTAMP '2026-03-30 13:31:00',
+    300,
+    TRUE,
+    1,
+    FALSE,
+    TIMESTAMP '2026-03-30 13:26:00',
+    TIMESTAMP '2026-03-30 13:31:00'
+FROM quizzes q
+JOIN users u ON u.email = 'learner2@devpath.com'
+WHERE q.title = '[A-CASE-B] QUIZ'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_attempts qa
+      WHERE qa.quiz_id = q.quiz_id
+        AND qa.learner_id = u.user_id
+        AND qa.attempt_number = 1
+        AND qa.is_deleted = FALSE
+  );
+
+INSERT INTO quiz_attempts (
+    quiz_id,
+    learner_id,
+    score,
+    max_score,
+    started_at,
+    completed_at,
+    time_spent_seconds,
+    is_passed,
+    attempt_number,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    u.user_id,
+    40,
+    100,
+    TIMESTAMP '2026-03-30 13:32:00',
+    TIMESTAMP '2026-03-30 13:37:00',
+    300,
+    FALSE,
+    1,
+    FALSE,
+    TIMESTAMP '2026-03-30 13:32:00',
+    TIMESTAMP '2026-03-30 13:37:00'
+FROM quizzes q
+JOIN users u ON u.email = 'learner@devpath.com'
+WHERE q.title = '[A-CASE-C] QUIZ'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_attempts qa
+      WHERE qa.quiz_id = q.quiz_id
+        AND qa.learner_id = u.user_id
+        AND qa.attempt_number = 1
+        AND qa.is_deleted = FALSE
+  );
+
+INSERT INTO assignment_submissions (
+    assignment_id,
+    learner_id,
+    grader_id,
+    submission_text,
+    submission_url,
+    is_late,
+    submission_status,
+    submitted_at,
+    graded_at,
+    readme_passed,
+    test_passed,
+    lint_passed,
+    file_format_passed,
+    quality_score,
+    total_score,
+    individual_feedback,
+    common_feedback,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    a.assignment_id,
+    lu.user_id,
+    iu.user_id,
+    'Case A submission',
+    'https://github.com/devpath/a-case-a',
+    FALSE,
+    'GRADED',
+    TIMESTAMP '2026-03-30 13:40:00',
+    TIMESTAMP '2026-03-30 13:50:00',
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    97,
+    96,
+    'All branch conditions are satisfied.',
+    'Case A feedback',
+    FALSE,
+    TIMESTAMP '2026-03-30 13:40:00',
+    TIMESTAMP '2026-03-30 13:50:00'
+FROM assignments a
+JOIN users lu ON lu.email = 'learner@devpath.com'
+JOIN users iu ON iu.email = 'instructor@devpath.com'
+WHERE a.title = '[A-CASE-A] ASSIGNMENT'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignment_submissions s
+      WHERE s.assignment_id = a.assignment_id
+        AND s.learner_id = lu.user_id
+        AND s.is_deleted = FALSE
+  );
+
+INSERT INTO assignment_submissions (
+    assignment_id,
+    learner_id,
+    grader_id,
+    submission_text,
+    submission_url,
+    is_late,
+    submission_status,
+    submitted_at,
+    graded_at,
+    readme_passed,
+    test_passed,
+    lint_passed,
+    file_format_passed,
+    quality_score,
+    total_score,
+    individual_feedback,
+    common_feedback,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    a.assignment_id,
+    lu.user_id,
+    iu.user_id,
+    'Case B submission',
+    'https://github.com/devpath/a-case-b',
+    FALSE,
+    'GRADED',
+    TIMESTAMP '2026-03-30 13:41:00',
+    TIMESTAMP '2026-03-30 13:51:00',
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    94,
+    93,
+    'Submission passes even though one required tag is missing.',
+    'Case B feedback',
+    FALSE,
+    TIMESTAMP '2026-03-30 13:41:00',
+    TIMESTAMP '2026-03-30 13:51:00'
+FROM assignments a
+JOIN users lu ON lu.email = 'learner2@devpath.com'
+JOIN users iu ON iu.email = 'instructor@devpath.com'
+WHERE a.title = '[A-CASE-B] ASSIGNMENT'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignment_submissions s
+      WHERE s.assignment_id = a.assignment_id
+        AND s.learner_id = lu.user_id
+        AND s.is_deleted = FALSE
+  );
+
+INSERT INTO assignment_submissions (
+    assignment_id,
+    learner_id,
+    grader_id,
+    submission_text,
+    submission_url,
+    is_late,
+    submission_status,
+    submitted_at,
+    graded_at,
+    readme_passed,
+    test_passed,
+    lint_passed,
+    file_format_passed,
+    quality_score,
+    total_score,
+    individual_feedback,
+    common_feedback,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    a.assignment_id,
+    lu.user_id,
+    iu.user_id,
+    'Case C submission',
+    'https://github.com/devpath/a-case-c',
+    FALSE,
+    'GRADED',
+    TIMESTAMP '2026-03-30 13:42:00',
+    TIMESTAMP '2026-03-30 13:52:00',
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    95,
+    95,
+    'Assignment passes but the quiz branch still fails.',
+    'Case C feedback',
+    FALSE,
+    TIMESTAMP '2026-03-30 13:42:00',
+    TIMESTAMP '2026-03-30 13:52:00'
+FROM assignments a
+JOIN users lu ON lu.email = 'learner@devpath.com'
+JOIN users iu ON iu.email = 'instructor@devpath.com'
+WHERE a.title = '[A-CASE-C] ASSIGNMENT'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM assignment_submissions s
+      WHERE s.assignment_id = a.assignment_id
+        AND s.learner_id = lu.user_id
+        AND s.is_deleted = FALSE
+  );
+
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    'CLEARED',
+    100.00,
+    TRUE,
+    0,
+    TRUE,
+    TRUE,
+    TRUE,
+    TRUE,
+    TIMESTAMP '2026-03-30 14:00:00',
+    TIMESTAMP '2026-03-30 14:00:00',
+    TIMESTAMP '2026-03-30 14:00:00',
+    TIMESTAMP '2026-03-30 14:00:00'
+FROM users u
+JOIN roadmap_nodes rn ON rn.title = '[A-CASE-A] Full pass'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = rn.node_id
+  );
+
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    'NOT_CLEARED',
+    100.00,
+    FALSE,
+    1,
+    TRUE,
+    TRUE,
+    TRUE,
+    FALSE,
+    NULL,
+    TIMESTAMP '2026-03-30 14:05:00',
+    TIMESTAMP '2026-03-30 14:05:00',
+    TIMESTAMP '2026-03-30 14:05:00'
+FROM users u
+JOIN roadmap_nodes rn ON rn.title = '[A-CASE-B] Missing tag'
+WHERE u.email = 'learner2@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = rn.node_id
+  );
+
+INSERT INTO node_clearances (
+    user_id,
+    node_id,
+    clearance_status,
+    lesson_completion_rate,
+    required_tags_satisfied,
+    missing_tag_count,
+    lesson_completed,
+    quiz_passed,
+    assignment_passed,
+    proof_eligible,
+    cleared_at,
+    last_calculated_at,
+    created_at,
+    updated_at
+)
+SELECT
+    u.user_id,
+    rn.node_id,
+    'NOT_CLEARED',
+    100.00,
+    TRUE,
+    0,
+    TRUE,
+    FALSE,
+    TRUE,
+    FALSE,
+    NULL,
+    TIMESTAMP '2026-03-30 14:10:00',
+    TIMESTAMP '2026-03-30 14:10:00',
+    TIMESTAMP '2026-03-30 14:10:00'
+FROM users u
+JOIN roadmap_nodes rn ON rn.title = '[A-CASE-C] Quiz failed'
+WHERE u.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM node_clearances nc
+      WHERE nc.user_id = u.user_id
+        AND nc.node_id = rn.node_id
+  );
+
 INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
 SELECT
     'learner4@devpath.com',
