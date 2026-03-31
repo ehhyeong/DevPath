@@ -58,7 +58,10 @@ public class AdminTagGovernanceService {
 
         tagRepository
                 .findByName(name)
-                .filter(existingTag -> !existingTag.getTagId().equals(tagId))
+                .filter(existingTag ->
+                        !Boolean.TRUE.equals(existingTag.getIsDeleted())
+                                && !existingTag.getTagId().equals(tagId)
+                )
                 .ifPresent(existingTag -> {
                     throw new CustomException(ErrorCode.ALREADY_EXISTS);
                 });
