@@ -6,12 +6,10 @@ import com.devpath.api.notice.entity.Notice;
 import com.devpath.api.notice.repository.NoticeRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,36 +23,44 @@ public class AdminNoticeService {
                 .authorId(adminId)
                 .title(request.getTitle())
                 .content(request.getContent())
-                .isPinned(request.getIsPinned() != null ? request.getIsPinned() : false)
+                .isPinned(Boolean.TRUE.equals(request.getIsPinned()))
                 .build();
+
         return NoticeResponse.from(noticeRepository.save(notice));
     }
 
     public NoticeResponse updateNotice(Long noticeId, Long adminId, NoticeCreateRequest request) {
-        Notice notice = noticeRepository.findByIdAndIsDeletedFalse(noticeId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOTICE_NOT_FOUND));
-        notice.update(request.getTitle(), request.getContent(),
-                request.getIsPinned() != null ? request.getIsPinned() : false);
+        Notice notice = getActiveNotice(noticeId);
+
+        // 공지는 전사 운영 자산이라 관리자라면 누구나 수정 가능하게 둔다.
+        notice.update(
+                request.getTitle(),
+                request.getContent(),
+                Boolean.TRUE.equals(request.getIsPinned())
+        );
         return NoticeResponse.from(notice);
     }
 
     public void deleteNotice(Long noticeId, Long adminId) {
-        Notice notice = noticeRepository.findByIdAndIsDeletedFalse(noticeId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOTICE_NOT_FOUND));
+        Notice notice = getActiveNotice(noticeId);
         notice.delete();
     }
 
     @Transactional(readOnly = true)
     public List<NoticeResponse> getNotices() {
-        return noticeRepository.findByIsDeletedFalseOrderByIsPinnedDescCreatedAtDesc().stream()
+        return noticeRepository.findByIsDeletedFalseOrderByIsPinnedDescCreatedAtDesc()
+                .stream()
                 .map(NoticeResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public NoticeResponse getNotice(Long noticeId) {
-        Notice notice = noticeRepository.findByIdAndIsDeletedFalse(noticeId)
+        return NoticeResponse.from(getActiveNotice(noticeId));
+    }
+
+    private Notice getActiveNotice(Long noticeId) {
+        return noticeRepository.findByIdAndIsDeletedFalse(noticeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOTICE_NOT_FOUND));
-        return NoticeResponse.from(notice);
     }
 }
