@@ -25,7 +25,7 @@ WHERE NOT EXISTS (
 INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
 SELECT
     'learner@devpath.com',
-    '$2a$10$RcdWJBwl.kuttYmqm/BN..6aZKeLNlq9DiNFHbZgZxfTzzNDD33o2',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
     'Learner Kim',
     'ROLE_LEARNER',
     TRUE,
@@ -40,7 +40,7 @@ WHERE NOT EXISTS (
 INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
 SELECT
     'instructor@devpath.com',
-    '$2a$10$RcdWJBwl.kuttYmqm/BN..6aZKeLNlq9DiNFHbZgZxfTzzNDD33o2',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
     'Instructor Hong',
     'ROLE_INSTRUCTOR',
     TRUE,
@@ -55,7 +55,7 @@ WHERE NOT EXISTS (
 INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
 SELECT
     'admin@devpath.com',
-    '$2a$10$RcdWJBwl.kuttYmqm/BN..6aZKeLNlq9DiNFHbZgZxfTzzNDD33o2',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
     'Admin Park',
     'ROLE_ADMIN',
     TRUE,
@@ -68,7 +68,7 @@ WHERE NOT EXISTS (
 );
 
 UPDATE users
-SET password = '$2a$10$RcdWJBwl.kuttYmqm/BN..6aZKeLNlq9DiNFHbZgZxfTzzNDD33o2'
+SET password = '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.'
 WHERE email IN ('learner@devpath.com', 'instructor@devpath.com', 'admin@devpath.com');
 
 INSERT INTO user_profiles (
@@ -2538,9 +2538,6 @@ SELECT setval('project_proof_submission_id_seq', (SELECT COALESCE(MAX(id), 1) FR
 -- A SECTION LEARNING AUTOMATION / PROOF / HISTORY
 -- ========================================
 INSERT INTO quizzes (
-    question,
-    answer,
-    options,
     node_id,
     title,
     description,
@@ -2555,9 +2552,6 @@ INSERT INTO quizzes (
     updated_at
 )
 SELECT
-    'Which statement best describes dependency injection in Spring?',
-    'Spring manages object wiring for application components.',
-    'Constructor injection,Field injection,Manual new object creation,Random bean discovery',
     rn.node_id,
     'Spring Boot Intro Checkpoint Quiz',
     'Checkpoint quiz for the Java Basics roadmap node.',
@@ -2579,6 +2573,78 @@ WHERE r.title = 'Backend Master Roadmap'
       FROM quizzes q
       WHERE q.title = 'Spring Boot Intro Checkpoint Quiz'
         AND q.node_id = rn.node_id
+  );
+
+INSERT INTO quiz_questions (
+    quiz_id,
+    question_type,
+    question_text,
+    explanation,
+    points,
+    display_order,
+    source_timestamp,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    'MULTIPLE_CHOICE',
+    'Which statement best describes dependency injection in Spring?',
+    'Spring manages object wiring for application components.',
+    100,
+    1,
+    NULL,
+    FALSE,
+    TIMESTAMP '2026-03-28 20:50:00',
+    TIMESTAMP '2026-03-28 20:50:00'
+FROM quizzes q
+JOIN roadmap_nodes rn ON rn.node_id = q.node_id
+JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+WHERE q.title = 'Spring Boot Intro Checkpoint Quiz'
+  AND r.title = 'Backend Master Roadmap'
+  AND rn.title = 'Java Basics'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_questions qq
+      WHERE qq.quiz_id = q.quiz_id
+        AND qq.display_order = 1
+  );
+
+INSERT INTO quiz_question_options (
+    question_id,
+    option_text,
+    is_correct,
+    display_order,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    qq.question_id,
+    option_seed.option_text,
+    option_seed.is_correct,
+    option_seed.display_order,
+    FALSE,
+    TIMESTAMP '2026-03-28 20:50:00',
+    TIMESTAMP '2026-03-28 20:50:00'
+FROM quiz_questions qq
+JOIN quizzes q ON q.quiz_id = qq.quiz_id
+JOIN (
+    SELECT 'Constructor injection' AS option_text, FALSE AS is_correct, 1 AS display_order
+    UNION ALL
+    SELECT 'Field injection', FALSE, 2
+    UNION ALL
+    SELECT 'Manual new object creation', FALSE, 3
+    UNION ALL
+    SELECT 'Spring manages object wiring for application components.', TRUE, 4
+) option_seed ON TRUE
+WHERE q.title = 'Spring Boot Intro Checkpoint Quiz'
+  AND qq.display_order = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_question_options qo
+      WHERE qo.question_id = qq.question_id
   );
 
 INSERT INTO assignments (
@@ -4117,9 +4183,6 @@ WHERE c.title = '[A-CASE-C] Quiz Fail Course'
   );
 
 INSERT INTO quizzes (
-    question,
-    answer,
-    options,
     node_id,
     title,
     description,
@@ -4134,9 +4197,6 @@ INSERT INTO quizzes (
     updated_at
 )
 SELECT
-    'What must be true for the A-case node to clear?',
-    'Lessons, tags, quiz, and assignment must all pass.',
-    'Only lessons,Lessons and tags,Lessons tags quiz and assignment,Only quiz and assignment',
     rn.node_id,
     '[A-CASE-A] QUIZ',
     'Quiz for the full-pass branch.',
@@ -4157,10 +4217,77 @@ WHERE rn.title = '[A-CASE-A] Full pass'
       WHERE q.title = '[A-CASE-A] QUIZ'
   );
 
+INSERT INTO quiz_questions (
+    quiz_id,
+    question_type,
+    question_text,
+    explanation,
+    points,
+    display_order,
+    source_timestamp,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    'MULTIPLE_CHOICE',
+    'What must be true for the A-case node to clear?',
+    'Lessons, tags, quiz, and assignment must all pass.',
+    100,
+    1,
+    NULL,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:00:00',
+    TIMESTAMP '2026-03-30 12:00:00'
+FROM quizzes q
+JOIN roadmap_nodes rn ON rn.node_id = q.node_id
+WHERE q.title = '[A-CASE-A] QUIZ'
+  AND rn.title = '[A-CASE-A] Full pass'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_questions qq
+      WHERE qq.quiz_id = q.quiz_id
+        AND qq.display_order = 1
+  );
+
+INSERT INTO quiz_question_options (
+    question_id,
+    option_text,
+    is_correct,
+    display_order,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    qq.question_id,
+    option_seed.option_text,
+    option_seed.is_correct,
+    option_seed.display_order,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:00:00',
+    TIMESTAMP '2026-03-30 12:00:00'
+FROM quiz_questions qq
+JOIN quizzes q ON q.quiz_id = qq.quiz_id
+JOIN (
+    SELECT 'Only lessons' AS option_text, FALSE AS is_correct, 1 AS display_order
+    UNION ALL
+    SELECT 'Lessons and tags', FALSE, 2
+    UNION ALL
+    SELECT 'Lessons, tags, quiz, and assignment', TRUE, 3
+    UNION ALL
+    SELECT 'Only quiz and assignment', FALSE, 4
+) option_seed ON TRUE
+WHERE q.title = '[A-CASE-A] QUIZ'
+  AND qq.display_order = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_question_options qo
+      WHERE qo.question_id = qq.question_id
+  );
+
 INSERT INTO quizzes (
-    question,
-    answer,
-    options,
     node_id,
     title,
     description,
@@ -4175,9 +4302,6 @@ INSERT INTO quizzes (
     updated_at
 )
 SELECT
-    'Why should the B-case node remain uncleared?',
-    'A required tag is still missing.',
-    'No lessons were completed,A required tag is missing,The assignment is absent,The node has no course',
     rn.node_id,
     '[A-CASE-B] QUIZ',
     'Quiz for the missing-tag branch.',
@@ -4198,10 +4322,77 @@ WHERE rn.title = '[A-CASE-B] Missing tag'
       WHERE q.title = '[A-CASE-B] QUIZ'
   );
 
+INSERT INTO quiz_questions (
+    quiz_id,
+    question_type,
+    question_text,
+    explanation,
+    points,
+    display_order,
+    source_timestamp,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    'MULTIPLE_CHOICE',
+    'Why should the B-case node remain uncleared?',
+    'A required tag is still missing.',
+    100,
+    1,
+    NULL,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:05:00',
+    TIMESTAMP '2026-03-30 12:05:00'
+FROM quizzes q
+JOIN roadmap_nodes rn ON rn.node_id = q.node_id
+WHERE q.title = '[A-CASE-B] QUIZ'
+  AND rn.title = '[A-CASE-B] Missing tag'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_questions qq
+      WHERE qq.quiz_id = q.quiz_id
+        AND qq.display_order = 1
+  );
+
+INSERT INTO quiz_question_options (
+    question_id,
+    option_text,
+    is_correct,
+    display_order,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    qq.question_id,
+    option_seed.option_text,
+    option_seed.is_correct,
+    option_seed.display_order,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:05:00',
+    TIMESTAMP '2026-03-30 12:05:00'
+FROM quiz_questions qq
+JOIN quizzes q ON q.quiz_id = qq.quiz_id
+JOIN (
+    SELECT 'No lessons were completed' AS option_text, FALSE AS is_correct, 1 AS display_order
+    UNION ALL
+    SELECT 'A required tag is missing', TRUE, 2
+    UNION ALL
+    SELECT 'The assignment is absent', FALSE, 3
+    UNION ALL
+    SELECT 'The node has no course', FALSE, 4
+) option_seed ON TRUE
+WHERE q.title = '[A-CASE-B] QUIZ'
+  AND qq.display_order = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_question_options qo
+      WHERE qo.question_id = qq.question_id
+  );
+
 INSERT INTO quizzes (
-    question,
-    answer,
-    options,
     node_id,
     title,
     description,
@@ -4216,9 +4407,6 @@ INSERT INTO quizzes (
     updated_at
 )
 SELECT
-    'Why should the C-case node remain uncleared?',
-    'The quiz was failed even though the tags and assignment passed.',
-    'A tag is missing,The lesson is incomplete,The quiz failed,No assignment exists',
     rn.node_id,
     '[A-CASE-C] QUIZ',
     'Quiz for the quiz-failed branch.',
@@ -4237,6 +4425,76 @@ WHERE rn.title = '[A-CASE-C] Quiz failed'
       SELECT 1
       FROM quizzes q
       WHERE q.title = '[A-CASE-C] QUIZ'
+  );
+
+INSERT INTO quiz_questions (
+    quiz_id,
+    question_type,
+    question_text,
+    explanation,
+    points,
+    display_order,
+    source_timestamp,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    q.quiz_id,
+    'MULTIPLE_CHOICE',
+    'Why should the C-case node remain uncleared?',
+    'The quiz was failed even though the tags and assignment passed.',
+    100,
+    1,
+    NULL,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:10:00',
+    TIMESTAMP '2026-03-30 12:10:00'
+FROM quizzes q
+JOIN roadmap_nodes rn ON rn.node_id = q.node_id
+WHERE q.title = '[A-CASE-C] QUIZ'
+  AND rn.title = '[A-CASE-C] Quiz failed'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_questions qq
+      WHERE qq.quiz_id = q.quiz_id
+        AND qq.display_order = 1
+  );
+
+INSERT INTO quiz_question_options (
+    question_id,
+    option_text,
+    is_correct,
+    display_order,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    qq.question_id,
+    option_seed.option_text,
+    option_seed.is_correct,
+    option_seed.display_order,
+    FALSE,
+    TIMESTAMP '2026-03-30 12:10:00',
+    TIMESTAMP '2026-03-30 12:10:00'
+FROM quiz_questions qq
+JOIN quizzes q ON q.quiz_id = qq.quiz_id
+JOIN (
+    SELECT 'A tag is missing' AS option_text, FALSE AS is_correct, 1 AS display_order
+    UNION ALL
+    SELECT 'The lesson is incomplete', FALSE, 2
+    UNION ALL
+    SELECT 'The quiz failed', TRUE, 3
+    UNION ALL
+    SELECT 'No assignment exists', FALSE, 4
+) option_seed ON TRUE
+WHERE q.title = '[A-CASE-C] QUIZ'
+  AND qq.display_order = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM quiz_question_options qo
+      WHERE qo.question_id = qq.question_id
   );
 
 INSERT INTO assignments (

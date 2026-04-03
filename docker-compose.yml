@@ -1,5 +1,15 @@
 version: '3.8'
 services:
+  frontend:
+    build:
+      context: ./frontend
+    container_name: devpath-frontend
+    ports:
+      - "80:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+
   postgres:
     image: postgres:15-alpine
     container_name: devpath-postgres

@@ -9,5 +9,9 @@ public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
     List<StudyGroup> findAllByIsDeletedFalseOrderByCreatedAtDesc();
 
+    long countByIsDeletedFalse();
+
+    List<StudyGroup> findTop3ByIsDeletedFalseOrderByCreatedAtDesc();
+
     Optional<StudyGroup> findByIdAndIsDeletedFalse(Long groupId);
 }

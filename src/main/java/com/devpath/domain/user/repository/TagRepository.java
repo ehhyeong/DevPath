@@ -9,4 +9,6 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
   Optional<Tag> findByName(String name);
 
   List<Tag> findAllByIsOfficialTrue();
+
+  List<Tag> findTop6ByIsOfficialTrueAndIsDeletedFalseOrderByTagIdAsc();
 }

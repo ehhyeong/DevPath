@@ -35,7 +35,7 @@ spring:
   datasource:
     # Postgres 연결
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:devpath_db}
+    url: jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:devpath_db}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
 
@@ -59,7 +59,7 @@ spring:
   data:
     redis:
       # Redis 연결
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD}
 
