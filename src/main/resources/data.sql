@@ -14971,3 +14971,821 @@ WHERE r.is_official = TRUE
       WHERE existing.node_id = rn.node_id
         AND existing.url = seed.url
   );
+
+-- =========================
+-- WEEK9_B_MENTORING_MARKET_SEED
+-- =========================
+
+-- B-1. Mentoring / Market 테스트 유저
+INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+SELECT
+    'week9.b.mentor@devpath.com',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
+    'B멘토 김태형',
+    'ROLE_INSTRUCTOR',
+    TRUE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'week9.b.mentor@devpath.com'
+);
+
+INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+SELECT
+    'week9.b.mentee@devpath.com',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
+    'B멘티 이서연',
+    'ROLE_LEARNER',
+    TRUE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'week9.b.mentee@devpath.com'
+);
+
+-- B-2. 멘토링 공고
+INSERT INTO mentoring_posts (
+    mentor_id,
+    title,
+    content,
+    required_stacks,
+    max_participants,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentor.user_id,
+    'WEEK9 B 백엔드 멘토링 공고',
+    'Spring Boot, PR 리뷰, 채용시장 분석 기능을 함께 구현하는 멘토링입니다.',
+    'Java, Spring Boot, JPA, PostgreSQL, Docker',
+    5,
+    'OPEN',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users mentor
+WHERE mentor.email = 'week9.b.mentor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_posts mp
+      WHERE mp.title = 'WEEK9 B 백엔드 멘토링 공고'
+        AND mp.is_deleted = FALSE
+  );
+
+-- B-3. 멘토링 신청
+INSERT INTO mentoring_applications (
+    mentoring_post_id,
+    applicant_id,
+    message,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    mentee.user_id,
+    '백엔드 PR 리뷰와 채용시장 분석 기능을 함께 학습하고 싶습니다.',
+    'APPROVED',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_posts post
+JOIN users mentee ON mentee.email = 'week9.b.mentee@devpath.com'
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_applications ma
+      WHERE ma.mentoring_post_id = post.mentoring_post_id
+        AND ma.applicant_id = mentee.user_id
+        AND ma.is_deleted = FALSE
+  );
+
+-- B-4. 승인된 멘토링
+INSERT INTO mentorings (
+    mentoring_post_id,
+    mentor_id,
+    mentee_id,
+    status,
+    started_at,
+    ended_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    mentor.user_id,
+    mentee.user_id,
+    'ONGOING',
+    NOW(),
+    NULL,
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_posts post
+JOIN users mentor ON mentor.email = 'week9.b.mentor@devpath.com'
+JOIN users mentee ON mentee.email = 'week9.b.mentee@devpath.com'
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentorings m
+      WHERE m.mentoring_post_id = post.mentoring_post_id
+        AND m.mentor_id = mentor.user_id
+        AND m.mentee_id = mentee.user_id
+        AND m.is_deleted = FALSE
+  );
+
+-- B-5. 멘토링 미션
+INSERT INTO mentoring_missions (
+    mentoring_id,
+    week_number,
+    title,
+    description,
+    status,
+    due_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentoring.mentoring_id,
+    1,
+    '1주차 PR 리뷰 미션',
+    '멘토링 공고, 신청, PR 제출 흐름을 Swagger로 검증하고 PR 링크를 제출합니다.',
+    'OPEN',
+    NOW() + INTERVAL '7 days',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentorings mentoring
+JOIN mentoring_posts post ON post.mentoring_post_id = mentoring.mentoring_post_id
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_missions mission
+      WHERE mission.mentoring_id = mentoring.mentoring_id
+        AND mission.week_number = 1
+        AND mission.is_deleted = FALSE
+  );
+
+-- B-6. 멘토링 자료
+INSERT INTO mentoring_materials (
+    mentoring_mission_id,
+    type,
+    title,
+    content,
+    url,
+    sort_order,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mission.mentoring_mission_id,
+    'URL',
+    'PR 리뷰 체크리스트',
+    'PR 제출 전 Controller/Service/DTO/Swagger 기준을 확인합니다.',
+    'https://devpath.example.com/materials/week9-b-pr-checklist',
+    1,
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_missions mission
+JOIN mentorings mentoring ON mentoring.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = mentoring.mentoring_post_id
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND mission.week_number = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_materials material
+      WHERE material.mentoring_mission_id = mission.mentoring_mission_id
+        AND material.title = 'PR 리뷰 체크리스트'
+        AND material.is_deleted = FALSE
+  );
+
+-- B-7. 미션 제출
+INSERT INTO mission_submissions (
+    mentoring_mission_id,
+    submitter_id,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mission.mentoring_mission_id,
+    mentee.user_id,
+    'SUBMITTED',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_missions mission
+JOIN mentorings mentoring ON mentoring.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = mentoring.mentoring_post_id
+JOIN users mentee ON mentee.email = 'week9.b.mentee@devpath.com'
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND mission.week_number = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mission_submissions submission
+      WHERE submission.mentoring_mission_id = mission.mentoring_mission_id
+        AND submission.submitter_id = mentee.user_id
+        AND submission.is_deleted = FALSE
+  );
+
+-- B-8. PR 제출
+INSERT INTO pull_request_submissions (
+    mission_submission_id,
+    title,
+    pr_url,
+    description,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    submission.mission_submission_id,
+    'WEEK9 B PR 제출',
+    'https://github.com/yongha03/DevPath/pull/9001',
+    '멘토링 신청부터 Q&A, 회의, AI 리뷰, 채용 분석 흐름까지 구현한 PR입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mission_submissions submission
+JOIN mentoring_missions mission ON mission.mentoring_mission_id = submission.mentoring_mission_id
+JOIN mentorings mentoring ON mentoring.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = mentoring.mentoring_post_id
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND mission.week_number = 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM pull_request_submissions prs
+      WHERE prs.mission_submission_id = submission.mission_submission_id
+        AND prs.pr_url = 'https://github.com/yongha03/DevPath/pull/9001'
+        AND prs.is_deleted = FALSE
+  );
+
+-- B-9. PR 리뷰
+INSERT INTO pull_request_reviews (
+    pull_request_submission_id,
+    reviewer_id,
+    comment,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    prs.pull_request_submission_id,
+    mentor.user_id,
+    'Controller가 얇고 Service 중심으로 비즈니스 로직이 분리되어 있습니다. Swagger 검증 흐름도 확인했습니다.',
+    'APPROVED',
+    FALSE,
+    NOW(),
+    NOW()
+FROM pull_request_submissions prs
+JOIN mission_submissions submission ON submission.mission_submission_id = prs.mission_submission_id
+JOIN mentoring_missions mission ON mission.mentoring_mission_id = submission.mentoring_mission_id
+JOIN mentorings mentoring ON mentoring.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = mentoring.mentoring_post_id
+JOIN users mentor ON mentor.email = 'week9.b.mentor@devpath.com'
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND prs.pr_url = 'https://github.com/yongha03/DevPath/pull/9001'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM pull_request_reviews review
+      WHERE review.pull_request_submission_id = prs.pull_request_submission_id
+        AND review.reviewer_id = mentor.user_id
+        AND review.is_deleted = FALSE
+  );
+
+-- B-10. 라운지 신청
+INSERT INTO lounge_applications (
+    sender_id,
+    receiver_id,
+    type,
+    target_id,
+    target_title,
+    title,
+    content,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentee.user_id,
+    mentor.user_id,
+    'SQUAD_APPLICATION',
+    1,
+    'WEEK9 B 백엔드 라운지',
+    'WEEK9 B 라운지 참여 신청',
+    '백엔드 B 담당 기능 구현 라운지에 참여하고 싶습니다.',
+    'APPROVED',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users mentee
+JOIN users mentor ON mentor.email = 'week9.b.mentor@devpath.com'
+WHERE mentee.email = 'week9.b.mentee@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lounge_applications app
+      WHERE app.title = 'WEEK9 B 라운지 참여 신청'
+        AND app.sender_id = mentee.user_id
+        AND app.receiver_id = mentor.user_id
+        AND app.is_deleted = FALSE
+  );
+
+-- B-11. 라운지 메시지
+INSERT INTO application_messages (
+    lounge_application_id,
+    sender_id,
+    content,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    app.lounge_application_id,
+    mentee.user_id,
+    '신청 승인 감사합니다. PR 리뷰와 채용 분석 기능부터 확인하겠습니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM lounge_applications app
+JOIN users mentee ON mentee.email = 'week9.b.mentee@devpath.com'
+WHERE app.title = 'WEEK9 B 라운지 참여 신청'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM application_messages msg
+      WHERE msg.lounge_application_id = app.lounge_application_id
+        AND msg.sender_id = mentee.user_id
+        AND msg.content = '신청 승인 감사합니다. PR 리뷰와 채용 분석 기능부터 확인하겠습니다.'
+        AND msg.is_deleted = FALSE
+  );
+
+-- B-12. 멘토링 Q&A 질문
+INSERT INTO mentoring_questions (
+    mentoring_id,
+    writer_id,
+    title,
+    content,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentoring.mentoring_id,
+    mentee.user_id,
+    'PR 리뷰 기준 질문',
+    'AI 코드 리뷰에서 @Data, @Setter, EAGER 로딩 감지가 제대로 되는지 확인하고 싶습니다.',
+    'ANSWERED',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentorings mentoring
+JOIN mentoring_posts post ON post.mentoring_post_id = mentoring.mentoring_post_id
+JOIN users mentee ON mentee.email = 'week9.b.mentee@devpath.com'
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_questions q
+      WHERE q.mentoring_id = mentoring.mentoring_id
+        AND q.title = 'PR 리뷰 기준 질문'
+        AND q.is_deleted = FALSE
+  );
+
+-- B-13. 멘토링 Q&A 답변
+INSERT INTO mentoring_answers (
+    mentoring_question_id,
+    writer_id,
+    content,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    question.mentoring_question_id,
+    mentor.user_id,
+    'Swagger 테스트에서는 diffText에 @Data, @Setter, FetchType.EAGER, password, TODO를 포함해서 감지 결과를 확인하면 됩니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_questions question
+JOIN users mentor ON mentor.email = 'week9.b.mentor@devpath.com'
+WHERE question.title = 'PR 리뷰 기준 질문'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_answers answer
+      WHERE answer.mentoring_question_id = question.mentoring_question_id
+        AND answer.writer_id = mentor.user_id
+        AND answer.is_deleted = FALSE
+  );
+
+-- B-14. 회의방
+INSERT INTO meeting_rooms (
+    mentoring_id,
+    host_id,
+    title,
+    meeting_url,
+    recording_url,
+    scheduled_at,
+    started_at,
+    ended_at,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentoring.mentoring_id,
+    mentor.user_id,
+    'WEEK9 B 멘토링 회의',
+    'https://meet.jit.si/devpath-week9-b-mentoring',
+    'https://storage.devpath.local/recordings/week9-b-meeting.mp4',
+    NOW() + INTERVAL '1 day',
+    NOW(),
+    NULL,
+    'OPEN',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentorings mentoring
+JOIN mentoring_posts post ON post.mentoring_post_id = mentoring.mentoring_post_id
+JOIN users mentor ON mentor.email = 'week9.b.mentor@devpath.com'
+WHERE post.title = 'WEEK9 B 백엔드 멘토링 공고'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM meeting_rooms meeting
+      WHERE meeting.mentoring_id = mentoring.mentoring_id
+        AND meeting.title = 'WEEK9 B 멘토링 회의'
+        AND meeting.is_deleted = FALSE
+  );
+
+-- B-15. 보이스 채널
+INSERT INTO voice_channels (
+    workspace_id,
+    creator_id,
+    name,
+    description,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    1,
+    mentor.user_id,
+    'WEEK9 B 보이스 채널',
+    '백엔드 B 담당 기능 구현 중 음성 논의를 위한 상태 저장용 채널입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users mentor
+WHERE mentor.email = 'week9.b.mentor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM voice_channels channel
+      WHERE channel.workspace_id = 1
+        AND channel.name = 'WEEK9 B 보이스 채널'
+        AND channel.is_deleted = FALSE
+  );
+
+-- B-16. AI 코드 리뷰
+INSERT INTO ai_code_reviews (
+    requester_id,
+    pull_request_submission_id,
+    title,
+    diff_text,
+    summary,
+    comment_count,
+    provider_name,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentee.user_id,
+    prs.pull_request_submission_id,
+    'WEEK9 B AI 코드 리뷰',
+    '+ @Data
++ @Setter
++ @ManyToOne(fetch = FetchType.EAGER)
++ private String password;
++ // TODO: 예외 처리 추가 필요',
+    '총 5개의 컨벤션 위반 가능성이 감지되었습니다.',
+    5,
+    'RULE_BASED',
+    FALSE,
+    NOW(),
+    NOW()
+FROM pull_request_submissions prs
+JOIN mission_submissions submission ON submission.mission_submission_id = prs.mission_submission_id
+JOIN users mentee ON mentee.email = 'week9.b.mentee@devpath.com'
+WHERE prs.pr_url = 'https://github.com/yongha03/DevPath/pull/9001'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM ai_code_reviews review
+      WHERE review.title = 'WEEK9 B AI 코드 리뷰'
+        AND review.requester_id = mentee.user_id
+        AND review.is_deleted = FALSE
+  );
+
+INSERT INTO ai_review_comments (
+    ai_code_review_id,
+    category,
+    line_number,
+    title,
+    message,
+    suggestion,
+    status,
+    decided_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    review.ai_code_review_id,
+    'LOMBOK_CONVENTION',
+    1,
+    '@Data 사용 감지',
+    '@Data는 무분별한 setter와 순환 참조 위험을 만들 수 있습니다.',
+    '@Getter, @NoArgsConstructor(access = AccessLevel.PROTECTED), @Builder 조합을 사용하세요.',
+    'PENDING',
+    NULL,
+    FALSE,
+    NOW(),
+    NOW()
+FROM ai_code_reviews review
+WHERE review.title = 'WEEK9 B AI 코드 리뷰'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM ai_review_comments comment
+      WHERE comment.ai_code_review_id = review.ai_code_review_id
+        AND comment.title = '@Data 사용 감지'
+        AND comment.is_deleted = FALSE
+  );
+
+-- B-17. 기업
+INSERT INTO companies (
+    name,
+    description,
+    website_url,
+    logo_url,
+    industry,
+    location,
+    verification_status,
+    verification_memo,
+    verified_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    'WEEK9 B DevPath Labs',
+    '개발자 성장과 채용 분석을 연결하는 HR Tech 기업입니다.',
+    'https://devpath.example.com',
+    'https://cdn.example.com/devpath-labs-logo.png',
+    'HR Tech',
+    'SEOUL',
+    'VERIFIED',
+    'WEEK9 B 테스트 기업 인증 완료',
+    NOW(),
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM companies company
+    WHERE company.name = 'WEEK9 B DevPath Labs'
+      AND company.is_deleted = FALSE
+);
+
+-- B-18. 채용 공고
+INSERT INTO job_postings (
+    company_id,
+    title,
+    job_role,
+    description,
+    required_skills,
+    region,
+    career_level,
+    source_url,
+    source,
+    status,
+    deadline,
+    external_job_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    company.company_id,
+    'WEEK9 B 백엔드 주니어 개발자 채용',
+    'Backend Developer',
+    'Java, Spring Boot, JPA 기반 백엔드 API 개발 경험이 필요합니다. Docker와 AWS 사용 경험이 있으면 좋습니다.',
+    'Java, Spring Boot, JPA, PostgreSQL, Docker, AWS',
+    'SEOUL',
+    'JUNIOR',
+    'https://jobs.example.com/week9-b-backend',
+    'INTERNAL',
+    'OPEN',
+    CURRENT_DATE + 30,
+    'week9-b-job-001',
+    FALSE,
+    NOW(),
+    NOW()
+FROM companies company
+WHERE company.name = 'WEEK9 B DevPath Labs'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_postings job
+      WHERE job.external_job_id = 'week9-b-job-001'
+        AND job.is_deleted = FALSE
+  );
+
+-- B-19. JD 분석 태그
+INSERT INTO job_skill_tags (
+    job_posting_id,
+    name,
+    source,
+    confidence_score,
+    matched_keyword,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    job.job_posting_id,
+    skill.name,
+    'JD_RULE_BASED',
+    skill.confidence_score,
+    skill.matched_keyword,
+    FALSE,
+    NOW(),
+    NOW()
+FROM job_postings job
+CROSS JOIN (
+    VALUES
+        ('Java', 0.95, 'java'),
+        ('Spring Boot', 0.95, 'spring boot'),
+        ('JPA', 0.95, 'jpa'),
+        ('PostgreSQL', 0.95, 'postgresql'),
+        ('Docker', 0.95, 'docker'),
+        ('AWS', 0.95, 'aws')
+) AS skill(name, confidence_score, matched_keyword)
+WHERE job.external_job_id = 'week9-b-job-001'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_skill_tags tag
+      WHERE tag.job_posting_id = job.job_posting_id
+        AND tag.name = skill.name
+        AND tag.is_deleted = FALSE
+  );
+
+-- B-20. Career Profile
+INSERT INTO career_profiles (
+    user_id,
+    target_role,
+    headline,
+    summary,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentee.user_id,
+    'Backend Developer',
+    '문제 해결 중심의 백엔드 개발자',
+    'Spring Boot 기반 API 설계와 JPA 데이터 모델링에 강점이 있습니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users mentee
+WHERE mentee.email = 'week9.b.mentee@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM career_profiles profile
+      WHERE profile.user_id = mentee.user_id
+        AND profile.is_deleted = FALSE
+  );
+
+-- B-21. Profile Skill
+INSERT INTO career_profile_skills (
+    career_profile_id,
+    name,
+    level,
+    self_reported,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    profile.career_profile_id,
+    skill.name,
+    skill.level,
+    TRUE,
+    FALSE,
+    NOW(),
+    NOW()
+FROM career_profiles profile
+JOIN users mentee ON mentee.user_id = profile.user_id
+CROSS JOIN (
+    VALUES
+        ('Java', 'INTERMEDIATE'),
+        ('Spring Boot', 'INTERMEDIATE'),
+        ('JPA', 'INTERMEDIATE')
+) AS skill(name, level)
+WHERE mentee.email = 'week9.b.mentee@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM career_profile_skills cps
+      WHERE cps.career_profile_id = profile.career_profile_id
+        AND LOWER(cps.name) = LOWER(skill.name)
+        AND cps.is_deleted = FALSE
+  );
+
+-- B-22. Career Profile Snapshot
+INSERT INTO career_profile_snapshots (
+    career_profile_id,
+    snapshot_content,
+    memo,
+    created_at
+)
+SELECT
+    profile.career_profile_id,
+    'targetRole: Backend Developer
+headline: 문제 해결 중심의 백엔드 개발자
+summary: Spring Boot 기반 API 설계와 JPA 데이터 모델링에 강점이 있습니다.
+skills: Java(INTERMEDIATE), Spring Boot(INTERMEDIATE), JPA(INTERMEDIATE)
+proofCards: WEEK9 B PR 리뷰 통과#1
+projects: DevPath(Backend Developer)',
+    'WEEK9 B 백엔드 주니어 지원용 프로필 스냅샷',
+    NOW()
+FROM career_profiles profile
+JOIN users mentee ON mentee.user_id = profile.user_id
+WHERE mentee.email = 'week9.b.mentee@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM career_profile_snapshots snapshot
+      WHERE snapshot.career_profile_id = profile.career_profile_id
+        AND snapshot.memo = 'WEEK9 B 백엔드 주니어 지원용 프로필 스냅샷'
+  );
+
+-- B-23. Career Profile Version
+INSERT INTO career_profile_versions (
+    career_profile_id,
+    career_profile_snapshot_id,
+    version_number,
+    description,
+    version_content,
+    created_at
+)
+SELECT
+    profile.career_profile_id,
+    snapshot.career_profile_snapshot_id,
+    1,
+    'WEEK9 B 백엔드 주니어 지원용 프로필 스냅샷',
+    snapshot.snapshot_content,
+    NOW()
+FROM career_profiles profile
+JOIN users mentee ON mentee.user_id = profile.user_id
+JOIN career_profile_snapshots snapshot ON snapshot.career_profile_id = profile.career_profile_id
+WHERE mentee.email = 'week9.b.mentee@devpath.com'
+  AND snapshot.memo = 'WEEK9 B 백엔드 주니어 지원용 프로필 스냅샷'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM career_profile_versions version
+      WHERE version.career_profile_id = profile.career_profile_id
+        AND version.version_number = 1
+  );
+
+-- B-24. Sequence 보정
+SELECT setval(pg_get_serial_sequence('users', 'user_id'), COALESCE((SELECT MAX(user_id) FROM users), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_posts', 'mentoring_post_id'), COALESCE((SELECT MAX(mentoring_post_id) FROM mentoring_posts), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_applications', 'mentoring_application_id'), COALESCE((SELECT MAX(mentoring_application_id) FROM mentoring_applications), 1));
+SELECT setval(pg_get_serial_sequence('mentorings', 'mentoring_id'), COALESCE((SELECT MAX(mentoring_id) FROM mentorings), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_missions', 'mentoring_mission_id'), COALESCE((SELECT MAX(mentoring_mission_id) FROM mentoring_missions), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_materials', 'mentoring_material_id'), COALESCE((SELECT MAX(mentoring_material_id) FROM mentoring_materials), 1));
+SELECT setval(pg_get_serial_sequence('mission_submissions', 'mission_submission_id'), COALESCE((SELECT MAX(mission_submission_id) FROM mission_submissions), 1));
+SELECT setval(pg_get_serial_sequence('pull_request_submissions', 'pull_request_submission_id'), COALESCE((SELECT MAX(pull_request_submission_id) FROM pull_request_submissions), 1));
+SELECT setval(pg_get_serial_sequence('pull_request_reviews', 'pull_request_review_id'), COALESCE((SELECT MAX(pull_request_review_id) FROM pull_request_reviews), 1));
+SELECT setval(pg_get_serial_sequence('lounge_applications', 'lounge_application_id'), COALESCE((SELECT MAX(lounge_application_id) FROM lounge_applications), 1));
+SELECT setval(pg_get_serial_sequence('application_messages', 'application_message_id'), COALESCE((SELECT MAX(application_message_id) FROM application_messages), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_questions', 'mentoring_question_id'), COALESCE((SELECT MAX(mentoring_question_id) FROM mentoring_questions), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_answers', 'mentoring_answer_id'), COALESCE((SELECT MAX(mentoring_answer_id) FROM mentoring_answers), 1));
+SELECT setval(pg_get_serial_sequence('meeting_rooms', 'meeting_room_id'), COALESCE((SELECT MAX(meeting_room_id) FROM meeting_rooms), 1));
+SELECT setval(pg_get_serial_sequence('voice_channels', 'voice_channel_id'), COALESCE((SELECT MAX(voice_channel_id) FROM voice_channels), 1));
+SELECT setval(pg_get_serial_sequence('ai_code_reviews', 'ai_code_review_id'), COALESCE((SELECT MAX(ai_code_review_id) FROM ai_code_reviews), 1));
+SELECT setval(pg_get_serial_sequence('ai_review_comments', 'ai_review_comment_id'), COALESCE((SELECT MAX(ai_review_comment_id) FROM ai_review_comments), 1));
+SELECT setval(pg_get_serial_sequence('companies', 'company_id'), COALESCE((SELECT MAX(company_id) FROM companies), 1));
+SELECT setval(pg_get_serial_sequence('job_postings', 'job_posting_id'), COALESCE((SELECT MAX(job_posting_id) FROM job_postings), 1));
+SELECT setval(pg_get_serial_sequence('job_skill_tags', 'job_skill_tag_id'), COALESCE((SELECT MAX(job_skill_tag_id) FROM job_skill_tags), 1));
+SELECT setval(pg_get_serial_sequence('career_profiles', 'career_profile_id'), COALESCE((SELECT MAX(career_profile_id) FROM career_profiles), 1));
+SELECT setval(pg_get_serial_sequence('career_profile_skills', 'career_profile_skill_id'), COALESCE((SELECT MAX(career_profile_skill_id) FROM career_profile_skills), 1));
+SELECT setval(pg_get_serial_sequence('career_profile_snapshots', 'career_profile_snapshot_id'), COALESCE((SELECT MAX(career_profile_snapshot_id) FROM career_profile_snapshots), 1));
+SELECT setval(pg_get_serial_sequence('career_profile_versions', 'career_profile_version_id'), COALESCE((SELECT MAX(career_profile_version_id) FROM career_profile_versions), 1));
