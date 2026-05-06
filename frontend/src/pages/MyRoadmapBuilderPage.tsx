@@ -88,21 +88,111 @@ function getTopicSummary(value: string) {
   return value.split(':')[0]?.trim() || value.trim()
 }
 
-function getNodeVisual(node: OfficialRoadmapNode) {
-  if (node.branchGroup !== null && node.branchGroup !== undefined) {
-    return { icon: 'fas fa-code-branch', color: 'text-amber-500', bgColor: 'bg-amber-50' }
+function getCategoryBadgeVisual(category: string) {
+  const normalized = category.replace(/\s/g, '').toLowerCase()
+
+  if (normalized.includes('직무별') || normalized.includes('job')) {
+    return {
+      icon: 'fa-briefcase',
+      className: 'border-blue-200 bg-blue-50 text-blue-600',
+    }
   }
 
-  switch ((node.nodeType ?? '').toUpperCase()) {
-    case 'PRACTICE':
-      return { icon: 'fas fa-laptop-code', color: 'text-blue-500', bgColor: 'bg-blue-50' }
-    case 'PROJECT':
-      return { icon: 'fas fa-cubes', color: 'text-violet-500', bgColor: 'bg-violet-50' }
-    case 'ADVANCED':
-      return { icon: 'fas fa-layer-group', color: 'text-rose-500', bgColor: 'bg-rose-50' }
-    default:
-      return { icon: 'fas fa-book-open', color: 'text-[#00C471]', bgColor: 'bg-green-50' }
+  if (normalized.includes('기술별') || normalized.includes('skill') || normalized.includes('tech')) {
+    return {
+      icon: 'fa-code',
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-600',
+    }
   }
+
+  return {
+    icon: 'fa-map',
+    className: 'border-gray-200 bg-gray-100 text-gray-500',
+  }
+}
+
+const NODE_VISUAL_RULES = [
+  {
+    keywords: ['frontend', '프론트', 'ui', '화면', '브라우저', 'html', 'css', 'javascript', 'react', 'vite', '반응형', '폼'],
+    icon: 'fas fa-laptop-code',
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-50',
+  },
+  {
+    keywords: ['ci/cd', 'cicd', 'ci cd', '파이프라인', 'pipeline', 'workflow', '워크플로', 'github actions', 'jenkins', '자동화', '빌드', 'build'],
+    icon: 'fas fa-stream',
+    color: 'text-indigo-500',
+    bgColor: 'bg-indigo-50',
+  },
+  {
+    keywords: ['배포', 'deploy', 'deployment', 'release', '릴리스', 'docker', 'container', '컨테이너', 'kubernetes', 'k8s'],
+    icon: 'fas fa-rocket',
+    color: 'text-orange-500',
+    bgColor: 'bg-orange-50',
+  },
+  {
+    keywords: ['환경 변수', '환경', '변수', 'env', 'config', 'configuration', '설정', '터미널', 'shell', 'cli'],
+    icon: 'fas fa-terminal',
+    color: 'text-slate-500',
+    bgColor: 'bg-slate-50',
+  },
+  {
+    keywords: ['테스트', '검증', 'test', 'testing', 'qa', '품질', '디버깅', 'debug'],
+    icon: 'fas fa-vial',
+    color: 'text-rose-500',
+    bgColor: 'bg-rose-50',
+  },
+  {
+    keywords: ['모니터링', 'monitoring', '로그', 'log', 'metric', 'metrics', '알림', 'alert', 'observability', '관측'],
+    icon: 'fas fa-chart-line',
+    color: 'text-cyan-500',
+    bgColor: 'bg-cyan-50',
+  },
+  {
+    keywords: ['데이터베이스', 'database', 'db', 'sql', 'mysql', 'postgres', 'redis', '데이터'],
+    icon: 'fas fa-database',
+    color: 'text-violet-500',
+    bgColor: 'bg-violet-50',
+  },
+  {
+    keywords: ['네트워크', 'network', '라우팅', 'routing', 'http', 'api', '서버 상태', '클라이언트 상태'],
+    icon: 'fas fa-network-wired',
+    color: 'text-sky-500',
+    bgColor: 'bg-sky-50',
+  },
+  {
+    keywords: ['인프라', 'infra', 'server', '서버', 'cloud', '클라우드', '클러스터', 'cluster', 'aws', 'gcp', 'azure', 'linux', '운영체제', 'os'],
+    icon: 'fas fa-server',
+    color: 'text-gray-500',
+    bgColor: 'bg-gray-100',
+  },
+  {
+    keywords: ['협업', 'git', 'github', 'branch', '브랜치', 'merge', '리뷰', 'review', 'pull request', 'pr'],
+    icon: 'fas fa-code-branch',
+    color: 'text-amber-500',
+    bgColor: 'bg-amber-50',
+  },
+  {
+    keywords: ['보안', 'security', 'auth', '인증', '권한', 'oauth', 'jwt', 'login', '로그인'],
+    icon: 'fas fa-shield-alt',
+    color: 'text-red-500',
+    bgColor: 'bg-red-50',
+  },
+  {
+    keywords: ['computer science', '컴퓨터 사이언스', 'cs', '자료구조', '알고리즘', '원리', '기본', '기반'],
+    icon: 'fas fa-book-open',
+    color: 'text-[#00C471]',
+    bgColor: 'bg-green-50',
+  },
+]
+
+function getNodeVisual(node: OfficialRoadmapNode) {
+  const target = `${node.title} ${node.subTopics ?? ''}`.toLowerCase()
+  const matchedRule = NODE_VISUAL_RULES.find((rule) =>
+    rule.keywords.some((keyword) => target.includes(keyword.toLowerCase())),
+  )
+
+  return matchedRule ?? { icon: 'fas fa-book-open', color: 'text-[#00C471]', bgColor: 'bg-green-50' }
 }
 
 function mapOfficialNodeToModule(
@@ -1072,16 +1162,16 @@ function MyRoadmapBuilderPage() {
                       {row.isBranching ? (
                         // ── 분기 row ──
                         <div className="flex items-start">
-                          <div className="z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-amber-400 bg-white text-xl font-black text-amber-500 shadow-lg">
+                          <div className="z-10 mt-7 flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-amber-400 bg-white text-xl font-black text-amber-500 shadow-lg">
                             {row.sortOrder}
                           </div>
-                          <div className="relative ml-8 grid flex-1 grid-cols-2 gap-4">
+                          <div className="relative ml-8 grid flex-1 grid-cols-2 gap-4 pt-7">
                             {/* ⇄ 스왑 버튼 */}
                             {row.nodes.length === 2 && (
                               <button
                                 type="button"
                                 onClick={() => handleSwapBranch(row.sortOrder)}
-                                className="absolute -top-3 left-1/2 z-20 -translate-x-1/2 rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-[11px] font-bold text-gray-400 opacity-0 shadow-sm transition-all group-hover:opacity-100 hover:border-amber-300 hover:text-amber-500"
+                                className="absolute left-1/2 top-0 z-20 -translate-x-1/2 rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-[11px] font-bold text-gray-400 opacity-0 shadow-sm transition-all group-hover:opacity-100 hover:border-amber-300 hover:text-amber-500"
                               >
                                 ⇄ 순서 변경
                               </button>
@@ -1390,9 +1480,7 @@ function ModuleDropPreview({ module }: { module: SkillModule }) {
             <ModuleTitleTooltip title={module.title} className="mb-2 text-lg font-bold text-gray-700" />
             <div className="flex flex-wrap gap-1.5">
               {module.topics.map((topic) => (
-                <span key={topic} className="inline-flex items-center rounded-md bg-green-100 px-2 py-1 text-[10px] font-medium text-gray-500">
-                  # {topic}
-                </span>
+                <ModuleTopicChip key={topic} topic={topic} tone="green" />
               ))}
             </div>
           </div>
@@ -1418,6 +1506,62 @@ function ModuleTitleTooltip({
         {title}
       </div>
     </div>
+  )
+}
+
+function ModuleCategoryBadge({
+  category,
+  compact = false,
+  className = '',
+}: {
+  category: string
+  compact?: boolean
+  className?: string
+}) {
+  const visual = getCategoryBadgeVisual(category)
+
+  return (
+    <span
+      className={[
+        'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border font-bold',
+        compact ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-[10px]',
+        visual.className,
+        className,
+      ].join(' ')}
+    >
+      <i className={`fas ${visual.icon} text-[9px]`} />
+      {category}
+    </span>
+  )
+}
+
+function ModuleTopicChip({
+  topic,
+  compact = false,
+  tone = 'gray',
+  elevated = false,
+}: {
+  topic: string
+  compact?: boolean
+  tone?: 'gray' | 'green'
+  elevated?: boolean
+}) {
+  const toneClassName = tone === 'green'
+    ? 'border-transparent bg-green-100 text-gray-500'
+    : 'border-gray-200 bg-gray-100 text-gray-600'
+
+  return (
+    <span
+      title={topic}
+      className={[
+        'inline-flex min-w-0 max-w-full items-center rounded-md border text-[10px] font-medium',
+        compact ? 'px-1.5 py-0.5' : 'px-2 py-1',
+        elevated ? 'shadow-sm' : '',
+        toneClassName,
+      ].join(' ')}
+    >
+      <span className="truncate"># {topic}</span>
+    </span>
   )
 }
 
@@ -1455,7 +1599,7 @@ function ModulePreviewPanel({
           <p className="line-clamp-2 text-sm font-extrabold leading-snug text-gray-900">
             {module.title}
           </p>
-          <p className="mt-1 text-[11px] font-bold text-gray-400">{module.category}</p>
+          <ModuleCategoryBadge category={module.category} compact className="mt-1" />
         </div>
       </div>
 
@@ -1553,9 +1697,7 @@ function DraggableModuleCard({
             title={module.title}
             className={`text-sm font-bold ${isUsed ? 'text-gray-500' : 'text-gray-800'}`}
           />
-          <span className="shrink-0 whitespace-nowrap rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-500">
-            {module.category}
-          </span>
+          <ModuleCategoryBadge category={module.category} compact />
         </div>
         <div className="mt-1 flex min-w-0 items-center gap-1.5">
           {visibleTopics.map((topic) => (
@@ -1693,15 +1835,11 @@ function DraggableSpineCard({
         <div className="min-w-0 flex-1 pr-24">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <ModuleTitleTooltip title={module.title} className="text-lg font-bold text-gray-900" />
-            <span className="rounded-full border border-gray-200 bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
-              {module.category}
-            </span>
+            <ModuleCategoryBadge category={module.category} />
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {module.topics.map((topic) => (
-              <span key={topic} className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-2 py-1 text-[10px] font-medium text-gray-600 shadow-sm">
-                # {topic}
-              </span>
+              <ModuleTopicChip key={topic} topic={topic} elevated />
             ))}
           </div>
         </div>
@@ -1796,15 +1934,11 @@ function DraggableBranchCard({
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
             <ModuleTitleTooltip title={module.title} className="text-sm font-bold text-gray-900" />
-            <span className="rounded-full border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-500">
-              {module.category}
-            </span>
+            <ModuleCategoryBadge category={module.category} compact />
           </div>
           <div className="flex flex-wrap gap-1">
             {module.topics.map((topic) => (
-              <span key={topic} className="inline-flex items-center rounded-md border border-gray-200 bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-                # {topic}
-              </span>
+              <ModuleTopicChip key={topic} topic={topic} compact />
             ))}
           </div>
         </div>
