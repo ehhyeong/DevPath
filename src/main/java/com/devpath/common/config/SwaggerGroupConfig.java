@@ -23,6 +23,7 @@ public class SwaggerGroupConfig {
                         "/api/evaluation/learner/**",
                         "/api/home/**",
                         "/api/instructors/**",
+                        "/api/jobs/**",
                         "/api/learning/**",
                         "/api/lounge/**",
                         "/api/me/**",

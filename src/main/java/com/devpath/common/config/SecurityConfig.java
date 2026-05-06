@@ -63,6 +63,8 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/instructors/**")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/jobs/recommendations/me")
+                    .permitAll()
                     .requestMatchers("/api/admin/**")
                     .hasRole("ADMIN")
                     .requestMatchers("/api/instructor/**", "/api/evaluation/instructor/**")

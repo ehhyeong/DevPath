@@ -13,6 +13,9 @@ public interface JobSkillTagRepository extends JpaRepository<JobSkillTag, Long> 
 
   List<JobSkillTag> findAllByJobPosting_IdAndIsDeletedFalse(Long jobId);
 
+  @EntityGraph(attributePaths = "jobPosting")
+  List<JobSkillTag> findAllByJobPosting_IdInAndIsDeletedFalse(List<Long> jobIds);
+
   @Query(
       """
       select tag.name as tagName, count(tag.id) as usageCount
