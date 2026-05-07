@@ -18,6 +18,6 @@ public class WorkspaceHubSummaryResponse {
     @Schema(description = "전체 미해결 태스크 수", example = "5")
     private long totalUnresolvedTasks;
 
-    @Schema(description = "전체 진행 중 마일스톤 수 (TASK-24 구현 전 0)", example = "0")
-    private int totalActiveMilestones;
+    @Schema(description = "전체 진행 중 마일스톤 수", example = "3")
+    private long totalActiveMilestones;
 }

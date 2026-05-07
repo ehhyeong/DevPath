@@ -15136,3 +15136,110 @@ WHERE NOT EXISTS (
     WHERE workspace_id = (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로')
       AND title = '포트폴리오 초안 작성'
 );
+
+-- milestone 샘플 데이터
+INSERT INTO milestone (workspace_id, title, description, start_date, due_date, status, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    'v1.0 MVP 릴리즈',
+    '핵심 기능 완성 및 스테이징 환경 배포',
+    '2026-05-01',
+    '2026-06-30',
+    'IN_PROGRESS',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-23 14:00:00',
+    '2026-03-23 14:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM milestone
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND title = 'v1.0 MVP 릴리즈'
+);
+
+INSERT INTO milestone (workspace_id, title, description, start_date, due_date, status, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    '코드 리뷰 프로세스 정립',
+    'PR 템플릿 및 리뷰 가이드라인 작성',
+    '2026-04-01',
+    '2026-04-30',
+    'DONE',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-22 10:00:00',
+    '2026-04-30 18:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM milestone
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND title = '코드 리뷰 프로세스 정립'
+);
+
+INSERT INTO milestone (workspace_id, title, description, start_date, due_date, status, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로'),
+    '포트폴리오 v1 완성',
+    '개인 포트폴리오 초안 작성 및 공개 링크 발급',
+    '2026-06-01',
+    '2026-07-31',
+    'OPEN',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-24 10:00:00',
+    '2026-03-24 10:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM milestone
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로')
+      AND title = '포트폴리오 v1 완성'
+);
+
+-- calendar_event 샘플 데이터
+INSERT INTO calendar_event (workspace_id, title, description, start_at, end_at, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    '스프린트 킥오프 회의',
+    '2주 스프린트 목표 설정 및 태스크 분배',
+    '2026-06-02 10:00:00',
+    '2026-06-02 11:00:00',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-23 14:00:00',
+    '2026-03-23 14:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM calendar_event
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND title = '스프린트 킥오프 회의'
+);
+
+INSERT INTO calendar_event (workspace_id, title, description, start_at, end_at, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    '중간 데모',
+    'v1.0 중간 진행 상황 공유 데모',
+    '2026-06-16 14:00:00',
+    '2026-06-16 15:00:00',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-24 09:00:00',
+    '2026-03-24 09:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM calendar_event
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND title = '중간 데모'
+);
+
+INSERT INTO calendar_event (workspace_id, title, description, start_at, end_at, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    '스프린트 회고',
+    '2주 스프린트 KPT 회고 미팅',
+    '2026-06-30 16:00:00',
+    '2026-06-30 17:00:00',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-25 09:00:00',
+    '2026-03-25 09:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM calendar_event
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND title = '스프린트 회고'
+);

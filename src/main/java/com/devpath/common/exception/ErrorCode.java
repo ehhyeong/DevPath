@@ -187,6 +187,10 @@ public enum ErrorCode {
   WORKSPACE_FORBIDDEN(HttpStatus.FORBIDDEN, "워크스페이스에 접근할 권한이 없습니다."),
   TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "태스크를 찾을 수 없습니다."),
   TASK_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 워크스페이스의 태스크가 아닙니다."),
+  MILESTONE_NOT_FOUND(HttpStatus.NOT_FOUND, "마일스톤을 찾을 수 없습니다."),
+  MILESTONE_FORBIDDEN(HttpStatus.FORBIDDEN, "마일스톤을 관리할 권한이 없습니다."),
+  CALENDAR_EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "캘린더 이벤트를 찾을 수 없습니다."),
+  CALENDAR_EVENT_FORBIDDEN(HttpStatus.FORBIDDEN, "캘린더 이벤트를 관리할 권한이 없습니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");
 

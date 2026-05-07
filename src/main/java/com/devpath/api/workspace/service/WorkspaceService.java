@@ -9,6 +9,8 @@ import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
+import com.devpath.domain.workspace.entity.MilestoneStatus;
+import com.devpath.domain.workspace.repository.MilestoneRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
@@ -27,6 +29,7 @@ public class WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final WorkspaceTaskRepository workspaceTaskRepository;
+    private final MilestoneRepository milestoneRepository;
 
     public List<WorkspaceResponse> getMyWorkspaces(Long userId, WorkspaceType type) {
         List<Long> workspaceIds = getWorkspaceIdsByMember(userId);
@@ -74,7 +77,9 @@ public class WorkspaceService {
         List<WorkspaceMember> members = workspaceMemberRepository.findAllByWorkspaceId(workspaceId);
         long unresolvedTaskCount = workspaceTaskRepository
                 .countByWorkspaceIdAndStatusNotAndIsDeletedFalse(workspaceId, WorkspaceTaskStatus.DONE);
-        return WorkspaceDashboardResponse.from(workspace, members, unresolvedTaskCount);
+        long activeMilestoneCount = milestoneRepository.countByWorkspaceIdAndStatusInAndIsDeletedFalse(
+                workspaceId, List.of(MilestoneStatus.OPEN, MilestoneStatus.IN_PROGRESS));
+        return WorkspaceDashboardResponse.from(workspace, members, unresolvedTaskCount, activeMilestoneCount);
     }
 
     public WorkspaceHubSummaryResponse getHubSummary(Long userId) {
@@ -85,12 +90,15 @@ public class WorkspaceService {
         long unresolvedTasks = workspaceIds.isEmpty() ? 0
                 : workspaceTaskRepository.countByWorkspaceIdInAndStatusNotAndIsDeletedFalse(
                         workspaceIds, WorkspaceTaskStatus.DONE);
+        long activeMilestones = workspaceIds.isEmpty() ? 0
+                : milestoneRepository.countByWorkspaceIdInAndStatusInAndIsDeletedFalse(
+                        workspaceIds, List.of(MilestoneStatus.OPEN, MilestoneStatus.IN_PROGRESS));
 
         return WorkspaceHubSummaryResponse.builder()
                 .totalWorkspaces(total)
                 .activeWorkspaces(active)
                 .totalUnresolvedTasks(unresolvedTasks)
-                .totalActiveMilestones(0)
+                .totalActiveMilestones(activeMilestones)
                 .build();
     }
 
