@@ -4,6 +4,8 @@ import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
 import com.devpath.api.workspace.dto.WorkspaceHubSummaryResponse;
+import com.devpath.api.workspace.dto.ActivityLogResponse;
+import com.devpath.api.workspace.service.ActivityLogService;
 import com.devpath.api.workspace.service.WorkspaceService;
 import com.devpath.api.workspace.service.WorkspaceTaskService;
 import com.devpath.common.response.ApiResponse;
@@ -30,6 +32,7 @@ public class WorkspaceDashboardController {
 
     private final WorkspaceService workspaceService;
     private final WorkspaceTaskService workspaceTaskService;
+    private final ActivityLogService activityLogService;
 
     @GetMapping("/workspaces/{workspaceId}/dashboard")
     @Operation(
@@ -81,19 +84,20 @@ public class WorkspaceDashboardController {
 
     @GetMapping("/workspaces/{workspaceId}/activities/recent")
     @Operation(
-            summary = "워크스페이스 최근 활동 조회 (stub)",
-            description = "최근 활동 로그를 조회합니다. TASK-25 ActivityLog 구현 후 실데이터로 교체 예정입니다.")
+            summary = "워크스페이스 최근 활동 조회",
+            description = "워크스페이스의 최근 활동 로그 10건을 조회합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "멤버 아님",
+                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "워크스페이스 없음",
                     content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
     })
-    public ApiResponse<List<Object>> getRecentActivities(
+    public ApiResponse<List<ActivityLogResponse>> getRecentActivities(
             @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId
     ) {
-        // TASK-25 ActivityLog 구현 후 실데이터 연동 예정 [STUB]
-        return ApiResponse.ok(List.of());
+        return ApiResponse.ok(activityLogService.getRecentActivityLogs(workspaceId, requireUserId(userId)));
     }
 
 }

@@ -15243,3 +15243,69 @@ WHERE NOT EXISTS (
     WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
       AND title = '스프린트 회고'
 );
+
+-- activity_log 샘플 데이터
+INSERT INTO activity_log (workspace_id, actor_id, activity_type, description, created_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    'MEMBER_JOINED',
+    '학습자가 워크스페이스에 참여했습니다.',
+    '2026-03-20 09:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM activity_log
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND activity_type = 'MEMBER_JOINED'
+);
+
+INSERT INTO activity_log (workspace_id, actor_id, activity_type, description, created_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    'TASK_CREATED',
+    '태스크 "API 설계 완료"가 생성되었습니다.',
+    '2026-03-21 10:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM activity_log
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND activity_type = 'TASK_CREATED'
+);
+
+INSERT INTO activity_log (workspace_id, actor_id, activity_type, description, created_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    'MILESTONE_CREATED',
+    '마일스톤 "MVP 기능 구현 완료"가 생성되었습니다.',
+    '2026-03-22 11:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM activity_log
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND activity_type = 'MILESTONE_CREATED'
+);
+
+INSERT INTO activity_log (workspace_id, actor_id, activity_type, description, created_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    'DOC_UPDATED',
+    'ERD 문서가 업데이트되었습니다.',
+    '2026-03-23 14:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM activity_log
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND activity_type = 'DOC_UPDATED'
+);
+
+INSERT INTO activity_log (workspace_id, actor_id, activity_type, description, created_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    'MEETING_NOTE_CREATED',
+    '회의록 "스프린트 킥오프"가 생성되었습니다.',
+    '2026-03-24 15:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM activity_log
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND activity_type = 'MEETING_NOTE_CREATED'
+);
