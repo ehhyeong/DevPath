@@ -1,40 +1,55 @@
 package com.devpath.api.project.dto;
 
 import com.devpath.domain.project.entity.Project;
-import com.devpath.domain.project.entity.ProjectStatus;
-import io.swagger.v3.oas.annotations.media.Schema;
+import com.devpath.domain.project.entity.ProjectMember;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
-@Schema(description = "프로젝트 응답 DTO")
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProjectResponse {
 
-    @Schema(description = "프로젝트 ID", example = "1")
-    private Long id;
-
-    @Schema(description = "프로젝트 이름", example = "DevPath 클론 코딩")
+    private Long projectId;
+    private Long ownerId;
     private String name;
-
-    @Schema(description = "프로젝트 설명", example = "React와 Spring Boot를 활용한 플랫폼 개발")
     private String description;
-
-    @Schema(description = "프로젝트 진행 상태", example = "PREPARING")
-    private ProjectStatus status;
-
-    @Schema(description = "생성 일시")
+    private String intro;
+    private String projectType;
+    private String status;
+    private String visibility;
+    private String recruitingStatus;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private List<ProjectMemberResponse> members;
 
-    public static ProjectResponse from(Project project) {
+    // 상세 조회 (멤버 포함)
+    public static ProjectResponse from(Project project, List<ProjectMember> members) {
         return ProjectResponse.builder()
-                .id(project.getId())
+                .projectId(project.getId())
+                .ownerId(project.getOwnerId())
                 .name(project.getName())
                 .description(project.getDescription())
-                .status(project.getStatus())
+                .intro(project.getIntro())
+                .projectType(project.getProjectType().name())
+                .status(project.getStatus().name())
+                .visibility(project.getVisibility().name())
+                .recruitingStatus(project.getRecruitingStatus().name())
                 .createdAt(project.getCreatedAt())
+                .updatedAt(project.getUpdatedAt())
+                .members(members.stream().map(ProjectMemberResponse::from).toList())
                 .build();
+    }
+
+    // 목록 조회 (멤버 제외)
+    public static ProjectResponse from(Project project) {
+        return from(project, Collections.emptyList());
     }
 }

@@ -3,6 +3,7 @@ package com.devpath.domain.project.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "project_idea_post")
@@ -26,8 +27,9 @@ public class ProjectIdeaPost {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private IdeaPostStatus status;
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private IdeaPostStatus status = IdeaPostStatus.PUBLISHED;
 
     @Column(name = "is_deleted", nullable = false)
     @Builder.Default
@@ -35,6 +37,10 @@ public class ProjectIdeaPost {
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {

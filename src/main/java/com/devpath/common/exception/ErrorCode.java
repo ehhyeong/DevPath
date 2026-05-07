@@ -170,6 +170,11 @@ public enum ErrorCode {
   JOB_SKILL_TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "채용 기술 태그를 찾을 수 없습니다."),
   JOB_JD_ANALYSIS_FAILED(HttpStatus.BAD_REQUEST, "JD 분석에 실패했습니다."),
 
+  PROJECT_NOT_FOUND(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
+  PROJECT_FORBIDDEN(HttpStatus.FORBIDDEN, "프로젝트를 관리할 권한이 없습니다."),
+  IDEA_POST_NOT_FOUND(HttpStatus.NOT_FOUND, "아이디어 게시글을 찾을 수 없습니다."),
+  IDEA_POST_FORBIDDEN(HttpStatus.FORBIDDEN, "아이디어 게시글을 관리할 권한이 없습니다."),
+
   SQUAD_NOT_FOUND(HttpStatus.NOT_FOUND, "스쿼드를 찾을 수 없습니다."),
   SQUAD_ALREADY_ARCHIVED(HttpStatus.BAD_REQUEST, "이미 보관된 스쿼드입니다."),
   SQUAD_NOT_ARCHIVED(HttpStatus.BAD_REQUEST, "보관 상태가 아닌 스쿼드입니다."),

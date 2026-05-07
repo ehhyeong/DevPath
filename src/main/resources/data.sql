@@ -2870,11 +2870,15 @@ WHERE u.email = 'learner2@devpath.com'
 -- ========================================
 -- C SECTION PROJECT
 -- ========================================
-INSERT INTO project (name, description, status, is_deleted, created_at)
+INSERT INTO project (owner_id, name, description, project_type, status, visibility, recruiting_status, is_deleted, created_at)
 SELECT
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     'DevPath Team Workspace',
     'DevPath 팀 협업 워크스페이스용 프로젝트. 역할 배정, 멘토링, Proof 제출 테스트용 데이터',
+    'SQUAD',
     'IN_PROGRESS',
+    'PUBLIC',
+    'OPEN',
     FALSE,
     '2026-03-23 14:00:00'
 WHERE NOT EXISTS (
@@ -2884,11 +2888,15 @@ WHERE NOT EXISTS (
       AND is_deleted = FALSE
 );
 
-INSERT INTO project (name, description, status, is_deleted, created_at)
+INSERT INTO project (owner_id, name, description, project_type, status, visibility, recruiting_status, is_deleted, created_at)
 SELECT
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     'Portfolio Builder Squad',
     '포트폴리오 제작 중심의 준비중 프로젝트. 초대 거절/멘토링 승인 시나리오 테스트용 데이터',
+    'SQUAD',
     'PREPARING',
+    'PUBLIC',
+    'CLOSED',
     FALSE,
     '2026-03-22 11:00:00'
 WHERE NOT EXISTS (

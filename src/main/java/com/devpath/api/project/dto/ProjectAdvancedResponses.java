@@ -53,17 +53,29 @@ public class ProjectAdvancedResponses {
         @Schema(description = "게시글 ID", example = "1")
         private Long id;
 
+        @Schema(description = "작성자 ID", example = "1")
+        private Long authorId;
+
         @Schema(description = "게시글 제목", example = "O2O 펫 시터 플랫폼 팀원 구합니다.")
         private String title;
 
         @Schema(description = "게시글 내용")
         private String content;
 
+        @Schema(description = "생성 일시")
+        private java.time.LocalDateTime createdAt;
+
+        @Schema(description = "수정 일시")
+        private java.time.LocalDateTime updatedAt;
+
         public static IdeaPostResponse from(ProjectIdeaPost post) {
             return builder()
                     .id(post.getId())
+                    .authorId(post.getAuthorId())
                     .title(post.getTitle())
                     .content(post.getContent())
+                    .createdAt(post.getCreatedAt())
+                    .updatedAt(post.getUpdatedAt())
                     .build();
         }
     }

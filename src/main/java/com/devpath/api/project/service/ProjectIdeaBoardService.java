@@ -59,12 +59,12 @@ public class ProjectIdeaBoardService {
 
     private void validateAuthor(ProjectIdeaPost ideaPost, Long requesterId) {
         if (!ideaPost.getAuthorId().equals(requesterId)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED_ACTION, "작성자만 게시글을 수정 또는 삭제할 수 있습니다.");
+            throw new CustomException(ErrorCode.IDEA_POST_FORBIDDEN);
         }
     }
 
     private ProjectIdeaPost getIdeaPostEntity(Long ideaId) {
         return projectIdeaPostRepository.findByIdAndIsDeletedFalse(ideaId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "프로젝트 아이디어 게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.IDEA_POST_NOT_FOUND));
     }
 }
