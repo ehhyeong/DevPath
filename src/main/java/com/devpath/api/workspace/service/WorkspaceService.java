@@ -10,6 +10,8 @@ import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
+import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
+import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,6 +26,7 @@ public class WorkspaceService {
 
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspaceTaskRepository workspaceTaskRepository;
 
     public List<WorkspaceResponse> getMyWorkspaces(Long userId, WorkspaceType type) {
         List<Long> workspaceIds = getWorkspaceIdsByMember(userId);
@@ -69,7 +72,9 @@ public class WorkspaceService {
         validateMember(workspaceId, userId);
 
         List<WorkspaceMember> members = workspaceMemberRepository.findAllByWorkspaceId(workspaceId);
-        return WorkspaceDashboardResponse.from(workspace, members);
+        long unresolvedTaskCount = workspaceTaskRepository
+                .countByWorkspaceIdAndStatusNotAndIsDeletedFalse(workspaceId, WorkspaceTaskStatus.DONE);
+        return WorkspaceDashboardResponse.from(workspace, members, unresolvedTaskCount);
     }
 
     public WorkspaceHubSummaryResponse getHubSummary(Long userId) {
@@ -77,11 +82,14 @@ public class WorkspaceService {
         long total = workspaceIds.size();
         long active = workspaceIds.isEmpty() ? 0
                 : workspaceRepository.countByIdInAndIsDeletedFalse(workspaceIds);
+        long unresolvedTasks = workspaceIds.isEmpty() ? 0
+                : workspaceTaskRepository.countByWorkspaceIdInAndStatusNotAndIsDeletedFalse(
+                        workspaceIds, WorkspaceTaskStatus.DONE);
 
         return WorkspaceHubSummaryResponse.builder()
                 .totalWorkspaces(total)
                 .activeWorkspaces(active)
-                .totalUnresolvedTasks(0)
+                .totalUnresolvedTasks(unresolvedTasks)
                 .totalActiveMilestones(0)
                 .build();
     }

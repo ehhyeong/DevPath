@@ -33,8 +33,8 @@ public class WorkspaceDashboardResponse {
     @Schema(description = "멤버 목록")
     private List<WorkspaceMemberResponse> members;
 
-    @Schema(description = "미해결 태스크 수 (TASK-23 구현 전 0)", example = "0")
-    private int unresolvedTaskCount;
+    @Schema(description = "미해결 태스크 수", example = "3")
+    private long unresolvedTaskCount;
 
     @Schema(description = "진행 중 마일스톤 수 (TASK-24 구현 전 0)", example = "0")
     private int activeMilestoneCount;
@@ -42,7 +42,8 @@ public class WorkspaceDashboardResponse {
     @Schema(description = "생성 일시")
     private LocalDateTime createdAt;
 
-    public static WorkspaceDashboardResponse from(Workspace workspace, List<WorkspaceMember> members) {
+    public static WorkspaceDashboardResponse from(Workspace workspace, List<WorkspaceMember> members,
+            long unresolvedTaskCount) {
         return builder()
                 .workspaceId(workspace.getId())
                 .name(workspace.getName())
@@ -50,7 +51,7 @@ public class WorkspaceDashboardResponse {
                 .status(workspace.getStatus())
                 .ownerId(workspace.getOwnerId())
                 .members(members.stream().map(WorkspaceMemberResponse::from).toList())
-                .unresolvedTaskCount(0)
+                .unresolvedTaskCount(unresolvedTaskCount)
                 .activeMilestoneCount(0)
                 .createdAt(workspace.getCreatedAt())
                 .build();

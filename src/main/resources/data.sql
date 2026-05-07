@@ -15059,3 +15059,80 @@ WHERE NOT EXISTS (
     WHERE workspace_id = (SELECT id FROM workspace WHERE name = '멘토링 세션 워크스페이스')
       AND learner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
 );
+
+-- workspace_task 샘플 데이터
+INSERT INTO workspace_task (workspace_id, title, description, status, priority, assignee_id, due_date, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    '로그인 API 구현',
+    'JWT 기반 로그인 및 토큰 발급 API 구현',
+    'TODO',
+    'HIGH',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    '2026-06-01',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-23 14:00:00',
+    '2026-03-23 14:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM workspace_task
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND title = '로그인 API 구현'
+);
+
+INSERT INTO workspace_task (workspace_id, title, description, status, priority, assignee_id, due_date, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    '칸반 보드 UI 설계',
+    'React 기반 드래그앤드롭 칸반 보드 UI 설계 및 구현',
+    'IN_PROGRESS',
+    'MEDIUM',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    '2026-06-10',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-24 09:00:00',
+    '2026-03-24 09:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM workspace_task
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND title = '칸반 보드 UI 설계'
+);
+
+INSERT INTO workspace_task (workspace_id, title, description, status, priority, assignee_id, due_date, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    'ERD 다이어그램 작성',
+    '전체 도메인 ERD 다이어그램 작성 및 리뷰',
+    'DONE',
+    'LOW',
+    NULL,
+    '2026-05-15',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-22 10:00:00',
+    '2026-03-22 10:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM workspace_task
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+      AND title = 'ERD 다이어그램 작성'
+);
+
+INSERT INTO workspace_task (workspace_id, title, description, status, priority, assignee_id, due_date, created_by_id, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로'),
+    '포트폴리오 초안 작성',
+    '개인 포트폴리오 초안 작성 및 프로젝트 정리',
+    'TODO',
+    'MEDIUM',
+    NULL,
+    '2026-06-20',
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    FALSE,
+    '2026-03-24 10:00:00',
+    '2026-03-24 10:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM workspace_task
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로')
+      AND title = '포트폴리오 초안 작성'
+);

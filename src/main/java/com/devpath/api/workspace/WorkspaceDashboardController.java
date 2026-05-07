@@ -5,6 +5,7 @@ import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
 import com.devpath.api.workspace.dto.WorkspaceHubSummaryResponse;
 import com.devpath.api.workspace.service.WorkspaceService;
+import com.devpath.api.workspace.service.WorkspaceTaskService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkspaceDashboardController {
 
     private final WorkspaceService workspaceService;
+    private final WorkspaceTaskService workspaceTaskService;
 
     @GetMapping("/workspaces/{workspaceId}/dashboard")
     @Operation(
@@ -94,20 +96,4 @@ public class WorkspaceDashboardController {
         return ApiResponse.ok(List.of());
     }
 
-    @GetMapping("/workspaces/{workspaceId}/tasks/unresolved")
-    @Operation(
-            summary = "워크스페이스 미해결 태스크 조회 (stub)",
-            description = "미해결 태스크 목록을 조회합니다. TASK-23 Kanban 구현 후 실데이터로 교체 예정입니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "멤버 아님",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
-    })
-    public ApiResponse<List<Object>> getUnresolvedTasks(
-            @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        // TASK-23 Kanban 구현 후 실데이터 연동 예정 [STUB]
-        return ApiResponse.ok(List.of());
-    }
 }
