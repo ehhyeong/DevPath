@@ -15422,3 +15422,61 @@ WHERE NOT EXISTS (
     WHERE showcase_id = (SELECT id FROM showcase WHERE title = 'DevPath 학습 대시보드')
       AND user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
 );
+
+-- portfolio 샘플 데이터
+INSERT INTO portfolio (user_id, title, bio, is_public, public_link_token, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    '김하늘의 개발 포트폴리오',
+    'Spring Boot와 React를 주로 사용하는 풀스택 개발자입니다.',
+    false,
+    NULL,
+    false,
+    '2026-04-01 09:00:00',
+    '2026-04-01 09:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM portfolio
+    WHERE user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND is_deleted = false
+);
+
+-- portfolio_item 샘플 데이터
+INSERT INTO portfolio_item (portfolio_id, item_type, reference_id, sort_order, added_at)
+SELECT
+    (SELECT id FROM portfolio WHERE user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com') AND is_deleted = false),
+    'PROJECT',
+    1,
+    0,
+    '2026-04-02 10:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM portfolio_item
+    WHERE portfolio_id = (SELECT id FROM portfolio WHERE user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com') AND is_deleted = false)
+      AND item_type = 'PROJECT' AND reference_id = 1
+);
+
+INSERT INTO portfolio_item (portfolio_id, item_type, reference_id, sort_order, added_at)
+SELECT
+    (SELECT id FROM portfolio WHERE user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com') AND is_deleted = false),
+    'PROOF_CARD',
+    1,
+    1,
+    '2026-04-02 11:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM portfolio_item
+    WHERE portfolio_id = (SELECT id FROM portfolio WHERE user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com') AND is_deleted = false)
+      AND item_type = 'PROOF_CARD' AND reference_id = 1
+);
+
+-- portfolio_github_commit 샘플 데이터
+INSERT INTO portfolio_github_commit (portfolio_id, repo_name, commit_message, commit_url, committed_at)
+SELECT
+    (SELECT id FROM portfolio WHERE user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com') AND is_deleted = false),
+    'devpath/backend',
+    'feat: Workspace API 구현',
+    'https://github.com/devpath/backend/commit/abc123',
+    '2026-04-10 14:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM portfolio_github_commit
+    WHERE portfolio_id = (SELECT id FROM portfolio WHERE user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com') AND is_deleted = false)
+      AND commit_url = 'https://github.com/devpath/backend/commit/abc123'
+);

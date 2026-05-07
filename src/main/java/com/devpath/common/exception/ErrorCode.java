@@ -201,6 +201,8 @@ public enum ErrorCode {
   SHOWCASE_COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "댓글을 관리할 권한이 없습니다."),
   SHOWCASE_ALREADY_LIKED(HttpStatus.CONFLICT, "이미 좋아요한 쇼케이스입니다."),
   SHOWCASE_NOT_LIKED(HttpStatus.CONFLICT, "좋아요하지 않은 쇼케이스입니다."),
+  PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "포트폴리오를 찾을 수 없습니다."),
+  PORTFOLIO_FORBIDDEN(HttpStatus.FORBIDDEN, "포트폴리오에 접근할 권한이 없습니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");
 
