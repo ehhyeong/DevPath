@@ -154,19 +154,19 @@ public class WorkspaceQuestionService {
         workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspace.getId(), userId);
 
     if (!owner && !member) {
-      throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
+      throw new CustomException(ErrorCode.QNA_NOT_WORKSPACE_MEMBER);
     }
   }
 
   private void validateAnswerable(Question question) {
     if (question.getQnaStatus() == QnaStatus.ANSWERED) {
-      throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION, "이미 답변 완료 처리된 질문입니다.");
+      throw new CustomException(ErrorCode.QNA_ALREADY_ANSWERED);
     }
   }
 
   private void validateQuestionStatus(QnaStatus status) {
     if (status != QnaStatus.UNANSWERED && status != QnaStatus.ANSWERED) {
-      throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
+      throw new CustomException(ErrorCode.QNA_INVALID_STATUS);
     }
   }
 
