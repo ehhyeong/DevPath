@@ -16,4 +16,14 @@ public interface SquadInvitationRepository extends JpaRepository<SquadInvitation
       Squad squad, Long inviteeId, SquadInvitationStatus status);
 
   List<SquadInvitation> findByInviteeIdAndStatus(Long inviteeId, SquadInvitationStatus status);
+
+  boolean existsBySquadAndInviteEmailAndStatus(
+      Squad squad, String inviteEmail, SquadInvitationStatus status);
+
+  List<SquadInvitation> findBySquadOrderByCreatedAtDesc(Squad squad);
+
+  List<SquadInvitation> findBySquadAndStatusOrderByCreatedAtDesc(
+      Squad squad, SquadInvitationStatus status);
+
+  Optional<SquadInvitation> findByInvitationToken(String invitationToken);
 }

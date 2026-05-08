@@ -85,6 +85,17 @@ public class WorkspaceTaskService {
         .build();
   }
 
+  public List<WorkspaceTaskResponse> getTasks(Long workspaceId, Long userId) {
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
+
+    return workspaceTaskRepository
+        .findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(workspaceId)
+        .stream()
+        .map(WorkspaceTaskResponse::from)
+        .toList();
+  }
+
   public WorkspaceTaskResponse getTask(Long workspaceId, Long taskId, Long userId) {
     validateWorkspaceExists(workspaceId);
     validateMember(workspaceId, userId);
@@ -109,12 +120,39 @@ public class WorkspaceTaskService {
   }
 
   @Transactional
+  public WorkspaceTaskResponse updateTaskById(
+      Long taskId, Long userId, UpdateTaskRequest request) {
+    WorkspaceTask task = getTaskEntity(taskId);
+    Long workspaceId = task.getWorkspaceId();
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
+
+    WorkspaceTaskPriority priority =
+        request.getPriority() != null ? request.getPriority() : task.getPriority();
+
+    task.update(request.getTitle(), request.getDescription(), priority, request.getDueDate());
+    return WorkspaceTaskResponse.from(task);
+  }
+
+  @Transactional
   public WorkspaceTaskResponse updateTaskStatus(
       Long workspaceId, Long taskId, Long userId, UpdateTaskStatusRequest request) {
     validateWorkspaceExists(workspaceId);
     validateMember(workspaceId, userId);
     WorkspaceTask task = getTaskEntity(taskId);
     validateTaskBelongsToWorkspace(task, workspaceId);
+
+    task.changeStatus(request.getStatus());
+    return WorkspaceTaskResponse.from(task);
+  }
+
+  @Transactional
+  public WorkspaceTaskResponse updateTaskStatusById(
+      Long taskId, Long userId, UpdateTaskStatusRequest request) {
+    WorkspaceTask task = getTaskEntity(taskId);
+    Long workspaceId = task.getWorkspaceId();
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
 
     task.changeStatus(request.getStatus());
     return WorkspaceTaskResponse.from(task);
@@ -133,11 +171,33 @@ public class WorkspaceTaskService {
   }
 
   @Transactional
+  public WorkspaceTaskResponse updateTaskAssigneeById(
+      Long taskId, Long userId, UpdateTaskAssigneeRequest request) {
+    WorkspaceTask task = getTaskEntity(taskId);
+    Long workspaceId = task.getWorkspaceId();
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
+
+    task.changeAssignee(request.getAssigneeId());
+    return WorkspaceTaskResponse.from(task);
+  }
+
+  @Transactional
   public void deleteTask(Long workspaceId, Long taskId, Long userId) {
     validateWorkspaceExists(workspaceId);
     validateMember(workspaceId, userId);
     WorkspaceTask task = getTaskEntity(taskId);
     validateTaskBelongsToWorkspace(task, workspaceId);
+
+    task.delete();
+  }
+
+  @Transactional
+  public void deleteTaskById(Long taskId, Long userId) {
+    WorkspaceTask task = getTaskEntity(taskId);
+    Long workspaceId = task.getWorkspaceId();
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
 
     task.delete();
   }

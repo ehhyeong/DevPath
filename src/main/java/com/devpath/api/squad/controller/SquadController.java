@@ -4,6 +4,7 @@ import com.devpath.api.squad.dto.CreateSquadRequest;
 import com.devpath.api.squad.dto.InviteSquadMemberRequest;
 import com.devpath.api.squad.dto.SquadInvitationResponse;
 import com.devpath.api.squad.dto.SquadResponse;
+import com.devpath.api.squad.dto.SquadSettingsResponse;
 import com.devpath.api.squad.dto.UpdateSquadSettingsRequest;
 import com.devpath.api.squad.service.SquadService;
 import com.devpath.common.response.ApiResponse;
@@ -102,6 +103,31 @@ public class SquadController {
           Long userId,
       @Valid @RequestBody InviteSquadMemberRequest request) {
     return ApiResponse.ok(squadService.inviteMember(squadId, userId, request));
+  }
+
+  @GetMapping("/{squadId}/settings")
+  @Operation(
+      summary = "스쿼드 설정 조회",
+      description = "LEADER가 스쿼드 이름, 설명, 보관 여부, 멤버 수, 대표 LEADER 정보를 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "스쿼드 설정 조회 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "LEADER 권한 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "스쿼드 또는 사용자를 찾을 수 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<SquadSettingsResponse> getSettings(
+      @Parameter(description = "스쿼드 ID", example = "1") @PathVariable Long squadId,
+      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
+          @RequestParam
+          Long userId) {
+    return ApiResponse.ok(squadService.getSettings(squadId, userId));
   }
 
   @PatchMapping("/{squadId}/settings")

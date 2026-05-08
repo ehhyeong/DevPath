@@ -7,6 +7,7 @@ import com.devpath.api.portfolio.dto.AddPortfolioItemRequest;
 import com.devpath.api.portfolio.dto.CreatePortfolioRequest;
 import com.devpath.api.portfolio.dto.PortfolioGithubCommitResponse;
 import com.devpath.api.portfolio.dto.PortfolioItemResponse;
+import com.devpath.api.portfolio.dto.PortfolioPdfDownloadHistoryResponse;
 import com.devpath.api.portfolio.dto.PortfolioPdfVersionResponse;
 import com.devpath.api.portfolio.dto.PortfolioResponse;
 import com.devpath.api.portfolio.dto.UpdatePortfolioRequest;
@@ -236,7 +237,7 @@ public class PortfolioController {
   }
 
   @PostMapping("/portfolios/{portfolioId}/pdf")
-  @Operation(summary = "PDF 생성 요청", description = "포트폴리오 PDF 생성을 요청합니다. [STUB]")
+  @Operation(summary = "PDF 생성", description = "포트폴리오 내용을 기반으로 PDF 파일을 생성하고 버전 정보를 저장합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
@@ -266,13 +267,13 @@ public class PortfolioController {
   }
 
   @GetMapping("/portfolios/{portfolioId}/pdf/download-histories")
-  @Operation(summary = "PDF 다운로드 이력", description = "PDF 다운로드 이력을 조회합니다. [STUB]")
+  @Operation(summary = "PDF 다운로드 이력", description = "포트폴리오 PDF 다운로드 이력을 조회합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
         description = "조회 성공")
   })
-  public ApiResponse<List<Object>> getDownloadHistories(
+  public ApiResponse<List<PortfolioPdfDownloadHistoryResponse>> getDownloadHistories(
       @Parameter(description = "포트폴리오 ID", example = "1") @PathVariable Long portfolioId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(

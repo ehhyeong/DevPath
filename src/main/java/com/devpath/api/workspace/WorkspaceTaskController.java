@@ -86,6 +86,27 @@ public class WorkspaceTaskController {
     return ApiResponse.ok(workspaceTaskService.getKanbanBoard(workspaceId, requireUserId(userId)));
   }
 
+  @GetMapping("/workspaces/{workspaceId}/tasks")
+  @Operation(summary = "워크스페이스 태스크 목록 조회", description = "워크스페이스의 전체 태스크 목록을 최신순으로 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "조회 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "멤버 아님",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "워크스페이스 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<List<WorkspaceTaskResponse>> getTasks(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(workspaceTaskService.getTasks(workspaceId, requireUserId(userId)));
+  }
+
   @GetMapping("/workspaces/{workspaceId}/tasks/{taskId}")
   @Operation(summary = "태스크 단건 조회", description = "특정 태스크를 조회합니다.")
   @ApiResponses({

@@ -193,7 +193,11 @@ public enum ErrorCode {
   SQUAD_NOT_ARCHIVED(HttpStatus.BAD_REQUEST, "보관 상태가 아닌 스쿼드입니다."),
   SQUAD_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "스쿼드 멤버를 찾을 수 없습니다."),
   SQUAD_ALREADY_MEMBER(HttpStatus.CONFLICT, "이미 스쿼드에 속한 멤버입니다."),
+  SQUAD_INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "스쿼드 초대를 찾을 수 없습니다."),
   SQUAD_INVITATION_ALREADY_PENDING(HttpStatus.CONFLICT, "이미 초대 대기 중인 사용자입니다."),
+  SQUAD_INVITATION_EXPIRED(HttpStatus.BAD_REQUEST, "만료된 스쿼드 초대입니다."),
+  SQUAD_LAST_LEADER_CANNOT_BE_CHANGED(HttpStatus.BAD_REQUEST, "마지막 LEADER는 역할을 변경하거나 제거할 수 없습니다."),
+  SQUAD_LEADER_CANNOT_REMOVE_SELF(HttpStatus.BAD_REQUEST, "LEADER는 자기 자신을 강퇴할 수 없습니다."),
   SQUAD_FORBIDDEN(HttpStatus.FORBIDDEN, "스쿼드를 관리할 권한이 없습니다."),
 
   WORKSPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "워크스페이스를 찾을 수 없습니다."),
@@ -216,6 +220,8 @@ public enum ErrorCode {
   SHOWCASE_NOT_LIKED(HttpStatus.CONFLICT, "좋아요하지 않은 쇼케이스입니다."),
   PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "포트폴리오를 찾을 수 없습니다."),
   PORTFOLIO_FORBIDDEN(HttpStatus.FORBIDDEN, "포트폴리오에 접근할 권한이 없습니다."),
+  PORTFOLIO_PDF_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "포트폴리오 PDF 버전을 찾을 수 없습니다."),
+  PORTFOLIO_PDF_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "포트폴리오 PDF 생성에 실패했습니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");
 
