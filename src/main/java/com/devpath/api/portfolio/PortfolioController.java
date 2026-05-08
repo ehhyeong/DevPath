@@ -8,10 +8,13 @@ import com.devpath.api.portfolio.dto.CreatePortfolioRequest;
 import com.devpath.api.portfolio.dto.PortfolioGithubCommitResponse;
 import com.devpath.api.portfolio.dto.PortfolioItemResponse;
 import com.devpath.api.portfolio.dto.PortfolioPdfDownloadHistoryResponse;
+import com.devpath.api.portfolio.dto.PortfolioPdfTemplateResponse;
 import com.devpath.api.portfolio.dto.PortfolioPdfVersionResponse;
 import com.devpath.api.portfolio.dto.PortfolioResponse;
 import com.devpath.api.portfolio.dto.UpdatePortfolioRequest;
 import com.devpath.api.portfolio.service.PortfolioPdfService;
+import com.devpath.api.portfolio.service.PortfolioPdfService.PdfDownloadFile;
+import com.devpath.api.portfolio.service.PortfolioPdfTemplateService;
 import com.devpath.api.portfolio.service.PortfolioService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerErrorResponse;
@@ -22,9 +25,14 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -42,6 +50,7 @@ public class PortfolioController {
 
   private final PortfolioService portfolioService;
   private final PortfolioPdfService portfolioPdfService;
+  private final PortfolioPdfTemplateService portfolioPdfTemplateService;
 
   @PostMapping("/portfolios")
   @Operation(summary = "포트폴리오 생성", description = "나의 포트폴리오를 생성합니다.")
@@ -95,6 +104,24 @@ public class PortfolioController {
       @Parameter(description = "포트폴리오 ID", example = "1") @PathVariable Long portfolioId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(portfolioService.getPortfolio(portfolioId, requireUserId(userId)));
+  }
+
+  @GetMapping({"/portfolios/public/{publicKey}", "/public/portfolios/{publicKey}"})
+  @Operation(summary = "공개 포트폴리오 조회", description = "공개 링크 토큰으로 포트폴리오를 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "조회 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "공개 포트폴리오 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<PortfolioResponse> getPublicPortfolio(
+      @Parameter(description = "공개 포트폴리오 토큰", example = "public-token")
+          @PathVariable
+          String publicKey) {
+    return ApiResponse.ok(portfolioService.getPublicPortfolio(publicKey));
   }
 
   @PatchMapping("/portfolios/{portfolioId}")
@@ -253,6 +280,24 @@ public class PortfolioController {
     return ApiResponse.ok(portfolioPdfService.requestPdf(portfolioId, requireUserId(userId)));
   }
 
+  @GetMapping("/portfolios/{portfolioId}/pdf/template")
+  @Operation(summary = "PDF 출력 템플릿 조회", description = "포트폴리오 PDF 렌더링에 사용하는 HTML 템플릿을 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "조회 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "권한 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<PortfolioPdfTemplateResponse> getPdfTemplate(
+      @Parameter(description = "포트폴리오 ID", example = "1") @PathVariable Long portfolioId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        portfolioPdfTemplateService.getTemplate(portfolioId, requireUserId(userId)));
+  }
+
   @GetMapping("/portfolios/{portfolioId}/pdf/versions")
   @Operation(summary = "PDF 버전 목록", description = "포트폴리오의 PDF 버전 목록을 조회합니다.")
   @ApiResponses({
@@ -264,6 +309,49 @@ public class PortfolioController {
       @Parameter(description = "포트폴리오 ID", example = "1") @PathVariable Long portfolioId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(portfolioPdfService.getPdfVersions(portfolioId, requireUserId(userId)));
+  }
+
+  @GetMapping("/portfolios/{portfolioId}/pdf/versions/{versionId}/download")
+  @Operation(summary = "PDF 버전 다운로드", description = "특정 포트폴리오 PDF 버전 파일을 다운로드합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "다운로드 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "PDF 버전 또는 파일 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ResponseEntity<Resource> downloadPdfVersion(
+      @Parameter(description = "포트폴리오 ID", example = "1") @PathVariable Long portfolioId,
+      @Parameter(description = "PDF 버전 ID", example = "1") @PathVariable Long versionId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      HttpServletRequest servletRequest) {
+    PdfDownloadFile file =
+        portfolioPdfService.downloadPdfVersion(
+            portfolioId, requireUserId(userId), versionId, getClientIp(servletRequest));
+    return toPdfDownloadResponse(file);
+  }
+
+  @GetMapping("/portfolios/{portfolioId}/pdf/download")
+  @Operation(summary = "최신 PDF 다운로드", description = "가장 최신 COMPLETED 포트폴리오 PDF 파일을 다운로드합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "다운로드 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "PDF 버전 또는 파일 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ResponseEntity<Resource> downloadLatestPdf(
+      @Parameter(description = "포트폴리오 ID", example = "1") @PathVariable Long portfolioId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      HttpServletRequest servletRequest) {
+    PdfDownloadFile file =
+        portfolioPdfService.downloadLatestPdf(
+            portfolioId, requireUserId(userId), getClientIp(servletRequest));
+    return toPdfDownloadResponse(file);
   }
 
   @GetMapping("/portfolios/{portfolioId}/pdf/download-histories")
@@ -278,5 +366,20 @@ public class PortfolioController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(
         portfolioPdfService.getDownloadHistories(portfolioId, requireUserId(userId)));
+  }
+
+  private ResponseEntity<Resource> toPdfDownloadResponse(PdfDownloadFile file) {
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_PDF)
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.fileName() + "\"")
+        .body(file.resource());
+  }
+
+  private String getClientIp(HttpServletRequest request) {
+    String forwardedFor = request.getHeader("X-Forwarded-For");
+    if (forwardedFor != null && !forwardedFor.isBlank()) {
+      return forwardedFor.split(",")[0].trim();
+    }
+    return request.getRemoteAddr();
   }
 }

@@ -60,6 +60,15 @@ public class PortfolioService {
     return toResponse(portfolio);
   }
 
+  public PortfolioResponse getPublicPortfolio(String publicKey) {
+    Portfolio portfolio =
+        portfolioRepository
+            .findByPublicLinkToken(publicKey)
+            .filter(found -> found.isPublic() && !found.isDeleted())
+            .orElseThrow(() -> new CustomException(ErrorCode.PORTFOLIO_NOT_FOUND));
+    return toResponse(portfolio);
+  }
+
   @Transactional
   public PortfolioResponse updatePortfolio(
       Long portfolioId, Long userId, UpdatePortfolioRequest request) {

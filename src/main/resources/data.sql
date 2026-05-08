@@ -17609,3 +17609,202 @@ SELECT setval(pg_get_serial_sequence('workspace_task', 'id'), COALESCE((SELECT M
 SELECT setval(pg_get_serial_sequence('portfolio', 'id'), COALESCE((SELECT MAX(id) FROM portfolio), 1));
 SELECT setval(pg_get_serial_sequence('portfolio_pdf_version', 'portfolio_pdf_version_id'), COALESCE((SELECT MAX(portfolio_pdf_version_id) FROM portfolio_pdf_version), 1));
 SELECT setval(pg_get_serial_sequence('portfolio_pdf_download_history', 'portfolio_pdf_download_history_id'), COALESCE((SELECT MAX(portfolio_pdf_download_history_id) FROM portfolio_pdf_download_history), 1));
+
+-- =========================================================
+-- C SEED - Workspace Notice / Integration / Admin Operation
+-- =========================================================
+
+INSERT INTO workspace_notice (
+    id,
+    workspace_id,
+    title,
+    content,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    9001,
+    1,
+    'C Swagger workspace notice',
+    'Seed notice for Workspace Notice detail, update, delete, and read APIs.',
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM workspace_notice
+    WHERE id = 9001
+       OR (workspace_id = 1 AND title = 'C Swagger workspace notice' AND is_deleted = FALSE)
+);
+
+INSERT INTO workspace_notice (
+    id,
+    workspace_id,
+    title,
+    content,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    9002,
+    1,
+    'C Swagger unread workspace notice',
+    'Seed notice that remains unread for unread list and count APIs.',
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM workspace_notice
+    WHERE id = 9002
+       OR (workspace_id = 1 AND title = 'C Swagger unread workspace notice' AND is_deleted = FALSE)
+);
+
+INSERT INTO workspace_notice_read (
+    id,
+    workspace_id,
+    notice_id,
+    user_id,
+    read_at
+)
+SELECT
+    9001,
+    1,
+    9001,
+    1,
+    NOW()
+WHERE EXISTS (
+    SELECT 1
+    FROM workspace_notice
+    WHERE id = 9001
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM workspace_notice_read
+    WHERE id = 9001
+       OR (notice_id = 9001 AND user_id = 1)
+);
+
+INSERT INTO external_integration (
+    id,
+    workspace_id,
+    provider,
+    is_active,
+    connected_at,
+    created_at,
+    updated_at
+)
+SELECT
+    9001,
+    1,
+    'GITHUB',
+    TRUE,
+    NOW(),
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM external_integration
+    WHERE id = 9001
+       OR (workspace_id = 1 AND provider = 'GITHUB')
+);
+
+INSERT INTO external_integration (
+    id,
+    workspace_id,
+    provider,
+    is_active,
+    connected_at,
+    created_at,
+    updated_at
+)
+SELECT
+    9002,
+    1,
+    'SLACK',
+    FALSE,
+    NULL,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM external_integration
+    WHERE id = 9002
+       OR (workspace_id = 1 AND provider = 'SLACK')
+);
+
+INSERT INTO recommendation_settings (
+    id,
+    setting_key,
+    setting_value,
+    description,
+    created_at,
+    updated_at
+)
+SELECT
+    9001,
+    'algorithm.weight.recent_activity',
+    '0.8',
+    'Recent activity recommendation weight',
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM recommendation_settings
+    WHERE id = 9001
+       OR setting_key = 'algorithm.weight.recent_activity'
+);
+
+INSERT INTO recommendation_settings (
+    id,
+    setting_key,
+    setting_value,
+    description,
+    created_at,
+    updated_at
+)
+SELECT
+    9002,
+    'algorithm.weight.skill_match',
+    '0.9',
+    'Skill match recommendation weight',
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM recommendation_settings
+    WHERE id = 9002
+       OR setting_key = 'algorithm.weight.skill_match'
+);
+
+INSERT INTO experiment_results (
+    id,
+    experiment_id,
+    experiment_name,
+    metrics_json,
+    created_at
+)
+SELECT
+    9001,
+    'EXP-C-9001',
+    'C Swagger admin analytics experiment',
+    '{"totalUsers": 15230, "weeklyActiveUsers": 4321, "averageRoadmapProgress": 42.8, "monthlyCompletedAssignments": 1830}',
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM experiment_results
+    WHERE id = 9001
+       OR experiment_id = 'EXP-C-9001'
+);
+
+-- =========================================================
+-- C SEED sequence sync
+-- =========================================================
+
+SELECT setval(pg_get_serial_sequence('workspace_notice', 'id'), COALESCE((SELECT MAX(id) FROM workspace_notice), 1));
+SELECT setval(pg_get_serial_sequence('workspace_notice_read', 'id'), COALESCE((SELECT MAX(id) FROM workspace_notice_read), 1));
+SELECT setval(pg_get_serial_sequence('external_integration', 'id'), COALESCE((SELECT MAX(id) FROM external_integration), 1));
+SELECT setval(pg_get_serial_sequence('recommendation_settings', 'id'), COALESCE((SELECT MAX(id) FROM recommendation_settings), 1));
+SELECT setval(pg_get_serial_sequence('experiment_results', 'id'), COALESCE((SELECT MAX(id) FROM experiment_results), 1));

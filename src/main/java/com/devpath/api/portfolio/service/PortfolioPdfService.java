@@ -2,11 +2,11 @@ package com.devpath.api.portfolio.service;
 
 import com.devpath.api.portfolio.dto.PortfolioPdfDownloadHistoryResponse;
 import com.devpath.api.portfolio.dto.PortfolioPdfVersionResponse;
-import com.devpath.api.portfolio.dto.PortfolioResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.portfolio.entity.Portfolio;
 import com.devpath.domain.portfolio.entity.PortfolioPdfDownloadHistory;
+import com.devpath.domain.portfolio.entity.PortfolioPdfStatus;
 import com.devpath.domain.portfolio.entity.PortfolioPdfVersion;
 import com.devpath.domain.portfolio.repository.PortfolioPdfDownloadHistoryRepository;
 import com.devpath.domain.portfolio.repository.PortfolioPdfVersionRepository;
@@ -15,9 +15,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -32,6 +33,7 @@ public class PortfolioPdfService {
   private final PortfolioPdfVersionRepository pdfVersionRepository;
   private final PortfolioPdfDownloadHistoryRepository downloadHistoryRepository;
   private final PortfolioService portfolioService;
+  private final PortfolioPdfTemplateService portfolioPdfTemplateService;
 
   @Transactional
   public PortfolioPdfVersionResponse requestPdf(Long portfolioId, Long userId) {
@@ -80,20 +82,46 @@ public class PortfolioPdfService {
   }
 
   @Transactional
-  public void recordDownloadHistory(
+  public PdfDownloadFile downloadPdfVersion(
       Long portfolioId, Long userId, Long pdfVersionId, String ipAddress) {
+    Portfolio portfolio = portfolioService.getPortfolioEntity(portfolioId);
+    validateOwner(portfolio, userId);
+
+    PortfolioPdfVersion pdfVersion = getCompletedPdfVersion(portfolioId, pdfVersionId);
+    Resource resource = toResource(pdfVersion, userId);
+    saveDownloadHistory(portfolioId, userId, pdfVersion, ipAddress);
+
+    return new PdfDownloadFile(resource, buildDownloadFileName(portfolioId, pdfVersion.getVersion()));
+  }
+
+  @Transactional
+  public PdfDownloadFile downloadLatestPdf(Long portfolioId, Long userId, String ipAddress) {
     Portfolio portfolio = portfolioService.getPortfolioEntity(portfolioId);
     validateOwner(portfolio, userId);
 
     PortfolioPdfVersion pdfVersion =
         pdfVersionRepository
-            .findById(pdfVersionId)
+            .findFirstByPortfolioIdAndStatusOrderByVersionDesc(
+                portfolioId, PortfolioPdfStatus.COMPLETED)
             .orElseThrow(() -> new CustomException(ErrorCode.PORTFOLIO_PDF_VERSION_NOT_FOUND));
+    Resource resource = toResource(pdfVersion, userId);
+    saveDownloadHistory(portfolioId, userId, pdfVersion, ipAddress);
 
-    if (!pdfVersion.getPortfolioId().equals(portfolioId)) {
-      throw new CustomException(ErrorCode.PORTFOLIO_FORBIDDEN);
-    }
+    return new PdfDownloadFile(resource, buildDownloadFileName(portfolioId, pdfVersion.getVersion()));
+  }
 
+  @Transactional
+  public void recordDownloadHistory(
+      Long portfolioId, Long userId, Long pdfVersionId, String ipAddress) {
+    Portfolio portfolio = portfolioService.getPortfolioEntity(portfolioId);
+    validateOwner(portfolio, userId);
+
+    PortfolioPdfVersion pdfVersion = getCompletedPdfVersion(portfolioId, pdfVersionId);
+    saveDownloadHistory(portfolioId, userId, pdfVersion, ipAddress);
+  }
+
+  private void saveDownloadHistory(
+      Long portfolioId, Long userId, PortfolioPdfVersion pdfVersion, String ipAddress) {
     PortfolioPdfDownloadHistory history =
         PortfolioPdfDownloadHistory.builder()
             .portfolioId(portfolioId)
@@ -107,8 +135,9 @@ public class PortfolioPdfService {
   }
 
   private void renderPdf(Long portfolioId, Long userId, Path pdfPath) throws IOException {
-    PortfolioResponse portfolio = portfolioService.getPortfolio(portfolioId, userId);
-    String html = buildPortfolioHtml(portfolio);
+    String html =
+        portfolioPdfTemplateService.buildPortfolioHtml(
+            portfolioService.getPortfolio(portfolioId, userId));
 
     try (OutputStream outputStream = Files.newOutputStream(pdfPath)) {
       PdfRendererBuilder builder = new PdfRendererBuilder();
@@ -119,92 +148,52 @@ public class PortfolioPdfService {
     }
   }
 
-  private String buildPortfolioHtml(PortfolioResponse portfolio) {
-    String safeTitle = escapeHtml(portfolio.getTitle());
-    String safeBio = escapeHtml(portfolio.getBio());
+  private PortfolioPdfVersion getCompletedPdfVersion(Long portfolioId, Long pdfVersionId) {
+    PortfolioPdfVersion pdfVersion =
+        pdfVersionRepository
+            .findById(pdfVersionId)
+            .orElseThrow(() -> new CustomException(ErrorCode.PORTFOLIO_PDF_VERSION_NOT_FOUND));
 
-    String itemHtml =
-        portfolio.getItems().stream()
-            .sorted(Comparator.comparingInt(item -> item.getSortOrder()))
-            .map(
-                item ->
-                    """
-                    <li>
-                        <strong>%s</strong>
-                        <span>#%d</span>
-                    </li>
-                    """
-                        .formatted(
-                            escapeHtml(item.getItemType().name()), item.getReferenceId()))
-            .reduce("", String::concat);
+    if (!pdfVersion.getPortfolioId().equals(portfolioId)
+        || pdfVersion.getStatus() != PortfolioPdfStatus.COMPLETED) {
+      throw new CustomException(ErrorCode.PORTFOLIO_PDF_VERSION_NOT_FOUND);
+    }
 
-    String commitHtml =
-        portfolio.getGithubCommits().stream()
-            .map(
-                commit ->
-                    """
-                    <li>
-                        <strong>%s</strong>
-                        <p>%s</p>
-                        <small>%s</small>
-                    </li>
-                    """
-                        .formatted(
-                            escapeHtml(commit.getRepoName()),
-                            escapeHtml(commit.getCommitMessage()),
-                            escapeHtml(commit.getCommitUrl())))
-            .reduce("", String::concat);
+    return pdfVersion;
+  }
 
-    return """
-        <!doctype html>
-        <html lang="ko">
-        <head>
-            <meta charset="UTF-8"/>
-            <style>
-                body {
-                    font-family: sans-serif;
-                    color: #111827;
-                    padding: 32px;
-                    line-height: 1.6;
-                }
-                h1 {
-                    font-size: 28px;
-                    margin-bottom: 8px;
-                }
-                h2 {
-                    font-size: 18px;
-                    margin-top: 28px;
-                    border-bottom: 1px solid #e5e7eb;
-                    padding-bottom: 6px;
-                }
-                .bio {
-                    color: #374151;
-                    white-space: pre-wrap;
-                }
-                ul {
-                    padding-left: 18px;
-                }
-                li {
-                    margin-bottom: 10px;
-                }
-                small {
-                    color: #6b7280;
-                }
-            </style>
-        </head>
-        <body>
-            <h1>%s</h1>
-            <p class="bio">%s</p>
+  private Resource toResource(PortfolioPdfVersion pdfVersion, Long userId) {
+    if (!StringUtils.hasText(pdfVersion.getFilePath())) {
+      throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+    }
 
-            <h2>Portfolio Items</h2>
-            <ul>%s</ul>
+    try {
+      Path path = resolvePdfPath(pdfVersion.getFilePath());
+      if (!Files.exists(path)) {
+        Files.createDirectories(path.getParent());
+        renderPdf(pdfVersion.getPortfolioId(), userId, path);
+      }
 
-            <h2>GitHub Commits</h2>
-            <ul>%s</ul>
-        </body>
-        </html>
-        """
-        .formatted(safeTitle, safeBio, itemHtml, commitHtml);
+      Resource resource = new UrlResource(path.toUri());
+      if (!resource.exists() || !resource.isReadable()) {
+        throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+      }
+      return resource;
+    } catch (IOException exception) {
+      throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+    }
+  }
+
+  private Path resolvePdfPath(String filePath) {
+    String normalized = filePath.replace("\\", "/");
+    if (normalized.startsWith("/uploads/")) {
+      normalized = normalized.substring(1);
+    }
+    return Path.of(normalized);
+  }
+
+  private String buildDownloadFileName(Long portfolioId, int version) {
+    return "portfolio-" + portfolioId + "-v" + version + ".pdf";
   }
 
   private Path buildPdfPath(Long portfolioId, int version) {
@@ -219,16 +208,5 @@ public class PortfolioPdfService {
     }
   }
 
-  private String escapeHtml(String value) {
-    if (!StringUtils.hasText(value)) {
-      return "";
-    }
-
-    return value
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#39;");
-  }
+  public record PdfDownloadFile(Resource resource, String fileName) {}
 }
