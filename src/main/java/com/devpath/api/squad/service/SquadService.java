@@ -4,6 +4,7 @@ import com.devpath.api.squad.dto.CreateSquadRequest;
 import com.devpath.api.squad.dto.InviteSquadMemberRequest;
 import com.devpath.api.squad.dto.SquadInvitationResponse;
 import com.devpath.api.squad.dto.SquadResponse;
+import com.devpath.api.squad.dto.SquadSettingsResponse;
 import com.devpath.api.squad.dto.UpdateSquadSettingsRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -51,6 +52,14 @@ public class SquadService {
     Squad squad = findNonDeletedSquad(squadId);
     List<SquadMember> members = squadMemberRepository.findBySquadWithUser(squad);
     return SquadResponse.from(squad, members);
+  }
+
+  public SquadSettingsResponse getSettings(Long squadId, Long userId) {
+    Squad squad = findNonDeletedSquad(squadId);
+    validateLeader(squad, userId);
+
+    List<SquadMember> members = squadMemberRepository.findBySquadWithUser(squad);
+    return SquadSettingsResponse.from(squad, members);
   }
 
   @Transactional
