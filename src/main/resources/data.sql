@@ -17303,3 +17303,309 @@ SELECT setval(pg_get_serial_sequence('career_profiles', 'career_profile_id'), CO
 SELECT setval(pg_get_serial_sequence('career_profile_proof_cards', 'career_profile_proof_card_id'), COALESCE((SELECT MAX(career_profile_proof_card_id) FROM career_profile_proof_cards), 1));
 SELECT setval(pg_get_serial_sequence('qna_questions', 'question_id'), COALESCE((SELECT MAX(question_id) FROM qna_questions), 1));
 SELECT setval(pg_get_serial_sequence('qna_answers', 'answer_id'), COALESCE((SELECT MAX(answer_id) FROM qna_answers), 1));
+
+-- =========================================================
+-- A SEED - Squad Member / Invite / Kanban / Portfolio PDF
+-- =========================================================
+
+-- 스쿼드 멤버 관리 테스트용 스쿼드
+INSERT INTO squads (
+    squad_id,
+    name,
+    description,
+    is_archived,
+    is_deleted,
+    archived_at,
+    created_at,
+    updated_at
+)
+SELECT
+    9001,
+    'DevPath A Squad',
+    '프로젝트/스쿼드/워크스페이스 A 기능 테스트용 스쿼드',
+    FALSE,
+    FALSE,
+    NULL,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM squads
+    WHERE squad_id = 9001
+       OR name = 'DevPath A Squad'
+);
+
+-- LEADER / MEMBER 멤버십
+INSERT INTO squad_members (
+    squad_member_id,
+    squad_id,
+    user_id,
+    role,
+    joined_at,
+    is_deleted,
+    deleted_at
+)
+SELECT
+    9001,
+    9001,
+    1,
+    'LEADER',
+    NOW(),
+    FALSE,
+    NULL
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM squad_members
+    WHERE squad_member_id = 9001
+       OR (squad_id = 9001 AND user_id = 1 AND is_deleted = FALSE)
+);
+
+INSERT INTO squad_members (
+    squad_member_id,
+    squad_id,
+    user_id,
+    role,
+    joined_at,
+    is_deleted,
+    deleted_at
+)
+SELECT
+    9002,
+    9001,
+    2,
+    'MEMBER',
+    NOW(),
+    FALSE,
+    NULL
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM squad_members
+    WHERE squad_member_id = 9002
+       OR (squad_id = 9001 AND user_id = 2 AND is_deleted = FALSE)
+);
+
+-- 초대 목록 조회 테스트용 PENDING 초대
+INSERT INTO squad_invitations (
+    squad_invitation_id,
+    squad_id,
+    inviter_id,
+    invitee_id,
+    invite_email,
+    message,
+    invitation_token,
+    expires_at,
+    accepted_at,
+    status,
+    created_at
+)
+SELECT
+    9001,
+    9001,
+    1,
+    NULL,
+    'invitee@example.com',
+    'DevPath A Squad에 초대합니다.',
+    'a-seed-invite-token-9001',
+    NOW() + INTERVAL '7 days',
+    NULL,
+    'PENDING',
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM squad_invitations
+    WHERE squad_invitation_id = 9001
+       OR invitation_token = 'a-seed-invite-token-9001'
+);
+
+-- 워크스페이스 태스크 테스트 데이터
+INSERT INTO workspace_task (
+    id,
+    workspace_id,
+    title,
+    description,
+    status,
+    priority,
+    assignee_id,
+    due_date,
+    created_by_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    9001,
+    1,
+    'A Swagger 칸반 TODO',
+    'GET /api/workspaces/{workspaceId}/tasks 테스트용 태스크',
+    'TODO',
+    'MEDIUM',
+    1,
+    CURRENT_DATE + 3,
+    1,
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM workspace_task
+    WHERE id = 9001
+       OR (workspace_id = 1 AND title = 'A Swagger 칸반 TODO' AND is_deleted = FALSE)
+);
+
+INSERT INTO workspace_task (
+    id,
+    workspace_id,
+    title,
+    description,
+    status,
+    priority,
+    assignee_id,
+    due_date,
+    created_by_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    9002,
+    1,
+    'A Swagger 칸반 진행 중',
+    'PATCH /api/tasks/{taskId}/status 테스트용 태스크',
+    'IN_PROGRESS',
+    'HIGH',
+    2,
+    CURRENT_DATE + 5,
+    1,
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM workspace_task
+    WHERE id = 9002
+       OR (workspace_id = 1 AND title = 'A Swagger 칸반 진행 중' AND is_deleted = FALSE)
+);
+
+INSERT INTO workspace_task (
+    id,
+    workspace_id,
+    title,
+    description,
+    status,
+    priority,
+    assignee_id,
+    due_date,
+    created_by_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    9003,
+    1,
+    'A Swagger 칸반 완료',
+    'PATCH /api/tasks/{taskId}/assignee 테스트용 태스크',
+    'DONE',
+    'LOW',
+    NULL,
+    CURRENT_DATE + 7,
+    1,
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM workspace_task
+    WHERE id = 9003
+       OR (workspace_id = 1 AND title = 'A Swagger 칸반 완료' AND is_deleted = FALSE)
+);
+
+-- 포트폴리오 PDF 테스트용 포트폴리오
+INSERT INTO portfolio (
+    id,
+    user_id,
+    title,
+    bio,
+    public_link_token,
+    is_public,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    9001,
+    1,
+    'DevPath A Portfolio',
+    'A 기능 테스트용 포트폴리오입니다.',
+    'a-seed-public-token-9001',
+    TRUE,
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM portfolio
+    WHERE id = 9001
+       OR public_link_token = 'a-seed-public-token-9001'
+);
+
+-- PDF 버전 조회 테스트용 COMPLETED 버전
+INSERT INTO portfolio_pdf_version (
+    portfolio_pdf_version_id,
+    portfolio_id,
+    version,
+    status,
+    file_path,
+    file_url,
+    created_at
+)
+SELECT
+    9001,
+    9001,
+    1,
+    'COMPLETED',
+    '/uploads/portfolios/9001/portfolio-v1.pdf',
+    '/uploads/portfolios/9001/portfolio-v1.pdf',
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM portfolio_pdf_version
+    WHERE portfolio_pdf_version_id = 9001
+       OR (portfolio_id = 9001 AND version = 1)
+);
+
+-- PDF 다운로드 이력 조회 테스트 데이터
+INSERT INTO portfolio_pdf_download_history (
+    portfolio_pdf_download_history_id,
+    portfolio_id,
+    portfolio_pdf_version_id,
+    user_id,
+    file_path,
+    ip_address,
+    downloaded_at
+)
+SELECT
+    9001,
+    9001,
+    9001,
+    1,
+    '/uploads/portfolios/9001/portfolio-v1.pdf',
+    '127.0.0.1',
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM portfolio_pdf_download_history
+    WHERE portfolio_pdf_download_history_id = 9001
+);
+
+-- =========================================================
+-- A SEED sequence sync
+-- =========================================================
+
+SELECT setval(pg_get_serial_sequence('squads', 'squad_id'), COALESCE((SELECT MAX(squad_id) FROM squads), 1));
+SELECT setval(pg_get_serial_sequence('squad_members', 'squad_member_id'), COALESCE((SELECT MAX(squad_member_id) FROM squad_members), 1));
+SELECT setval(pg_get_serial_sequence('squad_invitations', 'squad_invitation_id'), COALESCE((SELECT MAX(squad_invitation_id) FROM squad_invitations), 1));
+SELECT setval(pg_get_serial_sequence('workspace_task', 'id'), COALESCE((SELECT MAX(id) FROM workspace_task), 1));
+SELECT setval(pg_get_serial_sequence('portfolio', 'id'), COALESCE((SELECT MAX(id) FROM portfolio), 1));
+SELECT setval(pg_get_serial_sequence('portfolio_pdf_version', 'portfolio_pdf_version_id'), COALESCE((SELECT MAX(portfolio_pdf_version_id) FROM portfolio_pdf_version), 1));
+SELECT setval(pg_get_serial_sequence('portfolio_pdf_download_history', 'portfolio_pdf_download_history_id'), COALESCE((SELECT MAX(portfolio_pdf_download_history_id) FROM portfolio_pdf_download_history), 1));
