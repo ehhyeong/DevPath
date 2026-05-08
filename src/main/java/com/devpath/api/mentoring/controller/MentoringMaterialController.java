@@ -33,8 +33,7 @@ public class MentoringMaterialController {
   @PostMapping("/mentoring-missions/{missionId}/materials")
   @Operation(summary = "미션 자료 등록", description = "미션에 URL 자료 또는 TEXT 가이드라인을 등록합니다.")
   public ResponseEntity<ApiResponse<MentoringMaterialResponse.Detail>> create(
-      @PathVariable Long missionId,
-      @Valid @RequestBody MentoringMaterialRequest.Create request) {
+      @PathVariable Long missionId, @Valid @RequestBody MentoringMaterialRequest.Create request) {
     // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
     return ResponseEntity.ok(ApiResponse.ok(mentoringMaterialService.create(missionId, request)));
   }
@@ -50,8 +49,7 @@ public class MentoringMaterialController {
   @PatchMapping("/mentoring-materials/{materialId}")
   @Operation(summary = "미션 자료 수정", description = "미션 자료 제목, 내용, URL을 수정합니다.")
   public ResponseEntity<ApiResponse<MentoringMaterialResponse.Detail>> update(
-      @PathVariable Long materialId,
-      @Valid @RequestBody MentoringMaterialRequest.Update request) {
+      @PathVariable Long materialId, @Valid @RequestBody MentoringMaterialRequest.Update request) {
     // 수정 권한과 타입별 필수값 검증은 Service에서 처리한다.
     return ResponseEntity.ok(ApiResponse.ok(mentoringMaterialService.update(materialId, request)));
   }

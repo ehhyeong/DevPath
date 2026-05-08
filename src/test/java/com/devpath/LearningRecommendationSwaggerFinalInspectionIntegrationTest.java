@@ -29,10 +29,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @SpringBootTest(
-    properties = {
-      "spring.sql.init.mode=always",
-      "spring.jpa.defer-datasource-initialization=true"
-    })
+    properties = {"spring.sql.init.mode=always", "spring.jpa.defer-datasource-initialization=true"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
@@ -74,7 +71,8 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
 
   @Test
   void swaggerFinalInspectionFlowCoversLearningAndRecommendationApis() throws Exception {
-    JsonNode startedSession = postAsLearner("/api/learning/sessions/{lessonId}/start", null, lessonId);
+    JsonNode startedSession =
+        postAsLearner("/api/learning/sessions/{lessonId}/start", null, lessonId);
     assertThat(startedSession.get("lessonId").asLong()).isEqualTo(lessonId);
     assertThat(startedSession.get("progressPercent").asInt()).isZero();
     assertThat(startedSession.get("progressSeconds").asInt()).isZero();
@@ -105,9 +103,7 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
 
     JsonNode updatedPipConfig =
         patchAsLearner(
-            "/api/learning/player/{lessonId}/config/pip",
-            Map.of("pipEnabled", true),
-            lessonId);
+            "/api/learning/player/{lessonId}/config/pip", Map.of("pipEnabled", true), lessonId);
     assertThat(updatedPipConfig.get("pipEnabled").asBoolean()).isTrue();
 
     JsonNode createdNote =
@@ -155,7 +151,8 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
                     lessonId,
                     firstMaterial.get("materialId").asLong())
                 .with(authentication(learnerAuthentication())))
-        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isFound())
+        .andExpect(
+            org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isFound())
         .andExpect(
             org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
                 .string("Location", firstMaterial.get("materialUrl").asText()));
@@ -174,7 +171,13 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
     JsonNode convertedTil =
         postAsLearner(
             "/api/learning/til/convert",
-            Map.of("noteIds", List.of(noteId), "title", "노트 기반 Spring Security TIL", "lessonId", lessonId),
+            Map.of(
+                "noteIds",
+                List.of(noteId),
+                "title",
+                "노트 기반 Spring Security TIL",
+                "lessonId",
+                lessonId),
             HttpStatus.CREATED);
     long convertedTilId = convertedTil.get("tilId").asLong();
     assertThat(convertedTilId).isPositive();
@@ -221,7 +224,11 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
             Map.of("pendingOnly", "true"),
             roadmapId);
     assertThat(pendingRecommendations.get("pendingCount").asInt()).isGreaterThan(0);
-    assertThat(findById(pendingRecommendations.get("recommendations"), "recommendationId", recommendationId))
+    assertThat(
+            findById(
+                pendingRecommendations.get("recommendations"),
+                "recommendationId",
+                recommendationId))
         .isNotNull();
 
     JsonNode allRecommendations =
@@ -243,7 +250,8 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
     assertThat(recommendationHistory.get("totalCount").asInt()).isGreaterThanOrEqualTo(2);
     List<String> actionTypes = collectTexts(recommendationHistory.get("histories"), "actionType");
     assertThat(actionTypes).contains("GENERATED", "ACCEPTED");
-    JsonNode acceptedHistory = findByFieldValue(recommendationHistory.get("histories"), "actionType", "ACCEPTED");
+    JsonNode acceptedHistory =
+        findByFieldValue(recommendationHistory.get("histories"), "actionType", "ACCEPTED");
     assertThat(acceptedHistory).isNotNull();
     assertThat(acceptedHistory.get("beforeStatus").asText()).isEqualTo("PENDING");
     assertThat(acceptedHistory.get("afterStatus").asText()).isEqualTo("ACCEPTED");
@@ -256,8 +264,7 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
     assertThat(firstWarning.get("message").asText()).isNotBlank();
 
     JsonNode unacknowledgedWarnings =
-        getAsLearner(
-            "/api/recommendations/risk-warnings", Map.of("onlyUnacknowledged", "true"));
+        getAsLearner("/api/recommendations/risk-warnings", Map.of("onlyUnacknowledged", "true"));
     assertThat(unacknowledgedWarnings.get("totalCount").asInt()).isGreaterThan(0);
 
     JsonNode createdOcr =
@@ -280,14 +287,13 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
 
     JsonNode searchedOcr =
         getAsLearner(
-            "/api/learning/lessons/{lessonId}/ocr/search",
-            Map.of("keyword", "security"),
-            lessonId);
+            "/api/learning/lessons/{lessonId}/ocr/search", Map.of("keyword", "security"), lessonId);
     assertThat(searchedOcr.get("totalCount").asInt()).isGreaterThan(0);
     assertThat(collectTexts(searchedOcr.get("results"), "extractedText"))
         .anyMatch(text -> text.toLowerCase().contains("security"));
 
-    JsonNode mappingResult = getAsLearner("/api/learning/lessons/{lessonId}/ocr/mappings", lessonId);
+    JsonNode mappingResult =
+        getAsLearner("/api/learning/lessons/{lessonId}/ocr/mappings", lessonId);
     assertThat(mappingResult.get("totalCount").asInt()).isGreaterThan(0);
     JsonNode mapping = findById(mappingResult.get("mappings"), "ocrId", ocrId);
     assertThat(mapping).isNotNull();
@@ -299,8 +305,8 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
     return performAndReadData(post(url, uriVariables), body, HttpStatus.OK);
   }
 
-  private JsonNode postAsLearner(String url, Object body, HttpStatus expectedStatus, Object... uriVariables)
-      throws Exception {
+  private JsonNode postAsLearner(
+      String url, Object body, HttpStatus expectedStatus, Object... uriVariables) throws Exception {
     return performAndReadData(post(url, uriVariables), body, expectedStatus);
   }
 
@@ -308,7 +314,8 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
     return performAndReadData(put(url, uriVariables), body, HttpStatus.OK);
   }
 
-  private JsonNode patchAsLearner(String url, Object body, Object... uriVariables) throws Exception {
+  private JsonNode patchAsLearner(String url, Object body, Object... uriVariables)
+      throws Exception {
     return performAndReadData(patch(url, uriVariables), body, HttpStatus.OK);
   }
 
@@ -326,7 +333,8 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
   }
 
   private JsonNode performAndReadData(
-      MockHttpServletRequestBuilder builder, Object body, HttpStatus expectedStatus) throws Exception {
+      MockHttpServletRequestBuilder builder, Object body, HttpStatus expectedStatus)
+      throws Exception {
     builder = builder.with(authentication(learnerAuthentication()));
 
     if (body != null) {
@@ -339,7 +347,9 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
     MvcResult result =
         mockMvc
             .perform(builder)
-            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().is(expectedStatus.value()))
+            .andExpect(
+                org.springframework.test.web.servlet.result.MockMvcResultMatchers.status()
+                    .is(expectedStatus.value()))
             .andExpect(jsonPath("$.success").value(true))
             .andReturn();
 

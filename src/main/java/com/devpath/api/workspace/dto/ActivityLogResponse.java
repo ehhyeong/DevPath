@@ -15,21 +15,21 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ActivityLogResponse {
 
-    private Long logId;
-    private Long workspaceId;
-    private Long actorId;
-    private ActivityLogType activityType;
-    private String description;
-    private LocalDateTime createdAt;
+  private Long logId;
+  private Long workspaceId;
+  private Long actorId;
+  private ActivityLogType activityType;
+  private String description;
+  private LocalDateTime createdAt;
 
-    public static ActivityLogResponse from(ActivityLog log) {
-        return ActivityLogResponse.builder()
-                .logId(log.getId())
-                .workspaceId(log.getWorkspaceId())
-                .actorId(log.getActorId())
-                .activityType(log.getActivityType())
-                .description(log.getDescription())
-                .createdAt(log.getCreatedAt())
-                .build();
-    }
+  public static ActivityLogResponse from(ActivityLog log) {
+    return ActivityLogResponse.builder()
+        .logId(log.getId())
+        .workspaceId(log.getWorkspaceId())
+        .actorId(log.getActorId())
+        .activityType(log.getActivityType())
+        .description(log.getDescription())
+        .createdAt(log.getCreatedAt())
+        .build();
+  }
 }

@@ -2,6 +2,7 @@ package com.devpath.api.mentoring.service;
 
 import com.devpath.api.mentoring.dto.MentoringApplicationRequest;
 import com.devpath.api.mentoring.dto.MentoringApplicationResponse;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.mentoring.entity.Mentoring;
@@ -27,6 +28,7 @@ public class MentoringApplicationService {
   private final MentoringPostRepository mentoringPostRepository;
   private final MentoringRepository mentoringRepository;
   private final UserRepository userRepository;
+  private final NotificationEventService notificationEventService;
 
   @Transactional
   public MentoringApplicationResponse.Detail apply(
@@ -106,6 +108,8 @@ public class MentoringApplicationService {
             .build();
 
     Mentoring savedMentoring = mentoringRepository.save(mentoring);
+    notificationEventService.notifyApplicationApproved(
+        application.getApplicant().getId(), application.getPost().getTitle());
 
     return MentoringApplicationResponse.Detail.from(application, savedMentoring.getId());
   }
@@ -122,6 +126,8 @@ public class MentoringApplicationService {
     validatePending(application);
 
     application.reject(request.rejectReason());
+    notificationEventService.notifyApplicationRejected(
+        application.getApplicant().getId(), application.getPost().getTitle());
 
     return MentoringApplicationResponse.Detail.from(application);
   }

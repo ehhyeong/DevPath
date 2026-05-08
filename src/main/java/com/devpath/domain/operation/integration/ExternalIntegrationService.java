@@ -15,29 +15,28 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ExternalIntegrationService {
 
-    private final ExternalIntegrationRepository integrationRepository;
+  private final ExternalIntegrationRepository integrationRepository;
 
-    public List<IntegrationResponse> getIntegrationsByWorkspace(Long workspaceId) {
-        return integrationRepository.findByWorkspaceId(workspaceId)
-                .stream()
-                .map(IntegrationResponse::from)
-                .collect(Collectors.toList());
+  public List<IntegrationResponse> getIntegrationsByWorkspace(Long workspaceId) {
+    return integrationRepository.findByWorkspaceId(workspaceId).stream()
+        .map(IntegrationResponse::from)
+        .collect(Collectors.toList());
+  }
+
+  @Transactional
+  public IntegrationResponse updateIntegrationStatus(
+      Long workspaceId, IntegrationProvider provider, IntegrationStatusUpdateRequest request) {
+    ExternalIntegration integration =
+        integrationRepository
+            .findByWorkspaceIdAndProvider(workspaceId, provider)
+            .orElseThrow(() -> new CustomException(ErrorCode.INTEGRATION_NOT_FOUND));
+
+    if (request.getIsActive()) {
+      integration.activate();
+    } else {
+      integration.deactivate();
     }
 
-    @Transactional
-    public IntegrationResponse updateIntegrationStatus(
-            Long workspaceId,
-            IntegrationProvider provider,
-            IntegrationStatusUpdateRequest request) {
-        ExternalIntegration integration = integrationRepository.findByWorkspaceIdAndProvider(workspaceId, provider)
-                .orElseThrow(() -> new CustomException(ErrorCode.INTEGRATION_NOT_FOUND));
-
-        if (request.getIsActive()) {
-            integration.activate();
-        } else {
-            integration.deactivate();
-        }
-
-        return IntegrationResponse.from(integration);
-    }
+    return IntegrationResponse.from(integration);
+  }
 }

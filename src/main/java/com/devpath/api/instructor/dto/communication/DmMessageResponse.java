@@ -9,17 +9,17 @@ import lombok.Getter;
 @Builder
 public class DmMessageResponse {
 
-    private Long messageId;
-    private Long senderId;
-    private String message;
-    private LocalDateTime createdAt;
+  private Long messageId;
+  private Long senderId;
+  private String message;
+  private LocalDateTime createdAt;
 
-    public static DmMessageResponse from(DmMessage dmMessage) {
-        return DmMessageResponse.builder()
-                .messageId(dmMessage.getId())
-                .senderId(dmMessage.getSenderId())
-                .message(dmMessage.getMessage())
-                .createdAt(dmMessage.getCreatedAt())
-                .build();
-    }
+  public static DmMessageResponse from(DmMessage dmMessage) {
+    return DmMessageResponse.builder()
+        .messageId(dmMessage.getId())
+        .senderId(dmMessage.getSenderId())
+        .message(dmMessage.getMessage())
+        .createdAt(dmMessage.getCreatedAt())
+        .build();
+  }
 }

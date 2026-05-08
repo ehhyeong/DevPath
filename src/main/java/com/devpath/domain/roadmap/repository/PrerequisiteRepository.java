@@ -15,7 +15,8 @@ public interface PrerequisiteRepository extends JpaRepository<Prerequisite, Long
 
   void deleteAllByNode(RoadmapNode node);
 
-  @Query("""
+  @Query(
+      """
       select p.node.nodeId as nodeId, p.preNode.nodeId as prerequisiteNodeId
       from Prerequisite p
       where p.node.nodeId in :nodeIds
@@ -26,6 +27,7 @@ public interface PrerequisiteRepository extends JpaRepository<Prerequisite, Long
 
   interface PrerequisiteNodeIdProjection {
     Long getNodeId();
+
     Long getPrerequisiteNodeId();
   }
 }

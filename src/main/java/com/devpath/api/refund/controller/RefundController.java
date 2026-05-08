@@ -23,24 +23,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RefundController {
 
-    private final RefundService refundService;
+  private final RefundService refundService;
 
-    // 환불 요청은 서비스에서 기간/진도율/중복 요청 규칙을 모두 검증한다.
-    @Operation(summary = "환불 요청", description = "학습자가 강의 환불을 요청합니다.")
-    @PostMapping
-    public ApiResponse<RefundResponse> requestRefund(
-            @Valid @RequestBody RefundRequestDto request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("환불 요청이 완료되었습니다.", refundService.requestRefund(request, userId));
-    }
+  // 환불 요청은 서비스에서 기간/진도율/중복 요청 규칙을 모두 검증한다.
+  @Operation(summary = "환불 요청", description = "학습자가 강의 환불을 요청합니다.")
+  @PostMapping
+  public ApiResponse<RefundResponse> requestRefund(
+      @Valid @RequestBody RefundRequestDto request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success("환불 요청이 완료되었습니다.", refundService.requestRefund(request, userId));
+  }
 
-    // 마이페이지에서는 본인 환불 요청 목록을 최신순으로 조회한다.
-    @Operation(summary = "내 환불 내역 조회", description = "학습자 본인의 환불 요청 목록을 조회합니다.")
-    @GetMapping("/me")
-    public ApiResponse<List<RefundResponse>> getMyRefunds(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("환불 내역 조회 성공", refundService.getMyRefunds(userId));
-    }
+  // 마이페이지에서는 본인 환불 요청 목록을 최신순으로 조회한다.
+  @Operation(summary = "내 환불 내역 조회", description = "학습자 본인의 환불 요청 목록을 조회합니다.")
+  @GetMapping("/me")
+  public ApiResponse<List<RefundResponse>> getMyRefunds(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success("환불 내역 조회 성공", refundService.getMyRefunds(userId));
+  }
 }

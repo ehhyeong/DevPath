@@ -9,15 +9,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
 
-    Optional<Workspace> findByIdAndIsDeletedFalse(Long id);
+  Optional<Workspace> findByIdAndIsDeletedFalse(Long id);
 
-    List<Workspace> findAllByIdInAndIsDeletedFalseOrderByCreatedAtDesc(Collection<Long> ids);
+  List<Workspace> findAllByIdInAndIsDeletedFalseOrderByCreatedAtDesc(Collection<Long> ids);
 
-    List<Workspace> findAllByIdInAndTypeAndIsDeletedFalseOrderByCreatedAtDesc(
-            Collection<Long> ids, WorkspaceType type);
+  List<Workspace> findAllByIdInAndTypeAndIsDeletedFalseOrderByCreatedAtDesc(
+      Collection<Long> ids, WorkspaceType type);
 
-    List<Workspace> findAllByIdInAndTypeInAndIsDeletedFalseOrderByCreatedAtDesc(
-            Collection<Long> ids, Collection<WorkspaceType> types);
+  List<Workspace> findAllByIdInAndTypeInAndIsDeletedFalseOrderByCreatedAtDesc(
+      Collection<Long> ids, Collection<WorkspaceType> types);
 
-    long countByIdInAndIsDeletedFalse(Collection<Long> ids);
+  long countByIdInAndIsDeletedFalse(Collection<Long> ids);
 }

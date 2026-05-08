@@ -32,8 +32,7 @@ public class JobRecommendationController {
               Long userId,
           @Parameter(description = "희망 지역", example = "SEOUL") @RequestParam(required = false)
               String region,
-          @Parameter(description = "희망 경력 조건", example = "JUNIOR")
-              @RequestParam(required = false)
+          @Parameter(description = "희망 경력 조건", example = "JUNIOR") @RequestParam(required = false)
               String careerLevel,
           @Parameter(description = "보유 스킬 목록. 쉼표로 구분", example = "Java,Spring Boot,JPA")
               @RequestParam(required = false)
@@ -48,6 +47,7 @@ public class JobRecommendationController {
         new JobRecommendationRequest.SearchCondition(
             userId, region, careerLevel, skillTags, proofCardSkills, completedRoadmapSkills);
 
-    return ResponseEntity.ok(ApiResponse.ok(jobRecommendationService.getMyRecommendations(condition)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(jobRecommendationService.getMyRecommendations(condition)));
   }
 }

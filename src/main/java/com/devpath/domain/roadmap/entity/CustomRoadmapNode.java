@@ -70,21 +70,31 @@ public class CustomRoadmapNode {
   private LocalDateTime completedAt;
 
   @Builder
-  public CustomRoadmapNode(CustomRoadmap customRoadmap, RoadmapNode originalNode, Integer customSortOrder,
-      boolean isBranch, Long branchFromNodeId, String branchType) {
+  public CustomRoadmapNode(
+      CustomRoadmap customRoadmap,
+      RoadmapNode originalNode,
+      Integer customSortOrder,
+      boolean isBranch,
+      Long branchFromNodeId,
+      String branchType) {
     this.customRoadmap = customRoadmap;
     this.originalNode = originalNode;
     this.status = NodeStatus.NOT_STARTED;
-    this.customSortOrder = customSortOrder != null ? customSortOrder
-        : (originalNode != null ? originalNode.getSortOrder() : null);
+    this.customSortOrder =
+        customSortOrder != null
+            ? customSortOrder
+            : (originalNode != null ? originalNode.getSortOrder() : null);
     this.isBranch = isBranch;
     this.branchFromNodeId = branchFromNodeId;
     this.branchType = branchType;
   }
 
   @Builder(builderMethodName = "builderNodeBuilder", builderClassName = "BuilderNodeBuilder")
-  public CustomRoadmapNode(CustomRoadmap customRoadmap, BuilderModule builderModule,
-      Integer customSortOrder, Integer builderBranchGroup) {
+  public CustomRoadmapNode(
+      CustomRoadmap customRoadmap,
+      BuilderModule builderModule,
+      Integer customSortOrder,
+      Integer builderBranchGroup) {
     this.customRoadmap = customRoadmap;
     this.builderModule = builderModule;
     this.originalNode = null;

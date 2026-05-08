@@ -21,8 +21,7 @@ public class QnaResponse {
       @Schema(description = "작성자 이름", example = "이학습") String writerName,
       @Schema(description = "질문 제목", example = "PR 리뷰 기준이 궁금합니다.") String title,
       @Schema(description = "질문 상태", example = "WAITING") QuestionStatus status,
-      @Schema(description = "작성일시", example = "2026-05-03T17:00:00")
-          LocalDateTime createdAt) {
+      @Schema(description = "작성일시", example = "2026-05-03T17:00:00") LocalDateTime createdAt) {
 
     // 멘토링 질문 목록에 필요한 요약 정보를 DTO로 변환한다.
     public static MentoringQuestionSummary from(MentoringQuestion question) {
@@ -49,10 +48,8 @@ public class QnaResponse {
       @Schema(description = "질문 상태", example = "ANSWERED") QuestionStatus status,
       @Schema(description = "답변 목록", example = "[{\"answerId\":1,\"writerName\":\"김멘토\"}]")
           List<AnswerDetail> answers,
-      @Schema(description = "작성일시", example = "2026-05-03T17:00:00")
-          LocalDateTime createdAt,
-      @Schema(description = "수정일시", example = "2026-05-03T17:30:00")
-          LocalDateTime updatedAt) {
+      @Schema(description = "작성일시", example = "2026-05-03T17:00:00") LocalDateTime createdAt,
+      @Schema(description = "수정일시", example = "2026-05-03T17:30:00") LocalDateTime updatedAt) {
 
     // 멘토링 질문 상세와 답변 목록을 함께 응답한다.
     public static MentoringQuestionDetail from(
@@ -79,8 +76,7 @@ public class QnaResponse {
       @Schema(description = "작성자 이름", example = "이학습") String writerName,
       @Schema(description = "질문 제목", example = "ERD 설계 기준이 궁금합니다.") String title,
       @Schema(description = "질문 상태", example = "WAITING") QuestionStatus status,
-      @Schema(description = "작성일시", example = "2026-05-03T17:00:00")
-          LocalDateTime createdAt) {
+      @Schema(description = "작성일시", example = "2026-05-03T17:00:00") LocalDateTime createdAt) {
 
     // 워크스페이스 질문 목록에 필요한 요약 정보를 DTO로 변환한다.
     public static WorkspaceQuestionSummary from(WorkspaceQuestion question) {
@@ -102,15 +98,12 @@ public class QnaResponse {
       @Schema(description = "작성자 ID", example = "2") Long writerId,
       @Schema(description = "작성자 이름", example = "이학습") String writerName,
       @Schema(description = "질문 제목", example = "ERD 설계 기준이 궁금합니다.") String title,
-      @Schema(description = "질문 내용", example = "팀 ERD에서 중간 테이블을 어느 기준으로 분리해야 하나요?")
-          String content,
+      @Schema(description = "질문 내용", example = "팀 ERD에서 중간 테이블을 어느 기준으로 분리해야 하나요?") String content,
       @Schema(description = "질문 상태", example = "ANSWERED") QuestionStatus status,
       @Schema(description = "답변 목록", example = "[{\"answerId\":1,\"writerName\":\"김멘토\"}]")
           List<AnswerDetail> answers,
-      @Schema(description = "작성일시", example = "2026-05-03T17:00:00")
-          LocalDateTime createdAt,
-      @Schema(description = "수정일시", example = "2026-05-03T17:30:00")
-          LocalDateTime updatedAt) {
+      @Schema(description = "작성일시", example = "2026-05-03T17:00:00") LocalDateTime createdAt,
+      @Schema(description = "수정일시", example = "2026-05-03T17:30:00") LocalDateTime updatedAt) {
 
     // 워크스페이스 질문 상세와 답변 목록을 함께 응답한다.
     public static WorkspaceQuestionDetail from(
@@ -136,8 +129,7 @@ public class QnaResponse {
       @Schema(description = "답변 작성자 이름", example = "김멘토") String writerName,
       @Schema(description = "답변 내용", example = "Service 계층에서 검증과 상태 변경을 처리하는 것이 좋습니다.")
           String content,
-      @Schema(description = "답변 작성일시", example = "2026-05-03T17:30:00")
-          LocalDateTime createdAt) {
+      @Schema(description = "답변 작성일시", example = "2026-05-03T17:30:00") LocalDateTime createdAt) {
 
     // 멘토링 답변을 공통 답변 DTO로 변환한다.
     public static AnswerDetail from(MentoringAnswer answer) {

@@ -27,23 +27,22 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class RefundReview {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long refundRequestId;
+  @Column(nullable = false)
+  private Long refundRequestId;
 
-    @Column(nullable = false)
-    private Long adminId;
+  @Column(nullable = false)
+  private Long adminId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private RefundStatus decision;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private RefundStatus decision;
 
-    @Column(columnDefinition = "TEXT")
-    private String reason;
+  @Column(columnDefinition = "TEXT")
+  private String reason;
 
-    @CreatedDate
-    private LocalDateTime processedAt;
+  @CreatedDate private LocalDateTime processedAt;
 }

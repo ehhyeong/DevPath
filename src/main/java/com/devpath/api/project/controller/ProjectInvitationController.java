@@ -24,32 +24,31 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "프로젝트 - 초대", description = "프로젝트 멤버 초대 API")
 public class ProjectInvitationController {
 
-    private final ProjectInvitationService projectInvitationService;
+  private final ProjectInvitationService projectInvitationService;
 
-    @PostMapping
-    @Operation(summary = "프로젝트 멤버 초대", description = "프로젝트에 사용자를 초대합니다.")
-    public ApiResponse<InvitationResponse> inviteMember(
-            @Valid @RequestBody InvitationRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long inviterId
-    ) {
-        return ApiResponse.ok(projectInvitationService.inviteMember(request, requireUserId(inviterId)));
-    }
+  @PostMapping
+  @Operation(summary = "프로젝트 멤버 초대", description = "프로젝트에 사용자를 초대합니다.")
+  public ApiResponse<InvitationResponse> inviteMember(
+      @Valid @RequestBody InvitationRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long inviterId) {
+    return ApiResponse.ok(projectInvitationService.inviteMember(request, requireUserId(inviterId)));
+  }
 
-    @PostMapping("/{invitationId}/accept")
-    @Operation(summary = "프로젝트 초대 수락", description = "로그인한 사용자에게 온 프로젝트 초대를 수락합니다.")
-    public ApiResponse<InvitationResponse> acceptInvitation(
-            @PathVariable Long invitationId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId
-    ) {
-        return ApiResponse.ok(projectInvitationService.acceptInvitation(invitationId, requireUserId(learnerId)));
-    }
+  @PostMapping("/{invitationId}/accept")
+  @Operation(summary = "프로젝트 초대 수락", description = "로그인한 사용자에게 온 프로젝트 초대를 수락합니다.")
+  public ApiResponse<InvitationResponse> acceptInvitation(
+      @PathVariable Long invitationId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId) {
+    return ApiResponse.ok(
+        projectInvitationService.acceptInvitation(invitationId, requireUserId(learnerId)));
+  }
 
-    @PostMapping("/{invitationId}/reject")
-    @Operation(summary = "프로젝트 초대 거절", description = "로그인한 사용자에게 온 프로젝트 초대를 거절합니다.")
-    public ApiResponse<InvitationResponse> rejectInvitation(
-            @PathVariable Long invitationId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId
-    ) {
-        return ApiResponse.ok(projectInvitationService.rejectInvitation(invitationId, requireUserId(learnerId)));
-    }
+  @PostMapping("/{invitationId}/reject")
+  @Operation(summary = "프로젝트 초대 거절", description = "로그인한 사용자에게 온 프로젝트 초대를 거절합니다.")
+  public ApiResponse<InvitationResponse> rejectInvitation(
+      @PathVariable Long invitationId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId) {
+    return ApiResponse.ok(
+        projectInvitationService.rejectInvitation(invitationId, requireUserId(learnerId)));
+  }
 }

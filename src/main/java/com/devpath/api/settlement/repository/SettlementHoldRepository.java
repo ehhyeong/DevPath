@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SettlementHoldRepository extends JpaRepository<SettlementHold, Long> {
 
-    List<SettlementHold> findAllBySettlementIdOrderByHeldAtDesc(Long settlementId);
+  List<SettlementHold> findAllBySettlementIdOrderByHeldAtDesc(Long settlementId);
 }

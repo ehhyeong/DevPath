@@ -34,7 +34,8 @@ public class ApplicationMessageController {
       @PathVariable Long applicationId,
       @Valid @RequestBody ApplicationMessageRequest.Create request) {
     // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
-    return ResponseEntity.ok(ApiResponse.ok(applicationMessageService.create(applicationId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(applicationMessageService.create(applicationId, request)));
   }
 
   @GetMapping

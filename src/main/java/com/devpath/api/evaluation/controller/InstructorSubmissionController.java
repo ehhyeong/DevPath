@@ -1,14 +1,18 @@
 package com.devpath.api.evaluation.controller;
 
+import com.devpath.api.evaluation.dto.request.GradeSubmissionRequest;
 import com.devpath.api.evaluation.dto.response.AssignmentPrecheckResponse;
 import com.devpath.api.evaluation.dto.response.SubmissionDetailResponse;
+import com.devpath.api.evaluation.dto.response.SubmissionGradeResponse;
 import com.devpath.api.evaluation.dto.response.SubmissionResponse;
+import com.devpath.api.evaluation.service.SubmissionGradingService;
 import com.devpath.api.evaluation.service.SubmissionQueryService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.domain.learning.entity.SubmissionStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +32,7 @@ public class InstructorSubmissionController {
 
   // Evaluation Swagger 문서화 기준에 맞춘 강사용 제출물 컨트롤러다.
   private final SubmissionQueryService submissionQueryService;
+  private final SubmissionGradingService submissionGradingService;
 
   @Operation(
       summary = "제출물 목록 조회",
@@ -37,10 +42,10 @@ public class InstructorSubmissionController {
   public ResponseEntity<ApiResponse<List<SubmissionResponse>>> getSubmissionList(
       @Parameter(description = "강사 ID", example = "3") @RequestParam Long userId,
       @Parameter(description = "과제 ID", example = "10") @PathVariable Long assignmentId,
-      @Parameter(description = "제출 상태 필터", example = "SUBMITTED")
-          @RequestParam(required = false)
+      @Parameter(description = "제출 상태 필터", example = "SUBMITTED") @RequestParam(required = false)
           SubmissionStatus status) {
-    return ResponseEntity.ok(ApiResponse.ok(submissionQueryService.getSubmissionList(userId, assignmentId, status)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(submissionQueryService.getSubmissionList(userId, assignmentId, status)));
   }
 
   @Operation(
@@ -51,7 +56,8 @@ public class InstructorSubmissionController {
   public ResponseEntity<ApiResponse<SubmissionDetailResponse>> getSubmissionDetail(
       @Parameter(description = "강사 ID", example = "3") @RequestParam Long userId,
       @Parameter(description = "제출 ID", example = "1") @PathVariable Long submissionId) {
-    return ResponseEntity.ok(ApiResponse.ok(submissionQueryService.getSubmissionDetail(userId, submissionId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(submissionQueryService.getSubmissionDetail(userId, submissionId)));
   }
 
   @Operation(
@@ -62,7 +68,22 @@ public class InstructorSubmissionController {
   public ResponseEntity<ApiResponse<AssignmentPrecheckResponse>> getPrecheckResult(
       @Parameter(description = "강사 ID", example = "3") @RequestParam Long userId,
       @Parameter(description = "제출 ID", example = "1") @PathVariable Long submissionId) {
-    return ResponseEntity.ok(ApiResponse.ok(submissionQueryService.getPrecheckResult(userId, submissionId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(submissionQueryService.getPrecheckResult(userId, submissionId)));
   }
 
+  @Operation(
+      summary = "제출물 채점",
+      description =
+          "제출물을 루브릭 점수 기준으로 채점합니다. JWT 적용 전까지 Swagger 테스트용으로 userId를 요청 파라미터로 받습니다. 응답 데이터는 ApiResponse.data에 감싸져 반환됩니다.")
+  @PostMapping("/submissions/{submissionId}/grade")
+  public ResponseEntity<ApiResponse<SubmissionGradeResponse>> gradeSubmission(
+      @Parameter(description = "강사 ID", example = "3") @RequestParam Long userId,
+      @Parameter(description = "제출 ID", example = "1") @PathVariable Long submissionId,
+      @Valid @RequestBody GradeSubmissionRequest request) {
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            "제출물 채점이 완료되었습니다.",
+            submissionGradingService.gradeSubmission(userId, submissionId, request)));
+  }
 }

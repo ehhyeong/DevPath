@@ -76,7 +76,9 @@ class InstructorDashboardApiSmokeIntegrationTest {
   @Test
   void qnaInboxEndpointLoads() throws Exception {
     mockMvc
-        .perform(get("/api/instructor/qna-inbox?status=UNANSWERED").with(authentication(instructorAuthentication())))
+        .perform(
+            get("/api/instructor/qna-inbox?status=UNANSWERED")
+                .with(authentication(instructorAuthentication())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data[0].title").exists())
@@ -111,7 +113,9 @@ class InstructorDashboardApiSmokeIntegrationTest {
   @Test
   void marketingCouponsEndpointLoads() throws Exception {
     mockMvc
-        .perform(get("/api/instructor/marketing/coupons").with(authentication(instructorAuthentication())))
+        .perform(
+            get("/api/instructor/marketing/coupons")
+                .with(authentication(instructorAuthentication())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data[0].couponTitle").exists())
@@ -122,7 +126,9 @@ class InstructorDashboardApiSmokeIntegrationTest {
   @Test
   void marketingPromotionsEndpointLoads() throws Exception {
     mockMvc
-        .perform(get("/api/instructor/marketing/promotions").with(authentication(instructorAuthentication())))
+        .perform(
+            get("/api/instructor/marketing/promotions")
+                .with(authentication(instructorAuthentication())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data[0].courseTitle").exists())

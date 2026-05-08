@@ -15,4 +15,3 @@ public interface CareerProfileRepository extends JpaRepository<CareerProfile, Lo
   @EntityGraph(attributePaths = "user")
   Optional<CareerProfile> findByIdAndIsDeletedFalse(Long id);
 }
-

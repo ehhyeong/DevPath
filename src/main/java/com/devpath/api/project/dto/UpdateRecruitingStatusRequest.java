@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UpdateRecruitingStatusRequest {
 
-    @NotNull(message = "모집 상태는 필수입니다.")
-    private ProjectRecruitingStatus recruitingStatus;
+  @NotNull(message = "모집 상태는 필수입니다.")
+  private ProjectRecruitingStatus recruitingStatus;
 }

@@ -7,15 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InstructorCommentRepository extends JpaRepository<InstructorComment, Long> {
 
-    List<InstructorComment> findByPostIdAndIsDeletedFalse(Long postId);
+  List<InstructorComment> findByPostIdAndIsDeletedFalse(Long postId);
 
-    List<InstructorComment> findByPostIdAndIsDeletedFalseOrderByCreatedAtAsc(Long postId);
+  List<InstructorComment> findByPostIdAndIsDeletedFalseOrderByCreatedAtAsc(Long postId);
 
-    List<InstructorComment> findAllByParentCommentIdAndIsDeletedFalse(Long parentCommentId);
+  List<InstructorComment> findAllByParentCommentIdAndIsDeletedFalse(Long parentCommentId);
 
-    List<InstructorComment> findAllByPostIdInAndIsDeletedFalse(List<Long> postIds);
+  List<InstructorComment> findAllByPostIdInAndIsDeletedFalse(List<Long> postIds);
 
-    Optional<InstructorComment> findByIdAndIsDeletedFalse(Long id);
+  Optional<InstructorComment> findByIdAndIsDeletedFalse(Long id);
 
-    long countByPostIdInAndIsDeletedFalse(List<Long> postIds);
+  long countByPostIdInAndIsDeletedFalse(List<Long> postIds);
 }

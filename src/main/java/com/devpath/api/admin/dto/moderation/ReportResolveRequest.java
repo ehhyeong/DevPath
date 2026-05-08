@@ -13,11 +13,14 @@ import lombok.NoArgsConstructor;
 @Schema(description = "신고 처리 요청")
 public class ReportResolveRequest {
 
-    @NotBlank
-    @Schema(description = "처리 사유", example = "욕설 및 부적절 표현 포함")
-    private String reason;
+  @NotBlank
+  @Schema(description = "처리 사유", example = "욕설 및 부적절 표현 포함")
+  private String reason;
 
-    @NotNull
-    @Schema(description = "처리 액션", example = "SUSPEND", allowableValues = {"WARNING", "SUSPEND", "DISMISS"})
-    private ModerationActionType action;
+  @NotNull
+  @Schema(
+      description = "처리 액션",
+      example = "SUSPEND",
+      allowableValues = {"WARNING", "SUSPEND", "DISMISS"})
+  private ModerationActionType action;
 }

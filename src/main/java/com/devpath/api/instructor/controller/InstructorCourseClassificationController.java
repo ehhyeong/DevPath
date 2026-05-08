@@ -39,8 +39,7 @@ public class InstructorCourseClassificationController {
   @Operation(summary = "강의 노드 태그 커버리지 조회")
   @GetMapping("/courses/{courseId}/node-coverages")
   public ApiResponse<InstructorNodeCoverageDto.NodeCoverageResponse> getCourseNodeCoverages(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long courseId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
     InstructorNodeCoverageDto.NodeCoverageResponse response =
         instructorNodeCoverageQueryService.getNodeCoverages(userId, courseId);
 

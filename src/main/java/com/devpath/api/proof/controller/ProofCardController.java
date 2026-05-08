@@ -26,44 +26,40 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProofCardController {
 
-    // Proof Card 서비스다.
-    private final ProofCardService proofCardService;
+  // Proof Card 서비스다.
+  private final ProofCardService proofCardService;
 
-    // Proof Card를 발급한다.
-    @Operation(summary = "Proof Card 발급", description = "특정 노드 기준으로 Proof Card를 발급합니다.")
-    @PostMapping("/issue")
-    public ResponseEntity<ApiResponse<ProofCardResponse.Detail>> issue(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Valid @RequestBody ProofCardRequest.Issue request
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(proofCardService.issue(userId, request)));
-    }
+  // Proof Card를 발급한다.
+  @Operation(summary = "Proof Card 발급", description = "특정 노드 기준으로 Proof Card를 발급합니다.")
+  @PostMapping("/issue")
+  public ResponseEntity<ApiResponse<ProofCardResponse.Detail>> issue(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody ProofCardRequest.Issue request) {
+    return ResponseEntity.ok(ApiResponse.ok(proofCardService.issue(userId, request)));
+  }
 
-    // Proof Card 목록을 조회한다.
-    @Operation(summary = "Proof Card 목록 조회", description = "내 Proof Card 목록을 조회합니다.")
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<ProofCardResponse.Summary>>> getProofCards(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(proofCardService.getProofCards(userId)));
-    }
+  // Proof Card 목록을 조회한다.
+  @Operation(summary = "Proof Card 목록 조회", description = "내 Proof Card 목록을 조회합니다.")
+  @GetMapping
+  public ResponseEntity<ApiResponse<List<ProofCardResponse.Summary>>> getProofCards(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ResponseEntity.ok(ApiResponse.ok(proofCardService.getProofCards(userId)));
+  }
 
-    // Proof Card 상세를 조회한다.
-    @Operation(summary = "Proof Card 상세 조회", description = "특정 Proof Card 상세를 조회합니다.")
-    @GetMapping("/{proofCardId}")
-    public ResponseEntity<ApiResponse<ProofCardResponse.Detail>> getProofCard(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Parameter(description = "Proof Card 식별자", example = "1") @PathVariable Long proofCardId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(proofCardService.getProofCard(userId, proofCardId)));
-    }
+  // Proof Card 상세를 조회한다.
+  @Operation(summary = "Proof Card 상세 조회", description = "특정 Proof Card 상세를 조회합니다.")
+  @GetMapping("/{proofCardId}")
+  public ResponseEntity<ApiResponse<ProofCardResponse.Detail>> getProofCard(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "Proof Card 식별자", example = "1") @PathVariable Long proofCardId) {
+    return ResponseEntity.ok(ApiResponse.ok(proofCardService.getProofCard(userId, proofCardId)));
+  }
 
-    // Proof Card 갤러리를 조회한다.
-    @Operation(summary = "Proof Card 갤러리 조회", description = "내 Proof Card 갤러리를 조회합니다.")
-    @GetMapping("/gallery")
-    public ResponseEntity<ApiResponse<List<ProofCardResponse.GalleryItem>>> getGallery(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(proofCardService.getGallery(userId)));
-    }
+  // Proof Card 갤러리를 조회한다.
+  @Operation(summary = "Proof Card 갤러리 조회", description = "내 Proof Card 갤러리를 조회합니다.")
+  @GetMapping("/gallery")
+  public ResponseEntity<ApiResponse<List<ProofCardResponse.GalleryItem>>> getGallery(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ResponseEntity.ok(ApiResponse.ok(proofCardService.getGallery(userId)));
+  }
 }

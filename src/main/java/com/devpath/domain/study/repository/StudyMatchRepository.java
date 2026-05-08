@@ -10,16 +10,18 @@ import org.springframework.data.repository.query.Param;
 
 public interface StudyMatchRepository extends JpaRepository<StudyMatch, Long> {
 
-    @Query("""
+  @Query(
+      """
             select sm
             from StudyMatch sm
             where sm.requesterId = :learnerId
                or sm.receiverId = :learnerId
             order by sm.createdAt desc
             """)
-    List<StudyMatch> findMyMatches(@Param("learnerId") Long learnerId);
+  List<StudyMatch> findMyMatches(@Param("learnerId") Long learnerId);
 
-    @Query("""
+  @Query(
+      """
             select case when count(sm) > 0 then true else false end
             from StudyMatch sm
             where sm.status in :activeStatuses
@@ -29,23 +31,18 @@ public interface StudyMatchRepository extends JpaRepository<StudyMatch, Long> {
                  or (sm.requesterId = :candidateLearnerId and sm.receiverId = :learnerId)
               )
             """)
-    boolean existsActiveMatchBetweenUsersForNodes(
-            @Param("learnerId") Long learnerId,
-            @Param("candidateLearnerId") Long candidateLearnerId,
-            @Param("nodeIds") Collection<Long> nodeIds,
-            @Param("activeStatuses") Collection<StudyMatchStatus> activeStatuses
-    );
+  boolean existsActiveMatchBetweenUsersForNodes(
+      @Param("learnerId") Long learnerId,
+      @Param("candidateLearnerId") Long candidateLearnerId,
+      @Param("nodeIds") Collection<Long> nodeIds,
+      @Param("activeStatuses") Collection<StudyMatchStatus> activeStatuses);
 
-    default boolean existsActiveMatchBetweenUsersForNodes(
-            Long learnerId,
-            Long candidateLearnerId,
-            Collection<Long> nodeIds
-    ) {
-        return existsActiveMatchBetweenUsersForNodes(
-                learnerId,
-                candidateLearnerId,
-                nodeIds,
-                List.of(StudyMatchStatus.REQUESTED, StudyMatchStatus.ACCEPTED)
-        );
-    }
+  default boolean existsActiveMatchBetweenUsersForNodes(
+      Long learnerId, Long candidateLearnerId, Collection<Long> nodeIds) {
+    return existsActiveMatchBetweenUsersForNodes(
+        learnerId,
+        candidateLearnerId,
+        nodeIds,
+        List.of(StudyMatchStatus.REQUESTED, StudyMatchStatus.ACCEPTED));
+  }
 }

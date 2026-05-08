@@ -29,66 +29,67 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 public class WorkspaceTask {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "workspace_id", nullable = false)
-    private Long workspaceId;
+  @Column(name = "workspace_id", nullable = false)
+  private Long workspaceId;
 
-    @Column(nullable = false)
-    private String title;
+  @Column(nullable = false)
+  private String title;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+  @Column(columnDefinition = "TEXT")
+  private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private WorkspaceTaskStatus status = WorkspaceTaskStatus.TODO;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  @Builder.Default
+  private WorkspaceTaskStatus status = WorkspaceTaskStatus.TODO;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private WorkspaceTaskPriority priority = WorkspaceTaskPriority.MEDIUM;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  @Builder.Default
+  private WorkspaceTaskPriority priority = WorkspaceTaskPriority.MEDIUM;
 
-    @Column(name = "assignee_id")
-    private Long assigneeId;
+  @Column(name = "assignee_id")
+  private Long assigneeId;
 
-    @Column(name = "due_date")
-    private LocalDate dueDate;
+  @Column(name = "due_date")
+  private LocalDate dueDate;
 
-    @Column(name = "created_by_id", nullable = false)
-    private Long createdById;
+  @Column(name = "created_by_id", nullable = false)
+  private Long createdById;
 
-    @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+  @Builder.Default
+  @Column(name = "is_deleted", nullable = false)
+  private boolean isDeleted = false;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    public void update(String title, String description, WorkspaceTaskPriority priority, LocalDate dueDate) {
-        this.title = title;
-        this.description = description;
-        this.priority = priority;
-        this.dueDate = dueDate;
-    }
+  public void update(
+      String title, String description, WorkspaceTaskPriority priority, LocalDate dueDate) {
+    this.title = title;
+    this.description = description;
+    this.priority = priority;
+    this.dueDate = dueDate;
+  }
 
-    public void changeStatus(WorkspaceTaskStatus status) {
-        this.status = status;
-    }
+  public void changeStatus(WorkspaceTaskStatus status) {
+    this.status = status;
+  }
 
-    public void changeAssignee(Long assigneeId) {
-        this.assigneeId = assigneeId;
-    }
+  public void changeAssignee(Long assigneeId) {
+    this.assigneeId = assigneeId;
+  }
 
-    public void delete() {
-        this.isDeleted = true;
-    }
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

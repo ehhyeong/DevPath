@@ -16,12 +16,14 @@ public interface MentoringMissionRepository extends JpaRepository<MentoringMissi
       Long mentoringId, Integer weekNumber, Long missionId);
 
   // 멘토링 워크스페이스의 미션 목록을 주차 순서대로 조회한다.
-  @EntityGraph(attributePaths = {"mentoring", "mentoring.post", "mentoring.mentor", "mentoring.mentee"})
+  @EntityGraph(
+      attributePaths = {"mentoring", "mentoring.post", "mentoring.mentor", "mentoring.mentee"})
   List<MentoringMission> findAllByMentoring_IdAndIsDeletedFalseOrderByWeekNumberAscCreatedAtAsc(
       Long mentoringId);
 
   // 미션 단건 조회에서 필요한 멘토링 정보를 함께 로딩한다.
-  @EntityGraph(attributePaths = {"mentoring", "mentoring.post", "mentoring.mentor", "mentoring.mentee"})
+  @EntityGraph(
+      attributePaths = {"mentoring", "mentoring.post", "mentoring.mentor", "mentoring.mentee"})
   Optional<MentoringMission> findByIdAndIsDeletedFalse(Long id);
 
   // 멘토링 대시보드의 미션 개수 집계에 사용한다.

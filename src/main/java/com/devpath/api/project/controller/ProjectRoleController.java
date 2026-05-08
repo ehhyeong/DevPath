@@ -25,24 +25,23 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "프로젝트 - 역할", description = "프로젝트 역할 관리 API")
 public class ProjectRoleController {
 
-    private final ProjectRoleService projectRoleService;
+  private final ProjectRoleService projectRoleService;
 
-    @PostMapping
-    @Operation(summary = "프로젝트 역할 추가", description = "프로젝트에 역할을 추가합니다.")
-    public ApiResponse<RoleResponse> addRole(
-            @Valid @RequestBody RoleRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId
-    ) {
-        return ApiResponse.ok(projectRoleService.addRole(request, requireUserId(requesterId)));
-    }
+  @PostMapping
+  @Operation(summary = "프로젝트 역할 추가", description = "프로젝트에 역할을 추가합니다.")
+  public ApiResponse<RoleResponse> addRole(
+      @Valid @RequestBody RoleRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId) {
+    return ApiResponse.ok(projectRoleService.addRole(request, requireUserId(requesterId)));
+  }
 
-    @PutMapping("/{roleId}")
-    @Operation(summary = "프로젝트 역할 수정", description = "프로젝트 역할을 수정합니다.")
-    public ApiResponse<RoleResponse> updateRole(
-            @PathVariable Long roleId,
-            @Valid @RequestBody RoleRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId
-    ) {
-        return ApiResponse.ok(projectRoleService.updateRole(roleId, request, requireUserId(requesterId)));
-    }
+  @PutMapping("/{roleId}")
+  @Operation(summary = "프로젝트 역할 수정", description = "프로젝트 역할을 수정합니다.")
+  public ApiResponse<RoleResponse> updateRole(
+      @PathVariable Long roleId,
+      @Valid @RequestBody RoleRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId) {
+    return ApiResponse.ok(
+        projectRoleService.updateRole(roleId, request, requireUserId(requesterId)));
+  }
 }

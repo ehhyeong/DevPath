@@ -24,54 +24,53 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecommendationHistory {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "history_id")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "history_id")
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    @Column(name = "recommendation_id")
-    private Long recommendationId;
+  @Column(name = "recommendation_id")
+  private Long recommendationId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "node_id")
-    private RoadmapNode roadmapNode;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "node_id")
+  private RoadmapNode roadmapNode;
 
-    @Column(name = "before_status", length = 30)
-    private String beforeStatus;
+  @Column(name = "before_status", length = 30)
+  private String beforeStatus;
 
-    @Column(name = "after_status", length = 30)
-    private String afterStatus;
+  @Column(name = "after_status", length = 30)
+  private String afterStatus;
 
-    @Column(name = "action_type", nullable = false, length = 30)
-    private String actionType;
+  @Column(name = "action_type", nullable = false, length = 30)
+  private String actionType;
 
-    @Column(name = "context", columnDefinition = "TEXT")
-    private String context;
+  @Column(name = "context", columnDefinition = "TEXT")
+  private String context;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @Builder
-    public RecommendationHistory(
-            User user,
-            Long recommendationId,
-            RoadmapNode roadmapNode,
-            String beforeStatus,
-            String afterStatus,
-            String actionType,
-            String context
-    ) {
-        this.user = user;
-        this.recommendationId = recommendationId;
-        this.roadmapNode = roadmapNode;
-        this.beforeStatus = beforeStatus;
-        this.afterStatus = afterStatus;
-        this.actionType = actionType;
-        this.context = context;
-    }
+  @Builder
+  public RecommendationHistory(
+      User user,
+      Long recommendationId,
+      RoadmapNode roadmapNode,
+      String beforeStatus,
+      String afterStatus,
+      String actionType,
+      String context) {
+    this.user = user;
+    this.recommendationId = recommendationId;
+    this.roadmapNode = roadmapNode;
+    this.beforeStatus = beforeStatus;
+    this.afterStatus = afterStatus;
+    this.actionType = actionType;
+    this.context = context;
+  }
 }

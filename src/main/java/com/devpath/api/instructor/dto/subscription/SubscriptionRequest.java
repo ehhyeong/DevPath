@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class SubscriptionRequest {
 
-    @NotNull
-    private Long channelId;
+  @NotNull private Long channelId;
 }

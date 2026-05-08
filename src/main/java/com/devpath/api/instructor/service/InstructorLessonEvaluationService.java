@@ -81,8 +81,9 @@ public class InstructorLessonEvaluationService {
     Quiz quiz =
         node == null
             ? null
-            : quizRepository.findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(
-                node.getNodeId()).orElse(null);
+            : quizRepository
+                .findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(node.getNodeId())
+                .orElse(null);
 
     return mapQuizEditor(lesson, node, quiz);
   }
@@ -97,8 +98,9 @@ public class InstructorLessonEvaluationService {
     Lesson lesson = getOwnedLesson(instructorId, lessonId);
     RoadmapNode node = ensureEvaluationNode(lesson, true);
     Quiz quiz =
-        quizRepository.findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(
-            node.getNodeId()).orElse(null);
+        quizRepository
+            .findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(node.getNodeId())
+            .orElse(null);
 
     if (quiz == null) {
       quiz =
@@ -149,9 +151,11 @@ public class InstructorLessonEvaluationService {
 
     int totalScore = 0;
     for (int questionIndex = 0; questionIndex < questionInputs.size(); questionIndex += 1) {
-      InstructorLessonEvaluationDto.QuizQuestionInput questionInput = questionInputs.get(questionIndex);
+      InstructorLessonEvaluationDto.QuizQuestionInput questionInput =
+          questionInputs.get(questionIndex);
       QuestionType questionType = resolveQuestionType(questionInput.getQuestionType());
-      List<SanitizedQuizOption> options = sanitizeQuizOptions(questionType, questionInput.getOptions());
+      List<SanitizedQuizOption> options =
+          sanitizeQuizOptions(questionType, questionInput.getOptions());
 
       QuizQuestion question =
           QuizQuestion.builder()
@@ -191,16 +195,15 @@ public class InstructorLessonEvaluationService {
 
   @Transactional
   public InstructorLessonEvaluationDto.QuizEditorResponse generateQuizDraft(
-      Long instructorId,
-      Long lessonId,
-      InstructorLessonEvaluationDto.GenerateQuizRequest request) {
+      Long instructorId, Long lessonId, InstructorLessonEvaluationDto.GenerateQuizRequest request) {
     validateAuthenticatedUser(instructorId);
 
     Lesson lesson = getOwnedLesson(instructorId, lessonId);
     RoadmapNode node = ensureEvaluationNode(lesson, true);
     Quiz existingQuiz =
-        quizRepository.findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(
-            node.getNodeId()).orElse(null);
+        quizRepository
+            .findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(node.getNodeId())
+            .orElse(null);
 
     AiQuizDraftResponse draft =
         aiQuizDraftService.createDraft(
@@ -265,8 +268,10 @@ public class InstructorLessonEvaluationService {
             ? List.of()
             : request.getRubrics().stream().filter(this::hasRubricContent).toList();
 
-    int totalScore = rubricInputs.stream().mapToInt(item -> defaultNumber(item.getMaxPoints(), 0)).sum();
-    int passScore = Math.min(defaultNumber(request.getPassScore(), Math.min(totalScore, 80)), totalScore);
+    int totalScore =
+        rubricInputs.stream().mapToInt(item -> defaultNumber(item.getMaxPoints(), 0)).sum();
+    int passScore =
+        Math.min(defaultNumber(request.getPassScore(), Math.min(totalScore, 80)), totalScore);
 
     if (assignment == null) {
       assignment =
@@ -274,7 +279,9 @@ public class InstructorLessonEvaluationService {
               .roadmapNode(node)
               .title(defaultIfBlank(request.getTitle(), lesson.getTitle()))
               .description(defaultIfBlank(request.getDescription(), ""))
-              .submissionType(resolveSubmissionType(allowTextSubmission, allowFileSubmission, allowUrlSubmission))
+              .submissionType(
+                  resolveSubmissionType(
+                      allowTextSubmission, allowFileSubmission, allowUrlSubmission))
               .dueAt(null)
               .allowedFileFormats(allowFileSubmission ? DEFAULT_FILE_FORMATS : null)
               .readmeRequired(false)
@@ -312,11 +319,7 @@ public class InstructorLessonEvaluationService {
         assignment.getSubmissionRuleDescription(),
         false);
     assignment.updateEditorSettings(
-        passScore,
-        aiReviewEnabled,
-        allowTextSubmission,
-        allowFileSubmission,
-        allowUrlSubmission);
+        passScore, aiReviewEnabled, allowTextSubmission, allowFileSubmission, allowUrlSubmission);
 
     Map<Long, AssignmentReferenceFile> existingFiles =
         assignment.getReferenceFiles().stream()
@@ -330,7 +333,8 @@ public class InstructorLessonEvaluationService {
 
     assignment.getRubrics().clear();
     for (int rubricIndex = 0; rubricIndex < rubricInputs.size(); rubricIndex += 1) {
-      InstructorLessonEvaluationDto.AssignmentRubricInput rubricInput = rubricInputs.get(rubricIndex);
+      InstructorLessonEvaluationDto.AssignmentRubricInput rubricInput =
+          rubricInputs.get(rubricIndex);
       assignment.addRubric(
           Rubric.builder()
               .criteriaName(defaultIfBlank(rubricInput.getCriteriaName(), "평가 항목"))
@@ -345,7 +349,8 @@ public class InstructorLessonEvaluationService {
         request.getReferenceFiles() == null ? List.of() : request.getReferenceFiles();
 
     for (int fileIndex = 0; fileIndex < fileInputs.size(); fileIndex += 1) {
-      InstructorLessonEvaluationDto.AssignmentReferenceFileInput fileInput = fileInputs.get(fileIndex);
+      InstructorLessonEvaluationDto.AssignmentReferenceFileInput fileInput =
+          fileInputs.get(fileIndex);
       if (!hasReferenceFileContent(fileInput)) {
         continue;
       }
@@ -375,7 +380,8 @@ public class InstructorLessonEvaluationService {
   }
 
   private Lesson getOwnedLesson(Long instructorId, Long lessonId) {
-    return lessonRepository.findByLessonIdAndSectionCourseInstructorId(lessonId, instructorId)
+    return lessonRepository
+        .findByLessonIdAndSectionCourseInstructorId(lessonId, instructorId)
         .orElseGet(
             () -> {
               if (lessonRepository.existsById(lessonId)) {
@@ -386,7 +392,8 @@ public class InstructorLessonEvaluationService {
   }
 
   private RoadmapNode ensureEvaluationNode(Lesson lesson, boolean quizNode) {
-    RoadmapNode currentNode = quizNode ? lesson.getQuizRoadmapNode() : lesson.getAssignmentRoadmapNode();
+    RoadmapNode currentNode =
+        quizNode ? lesson.getQuizRoadmapNode() : lesson.getAssignmentRoadmapNode();
     if (currentNode != null) {
       return currentNode;
     }
@@ -525,7 +532,8 @@ public class InstructorLessonEvaluationService {
                             .options(
                                 question.getOptions().stream()
                                     .filter(option -> !Boolean.TRUE.equals(option.getIsDeleted()))
-                                    .sorted(Comparator.comparing(QuizQuestionOption::getDisplayOrder))
+                                    .sorted(
+                                        Comparator.comparing(QuizQuestionOption::getDisplayOrder))
                                     .map(
                                         option ->
                                             InstructorLessonEvaluationDto.QuizOptionItem.builder()
@@ -621,7 +629,8 @@ public class InstructorLessonEvaluationService {
     }
 
     return input.getOptions() != null
-        && input.getOptions().stream().anyMatch(option -> option != null && !isBlank(option.getOptionText()));
+        && input.getOptions().stream()
+            .anyMatch(option -> option != null && !isBlank(option.getOptionText()));
   }
 
   private List<SanitizedQuizOption> sanitizeQuizOptions(
@@ -630,7 +639,11 @@ public class InstructorLessonEvaluationService {
         inputs == null
             ? new ArrayList<>()
             : inputs.stream()
-                .filter(input -> input != null && (!isBlank(input.getOptionText()) || questionType == QuestionType.TRUE_FALSE))
+                .filter(
+                    input ->
+                        input != null
+                            && (!isBlank(input.getOptionText())
+                                || questionType == QuestionType.TRUE_FALSE))
                 .map(
                     input ->
                         new SanitizedQuizOption(
@@ -640,10 +653,10 @@ public class InstructorLessonEvaluationService {
                 .collect(Collectors.toCollection(ArrayList::new));
 
     if (questionType == QuestionType.TRUE_FALSE) {
-      if (options.size() != 2 || options.stream().filter(SanitizedQuizOption::correct).count() != 1) {
+      if (options.size() != 2
+          || options.stream().filter(SanitizedQuizOption::correct).count() != 1) {
         return List.of(
-            new SanitizedQuizOption("O", true, 1),
-            new SanitizedQuizOption("X", false, 2));
+            new SanitizedQuizOption("O", true, 1), new SanitizedQuizOption("X", false, 2));
       }
       return options;
     }
@@ -751,7 +764,9 @@ public class InstructorLessonEvaluationService {
       return false;
     }
 
-    return input.getFileId() != null || !isBlank(input.getFileName()) || !isBlank(input.getBase64Content());
+    return input.getFileId() != null
+        || !isBlank(input.getFileName())
+        || !isBlank(input.getBase64Content());
   }
 
   private byte[] resolveReferenceFileBytes(

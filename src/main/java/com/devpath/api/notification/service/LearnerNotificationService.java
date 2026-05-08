@@ -16,34 +16,32 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class LearnerNotificationService {
 
-    private final LearnerNotificationRepository learnerNotificationRepository;
-    private final UserRepository userRepository;
+  private final LearnerNotificationRepository learnerNotificationRepository;
+  private final UserRepository userRepository;
 
-    public List<NotificationResponse> getMyNotifications(Long learnerId) {
-        // 존재하지 않는 사용자 기준으로 알림을 조회하지 않도록 막는다.
-        validateUserExists(learnerId);
+  public List<NotificationResponse> getMyNotifications(Long learnerId) {
+    validateUserExists(learnerId);
 
-        return learnerNotificationRepository.findAllByLearnerIdOrderByCreatedAtDesc(learnerId)
-                .stream()
-                .map(NotificationResponse::from)
-                .toList();
+    return learnerNotificationRepository.findAllByLearnerIdOrderByCreatedAtDesc(learnerId).stream()
+        .map(NotificationResponse::from)
+        .toList();
+  }
+
+  @Transactional
+  public NotificationResponse markAsRead(Long learnerId, Long notificationId) {
+    LearnerNotification notification =
+        learnerNotificationRepository
+            .findByIdAndLearnerId(notificationId, learnerId)
+            .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+    notification.markAsRead();
+
+    return NotificationResponse.from(notification);
+  }
+
+  private void validateUserExists(Long userId) {
+    if (!userRepository.existsById(userId)) {
+      throw new CustomException(ErrorCode.USER_NOT_FOUND);
     }
-
-    @Transactional
-    public NotificationResponse markAsRead(Long learnerId, Long notificationId) {
-        // 본인의 알림만 읽음 처리할 수 있다.
-        LearnerNotification notification = learnerNotificationRepository
-                .findByIdAndLearnerId(notificationId, learnerId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOTIFICATION_NOT_FOUND));
-
-        notification.markAsRead();
-
-        return NotificationResponse.from(notification);
-    }
-
-    private void validateUserExists(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
-    }
+  }
 }

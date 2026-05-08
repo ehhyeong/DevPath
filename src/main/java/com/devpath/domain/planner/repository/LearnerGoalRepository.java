@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LearnerGoalRepository extends JpaRepository<LearnerGoal, Long> {
 
-    List<LearnerGoal> findAllByLearnerIdAndIsActiveTrue(Long learnerId);
+  List<LearnerGoal> findAllByLearnerIdAndIsActiveTrue(Long learnerId);
 
-    List<LearnerGoal> findAllByLearnerIdInAndIsActiveTrue(Collection<Long> learnerIds);
+  List<LearnerGoal> findAllByLearnerIdInAndIsActiveTrue(Collection<Long> learnerIds);
 }

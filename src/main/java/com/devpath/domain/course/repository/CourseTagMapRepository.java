@@ -42,7 +42,8 @@ public interface CourseTagMapRepository extends JpaRepository<CourseTagMap, Long
             order by ctm.course.courseId asc, ctm.tag.name asc
             """)
   // 여러 강의의 태그를 한 번에 읽어 병합 로직과 표 구성을 단순화한다.
-  List<CourseTagMap> findAllByCourseCourseIdInOrderByCourseAndTagName(@Param("courseIds") Collection<Long> courseIds);
+  List<CourseTagMap> findAllByCourseCourseIdInOrderByCourseAndTagName(
+      @Param("courseIds") Collection<Long> courseIds);
 
   List<CourseTagMap> findAllByTagTagId(Long tagId);
 
@@ -51,7 +52,8 @@ public interface CourseTagMapRepository extends JpaRepository<CourseTagMap, Long
   void deleteAllByCourseCourseId(Long courseId);
 
   // [TEMP] 추천 무료 강좌 조회용 — 임시 하드코딩, 추후 삭제 예정
-  @Query("""
+  @Query(
+      """
       SELECT ctm.course.courseId FROM CourseTagMap ctm
       WHERE ctm.tag.name IN :tagNames
       AND ctm.course.status = :status
@@ -59,7 +61,6 @@ public interface CourseTagMapRepository extends JpaRepository<CourseTagMap, Long
       ORDER BY ctm.course.courseId ASC
       """)
   List<Long> findFreePublishedCourseIdsByTagNames(
-      @Param("tagNames") Collection<String> tagNames,
-      @Param("status") CourseStatus status);
+      @Param("tagNames") Collection<String> tagNames, @Param("status") CourseStatus status);
   // [/TEMP]
 }

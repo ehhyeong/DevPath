@@ -23,55 +23,55 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
 @Tag(
-        name = "Community Like API",
-        description = "커뮤니티 게시글 좋아요 API입니다. Swagger 테스트 기준으로 userId=2를 상호작용 사용자로 사용하면 됩니다."
-)
+    name = "Community Like API",
+    description = "커뮤니티 게시글 좋아요 API입니다. Swagger 테스트 기준으로 userId=2를 상호작용 사용자로 사용하면 됩니다.")
 public class CommunityPostLikeController {
 
-    private final CommunityPostLikeService communityPostLikeService;
+  private final CommunityPostLikeService communityPostLikeService;
 
-    @PostMapping("/{postId}/likes")
-    @Operation(summary = "게시글 좋아요", description = "특정 게시글에 좋아요를 등록합니다.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "게시글 좋아요 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "사용자 또는 게시글을 찾을 수 없음",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "409",
-                    description = "이미 좋아요를 누른 게시글",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
-            )
-    })
-    public ApiResponse<PostLikeResponse> likePost(
-            @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
-            @RequestParam Long userId,
-            @Parameter(description = "좋아요를 누를 게시글 ID입니다.", example = "10")
-            @PathVariable Long postId
-    ) {
-        PostLikeResponse response = communityPostLikeService.likePost(userId, postId);
-        return ApiResponse.ok(response);
-    }
+  @PostMapping("/{postId}/likes")
+  @Operation(summary = "게시글 좋아요", description = "특정 게시글에 좋아요를 등록합니다.")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "게시글 좋아요 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "사용자 또는 게시글을 찾을 수 없음",
+            content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "409",
+            description = "이미 좋아요를 누른 게시글",
+            content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+      })
+  public ApiResponse<PostLikeResponse> likePost(
+      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
+          @RequestParam
+          Long userId,
+      @Parameter(description = "좋아요를 누를 게시글 ID입니다.", example = "10") @PathVariable Long postId) {
+    PostLikeResponse response = communityPostLikeService.likePost(userId, postId);
+    return ApiResponse.ok(response);
+  }
 
-    @DeleteMapping("/{postId}/likes")
-    @Operation(summary = "게시글 좋아요 취소", description = "특정 게시글의 좋아요를 취소합니다.")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "게시글 좋아요 취소 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "사용자 또는 게시글을 찾을 수 없음",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class))
-            )
-    })
-    public ApiResponse<PostLikeResponse> unlikePost(
-            @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
-            @RequestParam Long userId,
-            @Parameter(description = "좋아요를 취소할 게시글 ID입니다.", example = "10")
-            @PathVariable Long postId
-    ) {
-        PostLikeResponse response = communityPostLikeService.unlikePost(userId, postId);
-        return ApiResponse.ok(response);
-    }
+  @DeleteMapping("/{postId}/likes")
+  @Operation(summary = "게시글 좋아요 취소", description = "특정 게시글의 좋아요를 취소합니다.")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "게시글 좋아요 취소 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "사용자 또는 게시글을 찾을 수 없음",
+            content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+      })
+  public ApiResponse<PostLikeResponse> unlikePost(
+      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
+          @RequestParam
+          Long userId,
+      @Parameter(description = "좋아요를 취소할 게시글 ID입니다.", example = "10") @PathVariable Long postId) {
+    PostLikeResponse response = communityPostLikeService.unlikePost(userId, postId);
+    return ApiResponse.ok(response);
+  }
 }

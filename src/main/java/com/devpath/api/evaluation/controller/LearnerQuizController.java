@@ -40,8 +40,7 @@ public class LearnerQuizController {
       @Valid @RequestBody SubmitQuizAttemptRequest request) {
     return ResponseEntity.ok(
         ApiResponse.success(
-            "퀴즈 응시가 완료되었습니다.",
-            quizAttemptService.submitQuizAttempt(userId, quizId, request)));
+            "퀴즈 응시가 완료되었습니다.", quizAttemptService.submitQuizAttempt(userId, quizId, request)));
   }
 
   @Operation(
@@ -52,6 +51,7 @@ public class LearnerQuizController {
   public ResponseEntity<ApiResponse<QuizAttemptResultResponse>> getQuizAttemptResult(
       @Parameter(description = "학습자 ID", example = "1") @RequestParam Long userId,
       @Parameter(description = "응시 ID", example = "100") @PathVariable Long attemptId) {
-    return ResponseEntity.ok(ApiResponse.ok(quizResultQueryService.getQuizAttemptResult(userId, attemptId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(quizResultQueryService.getQuizAttemptResult(userId, attemptId)));
   }
 }

@@ -64,8 +64,7 @@ public class MarketTrendService {
   private List<MarketJobTrend> findJobTrends() {
     return jobPostingRepository.findJobRoleTrends().stream()
         .map(
-            projection ->
-                new MarketJobTrend(projection.getJobRole(), projection.getPostingCount()))
+            projection -> new MarketJobTrend(projection.getJobRole(), projection.getPostingCount()))
         .toList();
   }
 

@@ -28,8 +28,7 @@ public class AdminRoadmapHubController {
   @Operation(summary = "로드맵 허브 구성 조회")
   @GetMapping
   public ApiResponse<AdminRoadmapHubCatalogResponse> getCatalog() {
-    return ApiResponse.success(
-        "로드맵 허브 구성을 조회했습니다.", roadmapHubQueryService.getAdminCatalog());
+    return ApiResponse.success("로드맵 허브 구성을 조회했습니다.", roadmapHubQueryService.getAdminCatalog());
   }
 
   @Operation(summary = "로드맵 허브 구성 저장")
@@ -37,7 +36,6 @@ public class AdminRoadmapHubController {
   public ApiResponse<AdminRoadmapHubCatalogResponse> replaceCatalog(
       @RequestBody @Valid RoadmapHubCatalogUpdateRequest request) {
     adminRoadmapHubService.replaceCatalog(request);
-    return ApiResponse.success(
-        "로드맵 허브 구성을 저장했습니다.", roadmapHubQueryService.getAdminCatalog());
+    return ApiResponse.success("로드맵 허브 구성을 저장했습니다.", roadmapHubQueryService.getAdminCatalog());
   }
 }

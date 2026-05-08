@@ -132,7 +132,8 @@ public class CareerProfileService {
     CareerProfile profile = getActiveProfile(profileId);
     String snapshotContent = buildSnapshotContent(profile);
     int nextVersionNumber =
-        Math.toIntExact(careerProfileVersionRepository.countByCareerProfile_Id(profile.getId()) + 1);
+        Math.toIntExact(
+            careerProfileVersionRepository.countByCareerProfile_Id(profile.getId()) + 1);
 
     CareerProfileSnapshot snapshot =
         CareerProfileSnapshot.builder()
@@ -257,4 +258,3 @@ public class CareerProfileService {
     return value == null ? "" : value;
   }
 }
-

@@ -6,4 +6,3 @@ public record LearningNextStep(
     String title,
     String description,
     String recommendedAction) {}
-

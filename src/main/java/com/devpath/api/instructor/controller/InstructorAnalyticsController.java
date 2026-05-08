@@ -19,17 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstructorAnalyticsController {
 
-    private final InstructorAnalyticsService instructorAnalyticsService;
+  private final InstructorAnalyticsService instructorAnalyticsService;
 
-    @Operation(summary = "강사 분석 대시보드 조회")
-    @GetMapping("/dashboard")
-    public ApiResponse<InstructorAnalyticsDashboardResponse> getDashboard(
-            @RequestParam(required = false) Long courseId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success(
-                "Instructor analytics loaded.",
-                instructorAnalyticsService.getDashboard(userId, courseId)
-        );
-    }
+  @Operation(summary = "강사 분석 대시보드 조회")
+  @GetMapping("/dashboard")
+  public ApiResponse<InstructorAnalyticsDashboardResponse> getDashboard(
+      @RequestParam(required = false) Long courseId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "Instructor analytics loaded.", instructorAnalyticsService.getDashboard(userId, courseId));
+  }
 }

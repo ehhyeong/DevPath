@@ -27,23 +27,21 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class PortfolioItem {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long portfolioId;
+  @Column(nullable = false)
+  private Long portfolioId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PortfolioItemType itemType;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private PortfolioItemType itemType;
 
-    @Column(nullable = false)
-    private Long referenceId;
+  @Column(nullable = false)
+  private Long referenceId;
 
-    @Builder.Default
-    private int sortOrder = 0;
+  @Builder.Default private int sortOrder = 0;
 
-    @CreatedDate
-    private LocalDateTime addedAt;
+  @CreatedDate private LocalDateTime addedAt;
 }

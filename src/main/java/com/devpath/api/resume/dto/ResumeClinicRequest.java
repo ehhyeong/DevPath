@@ -65,7 +65,9 @@ public class ResumeClinicRequest {
           @NotBlank(message = "보유 기술 스택은 필수입니다.")
           @Size(max = 1000, message = "보유 기술 스택은 1000자 이하여야 합니다.")
           String skills,
-      @Schema(description = "대표 프로젝트 경험", example = "DevPath에서 멘토링, 실시간 알림, AI 리뷰, 채용 분석 API를 구현했습니다.")
+      @Schema(
+              description = "대표 프로젝트 경험",
+              example = "DevPath에서 멘토링, 실시간 알림, AI 리뷰, 채용 분석 API를 구현했습니다.")
           @NotBlank(message = "대표 프로젝트 경험은 필수입니다.")
           @Size(max = 3000, message = "대표 프로젝트 경험은 3000자 이하여야 합니다.")
           String projectExperience,

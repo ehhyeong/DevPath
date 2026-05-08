@@ -28,10 +28,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @SpringBootTest(
-    properties = {
-      "spring.sql.init.mode=always",
-      "spring.jpa.defer-datasource-initialization=true"
-    })
+    properties = {"spring.sql.init.mode=always", "spring.jpa.defer-datasource-initialization=true"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class EvaluationSwaggerFinalInspectionIntegrationTest {
@@ -85,24 +82,35 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
             Map.ofEntries(
                 Map.entry("questionType", "MULTIPLE_CHOICE"),
                 Map.entry("questionText", "JWT filter should usually run in which layer?"),
-                Map.entry("explanation", "JWT validation is typically handled in the security filter chain."),
+                Map.entry(
+                    "explanation",
+                    "JWT validation is typically handled in the security filter chain."),
                 Map.entry("points", 10),
                 Map.entry("displayOrder", 1),
                 Map.entry(
                     "options",
                     List.of(
                         Map.of(
-                            "optionText", "Security filter chain",
-                            "isCorrect", true,
-                            "displayOrder", 1),
+                            "optionText",
+                            "Security filter chain",
+                            "isCorrect",
+                            true,
+                            "displayOrder",
+                            1),
                         Map.of(
-                            "optionText", "CSS rendering layer",
-                            "isCorrect", false,
-                            "displayOrder", 2),
+                            "optionText",
+                            "CSS rendering layer",
+                            "isCorrect",
+                            false,
+                            "displayOrder",
+                            2),
                         Map.of(
-                            "optionText", "Database schema migration",
-                            "isCorrect", false,
-                            "displayOrder", 3)))),
+                            "optionText",
+                            "Database schema migration",
+                            "isCorrect",
+                            false,
+                            "displayOrder",
+                            3)))),
             quizId);
 
     JsonNode createdQuestion = quizWithQuestion.get("questions").get(0);
@@ -162,8 +170,10 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
         postAsLearner(
             "/api/evaluation/learner/quizzes/{quizId}/attempts",
             Map.of(
-                "answers", List.of(Map.of("questionId", questionId, "selectedOptionId", wrongOptionId)),
-                "timeSpentSeconds", 42),
+                "answers",
+                List.of(Map.of("questionId", questionId, "selectedOptionId", wrongOptionId)),
+                "timeSpentSeconds",
+                42),
             quizId);
 
     long attemptId = submittedAttempt.get("attemptId").asLong();
@@ -182,8 +192,10 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
         postAsLearner(
             "/api/evaluation/learner/wrong-answer-notes/attempts/{attemptId}",
             Map.of(
-                "questionId", questionId,
-                "noteContent", "Review why JWT validation belongs in the filter chain."),
+                "questionId",
+                questionId,
+                "noteContent",
+                "Review why JWT validation belongs in the filter chain."),
             attemptId);
 
     assertThat(wrongAnswerNote.get("attemptId").asLong()).isEqualTo(attemptId);
@@ -249,9 +261,7 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
     JsonNode gradedSubmission =
         postAsInstructor(
             "/api/evaluation/instructor/submissions/{submissionId}/grade",
-            Map.of(
-                "rubricScores",
-                List.of(Map.of("rubricId", rubricId, "earnedPoints", 85))),
+            Map.of("rubricScores", List.of(Map.of("rubricId", rubricId, "earnedPoints", 85))),
             submissionId);
 
     assertThat(gradedSubmission.get("submissionId").asLong()).isEqualTo(submissionId);
@@ -354,22 +364,34 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
                     "questions",
                     List.of(
                         Map.of(
-                            "questionType", "MULTIPLE_CHOICE",
-                            "questionText", "What is Spring Security mainly responsible for?",
-                            "explanation", "It focuses on authentication and authorization.",
-                            "points", 5,
-                            "displayOrder", 1,
-                            "sourceTimestamp", "15:10-15:40",
+                            "questionType",
+                            "MULTIPLE_CHOICE",
+                            "questionText",
+                            "What is Spring Security mainly responsible for?",
+                            "explanation",
+                            "It focuses on authentication and authorization.",
+                            "points",
+                            5,
+                            "displayOrder",
+                            1,
+                            "sourceTimestamp",
+                            "15:10-15:40",
                             "options",
                             List.of(
                                 Map.of(
-                                    "optionText", "Authentication and authorization",
-                                    "correct", true,
-                                    "displayOrder", 1),
+                                    "optionText",
+                                    "Authentication and authorization",
+                                    "correct",
+                                    true,
+                                    "displayOrder",
+                                    1),
                                 Map.of(
-                                    "optionText", "CSS styling",
-                                    "correct", false,
-                                    "displayOrder", 2)))))),
+                                    "optionText",
+                                    "CSS styling",
+                                    "correct",
+                                    false,
+                                    "displayOrder",
+                                    2)))))),
             updateDraftId);
 
     assertThat(updatedDraft.get("draftId").asLong()).isEqualTo(updateDraftId);
@@ -385,8 +407,7 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
     assertThat(evidence.get("evidences").get(0).get("questionText").asText())
         .isEqualTo("What is Spring Security mainly responsible for?");
 
-    JsonNode questionBankStats =
-        getAsInstructor("/api/evaluation/instructor/question-bank/stats");
+    JsonNode questionBankStats = getAsInstructor("/api/evaluation/instructor/question-bank/stats");
 
     assertThat(questionBankStats.get("adoptedAiDraftCount").asLong()).isGreaterThanOrEqualTo(1L);
     assertThat(questionBankStats.get("totalQuestionCount").asLong()).isGreaterThanOrEqualTo(3L);
@@ -394,31 +415,37 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
     assertThat(containsId(questionBankStats.get("quizzes"), "quizId", adoptedQuizId)).isTrue();
   }
 
-  private JsonNode postAsInstructor(String url, Object body, Object... uriVariables) throws Exception {
+  private JsonNode postAsInstructor(String url, Object body, Object... uriVariables)
+      throws Exception {
     return performAndReadData(
         post(url, uriVariables), instructorAuthentication(), instructorId, body, null);
   }
 
-  private JsonNode putAsInstructor(String url, Object body, Object... uriVariables) throws Exception {
+  private JsonNode putAsInstructor(String url, Object body, Object... uriVariables)
+      throws Exception {
     return performAndReadData(
         put(url, uriVariables), instructorAuthentication(), instructorId, body, null);
   }
 
   private JsonNode getAsInstructor(String url, Object... uriVariables) throws Exception {
-    return performAndReadData(get(url, uriVariables), instructorAuthentication(), instructorId, null, null);
+    return performAndReadData(
+        get(url, uriVariables), instructorAuthentication(), instructorId, null, null);
   }
 
-  private JsonNode getAsInstructor(String url, Map<String, String> queryParams, Object... uriVariables)
-      throws Exception {
-    return performAndReadData(get(url, uriVariables), instructorAuthentication(), instructorId, null, queryParams);
+  private JsonNode getAsInstructor(
+      String url, Map<String, String> queryParams, Object... uriVariables) throws Exception {
+    return performAndReadData(
+        get(url, uriVariables), instructorAuthentication(), instructorId, null, queryParams);
   }
 
   private JsonNode postAsLearner(String url, Object body, Object... uriVariables) throws Exception {
-    return performAndReadData(post(url, uriVariables), learnerAuthentication(), learnerId, body, null);
+    return performAndReadData(
+        post(url, uriVariables), learnerAuthentication(), learnerId, body, null);
   }
 
   private JsonNode getAsLearner(String url, Object... uriVariables) throws Exception {
-    return performAndReadData(get(url, uriVariables), learnerAuthentication(), learnerId, null, null);
+    return performAndReadData(
+        get(url, uriVariables), learnerAuthentication(), learnerId, null, null);
   }
 
   private JsonNode performAndReadData(

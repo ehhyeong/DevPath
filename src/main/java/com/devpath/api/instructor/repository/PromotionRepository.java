@@ -7,12 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 
-    List<Promotion> findByInstructorIdAndIsDeletedFalse(Long instructorId);
+  List<Promotion> findByInstructorIdAndIsDeletedFalse(Long instructorId);
 
-    Optional<Promotion> findByIdAndIsDeletedFalse(Long id);
+  Optional<Promotion> findByIdAndIsDeletedFalse(Long id);
 
-    Optional<Promotion> findTopByCourseIdAndInstructorIdAndIsDeletedFalseOrderByCreatedAtDesc(
-            Long courseId,
-            Long instructorId
-    );
+  Optional<Promotion> findTopByCourseIdAndInstructorIdAndIsDeletedFalseOrderByCreatedAtDesc(
+      Long courseId, Long instructorId);
 }

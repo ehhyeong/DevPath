@@ -8,9 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CareerProfileSkillRepository extends JpaRepository<CareerProfileSkill, Long> {
 
   @EntityGraph(attributePaths = "careerProfile")
-  List<CareerProfileSkill> findAllByCareerProfile_IdAndIsDeletedFalseOrderByNameAsc(
-      Long profileId);
+  List<CareerProfileSkill> findAllByCareerProfile_IdAndIsDeletedFalseOrderByNameAsc(Long profileId);
 
   boolean existsByCareerProfile_IdAndNameIgnoreCaseAndIsDeletedFalse(Long profileId, String name);
 }
-

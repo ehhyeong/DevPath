@@ -5,11 +5,12 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface InstructorCommentLikeRepository extends JpaRepository<InstructorCommentLike, Long> {
+public interface InstructorCommentLikeRepository
+    extends JpaRepository<InstructorCommentLike, Long> {
 
-    Optional<InstructorCommentLike> findByCommentIdAndUserId(Long commentId, Long userId);
+  Optional<InstructorCommentLike> findByCommentIdAndUserId(Long commentId, Long userId);
 
-    boolean existsByCommentIdAndUserId(Long commentId, Long userId);
+  boolean existsByCommentIdAndUserId(Long commentId, Long userId);
 
-    long countByCommentIdIn(List<Long> commentIds);
+  long countByCommentIdIn(List<Long> commentIds);
 }

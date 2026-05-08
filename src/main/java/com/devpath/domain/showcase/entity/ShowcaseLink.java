@@ -22,17 +22,17 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ShowcaseLink {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long showcaseId;
+  @Column(nullable = false)
+  private Long showcaseId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ShowcaseLinkType linkType;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private ShowcaseLinkType linkType;
 
-    @Column(nullable = false)
-    private String url;
+  @Column(nullable = false)
+  private String url;
 }

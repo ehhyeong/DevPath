@@ -26,35 +26,32 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class QnaAnswerDraft {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long questionId;
+  @Column(nullable = false)
+  private Long questionId;
 
-    @Column(nullable = false)
-    private Long instructorId;
+  @Column(nullable = false)
+  private Long instructorId;
 
-    @Column(columnDefinition = "TEXT")
-    private String draftContent;
+  @Column(columnDefinition = "TEXT")
+  private String draftContent;
 
-    @Builder.Default
-    private Boolean isDeleted = false;
+  @Builder.Default private Boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime savedAt;
+  @CreatedDate private LocalDateTime savedAt;
 
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+  @LastModifiedDate private LocalDateTime updatedAt;
 
-    // 같은 질문의 draft는 덮어쓰기 방식으로 유지한다.
-    public void updateDraft(String content) {
-        this.draftContent = content;
-    }
+  // 같은 질문의 draft는 덮어쓰기 방식으로 유지한다.
+  public void updateDraft(String content) {
+    this.draftContent = content;
+  }
 
-    // draft가 published answer로 승격되면 active draft는 soft delete 처리한다.
-    public void deleteDraft() {
-        this.isDeleted = true;
-    }
+  // draft가 published answer로 승격되면 active draft는 soft delete 처리한다.
+  public void deleteDraft() {
+    this.isDeleted = true;
+  }
 }

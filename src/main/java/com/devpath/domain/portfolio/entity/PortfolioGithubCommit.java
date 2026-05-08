@@ -21,20 +21,20 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PortfolioGithubCommit {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long portfolioId;
+  @Column(nullable = false)
+  private Long portfolioId;
 
-    @Column(nullable = false)
-    private String repoName;
+  @Column(nullable = false)
+  private String repoName;
 
-    private String commitMessage;
+  private String commitMessage;
 
-    @Column(nullable = false)
-    private String commitUrl;
+  @Column(nullable = false)
+  private String commitUrl;
 
-    private LocalDateTime committedAt;
+  private LocalDateTime committedAt;
 }

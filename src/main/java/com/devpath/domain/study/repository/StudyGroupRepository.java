@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface StudyGroupRepository extends JpaRepository<StudyGroup, Long> {
 
-    List<StudyGroup> findAllByIsDeletedFalseOrderByCreatedAtDesc();
+  List<StudyGroup> findAllByIsDeletedFalseOrderByCreatedAtDesc();
 
-    long countByIsDeletedFalse();
+  long countByIsDeletedFalse();
 
-    List<StudyGroup> findTop3ByIsDeletedFalseOrderByCreatedAtDesc();
+  List<StudyGroup> findTop3ByIsDeletedFalseOrderByCreatedAtDesc();
 
-    Optional<StudyGroup> findByIdAndIsDeletedFalse(Long groupId);
+  Optional<StudyGroup> findByIdAndIsDeletedFalse(Long groupId);
 }

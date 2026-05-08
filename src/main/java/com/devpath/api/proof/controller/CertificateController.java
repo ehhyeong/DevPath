@@ -26,57 +26,56 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CertificateController {
 
-    // 증명서 서비스다.
-    private final CertificateService certificateService;
+  // 증명서 서비스다.
+  private final CertificateService certificateService;
 
-    // Proof Card 기준 증명서를 발급한다.
-    @Operation(summary = "증명서 발급", description = "Proof Card 기준으로 증명서를 발급합니다.")
-    @PostMapping("/proof-cards/{proofCardId}")
-    public ResponseEntity<ApiResponse<CertificateResponse.Detail>> issue(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Parameter(description = "Proof Card 식별자", example = "1") @PathVariable Long proofCardId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(certificateService.issue(userId, proofCardId)));
-    }
+  // Proof Card 기준 증명서를 발급한다.
+  @Operation(summary = "증명서 발급", description = "Proof Card 기준으로 증명서를 발급합니다.")
+  @PostMapping("/proof-cards/{proofCardId}")
+  public ResponseEntity<ApiResponse<CertificateResponse.Detail>> issue(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "Proof Card 식별자", example = "1") @PathVariable Long proofCardId) {
+    return ResponseEntity.ok(ApiResponse.ok(certificateService.issue(userId, proofCardId)));
+  }
 
-    // 증명서 PDF를 생성한다.
-    @Operation(summary = "증명서 PDF 생성", description = "Proof Card 기준으로 증명서 PDF를 생성합니다.")
-    @PostMapping("/proof-cards/{proofCardId}/pdf")
-    public ResponseEntity<ApiResponse<CertificateResponse.PdfDetail>> generatePdf(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Parameter(description = "Proof Card 식별자", example = "1") @PathVariable Long proofCardId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(certificateService.generatePdf(userId, proofCardId)));
-    }
+  // 증명서 PDF를 생성한다.
+  @Operation(summary = "증명서 PDF 생성", description = "Proof Card 기준으로 증명서 PDF를 생성합니다.")
+  @PostMapping("/proof-cards/{proofCardId}/pdf")
+  public ResponseEntity<ApiResponse<CertificateResponse.PdfDetail>> generatePdf(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "Proof Card 식별자", example = "1") @PathVariable Long proofCardId) {
+    return ResponseEntity.ok(ApiResponse.ok(certificateService.generatePdf(userId, proofCardId)));
+  }
 
-    // 증명서 상세를 조회한다.
-    @Operation(summary = "증명서 상세 조회", description = "특정 증명서 상세를 조회합니다.")
-    @GetMapping("/{certificateId}")
-    public ResponseEntity<ApiResponse<CertificateResponse.Detail>> getCertificate(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Parameter(description = "증명서 ID", example = "1") @PathVariable Long certificateId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(certificateService.getCertificate(userId, certificateId)));
-    }
+  // 증명서 상세를 조회한다.
+  @Operation(summary = "증명서 상세 조회", description = "특정 증명서 상세를 조회합니다.")
+  @GetMapping("/{certificateId}")
+  public ResponseEntity<ApiResponse<CertificateResponse.Detail>> getCertificate(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "증명서 ID", example = "1") @PathVariable Long certificateId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(certificateService.getCertificate(userId, certificateId)));
+  }
 
-    // 증명서 다운로드 이력을 저장한다.
-    @Operation(summary = "증명서 다운로드 이력 저장", description = "증명서 다운로드 이력을 저장합니다.")
-    @PostMapping("/{certificateId}/downloads")
-    public ResponseEntity<ApiResponse<CertificateResponse.DownloadHistoryDetail>> recordDownload(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Parameter(description = "증명서 ID", example = "1") @PathVariable Long certificateId,
-        @Valid @RequestBody CertificateRequest.Download request
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(certificateService.recordDownload(userId, certificateId, request)));
-    }
+  // 증명서 다운로드 이력을 저장한다.
+  @Operation(summary = "증명서 다운로드 이력 저장", description = "증명서 다운로드 이력을 저장합니다.")
+  @PostMapping("/{certificateId}/downloads")
+  public ResponseEntity<ApiResponse<CertificateResponse.DownloadHistoryDetail>> recordDownload(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "증명서 ID", example = "1") @PathVariable Long certificateId,
+      @Valid @RequestBody CertificateRequest.Download request) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(certificateService.recordDownload(userId, certificateId, request)));
+  }
 
-    // 증명서 다운로드 이력을 조회한다.
-    @Operation(summary = "증명서 다운로드 이력 조회", description = "증명서 다운로드 이력을 조회합니다.")
-    @GetMapping("/{certificateId}/download-histories")
-    public ResponseEntity<ApiResponse<List<CertificateResponse.DownloadHistoryDetail>>> getDownloadHistories(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Parameter(description = "증명서 ID", example = "1") @PathVariable Long certificateId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(certificateService.getDownloadHistories(userId, certificateId)));
-    }
+  // 증명서 다운로드 이력을 조회한다.
+  @Operation(summary = "증명서 다운로드 이력 조회", description = "증명서 다운로드 이력을 조회합니다.")
+  @GetMapping("/{certificateId}/download-histories")
+  public ResponseEntity<ApiResponse<List<CertificateResponse.DownloadHistoryDetail>>>
+      getDownloadHistories(
+          @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+          @Parameter(description = "증명서 ID", example = "1") @PathVariable Long certificateId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(certificateService.getDownloadHistories(userId, certificateId)));
+  }
 }

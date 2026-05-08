@@ -8,12 +8,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UpdateShowcaseLinksRequest {
 
-    private List<LinkItem> links;
+  private List<LinkItem> links;
 
-    @Getter
-    @NoArgsConstructor
-    public static class LinkItem {
-        private String linkType;
-        private String url;
-    }
+  @Getter
+  @NoArgsConstructor
+  public static class LinkItem {
+    private String linkType;
+    private String url;
+  }
 }

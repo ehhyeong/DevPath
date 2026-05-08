@@ -12,13 +12,15 @@ public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, 
   // 특정 레슨의 자료 목록을 표시 순서대로 조회한다.
   List<CourseMaterial> findAllByLessonLessonIdOrderByDisplayOrderAsc(Long lessonId);
 
-  @Query("""
+  @Query(
+      """
       select cm
       from CourseMaterial cm
       where cm.lesson.lessonId in :lessonIds
       order by cm.lesson.lessonId asc, cm.displayOrder asc, cm.materialId asc
       """)
-  List<CourseMaterial> findAllByLessonIdsInDisplayOrder(@Param("lessonIds") Collection<Long> lessonIds);
+  List<CourseMaterial> findAllByLessonIdsInDisplayOrder(
+      @Param("lessonIds") Collection<Long> lessonIds);
 
   // 하위 호환을 위해 기존 sortOrder 메서드 이름도 유지한다.
   default List<CourseMaterial> findAllByLessonLessonIdOrderBySortOrderAsc(Long lessonId) {

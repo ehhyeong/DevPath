@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ReviewReportRepository extends JpaRepository<ReviewReport, Long> {
 
-    List<ReviewReport> findAllByReviewIdAndIsResolvedFalse(Long reviewId);
+  List<ReviewReport> findAllByReviewIdAndIsResolvedFalse(Long reviewId);
 }

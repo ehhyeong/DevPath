@@ -27,7 +27,8 @@ public class SubmissionHistoryResponse {
   private List<HistoryItem> submissions = new ArrayList<>();
 
   @Builder
-  public SubmissionHistoryResponse(Long learnerId, Integer totalCount, List<HistoryItem> submissions) {
+  public SubmissionHistoryResponse(
+      Long learnerId, Integer totalCount, List<HistoryItem> submissions) {
     this.learnerId = learnerId;
     this.totalCount = totalCount;
     this.submissions = submissions == null ? new ArrayList<>() : submissions;

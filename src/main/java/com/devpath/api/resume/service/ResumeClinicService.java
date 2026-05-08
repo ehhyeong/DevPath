@@ -92,11 +92,7 @@ public class ResumeClinicService {
     List<String> proofKeywords = parseCsv(request.proofCards());
 
     String headline =
-        request.profileTitle()
-            + " | "
-            + request.targetRole()
-            + " | "
-            + joinTopKeywords(skills);
+        request.profileTitle() + " | " + request.targetRole() + " | " + joinTopKeywords(skills);
 
     String introduction =
         "저는 "

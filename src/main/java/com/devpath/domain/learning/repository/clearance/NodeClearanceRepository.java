@@ -12,34 +12,30 @@ import org.springframework.data.repository.query.Param;
 
 public interface NodeClearanceRepository extends JpaRepository<NodeClearance, Long> {
 
-    Optional<NodeClearance> findByUserIdAndNodeNodeId(Long userId, Long nodeId);
+  Optional<NodeClearance> findByUserIdAndNodeNodeId(Long userId, Long nodeId);
 
-    List<NodeClearance> findAllByUserIdAndNodeRoadmapRoadmapIdOrderByNodeSortOrderAscNodeNodeIdAsc(
-            Long userId,
-            Long roadmapId
-    );
+  List<NodeClearance> findAllByUserIdAndNodeRoadmapRoadmapIdOrderByNodeSortOrderAscNodeNodeIdAsc(
+      Long userId, Long roadmapId);
 
-    List<NodeClearance> findAllByUserIdOrderByLastCalculatedAtDesc(Long userId);
+  List<NodeClearance> findAllByUserIdOrderByLastCalculatedAtDesc(Long userId);
 
-    List<NodeClearance> findAllByUserIdAndClearanceStatusOrderByClearedAtDesc(
-            Long userId,
-            ClearanceStatus clearanceStatus
-    );
+  List<NodeClearance> findAllByUserIdAndClearanceStatusOrderByClearedAtDesc(
+      Long userId, ClearanceStatus clearanceStatus);
 
-    @Query("""
+  @Query(
+      """
             select max(nc.lastCalculatedAt)
             from NodeClearance nc
             where nc.user.id = :userId
               and nc.node.roadmap.roadmapId = :roadmapId
             """)
-    LocalDateTime findLatestActivityAtByUserIdAndRoadmapId(
-            @Param("userId") Long userId,
-            @Param("roadmapId") Long roadmapId
-    );
+  LocalDateTime findLatestActivityAtByUserIdAndRoadmapId(
+      @Param("userId") Long userId, @Param("roadmapId") Long roadmapId);
 
-    long countByUserIdAndClearanceStatus(Long userId, ClearanceStatus clearanceStatus);
+  long countByUserIdAndClearanceStatus(Long userId, ClearanceStatus clearanceStatus);
 
-    @Query("""
+  @Query(
+      """
             select nc
             from NodeClearance nc
             join fetch nc.user u
@@ -48,9 +44,10 @@ public interface NodeClearanceRepository extends JpaRepository<NodeClearance, Lo
               and nc.clearanceStatus = com.devpath.domain.learning.entity.clearance.ClearanceStatus.NOT_CLEARED
             order by nc.lastCalculatedAt desc
             """)
-    List<NodeClearance> findInProgressClearancesByUserId(@Param("learnerId") Long learnerId);
+  List<NodeClearance> findInProgressClearancesByUserId(@Param("learnerId") Long learnerId);
 
-    @Query("""
+  @Query(
+      """
             select nc
             from NodeClearance nc
             join fetch nc.user u
@@ -61,8 +58,6 @@ public interface NodeClearanceRepository extends JpaRepository<NodeClearance, Lo
               and nc.clearanceStatus = com.devpath.domain.learning.entity.clearance.ClearanceStatus.NOT_CLEARED
             order by nc.lastCalculatedAt desc
             """)
-    List<NodeClearance> findCandidateInProgressClearances(
-            @Param("learnerId") Long learnerId,
-            @Param("nodeIds") Collection<Long> nodeIds
-    );
+  List<NodeClearance> findCandidateInProgressClearances(
+      @Param("learnerId") Long learnerId, @Param("nodeIds") Collection<Long> nodeIds);
 }

@@ -28,7 +28,8 @@ public class AssignmentCommandService {
   private final AssignmentRepository assignmentRepository;
 
   // 강사가 과제 루트 정보를 생성한다.
-  public AssignmentDetailResponse createAssignment(Long instructorUserId, CreateAssignmentRequest request) {
+  public AssignmentDetailResponse createAssignment(
+      Long instructorUserId, CreateAssignmentRequest request) {
     validateUserExists(instructorUserId);
 
     RoadmapNode roadmapNode =
@@ -72,7 +73,9 @@ public class AssignmentCommandService {
     assignment.updateInfo(
         assignment.getTitle(),
         assignment.getDescription(),
-        request.getSubmissionType() == null ? assignment.getSubmissionType() : request.getSubmissionType(),
+        request.getSubmissionType() == null
+            ? assignment.getSubmissionType()
+            : request.getSubmissionType(),
         request.getDueAt(),
         assignment.getTotalScore());
 

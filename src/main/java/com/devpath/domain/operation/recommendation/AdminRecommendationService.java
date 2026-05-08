@@ -15,23 +15,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AdminRecommendationService {
 
-    private final RecommendationSettingRepository settingRepository;
+  private final RecommendationSettingRepository settingRepository;
 
-    public List<RecommendationSettingResponse> getAllSettings() {
-        return settingRepository.findAll()
-                .stream()
-                .map(RecommendationSettingResponse::from)
-                .collect(Collectors.toList());
+  public List<RecommendationSettingResponse> getAllSettings() {
+    return settingRepository.findAll().stream()
+        .map(RecommendationSettingResponse::from)
+        .collect(Collectors.toList());
+  }
+
+  @Transactional
+  public List<RecommendationSettingResponse> updateSettings(
+      RecommendationSettingUpdateRequest request) {
+    for (RecommendationSettingUpdateRequest.SettingItem item : request.getSettings()) {
+      RecommendationSetting setting =
+          settingRepository
+              .findBySettingKey(item.getKey())
+              .orElseThrow(() -> new CustomException(ErrorCode.SETTING_NOT_FOUND));
+
+      setting.updateValue(item.getValue());
     }
-
-    @Transactional
-    public List<RecommendationSettingResponse> updateSettings(RecommendationSettingUpdateRequest request) {
-        for (RecommendationSettingUpdateRequest.SettingItem item : request.getSettings()) {
-            RecommendationSetting setting = settingRepository.findBySettingKey(item.getKey())
-                    .orElseThrow(() -> new CustomException(ErrorCode.SETTING_NOT_FOUND));
-
-            setting.updateValue(item.getValue());
-        }
-        return getAllSettings();
-    }
+    return getAllSettings();
+  }
 }

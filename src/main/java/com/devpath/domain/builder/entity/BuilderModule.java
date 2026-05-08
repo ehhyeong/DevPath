@@ -57,8 +57,15 @@ public class BuilderModule {
   private int sortOrder;
 
   @Builder
-  public BuilderModule(String moduleId, String category, String title, String icon,
-      String color, String bgColor, List<String> topics, int sortOrder) {
+  public BuilderModule(
+      String moduleId,
+      String category,
+      String title,
+      String icon,
+      String color,
+      String bgColor,
+      List<String> topics,
+      int sortOrder) {
     this.moduleId = moduleId;
     this.category = category;
     this.title = title;

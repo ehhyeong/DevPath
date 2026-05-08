@@ -8,17 +8,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TilDraftRepository extends JpaRepository<TilDraft, Long> {
 
-    List<TilDraft> findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
+  List<TilDraft> findByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
 
-    List<TilDraft> findByUserIdAndLessonLessonIdAndIsDeletedFalse(Long userId, Long lessonId);
+  List<TilDraft> findByUserIdAndLessonLessonIdAndIsDeletedFalse(Long userId, Long lessonId);
 
-    Optional<TilDraft> findByIdAndUserIdAndIsDeletedFalse(Long tilId, Long userId);
+  Optional<TilDraft> findByIdAndUserIdAndIsDeletedFalse(Long tilId, Long userId);
 
-    List<TilDraft> findByUserIdAndStatusAndIsDeletedFalse(Long userId, TilDraftStatus status);
+  List<TilDraft> findByUserIdAndStatusAndIsDeletedFalse(Long userId, TilDraftStatus status);
 
-    long countByUserIdAndIsDeletedFalse(Long userId);
+  long countByUserIdAndIsDeletedFalse(Long userId);
 
-    long countByUserIdAndStatusAndIsDeletedFalse(Long userId, TilDraftStatus status);
+  long countByUserIdAndStatusAndIsDeletedFalse(Long userId, TilDraftStatus status);
 
-    long countByUserIdAndLessonLessonIdAndIsDeletedFalse(Long userId, Long lessonId);
+  long countByUserIdAndLessonLessonIdAndIsDeletedFalse(Long userId, Long lessonId);
 }

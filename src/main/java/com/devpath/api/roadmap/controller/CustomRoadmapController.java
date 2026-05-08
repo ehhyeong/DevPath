@@ -30,9 +30,7 @@ public class CustomRoadmapController {
   private final CustomRoadmapQueryService customRoadmapQueryService;
   private final NodeClearanceCommandService nodeClearanceCommandService;
 
-  @Operation(
-      summary = "내 커스텀 로드맵 목록 조회",
-      description = "JWT 로그인 사용자의 커스텀 로드맵 목록을 최신순으로 조회합니다.")
+  @Operation(summary = "내 커스텀 로드맵 목록 조회", description = "JWT 로그인 사용자의 커스텀 로드맵 목록을 최신순으로 조회합니다.")
   @GetMapping
   public ResponseEntity<ApiResponse<MyRoadmapDto.ListResponse>> getMyRoadmaps(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
@@ -85,20 +83,26 @@ public class CustomRoadmapController {
       @Parameter(description = "커스텀 로드맵 ID", example = "10") @PathVariable Long customRoadmapId,
       @Parameter(description = "커스텀 노드 ID", example = "101") @PathVariable Long customNodeId) {
     return ResponseEntity.ok(
-        ApiResponse.success("노드가 클리어되었습니다.",
+        ApiResponse.success(
+            "노드가 클리어되었습니다.",
             nodeClearanceCommandService.clearNode(userId, customRoadmapId, customNodeId)));
   }
 
   // [TEMP] 추천 무료 강좌 조회 엔드포인트 — 임시 하드코딩, 추후 삭제 예정
-  @Operation(summary = "추천 무료 강좌 courseId 조회 (임시)", description = "노드 제목·필수 태그 기반으로 무료 공개 강좌 courseId를 반환합니다. (임시 하드코딩)")
+  @Operation(
+      summary = "추천 무료 강좌 courseId 조회 (임시)",
+      description = "노드 제목·필수 태그 기반으로 무료 공개 강좌 courseId를 반환합니다. (임시 하드코딩)")
   @GetMapping("/{customRoadmapId}/nodes/{customNodeId}/recommended-course")
   public ResponseEntity<ApiResponse<Long>> getRecommendedCourse(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "커스텀 로드맵 ID", example = "10") @PathVariable Long customRoadmapId,
       @Parameter(description = "커스텀 노드 ID", example = "101") @PathVariable Long customNodeId) {
-    return ResponseEntity.ok(ApiResponse.ok(
-        customRoadmapQueryService.getRecommendedFreeCourseId(userId, customRoadmapId, customNodeId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(
+            customRoadmapQueryService.getRecommendedFreeCourseId(
+                userId, customRoadmapId, customNodeId)));
   }
+
   // [/TEMP]
 
   @Operation(summary = "내 커스텀 로드맵 삭제", description = "JWT 로그인 사용자의 커스텀 로드맵을 삭제합니다.")

@@ -28,28 +28,26 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class AdminPermission {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "admin_role_id", nullable = false)
-    private AdminRole adminRole;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "admin_role_id", nullable = false)
+  private AdminRole adminRole;
 
-    @Column(nullable = false, length = 100)
-    private String permissionCode;
+  @Column(nullable = false, length = 100)
+  private String permissionCode;
 
-    @Column(length = 255)
-    private String description;
+  @Column(length = 255)
+  private String description;
 
-    @Builder.Default
-    private Boolean isDeleted = false;
+  @Builder.Default private Boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    // 기존 권한은 soft delete 후 새 권한 세트로 교체한다.
-    public void delete() {
-        this.isDeleted = true;
-    }
+  // 기존 권한은 soft delete 후 새 권한 세트로 교체한다.
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

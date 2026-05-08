@@ -30,79 +30,80 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class Review {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long courseId;
+  @Column(nullable = false)
+  private Long courseId;
 
-    @Column(nullable = false)
-    private Long learnerId;
+  @Column(nullable = false)
+  private Long learnerId;
 
-    @Column(nullable = false)
-    private Integer rating;
+  @Column(nullable = false)
+  private Integer rating;
 
-    @Column(columnDefinition = "TEXT")
-    private String content;
+  @Column(columnDefinition = "TEXT")
+  private String content;
 
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    @Column(nullable = false, length = 20)
-    private ReviewStatus status = ReviewStatus.UNANSWERED;
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  @Column(nullable = false, length = 20)
+  private ReviewStatus status = ReviewStatus.UNANSWERED;
 
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean isHidden = false;
+  @Builder.Default
+  @Column(nullable = false)
+  private Boolean isHidden = false;
 
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean isDeleted = false;
+  @Builder.Default
+  @Column(nullable = false)
+  private Boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+  @LastModifiedDate private LocalDateTime updatedAt;
 
-    @Column(name = "issue_tags_raw")
-    private String issueTagsRaw;
+  @Column(name = "issue_tags_raw")
+  private String issueTagsRaw;
 
-    // Review moderation only allows transitions around the answered flow.
-    public void changeStatus(ReviewStatus newStatus) {
-        boolean valid = switch (this.status) {
-            case UNANSWERED -> newStatus == ReviewStatus.ANSWERED;
-            case ANSWERED -> newStatus == ReviewStatus.UNSATISFIED || newStatus == ReviewStatus.ANSWERED;
-            case UNSATISFIED -> newStatus == ReviewStatus.ANSWERED || newStatus == ReviewStatus.UNSATISFIED;
+  // Review moderation only allows transitions around the answered flow.
+  public void changeStatus(ReviewStatus newStatus) {
+    boolean valid =
+        switch (this.status) {
+          case UNANSWERED -> newStatus == ReviewStatus.ANSWERED;
+          case ANSWERED ->
+              newStatus == ReviewStatus.UNSATISFIED || newStatus == ReviewStatus.ANSWERED;
+          case UNSATISFIED ->
+              newStatus == ReviewStatus.ANSWERED || newStatus == ReviewStatus.UNSATISFIED;
         };
 
-        if (!valid) {
-            throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
-        }
-
-        this.status = newStatus;
+    if (!valid) {
+      throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
     }
 
-    public void markAnswered() {
-        this.status = ReviewStatus.ANSWERED;
-    }
+    this.status = newStatus;
+  }
 
-    public void markUnanswered() {
-        this.status = ReviewStatus.UNANSWERED;
-    }
+  public void markAnswered() {
+    this.status = ReviewStatus.ANSWERED;
+  }
 
-    public void hide() {
-        if (Boolean.TRUE.equals(this.isHidden)) {
-            throw new CustomException(ErrorCode.REVIEW_ALREADY_HIDDEN);
-        }
-        this.isHidden = true;
-    }
+  public void markUnanswered() {
+    this.status = ReviewStatus.UNANSWERED;
+  }
 
-    public void resolveReport() {
-        this.isHidden = false;
+  public void hide() {
+    if (Boolean.TRUE.equals(this.isHidden)) {
+      throw new CustomException(ErrorCode.REVIEW_ALREADY_HIDDEN);
     }
+    this.isHidden = true;
+  }
 
-    public void updateIssueTags(String issueTagsRaw) {
-        this.issueTagsRaw = issueTagsRaw;
-    }
+  public void resolveReport() {
+    this.isHidden = false;
+  }
+
+  public void updateIssueTags(String issueTagsRaw) {
+    this.issueTagsRaw = issueTagsRaw;
+  }
 }

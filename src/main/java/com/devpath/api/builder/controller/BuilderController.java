@@ -1,6 +1,7 @@
 package com.devpath.api.builder.controller;
 
 import static com.devpath.common.security.AuthenticationUtils.requireUserId;
+
 import com.devpath.api.builder.dto.BuilderModuleDto;
 import com.devpath.api.builder.dto.MyRoadmapResponse;
 import com.devpath.api.builder.dto.MyRoadmapSaveRequest;
@@ -37,8 +38,8 @@ public class BuilderController {
   @Operation(summary = "빌더 모듈 목록 조회", description = "카테고리별 빌더 모듈 목록을 조회합니다.")
   @GetMapping("/modules")
   public ResponseEntity<ApiResponse<List<BuilderModuleDto>>> getModules(
-      @Parameter(description = "카테고리 키 (예: backend, frontend)", example = "backend")
-      @RequestParam String category) {
+      @Parameter(description = "카테고리 키 (예: backend, frontend)", example = "backend") @RequestParam
+          String category) {
     return ResponseEntity.ok(ApiResponse.ok(builderModuleService.getModulesByCategory(category)));
   }
 
@@ -48,7 +49,8 @@ public class BuilderController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody MyRoadmapSaveRequest request) {
     return ResponseEntity.ok(
-        ApiResponse.success("나만의 로드맵이 저장되었습니다.", myRoadmapService.save(requireUserId(userId), request)));
+        ApiResponse.success(
+            "나만의 로드맵이 저장되었습니다.", myRoadmapService.save(requireUserId(userId), request)));
   }
 
   @Operation(summary = "나만의 로드맵 목록 조회", description = "사용자의 나만의 로드맵 목록을 최신순으로 조회합니다.")

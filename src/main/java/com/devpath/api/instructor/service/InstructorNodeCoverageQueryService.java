@@ -76,7 +76,10 @@ public class InstructorNodeCoverageQueryService {
     List<InstructorNodeCoverageDto.NodeCoverageItem> nodeCoverages =
         candidateNodes.stream()
             .filter(node -> requiredTagsByNodeId.containsKey(node.getNodeId()))
-            .map(node -> toNodeCoverageItem(node, requiredTagsByNodeId.get(node.getNodeId()), courseTagSet))
+            .map(
+                node ->
+                    toNodeCoverageItem(
+                        node, requiredTagsByNodeId.get(node.getNodeId()), courseTagSet))
             .sorted(
                 (a, b) -> {
                   int coverageCompare = b.getCoveragePercent().compareTo(a.getCoveragePercent());
@@ -181,7 +184,8 @@ public class InstructorNodeCoverageQueryService {
 
   // 현재 로그인한 강사가 소유한 강의인지 검증하며 조회한다.
   private Course getOwnedCourse(Long instructorId, Long courseId) {
-    return courseRepository.findByCourseIdAndInstructorId(courseId, instructorId)
+    return courseRepository
+        .findByCourseIdAndInstructorId(courseId, instructorId)
         .orElseGet(
             () -> {
               if (courseRepository.existsById(courseId)) {

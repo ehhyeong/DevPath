@@ -22,21 +22,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin/course-catalog")
 public class AdminLectureCatalogController {
 
-    private final LectureCatalogQueryService lectureCatalogQueryService;
-    private final AdminLectureCatalogService adminLectureCatalogService;
+  private final LectureCatalogQueryService lectureCatalogQueryService;
+  private final AdminLectureCatalogService adminLectureCatalogService;
 
-    @Operation(summary = "강의 메뉴 조회")
-    @GetMapping
-    public ApiResponse<LectureCatalogMenuResponse> getMenu() {
-        return ApiResponse.success("강의 메뉴를 조회했습니다.", lectureCatalogQueryService.getAdminMenu());
-    }
+  @Operation(summary = "강의 메뉴 조회")
+  @GetMapping
+  public ApiResponse<LectureCatalogMenuResponse> getMenu() {
+    return ApiResponse.success("강의 메뉴를 조회했습니다.", lectureCatalogQueryService.getAdminMenu());
+  }
 
-    @Operation(summary = "강의 메뉴 저장")
-    @PutMapping
-    public ApiResponse<LectureCatalogMenuResponse> replaceMenu(
-            @RequestBody @Valid LectureCatalogMenuUpdateRequest request
-    ) {
-        adminLectureCatalogService.replaceMenu(request);
-        return ApiResponse.success("강의 메뉴를 저장했습니다.", lectureCatalogQueryService.getAdminMenu());
-    }
+  @Operation(summary = "강의 메뉴 저장")
+  @PutMapping
+  public ApiResponse<LectureCatalogMenuResponse> replaceMenu(
+      @RequestBody @Valid LectureCatalogMenuUpdateRequest request) {
+    adminLectureCatalogService.replaceMenu(request);
+    return ApiResponse.success("강의 메뉴를 저장했습니다.", lectureCatalogQueryService.getAdminMenu());
+  }
 }

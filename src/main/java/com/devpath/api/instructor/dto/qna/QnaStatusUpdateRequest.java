@@ -12,7 +12,10 @@ import lombok.NoArgsConstructor;
 @Schema(description = "QnA 상태 변경 요청")
 public class QnaStatusUpdateRequest {
 
-    @NotNull
-    @Schema(description = "질문 상태", example = "ANSWERED", allowableValues = {"UNANSWERED", "ANSWERED"})
-    private QnaStatus status;
+  @NotNull
+  @Schema(
+      description = "질문 상태",
+      example = "ANSWERED",
+      allowableValues = {"UNANSWERED", "ANSWERED"})
+  private QnaStatus status;
 }

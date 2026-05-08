@@ -8,6 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateShowcaseCommentRequest {
 
-    @NotBlank
-    private String content;
+  @NotBlank private String content;
 }

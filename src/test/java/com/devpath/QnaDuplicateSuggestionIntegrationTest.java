@@ -26,10 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(
-    properties = {
-      "spring.sql.init.mode=always",
-      "spring.jpa.defer-datasource-initialization=true"
-    })
+    properties = {"spring.sql.init.mode=always", "spring.jpa.defer-datasource-initialization=true"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class QnaDuplicateSuggestionIntegrationTest {
@@ -60,8 +57,7 @@ class QnaDuplicateSuggestionIntegrationTest {
         "Spring Security jwt filter executes twice",
         "JWT authentication filter seems to run more than once.");
     seedQuestion(
-        "Why does JWT auth filter run twice?",
-        "What should I check in the filter chain setup?");
+        "Why does JWT auth filter run twice?", "What should I check in the filter chain setup?");
     seedQuestion("How to apply Redis caching", "What is a safe cache expiration strategy?");
   }
 
@@ -81,8 +77,7 @@ class QnaDuplicateSuggestionIntegrationTest {
                     hasItems(
                         "Spring Boot JWT filter runs twice",
                         "Spring Security jwt filter executes twice")))
-        .andExpect(
-            jsonPath("$.data[*].title").value(not(hasItems("How to apply Redis caching"))))
+        .andExpect(jsonPath("$.data[*].title").value(not(hasItems("How to apply Redis caching"))))
         .andExpect(jsonPath("$.data[0].matchedKeyword").isNotEmpty());
   }
 

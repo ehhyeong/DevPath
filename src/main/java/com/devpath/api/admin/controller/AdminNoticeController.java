@@ -26,46 +26,43 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AdminNoticeController {
 
-    private final AdminNoticeService adminNoticeService;
+  private final AdminNoticeService adminNoticeService;
 
-    @Operation(summary = "전사 공지 등록", description = "운영 공지를 등록합니다.")
-    @PostMapping
-    public ApiResponse<NoticeResponse> createNotice(
-            @RequestBody @Valid NoticeCreateRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("공지가 등록되었습니다.", adminNoticeService.createNotice(userId, request));
-    }
+  @Operation(summary = "전사 공지 등록", description = "운영 공지를 등록합니다.")
+  @PostMapping
+  public ApiResponse<NoticeResponse> createNotice(
+      @RequestBody @Valid NoticeCreateRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success("공지가 등록되었습니다.", adminNoticeService.createNotice(userId, request));
+  }
 
-    @Operation(summary = "공지 수정", description = "기존 공지를 수정합니다.")
-    @PutMapping("/{noticeId}")
-    public ApiResponse<NoticeResponse> updateNotice(
-            @PathVariable Long noticeId,
-            @RequestBody @Valid NoticeCreateRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("공지가 수정되었습니다.", adminNoticeService.updateNotice(noticeId, userId, request));
-    }
+  @Operation(summary = "공지 수정", description = "기존 공지를 수정합니다.")
+  @PutMapping("/{noticeId}")
+  public ApiResponse<NoticeResponse> updateNotice(
+      @PathVariable Long noticeId,
+      @RequestBody @Valid NoticeCreateRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "공지가 수정되었습니다.", adminNoticeService.updateNotice(noticeId, userId, request));
+  }
 
-    @Operation(summary = "공지 삭제", description = "공지를 soft delete 처리합니다.")
-    @DeleteMapping("/{noticeId}")
-    public ApiResponse<Void> deleteNotice(
-            @PathVariable Long noticeId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        adminNoticeService.deleteNotice(noticeId, userId);
-        return ApiResponse.success("공지가 삭제되었습니다.", null);
-    }
+  @Operation(summary = "공지 삭제", description = "공지를 soft delete 처리합니다.")
+  @DeleteMapping("/{noticeId}")
+  public ApiResponse<Void> deleteNotice(
+      @PathVariable Long noticeId, @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    adminNoticeService.deleteNotice(noticeId, userId);
+    return ApiResponse.success("공지가 삭제되었습니다.", null);
+  }
 
-    @Operation(summary = "공지 목록 조회", description = "고정 공지 우선, 최신순으로 공지 목록을 조회합니다.")
-    @GetMapping
-    public ApiResponse<List<NoticeResponse>> getNotices() {
-        return ApiResponse.success("공지 목록을 조회했습니다.", adminNoticeService.getNotices());
-    }
+  @Operation(summary = "공지 목록 조회", description = "고정 공지 우선, 최신순으로 공지 목록을 조회합니다.")
+  @GetMapping
+  public ApiResponse<List<NoticeResponse>> getNotices() {
+    return ApiResponse.success("공지 목록을 조회했습니다.", adminNoticeService.getNotices());
+  }
 
-    @Operation(summary = "공지 상세 조회", description = "단일 공지의 상세 정보를 조회합니다.")
-    @GetMapping("/{noticeId}")
-    public ApiResponse<NoticeResponse> getNotice(@PathVariable Long noticeId) {
-        return ApiResponse.success("공지를 조회했습니다.", adminNoticeService.getNotice(noticeId));
-    }
+  @Operation(summary = "공지 상세 조회", description = "단일 공지의 상세 정보를 조회합니다.")
+  @GetMapping("/{noticeId}")
+  public ApiResponse<NoticeResponse> getNotice(@PathVariable Long noticeId) {
+    return ApiResponse.success("공지를 조회했습니다.", adminNoticeService.getNotice(noticeId));
+  }
 }

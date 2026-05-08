@@ -21,114 +21,116 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class LearningHistoryService {
 
-    private final LearningHistoryShareLinkRepository learningHistoryShareLinkRepository;
-    private final LearningHistoryAssembler learningHistoryAssembler;
-    private final UserRepository userRepository;
+  private final LearningHistoryShareLinkRepository learningHistoryShareLinkRepository;
+  private final LearningHistoryAssembler learningHistoryAssembler;
+  private final UserRepository userRepository;
 
-    @Transactional(readOnly = true)
-    public LearningHistoryResponse.Detail getLearningHistory(Long userId) {
-        validateUser(userId);
-        return learningHistoryAssembler.assemble(userId);
-    }
+  @Transactional(readOnly = true)
+  public LearningHistoryResponse.Detail getLearningHistory(Long userId) {
+    validateUser(userId);
+    return learningHistoryAssembler.assemble(userId);
+  }
 
-    @Transactional(readOnly = true)
-    public LearningHistoryResponse.Summary getSummary(Long userId) {
-        validateUser(userId);
-        return learningHistoryAssembler.assembleSummary(userId);
-    }
+  @Transactional(readOnly = true)
+  public LearningHistoryResponse.Summary getSummary(Long userId) {
+    validateUser(userId);
+    return learningHistoryAssembler.assembleSummary(userId);
+  }
 
-    @Transactional(readOnly = true)
-    public List<LearningHistoryResponse.CompletedNodeDetail> getCompletedNodes(Long userId) {
-        validateUser(userId);
-        return learningHistoryAssembler.assembleCompletedNodes(userId);
-    }
+  @Transactional(readOnly = true)
+  public List<LearningHistoryResponse.CompletedNodeDetail> getCompletedNodes(Long userId) {
+    validateUser(userId);
+    return learningHistoryAssembler.assembleCompletedNodes(userId);
+  }
 
-    @Transactional(readOnly = true)
-    public List<LearningHistoryResponse.AssignmentDetail> getAssignments(Long userId) {
-        validateUser(userId);
-        return learningHistoryAssembler.assembleAssignments(userId);
-    }
+  @Transactional(readOnly = true)
+  public List<LearningHistoryResponse.AssignmentDetail> getAssignments(Long userId) {
+    validateUser(userId);
+    return learningHistoryAssembler.assembleAssignments(userId);
+  }
 
-    @Transactional(readOnly = true)
-    public List<TilResponse> getTilHistory(Long userId) {
-        validateUser(userId);
-        return learningHistoryAssembler.assembleTils(userId);
-    }
+  @Transactional(readOnly = true)
+  public List<TilResponse> getTilHistory(Long userId) {
+    validateUser(userId);
+    return learningHistoryAssembler.assembleTils(userId);
+  }
 
-    @Transactional
-    public LearningHistoryResponse.ShareLinkDetail createShareLink(
-        Long userId,
-        LearningHistoryRequest.CreateShareLink request
-    ) {
-        User user = validateUser(userId);
+  @Transactional
+  public LearningHistoryResponse.ShareLinkDetail createShareLink(
+      Long userId, LearningHistoryRequest.CreateShareLink request) {
+    User user = validateUser(userId);
 
-        LearningHistoryShareLink savedShareLink = learningHistoryShareLinkRepository.save(
+    LearningHistoryShareLink savedShareLink =
+        learningHistoryShareLinkRepository.save(
             LearningHistoryShareLink.builder()
                 .user(user)
                 .shareToken(generateShareToken())
                 .title(request.getTitle())
                 .expiresAt(request.getExpiresAt())
-                .build()
-        );
+                .build());
 
-        return toShareLinkDetail(savedShareLink);
-    }
+    return toShareLinkDetail(savedShareLink);
+  }
 
-    @Transactional
-    public LearningHistoryResponse.SharedDetail getSharedLearningHistory(String shareToken) {
-        LearningHistoryShareLink shareLink = learningHistoryShareLinkRepository
+  @Transactional
+  public LearningHistoryResponse.SharedDetail getSharedLearningHistory(String shareToken) {
+    LearningHistoryShareLink shareLink =
+        learningHistoryShareLinkRepository
             .findByShareTokenAndIsActiveTrue(shareToken)
             .orElseThrow(() -> new CustomException(ErrorCode.SHARE_LINK_NOT_FOUND));
 
-        if (shareLink.isExpired()) {
-            shareLink.deactivate();
-            throw new CustomException(ErrorCode.SHARE_LINK_NOT_FOUND);
-        }
-
-        shareLink.increaseAccessCount();
-
-        return LearningHistoryResponse.SharedDetail.builder()
-            .shareToken(shareLink.getShareToken())
-            .title(shareLink.getTitle())
-            .accessCount(shareLink.getAccessCount())
-            .history(learningHistoryAssembler.assemble(shareLink.getUser().getId()))
-            .build();
+    if (shareLink.isExpired()) {
+      shareLink.deactivate();
+      throw new CustomException(ErrorCode.SHARE_LINK_NOT_FOUND);
     }
 
-    @Transactional(readOnly = true)
-    public LearningHistoryResponse.OrganizeResult organize(Long userId, LearningHistoryRequest.Organize request) {
-        validateUser(userId);
+    shareLink.increaseAccessCount();
 
-        return LearningHistoryResponse.OrganizeResult.builder()
-            .organizedAt(LocalDateTime.now())
-            .summary(learningHistoryAssembler.assembleSummary(userId))
-            .build();
+    return LearningHistoryResponse.SharedDetail.builder()
+        .shareToken(shareLink.getShareToken())
+        .title(shareLink.getTitle())
+        .accessCount(shareLink.getAccessCount())
+        .history(learningHistoryAssembler.assemble(shareLink.getUser().getId()))
+        .build();
+  }
+
+  @Transactional(readOnly = true)
+  public LearningHistoryResponse.OrganizeResult organize(
+      Long userId, LearningHistoryRequest.Organize request) {
+    validateUser(userId);
+
+    return LearningHistoryResponse.OrganizeResult.builder()
+        .organizedAt(LocalDateTime.now())
+        .summary(learningHistoryAssembler.assembleSummary(userId))
+        .build();
+  }
+
+  private LearningHistoryResponse.ShareLinkDetail toShareLinkDetail(
+      LearningHistoryShareLink shareLink) {
+    return LearningHistoryResponse.ShareLinkDetail.builder()
+        .shareLinkId(shareLink.getId())
+        .shareToken(shareLink.getShareToken())
+        .title(shareLink.getTitle())
+        .shareUrl("/api/me/learning-histories/share-links/" + shareLink.getShareToken())
+        .accessCount(shareLink.getAccessCount())
+        .expiresAt(shareLink.getExpiresAt())
+        .createdAt(shareLink.getCreatedAt())
+        .build();
+  }
+
+  private String generateShareToken() {
+    String shareToken = UUID.randomUUID().toString().replace("-", "");
+
+    while (learningHistoryShareLinkRepository.existsByShareToken(shareToken)) {
+      shareToken = UUID.randomUUID().toString().replace("-", "");
     }
 
-    private LearningHistoryResponse.ShareLinkDetail toShareLinkDetail(LearningHistoryShareLink shareLink) {
-        return LearningHistoryResponse.ShareLinkDetail.builder()
-            .shareLinkId(shareLink.getId())
-            .shareToken(shareLink.getShareToken())
-            .title(shareLink.getTitle())
-            .shareUrl("/api/me/learning-histories/share-links/" + shareLink.getShareToken())
-            .accessCount(shareLink.getAccessCount())
-            .expiresAt(shareLink.getExpiresAt())
-            .createdAt(shareLink.getCreatedAt())
-            .build();
-    }
+    return shareToken;
+  }
 
-    private String generateShareToken() {
-        String shareToken = UUID.randomUUID().toString().replace("-", "");
-
-        while (learningHistoryShareLinkRepository.existsByShareToken(shareToken)) {
-            shareToken = UUID.randomUUID().toString().replace("-", "");
-        }
-
-        return shareToken;
-    }
-
-    private User validateUser(Long userId) {
-        return userRepository.findById(userId)
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
+  private User validateUser(Long userId) {
+    return userRepository
+        .findById(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+  }
 }

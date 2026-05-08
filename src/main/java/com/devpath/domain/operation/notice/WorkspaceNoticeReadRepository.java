@@ -9,19 +9,20 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface WorkspaceNoticeReadRepository extends JpaRepository<WorkspaceNoticeRead, Long> {
 
-    boolean existsByNoticeIdAndUserId(Long noticeId, Long userId);
+  boolean existsByNoticeIdAndUserId(Long noticeId, Long userId);
 
-    @Query("""
+  @Query(
+      """
             select r.noticeId
             from WorkspaceNoticeRead r
             where r.workspaceId = :workspaceId
               and r.userId = :userId
             """)
-    List<Long> findNoticeIdsByWorkspaceIdAndUserId(
-            @Param("workspaceId") Long workspaceId,
-            @Param("userId") Long userId);
+  List<Long> findNoticeIdsByWorkspaceIdAndUserId(
+      @Param("workspaceId") Long workspaceId, @Param("userId") Long userId);
 
-    @Query("""
+  @Query(
+      """
             select count(r)
             from WorkspaceNoticeRead r
             where r.workspaceId = :workspaceId
@@ -33,7 +34,5 @@ public interface WorkspaceNoticeReadRepository extends JpaRepository<WorkspaceNo
                     and n.isDeleted = false
               )
             """)
-    long countActiveReadNotices(
-            @Param("workspaceId") Long workspaceId,
-            @Param("userId") Long userId);
+  long countActiveReadNotices(@Param("workspaceId") Long workspaceId, @Param("userId") Long userId);
 }

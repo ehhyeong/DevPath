@@ -103,7 +103,8 @@ public class AdminRoadmapNodeResourceService {
     return node;
   }
 
-  private RoadmapNodeResourceUpsertRequest requireRequest(RoadmapNodeResourceUpsertRequest request) {
+  private RoadmapNodeResourceUpsertRequest requireRequest(
+      RoadmapNodeResourceUpsertRequest request) {
     if (request == null) {
       throw new CustomException(ErrorCode.INVALID_INPUT);
     }

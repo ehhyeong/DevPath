@@ -14,23 +14,23 @@ import lombok.NoArgsConstructor;
 @Builder
 public class WorkspaceFileResponse {
 
-    private Long fileId;
-    private Long workspaceId;
-    private String originalFileName;
-    private long fileSize;
-    private String contentType;
-    private Long uploadedById;
-    private LocalDateTime createdAt;
+  private Long fileId;
+  private Long workspaceId;
+  private String originalFileName;
+  private long fileSize;
+  private String contentType;
+  private Long uploadedById;
+  private LocalDateTime createdAt;
 
-    public static WorkspaceFileResponse from(WorkspaceFile file) {
-        return WorkspaceFileResponse.builder()
-                .fileId(file.getId())
-                .workspaceId(file.getWorkspaceId())
-                .originalFileName(file.getOriginalFileName())
-                .fileSize(file.getFileSize())
-                .contentType(file.getContentType())
-                .uploadedById(file.getUploadedById())
-                .createdAt(file.getCreatedAt())
-                .build();
-    }
+  public static WorkspaceFileResponse from(WorkspaceFile file) {
+    return WorkspaceFileResponse.builder()
+        .fileId(file.getId())
+        .workspaceId(file.getWorkspaceId())
+        .originalFileName(file.getOriginalFileName())
+        .fileSize(file.getFileSize())
+        .contentType(file.getContentType())
+        .uploadedById(file.getUploadedById())
+        .createdAt(file.getCreatedAt())
+        .build();
+  }
 }

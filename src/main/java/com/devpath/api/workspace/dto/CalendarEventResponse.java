@@ -14,27 +14,27 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CalendarEventResponse {
 
-    private Long eventId;
-    private Long workspaceId;
-    private String title;
-    private String description;
-    private LocalDateTime startAt;
-    private LocalDateTime endAt;
-    private Long createdById;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+  private Long eventId;
+  private Long workspaceId;
+  private String title;
+  private String description;
+  private LocalDateTime startAt;
+  private LocalDateTime endAt;
+  private Long createdById;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
 
-    public static CalendarEventResponse from(CalendarEvent event) {
-        return CalendarEventResponse.builder()
-                .eventId(event.getId())
-                .workspaceId(event.getWorkspaceId())
-                .title(event.getTitle())
-                .description(event.getDescription())
-                .startAt(event.getStartAt())
-                .endAt(event.getEndAt())
-                .createdById(event.getCreatedById())
-                .createdAt(event.getCreatedAt())
-                .updatedAt(event.getUpdatedAt())
-                .build();
-    }
+  public static CalendarEventResponse from(CalendarEvent event) {
+    return CalendarEventResponse.builder()
+        .eventId(event.getId())
+        .workspaceId(event.getWorkspaceId())
+        .title(event.getTitle())
+        .description(event.getDescription())
+        .startAt(event.getStartAt())
+        .endAt(event.getEndAt())
+        .createdById(event.getCreatedById())
+        .createdAt(event.getCreatedAt())
+        .updatedAt(event.getUpdatedAt())
+        .build();
+  }
 }

@@ -44,8 +44,7 @@ public class InstructorAnnouncementController {
   @Operation(summary = "강의 공지 목록 조회")
   @GetMapping("/courses/{courseId}/announcements")
   public ApiResponse<List<InstructorAnnouncementDto.AnnouncementSummaryResponse>> getAnnouncements(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long courseId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
     List<InstructorAnnouncementDto.AnnouncementSummaryResponse> response =
         instructorAnnouncementQueryService.getAnnouncements(userId, courseId);
     return ApiResponse.success("강의 공지 목록을 조회했습니다.", response);

@@ -15,27 +15,28 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AdminAnalyticsService {
 
-    private final ExperimentResultRepository experimentResultRepository;
+  private final ExperimentResultRepository experimentResultRepository;
 
-    public List<ExperimentResultResponse> getAllExperimentResults() {
-        return experimentResultRepository.findAll()
-                .stream()
-                .map(ExperimentResultResponse::from)
-                .collect(Collectors.toList());
-    }
+  public List<ExperimentResultResponse> getAllExperimentResults() {
+    return experimentResultRepository.findAll().stream()
+        .map(ExperimentResultResponse::from)
+        .collect(Collectors.toList());
+  }
 
-    public ExperimentResultResponse getExperimentResult(String experimentId) {
-        ExperimentResult result = experimentResultRepository.findByExperimentId(experimentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.EXPERIMENT_NOT_FOUND));
-        return ExperimentResultResponse.from(result);
-    }
+  public ExperimentResultResponse getExperimentResult(String experimentId) {
+    ExperimentResult result =
+        experimentResultRepository
+            .findByExperimentId(experimentId)
+            .orElseThrow(() -> new CustomException(ErrorCode.EXPERIMENT_NOT_FOUND));
+    return ExperimentResultResponse.from(result);
+  }
 
-    public AnalyticsDashboardResponse getDashboardSummary() {
-        return AnalyticsDashboardResponse.builder()
-                .totalUsers(15230L)
-                .weeklyActiveUsers(4321L)
-                .averageRoadmapProgress(42.8)
-                .monthlyCompletedAssignments(1830L)
-                .build();
-    }
+  public AnalyticsDashboardResponse getDashboardSummary() {
+    return AnalyticsDashboardResponse.builder()
+        .totalUsers(15230L)
+        .weeklyActiveUsers(4321L)
+        .averageRoadmapProgress(42.8)
+        .monthlyCompletedAssignments(1830L)
+        .build();
+  }
 }

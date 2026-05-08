@@ -8,9 +8,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ExternalIntegrationRepository extends JpaRepository<ExternalIntegration, Long> {
 
-    List<ExternalIntegration> findByWorkspaceId(Long workspaceId);
+  List<ExternalIntegration> findByWorkspaceId(Long workspaceId);
 
-    Optional<ExternalIntegration> findByWorkspaceIdAndProvider(
-            Long workspaceId,
-            IntegrationProvider provider);
+  Optional<ExternalIntegration> findByWorkspaceIdAndProvider(
+      Long workspaceId, IntegrationProvider provider);
 }

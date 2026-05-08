@@ -48,7 +48,8 @@ public class MentoringPostController {
 
   @GetMapping("/{postId}")
   @Operation(summary = "멘토링 공고 단건 조회", description = "멘토링 공고 상세 정보를 조회합니다.")
-  public ResponseEntity<ApiResponse<MentoringPostResponse.Detail>> getPost(@PathVariable Long postId) {
+  public ResponseEntity<ApiResponse<MentoringPostResponse.Detail>> getPost(
+      @PathVariable Long postId) {
     // PathVariable만 Service로 전달하고 조회 로직은 Service에서 처리한다.
     return ResponseEntity.ok(ApiResponse.ok(mentoringPostService.getPost(postId)));
   }

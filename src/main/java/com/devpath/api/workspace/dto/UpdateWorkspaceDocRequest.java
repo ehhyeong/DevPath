@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UpdateWorkspaceDocRequest {
 
-    @Schema(description = "문서 내용 (Markdown 형식 권장)", example = "# ERD\n\n```mermaid\nerDiagram\n  USER ||--o{ ORDER : places\n```")
-    private String content;
+  @Schema(
+      description = "문서 내용 (Markdown 형식 권장)",
+      example = "# ERD\n\n```mermaid\nerDiagram\n  USER ||--o{ ORDER : places\n```")
+  private String content;
 }

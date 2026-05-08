@@ -28,49 +28,49 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class Workspace {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "owner_id", nullable = false)
-    private Long ownerId;
+  @Column(name = "owner_id", nullable = false)
+  private Long ownerId;
 
-    @Column(nullable = false, length = 100)
-    private String name;
+  @Column(nullable = false, length = 100)
+  private String name;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+  @Column(columnDefinition = "TEXT")
+  private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private WorkspaceType type;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private WorkspaceType type;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    private WorkspaceStatus status = WorkspaceStatus.ACTIVE;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  @Builder.Default
+  private WorkspaceStatus status = WorkspaceStatus.ACTIVE;
 
-    @Column(name = "is_deleted", nullable = false)
-    @Builder.Default
-    private boolean isDeleted = false;
+  @Column(name = "is_deleted", nullable = false)
+  @Builder.Default
+  private boolean isDeleted = false;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    public void archive() {
-        this.status = WorkspaceStatus.ARCHIVED;
-    }
+  public void archive() {
+    this.status = WorkspaceStatus.ARCHIVED;
+  }
 
-    public void restore() {
-        this.status = WorkspaceStatus.ACTIVE;
-    }
+  public void restore() {
+    this.status = WorkspaceStatus.ACTIVE;
+  }
 
-    public void delete() {
-        this.isDeleted = true;
-    }
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

@@ -7,15 +7,15 @@ import lombok.NoArgsConstructor;
 
 public class NodeClearanceRequest {
 
-    @Getter
-    @NoArgsConstructor
-    @Schema(description = "Node clearance recalculate request")
-    public static class Recalculate {
+  @Getter
+  @NoArgsConstructor
+  @Schema(description = "Node clearance recalculate request")
+  public static class Recalculate {
 
-        @Schema(description = "Roadmap ID", example = "1")
-        private Long roadmapId;
+    @Schema(description = "Roadmap ID", example = "1")
+    private Long roadmapId;
 
-        @Schema(description = "Target node IDs", example = "[10,11,12]")
-        private List<Long> nodeIds;
-    }
+    @Schema(description = "Target node IDs", example = "[10,11,12]")
+    private List<Long> nodeIds;
+  }
 }

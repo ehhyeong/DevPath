@@ -13,33 +13,38 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WeaknessAnalysisService {
 
-    private final DiagnosisResultRepository diagnosisResultRepository;
+  private final DiagnosisResultRepository diagnosisResultRepository;
 
-    @Transactional(readOnly = true)
-    public WeaknessAnalysisResponse getAnalysisByResultId(Long userId, Long resultId) {
-        DiagnosisResult result = diagnosisResultRepository.findByResultIdAndUser_Id(resultId, userId)
+  @Transactional(readOnly = true)
+  public WeaknessAnalysisResponse getAnalysisByResultId(Long userId, Long resultId) {
+    DiagnosisResult result =
+        diagnosisResultRepository
+            .findByResultIdAndUser_Id(resultId, userId)
             .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        return WeaknessAnalysisResponse.from(result);
-    }
+    return WeaknessAnalysisResponse.from(result);
+  }
 
-    @Transactional(readOnly = true)
-    public WeaknessAnalysisResponse getLatestAnalysis(Long userId, Long roadmapId) {
-        DiagnosisResult result = diagnosisResultRepository.findLatestByUserAndRoadmap(userId, roadmapId)
+  @Transactional(readOnly = true)
+  public WeaknessAnalysisResponse getLatestAnalysis(Long userId, Long roadmapId) {
+    DiagnosisResult result =
+        diagnosisResultRepository
+            .findLatestByUserAndRoadmap(userId, roadmapId)
             .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        return WeaknessAnalysisResponse.from(result);
-    }
+    return WeaknessAnalysisResponse.from(result);
+  }
 
-    @Transactional(readOnly = true)
-    public WeaknessAnalysisResponse getLatestAnalysisForHistory(Long userId) {
-        return diagnosisResultRepository.findTopByUser_IdOrderByCreatedAtDesc(userId)
-            .map(WeaknessAnalysisResponse::from)
-            .orElse(null);
-    }
+  @Transactional(readOnly = true)
+  public WeaknessAnalysisResponse getLatestAnalysisForHistory(Long userId) {
+    return diagnosisResultRepository
+        .findTopByUser_IdOrderByCreatedAtDesc(userId)
+        .map(WeaknessAnalysisResponse::from)
+        .orElse(null);
+  }
 
-    @Transactional(readOnly = true)
-    public boolean hasLatestAnalysisSignalForRecommendationChange(Long userId) {
-        return getLatestAnalysisForHistory(userId) != null;
-    }
+  @Transactional(readOnly = true)
+  public boolean hasLatestAnalysisSignalForRecommendationChange(Long userId) {
+    return getLatestAnalysisForHistory(userId) != null;
+  }
 }

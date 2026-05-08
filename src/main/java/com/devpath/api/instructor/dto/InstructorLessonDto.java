@@ -72,9 +72,7 @@ public class InstructorLessonDto {
     @Schema(description = "레슨 제목", example = "JWT 인증 필터 심화 구현")
     private String title;
 
-    @Schema(
-        description = "레슨 설명",
-        example = "JWT 인증 필터와 SecurityContext 저장 흐름을 심화 학습합니다.")
+    @Schema(description = "레슨 설명", example = "JWT 인증 필터와 SecurityContext 저장 흐름을 심화 학습합니다.")
     private String description;
 
     @NotBlank(message = "레슨 유형은 필수입니다.")

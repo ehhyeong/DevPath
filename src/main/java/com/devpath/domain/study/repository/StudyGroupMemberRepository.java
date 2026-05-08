@@ -8,25 +8,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface StudyGroupMemberRepository extends JpaRepository<StudyGroupMember, Long> {
 
-    Optional<StudyGroupMember> findByStudyGroupIdAndLearnerId(Long studyGroupId, Long learnerId);
+  Optional<StudyGroupMember> findByStudyGroupIdAndLearnerId(Long studyGroupId, Long learnerId);
 
-    Optional<StudyGroupMember> findByStudyGroupIdAndLearnerIdAndJoinStatus(
-            Long studyGroupId,
-            Long learnerId,
-            StudyGroupJoinStatus joinStatus
-    );
+  Optional<StudyGroupMember> findByStudyGroupIdAndLearnerIdAndJoinStatus(
+      Long studyGroupId, Long learnerId, StudyGroupJoinStatus joinStatus);
 
-    Optional<StudyGroupMember> findByIdAndStudyGroupId(Long id, Long studyGroupId);
+  Optional<StudyGroupMember> findByIdAndStudyGroupId(Long id, Long studyGroupId);
 
-    long countByStudyGroupIdAndJoinStatus(Long studyGroupId, StudyGroupJoinStatus joinStatus);
+  long countByStudyGroupIdAndJoinStatus(Long studyGroupId, StudyGroupJoinStatus joinStatus);
 
-    List<StudyGroupMember> findAllByLearnerIdAndJoinStatusOrderByJoinedAtDesc(
-            Long learnerId,
-            StudyGroupJoinStatus joinStatus
-    );
+  List<StudyGroupMember> findAllByLearnerIdAndJoinStatusOrderByJoinedAtDesc(
+      Long learnerId, StudyGroupJoinStatus joinStatus);
 
-    List<StudyGroupMember> findAllByStudyGroupIdAndJoinStatus(
-            Long studyGroupId,
-            StudyGroupJoinStatus joinStatus
-    );
+  List<StudyGroupMember> findAllByStudyGroupIdAndJoinStatus(
+      Long studyGroupId, StudyGroupJoinStatus joinStatus);
 }

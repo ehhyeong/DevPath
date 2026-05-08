@@ -17,10 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(
-    properties = {
-      "spring.sql.init.mode=always",
-      "spring.jpa.defer-datasource-initialization=true"
-    })
+    properties = {"spring.sql.init.mode=always", "spring.jpa.defer-datasource-initialization=true"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SwaggerAudienceCoverageIntegrationTest {
@@ -37,9 +34,12 @@ class SwaggerAudienceCoverageIntegrationTest {
         learnerDoc,
         List.of(
             new ExpectedOperation("post", "/api/evaluation/learner/quizzes/{quizId}/attempts"),
-            new ExpectedOperation("get", "/api/evaluation/learner/quizzes/attempts/{attemptId}/result"),
-            new ExpectedOperation("post", "/api/evaluation/learner/assignments/{assignmentId}/precheck"),
-            new ExpectedOperation("post", "/api/evaluation/learner/assignments/{assignmentId}/submissions"),
+            new ExpectedOperation(
+                "get", "/api/evaluation/learner/quizzes/attempts/{attemptId}/result"),
+            new ExpectedOperation(
+                "post", "/api/evaluation/learner/assignments/{assignmentId}/precheck"),
+            new ExpectedOperation(
+                "post", "/api/evaluation/learner/assignments/{assignmentId}/submissions"),
             new ExpectedOperation("get", "/api/evaluation/learner/assignments/submissions/history"),
             new ExpectedOperation(
                 "post", "/api/evaluation/learner/wrong-answer-notes/attempts/{attemptId}"),
@@ -80,7 +80,8 @@ class SwaggerAudienceCoverageIntegrationTest {
             new ExpectedOperation("get", "/api/qna/questions/{questionId}"),
             new ExpectedOperation("get", "/api/qna/questions/duplicate-suggestions"),
             new ExpectedOperation("post", "/api/qna/questions/{questionId}/answers"),
-            new ExpectedOperation("patch", "/api/qna/questions/{questionId}/answers/{answerId}/adopt"),
+            new ExpectedOperation(
+                "patch", "/api/qna/questions/{questionId}/answers/{answerId}/adopt"),
             new ExpectedOperation("get", "/api/qna/templates"),
             new ExpectedOperation("post", "/api/posts"),
             new ExpectedOperation("get", "/api/posts"),
@@ -104,24 +105,33 @@ class SwaggerAudienceCoverageIntegrationTest {
         instructorDoc,
         List.of(
             new ExpectedOperation("post", "/api/instructor/assignments"),
-            new ExpectedOperation("patch", "/api/instructor/assignments/{assignmentId}/submission-rule"),
+            new ExpectedOperation(
+                "patch", "/api/instructor/assignments/{assignmentId}/submission-rule"),
             new ExpectedOperation("post", "/api/instructor/assignments/{assignmentId}/rubrics"),
             new ExpectedOperation("patch", "/api/instructor/rubrics/{rubricId}"),
             new ExpectedOperation("post", "/api/instructor/quizzes"),
             new ExpectedOperation("post", "/api/instructor/quizzes/{quizId}/questions"),
             new ExpectedOperation(
-                "patch", "/api/instructor/quizzes/{quizId}/questions/{questionId}/answer-explanation"),
+                "patch",
+                "/api/instructor/quizzes/{quizId}/questions/{questionId}/answer-explanation"),
             new ExpectedOperation("post", "/api/evaluation/instructor/ai-quiz-drafts"),
-            new ExpectedOperation("post", "/api/evaluation/instructor/ai-quiz-drafts/{draftId}/adopt"),
-            new ExpectedOperation("post", "/api/evaluation/instructor/ai-quiz-drafts/{draftId}/reject"),
+            new ExpectedOperation(
+                "post", "/api/evaluation/instructor/ai-quiz-drafts/{draftId}/adopt"),
+            new ExpectedOperation(
+                "post", "/api/evaluation/instructor/ai-quiz-drafts/{draftId}/reject"),
             new ExpectedOperation("put", "/api/evaluation/instructor/ai-quiz-drafts/{draftId}"),
-            new ExpectedOperation("get", "/api/evaluation/instructor/ai-quiz-drafts/{draftId}/evidence"),
+            new ExpectedOperation(
+                "get", "/api/evaluation/instructor/ai-quiz-drafts/{draftId}/evidence"),
             new ExpectedOperation("get", "/api/evaluation/instructor/question-bank/stats"),
-            new ExpectedOperation("get", "/api/evaluation/instructor/assignments/{assignmentId}/submissions"),
+            new ExpectedOperation(
+                "get", "/api/evaluation/instructor/assignments/{assignmentId}/submissions"),
             new ExpectedOperation("get", "/api/evaluation/instructor/submissions/{submissionId}"),
-            new ExpectedOperation("get", "/api/evaluation/instructor/submissions/{submissionId}/precheck"),
-            new ExpectedOperation("post", "/api/evaluation/instructor/submissions/{submissionId}/grade"),
-            new ExpectedOperation("post", "/api/evaluation/instructor/submissions/{submissionId}/feedback")));
+            new ExpectedOperation(
+                "get", "/api/evaluation/instructor/submissions/{submissionId}/precheck"),
+            new ExpectedOperation(
+                "post", "/api/evaluation/instructor/submissions/{submissionId}/grade"),
+            new ExpectedOperation(
+                "post", "/api/evaluation/instructor/submissions/{submissionId}/feedback")));
   }
 
   @Test

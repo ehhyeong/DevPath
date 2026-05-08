@@ -15,42 +15,43 @@ import lombok.NoArgsConstructor;
 @Schema(description = "질문 등록 요청 DTO")
 public class QuestionCreateRequest {
 
-    @NotNull(message = "질문 템플릿 타입은 필수입니다.")
-    @Schema(
-            description = SwaggerDocConstants.QUESTION_TEMPLATE_TYPE_DESCRIPTION,
-            example = "DEBUGGING",
-            allowableValues = {"DEBUGGING", "IMPLEMENTATION", "CODE_REVIEW", "CAREER", "STUDY", "PROJECT"}
-    )
-    private QuestionTemplateType templateType;
+  @NotNull(message = "질문 템플릿 타입은 필수입니다.")
+  @Schema(
+      description = SwaggerDocConstants.QUESTION_TEMPLATE_TYPE_DESCRIPTION,
+      example = "DEBUGGING",
+      allowableValues = {
+        "DEBUGGING",
+        "IMPLEMENTATION",
+        "CODE_REVIEW",
+        "CAREER",
+        "STUDY",
+        "PROJECT"
+      })
+  private QuestionTemplateType templateType;
 
-    @NotNull(message = "질문 난이도는 필수입니다.")
-    @Schema(
-            description = SwaggerDocConstants.QUESTION_DIFFICULTY_DESCRIPTION,
-            example = "MEDIUM",
-            allowableValues = {"EASY", "MEDIUM", "HARD"}
-    )
-    private QuestionDifficulty difficulty;
+  @NotNull(message = "질문 난이도는 필수입니다.")
+  @Schema(
+      description = SwaggerDocConstants.QUESTION_DIFFICULTY_DESCRIPTION,
+      example = "MEDIUM",
+      allowableValues = {"EASY", "MEDIUM", "HARD"})
+  private QuestionDifficulty difficulty;
 
-    @NotBlank(message = "질문 제목을 입력해주세요.")
-    @Schema(
-            description = "중복 질문 추천에도 사용되는 질문 제목입니다.",
-            example = "Spring Boot에서 JWT 필터가 두 번 실행됩니다."
-    )
-    private String title;
+  @NotBlank(message = "질문 제목을 입력해주세요.")
+  @Schema(description = "중복 질문 추천에도 사용되는 질문 제목입니다.", example = "Spring Boot에서 JWT 필터가 두 번 실행됩니다.")
+  private String title;
 
-    @NotBlank(message = "질문 내용을 입력해주세요.")
-    @Schema(
-            description = "재현 방법, 기대 결과, 실제 결과를 포함한 질문 본문입니다.",
-            example = "OncePerRequestFilter를 사용했는데도 로그가 두 번 찍힙니다. SecurityFilterChain 설정도 함께 봐야 할까요?"
-    )
-    private String content;
+  @NotBlank(message = "질문 내용을 입력해주세요.")
+  @Schema(
+      description = "재현 방법, 기대 결과, 실제 결과를 포함한 질문 본문입니다.",
+      example = "OncePerRequestFilter를 사용했는데도 로그가 두 번 찍힙니다. SecurityFilterChain 설정도 함께 봐야 할까요?")
+  private String content;
 
-    @Schema(description = "媛뺤쓽 ID", example = "1", nullable = true)
-    private Long courseId;
+  @Schema(description = "媛뺤쓽 ID", example = "1", nullable = true)
+  private Long courseId;
 
-    @Schema(description = "질문을 남긴 레슨 ID", example = "10", nullable = true)
-    private Long lessonId;
+  @Schema(description = "질문을 남긴 레슨 ID", example = "10", nullable = true)
+  private Long lessonId;
 
-    @Schema(description = "媛뺤쓽 ?쒖젏 紐⑥떇", example = "00:12:44", nullable = true)
-    private String lectureTimestamp;
+  @Schema(description = "媛뺤쓽 ?쒖젏 紐⑥떇", example = "00:12:44", nullable = true)
+  private String lectureTimestamp;
 }

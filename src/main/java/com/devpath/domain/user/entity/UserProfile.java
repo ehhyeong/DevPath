@@ -24,155 +24,141 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserProfile {
 
-    private static final String LEGACY_DEFAULT_PROFILE_PREFIX = "/images/profiles/";
+  private static final String LEGACY_DEFAULT_PROFILE_PREFIX = "/images/profiles/";
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "profile_id")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "profile_id")
+  private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private User user;
+  @OneToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false, unique = true)
+  private User user;
 
-    @Column(name = "profile_image", length = 500)
-    private String profileImage;
+  @Column(name = "profile_image", length = 500)
+  private String profileImage;
 
-    @Column(name = "channel_name", length = 120)
-    private String channelName;
+  @Column(name = "channel_name", length = 120)
+  private String channelName;
 
-    @Column(columnDefinition = "TEXT")
-    private String bio;
+  @Column(columnDefinition = "TEXT")
+  private String bio;
 
-    @Column(name = "channel_description", columnDefinition = "TEXT")
-    private String channelDescription;
+  @Column(name = "channel_description", columnDefinition = "TEXT")
+  private String channelDescription;
 
-    @Column(length = 20)
-    private String phone;
+  @Column(length = 20)
+  private String phone;
 
-    @Column(name = "date_of_birth")
-    private LocalDate dateOfBirth;
+  @Column(name = "date_of_birth")
+  private LocalDate dateOfBirth;
 
-    @Column(name = "github_url", length = 500)
-    private String githubUrl;
+  @Column(name = "github_url", length = 500)
+  private String githubUrl;
 
-    @Column(name = "blog_url", length = 500)
-    private String blogUrl;
+  @Column(name = "blog_url", length = 500)
+  private String blogUrl;
 
-    @Column(name = "is_public", nullable = false, columnDefinition = "boolean default true")
-    private Boolean isPublic;
+  @Column(name = "is_public", nullable = false, columnDefinition = "boolean default true")
+  private Boolean isPublic;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    @Builder
-    public UserProfile(
-            User user,
-            String profileImage,
-            String channelName,
-            String bio,
-            String channelDescription,
-            String phone,
-            LocalDate dateOfBirth,
-            String githubUrl,
-            String blogUrl,
-            Boolean isPublic
-    ) {
-        this.user = user;
-        this.profileImage = normalizeProfileImage(profileImage);
-        this.channelName = channelName;
-        this.bio = bio;
-        this.channelDescription = channelDescription;
-        this.phone = phone;
-        this.dateOfBirth = dateOfBirth;
-        this.githubUrl = githubUrl;
-        this.blogUrl = blogUrl;
-        this.isPublic = isPublic == null ? Boolean.TRUE : isPublic;
+  @Builder
+  public UserProfile(
+      User user,
+      String profileImage,
+      String channelName,
+      String bio,
+      String channelDescription,
+      String phone,
+      LocalDate dateOfBirth,
+      String githubUrl,
+      String blogUrl,
+      Boolean isPublic) {
+    this.user = user;
+    this.profileImage = normalizeProfileImage(profileImage);
+    this.channelName = channelName;
+    this.bio = bio;
+    this.channelDescription = channelDescription;
+    this.phone = phone;
+    this.dateOfBirth = dateOfBirth;
+    this.githubUrl = githubUrl;
+    this.blogUrl = blogUrl;
+    this.isPublic = isPublic == null ? Boolean.TRUE : isPublic;
+  }
+
+  // Keep the legacy entry point for existing callers.
+  public void updateProfile(
+      String bio, String profileImage, String channelName, String githubUrl, String blogUrl) {
+    this.bio = bio;
+    this.profileImage = normalizeProfileImage(profileImage);
+    this.channelName = channelName;
+    this.githubUrl = githubUrl;
+    this.blogUrl = blogUrl;
+  }
+
+  // Instructor profile edits update introduction and legacy external link fields.
+  public void updateChannelProfile(
+      String introduction, String profileImage, String githubUrl, String blogUrl) {
+    this.bio = introduction;
+    this.profileImage = normalizeProfileImage(profileImage);
+    this.githubUrl = githubUrl;
+    this.blogUrl = blogUrl;
+  }
+
+  // Channel info edits manage name and description separately from the profile text.
+  public void updateChannelInfo(String channelName, String channelDescription) {
+    this.channelName = channelName;
+    this.channelDescription = channelDescription;
+  }
+
+  public void updateOnboardingProfile(String bio, String phone) {
+    this.bio = bio;
+    this.phone = phone;
+  }
+
+  public void updateLearnerProfile(
+      String bio,
+      String phone,
+      String profileImage,
+      String channelName,
+      String githubUrl,
+      String blogUrl) {
+    this.bio = bio;
+    this.phone = phone;
+    this.profileImage = normalizeProfileImage(profileImage);
+    this.channelName = channelName;
+    this.githubUrl = githubUrl;
+    this.blogUrl = blogUrl;
+  }
+
+  public void changePublicVisibility(Boolean isPublic) {
+    this.isPublic = Boolean.TRUE.equals(isPublic);
+  }
+
+  public String getDisplayProfileImage() {
+    String normalized = normalizeProfileImage(profileImage);
+
+    if (normalized == null || normalized.startsWith(LEGACY_DEFAULT_PROFILE_PREFIX)) {
+      return null;
     }
 
-    // Keep the legacy entry point for existing callers.
-    public void updateProfile(
-            String bio,
-            String profileImage,
-            String channelName,
-            String githubUrl,
-            String blogUrl
-    ) {
-        this.bio = bio;
-        this.profileImage = normalizeProfileImage(profileImage);
-        this.channelName = channelName;
-        this.githubUrl = githubUrl;
-        this.blogUrl = blogUrl;
+    return normalized;
+  }
+
+  private static String normalizeProfileImage(String profileImage) {
+    if (profileImage == null) {
+      return null;
     }
 
-    // Instructor profile edits update introduction and legacy external link fields.
-    public void updateChannelProfile(
-            String introduction,
-            String profileImage,
-            String githubUrl,
-            String blogUrl
-    ) {
-        this.bio = introduction;
-        this.profileImage = normalizeProfileImage(profileImage);
-        this.githubUrl = githubUrl;
-        this.blogUrl = blogUrl;
-    }
-
-    // Channel info edits manage name and description separately from the profile text.
-    public void updateChannelInfo(
-            String channelName,
-            String channelDescription
-    ) {
-        this.channelName = channelName;
-        this.channelDescription = channelDescription;
-    }
-
-    public void updateOnboardingProfile(String bio, String phone) {
-        this.bio = bio;
-        this.phone = phone;
-    }
-
-    public void updateLearnerProfile(
-            String bio,
-            String phone,
-            String profileImage,
-            String channelName,
-            String githubUrl,
-            String blogUrl
-    ) {
-        this.bio = bio;
-        this.phone = phone;
-        this.profileImage = normalizeProfileImage(profileImage);
-        this.channelName = channelName;
-        this.githubUrl = githubUrl;
-        this.blogUrl = blogUrl;
-    }
-
-    public void changePublicVisibility(Boolean isPublic) {
-        this.isPublic = Boolean.TRUE.equals(isPublic);
-    }
-
-    public String getDisplayProfileImage() {
-        String normalized = normalizeProfileImage(profileImage);
-
-        if (normalized == null || normalized.startsWith(LEGACY_DEFAULT_PROFILE_PREFIX)) {
-            return null;
-        }
-
-        return normalized;
-    }
-
-    private static String normalizeProfileImage(String profileImage) {
-        if (profileImage == null) {
-            return null;
-        }
-
-        String normalized = profileImage.trim();
-        return normalized.isEmpty() ? null : normalized;
-    }
+    String normalized = profileImage.trim();
+    return normalized.isEmpty() ? null : normalized;
+  }
 }

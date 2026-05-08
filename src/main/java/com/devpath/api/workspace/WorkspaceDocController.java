@@ -34,96 +34,117 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Workspace Docs API", description = "워크스페이스 문서(ERD/API명세/회의록) API")
 public class WorkspaceDocController {
 
-    private final WorkspaceDocService workspaceDocService;
+  private final WorkspaceDocService workspaceDocService;
 
-    @PutMapping("/workspaces/{workspaceId}/erd")
-    @Operation(summary = "ERD 문서 저장", description = "워크스페이스 ERD 문서를 저장합니다. 없으면 생성, 있으면 수정합니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "저장 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "멤버 아님",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
-    })
-    public ApiResponse<WorkspaceDocResponse> upsertErd(
-            @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
-            @RequestBody UpdateWorkspaceDocRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.ok(workspaceDocService.upsertDoc(workspaceId, requireUserId(userId),
-                WorkspaceDocType.ERD, request));
-    }
+  @PutMapping("/workspaces/{workspaceId}/erd")
+  @Operation(summary = "ERD 문서 저장", description = "워크스페이스 ERD 문서를 저장합니다. 없으면 생성, 있으면 수정합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "저장 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "멤버 아님",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<WorkspaceDocResponse> upsertErd(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @RequestBody UpdateWorkspaceDocRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.upsertDoc(
+            workspaceId, requireUserId(userId), WorkspaceDocType.ERD, request));
+  }
 
-    @GetMapping("/workspaces/{workspaceId}/erd")
-    @Operation(summary = "ERD 문서 조회", description = "워크스페이스 ERD 문서를 조회합니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "문서 없음",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
-    })
-    public ApiResponse<WorkspaceDocResponse> getErd(
-            @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.ok(workspaceDocService.getDoc(workspaceId, requireUserId(userId),
-                WorkspaceDocType.ERD));
-    }
+  @GetMapping("/workspaces/{workspaceId}/erd")
+  @Operation(summary = "ERD 문서 조회", description = "워크스페이스 ERD 문서를 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "조회 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "문서 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<WorkspaceDocResponse> getErd(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.getDoc(workspaceId, requireUserId(userId), WorkspaceDocType.ERD));
+  }
 
-    @PutMapping("/workspaces/{workspaceId}/api-spec")
-    @Operation(summary = "API 명세 저장", description = "워크스페이스 API 명세를 저장합니다. 없으면 생성, 있으면 수정합니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "저장 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "멤버 아님",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
-    })
-    public ApiResponse<WorkspaceDocResponse> upsertApiSpec(
-            @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
-            @RequestBody UpdateWorkspaceDocRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.ok(workspaceDocService.upsertDoc(workspaceId, requireUserId(userId),
-                WorkspaceDocType.API_SPEC, request));
-    }
+  @PutMapping("/workspaces/{workspaceId}/api-spec")
+  @Operation(summary = "API 명세 저장", description = "워크스페이스 API 명세를 저장합니다. 없으면 생성, 있으면 수정합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "저장 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "멤버 아님",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<WorkspaceDocResponse> upsertApiSpec(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @RequestBody UpdateWorkspaceDocRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.upsertDoc(
+            workspaceId, requireUserId(userId), WorkspaceDocType.API_SPEC, request));
+  }
 
-    @GetMapping("/workspaces/{workspaceId}/api-spec")
-    @Operation(summary = "API 명세 조회", description = "워크스페이스 API 명세를 조회합니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "문서 없음",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
-    })
-    public ApiResponse<WorkspaceDocResponse> getApiSpec(
-            @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.ok(workspaceDocService.getDoc(workspaceId, requireUserId(userId),
-                WorkspaceDocType.API_SPEC));
-    }
+  @GetMapping("/workspaces/{workspaceId}/api-spec")
+  @Operation(summary = "API 명세 조회", description = "워크스페이스 API 명세를 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "조회 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "문서 없음",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<WorkspaceDocResponse> getApiSpec(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.getDoc(workspaceId, requireUserId(userId), WorkspaceDocType.API_SPEC));
+  }
 
-    @PostMapping("/workspaces/{workspaceId}/meeting-notes")
-    @Operation(summary = "회의록 생성", description = "워크스페이스에 회의록을 생성합니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "생성 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "멤버 아님",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
-    })
-    public ApiResponse<MeetingNoteResponse> createMeetingNote(
-            @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
-            @Valid @RequestBody CreateMeetingNoteRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.ok(workspaceDocService.createMeetingNote(workspaceId, requireUserId(userId), request));
-    }
+  @PostMapping("/workspaces/{workspaceId}/meeting-notes")
+  @Operation(summary = "회의록 생성", description = "워크스페이스에 회의록을 생성합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "생성 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "멤버 아님",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<MeetingNoteResponse> createMeetingNote(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @Valid @RequestBody CreateMeetingNoteRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.createMeetingNote(workspaceId, requireUserId(userId), request));
+  }
 
-    @GetMapping("/workspaces/{workspaceId}/meeting-notes")
-    @Operation(summary = "회의록 목록 조회", description = "워크스페이스의 회의록 목록을 조회합니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "멤버 아님",
-                    content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
-    })
-    public ApiResponse<List<MeetingNoteResponse>> getMeetingNotes(
-            @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.ok(workspaceDocService.getMeetingNotes(workspaceId, requireUserId(userId)));
-    }
+  @GetMapping("/workspaces/{workspaceId}/meeting-notes")
+  @Operation(summary = "회의록 목록 조회", description = "워크스페이스의 회의록 목록을 조회합니다.")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "200",
+        description = "조회 성공"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "멤버 아님",
+        content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
+  })
+  public ApiResponse<List<MeetingNoteResponse>> getMeetingNotes(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(workspaceDocService.getMeetingNotes(workspaceId, requireUserId(userId)));
+  }
 }

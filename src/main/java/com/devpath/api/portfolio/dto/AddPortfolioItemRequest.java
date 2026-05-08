@@ -8,6 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AddPortfolioItemRequest {
 
-    @NotNull
-    private Long referenceId;
+  @NotNull private Long referenceId;
 }

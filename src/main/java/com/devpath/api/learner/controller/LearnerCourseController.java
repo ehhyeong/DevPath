@@ -22,22 +22,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class LearnerCourseController {
 
-    private final LearnerCourseService learnerCourseService;
+  private final LearnerCourseService learnerCourseService;
 
-    @Operation(summary = "강의 목록 조회", description = "전체 강의 목록을 조회합니다.")
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<CourseListItemResponse>>> getCourseList(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(learnerCourseService.getCourseList(userId)));
-    }
+  @Operation(summary = "강의 목록 조회", description = "전체 강의 목록을 조회합니다.")
+  @GetMapping
+  public ResponseEntity<ApiResponse<List<CourseListItemResponse>>> getCourseList(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ResponseEntity.ok(ApiResponse.ok(learnerCourseService.getCourseList(userId)));
+  }
 
-    @Operation(summary = "강의 상세 조회", description = "강의 ID로 상세 정보를 조회합니다.")
-    @GetMapping("/{courseId}")
-    public ResponseEntity<ApiResponse<CourseDetailResponse>> getCourseDetail(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @PathVariable Long courseId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(learnerCourseService.getCourseDetail(userId, courseId)));
-    }
+  @Operation(summary = "강의 상세 조회", description = "강의 ID로 상세 정보를 조회합니다.")
+  @GetMapping("/{courseId}")
+  public ResponseEntity<ApiResponse<CourseDetailResponse>> getCourseDetail(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(learnerCourseService.getCourseDetail(userId, courseId)));
+  }
 }

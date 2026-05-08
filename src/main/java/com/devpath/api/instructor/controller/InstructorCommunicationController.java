@@ -24,43 +24,33 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstructorCommunicationController {
 
-    private final InstructorCommunicationService instructorCommunicationService;
+  private final InstructorCommunicationService instructorCommunicationService;
 
-    // 미답변 요약은 QnA와 리뷰 건수를 묶어서 내려준다.
-    @Operation(summary = "미답변 Q&A/리뷰 요약 조회")
-    @GetMapping("/unanswered-summary")
-    public ApiResponse<UnansweredSummaryResponse> getUnansweredSummary(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success(
-                "미답변 요약을 조회했습니다.",
-                instructorCommunicationService.getUnansweredSummary(userId)
-        );
-    }
+  // 미답변 요약은 QnA와 리뷰 건수를 묶어서 내려준다.
+  @Operation(summary = "미답변 Q&A/리뷰 요약 조회")
+  @GetMapping("/unanswered-summary")
+  public ApiResponse<UnansweredSummaryResponse> getUnansweredSummary(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "미답변 요약을 조회했습니다.", instructorCommunicationService.getUnansweredSummary(userId));
+  }
 
-    // DM 방 생성은 동일 pair가 이미 있으면 기존 방을 재사용한다.
-    @Operation(summary = "수강생 DM 방 생성")
-    @PostMapping("/dm-rooms")
-    public ApiResponse<DmRoomResponse> createDmRoom(
-            @RequestBody @Valid DmRoomCreateRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success(
-                "DM 방이 생성되었습니다.",
-                instructorCommunicationService.createDmRoom(userId, request)
-        );
-    }
+  // DM 방 생성은 동일 pair가 이미 있으면 기존 방을 재사용한다.
+  @Operation(summary = "수강생 DM 방 생성")
+  @PostMapping("/dm-rooms")
+  public ApiResponse<DmRoomResponse> createDmRoom(
+      @RequestBody @Valid DmRoomCreateRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "DM 방이 생성되었습니다.", instructorCommunicationService.createDmRoom(userId, request));
+  }
 
-    // 방 조회 시 메시지 목록까지 함께 조회한다.
-    @Operation(summary = "DM 방 조회")
-    @GetMapping("/dm-rooms/{roomId}")
-    public ApiResponse<DmRoomResponse> getDmRoom(
-            @PathVariable Long roomId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success(
-                "DM 방을 조회했습니다.",
-                instructorCommunicationService.getDmRoom(roomId, userId)
-        );
-    }
+  // 방 조회 시 메시지 목록까지 함께 조회한다.
+  @Operation(summary = "DM 방 조회")
+  @GetMapping("/dm-rooms/{roomId}")
+  public ApiResponse<DmRoomResponse> getDmRoom(
+      @PathVariable Long roomId, @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "DM 방을 조회했습니다.", instructorCommunicationService.getDmRoom(roomId, userId));
+  }
 }

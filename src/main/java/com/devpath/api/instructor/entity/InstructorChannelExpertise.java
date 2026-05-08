@@ -25,28 +25,28 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class InstructorChannelExpertise {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "instructor_id", nullable = false)
-    private Long instructorId;
+  @Column(name = "instructor_id", nullable = false)
+  private Long instructorId;
 
-    @Column(name = "expertise_name", nullable = false, length = 100)
-    private String expertiseName;
+  @Column(name = "expertise_name", nullable = false, length = 100)
+  private String expertiseName;
 
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
+  @Column(name = "sort_order", nullable = false)
+  private Integer sortOrder;
 
-    @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
+  @Builder.Default
+  @Column(name = "is_deleted", nullable = false)
+  private Boolean isDeleted = false;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    public void delete() {
-        this.isDeleted = true;
-    }
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

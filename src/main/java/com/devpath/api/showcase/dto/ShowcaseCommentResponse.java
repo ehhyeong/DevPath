@@ -9,21 +9,21 @@ import lombok.Getter;
 @Builder
 public class ShowcaseCommentResponse {
 
-    private Long commentId;
-    private Long showcaseId;
-    private Long userId;
-    private String content;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+  private Long commentId;
+  private Long showcaseId;
+  private Long userId;
+  private String content;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
 
-    public static ShowcaseCommentResponse from(ShowcaseComment comment) {
-        return ShowcaseCommentResponse.builder()
-                .commentId(comment.getId())
-                .showcaseId(comment.getShowcaseId())
-                .userId(comment.getUserId())
-                .content(comment.getContent())
-                .createdAt(comment.getCreatedAt())
-                .updatedAt(comment.getUpdatedAt())
-                .build();
-    }
+  public static ShowcaseCommentResponse from(ShowcaseComment comment) {
+    return ShowcaseCommentResponse.builder()
+        .commentId(comment.getId())
+        .showcaseId(comment.getShowcaseId())
+        .userId(comment.getUserId())
+        .content(comment.getContent())
+        .createdAt(comment.getCreatedAt())
+        .updatedAt(comment.getUpdatedAt())
+        .build();
+  }
 }

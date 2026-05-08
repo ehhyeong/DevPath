@@ -20,10 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest(
-    properties = {
-      "spring.sql.init.mode=always",
-      "spring.jpa.defer-datasource-initialization=true"
-    })
+    properties = {"spring.sql.init.mode=always", "spring.jpa.defer-datasource-initialization=true"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SwaggerSmokeIntegrationTest {
@@ -50,8 +47,7 @@ class SwaggerSmokeIntegrationTest {
         .perform(get("/v3/api-docs"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.paths['/api/instructor/courses/{courseId}']").exists())
-        .andExpect(
-            jsonPath("$.paths['/api/instructor/courses/{courseId}/announcements']").exists())
+        .andExpect(jsonPath("$.paths['/api/instructor/courses/{courseId}/announcements']").exists())
         .andExpect(
             jsonPath("$.paths['/api/instructor/courses/{courseId}/node-classifications']").exists())
         .andExpect(

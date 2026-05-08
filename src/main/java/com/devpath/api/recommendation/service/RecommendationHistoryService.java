@@ -17,37 +17,41 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class RecommendationHistoryService {
 
-    private final RecommendationHistoryRepository recommendationHistoryRepository;
-    private final UserRepository userRepository;
+  private final RecommendationHistoryRepository recommendationHistoryRepository;
+  private final UserRepository userRepository;
 
-    public RecommendationHistoryResponse.ListResult getHistories(Long userId, Long recommendationId, Long nodeId) {
-        validateUser(userId);
+  public RecommendationHistoryResponse.ListResult getHistories(
+      Long userId, Long recommendationId, Long nodeId) {
+    validateUser(userId);
 
-        List<RecommendationHistory> histories;
-        if (recommendationId != null) {
-            histories = recommendationHistoryRepository
-                    .findAllByUserIdAndRecommendationIdOrderByCreatedAtDesc(userId, recommendationId);
-        } else if (nodeId != null) {
-            histories = recommendationHistoryRepository
-                    .findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(userId, nodeId);
-        } else {
-            histories = recommendationHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
-        }
-
-        return RecommendationHistoryResponse.ListResult.of(userId, histories);
+    List<RecommendationHistory> histories;
+    if (recommendationId != null) {
+      histories =
+          recommendationHistoryRepository.findAllByUserIdAndRecommendationIdOrderByCreatedAtDesc(
+              userId, recommendationId);
+    } else if (nodeId != null) {
+      histories =
+          recommendationHistoryRepository.findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(
+              userId, nodeId);
+    } else {
+      histories = recommendationHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    public long getRecentHistoryCountForRecommendationChange(Long userId) {
-        validateUser(userId);
-        return recommendationHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId).size();
+    return RecommendationHistoryResponse.ListResult.of(userId, histories);
+  }
+
+  public long getRecentHistoryCountForRecommendationChange(Long userId) {
+    validateUser(userId);
+    return recommendationHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId).size();
+  }
+
+  private User validateUser(Long userId) {
+    if (userId == null) {
+      throw new CustomException(ErrorCode.UNAUTHORIZED);
     }
 
-    private User validateUser(Long userId) {
-        if (userId == null) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
+    return userRepository
+        .findById(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+  }
 }

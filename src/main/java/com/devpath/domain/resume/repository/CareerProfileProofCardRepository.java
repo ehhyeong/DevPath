@@ -13,10 +13,8 @@ public interface CareerProfileProofCardRepository
   List<CareerProfileProofCard> findAllByCareerProfile_IdAndIsDeletedFalseOrderByCreatedAtDesc(
       Long profileId);
 
-  boolean existsByCareerProfile_IdAndProofCardIdAndIsDeletedFalse(
-      Long profileId, Long proofCardId);
+  boolean existsByCareerProfile_IdAndProofCardIdAndIsDeletedFalse(Long profileId, Long proofCardId);
 
   Optional<CareerProfileProofCard> findByCareerProfile_IdAndProofCardIdAndIsDeletedFalse(
       Long profileId, Long proofCardId);
 }
-

@@ -28,75 +28,69 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "학습자 스킬 체크", description = "학습자의 보유 스킬 관리 및 로드맵 추천 API")
 public class SkillCheckController {
 
-    private final SkillCheckService skillCheckService;
-    private final RoadmapRepository roadmapRepository;
+  private final SkillCheckService skillCheckService;
+  private final RoadmapRepository roadmapRepository;
 
-    @PostMapping("/skills/check")
-    @Operation(
-            summary = "보유 스킬 등록",
-            description = "사용자의 보유 스킬을 한 번에 등록합니다. 이미 등록된 스킬은 중복 등록하지 않습니다."
-    )
-    public ResponseEntity<ApiResponse<SkillCheckDto.RegisterSkillsResponse>> registerSkills(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @RequestBody SkillCheckDto.RegisterSkillsRequest request
-    ) {
-        List<String> requestedTagNames = request.getTagNames() == null ? List.of() : request.getTagNames();
-        List<String> existingSkills = skillCheckService.getUserSkills(userId);
-        List<String> registeredSkills = skillCheckService.registerUserSkills(userId, requestedTagNames);
+  @PostMapping("/skills/check")
+  @Operation(summary = "보유 스킬 등록", description = "사용자의 보유 스킬을 한 번에 등록합니다. 이미 등록된 스킬은 중복 등록하지 않습니다.")
+  public ResponseEntity<ApiResponse<SkillCheckDto.RegisterSkillsResponse>> registerSkills(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @RequestBody SkillCheckDto.RegisterSkillsRequest request) {
+    List<String> requestedTagNames =
+        request.getTagNames() == null ? List.of() : request.getTagNames();
+    List<String> existingSkills = skillCheckService.getUserSkills(userId);
+    List<String> registeredSkills = skillCheckService.registerUserSkills(userId, requestedTagNames);
 
-        List<String> alreadyOwned = requestedTagNames.stream()
-                .filter(existingSkills::contains)
-                .collect(Collectors.toList());
+    List<String> alreadyOwned =
+        requestedTagNames.stream().filter(existingSkills::contains).collect(Collectors.toList());
 
-        SkillCheckDto.RegisterSkillsResponse response = SkillCheckDto.RegisterSkillsResponse.builder()
-                .registeredSkills(registeredSkills)
-                .existingSkills(alreadyOwned)
-                .build();
+    SkillCheckDto.RegisterSkillsResponse response =
+        SkillCheckDto.RegisterSkillsResponse.builder()
+            .registeredSkills(registeredSkills)
+            .existingSkills(alreadyOwned)
+            .build();
 
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
+    return ResponseEntity.ok(ApiResponse.ok(response));
+  }
 
-    @GetMapping("/roadmaps/{roadmapId}/skill-suggestions")
-    @Operation(
-            summary = "로드맵 추천 스킬 조회",
-            description = "특정 로드맵을 학습하기 위해 필요한 스킬 중 사용자가 아직 보유하지 않은 스킬을 추천합니다."
-    )
-    public ResponseEntity<ApiResponse<SkillCheckDto.SuggestedSkillsResponse>> getSuggestedSkills(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @Parameter(description = "로드맵 ID") @PathVariable Long roadmapId
-    ) {
-        Roadmap roadmap = roadmapRepository.findById(roadmapId)
-                .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NOT_FOUND));
+  @GetMapping("/roadmaps/{roadmapId}/skill-suggestions")
+  @Operation(
+      summary = "로드맵 추천 스킬 조회",
+      description = "특정 로드맵을 학습하기 위해 필요한 스킬 중 사용자가 아직 보유하지 않은 스킬을 추천합니다.")
+  public ResponseEntity<ApiResponse<SkillCheckDto.SuggestedSkillsResponse>> getSuggestedSkills(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "로드맵 ID") @PathVariable Long roadmapId) {
+    Roadmap roadmap =
+        roadmapRepository
+            .findById(roadmapId)
+            .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NOT_FOUND));
 
-        List<String> userSkills = skillCheckService.getUserSkills(userId);
-        List<String> suggestedSkills = skillCheckService.suggestSkillsForRoadmap(userId, roadmapId);
-        int totalRequiredSkills = userSkills.size() + suggestedSkills.size();
+    List<String> userSkills = skillCheckService.getUserSkills(userId);
+    List<String> suggestedSkills = skillCheckService.suggestSkillsForRoadmap(userId, roadmapId);
+    int totalRequiredSkills = userSkills.size() + suggestedSkills.size();
 
-        double coveragePercent = totalRequiredSkills > 0
-                ? (double) userSkills.size() / totalRequiredSkills * 100
-                : 0.0;
+    double coveragePercent =
+        totalRequiredSkills > 0 ? (double) userSkills.size() / totalRequiredSkills * 100 : 0.0;
 
-        SkillCheckDto.SuggestedSkillsResponse response = SkillCheckDto.SuggestedSkillsResponse.builder()
-                .roadmapId(roadmapId)
-                .roadmapTitle(roadmap.getTitle())
-                .userSkills(userSkills)
-                .suggestedSkills(suggestedSkills)
-                .totalRequiredSkills(totalRequiredSkills)
-                .skillCoveragePercent(Math.round(coveragePercent * 10) / 10.0)
-                .build();
+    SkillCheckDto.SuggestedSkillsResponse response =
+        SkillCheckDto.SuggestedSkillsResponse.builder()
+            .roadmapId(roadmapId)
+            .roadmapTitle(roadmap.getTitle())
+            .userSkills(userSkills)
+            .suggestedSkills(suggestedSkills)
+            .totalRequiredSkills(totalRequiredSkills)
+            .skillCoveragePercent(Math.round(coveragePercent * 10) / 10.0)
+            .build();
 
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
+    return ResponseEntity.ok(ApiResponse.ok(response));
+  }
 
-    @GetMapping("/roadmaps/{roadmapId}/lock-status")
-    @Operation(
-            summary = "로드맵 노드 잠금 상태 조회",
-            description = "로드맵의 모든 노드에 대한 잠금/해금 상태를 조회합니다."
-    )
-    public ResponseEntity<ApiResponse<SkillCheckDto.RoadmapLockStatusResponse>> getRoadmapLockStatus(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @Parameter(description = "로드맵 ID") @PathVariable Long roadmapId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(skillCheckService.getRoadmapLockStatus(userId, roadmapId)));
-    }
+  @GetMapping("/roadmaps/{roadmapId}/lock-status")
+  @Operation(summary = "로드맵 노드 잠금 상태 조회", description = "로드맵의 모든 노드에 대한 잠금/해금 상태를 조회합니다.")
+  public ResponseEntity<ApiResponse<SkillCheckDto.RoadmapLockStatusResponse>> getRoadmapLockStatus(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "로드맵 ID") @PathVariable Long roadmapId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(skillCheckService.getRoadmapLockStatus(userId, roadmapId)));
+  }
 }

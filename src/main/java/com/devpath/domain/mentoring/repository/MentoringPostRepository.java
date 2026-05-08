@@ -15,7 +15,8 @@ public interface MentoringPostRepository extends JpaRepository<MentoringPost, Lo
 
   // 상태 필터가 있는 목록 조회에서도 mentor를 함께 로딩한다.
   @EntityGraph(attributePaths = "mentor")
-  List<MentoringPost> findAllByStatusAndIsDeletedFalseOrderByCreatedAtDesc(MentoringPostStatus status);
+  List<MentoringPost> findAllByStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+      MentoringPostStatus status);
 
   // Soft Delete 된 공고는 단건 조회 대상에서 제외한다.
   @EntityGraph(attributePaths = "mentor")

@@ -49,8 +49,7 @@ public class SystemSetting {
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
 
-  public void updateSystemPolicy(
-      BigDecimal platformFeeRate, BigDecimal instructorSettlementRate) {
+  public void updateSystemPolicy(BigDecimal platformFeeRate, BigDecimal instructorSettlementRate) {
     this.platformFeeRate = platformFeeRate;
     this.instructorSettlementRate = instructorSettlementRate;
   }

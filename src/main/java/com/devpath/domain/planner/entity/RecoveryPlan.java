@@ -1,8 +1,8 @@
 package com.devpath.domain.planner.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "recovery_plan")
@@ -12,17 +12,17 @@ import java.time.LocalDateTime;
 @Builder
 public class RecoveryPlan {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "learner_id", nullable = false)
-    private Long learnerId;
+  @Column(name = "learner_id", nullable = false)
+  private Long learnerId;
 
-    @Column(name = "plan_details", nullable = false)
-    private String planDetails;
+  @Column(name = "plan_details", nullable = false)
+  private String planDetails;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+  @Column(name = "created_at", nullable = false, updatable = false)
+  @Builder.Default
+  private LocalDateTime createdAt = LocalDateTime.now();
 }

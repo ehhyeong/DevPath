@@ -26,45 +26,41 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class Portfolio {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long userId;
+  @Column(nullable = false)
+  private Long userId;
 
-    @Column(nullable = false)
-    private String title;
+  @Column(nullable = false)
+  private String title;
 
-    @Column(columnDefinition = "TEXT")
-    private String bio;
+  @Column(columnDefinition = "TEXT")
+  private String bio;
 
-    @Builder.Default
-    private boolean isPublic = false;
+  @Builder.Default private boolean isPublic = false;
 
-    private String publicLinkToken;
+  private String publicLinkToken;
 
-    @Builder.Default
-    private boolean isDeleted = false;
+  @Builder.Default private boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+  @LastModifiedDate private LocalDateTime updatedAt;
 
-    public void update(String title, String bio, boolean isPublic) {
-        this.title = title;
-        this.bio = bio;
-        this.isPublic = isPublic;
-    }
+  public void update(String title, String bio, boolean isPublic) {
+    this.title = title;
+    this.bio = bio;
+    this.isPublic = isPublic;
+  }
 
-    public void generatePublicLink(String token) {
-        this.publicLinkToken = token;
-        this.isPublic = true;
-    }
+  public void generatePublicLink(String token) {
+    this.publicLinkToken = token;
+    this.isPublic = true;
+  }
 
-    public void delete() {
-        this.isDeleted = true;
-    }
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

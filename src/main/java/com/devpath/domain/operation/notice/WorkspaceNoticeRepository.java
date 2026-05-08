@@ -8,9 +8,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface WorkspaceNoticeRepository extends JpaRepository<WorkspaceNotice, Long> {
 
-    List<WorkspaceNotice> findByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(Long workspaceId);
+  List<WorkspaceNotice> findByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(Long workspaceId);
 
-    Optional<WorkspaceNotice> findByIdAndIsDeletedFalse(Long id);
+  Optional<WorkspaceNotice> findByIdAndIsDeletedFalse(Long id);
 
-    long countByWorkspaceIdAndIsDeletedFalse(Long workspaceId);
+  long countByWorkspaceIdAndIsDeletedFalse(Long workspaceId);
 }

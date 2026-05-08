@@ -9,29 +9,21 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RecommendationChangeRepository extends JpaRepository<RecommendationChange, Long> {
 
-    List<RecommendationChange> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+  List<RecommendationChange> findAllByUserIdOrderByCreatedAtDesc(Long userId);
 
-    List<RecommendationChange> findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
-        Long userId,
-        RecommendationChangeStatus changeStatus
-    );
+  List<RecommendationChange> findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
+      Long userId, RecommendationChangeStatus changeStatus);
 
-    List<RecommendationChange> findAllByUserIdAndChangeStatusInOrderByUpdatedAtDesc(
-        Long userId,
-        Collection<RecommendationChangeStatus> changeStatuses
-    );
+  List<RecommendationChange> findAllByUserIdAndChangeStatusInOrderByUpdatedAtDesc(
+      Long userId, Collection<RecommendationChangeStatus> changeStatuses);
 
-    Optional<RecommendationChange> findByIdAndUserId(Long changeId, Long userId);
+  Optional<RecommendationChange> findByIdAndUserId(Long changeId, Long userId);
 
-    Optional<RecommendationChange> findTopByUserIdAndRoadmapNodeNodeIdAndChangeStatusOrderByCreatedAtDesc(
-        Long userId,
-        Long nodeId,
-        RecommendationChangeStatus changeStatus
-    );
+  Optional<RecommendationChange>
+      findTopByUserIdAndRoadmapNodeNodeIdAndChangeStatusOrderByCreatedAtDesc(
+          Long userId, Long nodeId, RecommendationChangeStatus changeStatus);
 
-    List<RecommendationChange> findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
-        Long userId,
-        Long roadmapId,
-        RecommendationChangeStatus changeStatus
-    );
+  List<RecommendationChange>
+      findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
+          Long userId, Long roadmapId, RecommendationChangeStatus changeStatus);
 }

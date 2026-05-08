@@ -11,10 +11,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface SquadMemberRepository extends JpaRepository<SquadMember, Long> {
 
-    @Query("SELECT sm FROM SquadMember sm JOIN FETCH sm.user WHERE sm.squad = :squad")
-    List<SquadMember> findBySquadWithUser(@Param("squad") Squad squad);
+  @Query("SELECT sm FROM SquadMember sm JOIN FETCH sm.user WHERE sm.squad = :squad")
+  List<SquadMember> findBySquadWithUser(@Param("squad") Squad squad);
 
-    Optional<SquadMember> findBySquadAndUser(Squad squad, User user);
+  Optional<SquadMember> findBySquadAndUser(Squad squad, User user);
 
-    boolean existsBySquadAndUser(Squad squad, User user);
+  boolean existsBySquadAndUser(Squad squad, User user);
 }

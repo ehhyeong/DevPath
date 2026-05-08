@@ -21,7 +21,6 @@ import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -154,7 +153,8 @@ class PublicInstructorQueryServiceIntegrationTest {
         UserTechStack.builder().user(publicInstructor).tag(springBootTag).build());
     userTechStackRepository.save(
         UserTechStack.builder().user(publicInstructor).tag(springSecurityTag).build());
-    userTechStackRepository.save(UserTechStack.builder().user(publicInstructor).tag(jwtTag).build());
+    userTechStackRepository.save(
+        UserTechStack.builder().user(publicInstructor).tag(jwtTag).build());
 
     LocalDateTime now = LocalDateTime.of(2026, 3, 16, 0, 0);
 
@@ -295,10 +295,7 @@ class PublicInstructorQueryServiceIntegrationTest {
     assertThat(response.getFeaturedCourses())
         .extracting(InstructorChannelDto.FeaturedCourseItem::getTitle)
         .containsExactly(
-            "Published Course 5",
-            "Published Course 4",
-            "Published Course 3",
-            "Published Course 2");
+            "Published Course 5", "Published Course 4", "Published Course 3", "Published Course 2");
     assertThat(response.getFeaturedCourses())
         .extracting(InstructorChannelDto.FeaturedCourseItem::getSubtitle)
         .containsExactly("Subtitle 5", "Subtitle 4", "Subtitle 3", "Subtitle 2");
@@ -321,7 +318,8 @@ class PublicInstructorQueryServiceIntegrationTest {
         .build();
   }
 
-  private Course draftCourse(Long instructorId, String title, String subtitle, String thumbnailUrl) {
+  private Course draftCourse(
+      Long instructorId, String title, String subtitle, String thumbnailUrl) {
     User instructor = userRepository.findById(instructorId).orElseThrow();
     return Course.builder()
         .instructor(instructor)

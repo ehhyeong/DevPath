@@ -12,7 +12,10 @@ import lombok.NoArgsConstructor;
 @Schema(description = "프로모션 상태 변경 요청")
 public class PromotionStatusUpdateRequest {
 
-    @NotNull
-    @Schema(description = "프로모션 상태", example = "ACTIVE", allowableValues = {"ACTIVE", "INACTIVE"})
-    private PromotionStatus status;
+  @NotNull
+  @Schema(
+      description = "프로모션 상태",
+      example = "ACTIVE",
+      allowableValues = {"ACTIVE", "INACTIVE"})
+  private PromotionStatus status;
 }

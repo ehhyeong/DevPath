@@ -119,14 +119,10 @@ public class InstructorCourseDto {
   @Schema(description = "강의 메타데이터 전체 교체 요청 DTO")
   public static class UpdateMetadataRequest {
 
-    @Schema(
-        description = "선수지식 목록",
-        example = "[\"Java 기본 문법\", \"HTTP 기초\", \"Spring Core\"]")
+    @Schema(description = "선수지식 목록", example = "[\"Java 기본 문법\", \"HTTP 기초\", \"Spring Core\"]")
     private List<String> prerequisites;
 
-    @Schema(
-        description = "직무 연관성 목록",
-        example = "[\"백엔드 개발자\", \"서버 엔지니어\", \"플랫폼 엔지니어\"]")
+    @Schema(description = "직무 연관성 목록", example = "[\"백엔드 개발자\", \"서버 엔지니어\", \"플랫폼 엔지니어\"]")
     private List<String> jobRelevance;
 
     @NotEmpty(message = "강의 태그는 최소 1개 이상 선택해야 합니다.")
@@ -162,7 +158,9 @@ public class InstructorCourseDto {
   public static class UploadThumbnailRequest {
 
     @NotBlank(message = "썸네일 URL은 필수입니다.")
-    @Schema(description = "썸네일 URL", example = "https://cdn.devpath.com/courses/thumbnails/course-1.png")
+    @Schema(
+        description = "썸네일 URL",
+        example = "https://cdn.devpath.com/courses/thumbnails/course-1.png")
     private String thumbnailUrl;
 
     @Schema(description = "원본 파일명", example = "spring-security-thumbnail.png")
@@ -175,7 +173,9 @@ public class InstructorCourseDto {
   public static class UploadTrailerRequest {
 
     @NotBlank(message = "트레일러 URL은 필수입니다.")
-    @Schema(description = "트레일러 URL", example = "https://cdn.devpath.com/courses/trailers/course-1.mp4")
+    @Schema(
+        description = "트레일러 URL",
+        example = "https://cdn.devpath.com/courses/trailers/course-1.mp4")
     private String trailerUrl;
 
     @Schema(description = "비디오 에셋 키", example = "courses/trailers/course-1.mp4")

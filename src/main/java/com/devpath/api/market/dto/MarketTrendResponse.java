@@ -50,11 +50,17 @@ public class MarketTrendResponse {
       @Schema(description = "CLOSED 공고 수", example = "7") Long closedPostingCount,
       @Schema(description = "DRAFT 공고 수", example = "3") Long draftPostingCount,
       @Schema(description = "분석된 기술 태그 수", example = "52") Long analyzedSkillTagCount,
-      @Schema(description = "상위 인기 기술 스택", example = "[{\"skillName\":\"Spring Boot\",\"postingCount\":12}]")
+      @Schema(
+              description = "상위 인기 기술 스택",
+              example = "[{\"skillName\":\"Spring Boot\",\"postingCount\":12}]")
           List<SkillStackTrend> topSkills,
-      @Schema(description = "상위 직무 트렌드", example = "[{\"jobRole\":\"Backend Developer\",\"postingCount\":8}]")
+      @Schema(
+              description = "상위 직무 트렌드",
+              example = "[{\"jobRole\":\"Backend Developer\",\"postingCount\":8}]")
           List<JobTrend> topJobRoles,
-      @Schema(description = "지역별/경력별 지표", example = "[{\"type\":\"REGION\",\"label\":\"SEOUL\",\"postingCount\":15}]")
+      @Schema(
+              description = "지역별/경력별 지표",
+              example = "[{\"type\":\"REGION\",\"label\":\"SEOUL\",\"postingCount\":15}]")
           List<Indicator> indicators,
       @Schema(description = "리포트 생성 일시", example = "2026-05-06T14:00:00")
           LocalDateTime generatedAt) {

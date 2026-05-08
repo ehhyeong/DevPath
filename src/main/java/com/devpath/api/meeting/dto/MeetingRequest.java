@@ -8,82 +8,67 @@ import java.time.LocalDateTime;
 
 public class MeetingRequest {
 
-    private MeetingRequest() {
-    }
+  private MeetingRequest() {}
 
-    @Schema(name = "MeetingCreateRequest", description = "회의방 생성 요청")
-    public record Create(
+  @Schema(name = "MeetingCreateRequest", description = "회의방 생성 요청")
+  public record Create(
 
-            // 회의가 속한 멘토링 ID다.
-            @Schema(description = "멘토링 ID", example = "1")
-            @NotNull(message = "멘토링 ID는 필수입니다.")
-            Long mentoringId,
+      // 회의가 속한 멘토링 ID다.
+      @Schema(description = "멘토링 ID", example = "1") @NotNull(message = "멘토링 ID는 필수입니다.")
+          Long mentoringId,
 
-            // 인증 연동 전 Swagger 테스트를 위해 회의 생성자 ID를 요청으로 받는다.
-            @Schema(description = "회의 생성자 ID", example = "1")
-            @NotNull(message = "회의 생성자 ID는 필수입니다.")
-            Long hostId,
+      // 인증 연동 전 Swagger 테스트를 위해 회의 생성자 ID를 요청으로 받는다.
+      @Schema(description = "회의 생성자 ID", example = "1") @NotNull(message = "회의 생성자 ID는 필수입니다.")
+          Long hostId,
 
-            // 회의방 제목이다.
-            @Schema(description = "회의 제목", example = "1주차 멘토링 코드 리뷰 회의")
-            @NotBlank(message = "회의 제목은 필수입니다.")
-            @Size(max = 150, message = "회의 제목은 150자 이하여야 합니다.")
-            String title,
+      // 회의방 제목이다.
+      @Schema(description = "회의 제목", example = "1주차 멘토링 코드 리뷰 회의")
+          @NotBlank(message = "회의 제목은 필수입니다.")
+          @Size(max = 150, message = "회의 제목은 150자 이하여야 합니다.")
+          String title,
 
-            // 외부 RTC 또는 Jitsi URL이다. 비워두면 백엔드에서 기본 Jitsi URL을 생성한다.
-            @Schema(description = "회의 URL", example = "https://meet.jit.si/devpath-mentoring-1-week-1")
-            @Size(max = 1000, message = "회의 URL은 1000자 이하여야 합니다.")
-            String meetingUrl,
+      // 외부 RTC 또는 Jitsi URL이다. 비워두면 백엔드에서 기본 Jitsi URL을 생성한다.
+      @Schema(description = "회의 URL", example = "https://meet.jit.si/devpath-mentoring-1-week-1")
+          @Size(max = 1000, message = "회의 URL은 1000자 이하여야 합니다.")
+          String meetingUrl,
 
-            // 회의 예정 시간이다.
-            @Schema(description = "회의 예정 일시", example = "2026-05-10T20:00:00")
-            LocalDateTime scheduledAt
-    ) {
-    }
+      // 회의 예정 시간이다.
+      @Schema(description = "회의 예정 일시", example = "2026-05-10T20:00:00")
+          LocalDateTime scheduledAt) {}
 
-    @Schema(name = "MeetingEndRequest", description = "회의 종료 요청")
-    public record End(
+  @Schema(name = "MeetingEndRequest", description = "회의 종료 요청")
+  public record End(
 
-            // 회의 생성자만 종료할 수 있도록 검증한다.
-            @Schema(description = "회의 생성자 ID", example = "1")
-            @NotNull(message = "회의 생성자 ID는 필수입니다.")
-            Long hostId
-    ) {
-    }
+      // 회의 생성자만 종료할 수 있도록 검증한다.
+      @Schema(description = "회의 생성자 ID", example = "1") @NotNull(message = "회의 생성자 ID는 필수입니다.")
+          Long hostId) {}
 
-    @Schema(name = "MeetingJoinRequest", description = "회의 참가 요청")
-    public record Join(
+  @Schema(name = "MeetingJoinRequest", description = "회의 참가 요청")
+  public record Join(
 
-            // 회의에 참가할 사용자 ID다.
-            @Schema(description = "참가자 ID", example = "2")
-            @NotNull(message = "참가자 ID는 필수입니다.")
-            Long userId
-    ) {
-    }
+      // 회의에 참가할 사용자 ID다.
+      @Schema(description = "참가자 ID", example = "2") @NotNull(message = "참가자 ID는 필수입니다.")
+          Long userId) {}
 
-    @Schema(name = "MeetingLeaveRequest", description = "회의 퇴장 요청")
-    public record Leave(
+  @Schema(name = "MeetingLeaveRequest", description = "회의 퇴장 요청")
+  public record Leave(
 
-            // 회의에서 퇴장할 사용자 ID다.
-            @Schema(description = "참가자 ID", example = "2")
-            @NotNull(message = "참가자 ID는 필수입니다.")
-            Long userId
-    ) {
-    }
+      // 회의에서 퇴장할 사용자 ID다.
+      @Schema(description = "참가자 ID", example = "2") @NotNull(message = "참가자 ID는 필수입니다.")
+          Long userId) {}
 
-    @Schema(name = "MeetingRecordingUrlRequest", description = "회의 녹화 URL 저장 요청")
-    public record RecordingUrl(
+  @Schema(name = "MeetingRecordingUrlRequest", description = "회의 녹화 URL 저장 요청")
+  public record RecordingUrl(
 
-            // 회의 생성자만 녹화 URL을 수정할 수 있도록 검증한다.
-            @Schema(description = "회의 생성자 ID", example = "1")
-            @NotNull(message = "회의 생성자 ID는 필수입니다.")
-            Long hostId,
+      // 회의 생성자만 녹화 URL을 수정할 수 있도록 검증한다.
+      @Schema(description = "회의 생성자 ID", example = "1") @NotNull(message = "회의 생성자 ID는 필수입니다.")
+          Long hostId,
 
-            // 녹화 파일 또는 외부 녹화 링크다.
-            @Schema(description = "녹화 URL", example = "https://storage.devpath.local/recordings/meeting-1.mp4")
-            @NotBlank(message = "녹화 URL은 필수입니다.")
-            @Size(max = 1000, message = "녹화 URL은 1000자 이하여야 합니다.")
-            String recordingUrl
-    ) {
-    }
+      // 녹화 파일 또는 외부 녹화 링크다.
+      @Schema(
+              description = "녹화 URL",
+              example = "https://storage.devpath.local/recordings/meeting-1.mp4")
+          @NotBlank(message = "녹화 URL은 필수입니다.")
+          @Size(max = 1000, message = "녹화 URL은 1000자 이하여야 합니다.")
+          String recordingUrl) {}
 }

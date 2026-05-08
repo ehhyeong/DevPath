@@ -13,80 +13,91 @@ import lombok.Getter;
 @Schema(description = "질문 상세 응답 DTO")
 public class QuestionDetailResponse {
 
-    @Schema(description = "질문 ID", example = "10")
-    private Long id;
+  @Schema(description = "질문 ID", example = "10")
+  private Long id;
 
-    @Schema(description = "작성자 ID", example = "1")
-    private Long authorId;
+  @Schema(description = "작성자 ID", example = "1")
+  private Long authorId;
 
-    @Schema(description = "작성자 이름", example = "김태형")
-    private String authorName;
+  @Schema(description = "작성자 이름", example = "김태형")
+  private String authorName;
 
-    @Schema(description = "Course ID", example = "1", nullable = true)
-    private Long courseId;
+  @Schema(description = "질문 소속 범위", example = "MENTORING")
+  private String questionScope;
 
-    @Schema(description = "Lesson ID", example = "10", nullable = true)
-    private Long lessonId;
+  @Schema(description = "멘토링 ID", example = "1", nullable = true)
+  private Long mentoringId;
 
-    @Schema(description = "질문 템플릿 타입", example = "DEBUGGING")
-    private String templateType;
+  @Schema(description = "워크스페이스 ID", example = "1", nullable = true)
+  private Long workspaceId;
 
-    @Schema(description = "질문 난이도", example = "MEDIUM")
-    private String difficulty;
+  @Schema(description = "Course ID", example = "1", nullable = true)
+  private Long courseId;
 
-    @Schema(description = "질문 제목", example = "Spring Boot에서 JWT 필터가 두 번 실행됩니다.")
-    private String title;
+  @Schema(description = "Lesson ID", example = "10", nullable = true)
+  private Long lessonId;
 
-    @Schema(description = "질문 본문", example = "OncePerRequestFilter를 사용했는데도 로그가 두 번 찍힙니다.")
-    private String content;
+  @Schema(description = "질문 템플릿 타입", example = "DEBUGGING")
+  private String templateType;
 
-    @Schema(description = "채택된 답변 ID", example = "25", nullable = true)
-    private Long adoptedAnswerId;
+  @Schema(description = "질문 난이도", example = "MEDIUM")
+  private String difficulty;
 
-    @Schema(description = "Lecture timestamp", example = "00:12:44", nullable = true)
-    private String lectureTimestamp;
+  @Schema(description = "질문 상태", example = "ANSWERED")
+  private String qnaStatus;
 
-    @Schema(description = "Q&A status", example = "UNANSWERED")
-    private String qnaStatus;
+  @Schema(description = "질문 제목", example = "Spring Boot에서 JWT 필터가 두 번 실행됩니다.")
+  private String title;
 
-    @Schema(description = "Answer count", example = "2")
-    private int answerCount;
+  @Schema(description = "질문 본문", example = "OncePerRequestFilter를 사용했는데도 로그가 두 번 찍힙니다.")
+  private String content;
 
-    @Schema(description = "조회수", example = "13")
-    private int viewCount;
+  @Schema(description = "채택된 답변 ID", example = "25", nullable = true)
+  private Long adoptedAnswerId;
 
-    @Schema(description = "질문 작성 일시", example = "2026-03-23T18:00:00")
-    private LocalDateTime createdAt;
+  @Schema(description = "Lecture timestamp", example = "00:12:44", nullable = true)
+  private String lectureTimestamp;
 
-    @Schema(description = "질문 수정 일시", example = "2026-03-23T18:05:00")
-    private LocalDateTime updatedAt;
+  @Schema(description = "Answer count", example = "2")
+  private int answerCount;
 
-    @ArraySchema(
-            arraySchema = @Schema(description = "답변 목록"),
-            schema = @Schema(implementation = AnswerResponse.class)
-    )
-    private List<AnswerResponse> answers;
+  @Schema(description = "조회수", example = "13")
+  private int viewCount;
 
-    // 질문 엔티티와 답변 목록을 상세 응답 DTO로 변환한다.
-    public static QuestionDetailResponse from(Question question, List<AnswerResponse> answers) {
-        return QuestionDetailResponse.builder()
-                .id(question.getId())
-                .authorId(question.getUser().getId())
-                .authorName(question.getUser().getName())
-                .courseId(question.getCourseId())
-                .lessonId(question.getLessonId())
-                .templateType(question.getTemplateType().name())
-                .difficulty(question.getDifficulty().name())
-                .title(question.getTitle())
-                .content(question.getContent())
-                .adoptedAnswerId(question.getAdoptedAnswerId())
-                .lectureTimestamp(question.getLectureTimestamp())
-                .qnaStatus(question.getQnaStatus().name())
-                .answerCount(answers.size())
-                .viewCount(question.getViewCount())
-                .createdAt(question.getCreatedAt())
-                .updatedAt(question.getUpdatedAt())
-                .answers(answers)
-                .build();
-    }
+  @Schema(description = "질문 작성 일시", example = "2026-03-23T18:00:00")
+  private LocalDateTime createdAt;
+
+  @Schema(description = "질문 수정 일시", example = "2026-03-23T18:05:00")
+  private LocalDateTime updatedAt;
+
+  @ArraySchema(
+      arraySchema = @Schema(description = "답변 목록"),
+      schema = @Schema(implementation = AnswerResponse.class))
+  private List<AnswerResponse> answers;
+
+  public static QuestionDetailResponse from(Question question, List<AnswerResponse> answers) {
+    return QuestionDetailResponse.builder()
+        .id(question.getId())
+        .authorId(question.getUser().getId())
+        .authorName(question.getUser().getName())
+        .questionScope(
+            question.getQuestionScope() == null ? null : question.getQuestionScope().name())
+        .mentoringId(question.getMentoringId())
+        .workspaceId(question.getWorkspaceId())
+        .courseId(question.getCourseId())
+        .lessonId(question.getLessonId())
+        .templateType(question.getTemplateType().name())
+        .difficulty(question.getDifficulty().name())
+        .qnaStatus(question.getQnaStatus().name())
+        .title(question.getTitle())
+        .content(question.getContent())
+        .adoptedAnswerId(question.getAdoptedAnswerId())
+        .lectureTimestamp(question.getLectureTimestamp())
+        .answerCount(answers.size())
+        .viewCount(question.getViewCount())
+        .createdAt(question.getCreatedAt())
+        .updatedAt(question.getUpdatedAt())
+        .answers(answers)
+        .build();
+  }
 }

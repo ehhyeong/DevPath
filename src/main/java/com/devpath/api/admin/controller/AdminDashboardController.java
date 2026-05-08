@@ -23,8 +23,6 @@ public class AdminDashboardController {
   @GetMapping("/overview")
   // 상단 카드와 차트가 필요한 요약 데이터를 한 번에 내려준다.
   public ApiResponse<AdminDashboardOverviewResponse> getOverview() {
-    return ApiResponse.success(
-        "관리자 대시보드 개요를 조회했습니다.",
-        adminDashboardService.getOverview());
+    return ApiResponse.success("관리자 대시보드 개요를 조회했습니다.", adminDashboardService.getOverview());
   }
 }

@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "리뷰 이슈 태그 요청")
 public class ReviewIssueTagRequest {
 
-    @NotEmpty
-    @Schema(description = "리뷰 이슈 태그 목록", example = "[\"slow-audio\", \"too-fast\"]")
-    private List<String> issueTags;
+  @NotEmpty
+  @Schema(description = "리뷰 이슈 태그 목록", example = "[\"slow-audio\", \"too-fast\"]")
+  private List<String> issueTags;
 }

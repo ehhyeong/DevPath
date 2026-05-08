@@ -25,19 +25,18 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class SettlementHold {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long settlementId;
+  @Column(nullable = false)
+  private Long settlementId;
 
-    @Column(nullable = false)
-    private Long adminId;
+  @Column(nullable = false)
+  private Long adminId;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String reason;
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String reason;
 
-    @CreatedDate
-    private LocalDateTime heldAt;
+  @CreatedDate private LocalDateTime heldAt;
 }

@@ -2,8 +2,8 @@ package com.devpath.api.admin.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.devpath.api.admin.dto.roadmaphub.RoadmapHubCatalogUpdateRequest;
 import com.devpath.api.admin.dto.roadmaphub.AdminRoadmapHubCatalogResponse;
+import com.devpath.api.admin.dto.roadmaphub.RoadmapHubCatalogUpdateRequest;
 import com.devpath.api.roadmap.dto.RoadmapHubCatalogResponse;
 import com.devpath.api.roadmap.service.RoadmapHubQueryService;
 import com.devpath.domain.roadmap.entity.Roadmap;
@@ -46,7 +46,14 @@ class AdminRoadmapHubServiceIntegrationTest {
                 "CARD_GRID",
                 true,
                 0,
-                item("Backend", "Backend", "fas fa-server", backendRoadmap.getRoadmapId(), true, true, 0)),
+                item(
+                    "Backend",
+                    "Backend",
+                    "fas fa-server",
+                    backendRoadmap.getRoadmapId(),
+                    true,
+                    true,
+                    0)),
             section(
                 "skill-based",
                 "기술 기반 로드맵",
@@ -83,7 +90,14 @@ class AdminRoadmapHubServiceIntegrationTest {
                 "CARD_GRID",
                 true,
                 0,
-                item("Backend", "Backend", "fas fa-server", backendRoadmap.getRoadmapId(), true, true, 0),
+                item(
+                    "Backend",
+                    "Backend",
+                    "fas fa-server",
+                    backendRoadmap.getRoadmapId(),
+                    true,
+                    true,
+                    0),
                 item("Hidden", null, null, null, false, false, 1)),
             section(
                 "skill-based",
@@ -114,8 +128,7 @@ class AdminRoadmapHubServiceIntegrationTest {
   }
 
   private RoadmapHubCatalogUpdateRequest request(
-      RoadmapHubCatalogUpdateRequest.SectionRequest... sections
-  ) {
+      RoadmapHubCatalogUpdateRequest.SectionRequest... sections) {
     RoadmapHubCatalogUpdateRequest request = new RoadmapHubCatalogUpdateRequest();
     ReflectionTestUtils.setField(request, "sections", java.util.List.of(sections));
     return request;
@@ -127,8 +140,7 @@ class AdminRoadmapHubServiceIntegrationTest {
       String layoutType,
       boolean active,
       int sortOrder,
-      RoadmapHubCatalogUpdateRequest.ItemRequest... items
-  ) {
+      RoadmapHubCatalogUpdateRequest.ItemRequest... items) {
     RoadmapHubCatalogUpdateRequest.SectionRequest request =
         new RoadmapHubCatalogUpdateRequest.SectionRequest();
     ReflectionTestUtils.setField(request, "sectionKey", sectionKey);
@@ -148,8 +160,7 @@ class AdminRoadmapHubServiceIntegrationTest {
       Long linkedRoadmapId,
       boolean active,
       boolean featured,
-      int sortOrder
-  ) {
+      int sortOrder) {
     RoadmapHubCatalogUpdateRequest.ItemRequest request =
         new RoadmapHubCatalogUpdateRequest.ItemRequest();
     ReflectionTestUtils.setField(request, "title", title);

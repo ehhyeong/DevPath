@@ -6,9 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RiskWarningRepository extends JpaRepository<RiskWarning, Long> {
 
-    List<RiskWarning> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+  List<RiskWarning> findAllByUserIdOrderByCreatedAtDesc(Long userId);
 
-    List<RiskWarning> findAllByUserIdAndIsAcknowledgedFalseOrderByCreatedAtDesc(Long userId);
+  List<RiskWarning> findAllByUserIdAndIsAcknowledgedFalseOrderByCreatedAtDesc(Long userId);
 
-    List<RiskWarning> findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(Long userId, Long nodeId);
+  List<RiskWarning> findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(
+      Long userId, Long nodeId);
 }

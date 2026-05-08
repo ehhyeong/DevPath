@@ -11,12 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MyRoadmapSaveRequest {
 
-  @NotBlank
-  private String title;
+  @NotBlank private String title;
 
-  @NotEmpty
-  @Valid
-  private List<ModuleItem> modules;
+  @NotEmpty @Valid private List<ModuleItem> modules;
 
   @Getter
   @NoArgsConstructor

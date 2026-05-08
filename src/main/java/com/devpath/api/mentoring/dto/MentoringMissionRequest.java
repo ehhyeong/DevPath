@@ -15,8 +15,7 @@ public class MentoringMissionRequest {
   public record Create(
 
       // 인증 연동 전 Swagger 테스트를 위해 멘토 ID를 요청으로 받는다.
-      @Schema(description = "멘토 사용자 ID", example = "1")
-          @NotNull(message = "멘토 ID는 필수입니다.")
+      @Schema(description = "멘토 사용자 ID", example = "1") @NotNull(message = "멘토 ID는 필수입니다.")
           Long mentorId,
 
       // 멘토링 안에서 몇 주차 미션인지 나타낸다.
@@ -37,15 +36,13 @@ public class MentoringMissionRequest {
           String description,
 
       // 미션 제출 권장 마감일이다.
-      @Schema(description = "마감일시", example = "2026-05-10T23:59:00")
-          LocalDateTime dueAt) {}
+      @Schema(description = "마감일시", example = "2026-05-10T23:59:00") LocalDateTime dueAt) {}
 
   @Schema(name = "MentoringMissionUpdateRequest", description = "멘토링 미션 수정 요청")
   public record Update(
 
       // 해당 미션의 멘토 권한 검증에 사용한다.
-      @Schema(description = "멘토 사용자 ID", example = "1")
-          @NotNull(message = "멘토 ID는 필수입니다.")
+      @Schema(description = "멘토 사용자 ID", example = "1") @NotNull(message = "멘토 ID는 필수입니다.")
           Long mentorId,
 
       // 수정 후에도 같은 멘토링 내 주차 중복은 허용하지 않는다.
@@ -66,6 +63,5 @@ public class MentoringMissionRequest {
           String description,
 
       // 수정된 제출 권장 마감일이다.
-      @Schema(description = "마감일시", example = "2026-05-17T23:59:00")
-          LocalDateTime dueAt) {}
+      @Schema(description = "마감일시", example = "2026-05-17T23:59:00") LocalDateTime dueAt) {}
 }

@@ -26,9 +26,7 @@ public class MyRoadmapResponse {
         .customRoadmapId(customRoadmapId)
         .title(myRoadmap.getTitle())
         .createdAt(myRoadmap.getCreatedAt())
-        .modules(myRoadmap.getModules().stream()
-            .map(MyRoadmapModuleDto::from)
-            .toList())
+        .modules(myRoadmap.getModules().stream().map(MyRoadmapModuleDto::from).toList())
         .build();
   }
 

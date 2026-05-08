@@ -9,9 +9,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SquadInvitationRepository extends JpaRepository<SquadInvitation, Long> {
 
-    boolean existsBySquadAndInviteeIdAndStatus(Squad squad, Long inviteeId, SquadInvitationStatus status);
+  boolean existsBySquadAndInviteeIdAndStatus(
+      Squad squad, Long inviteeId, SquadInvitationStatus status);
 
-    Optional<SquadInvitation> findBySquadAndInviteeIdAndStatus(Squad squad, Long inviteeId, SquadInvitationStatus status);
+  Optional<SquadInvitation> findBySquadAndInviteeIdAndStatus(
+      Squad squad, Long inviteeId, SquadInvitationStatus status);
 
-    List<SquadInvitation> findByInviteeIdAndStatus(Long inviteeId, SquadInvitationStatus status);
+  List<SquadInvitation> findByInviteeIdAndStatus(Long inviteeId, SquadInvitationStatus status);
 }

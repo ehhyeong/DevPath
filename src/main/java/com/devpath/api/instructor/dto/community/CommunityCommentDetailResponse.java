@@ -9,46 +9,44 @@ import lombok.Getter;
 @Getter
 public class CommunityCommentDetailResponse {
 
-    private final Long id;
-    private final Long postId;
-    private final Long authorId;
-    private final String content;
-    private final Long parentCommentId;
-    private final int likeCount;
-    private final LocalDateTime createdAt;
-    private final List<CommunityCommentDetailResponse> replies = new ArrayList<>();
+  private final Long id;
+  private final Long postId;
+  private final Long authorId;
+  private final String content;
+  private final Long parentCommentId;
+  private final int likeCount;
+  private final LocalDateTime createdAt;
+  private final List<CommunityCommentDetailResponse> replies = new ArrayList<>();
 
-    private CommunityCommentDetailResponse(
-            Long id,
-            Long postId,
-            Long authorId,
-            String content,
-            Long parentCommentId,
-            int likeCount,
-            LocalDateTime createdAt
-    ) {
-        this.id = id;
-        this.postId = postId;
-        this.authorId = authorId;
-        this.content = content;
-        this.parentCommentId = parentCommentId;
-        this.likeCount = likeCount;
-        this.createdAt = createdAt;
-    }
+  private CommunityCommentDetailResponse(
+      Long id,
+      Long postId,
+      Long authorId,
+      String content,
+      Long parentCommentId,
+      int likeCount,
+      LocalDateTime createdAt) {
+    this.id = id;
+    this.postId = postId;
+    this.authorId = authorId;
+    this.content = content;
+    this.parentCommentId = parentCommentId;
+    this.likeCount = likeCount;
+    this.createdAt = createdAt;
+  }
 
-    public void addReply(CommunityCommentDetailResponse reply) {
-        this.replies.add(reply);
-    }
+  public void addReply(CommunityCommentDetailResponse reply) {
+    this.replies.add(reply);
+  }
 
-    public static CommunityCommentDetailResponse from(InstructorComment comment) {
-        return new CommunityCommentDetailResponse(
-                comment.getId(),
-                comment.getPostId(),
-                comment.getAuthorId(),
-                comment.getContent(),
-                comment.getParentCommentId(),
-                comment.getLikeCount(),
-                comment.getCreatedAt()
-        );
-    }
+  public static CommunityCommentDetailResponse from(InstructorComment comment) {
+    return new CommunityCommentDetailResponse(
+        comment.getId(),
+        comment.getPostId(),
+        comment.getAuthorId(),
+        comment.getContent(),
+        comment.getParentCommentId(),
+        comment.getLikeCount(),
+        comment.getCreatedAt());
+  }
 }

@@ -51,6 +51,7 @@ public class CustomRoadmapQueryService {
   // [TEMP] 추천 무료 강좌 조회용 — 임시 하드코딩, 추후 삭제 예정
   private final CourseRepository courseRepository;
   private final CourseTagMapRepository courseTagMapRepository;
+
   // [/TEMP]
 
   @Transactional(readOnly = true)
@@ -77,8 +78,7 @@ public class CustomRoadmapQueryService {
     courseCompletionTagService.syncCompletedCourseTags(userId);
 
     List<CustomRoadmapNode> customNodes =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(
-            customRoadmap);
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
     prerequisiteSyncService.ensurePrerequisites(customRoadmap, customNodes);
     Map<Long, List<Long>> prerequisiteIdsByNodeId =
         customNodePrerequisiteRepository.findAllByCustomRoadmap(customRoadmap).stream()
@@ -89,12 +89,14 @@ public class CustomRoadmapQueryService {
                         prerequisite -> prerequisite.getPrerequisiteCustomNode().getId(),
                         Collectors.toList())));
 
-    Map<Long, NodeStatus> statusByNodeId = customNodes.stream()
-        .collect(Collectors.toMap(CustomRoadmapNode::getId, CustomRoadmapNode::getStatus));
+    Map<Long, NodeStatus> statusByNodeId =
+        customNodes.stream()
+            .collect(Collectors.toMap(CustomRoadmapNode::getId, CustomRoadmapNode::getStatus));
 
     Map<Long, NodeClearance> clearanceByNodeId =
         customRoadmap.getOriginalRoadmap() != null
-            ? nodeClearanceRepository.findAllByUserIdAndNodeRoadmapRoadmapIdOrderByNodeSortOrderAscNodeNodeIdAsc(
+            ? nodeClearanceRepository
+                .findAllByUserIdAndNodeRoadmapRoadmapIdOrderByNodeSortOrderAscNodeNodeIdAsc(
                     userId, customRoadmap.getOriginalRoadmap().getRoadmapId())
                 .stream()
                 .collect(Collectors.toMap(c -> c.getNode().getNodeId(), c -> c))
@@ -115,15 +117,17 @@ public class CustomRoadmapQueryService {
         originalNodeIds.isEmpty()
             ? Map.of()
             : nodeRequiredTagRepository.findTagNamesByNodeIds(originalNodeIds).stream()
-                .collect(Collectors.groupingBy(
-                    p -> p.getNodeId(),
-                    Collectors.mapping(p -> p.getTagName(), Collectors.toList())));
+                .collect(
+                    Collectors.groupingBy(
+                        p -> p.getNodeId(),
+                        Collectors.mapping(p -> p.getTagName(), Collectors.toList())));
     Set<String> userTags = normalizeTags(userTechStackRepository.findTagNamesByUserId(userId));
     Map<Long, Boolean> requiredTagsSatisfiedByNodeId =
         requiredTagsByNodeId.entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> areRequiredTagsSatisfied(entry.getValue(), userTags)));
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> areRequiredTagsSatisfied(entry.getValue(), userTags)));
 
     return MyRoadmapDto.DetailResponse.from(
         customRoadmap,
@@ -141,8 +145,10 @@ public class CustomRoadmapQueryService {
   @Transactional(readOnly = true)
   public Long getRecommendedFreeCourseId(Long userId, Long customRoadmapId, Long customNodeId) {
     CustomRoadmap customRoadmap = getOwnedRoadmap(userId, customRoadmapId);
-    CustomRoadmapNode node = customRoadmapNodeRepository.findById(customNodeId)
-        .orElseThrow(() -> new CustomException(ErrorCode.CUSTOM_NODE_NOT_FOUND));
+    CustomRoadmapNode node =
+        customRoadmapNodeRepository
+            .findById(customNodeId)
+            .orElseThrow(() -> new CustomException(ErrorCode.CUSTOM_NODE_NOT_FOUND));
 
     if (!node.getCustomRoadmap().getId().equals(customRoadmap.getId())) {
       throw new CustomException(ErrorCode.FORBIDDEN);
@@ -152,20 +158,24 @@ public class CustomRoadmapQueryService {
 
     // 1차: '로드맵 실전: {노드제목}' 패턴 무료 강좌 직접 매칭
     String targetTitle = "로드맵 실전: " + node.getOriginalNode().getTitle();
-    Long courseId = courseRepository
-        .findFirstByTitleAndStatus(targetTitle, CourseStatus.PUBLISHED)
-        .map(c -> c.getCourseId())
-        .orElse(null);
+    Long courseId =
+        courseRepository
+            .findFirstByTitleAndStatus(targetTitle, CourseStatus.PUBLISHED)
+            .map(c -> c.getCourseId())
+            .orElse(null);
 
     if (courseId != null) return courseId;
 
     // 2차: 노드 필수 태그로 무료 공개 강좌 탐색
-    List<String> tags = nodeRequiredTagRepository.findTagNamesByNodeId(node.getOriginalNode().getNodeId());
+    List<String> tags =
+        nodeRequiredTagRepository.findTagNamesByNodeId(node.getOriginalNode().getNodeId());
     if (tags.isEmpty()) return null;
 
-    List<Long> ids = courseTagMapRepository.findFreePublishedCourseIdsByTagNames(tags, CourseStatus.PUBLISHED);
+    List<Long> ids =
+        courseTagMapRepository.findFreePublishedCourseIdsByTagNames(tags, CourseStatus.PUBLISHED);
     return ids.isEmpty() ? null : ids.get(0);
   }
+
   // [/TEMP]
 
   @Transactional

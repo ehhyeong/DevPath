@@ -25,25 +25,23 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class ConversionStat {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long instructorId;
+  @Column(nullable = false)
+  private Long instructorId;
 
-    @Column
-    private Long courseId;
+  @Column private Long courseId;
 
-    @Column(nullable = false)
-    private Long totalVisitors;
+  @Column(nullable = false)
+  private Long totalVisitors;
 
-    @Column(nullable = false)
-    private Long totalSignups;
+  @Column(nullable = false)
+  private Long totalSignups;
 
-    @Column(nullable = false)
-    private Long totalPurchases;
+  @Column(nullable = false)
+  private Long totalPurchases;
 
-    @CreatedDate
-    private LocalDateTime calculatedAt;
+  @CreatedDate private LocalDateTime calculatedAt;
 }

@@ -14,17 +14,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProjectMemberResponse {
 
-    private Long memberId;
-    private Long learnerId;
-    private String roleType;
-    private LocalDateTime joinedAt;
+  private Long memberId;
+  private Long learnerId;
+  private String roleType;
+  private LocalDateTime joinedAt;
 
-    public static ProjectMemberResponse from(ProjectMember member) {
-        return ProjectMemberResponse.builder()
-                .memberId(member.getId())
-                .learnerId(member.getLearnerId())
-                .roleType(member.getRoleType().name())
-                .joinedAt(member.getJoinedAt())
-                .build();
-    }
+  public static ProjectMemberResponse from(ProjectMember member) {
+    return ProjectMemberResponse.builder()
+        .memberId(member.getId())
+        .learnerId(member.getLearnerId())
+        .roleType(member.getRoleType().name())
+        .joinedAt(member.getJoinedAt())
+        .build();
+  }
 }

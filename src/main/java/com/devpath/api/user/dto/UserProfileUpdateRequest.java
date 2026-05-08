@@ -18,7 +18,8 @@ public record UserProfileUpdateRequest(
         @Size(max = 20, message = "Phone number must be 20 characters or fewer.")
         String phone,
     @Schema(description = "Profile image URL") @Size(max = 500) String profileImage,
-    @Schema(description = "Channel or nickname", example = "CozyCoder") @Size(max = 120) String channelName,
+    @Schema(description = "Channel or nickname", example = "CozyCoder") @Size(max = 120)
+        String channelName,
     @Schema(description = "GitHub URL") @Size(max = 500) String githubUrl,
     @Schema(description = "Blog URL") @Size(max = 500) String blogUrl,
     @Schema(description = "Selected tech tag ids", example = "[1, 5, 12]") List<Long> tagIds) {}

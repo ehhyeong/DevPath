@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @Schema(description = "답변 등록 요청 DTO")
 public class AnswerCreateRequest {
 
-    @NotBlank(message = "답변 내용을 입력해주세요.")
-    @Schema(description = "답변 내용", example = "SecurityFilterChain 설정과 OncePerRequestFilter 적용 위치를 먼저 점검해보세요.")
-    private String content;
+  @NotBlank(message = "답변 내용을 입력해주세요.")
+  @Schema(
+      description = "답변 내용",
+      example = "SecurityFilterChain 설정과 OncePerRequestFilter 적용 위치를 먼저 점검해보세요.")
+  private String content;
 }

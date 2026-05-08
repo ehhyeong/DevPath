@@ -9,49 +9,44 @@ import lombok.Getter;
 @Getter
 public class LectureCatalogMenuUpdateRequest {
 
-    @Valid
-    @NotEmpty
-    private List<CategoryRequest> categories;
+  @Valid @NotEmpty private List<CategoryRequest> categories;
 
-    @Getter
-    public static class CategoryRequest {
+  @Getter
+  public static class CategoryRequest {
 
-        private String categoryKey;
-        private String label;
-        private String title;
-        private String iconClass;
-        private Integer sortOrder;
-        private Boolean active;
+    private String categoryKey;
+    private String label;
+    private String title;
+    private String iconClass;
+    private Integer sortOrder;
+    private Boolean active;
 
-        @Valid
-        private List<MegaMenuItemRequest> megaMenuItems;
+    @Valid private List<MegaMenuItemRequest> megaMenuItems;
 
-        @Valid
-        private List<GroupRequest> groups;
-    }
+    @Valid private List<GroupRequest> groups;
+  }
 
-    @Getter
-    public static class MegaMenuItemRequest {
+  @Getter
+  public static class MegaMenuItemRequest {
 
-        private String label;
-        private Integer sortOrder;
-    }
+    private String label;
+    private Integer sortOrder;
+  }
 
-    @Getter
-    public static class GroupRequest {
+  @Getter
+  public static class GroupRequest {
 
-        private String name;
-        private Integer sortOrder;
+    private String name;
+    private Integer sortOrder;
 
-        @Valid
-        private List<GroupItemRequest> items;
-    }
+    @Valid private List<GroupItemRequest> items;
+  }
 
-    @Getter
-    public static class GroupItemRequest {
+  @Getter
+  public static class GroupItemRequest {
 
-        private String name;
-        private String linkedCategoryKey;
-        private Integer sortOrder;
-    }
+    private String name;
+    private String linkedCategoryKey;
+    private Integer sortOrder;
+  }
 }

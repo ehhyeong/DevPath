@@ -119,6 +119,7 @@ public enum ErrorCode {
   REVIEW_PULL_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "PR 제출을 찾을 수 없습니다."),
   REVIEW_PULL_REQUEST_FORBIDDEN(HttpStatus.FORBIDDEN, "PR 제출 또는 리뷰를 처리할 권한이 없습니다."),
   REVIEW_DECISION_FORBIDDEN(HttpStatus.FORBIDDEN, "해당 리뷰를 승인 또는 반려할 권한이 없습니다."),
+  REVIEW_ALREADY_DECIDED(HttpStatus.BAD_REQUEST, "이미 승인 또는 반려 처리된 리뷰입니다."),
   REVIEW_MISSION_SUBMISSION_NOT_FOUND(HttpStatus.NOT_FOUND, "미션 제출을 찾을 수 없습니다."),
   REVIEW_MISSION_SUBMISSION_FORBIDDEN(HttpStatus.FORBIDDEN, "미션 제출을 판정할 권한이 없습니다."),
   REVIEW_MISSION_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 해당 미션에 제출했습니다."),
@@ -133,6 +134,11 @@ public enum ErrorCode {
   QNA_WORKSPACE_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "워크스페이스 질문을 찾을 수 없습니다."),
   QNA_FORBIDDEN(HttpStatus.FORBIDDEN, "Q&A를 처리할 권한이 없습니다."),
   QNA_QUESTION_CLOSED(HttpStatus.BAD_REQUEST, "닫힌 질문에는 답변을 작성할 수 없습니다."),
+  QNA_ACCESS_DENIED(HttpStatus.FORBIDDEN, "질문에 접근할 권한이 없습니다."),
+  QNA_INVALID_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 질문 상태입니다."),
+  QNA_ALREADY_ANSWERED(HttpStatus.BAD_REQUEST, "이미 답변 완료 처리된 질문입니다."),
+  QNA_NOT_MENTORING_MEMBER(HttpStatus.FORBIDDEN, "해당 멘토링 참여자가 아닙니다."),
+  QNA_NOT_WORKSPACE_MEMBER(HttpStatus.FORBIDDEN, "해당 워크스페이스 참여자가 아닙니다."),
 
   REALTIME_CANNOT_MESSAGE_SELF(HttpStatus.BAD_REQUEST, "자기 자신에게 메시지를 보낼 수 없습니다."),
 

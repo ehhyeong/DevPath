@@ -17,39 +17,39 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProjectResponse {
 
-    private Long projectId;
-    private Long ownerId;
-    private String name;
-    private String description;
-    private String intro;
-    private String projectType;
-    private String status;
-    private String visibility;
-    private String recruitingStatus;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private List<ProjectMemberResponse> members;
+  private Long projectId;
+  private Long ownerId;
+  private String name;
+  private String description;
+  private String intro;
+  private String projectType;
+  private String status;
+  private String visibility;
+  private String recruitingStatus;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
+  private List<ProjectMemberResponse> members;
 
-    // 상세 조회 (멤버 포함)
-    public static ProjectResponse from(Project project, List<ProjectMember> members) {
-        return ProjectResponse.builder()
-                .projectId(project.getId())
-                .ownerId(project.getOwnerId())
-                .name(project.getName())
-                .description(project.getDescription())
-                .intro(project.getIntro())
-                .projectType(project.getProjectType().name())
-                .status(project.getStatus().name())
-                .visibility(project.getVisibility().name())
-                .recruitingStatus(project.getRecruitingStatus().name())
-                .createdAt(project.getCreatedAt())
-                .updatedAt(project.getUpdatedAt())
-                .members(members.stream().map(ProjectMemberResponse::from).toList())
-                .build();
-    }
+  // 상세 조회 (멤버 포함)
+  public static ProjectResponse from(Project project, List<ProjectMember> members) {
+    return ProjectResponse.builder()
+        .projectId(project.getId())
+        .ownerId(project.getOwnerId())
+        .name(project.getName())
+        .description(project.getDescription())
+        .intro(project.getIntro())
+        .projectType(project.getProjectType().name())
+        .status(project.getStatus().name())
+        .visibility(project.getVisibility().name())
+        .recruitingStatus(project.getRecruitingStatus().name())
+        .createdAt(project.getCreatedAt())
+        .updatedAt(project.getUpdatedAt())
+        .members(members.stream().map(ProjectMemberResponse::from).toList())
+        .build();
+  }
 
-    // 목록 조회 (멤버 제외)
-    public static ProjectResponse from(Project project) {
-        return from(project, Collections.emptyList());
-    }
+  // 목록 조회 (멤버 제외)
+  public static ProjectResponse from(Project project) {
+    return from(project, Collections.emptyList());
+  }
 }

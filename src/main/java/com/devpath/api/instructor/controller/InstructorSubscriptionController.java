@@ -25,38 +25,33 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstructorSubscriptionController {
 
-    private final InstructorSubscriptionService instructorSubscriptionService;
+  private final InstructorSubscriptionService instructorSubscriptionService;
 
-    @Operation(summary = "채널 팔로우")
-    @PostMapping
-    public ApiResponse<SubscriptionResponse> subscribe(
-            @RequestBody @Valid SubscriptionRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success(
-                "채널을 팔로우했습니다.",
-                instructorSubscriptionService.subscribe(request.getChannelId(), userId)
-        );
-    }
+  @Operation(summary = "채널 팔로우")
+  @PostMapping
+  public ApiResponse<SubscriptionResponse> subscribe(
+      @RequestBody @Valid SubscriptionRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "채널을 팔로우했습니다.", instructorSubscriptionService.subscribe(request.getChannelId(), userId));
+  }
 
-    @Operation(summary = "채널 언팔로우")
-    @DeleteMapping("/{channelId}")
-    public ApiResponse<Void> unsubscribe(
-            @PathVariable Long channelId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        instructorSubscriptionService.unsubscribe(channelId, userId);
-        return ApiResponse.success("채널 팔로우를 취소했습니다.", null);
-    }
+  @Operation(summary = "채널 언팔로우")
+  @DeleteMapping("/{channelId}")
+  public ApiResponse<Void> unsubscribe(
+      @PathVariable Long channelId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    instructorSubscriptionService.unsubscribe(channelId, userId);
+    return ApiResponse.success("채널 팔로우를 취소했습니다.", null);
+  }
 
-    @Operation(summary = "구독 알림 on/off 설정")
-    @PatchMapping("/{channelId}/notification")
-    public ApiResponse<Void> updateNotification(
-            @PathVariable Long channelId,
-            @Parameter(description = "알림 활성화 여부") @RequestParam boolean notificationEnabled,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        instructorSubscriptionService.updateNotification(channelId, userId, notificationEnabled);
-        return ApiResponse.success("알림 설정이 변경되었습니다.", null);
-    }
+  @Operation(summary = "구독 알림 on/off 설정")
+  @PatchMapping("/{channelId}/notification")
+  public ApiResponse<Void> updateNotification(
+      @PathVariable Long channelId,
+      @Parameter(description = "알림 활성화 여부") @RequestParam boolean notificationEnabled,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    instructorSubscriptionService.updateNotification(channelId, userId, notificationEnabled);
+    return ApiResponse.success("알림 설정이 변경되었습니다.", null);
+  }
 }

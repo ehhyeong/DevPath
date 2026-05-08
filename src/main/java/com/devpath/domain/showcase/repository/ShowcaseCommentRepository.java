@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ShowcaseCommentRepository extends JpaRepository<ShowcaseComment, Long> {
 
-    Optional<ShowcaseComment> findByIdAndIsDeletedFalse(Long id);
+  Optional<ShowcaseComment> findByIdAndIsDeletedFalse(Long id);
 
-    List<ShowcaseComment> findAllByShowcaseIdAndIsDeletedFalseOrderByCreatedAtAsc(Long showcaseId);
+  List<ShowcaseComment> findAllByShowcaseIdAndIsDeletedFalseOrderByCreatedAtAsc(Long showcaseId);
 }

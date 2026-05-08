@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TagUpdateRequest {
 
-    @NotBlank
-    private String name;
+  @NotBlank private String name;
 
-    private String description;
+  private String description;
 }

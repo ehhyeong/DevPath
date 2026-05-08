@@ -10,49 +10,63 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Service
 public class NotificationSseService {
 
-    private static final long SSE_TIMEOUT_MILLIS = 60L * 60L * 1000L;
+  private static final long SSE_TIMEOUT_MILLIS = 60L * 60L * 1000L;
+  private static final long RECONNECT_TIME_MILLIS = 3_000L;
 
-    // 사용자별 SSE 연결을 메모리에 보관한다.
-    private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
+  private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-    public SseEmitter subscribe(Long learnerId) {
-        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MILLIS);
+  public SseEmitter subscribe(Long learnerId) {
+    SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MILLIS);
 
-        // 같은 사용자가 재구독하면 최신 연결로 교체한다.
-        emitters.put(learnerId, emitter);
+    SseEmitter oldEmitter = emitters.put(learnerId, emitter);
+    completeOldEmitter(oldEmitter);
 
-        emitter.onCompletion(() -> emitters.remove(learnerId));
-        emitter.onTimeout(() -> emitters.remove(learnerId));
-        emitter.onError(error -> emitters.remove(learnerId));
+    emitter.onCompletion(() -> emitters.remove(learnerId, emitter));
+    emitter.onTimeout(() -> emitters.remove(learnerId, emitter));
+    emitter.onError(error -> emitters.remove(learnerId, emitter));
 
-        sendConnectEvent(learnerId, emitter);
+    sendConnectEvent(learnerId, emitter);
 
-        return emitter;
+    return emitter;
+  }
+
+  public void send(Long learnerId, NotificationResponse response) {
+    SseEmitter emitter = emitters.get(learnerId);
+
+    if (emitter == null) {
+      return;
     }
 
-    public void send(Long learnerId, NotificationResponse response) {
-        SseEmitter emitter = emitters.get(learnerId);
+    try {
+      emitter.send(
+          SseEmitter.event()
+              .name("notification")
+              .reconnectTime(RECONNECT_TIME_MILLIS)
+              .data(response));
+    } catch (IOException exception) {
+      emitters.remove(learnerId, emitter);
+      emitter.completeWithError(exception);
+    }
+  }
 
-        if (emitter == null) {
-            return;
-        }
+  private void sendConnectEvent(Long learnerId, SseEmitter emitter) {
+    try {
+      emitter.send(
+          SseEmitter.event()
+              .name("connect")
+              .reconnectTime(RECONNECT_TIME_MILLIS)
+              .data("notification-sse-connected:" + learnerId));
+    } catch (IOException exception) {
+      emitters.remove(learnerId, emitter);
+      emitter.completeWithError(exception);
+    }
+  }
 
-        try {
-            emitter.send(SseEmitter.event()
-                    .name("notification")
-                    .data(response));
-        } catch (IOException exception) {
-            emitters.remove(learnerId);
-        }
+  private void completeOldEmitter(SseEmitter oldEmitter) {
+    if (oldEmitter == null) {
+      return;
     }
 
-    private void sendConnectEvent(Long learnerId, SseEmitter emitter) {
-        try {
-            emitter.send(SseEmitter.event()
-                    .name("connect")
-                    .data("notification-sse-connected:" + learnerId));
-        } catch (IOException exception) {
-            emitters.remove(learnerId);
-        }
-    }
+    oldEmitter.complete();
+  }
 }

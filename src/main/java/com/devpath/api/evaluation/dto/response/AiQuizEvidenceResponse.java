@@ -20,9 +20,7 @@ public class AiQuizEvidenceResponse {
   @Schema(description = "초안 제목", example = "Spring Security AI 초안 퀴즈")
   private String title;
 
-  @Schema(
-      description = "AI 퀴즈 생성 근거 원문",
-      example = "Spring Security는 인증과 인가를 담당하는 프레임워크다.")
+  @Schema(description = "AI 퀴즈 생성 근거 원문", example = "Spring Security는 인증과 인가를 담당하는 프레임워크다.")
   private String sourceText;
 
   @Schema(description = "전체 근거 타임스탬프 구간", example = "12:10-13:20")
@@ -56,9 +54,7 @@ public class AiQuizEvidenceResponse {
     @Schema(description = "문항 본문", example = "Spring Security의 핵심 역할은 무엇인가?")
     private String questionText;
 
-    @Schema(
-      description = "문항 생성 근거 발췌문",
-      example = "Spring Security는 인증과 인가를 담당하는 프레임워크다.")
+    @Schema(description = "문항 생성 근거 발췌문", example = "Spring Security는 인증과 인가를 담당하는 프레임워크다.")
     private String evidenceExcerpt;
 
     @Schema(description = "문항별 근거 타임스탬프", example = "12:10-13:20")

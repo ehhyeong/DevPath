@@ -79,4 +79,3 @@ public class CareerProfileProject {
     this.isDeleted = true;
   }
 }
-

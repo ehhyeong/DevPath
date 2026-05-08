@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CreateSquadRequest {
 
-    @NotBlank(message = "스쿼드 이름은 필수입니다.")
-    @Size(max = 100, message = "스쿼드 이름은 100자 이하여야 합니다.")
-    private String name;
+  @NotBlank(message = "스쿼드 이름은 필수입니다.")
+  @Size(max = 100, message = "스쿼드 이름은 100자 이하여야 합니다.")
+  private String name;
 
-    private String description;
+  private String description;
 }

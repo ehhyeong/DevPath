@@ -44,11 +44,9 @@ public class AdminRoadmapNodeResourceController {
   @Operation(summary = "노드 추천 자료 수정")
   @PutMapping("/{resourceId}")
   public ApiResponse<AdminRoadmapNodeResourceResponse> updateResource(
-      @PathVariable Long resourceId,
-      @RequestBody @Valid RoadmapNodeResourceUpsertRequest request) {
+      @PathVariable Long resourceId, @RequestBody @Valid RoadmapNodeResourceUpsertRequest request) {
     return ApiResponse.success(
-        "노드 추천 자료를 수정했습니다.",
-        adminRoadmapNodeResourceService.updateResource(resourceId, request));
+        "노드 추천 자료를 수정했습니다.", adminRoadmapNodeResourceService.updateResource(resourceId, request));
   }
 
   @Operation(summary = "노드 추천 자료 삭제")

@@ -21,25 +21,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/courses")
 public class PublicCourseController {
 
-    private final PublicCourseNewsQueryService publicCourseNewsQueryService;
-    private final LectureCatalogQueryService lectureCatalogQueryService;
+  private final PublicCourseNewsQueryService publicCourseNewsQueryService;
+  private final LectureCatalogQueryService lectureCatalogQueryService;
 
-    // 강의 목록 상단 메뉴 구성을 공개 화면에 내려준다.
-    @Operation(summary = "강의 메뉴 조회", description = "강의 목록 페이지에 필요한 메뉴 구성을 조회합니다.")
-    @GetMapping("/catalog-menu")
-    public ApiResponse<LectureCatalogMenuResponse> getCatalogMenu() {
-        return ApiResponse.success("강의 메뉴를 조회했습니다.", lectureCatalogQueryService.getPublicMenu());
-    }
+  // 강의 목록 상단 메뉴 구성을 공개 화면에 내려준다.
+  @Operation(summary = "강의 메뉴 조회", description = "강의 목록 페이지에 필요한 메뉴 구성을 조회합니다.")
+  @GetMapping("/catalog-menu")
+  public ApiResponse<LectureCatalogMenuResponse> getCatalogMenu() {
+    return ApiResponse.success("강의 메뉴를 조회했습니다.", lectureCatalogQueryService.getPublicMenu());
+  }
 
-    // 공개 강의 상세의 뉴스 탭 목록을 조회한다.
-    @Operation(summary = "강의 뉴스 조회", description = "공개 강의 상세의 뉴스 탭 목록을 조회합니다.")
-    @GetMapping("/{courseId}/news")
-    public ApiResponse<List<PublicCourseNewsDto.NewsItemResponse>> getCourseNews(
-            @PathVariable Long courseId
-    ) {
-        List<PublicCourseNewsDto.NewsItemResponse> response =
-                publicCourseNewsQueryService.getCourseNews(courseId);
+  // 공개 강의 상세의 뉴스 탭 목록을 조회한다.
+  @Operation(summary = "강의 뉴스 조회", description = "공개 강의 상세의 뉴스 탭 목록을 조회합니다.")
+  @GetMapping("/{courseId}/news")
+  public ApiResponse<List<PublicCourseNewsDto.NewsItemResponse>> getCourseNews(
+      @PathVariable Long courseId) {
+    List<PublicCourseNewsDto.NewsItemResponse> response =
+        publicCourseNewsQueryService.getCourseNews(courseId);
 
-        return ApiResponse.success("강의 뉴스를 조회했습니다.", response);
-    }
+    return ApiResponse.success("강의 뉴스를 조회했습니다.", response);
+  }
 }

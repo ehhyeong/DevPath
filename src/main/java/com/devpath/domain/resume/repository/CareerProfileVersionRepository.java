@@ -12,4 +12,3 @@ public interface CareerProfileVersionRepository extends JpaRepository<CareerProf
 
   long countByCareerProfile_Id(Long profileId);
 }
-

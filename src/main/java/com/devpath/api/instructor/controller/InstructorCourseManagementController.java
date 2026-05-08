@@ -45,14 +45,14 @@ public class InstructorCourseManagementController {
   @GetMapping("/courses")
   public ApiResponse<List<InstructorCourseListResponse>> getCourses(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.success("Instructor courses loaded.", instructorCourseQueryService.getCourseList(userId));
+    return ApiResponse.success(
+        "Instructor courses loaded.", instructorCourseQueryService.getCourseList(userId));
   }
 
   @Operation(summary = "강의 상세 조회")
   @GetMapping("/courses/{courseId}")
   public ApiResponse<CourseDetailResponse> getCourseDetail(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long courseId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
     CourseDetailResponse response = instructorCourseQueryService.getCourseDetail(userId, courseId);
     return ApiResponse.success("Course detail loaded.", response);
   }
@@ -70,8 +70,7 @@ public class InstructorCourseManagementController {
   @Operation(summary = "강의 삭제")
   @DeleteMapping("/courses/{courseId}")
   public ApiResponse<Void> deleteCourse(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long courseId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
     instructorCourseService.deleteCourse(userId, courseId);
     return ApiResponse.success("Course deleted.", null);
   }

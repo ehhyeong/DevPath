@@ -6,4 +6,3 @@ public record RelatedLearningResource(
     String title,
     String description,
     Integer priorityScore) {}
-

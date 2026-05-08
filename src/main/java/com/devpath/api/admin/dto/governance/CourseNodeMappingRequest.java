@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 @Schema(description = "강의-노드 매핑 반영 요청")
 public class CourseNodeMappingRequest {
 
-    // 빈 배열은 허용해서 기존 매핑 전체 해제에도 사용할 수 있게 한다.
-    @NotNull
-    @Schema(description = "매핑할 노드 ID 목록", example = "[11, 12, 13]")
-    private List<Long> nodeIds;
+  // 빈 배열은 허용해서 기존 매핑 전체 해제에도 사용할 수 있게 한다.
+  @NotNull
+  @Schema(description = "매핑할 노드 ID 목록", example = "[11, 12, 13]")
+  private List<Long> nodeIds;
 }

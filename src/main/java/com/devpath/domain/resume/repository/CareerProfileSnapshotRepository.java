@@ -11,4 +11,3 @@ public interface CareerProfileSnapshotRepository
   @EntityGraph(attributePaths = "careerProfile")
   List<CareerProfileSnapshot> findAllByCareerProfile_IdOrderByCreatedAtDesc(Long profileId);
 }
-

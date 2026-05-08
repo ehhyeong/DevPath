@@ -20,52 +20,49 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class PublicCourseNewsQueryService {
 
-    private final CourseRepository courseRepository;
-    private final CourseAnnouncementRepository courseAnnouncementRepository;
+  private final CourseRepository courseRepository;
+  private final CourseAnnouncementRepository courseAnnouncementRepository;
 
-    // 공개 강의의 새소식 탭 목록을 조회한다.
-    public List<PublicCourseNewsDto.NewsItemResponse> getCourseNews(Long courseId) {
-        validatePublishedCourse(courseId);
+  // 공개 강의의 새소식 탭 목록을 조회한다.
+  public List<PublicCourseNewsDto.NewsItemResponse> getCourseNews(Long courseId) {
+    validatePublishedCourse(courseId);
 
-        LocalDateTime now = LocalDateTime.now();
+    LocalDateTime now = LocalDateTime.now();
 
-        List<CourseAnnouncement> announcements =
-                courseAnnouncementRepository.findPublicNewsTabAnnouncements(
-                        courseId,
-                        CourseStatus.PUBLISHED,
-                        now
-                );
+    List<CourseAnnouncement> announcements =
+        courseAnnouncementRepository.findPublicNewsTabAnnouncements(
+            courseId, CourseStatus.PUBLISHED, now);
 
-        return announcements.stream()
-                .map(this::toNewsItemResponse)
-                .toList();
+    return announcements.stream().map(this::toNewsItemResponse).toList();
+  }
+
+  // 공개 상태의 강의인지 검증한다.
+  private void validatePublishedCourse(Long courseId) {
+    Course course =
+        courseRepository
+            .findByCourseIdAndStatus(courseId, CourseStatus.PUBLISHED)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+
+    if (course.getCourseId() == null) {
+      throw new CustomException(ErrorCode.RESOURCE_NOT_FOUND);
     }
+  }
 
-    // 공개 상태의 강의인지 검증한다.
-    private void validatePublishedCourse(Long courseId) {
-        Course course = courseRepository.findByCourseIdAndStatus(courseId, CourseStatus.PUBLISHED)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-
-        if (course.getCourseId() == null) {
-            throw new CustomException(ErrorCode.RESOURCE_NOT_FOUND);
-        }
-    }
-
-    // 공지 엔티티를 새소식 탭 응답 DTO로 변환한다.
-    private PublicCourseNewsDto.NewsItemResponse toNewsItemResponse(CourseAnnouncement announcement) {
-        return PublicCourseNewsDto.NewsItemResponse.builder()
-                .announcementId(announcement.getAnnouncementId())
-                .type(announcement.getType().name())
-                .title(announcement.getTitle())
-                .content(announcement.getContent())
-                .pinned(announcement.getPinned())
-                .displayOrder(announcement.getDisplayOrder())
-                .publishedAt(announcement.getPublishedAt())
-                .exposureStartAt(announcement.getExposureStartAt())
-                .exposureEndAt(announcement.getExposureEndAt())
-                .eventBannerText(announcement.getEventBannerText())
-                .eventLink(announcement.getEventLink())
-                .createdAt(announcement.getCreatedAt())
-                .build();
-    }
+  // 공지 엔티티를 새소식 탭 응답 DTO로 변환한다.
+  private PublicCourseNewsDto.NewsItemResponse toNewsItemResponse(CourseAnnouncement announcement) {
+    return PublicCourseNewsDto.NewsItemResponse.builder()
+        .announcementId(announcement.getAnnouncementId())
+        .type(announcement.getType().name())
+        .title(announcement.getTitle())
+        .content(announcement.getContent())
+        .pinned(announcement.getPinned())
+        .displayOrder(announcement.getDisplayOrder())
+        .publishedAt(announcement.getPublishedAt())
+        .exposureStartAt(announcement.getExposureStartAt())
+        .exposureEndAt(announcement.getExposureEndAt())
+        .eventBannerText(announcement.getEventBannerText())
+        .eventLink(announcement.getEventLink())
+        .createdAt(announcement.getCreatedAt())
+        .build();
+  }
 }

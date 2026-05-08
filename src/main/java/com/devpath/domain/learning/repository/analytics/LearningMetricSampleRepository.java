@@ -7,7 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LearningMetricSampleRepository extends JpaRepository<LearningMetricSample, Long> {
 
-    List<LearningMetricSample> findTop50ByCourseInstructorIdOrderBySampledAtDesc(Long instructorId);
+  List<LearningMetricSample> findTop50ByCourseInstructorIdOrderBySampledAtDesc(Long instructorId);
 
-    List<LearningMetricSample> findTop50ByMetricTypeOrderBySampledAtDesc(AnalyticsMetricType metricType);
+  List<LearningMetricSample> findTop50ByMetricTypeOrderBySampledAtDesc(
+      AnalyticsMetricType metricType);
 }

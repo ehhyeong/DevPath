@@ -8,9 +8,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ConversionStatRepository extends JpaRepository<ConversionStat, Long> {
 
-    Optional<ConversionStat> findTopByInstructorIdAndCourseIdIsNullOrderByCalculatedAtDesc(Long instructorId);
+  Optional<ConversionStat> findTopByInstructorIdAndCourseIdIsNullOrderByCalculatedAtDesc(
+      Long instructorId);
 
-    List<ConversionStat> findByInstructorIdAndCourseIdIsNotNullOrderByCalculatedAtDesc(Long instructorId);
+  List<ConversionStat> findByInstructorIdAndCourseIdIsNotNullOrderByCalculatedAtDesc(
+      Long instructorId);
 
-    long countByInstructorIdAndCourseIdIsNullAndCalculatedAtAfter(Long instructorId, LocalDateTime calculatedAt);
+  long countByInstructorIdAndCourseIdIsNullAndCalculatedAtAfter(
+      Long instructorId, LocalDateTime calculatedAt);
 }

@@ -18,7 +18,10 @@ public class CourseListItemResponse {
   @Schema(description = "Course title", example = "Spring Boot 입문")
   private String title;
 
-  @Schema(description = "Thumbnail URL", nullable = true, example = "/images/courses/spring-boot.png")
+  @Schema(
+      description = "Thumbnail URL",
+      nullable = true,
+      example = "/images/courses/spring-boot.png")
   private String thumbnailUrl;
 
   @Schema(description = "Instructor name", example = "홍길동")

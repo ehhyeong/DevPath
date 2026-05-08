@@ -99,8 +99,7 @@ public class UserService {
     return tagRepository.findAllByIsOfficialTrueAndIsDeletedFalseOrderByTagIdAsc().stream()
         .map(
             tag ->
-                new UserProfileResponse.TagItem(
-                    tag.getTagId(), tag.getName(), tag.getCategory()))
+                new UserProfileResponse.TagItem(tag.getTagId(), tag.getName(), tag.getCategory()))
         .toList();
   }
 

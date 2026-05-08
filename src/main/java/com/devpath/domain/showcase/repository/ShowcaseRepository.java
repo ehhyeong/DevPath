@@ -8,13 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ShowcaseRepository extends JpaRepository<Showcase, Long> {
 
-    Optional<Showcase> findByIdAndIsDeletedFalse(Long id);
+  Optional<Showcase> findByIdAndIsDeletedFalse(Long id);
 
-    List<Showcase> findAllByIsDeletedFalseOrderByCreatedAtDesc();
+  List<Showcase> findAllByIsDeletedFalseOrderByCreatedAtDesc();
 
-    List<Showcase> findAllByCategoryAndIsDeletedFalseOrderByCreatedAtDesc(ShowcaseCategory category);
+  List<Showcase> findAllByCategoryAndIsDeletedFalseOrderByCreatedAtDesc(ShowcaseCategory category);
 
-    List<Showcase> findAllByIsDeletedFalseOrderByViewCountDesc();
+  List<Showcase> findAllByIsDeletedFalseOrderByViewCountDesc();
 
-    List<Showcase> findAllByCategoryAndIsDeletedFalseOrderByViewCountDesc(ShowcaseCategory category);
+  List<Showcase> findAllByCategoryAndIsDeletedFalseOrderByViewCountDesc(ShowcaseCategory category);
 }

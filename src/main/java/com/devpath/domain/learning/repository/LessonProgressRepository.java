@@ -12,15 +12,16 @@ import org.springframework.data.repository.query.Param;
 
 public interface LessonProgressRepository extends JpaRepository<LessonProgress, Long> {
 
-    Optional<LessonProgress> findByUserIdAndLessonLessonId(Long userId, Long lessonId);
+  Optional<LessonProgress> findByUserIdAndLessonLessonId(Long userId, Long lessonId);
 
-    List<LessonProgress> findAllByUserId(Long userId);
+  List<LessonProgress> findAllByUserId(Long userId);
 
-    boolean existsByUserIdAndLessonLessonIdAndIsCompletedTrue(Long userId, Long lessonId);
+  boolean existsByUserIdAndLessonLessonIdAndIsCompletedTrue(Long userId, Long lessonId);
 
-    long countByUserIdAndLastWatchedAtAfter(Long userId, LocalDateTime lastWatchedAt);
+  long countByUserIdAndLastWatchedAtAfter(Long userId, LocalDateTime lastWatchedAt);
 
-    @Query("""
+  @Query(
+      """
             select lp
             from LessonProgress lp
             join fetch lp.user u
@@ -29,36 +30,38 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
             join fetch s.course c
             where c.instructorId = :instructorId
             """)
-    List<LessonProgress> findAllByInstructorId(@Param("instructorId") Long instructorId);
+  List<LessonProgress> findAllByInstructorId(@Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
             select count(lp)
             from LessonProgress lp
             where lp.lesson.section.course.instructorId = :instructorId
               and lp.isCompleted = true
             """)
-    long countByInstructorIdAndIsCompletedTrue(@Param("instructorId") Long instructorId);
+  long countByInstructorIdAndIsCompletedTrue(@Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
             select count(lp)
             from LessonProgress lp
             where lp.user.id = :userId
               and lp.lesson.section.course.courseId in :courseIds
               and lp.isCompleted = true
             """)
-    long countCompletedLessonsByUserIdAndCourseIds(
-            @Param("userId") Long userId,
-            @Param("courseIds") Collection<Long> courseIds
-    );
+  long countCompletedLessonsByUserIdAndCourseIds(
+      @Param("userId") Long userId, @Param("courseIds") Collection<Long> courseIds);
 
-    @Query("""
+  @Query(
+      """
             select coalesce(sum(lp.progressSeconds), 0)
             from LessonProgress lp
             where lp.user.id = :learnerId
             """)
-    Long sumProgressSecondsByLearnerId(@Param("learnerId") Long learnerId);
+  Long sumProgressSecondsByLearnerId(@Param("learnerId") Long learnerId);
 
-    @Query("""
+  @Query(
+      """
             select lp
             from LessonProgress lp
             join fetch lp.lesson l
@@ -67,5 +70,6 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
             and lp.lastWatchedAt is not null
             order by lp.lastWatchedAt desc
             """)
-    List<LessonProgress> findRecentByUserIdWithLessonAndSection(@Param("userId") Long userId, Pageable pageable);
+  List<LessonProgress> findRecentByUserIdWithLessonAndSection(
+      @Param("userId") Long userId, Pageable pageable);
 }

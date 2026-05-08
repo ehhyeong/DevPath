@@ -10,20 +10,24 @@ import org.springframework.data.repository.query.Param;
 
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
-    Optional<Assignment> findByIdAndIsDeletedFalse(Long id);
+  Optional<Assignment> findByIdAndIsDeletedFalse(Long id);
 
-    Optional<Assignment> findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(Long nodeId);
+  Optional<Assignment> findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(
+      Long nodeId);
 
-    @Query("""
+  @Query(
+      """
         select a
         from Assignment a
         where a.roadmapNode.nodeId = :nodeId
           and a.isDeleted = false
         order by a.createdAt desc
         """)
-    List<Assignment> findAllByRoadmapNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(@Param("nodeId") Long nodeId);
+  List<Assignment> findAllByRoadmapNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(
+      @Param("nodeId") Long nodeId);
 
-    @Query("""
+  @Query(
+      """
         select a
         from Assignment a
         join fetch a.roadmapNode rn
@@ -31,7 +35,6 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
           and a.isDeleted = false
         order by a.createdAt desc
         """)
-    List<Assignment> findAllByRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(
-        @Param("nodeIds") Collection<Long> nodeIds
-    );
+  List<Assignment> findAllByRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(
+      @Param("nodeIds") Collection<Long> nodeIds);
 }

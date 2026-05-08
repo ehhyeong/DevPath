@@ -28,54 +28,53 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class Showcase {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long userId;
+  @Column(nullable = false)
+  private Long userId;
 
-    @Column(nullable = false)
-    private String title;
+  @Column(nullable = false)
+  private String title;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+  @Column(columnDefinition = "TEXT")
+  private String description;
 
-    private String thumbnailUrl;
+  private String thumbnailUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ShowcaseCategory category;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private ShowcaseCategory category;
 
-    @Builder.Default
-    private boolean isPublic = true;
+  @Builder.Default private boolean isPublic = true;
 
-    @Builder.Default
-    private long viewCount = 0;
+  @Builder.Default private long viewCount = 0;
 
-    @Builder.Default
-    private boolean isDeleted = false;
+  @Builder.Default private boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+  @LastModifiedDate private LocalDateTime updatedAt;
 
-    public void update(String title, String description, String thumbnailUrl,
-            ShowcaseCategory category, boolean isPublic) {
-        this.title = title;
-        this.description = description;
-        this.thumbnailUrl = thumbnailUrl;
-        this.category = category;
-        this.isPublic = isPublic;
-    }
+  public void update(
+      String title,
+      String description,
+      String thumbnailUrl,
+      ShowcaseCategory category,
+      boolean isPublic) {
+    this.title = title;
+    this.description = description;
+    this.thumbnailUrl = thumbnailUrl;
+    this.category = category;
+    this.isPublic = isPublic;
+  }
 
-    public void delete() {
-        this.isDeleted = true;
-    }
+  public void delete() {
+    this.isDeleted = true;
+  }
 
-    public void incrementView() {
-        this.viewCount++;
-    }
+  public void incrementView() {
+    this.viewCount++;
+  }
 }

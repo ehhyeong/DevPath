@@ -20,22 +20,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RiskWarningController {
 
-    private final RiskWarningService riskWarningService;
+  private final RiskWarningService riskWarningService;
 
-    @Operation(
-        summary = "기존 추천 리스크 경고 조회",
-        description = "미확인 여부와 노드 조건으로 기존 리스크 경고를 조회합니다."
-    )
-    @GetMapping
-    public ResponseEntity<ApiResponse<RiskWarningResponse.ListResult>> getWarnings(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Parameter(description = "미확인 경고만 조회할지 여부", example = "true")
-        @RequestParam(defaultValue = "false") Boolean onlyUnacknowledged,
-        @Parameter(description = "로드맵 노드 ID", example = "100")
-        @RequestParam(required = false) Long nodeId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-            riskWarningService.getWarnings(userId, onlyUnacknowledged, nodeId)
-        ));
-    }
+  @Operation(summary = "기존 추천 리스크 경고 조회", description = "미확인 여부와 노드 조건으로 기존 리스크 경고를 조회합니다.")
+  @GetMapping
+  public ResponseEntity<ApiResponse<RiskWarningResponse.ListResult>> getWarnings(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "미확인 경고만 조회할지 여부", example = "true")
+          @RequestParam(defaultValue = "false")
+          Boolean onlyUnacknowledged,
+      @Parameter(description = "로드맵 노드 ID", example = "100") @RequestParam(required = false)
+          Long nodeId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(riskWarningService.getWarnings(userId, onlyUnacknowledged, nodeId)));
+  }
 }

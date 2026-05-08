@@ -8,10 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Long> {
 
-    Optional<CalendarEvent> findByIdAndIsDeletedFalse(Long id);
+  Optional<CalendarEvent> findByIdAndIsDeletedFalse(Long id);
 
-    List<CalendarEvent> findAllByWorkspaceIdAndIsDeletedFalseOrderByStartAtAsc(Long workspaceId);
+  List<CalendarEvent> findAllByWorkspaceIdAndIsDeletedFalseOrderByStartAtAsc(Long workspaceId);
 
-    List<CalendarEvent> findAllByWorkspaceIdAndStartAtBetweenAndIsDeletedFalseOrderByStartAtAsc(
-            Long workspaceId, LocalDateTime from, LocalDateTime to);
+  List<CalendarEvent> findAllByWorkspaceIdAndStartAtBetweenAndIsDeletedFalseOrderByStartAtAsc(
+      Long workspaceId, LocalDateTime from, LocalDateTime to);
 }

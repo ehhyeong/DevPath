@@ -34,7 +34,9 @@ public class QuestionBankStatsService {
     validateInstructor(userId);
 
     List<Quiz> quizzes =
-        quizRepository.findAll().stream().filter(quiz -> !Boolean.TRUE.equals(quiz.getIsDeleted())).toList();
+        quizRepository.findAll().stream()
+            .filter(quiz -> !Boolean.TRUE.equals(quiz.getIsDeleted()))
+            .toList();
     List<QuizQuestion> questions =
         quizQuestionRepository.findAll().stream()
             .filter(question -> !Boolean.TRUE.equals(question.getIsDeleted()))
@@ -59,7 +61,8 @@ public class QuestionBankStatsService {
         questions.stream()
             .filter(
                 question ->
-                    question.getCreatedAt() != null && question.getCreatedAt().isAfter(sevenDaysAgo))
+                    question.getCreatedAt() != null
+                        && question.getCreatedAt().isAfter(sevenDaysAgo))
             .count();
 
     Map<Long, Long> questionCountByQuizId =
@@ -77,7 +80,8 @@ public class QuestionBankStatsService {
                         .quizId(quiz.getId())
                         .quizTitle(quiz.getTitle())
                         .quizType(quiz.getQuizType())
-                        .questionCount(questionCountByQuizId.getOrDefault(quiz.getId(), 0L).intValue())
+                        .questionCount(
+                            questionCountByQuizId.getOrDefault(quiz.getId(), 0L).intValue())
                         .build())
             .toList();
 

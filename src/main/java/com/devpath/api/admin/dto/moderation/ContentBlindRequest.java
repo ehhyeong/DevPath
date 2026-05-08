@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ContentBlindRequest {
 
-    @NotBlank
-    private String reason;
+  @NotBlank private String reason;
 }

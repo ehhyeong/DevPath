@@ -14,8 +14,7 @@ public class PullRequestSubmissionRequest {
   public record Create(
 
       // 인증 연동 전 Swagger 테스트를 위해 제출자 ID를 요청으로 받는다.
-      @Schema(description = "제출자 사용자 ID", example = "2")
-          @NotNull(message = "제출자 ID는 필수입니다.")
+      @Schema(description = "제출자 사용자 ID", example = "2") @NotNull(message = "제출자 ID는 필수입니다.")
           Long submitterId,
 
       // GitHub PR URL 형식만 허용한다.

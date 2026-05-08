@@ -22,166 +22,171 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OcrService {
 
-    private final OcrResultRepository ocrResultRepository;
-    private final LessonRepository lessonRepository;
-    private final UserRepository userRepository;
-    private final OcrProvider ocrProvider;
+  private final OcrResultRepository ocrResultRepository;
+  private final LessonRepository lessonRepository;
+  private final UserRepository userRepository;
+  private final OcrProvider ocrProvider;
 
-    @Value("${ocr.allow-source-text-fallback:true}")
-    private boolean allowSourceTextFallback;
+  @Value("${ocr.allow-source-text-fallback:true}")
+  private boolean allowSourceTextFallback;
 
-    @Transactional
-    public OcrResponse.Detail extractText(Long userId, Long lessonId, OcrRequest.Extract request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+  @Transactional
+  public OcrResponse.Detail extractText(Long userId, Long lessonId, OcrRequest.Extract request) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+    Lesson lesson =
+        lessonRepository
+            .findById(lessonId)
+            .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
 
-        OcrResult ocrResult = OcrResult.builder()
-                .user(user)
-                .lesson(lesson)
-                .frameTimestampSecond(request.getFrameTimestampSecond())
-                .sourceImageUrl(request.getSourceImageUrl())
-                .status("REQUESTED")
-                .build();
+    OcrResult ocrResult =
+        OcrResult.builder()
+            .user(user)
+            .lesson(lesson)
+            .frameTimestampSecond(request.getFrameTimestampSecond())
+            .sourceImageUrl(request.getSourceImageUrl())
+            .status("REQUESTED")
+            .build();
 
-        try {
-            OcrProvider.OcrResult providerResult = ocrProvider.extractTextFromImageUrl(request.getSourceImageUrl());
-            applyProviderResult(ocrResult, request, providerResult);
-        } catch (CustomException e) {
-            if (canUseHintFallback(request)) {
-                applyHintFallback(ocrResult, request);
-            } else {
-                ocrResult.markFailed();
-                ocrResultRepository.save(ocrResult);
-                throw e;
-            }
-        }
-
-        OcrResult saved = ocrResultRepository.save(ocrResult);
-        return OcrResponse.Detail.from(saved);
+    try {
+      OcrProvider.OcrResult providerResult =
+          ocrProvider.extractTextFromImageUrl(request.getSourceImageUrl());
+      applyProviderResult(ocrResult, request, providerResult);
+    } catch (CustomException e) {
+      if (canUseHintFallback(request)) {
+        applyHintFallback(ocrResult, request);
+      } else {
+        ocrResult.markFailed();
+        ocrResultRepository.save(ocrResult);
+        throw e;
+      }
     }
 
-    @Transactional(readOnly = true)
-    public OcrResponse.Detail getOcrResult(Long userId, Long ocrId) {
-        OcrResult ocrResult = ocrResultRepository.findByIdAndUserId(ocrId, userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "OCR 결과를 찾을 수 없습니다."));
+    OcrResult saved = ocrResultRepository.save(ocrResult);
+    return OcrResponse.Detail.from(saved);
+  }
 
-        return OcrResponse.Detail.from(ocrResult);
+  @Transactional(readOnly = true)
+  public OcrResponse.Detail getOcrResult(Long userId, Long ocrId) {
+    OcrResult ocrResult =
+        ocrResultRepository
+            .findByIdAndUserId(ocrId, userId)
+            .orElseThrow(
+                () -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "OCR 결과를 찾을 수 없습니다."));
+
+    return OcrResponse.Detail.from(ocrResult);
+  }
+
+  @Transactional(readOnly = true)
+  public OcrResponse.SearchResult searchOcrText(Long userId, Long lessonId, String keyword) {
+    lessonRepository
+        .findById(lessonId)
+        .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+
+    if (keyword == null || keyword.isBlank()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "검색어는 비워 둘 수 없습니다.");
     }
 
-    @Transactional(readOnly = true)
-    public OcrResponse.SearchResult searchOcrText(Long userId, Long lessonId, String keyword) {
-        lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+    List<OcrResult> results =
+        ocrResultRepository
+            .findAllByUserIdAndLessonLessonIdAndSearchableNormalizedTextContainingOrderByFrameTimestampSecondAsc(
+                userId, lessonId, normalize(keyword));
 
-        if (keyword == null || keyword.isBlank()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT, "검색어는 비워 둘 수 없습니다.");
-        }
+    return OcrResponse.SearchResult.of(lessonId, keyword, results);
+  }
 
-        List<OcrResult> results = ocrResultRepository
-                .findAllByUserIdAndLessonLessonIdAndSearchableNormalizedTextContainingOrderByFrameTimestampSecondAsc(
-                        userId,
-                        lessonId,
-                        normalize(keyword)
-                );
+  @Transactional(readOnly = true)
+  public OcrResponse.MappingResult getTimestampMappings(Long userId, Long lessonId) {
+    lessonRepository
+        .findById(lessonId)
+        .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
 
-        return OcrResponse.SearchResult.of(lessonId, keyword, results);
+    List<OcrResult> results =
+        ocrResultRepository.findAllByUserIdAndLessonLessonIdOrderByFrameTimestampSecondAsc(
+            userId, lessonId);
+
+    return OcrResponse.MappingResult.of(lessonId, results);
+  }
+
+  private void applyProviderResult(
+      OcrResult ocrResult, OcrRequest.Extract request, OcrProvider.OcrResult providerResult) {
+    String extractedText = resolveExtractedText(providerResult);
+    if (extractedText.isBlank()) {
+      throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "OCR 서버가 빈 텍스트를 반환했습니다.");
     }
 
-    @Transactional(readOnly = true)
-    public OcrResponse.MappingResult getTimestampMappings(Long userId, Long lessonId) {
-        lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+    ocrResult.markCompleted(
+        extractedText,
+        normalize(extractedText),
+        buildTimestampMappings(
+            request.getFrameTimestampSecond(), providerResult.getLines(), extractedText),
+        providerResult.getConfidence() == null ? 0.0D : providerResult.getConfidence());
+  }
 
-        List<OcrResult> results = ocrResultRepository
-                .findAllByUserIdAndLessonLessonIdOrderByFrameTimestampSecondAsc(userId, lessonId);
+  private boolean canUseHintFallback(OcrRequest.Extract request) {
+    return allowSourceTextFallback
+        && request.getSourceTextHint() != null
+        && !request.getSourceTextHint().isBlank();
+  }
 
-        return OcrResponse.MappingResult.of(lessonId, results);
+  private void applyHintFallback(OcrResult ocrResult, OcrRequest.Extract request) {
+    // 한글 주석: 외부 OCR 서버가 실패한 경우에만 명시적 힌트 텍스트를 fallback으로 쓴다.
+    String extractedText = request.getSourceTextHint().trim();
+    ocrResult.markCompleted(
+        extractedText,
+        normalize(extractedText),
+        buildTimestampMappings(
+            request.getFrameTimestampSecond(), List.of(extractedText), extractedText),
+        0.97D);
+  }
+
+  private String resolveExtractedText(OcrProvider.OcrResult providerResult) {
+    if (providerResult.getText() != null && !providerResult.getText().isBlank()) {
+      return providerResult.getText().trim();
+    }
+    if (providerResult.getLines() != null && !providerResult.getLines().isEmpty()) {
+      return providerResult.getLines().stream()
+          .filter(line -> line != null && !line.isBlank())
+          .map(String::trim)
+          .reduce((left, right) -> left + "\n" + right)
+          .orElse("");
+    }
+    return "";
+  }
+
+  private String normalize(String value) {
+    return value == null ? "" : value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+  }
+
+  private String buildTimestampMappings(
+      Integer frameTimestampSecond, List<String> lines, String extractedText) {
+    List<String> mappingLines = (lines == null || lines.isEmpty()) ? List.of(extractedText) : lines;
+    StringBuilder builder = new StringBuilder("[");
+
+    for (int index = 0; index < mappingLines.size(); index++) {
+      if (index > 0) {
+        builder.append(",");
+      }
+      builder
+          .append("{\"second\":")
+          .append(frameTimestampSecond)
+          .append(",\"text\":\"")
+          .append(escapeJson(mappingLines.get(index)))
+          .append("\"}");
     }
 
-    private void applyProviderResult(OcrResult ocrResult, OcrRequest.Extract request, OcrProvider.OcrResult providerResult) {
-        String extractedText = resolveExtractedText(providerResult);
-        if (extractedText.isBlank()) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "OCR 서버가 빈 텍스트를 반환했습니다.");
-        }
+    builder.append("]");
+    return builder.toString();
+  }
 
-        ocrResult.markCompleted(
-                extractedText,
-                normalize(extractedText),
-                buildTimestampMappings(request.getFrameTimestampSecond(), providerResult.getLines(), extractedText),
-                providerResult.getConfidence() == null ? 0.0D : providerResult.getConfidence()
-        );
+  private String escapeJson(String value) {
+    if (value == null) {
+      return "";
     }
 
-    private boolean canUseHintFallback(OcrRequest.Extract request) {
-        return allowSourceTextFallback
-                && request.getSourceTextHint() != null
-                && !request.getSourceTextHint().isBlank();
-    }
-
-    private void applyHintFallback(OcrResult ocrResult, OcrRequest.Extract request) {
-        // 한글 주석: 외부 OCR 서버가 실패한 경우에만 명시적 힌트 텍스트를 fallback으로 쓴다.
-        String extractedText = request.getSourceTextHint().trim();
-        ocrResult.markCompleted(
-                extractedText,
-                normalize(extractedText),
-                buildTimestampMappings(request.getFrameTimestampSecond(), List.of(extractedText), extractedText),
-                0.97D
-        );
-    }
-
-    private String resolveExtractedText(OcrProvider.OcrResult providerResult) {
-        if (providerResult.getText() != null && !providerResult.getText().isBlank()) {
-            return providerResult.getText().trim();
-        }
-        if (providerResult.getLines() != null && !providerResult.getLines().isEmpty()) {
-            return providerResult.getLines().stream()
-                    .filter(line -> line != null && !line.isBlank())
-                    .map(String::trim)
-                    .reduce((left, right) -> left + "\n" + right)
-                    .orElse("");
-        }
-        return "";
-    }
-
-    private String normalize(String value) {
-        return value == null
-                ? ""
-                : value.trim()
-                        .replaceAll("\\s+", " ")
-                        .toLowerCase(Locale.ROOT);
-    }
-
-    private String buildTimestampMappings(Integer frameTimestampSecond, List<String> lines, String extractedText) {
-        List<String> mappingLines = (lines == null || lines.isEmpty()) ? List.of(extractedText) : lines;
-        StringBuilder builder = new StringBuilder("[");
-
-        for (int index = 0; index < mappingLines.size(); index++) {
-            if (index > 0) {
-                builder.append(",");
-            }
-            builder.append("{\"second\":")
-                    .append(frameTimestampSecond)
-                    .append(",\"text\":\"")
-                    .append(escapeJson(mappingLines.get(index)))
-                    .append("\"}");
-        }
-
-        builder.append("]");
-        return builder.toString();
-    }
-
-    private String escapeJson(String value) {
-        if (value == null) {
-            return "";
-        }
-
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", " ")
-                .replace("\r", " ");
-    }
+    return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ");
+  }
 }

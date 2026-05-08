@@ -6,9 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
 
-    Optional<Portfolio> findByIdAndIsDeletedFalse(Long id);
+  Optional<Portfolio> findByIdAndIsDeletedFalse(Long id);
 
-    Optional<Portfolio> findFirstByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
+  Optional<Portfolio> findFirstByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
 
-    Optional<Portfolio> findByPublicLinkToken(String token);
+  Optional<Portfolio> findByPublicLinkToken(String token);
 }

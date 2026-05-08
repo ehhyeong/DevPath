@@ -24,17 +24,17 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LectureCatalogMegaMenuItem {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
-    private LectureCatalogCategory category;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "category_id", nullable = false)
+  private LectureCatalogCategory category;
 
-    @Column(nullable = false, length = 120)
-    private String label;
+  @Column(nullable = false, length = 120)
+  private String label;
 
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
+  @Column(name = "sort_order", nullable = false)
+  private Integer sortOrder;
 }

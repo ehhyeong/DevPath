@@ -13,8 +13,7 @@ public class QnaRequest {
   @Schema(name = "QnaQuestionCreateRequest", description = "Q&A 질문 작성 요청")
   public record QuestionCreate(
       // 인증 연동 전 Swagger 테스트를 위해 작성자 ID를 요청으로 받는다.
-      @Schema(description = "질문 작성자 ID", example = "2")
-          @NotNull(message = "질문 작성자 ID는 필수입니다.")
+      @Schema(description = "질문 작성자 ID", example = "2") @NotNull(message = "질문 작성자 ID는 필수입니다.")
           Long writerId,
       // 질문 목록과 상세 화면에 표시되는 제목이다.
       @Schema(description = "질문 제목", example = "PR 리뷰 기준이 궁금합니다.")
@@ -30,11 +29,12 @@ public class QnaRequest {
   @Schema(name = "QnaAnswerCreateRequest", description = "Q&A 답변 작성 요청")
   public record AnswerCreate(
       // 인증 연동 전 Swagger 테스트를 위해 답변자 ID를 요청으로 받는다.
-      @Schema(description = "답변 작성자 ID", example = "1")
-          @NotNull(message = "답변 작성자 ID는 필수입니다.")
+      @Schema(description = "답변 작성자 ID", example = "1") @NotNull(message = "답변 작성자 ID는 필수입니다.")
           Long writerId,
       // 답변 본문이다.
-      @Schema(description = "답변 내용", example = "Controller는 얇게 유지하고, 검증과 상태 변경은 Service에서 처리하는 것이 좋습니다.")
+      @Schema(
+              description = "답변 내용",
+              example = "Controller는 얇게 유지하고, 검증과 상태 변경은 Service에서 처리하는 것이 좋습니다.")
           @NotBlank(message = "답변 내용은 필수입니다.")
           @Size(max = 3000, message = "답변 내용은 3000자 이하여야 합니다.")
           String content) {}
@@ -42,11 +42,9 @@ public class QnaRequest {
   @Schema(name = "QnaStatusUpdateRequest", description = "Q&A 질문 상태 변경 요청")
   public record StatusUpdate(
       // 상태 변경을 요청한 사용자 ID다.
-      @Schema(description = "요청자 ID", example = "1")
-          @NotNull(message = "요청자 ID는 필수입니다.")
+      @Schema(description = "요청자 ID", example = "1") @NotNull(message = "요청자 ID는 필수입니다.")
           Long requesterId,
       // 변경할 질문 상태다.
-      @Schema(description = "변경할 질문 상태", example = "CLOSED")
-          @NotNull(message = "질문 상태는 필수입니다.")
+      @Schema(description = "변경할 질문 상태", example = "CLOSED") @NotNull(message = "질문 상태는 필수입니다.")
           QuestionStatus status) {}
 }

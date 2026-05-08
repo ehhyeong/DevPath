@@ -18,46 +18,40 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 public class GeminiProvider {
 
-    private static final String GEMINI_URL =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=";
+  private static final String GEMINI_URL =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=";
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    private final GeminiProperties geminiProperties;
-    private final RestTemplate restTemplate;
+  private final GeminiProperties geminiProperties;
+  private final RestTemplate restTemplate;
 
-    /**
-     * Gemini API를 호출하여 텍스트 응답을 반환한다.
-     * 실패 시 null을 반환하며, 호출부에서 fallback 처리한다.
-     */
-    public String generate(String prompt) {
-        try {
-            String url = GEMINI_URL + geminiProperties.getKey();
+  /** Gemini API를 호출하여 텍스트 응답을 반환한다. 실패 시 null을 반환하며, 호출부에서 fallback 처리한다. */
+  public String generate(String prompt) {
+    try {
+      String url = GEMINI_URL + geminiProperties.getKey();
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
+      HttpHeaders headers = new HttpHeaders();
+      headers.setContentType(MediaType.APPLICATION_JSON);
 
-            Map<String, Object> body = Map.of(
-                "contents", List.of(
-                    Map.of("parts", List.of(Map.of("text", prompt)))
-                )
-            );
+      Map<String, Object> body =
+          Map.of("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-            String raw = restTemplate.postForObject(url, request, String.class);
+      HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+      String raw = restTemplate.postForObject(url, request, String.class);
 
-            JsonNode root = MAPPER.readTree(raw);
-            return root.path("candidates")
-                .get(0)
-                .path("content")
-                .path("parts")
-                .get(0)
-                .path("text")
-                .asText(null);
+      JsonNode root = MAPPER.readTree(raw);
+      return root.path("candidates")
+          .get(0)
+          .path("content")
+          .path("parts")
+          .get(0)
+          .path("text")
+          .asText(null);
 
-        } catch (Exception e) {
-            log.warn("[GeminiProvider] API 호출 실패: {}", e.getMessage());
-            return null;
-        }
+    } catch (Exception e) {
+      log.warn("[GeminiProvider] API 호출 실패: {}", e.getMessage());
+      return null;
     }
+  }
 }

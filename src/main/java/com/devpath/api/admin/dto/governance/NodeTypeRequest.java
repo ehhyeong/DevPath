@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NodeTypeRequest {
 
-    @NotBlank
-    private String nodeType;
+  @NotBlank private String nodeType;
 }

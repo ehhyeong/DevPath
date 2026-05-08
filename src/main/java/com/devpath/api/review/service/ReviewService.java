@@ -21,50 +21,54 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ReviewService {
 
-    private final ReviewRepository reviewRepository;
-    private final ReviewReplyRepository reviewReplyRepository;
+  private final ReviewRepository reviewRepository;
+  private final ReviewReplyRepository reviewReplyRepository;
 
-    public ReviewResponse createReview(ReviewRequest request, Long learnerId) {
-        if (reviewRepository.existsByCourseIdAndLearnerIdAndIsDeletedFalse(request.getCourseId(), learnerId)) {
-            throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
-        }
-
-        Review review = Review.builder()
-                .courseId(request.getCourseId())
-                .learnerId(learnerId)
-                .rating(request.getRating())
-                .content(request.getContent())
-                .build();
-
-        Review saved = reviewRepository.save(review);
-        return ReviewResponse.from(saved, null);
+  public ReviewResponse createReview(ReviewRequest request, Long learnerId) {
+    if (reviewRepository.existsByCourseIdAndLearnerIdAndIsDeletedFalse(
+        request.getCourseId(), learnerId)) {
+      throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
     }
 
-    @Transactional(readOnly = true)
-    public List<ReviewResponse> getReviewsByCourse(Long courseId) {
-        List<Review> reviews = reviewRepository.findByCourseIdAndIsDeletedFalseAndIsHiddenFalseOrderByCreatedAtDesc(
-                courseId
-        );
+    Review review =
+        Review.builder()
+            .courseId(request.getCourseId())
+            .learnerId(learnerId)
+            .rating(request.getRating())
+            .content(request.getContent())
+            .build();
 
-        Map<Long, ReviewReply> replyMap = reviewReplyRepository.findAllByReviewIdInAndIsDeletedFalse(
-                        reviews.stream().map(Review::getId).toList()
-                )
-                .stream()
-                .collect(Collectors.toMap(ReviewReply::getReviewId, Function.identity()));
+    Review saved = reviewRepository.save(review);
+    return ReviewResponse.from(saved, null);
+  }
 
-        return reviews.stream()
-                .map(review -> ReviewResponse.from(review, replyMap.get(review.getId())))
-                .toList();
-    }
+  @Transactional(readOnly = true)
+  public List<ReviewResponse> getReviewsByCourse(Long courseId) {
+    List<Review> reviews =
+        reviewRepository.findByCourseIdAndIsDeletedFalseAndIsHiddenFalseOrderByCreatedAtDesc(
+            courseId);
 
-    @Transactional(readOnly = true)
-    public ReviewResponse getReview(Long reviewId) {
-        Review review = reviewRepository.findByIdAndIsDeletedFalseAndIsHiddenFalse(reviewId)
-                .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+    Map<Long, ReviewReply> replyMap =
+        reviewReplyRepository
+            .findAllByReviewIdInAndIsDeletedFalse(reviews.stream().map(Review::getId).toList())
+            .stream()
+            .collect(Collectors.toMap(ReviewReply::getReviewId, Function.identity()));
 
-        ReviewReply officialReply = reviewReplyRepository.findByReviewIdAndIsDeletedFalse(reviewId)
-                .orElse(null);
+    return reviews.stream()
+        .map(review -> ReviewResponse.from(review, replyMap.get(review.getId())))
+        .toList();
+  }
 
-        return ReviewResponse.from(review, officialReply);
-    }
+  @Transactional(readOnly = true)
+  public ReviewResponse getReview(Long reviewId) {
+    Review review =
+        reviewRepository
+            .findByIdAndIsDeletedFalseAndIsHiddenFalse(reviewId)
+            .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+
+    ReviewReply officialReply =
+        reviewReplyRepository.findByReviewIdAndIsDeletedFalse(reviewId).orElse(null);
+
+    return ReviewResponse.from(review, officialReply);
+  }
 }

@@ -48,9 +48,7 @@ public class CreateAssignmentRequest {
   @Schema(description = "린트 통과를 필수로 요구할지 여부", example = "true")
   private Boolean lintRequired;
 
-  @Schema(
-      description = "학습자에게 보여줄 제출 규칙 설명",
-      example = "README에 실행 방법과 검증 결과를 반드시 포함하세요.")
+  @Schema(description = "학습자에게 보여줄 제출 규칙 설명", example = "README에 실행 방법과 검증 결과를 반드시 포함하세요.")
   private String submissionRuleDescription;
 
   @NotNull

@@ -9,9 +9,7 @@ import lombok.Getter;
 @Getter
 public class RoadmapHubCatalogUpdateRequest {
 
-  @Valid
-  @NotEmpty
-  private List<SectionRequest> sections;
+  @Valid @NotEmpty private List<SectionRequest> sections;
 
   @Getter
   public static class SectionRequest {
@@ -23,8 +21,7 @@ public class RoadmapHubCatalogUpdateRequest {
     private Integer sortOrder;
     private Boolean active;
 
-    @Valid
-    private List<ItemRequest> items;
+    @Valid private List<ItemRequest> items;
   }
 
   @Getter

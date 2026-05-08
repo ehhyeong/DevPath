@@ -10,31 +10,32 @@ import lombok.Getter;
 @Builder
 public class PortfolioResponse {
 
-    private Long portfolioId;
-    private Long userId;
-    private String title;
-    private String bio;
-    private boolean isPublic;
-    private String publicLinkToken;
-    private List<PortfolioItemResponse> items;
-    private List<PortfolioGithubCommitResponse> githubCommits;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+  private Long portfolioId;
+  private Long userId;
+  private String title;
+  private String bio;
+  private boolean isPublic;
+  private String publicLinkToken;
+  private List<PortfolioItemResponse> items;
+  private List<PortfolioGithubCommitResponse> githubCommits;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
 
-    public static PortfolioResponse of(Portfolio portfolio,
-            List<PortfolioItemResponse> items,
-            List<PortfolioGithubCommitResponse> githubCommits) {
-        return PortfolioResponse.builder()
-                .portfolioId(portfolio.getId())
-                .userId(portfolio.getUserId())
-                .title(portfolio.getTitle())
-                .bio(portfolio.getBio())
-                .isPublic(portfolio.isPublic())
-                .publicLinkToken(portfolio.getPublicLinkToken())
-                .items(items)
-                .githubCommits(githubCommits)
-                .createdAt(portfolio.getCreatedAt())
-                .updatedAt(portfolio.getUpdatedAt())
-                .build();
-    }
+  public static PortfolioResponse of(
+      Portfolio portfolio,
+      List<PortfolioItemResponse> items,
+      List<PortfolioGithubCommitResponse> githubCommits) {
+    return PortfolioResponse.builder()
+        .portfolioId(portfolio.getId())
+        .userId(portfolio.getUserId())
+        .title(portfolio.getTitle())
+        .bio(portfolio.getBio())
+        .isPublic(portfolio.isPublic())
+        .publicLinkToken(portfolio.getPublicLinkToken())
+        .items(items)
+        .githubCommits(githubCommits)
+        .createdAt(portfolio.getCreatedAt())
+        .updatedAt(portfolio.getUpdatedAt())
+        .build();
+  }
 }

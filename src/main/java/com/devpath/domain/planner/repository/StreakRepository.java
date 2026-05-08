@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface StreakRepository extends JpaRepository<Streak, Long> {
 
-    Optional<Streak> findByLearnerId(Long learnerId);
+  Optional<Streak> findByLearnerId(Long learnerId);
 
-    List<Streak> findAllByLearnerIdIn(Collection<Long> learnerIds);
+  List<Streak> findAllByLearnerIdIn(Collection<Long> learnerIds);
 }

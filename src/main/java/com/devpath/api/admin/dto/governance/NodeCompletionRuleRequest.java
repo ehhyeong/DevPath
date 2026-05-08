@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class NodeCompletionRuleRequest {
 
-    @NotBlank
-    private String completionRuleDescription;
+  @NotBlank private String completionRuleDescription;
 
-    private Integer requiredProgressRate;
+  private Integer requiredProgressRate;
 }

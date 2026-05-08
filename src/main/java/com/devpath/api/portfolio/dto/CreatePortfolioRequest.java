@@ -8,10 +8,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreatePortfolioRequest {
 
-    @NotBlank
-    private String title;
+  @NotBlank private String title;
 
-    private String bio;
+  private String bio;
 
-    private boolean isPublic = false;
+  private boolean isPublic = false;
 }

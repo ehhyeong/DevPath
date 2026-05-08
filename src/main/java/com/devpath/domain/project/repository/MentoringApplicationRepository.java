@@ -9,13 +9,10 @@ import org.springframework.stereotype.Repository;
 @Repository("projectMentoringApplicationRepository")
 public interface MentoringApplicationRepository extends JpaRepository<MentoringApplication, Long> {
 
-    boolean existsByProjectIdAndMentorIdAndStatus(
-            Long projectId,
-            Long mentorId,
-            MentoringApplicationStatus status
-    );
+  boolean existsByProjectIdAndMentorIdAndStatus(
+      Long projectId, Long mentorId, MentoringApplicationStatus status);
 
-    List<MentoringApplication> findAllByProjectIdInOrderByCreatedAtDesc(List<Long> projectIds);
+  List<MentoringApplication> findAllByProjectIdInOrderByCreatedAtDesc(List<Long> projectIds);
 
-    List<MentoringApplication> findAllByProjectIdOrderByCreatedAtDesc(Long projectId);
+  List<MentoringApplication> findAllByProjectIdOrderByCreatedAtDesc(Long projectId);
 }

@@ -39,30 +39,34 @@ public class MyRoadmapService {
 
   @Transactional
   public MyRoadmapResponse save(Long userId, MyRoadmapSaveRequest request) {
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
     request.getModules().forEach(this::validateModuleSource);
 
-    List<Long> moduleIds = request.getModules().stream()
-        .map(MyRoadmapSaveRequest.ModuleItem::getBuilderModuleId)
-        .filter(Objects::nonNull)
-        .distinct()
-        .toList();
+    List<Long> moduleIds =
+        request.getModules().stream()
+            .map(MyRoadmapSaveRequest.ModuleItem::getBuilderModuleId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
 
-    Map<Long, BuilderModule> moduleMap = builderModuleRepository.findAllById(moduleIds)
-        .stream()
-        .collect(Collectors.toMap(BuilderModule::getId, m -> m));
+    Map<Long, BuilderModule> moduleMap =
+        builderModuleRepository.findAllById(moduleIds).stream()
+            .collect(Collectors.toMap(BuilderModule::getId, m -> m));
 
-    List<Long> originalNodeIds = request.getModules().stream()
-        .map(MyRoadmapSaveRequest.ModuleItem::getOriginalNodeId)
-        .filter(Objects::nonNull)
-        .distinct()
-        .toList();
+    List<Long> originalNodeIds =
+        request.getModules().stream()
+            .map(MyRoadmapSaveRequest.ModuleItem::getOriginalNodeId)
+            .filter(Objects::nonNull)
+            .distinct()
+            .toList();
 
-    Map<Long, RoadmapNode> originalNodeMap = roadmapNodeRepository.findAllById(originalNodeIds)
-        .stream()
-        .collect(Collectors.toMap(RoadmapNode::getNodeId, n -> n));
+    Map<Long, RoadmapNode> originalNodeMap =
+        roadmapNodeRepository.findAllById(originalNodeIds).stream()
+            .collect(Collectors.toMap(RoadmapNode::getNodeId, n -> n));
 
     for (Long id : moduleIds) {
       if (!moduleMap.containsKey(id)) {
@@ -76,49 +80,50 @@ public class MyRoadmapService {
       }
     }
 
-    MyRoadmap myRoadmap = MyRoadmap.builder()
-        .user(user)
-        .title(request.getTitle())
-        .build();
+    MyRoadmap myRoadmap = MyRoadmap.builder().user(user).title(request.getTitle()).build();
 
     request.getModules().stream()
         .filter(item -> item.getBuilderModuleId() != null)
-        .forEach(item -> {
-          MyRoadmapModule module = MyRoadmapModule.builder()
-              .myRoadmap(myRoadmap)
-              .builderModule(moduleMap.get(item.getBuilderModuleId()))
-              .sortOrder(item.getSortOrder())
-              .branchGroup(item.getBranchGroup())
-              .build();
-          myRoadmap.addModule(module);
-        });
+        .forEach(
+            item -> {
+              MyRoadmapModule module =
+                  MyRoadmapModule.builder()
+                      .myRoadmap(myRoadmap)
+                      .builderModule(moduleMap.get(item.getBuilderModuleId()))
+                      .sortOrder(item.getSortOrder())
+                      .branchGroup(item.getBranchGroup())
+                      .build();
+              myRoadmap.addModule(module);
+            });
 
     myRoadmapRepository.save(myRoadmap);
 
-    CustomRoadmap customRoadmap = CustomRoadmap.builderOriginBuilder()
-        .user(user)
-        .title(request.getTitle())
-        .build();
+    CustomRoadmap customRoadmap =
+        CustomRoadmap.builderOriginBuilder().user(user).title(request.getTitle()).build();
     customRoadmapRepository.save(customRoadmap);
 
-    request.getModules().forEach(item -> {
-      CustomRoadmapNode node = item.getBuilderModuleId() != null
-          ? CustomRoadmapNode.builderNodeBuilder()
-              .customRoadmap(customRoadmap)
-              .builderModule(moduleMap.get(item.getBuilderModuleId()))
-              .customSortOrder(item.getSortOrder())
-              .builderBranchGroup(item.getBranchGroup())
-              .build()
-          : CustomRoadmapNode.builder()
-              .customRoadmap(customRoadmap)
-              .originalNode(originalNodeMap.get(item.getOriginalNodeId()))
-              .customSortOrder(item.getSortOrder())
-              .isBranch(false)
-              .branchFromNodeId(null)
-              .branchType(null)
-              .build();
-      customRoadmapNodeRepository.save(node);
-    });
+    request
+        .getModules()
+        .forEach(
+            item -> {
+              CustomRoadmapNode node =
+                  item.getBuilderModuleId() != null
+                      ? CustomRoadmapNode.builderNodeBuilder()
+                          .customRoadmap(customRoadmap)
+                          .builderModule(moduleMap.get(item.getBuilderModuleId()))
+                          .customSortOrder(item.getSortOrder())
+                          .builderBranchGroup(item.getBranchGroup())
+                          .build()
+                      : CustomRoadmapNode.builder()
+                          .customRoadmap(customRoadmap)
+                          .originalNode(originalNodeMap.get(item.getOriginalNodeId()))
+                          .customSortOrder(item.getSortOrder())
+                          .isBranch(false)
+                          .branchFromNodeId(null)
+                          .branchType(null)
+                          .build();
+              customRoadmapNodeRepository.save(node);
+            });
 
     return MyRoadmapResponse.from(myRoadmap, customRoadmap.getId());
   }
@@ -130,15 +135,19 @@ public class MyRoadmapService {
 
   @Transactional(readOnly = true)
   public MyRoadmapResponse findById(Long userId, Long myRoadmapId) {
-    MyRoadmap myRoadmap = myRoadmapRepository.findByIdWithModules(myRoadmapId, userId)
-        .orElseThrow(() -> new CustomException(ErrorCode.MY_ROADMAP_NOT_FOUND));
+    MyRoadmap myRoadmap =
+        myRoadmapRepository
+            .findByIdWithModules(myRoadmapId, userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.MY_ROADMAP_NOT_FOUND));
     return MyRoadmapResponse.from(myRoadmap);
   }
 
   @Transactional
   public void delete(Long userId, Long myRoadmapId) {
-    MyRoadmap myRoadmap = myRoadmapRepository.findByIdWithModules(myRoadmapId, userId)
-        .orElseThrow(() -> new CustomException(ErrorCode.MY_ROADMAP_NOT_FOUND));
+    MyRoadmap myRoadmap =
+        myRoadmapRepository
+            .findByIdWithModules(myRoadmapId, userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.MY_ROADMAP_NOT_FOUND));
     myRoadmapRepository.delete(myRoadmap);
   }
 
@@ -147,8 +156,7 @@ public class MyRoadmapService {
     boolean hasOriginalNode = item.getOriginalNodeId() != null;
     if (hasBuilderModule == hasOriginalNode) {
       throw new CustomException(
-          ErrorCode.INVALID_INPUT,
-          "Exactly one of builderModuleId or originalNodeId is required.");
+          ErrorCode.INVALID_INPUT, "Exactly one of builderModuleId or originalNodeId is required.");
     }
   }
 }

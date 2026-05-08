@@ -10,7 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface NodeRequiredTagRepository extends JpaRepository<NodeRequiredTag, Long> {
 
-  @Query("""
+  @Query(
+      """
       select nrt
       from NodeRequiredTag nrt
       join fetch nrt.tag
@@ -19,7 +20,8 @@ public interface NodeRequiredTagRepository extends JpaRepository<NodeRequiredTag
       """)
   List<NodeRequiredTag> findAllByNodeId(@Param("nodeId") Long nodeId);
 
-  @Query("""
+  @Query(
+      """
       select t.name
       from NodeRequiredTag nrt
       join nrt.tag t
@@ -28,7 +30,8 @@ public interface NodeRequiredTagRepository extends JpaRepository<NodeRequiredTag
       """)
   List<String> findTagNamesByNodeId(@Param("nodeId") Long nodeId);
 
-  @Query("""
+  @Query(
+      """
       select nrt.node.nodeId as nodeId, t.name as tagName
       from NodeRequiredTag nrt
       join nrt.tag t
@@ -42,6 +45,7 @@ public interface NodeRequiredTagRepository extends JpaRepository<NodeRequiredTag
 
   interface NodeRequiredTagNameProjection {
     Long getNodeId();
+
     String getTagName();
   }
 
@@ -49,7 +53,8 @@ public interface NodeRequiredTagRepository extends JpaRepository<NodeRequiredTag
 
   // 사용자 커스텀 로드맵에서 클리어 노드 이후(sort_order > minSortOrder) 노드들이 보유한 태그명 목록
   // 심화 추천 시 이후에 배울 내용을 중복 추천하지 않기 위한 필터 용도
-  @Query("""
+  @Query(
+      """
       select distinct t.name
       from NodeRequiredTag nrt
       join nrt.tag t

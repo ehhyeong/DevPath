@@ -13,8 +13,7 @@ public class ApplicationMessageRequest {
   public record Create(
 
       // 인증 연동 전 Swagger 테스트를 위해 메시지 작성자 ID를 요청으로 받는다.
-      @Schema(description = "메시지 작성자 ID", example = "2")
-          @NotNull(message = "메시지 작성자 ID는 필수입니다.")
+      @Schema(description = "메시지 작성자 ID", example = "2") @NotNull(message = "메시지 작성자 ID는 필수입니다.")
           Long senderId,
 
       // 신청서 또는 제안서 기반 대화 메시지 본문이다.

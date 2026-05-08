@@ -26,37 +26,35 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class ReviewReport {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long reviewId;
+  @Column(nullable = false)
+  private Long reviewId;
 
-    @Column(nullable = false)
-    private Long reporterId;
+  @Column(nullable = false)
+  private Long reporterId;
 
-    @Column(columnDefinition = "TEXT")
-    private String reason;
+  @Column(columnDefinition = "TEXT")
+  private String reason;
 
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean isResolved = false;
+  @Builder.Default
+  @Column(nullable = false)
+  private Boolean isResolved = false;
 
-    private Long resolvedBy;
+  private Long resolvedBy;
 
-    private LocalDateTime resolvedAt;
+  private LocalDateTime resolvedAt;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+  @LastModifiedDate private LocalDateTime updatedAt;
 
-    // 신고 처리 시 처리자와 처리 시각을 함께 남긴다.
-    public void resolve(Long resolverId) {
-        this.isResolved = true;
-        this.resolvedBy = resolverId;
-        this.resolvedAt = LocalDateTime.now();
-    }
+  // 신고 처리 시 처리자와 처리 시각을 함께 남긴다.
+  public void resolve(Long resolverId) {
+    this.isResolved = true;
+    this.resolvedBy = resolverId;
+    this.resolvedAt = LocalDateTime.now();
+  }
 }

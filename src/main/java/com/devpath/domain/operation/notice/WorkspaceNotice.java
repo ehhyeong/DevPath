@@ -23,44 +23,44 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class WorkspaceNotice {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "workspace_id", nullable = false)
-    private Long workspaceId;
+  @Column(name = "workspace_id", nullable = false)
+  private Long workspaceId;
 
-    @Column(nullable = false, length = 200)
-    private String title;
+  @Column(nullable = false, length = 200)
+  private String title;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String content;
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String content;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted;
+  @Column(name = "is_deleted", nullable = false)
+  private boolean isDeleted;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    @Builder
-    public WorkspaceNotice(Long workspaceId, String title, String content) {
-        this.workspaceId = workspaceId;
-        this.title = title;
-        this.content = content;
-        this.isDeleted = false;
-    }
+  @Builder
+  public WorkspaceNotice(Long workspaceId, String title, String content) {
+    this.workspaceId = workspaceId;
+    this.title = title;
+    this.content = content;
+    this.isDeleted = false;
+  }
 
-    public void updateNotice(String title, String content) {
-        this.title = title;
-        this.content = content;
-    }
+  public void updateNotice(String title, String content) {
+    this.title = title;
+    this.content = content;
+  }
 
-    public void delete() {
-        this.isDeleted = true;
-    }
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UpdateTaskStatusRequest {
 
-    @NotNull
-    @Schema(description = "변경할 상태 (TODO, IN_PROGRESS, DONE)", example = "IN_PROGRESS")
-    private WorkspaceTaskStatus status;
+  @NotNull
+  @Schema(description = "변경할 상태 (TODO, IN_PROGRESS, DONE)", example = "IN_PROGRESS")
+  private WorkspaceTaskStatus status;
 }

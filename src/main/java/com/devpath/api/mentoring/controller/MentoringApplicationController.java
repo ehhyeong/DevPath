@@ -38,10 +38,11 @@ public class MentoringApplicationController {
 
   @GetMapping("/api/mentoring-applications/sent")
   @Operation(summary = "보낸 멘토링 신청 조회", description = "내가 보낸 멘토링 신청 목록을 조회합니다.")
-  public ResponseEntity<ApiResponse<List<MentoringApplicationResponse.Summary>>> getSentApplications(
-      @RequestParam Long userId) {
+  public ResponseEntity<ApiResponse<List<MentoringApplicationResponse.Summary>>>
+      getSentApplications(@RequestParam Long userId) {
     // 인증 연동 전이므로 userId query parameter로 보낸 신청을 조회한다.
-    return ResponseEntity.ok(ApiResponse.ok(mentoringApplicationService.getSentApplications(userId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(mentoringApplicationService.getSentApplications(userId)));
   }
 
   @GetMapping("/api/mentoring-applications/received")
@@ -77,6 +78,7 @@ public class MentoringApplicationController {
       @PathVariable Long applicationId,
       @Valid @RequestBody MentoringApplicationRequest.Reject request) {
     // 거절은 Mentoring을 생성하지 않고 신청 상태만 REJECTED로 변경한다.
-    return ResponseEntity.ok(ApiResponse.ok(mentoringApplicationService.reject(applicationId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(mentoringApplicationService.reject(applicationId, request)));
   }
 }

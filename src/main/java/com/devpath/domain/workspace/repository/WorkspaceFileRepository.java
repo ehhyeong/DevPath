@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceFileRepository extends JpaRepository<WorkspaceFile, Long> {
 
-    Optional<WorkspaceFile> findByIdAndIsDeletedFalse(Long id);
+  Optional<WorkspaceFile> findByIdAndIsDeletedFalse(Long id);
 
-    List<WorkspaceFile> findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(Long workspaceId);
+  List<WorkspaceFile> findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(Long workspaceId);
 }

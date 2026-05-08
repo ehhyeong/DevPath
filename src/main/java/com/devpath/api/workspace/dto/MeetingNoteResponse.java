@@ -14,23 +14,23 @@ import lombok.NoArgsConstructor;
 @Builder
 public class MeetingNoteResponse {
 
-    private Long noteId;
-    private Long workspaceId;
-    private String title;
-    private String content;
-    private Long createdById;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+  private Long noteId;
+  private Long workspaceId;
+  private String title;
+  private String content;
+  private Long createdById;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
 
-    public static MeetingNoteResponse from(MeetingNote note) {
-        return MeetingNoteResponse.builder()
-                .noteId(note.getId())
-                .workspaceId(note.getWorkspaceId())
-                .title(note.getTitle())
-                .content(note.getContent())
-                .createdById(note.getCreatedById())
-                .createdAt(note.getCreatedAt())
-                .updatedAt(note.getUpdatedAt())
-                .build();
-    }
+  public static MeetingNoteResponse from(MeetingNote note) {
+    return MeetingNoteResponse.builder()
+        .noteId(note.getId())
+        .workspaceId(note.getWorkspaceId())
+        .title(note.getTitle())
+        .content(note.getContent())
+        .createdById(note.getCreatedById())
+        .createdAt(note.getCreatedAt())
+        .updatedAt(note.getUpdatedAt())
+        .build();
+  }
 }

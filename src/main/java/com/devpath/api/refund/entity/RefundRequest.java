@@ -29,59 +29,58 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class RefundRequest {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long learnerId;
+  @Column(nullable = false)
+  private Long learnerId;
 
-    @Column(nullable = false)
-    private Long courseId;
+  @Column(nullable = false)
+  private Long courseId;
 
-    @Column(nullable = false, columnDefinition = "bigint default 0")
-    private Long instructorId;
+  @Column(nullable = false, columnDefinition = "bigint default 0")
+  private Long instructorId;
 
-    @Column(columnDefinition = "TEXT")
-    private String reason;
+  @Column(columnDefinition = "TEXT")
+  private String reason;
 
-    @Column(nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
-    private LocalDateTime enrolledAt;
+  @Column(nullable = false, columnDefinition = "timestamp default CURRENT_TIMESTAMP")
+  private LocalDateTime enrolledAt;
 
-    @Column(nullable = false, columnDefinition = "integer default 0")
-    private Integer progressPercentSnapshot;
+  @Column(nullable = false, columnDefinition = "integer default 0")
+  private Integer progressPercentSnapshot;
 
-    @Column(nullable = false, columnDefinition = "bigint default 0")
-    private Long refundAmount;
+  @Column(nullable = false, columnDefinition = "bigint default 0")
+  private Long refundAmount;
 
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    @Column(nullable = false, length = 20)
-    private RefundStatus status = RefundStatus.PENDING;
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  @Column(nullable = false, length = 20)
+  private RefundStatus status = RefundStatus.PENDING;
 
-    @Builder.Default
-    @Column(nullable = false, columnDefinition = "boolean default false")
-    private Boolean isDeleted = false;
+  @Builder.Default
+  @Column(nullable = false, columnDefinition = "boolean default false")
+  private Boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime requestedAt;
+  @CreatedDate private LocalDateTime requestedAt;
 
-    private LocalDateTime processedAt;
+  private LocalDateTime processedAt;
 
-    // 환불 승인/반려는 PENDING 상태에서만 가능하다.
-    public void approve() {
-        if (this.status != RefundStatus.PENDING) {
-            throw new CustomException(ErrorCode.REFUND_ALREADY_PROCESSED);
-        }
-        this.status = RefundStatus.APPROVED;
-        this.processedAt = LocalDateTime.now();
+  // 환불 승인/반려는 PENDING 상태에서만 가능하다.
+  public void approve() {
+    if (this.status != RefundStatus.PENDING) {
+      throw new CustomException(ErrorCode.REFUND_ALREADY_PROCESSED);
     }
+    this.status = RefundStatus.APPROVED;
+    this.processedAt = LocalDateTime.now();
+  }
 
-    public void reject() {
-        if (this.status != RefundStatus.PENDING) {
-            throw new CustomException(ErrorCode.REFUND_ALREADY_PROCESSED);
-        }
-        this.status = RefundStatus.REJECTED;
-        this.processedAt = LocalDateTime.now();
+  public void reject() {
+    if (this.status != RefundStatus.PENDING) {
+      throw new CustomException(ErrorCode.REFUND_ALREADY_PROCESSED);
     }
+    this.status = RefundStatus.REJECTED;
+    this.processedAt = LocalDateTime.now();
+  }
 }

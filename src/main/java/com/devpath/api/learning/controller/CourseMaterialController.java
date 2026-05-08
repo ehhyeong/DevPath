@@ -25,31 +25,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CourseMaterialController {
 
-    private final CourseMaterialService courseMaterialService;
+  private final CourseMaterialService courseMaterialService;
 
-    @Operation(summary = "학습자료 목록 조회", description = "선택한 레슨의 학습자료 메타 정보를 조회합니다.")
-    @GetMapping("/{lessonId}/materials")
-    public ResponseEntity<ApiResponse<List<CourseMaterialResponse>>> getMaterials(
-            @PathVariable Long lessonId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(courseMaterialService.getMaterials(lessonId)));
-    }
+  @Operation(summary = "학습자료 목록 조회", description = "선택한 레슨의 학습자료 메타 정보를 조회합니다.")
+  @GetMapping("/{lessonId}/materials")
+  public ResponseEntity<ApiResponse<List<CourseMaterialResponse>>> getMaterials(
+      @PathVariable Long lessonId) {
+    return ResponseEntity.ok(ApiResponse.ok(courseMaterialService.getMaterials(lessonId)));
+  }
 
-    @Operation(summary = "학습자료 다운로드", description = "선택한 학습자료 다운로드를 시작할 외부 파일 URL로 리다이렉트합니다.")
-    @GetMapping("/{lessonId}/materials/{materialId}/download")
-    public ResponseEntity<Void> downloadMaterial(
-            @PathVariable Long lessonId,
-            @PathVariable Long materialId
-    ) {
-        CourseMaterial material = courseMaterialService.getDownloadMaterial(lessonId, materialId);
-        String contentDisposition = ContentDisposition.attachment()
-                .filename(material.getOriginalFileName(), StandardCharsets.UTF_8)
-                .build()
-                .toString();
+  @Operation(summary = "학습자료 다운로드", description = "선택한 학습자료 다운로드를 시작할 외부 파일 URL로 리다이렉트합니다.")
+  @GetMapping("/{lessonId}/materials/{materialId}/download")
+  public ResponseEntity<Void> downloadMaterial(
+      @PathVariable Long lessonId, @PathVariable Long materialId) {
+    CourseMaterial material = courseMaterialService.getDownloadMaterial(lessonId, materialId);
+    String contentDisposition =
+        ContentDisposition.attachment()
+            .filename(material.getOriginalFileName(), StandardCharsets.UTF_8)
+            .build()
+            .toString();
 
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(material.getMaterialUrl()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
-                .build();
-    }
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .location(URI.create(material.getMaterialUrl()))
+        .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+        .build();
+  }
 }

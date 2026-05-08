@@ -203,4 +203,3 @@ public class LearningFeedbackService {
     return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
   }
 }
-

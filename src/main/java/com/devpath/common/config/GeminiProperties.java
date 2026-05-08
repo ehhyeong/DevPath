@@ -10,5 +10,5 @@ import org.springframework.stereotype.Component;
 @Getter
 @Setter
 public class GeminiProperties {
-    private String key;
+  private String key;
 }

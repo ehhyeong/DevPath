@@ -24,20 +24,20 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LectureCatalogGroupItem {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "group_id", nullable = false)
-    private LectureCatalogGroup group;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "group_id", nullable = false)
+  private LectureCatalogGroup group;
 
-    @Column(nullable = false, length = 120)
-    private String name;
+  @Column(nullable = false, length = 120)
+  private String name;
 
-    @Column(name = "linked_category_key", length = 50)
-    private String linkedCategoryKey;
+  @Column(name = "linked_category_key", length = 50)
+  private String linkedCategoryKey;
 
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
+  @Column(name = "sort_order", nullable = false)
+  private Integer sortOrder;
 }

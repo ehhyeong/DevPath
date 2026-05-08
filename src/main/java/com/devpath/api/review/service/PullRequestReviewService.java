@@ -13,6 +13,7 @@ import com.devpath.domain.mentoring.repository.MentoringMissionRepository;
 import com.devpath.domain.mentoring.repository.MentoringRepository;
 import com.devpath.domain.review.entity.MissionSubmission;
 import com.devpath.domain.review.entity.PullRequestReview;
+import com.devpath.domain.review.entity.PullRequestReviewStatus;
 import com.devpath.domain.review.entity.PullRequestSubmission;
 import com.devpath.domain.review.repository.MissionSubmissionRepository;
 import com.devpath.domain.review.repository.PullRequestReviewRepository;
@@ -56,8 +57,7 @@ public class PullRequestReviewService {
     MissionSubmission missionSubmission =
         MissionSubmission.builder().mission(mission).submitter(submitter).build();
 
-    MissionSubmission savedMissionSubmission =
-        missionSubmissionRepository.save(missionSubmission);
+    MissionSubmission savedMissionSubmission = missionSubmissionRepository.save(missionSubmission);
 
     PullRequestSubmission pullRequestSubmission =
         PullRequestSubmission.builder()
@@ -114,9 +114,9 @@ public class PullRequestReviewService {
     PullRequestReview savedReview = pullRequestReviewRepository.save(review);
 
     // PR 리뷰 작성 시 제출자에게 알림을 저장하고 SSE로 전송한다.
-    notificationEventService.notifySystem(
+    notificationEventService.notifyPrReviewCreated(
         pullRequestSubmission.getMissionSubmission().getSubmitter().getId(),
-        "PR 리뷰가 등록되었습니다: " + pullRequestSubmission.getTitle());
+        pullRequestSubmission.getTitle());
 
     return PullRequestReviewResponse.ReviewDetail.from(savedReview);
   }
@@ -128,6 +128,7 @@ public class PullRequestReviewService {
 
     // 리뷰 작성자 본인만 해당 리뷰를 승인 처리할 수 있다.
     validateReviewerOwner(review, request.reviewerId());
+    validateReviewCommented(review);
 
     review.approve();
 
@@ -141,6 +142,7 @@ public class PullRequestReviewService {
 
     // 리뷰 작성자 본인만 해당 리뷰를 반려 처리할 수 있다.
     validateReviewerOwner(review, request.reviewerId());
+    validateReviewCommented(review);
 
     review.reject();
 
@@ -194,8 +196,7 @@ public class PullRequestReviewService {
   private MissionSubmission getActiveMissionSubmission(Long submissionId) {
     return missionSubmissionRepository
         .findByIdAndIsDeletedFalse(submissionId)
-        .orElseThrow(
-            () -> new CustomException(ErrorCode.REVIEW_MISSION_SUBMISSION_NOT_FOUND));
+        .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_MISSION_SUBMISSION_NOT_FOUND));
   }
 
   private PullRequestSubmission getActivePullRequest(Long pullRequestId) {
@@ -253,6 +254,12 @@ public class PullRequestReviewService {
   private void validateReviewerOwner(PullRequestReview review, Long reviewerId) {
     if (!review.getReviewer().getId().equals(reviewerId)) {
       throw new CustomException(ErrorCode.REVIEW_DECISION_FORBIDDEN);
+    }
+  }
+
+  private void validateReviewCommented(PullRequestReview review) {
+    if (review.getStatus() != PullRequestReviewStatus.COMMENTED) {
+      throw new CustomException(ErrorCode.REVIEW_ALREADY_DECIDED);
     }
   }
 

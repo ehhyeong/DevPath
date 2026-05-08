@@ -6,9 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProjectInvitationRepository extends JpaRepository<ProjectInvitation, Long> {
 
-    boolean existsByProjectIdAndInviteeIdAndStatus(
-            Long projectId,
-            Long inviteeId,
-            ProjectInvitationStatus status
-    );
+  boolean existsByProjectIdAndInviteeIdAndStatus(
+      Long projectId, Long inviteeId, ProjectInvitationStatus status);
 }

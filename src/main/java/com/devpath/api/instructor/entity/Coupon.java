@@ -1,15 +1,14 @@
 package com.devpath.api.instructor.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "coupon")
@@ -20,35 +19,32 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 public class Coupon {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long instructorId;
+  @Column(nullable = false)
+  private Long instructorId;
 
-    @Column(unique = true, nullable = false)
-    private String couponCode;
+  @Column(unique = true, nullable = false)
+  private String couponCode;
 
-    @Column(nullable = false)
-    private String couponTitle;
+  @Column(nullable = false)
+  private String couponTitle;
 
-    private String discountType;
+  private String discountType;
 
-    private Long discountValue;
+  private Long discountValue;
 
-    private Long targetCourseId;
+  private Long targetCourseId;
 
-    private Integer maxUsageCount;
+  private Integer maxUsageCount;
 
-    @Builder.Default
-    private Integer usageCount = 0;
+  @Builder.Default private Integer usageCount = 0;
 
-    private LocalDateTime expiresAt;
+  private LocalDateTime expiresAt;
 
-    @Builder.Default
-    private Boolean isDeleted = false;
+  @Builder.Default private Boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 }

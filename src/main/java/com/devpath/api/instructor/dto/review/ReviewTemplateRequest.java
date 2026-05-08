@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReviewTemplateRequest {
 
-    @NotBlank
-    private String title;
+  @NotBlank private String title;
 
-    @NotBlank
-    private String content;
+  @NotBlank private String content;
 }

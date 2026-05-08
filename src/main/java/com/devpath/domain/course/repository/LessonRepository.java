@@ -11,13 +11,15 @@ import org.springframework.data.repository.query.Param;
 
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
-    List<Lesson> findAllBySectionSectionIdOrderByOrderIndexAsc(Long sectionId);
+  List<Lesson> findAllBySectionSectionIdOrderByOrderIndexAsc(Long sectionId);
 
-    List<Lesson> findAllByLessonIdInAndSectionCourseInstructorId(List<Long> lessonIds, Long instructorId);
+  List<Lesson> findAllByLessonIdInAndSectionCourseInstructorId(
+      List<Long> lessonIds, Long instructorId);
 
-    List<Lesson> findAllBySectionCourseCourseId(Long courseId);
+  List<Lesson> findAllBySectionCourseCourseId(Long courseId);
 
-    @Query("""
+  @Query(
+      """
         select l
         from Lesson l
         join fetch l.section s
@@ -28,28 +30,29 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
           and l.lessonType = :lessonType
         order by c.courseId asc, s.orderIndex asc, l.orderIndex asc, l.lessonId asc
         """)
-    List<Lesson> findPublishedLessonsByCourseIdsAndTypeInDisplayOrder(
-            @Param("courseIds") Collection<Long> courseIds,
-            @Param("lessonType") LessonType lessonType
-    );
+  List<Lesson> findPublishedLessonsByCourseIdsAndTypeInDisplayOrder(
+      @Param("courseIds") Collection<Long> courseIds, @Param("lessonType") LessonType lessonType);
 
-    @Query("""
+  @Query(
+      """
         select l
         from Lesson l
         where l.section.sectionId in :sectionIds
         order by l.section.sectionId asc, l.orderIndex asc, l.lessonId asc
         """)
-    List<Lesson> findAllBySectionIdsInDisplayOrder(@Param("sectionIds") Collection<Long> sectionIds);
+  List<Lesson> findAllBySectionIdsInDisplayOrder(@Param("sectionIds") Collection<Long> sectionIds);
 
-    @Query("""
+  @Query(
+      """
         select count(l)
         from Lesson l
         where l.section.course.instructorId = :instructorId
           and coalesce(l.isPublished, false) = true
         """)
-    long countBySectionCourseInstructorIdAndIsPublishedTrue(@Param("instructorId") Long instructorId);
+  long countBySectionCourseInstructorIdAndIsPublishedTrue(@Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
         select l
         from Lesson l
         join fetch l.section s
@@ -58,21 +61,23 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
           and coalesce(l.isPublished, false) = true
         order by c.courseId asc, l.orderIndex asc, l.lessonId asc
         """)
-    List<Lesson> findAllBySectionCourseInstructorIdAndIsPublishedTrue(@Param("instructorId") Long instructorId);
+  List<Lesson> findAllBySectionCourseInstructorIdAndIsPublishedTrue(
+      @Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
         select count(l)
         from Lesson l
         where l.section.course.courseId in :courseIds
           and coalesce(l.isPublished, false) = true
         """)
-    long countPublishedLessonsByCourseIds(@Param("courseIds") Collection<Long> courseIds);
+  long countPublishedLessonsByCourseIds(@Param("courseIds") Collection<Long> courseIds);
 
-    default List<Lesson> findAllBySectionSectionIdOrderBySortOrderAsc(Long sectionId) {
-        return findAllBySectionSectionIdOrderByOrderIndexAsc(sectionId);
-    }
+  default List<Lesson> findAllBySectionSectionIdOrderBySortOrderAsc(Long sectionId) {
+    return findAllBySectionSectionIdOrderByOrderIndexAsc(sectionId);
+  }
 
-    Optional<Lesson> findByLessonIdAndSectionCourseInstructorId(Long lessonId, Long instructorId);
+  Optional<Lesson> findByLessonIdAndSectionCourseInstructorId(Long lessonId, Long instructorId);
 
-    void deleteAllBySectionCourseCourseId(Long courseId);
+  void deleteAllBySectionCourseCourseId(Long courseId);
 }

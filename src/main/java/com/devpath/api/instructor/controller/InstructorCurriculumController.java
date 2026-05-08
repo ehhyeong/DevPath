@@ -91,8 +91,7 @@ public class InstructorCurriculumController {
   @Operation(summary = "레슨 삭제")
   @DeleteMapping("/lessons/{lessonId}")
   public ApiResponse<Void> deleteLesson(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long lessonId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long lessonId) {
     instructorCourseService.deleteLesson(userId, lessonId);
     return ApiResponse.success("레슨이 삭제되었습니다.", null);
   }

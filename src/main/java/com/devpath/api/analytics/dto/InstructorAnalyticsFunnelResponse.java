@@ -7,24 +7,24 @@ import lombok.Getter;
 
 public class InstructorAnalyticsFunnelResponse {
 
-    @Getter
-    @Builder
-    @Schema(description = "Funnel step item")
-    public static class StepItem {
+  @Getter
+  @Builder
+  @Schema(description = "Funnel step item")
+  public static class StepItem {
 
-        @Schema(description = "Step name", example = "ENROLLED")
-        private String stepName;
+    @Schema(description = "Step name", example = "ENROLLED")
+    private String stepName;
 
-        @Schema(description = "Step value", example = "120")
-        private Long value;
-    }
+    @Schema(description = "Step value", example = "120")
+    private Long value;
+  }
 
-    @Getter
-    @Builder
-    @Schema(description = "Funnel detail")
-    public static class Detail {
+  @Getter
+  @Builder
+  @Schema(description = "Funnel detail")
+  public static class Detail {
 
-        @Schema(description = "Funnel steps")
-        private List<StepItem> steps;
-    }
+    @Schema(description = "Funnel steps")
+    private List<StepItem> steps;
+  }
 }

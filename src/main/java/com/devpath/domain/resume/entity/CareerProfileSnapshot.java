@@ -44,11 +44,9 @@ public class CareerProfileSnapshot {
   private LocalDateTime createdAt;
 
   @Builder
-  private CareerProfileSnapshot(
-      CareerProfile careerProfile, String snapshotContent, String memo) {
+  private CareerProfileSnapshot(CareerProfile careerProfile, String snapshotContent, String memo) {
     this.careerProfile = careerProfile;
     this.snapshotContent = snapshotContent;
     this.memo = memo;
   }
 }
-

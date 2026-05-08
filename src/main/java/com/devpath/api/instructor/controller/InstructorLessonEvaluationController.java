@@ -28,8 +28,7 @@ public class InstructorLessonEvaluationController {
   @GetMapping("/{lessonId}/quiz-editor")
   @Operation(summary = "퀴즈 편집기 조회", description = "레슨별 퀴즈 편집 데이터를 조회합니다.")
   public ApiResponse<InstructorLessonEvaluationDto.QuizEditorResponse> getQuizEditor(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long lessonId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long lessonId) {
     return ApiResponse.ok(instructorLessonEvaluationService.getQuizEditor(userId, lessonId));
   }
 
@@ -58,8 +57,7 @@ public class InstructorLessonEvaluationController {
   @GetMapping("/{lessonId}/assignment-editor")
   @Operation(summary = "과제 편집기 조회", description = "레슨별 과제 편집 데이터를 조회합니다.")
   public ApiResponse<InstructorLessonEvaluationDto.AssignmentEditorResponse> getAssignmentEditor(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long lessonId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long lessonId) {
     return ApiResponse.ok(instructorLessonEvaluationService.getAssignmentEditor(userId, lessonId));
   }
 

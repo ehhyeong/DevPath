@@ -203,9 +203,7 @@ class CustomRoadmapCopyIntegrationTest {
     assertThat(detail.getNodes())
         .extracting(MyRoadmapDto.NodeItem::getStatus)
         .containsExactly(
-            DisplayNodeStatus.PENDING,
-            DisplayNodeStatus.LOCKED,
-            DisplayNodeStatus.LOCKED);
+            DisplayNodeStatus.PENDING, DisplayNodeStatus.LOCKED, DisplayNodeStatus.LOCKED);
   }
 
   @Test

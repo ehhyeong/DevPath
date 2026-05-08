@@ -16,28 +16,29 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CourseMaterialService {
 
-    private final CourseMaterialRepository courseMaterialRepository;
-    private final LessonRepository lessonRepository;
+  private final CourseMaterialRepository courseMaterialRepository;
+  private final LessonRepository lessonRepository;
 
-    // 특정 레슨의 학습자료 메타 목록을 표시 순서대로 조회한다.
-    @Transactional(readOnly = true)
-    public List<CourseMaterialResponse> getMaterials(Long lessonId) {
-        lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+  // 특정 레슨의 학습자료 메타 목록을 표시 순서대로 조회한다.
+  @Transactional(readOnly = true)
+  public List<CourseMaterialResponse> getMaterials(Long lessonId) {
+    lessonRepository
+        .findById(lessonId)
+        .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
 
-        return courseMaterialRepository
-                .findAllByLessonLessonIdOrderByDisplayOrderAsc(lessonId)
-                .stream()
-                .map(CourseMaterialResponse::from)
-                .collect(Collectors.toList());
-    }
+    return courseMaterialRepository.findAllByLessonLessonIdOrderByDisplayOrderAsc(lessonId).stream()
+        .map(CourseMaterialResponse::from)
+        .collect(Collectors.toList());
+  }
 
-    @Transactional(readOnly = true)
-    public CourseMaterial getDownloadMaterial(Long lessonId, Long materialId) {
-        lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+  @Transactional(readOnly = true)
+  public CourseMaterial getDownloadMaterial(Long lessonId, Long materialId) {
+    lessonRepository
+        .findById(lessonId)
+        .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
 
-        return courseMaterialRepository.findByMaterialIdAndLessonLessonId(materialId, lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-    }
+    return courseMaterialRepository
+        .findByMaterialIdAndLessonLessonId(materialId, lessonId)
+        .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+  }
 }

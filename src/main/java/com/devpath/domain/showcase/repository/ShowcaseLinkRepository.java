@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ShowcaseLinkRepository extends JpaRepository<ShowcaseLink, Long> {
 
-    List<ShowcaseLink> findAllByShowcaseId(Long showcaseId);
+  List<ShowcaseLink> findAllByShowcaseId(Long showcaseId);
 
-    void deleteAllByShowcaseId(Long showcaseId);
+  void deleteAllByShowcaseId(Long showcaseId);
 }

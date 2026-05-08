@@ -97,7 +97,9 @@ public class QuizAttemptResultResponse {
     @Schema(description = "정답 텍스트", example = "UsernamePasswordAuthenticationFilter")
     private String correctAnswerText;
 
-    @Schema(description = "문항 해설", example = "폼 로그인 기본 인증 필터는 UsernamePasswordAuthenticationFilter입니다.")
+    @Schema(
+        description = "문항 해설",
+        example = "폼 로그인 기본 인증 필터는 UsernamePasswordAuthenticationFilter입니다.")
     private String explanation;
 
     @Builder

@@ -1,8 +1,8 @@
 package com.devpath.domain.project.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity(name = "ProjectMentoringApplication")
 @Table(name = "mentoring_application")
@@ -11,23 +11,24 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class MentoringApplication {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "project_id", nullable = false)
-    private Long projectId;
+  @Column(name = "project_id", nullable = false)
+  private Long projectId;
 
-    @Column(name = "mentor_id", nullable = false)
-    private Long mentorId;
+  @Column(name = "mentor_id", nullable = false)
+  private Long mentorId;
 
-    @Column(columnDefinition = "TEXT")
-    private String message;
+  @Column(columnDefinition = "TEXT")
+  private String message;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private MentoringApplicationStatus status;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private MentoringApplicationStatus status;
 
-    @Column(name = "created_at", updatable = false)
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+  @Column(name = "created_at", updatable = false)
+  @Builder.Default
+  private LocalDateTime createdAt = LocalDateTime.now();
 }

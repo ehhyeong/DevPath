@@ -9,9 +9,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface PostRepository extends JpaRepository<Post, Long>, JpaSpecificationExecutor<Post> {
 
-    List<Post> findByCategoryAndIsDeletedFalseOrderByCreatedAtDesc(CommunityCategory category);
+  List<Post> findByCategoryAndIsDeletedFalseOrderByCreatedAtDesc(CommunityCategory category);
 
-    Optional<Post> findByIdAndIsDeletedFalse(Long postId);
+  Optional<Post> findByIdAndIsDeletedFalse(Long postId);
 
-    List<Post> findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
+  List<Post> findAllByUserIdAndIsDeletedFalseOrderByCreatedAtDesc(Long userId);
 }

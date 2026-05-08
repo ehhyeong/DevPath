@@ -29,75 +29,76 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class WorkspaceNoticeController {
 
-    private final WorkspaceNoticeService noticeService;
+  private final WorkspaceNoticeService noticeService;
 
-    @Operation(summary = "Publish workspace notice")
-    @PostMapping("/workspaces/{workspaceId}/notices")
-    public ResponseEntity<ApiResponse<NoticeResponse>> createNotice(
-            @Parameter(description = "Workspace ID") @PathVariable Long workspaceId,
-            @Valid @RequestBody NoticeCreateRequest request) {
-        NoticeResponse response = noticeService.createNotice(workspaceId, request);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Publish workspace notice")
+  @PostMapping("/workspaces/{workspaceId}/notices")
+  public ResponseEntity<ApiResponse<NoticeResponse>> createNotice(
+      @Parameter(description = "Workspace ID") @PathVariable Long workspaceId,
+      @Valid @RequestBody NoticeCreateRequest request) {
+    NoticeResponse response = noticeService.createNotice(workspaceId, request);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "List workspace notices")
-    @GetMapping("/workspaces/{workspaceId}/notices")
-    public ResponseEntity<ApiResponse<List<NoticeResponse>>> getNotices(
-            @Parameter(description = "Workspace ID") @PathVariable Long workspaceId) {
-        List<NoticeResponse> responses = noticeService.getNoticesByWorkspace(workspaceId);
-        return ResponseEntity.ok(ApiResponse.success(responses));
-    }
+  @Operation(summary = "List workspace notices")
+  @GetMapping("/workspaces/{workspaceId}/notices")
+  public ResponseEntity<ApiResponse<List<NoticeResponse>>> getNotices(
+      @Parameter(description = "Workspace ID") @PathVariable Long workspaceId) {
+    List<NoticeResponse> responses = noticeService.getNoticesByWorkspace(workspaceId);
+    return ResponseEntity.ok(ApiResponse.success(responses));
+  }
 
-    @Operation(summary = "Get workspace notice detail")
-    @GetMapping("/workspace-notices/{noticeId}")
-    public ResponseEntity<ApiResponse<NoticeResponse>> getNoticeDetail(
-            @Parameter(description = "Notice ID") @PathVariable Long noticeId) {
-        NoticeResponse response = noticeService.getNotice(noticeId);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Get workspace notice detail")
+  @GetMapping("/workspace-notices/{noticeId}")
+  public ResponseEntity<ApiResponse<NoticeResponse>> getNoticeDetail(
+      @Parameter(description = "Notice ID") @PathVariable Long noticeId) {
+    NoticeResponse response = noticeService.getNotice(noticeId);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "Update workspace notice")
-    @PatchMapping("/workspace-notices/{noticeId}")
-    public ResponseEntity<ApiResponse<NoticeResponse>> updateNotice(
-            @Parameter(description = "Notice ID") @PathVariable Long noticeId,
-            @Valid @RequestBody NoticeUpdateRequest request) {
-        NoticeResponse response = noticeService.updateNotice(noticeId, request);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
+  @Operation(summary = "Update workspace notice")
+  @PatchMapping("/workspace-notices/{noticeId}")
+  public ResponseEntity<ApiResponse<NoticeResponse>> updateNotice(
+      @Parameter(description = "Notice ID") @PathVariable Long noticeId,
+      @Valid @RequestBody NoticeUpdateRequest request) {
+    NoticeResponse response = noticeService.updateNotice(noticeId, request);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
 
-    @Operation(summary = "Delete workspace notice")
-    @DeleteMapping("/workspace-notices/{noticeId}")
-    public ResponseEntity<ApiResponse<Void>> deleteNotice(
-            @Parameter(description = "Notice ID") @PathVariable Long noticeId) {
-        noticeService.deleteNotice(noticeId);
-        return ResponseEntity.ok(ApiResponse.success("Workspace notice deleted.", null));
-    }
+  @Operation(summary = "Delete workspace notice")
+  @DeleteMapping("/workspace-notices/{noticeId}")
+  public ResponseEntity<ApiResponse<Void>> deleteNotice(
+      @Parameter(description = "Notice ID") @PathVariable Long noticeId) {
+    noticeService.deleteNotice(noticeId);
+    return ResponseEntity.ok(ApiResponse.success("Workspace notice deleted.", null));
+  }
 
-    @Operation(summary = "Mark workspace notice as read")
-    @PostMapping("/workspace-notices/{noticeId}/read")
-    public ResponseEntity<ApiResponse<Void>> markNoticeAsRead(
-            @Parameter(description = "Notice ID") @PathVariable Long noticeId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-        noticeService.markAsRead(noticeId, AuthenticationUtils.requireUserId(userId));
-        return ResponseEntity.ok(ApiResponse.success("Workspace notice marked as read.", null));
-    }
+  @Operation(summary = "Mark workspace notice as read")
+  @PostMapping("/workspace-notices/{noticeId}/read")
+  public ResponseEntity<ApiResponse<Void>> markNoticeAsRead(
+      @Parameter(description = "Notice ID") @PathVariable Long noticeId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    noticeService.markAsRead(noticeId, AuthenticationUtils.requireUserId(userId));
+    return ResponseEntity.ok(ApiResponse.success("Workspace notice marked as read.", null));
+  }
 
-    @Operation(summary = "List unread workspace notices")
-    @GetMapping("/workspaces/{workspaceId}/notices/unread")
-    public ResponseEntity<ApiResponse<List<NoticeResponse>>> getUnreadNotices(
-            @Parameter(description = "Workspace ID") @PathVariable Long workspaceId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-        List<NoticeResponse> responses =
-                noticeService.getUnreadNotices(workspaceId, AuthenticationUtils.requireUserId(userId));
-        return ResponseEntity.ok(ApiResponse.success(responses));
-    }
+  @Operation(summary = "List unread workspace notices")
+  @GetMapping("/workspaces/{workspaceId}/notices/unread")
+  public ResponseEntity<ApiResponse<List<NoticeResponse>>> getUnreadNotices(
+      @Parameter(description = "Workspace ID") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    List<NoticeResponse> responses =
+        noticeService.getUnreadNotices(workspaceId, AuthenticationUtils.requireUserId(userId));
+    return ResponseEntity.ok(ApiResponse.success(responses));
+  }
 
-    @Operation(summary = "Count unread workspace notices")
-    @GetMapping("/workspaces/{workspaceId}/notices/unread/count")
-    public ResponseEntity<ApiResponse<Long>> getUnreadNoticeCount(
-            @Parameter(description = "Workspace ID") @PathVariable Long workspaceId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-        long count = noticeService.getUnreadNoticeCount(workspaceId, AuthenticationUtils.requireUserId(userId));
-        return ResponseEntity.ok(ApiResponse.success(count));
-    }
+  @Operation(summary = "Count unread workspace notices")
+  @GetMapping("/workspaces/{workspaceId}/notices/unread/count")
+  public ResponseEntity<ApiResponse<Long>> getUnreadNoticeCount(
+      @Parameter(description = "Workspace ID") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    long count =
+        noticeService.getUnreadNoticeCount(workspaceId, AuthenticationUtils.requireUserId(userId));
+    return ResponseEntity.ok(ApiResponse.success(count));
+  }
 }

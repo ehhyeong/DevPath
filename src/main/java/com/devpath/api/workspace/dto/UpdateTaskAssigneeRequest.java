@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UpdateTaskAssigneeRequest {
 
-    @Schema(description = "담당자 ID (null이면 담당자 해제)", example = "2")
-    private Long assigneeId;
+  @Schema(description = "담당자 ID (null이면 담당자 해제)", example = "2")
+  private Long assigneeId;
 }

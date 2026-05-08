@@ -16,9 +16,7 @@ import lombok.NoArgsConstructor;
 public class UpdateQuizAnswerExplanationRequest {
 
   // Evaluation Swagger 문서화 기준에 맞춘 퀴즈 정답/해설 수정 요청 DTO다.
-  @Schema(
-      description = "문항 해설",
-      example = "JWT는 서버 세션 대신 토큰으로 인증 상태를 표현하는 stateless 방식에 적합합니다.")
+  @Schema(description = "문항 해설", example = "JWT는 서버 세션 대신 토큰으로 인증 상태를 표현하는 stateless 방식에 적합합니다.")
   private String explanation;
 
   @Schema(description = "AI 생성 문항일 경우 수정할 근거 타임스탬프", example = "00:10:15-00:11:03")

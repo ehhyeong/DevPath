@@ -12,8 +12,10 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Recovery plan create request")
 public class RecoveryPlanRequest {
 
-    @NotBlank(message = "Recovery plan details are required.")
-    @Size(max = 1000, message = "Recovery plan details must be 1000 characters or fewer.")
-    @Schema(description = "Recovery plan details", example = "Review for 30 minutes today, practice for 1 hour tomorrow.")
-    private String planDetails;
+  @NotBlank(message = "Recovery plan details are required.")
+  @Size(max = 1000, message = "Recovery plan details must be 1000 characters or fewer.")
+  @Schema(
+      description = "Recovery plan details",
+      example = "Review for 30 minutes today, practice for 1 hour tomorrow.")
+  private String planDetails;
 }

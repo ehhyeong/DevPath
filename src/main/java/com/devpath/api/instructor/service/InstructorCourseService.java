@@ -258,7 +258,8 @@ public class InstructorCourseService {
       throw new CustomException(ErrorCode.INVALID_INPUT);
     }
 
-    if (uniquePrerequisiteLessonIds.contains(null) || uniquePrerequisiteLessonIds.contains(lessonId)) {
+    if (uniquePrerequisiteLessonIds.contains(null)
+        || uniquePrerequisiteLessonIds.contains(lessonId)) {
       throw new CustomException(ErrorCode.INVALID_INPUT);
     }
 
@@ -366,9 +367,7 @@ public class InstructorCourseService {
   // 수강 대상을 전체 교체한다.
   @Transactional
   public void replaceTargetAudiences(
-      Long instructorId,
-      Long courseId,
-      InstructorCourseDto.ReplaceTargetAudiencesRequest request) {
+      Long instructorId, Long courseId, InstructorCourseDto.ReplaceTargetAudiencesRequest request) {
     validateAuthenticatedUser(instructorId);
 
     Course course = getOwnedCourse(instructorId, courseId);
@@ -487,7 +486,8 @@ public class InstructorCourseService {
       throw new CustomException(ErrorCode.RESOURCE_NOT_FOUND);
     }
 
-    Set<Long> actualLessonIds = lessons.stream().map(Lesson::getLessonId).collect(Collectors.toSet());
+    Set<Long> actualLessonIds =
+        lessons.stream().map(Lesson::getLessonId).collect(Collectors.toSet());
     Set<Long> requestedLessonIds =
         request.getLessonOrders().stream()
             .map(InstructorLessonDto.LessonOrderItem::getLessonId)
@@ -561,7 +561,8 @@ public class InstructorCourseService {
     Long targetCourseId = targetLesson.getSection().getCourse().getCourseId();
     boolean hasDifferentCourseLesson =
         lessons.stream()
-            .anyMatch(lesson -> !targetCourseId.equals(lesson.getSection().getCourse().getCourseId()));
+            .anyMatch(
+                lesson -> !targetCourseId.equals(lesson.getSection().getCourse().getCourseId()));
 
     if (hasDifferentCourseLesson) {
       throw new CustomException(ErrorCode.INVALID_INPUT);

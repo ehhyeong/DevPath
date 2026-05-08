@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UpdateSquadSettingsRequest {
 
-    @Size(max = 100, message = "스쿼드 이름은 100자 이하여야 합니다.")
-    private String name;
+  @Size(max = 100, message = "스쿼드 이름은 100자 이하여야 합니다.")
+  private String name;
 
-    private String description;
+  private String description;
 }

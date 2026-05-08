@@ -19,14 +19,12 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(
-        name = "instructor_subscription",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_instructor_subscription_channel_learner",
-                        columnNames = {"channel_id", "learner_id"}
-                )
-        }
-)
+    name = "instructor_subscription",
+    uniqueConstraints = {
+      @UniqueConstraint(
+          name = "uk_instructor_subscription_channel_learner",
+          columnNames = {"channel_id", "learner_id"})
+    })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -34,40 +32,40 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class InstructorSubscription {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "channel_id", nullable = false)
-    private Long channelId;
+  @Column(name = "channel_id", nullable = false)
+  private Long channelId;
 
-    @Column(name = "learner_id", nullable = false)
-    private Long learnerId;
+  @Column(name = "learner_id", nullable = false)
+  private Long learnerId;
 
-    @Builder.Default
-    @Column(name = "notification_enabled", nullable = false)
-    private boolean notificationEnabled = true;
+  @Builder.Default
+  @Column(name = "notification_enabled", nullable = false)
+  private boolean notificationEnabled = true;
 
-    @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
+  @Builder.Default
+  @Column(name = "is_deleted", nullable = false)
+  private Boolean isDeleted = false;
 
-    @CreatedDate
-    @Column(name = "subscribed_at", updatable = false)
-    private LocalDateTime subscribedAt;
+  @CreatedDate
+  @Column(name = "subscribed_at", updatable = false)
+  private LocalDateTime subscribedAt;
 
-    public void updateNotification(boolean notificationEnabled) {
-        this.notificationEnabled = notificationEnabled;
-    }
+  public void updateNotification(boolean notificationEnabled) {
+    this.notificationEnabled = notificationEnabled;
+  }
 
-    // Keep the row for re-subscribe flows instead of deleting it.
-    public void unsubscribe() {
-        this.isDeleted = true;
-        this.notificationEnabled = false;
-    }
+  // Keep the row for re-subscribe flows instead of deleting it.
+  public void unsubscribe() {
+    this.isDeleted = true;
+    this.notificationEnabled = false;
+  }
 
-    public void resubscribe() {
-        this.isDeleted = false;
-        this.notificationEnabled = true;
-    }
+  public void resubscribe() {
+    this.isDeleted = false;
+    this.notificationEnabled = true;
+  }
 }

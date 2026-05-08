@@ -49,8 +49,7 @@ public class UserController {
   @Operation(summary = "비밀번호 변경", description = "로그인한 사용자의 비밀번호를 변경합니다.")
   @PatchMapping("/me/password")
   public ResponseEntity<ApiResponse<Void>> changePassword(
-      @AuthenticationPrincipal Long userId,
-      @Valid @RequestBody UserPasswordChangeRequest request) {
+      @AuthenticationPrincipal Long userId, @Valid @RequestBody UserPasswordChangeRequest request) {
     userService.changePassword(userId, request);
     return ResponseEntity.ok(ApiResponse.success("비밀번호를 변경했습니다.", null));
   }
@@ -63,9 +62,7 @@ public class UserController {
   }
 
   // 회원가입 직후 온보딩 화면에서 기본 프로필과 기술 태그를 저장한다.
-  @Operation(
-      summary = "프로필 온보딩 저장",
-      description = "회원가입 직후 온보딩 과정에서 프로필과 기술 태그를 저장합니다.")
+  @Operation(summary = "프로필 온보딩 저장", description = "회원가입 직후 온보딩 과정에서 프로필과 기술 태그를 저장합니다.")
   @PostMapping("/profile/setup")
   public ResponseEntity<ApiResponse<Void>> setupProfile(
       @AuthenticationPrincipal Long userId, @Valid @RequestBody UserProfileSetupRequest request) {

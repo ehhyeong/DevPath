@@ -10,5 +10,6 @@ public interface RoadmapHubItemRepository extends JpaRepository<RoadmapHubItem, 
 
   // 허브 아이템을 섹션별 정렬 상태 그대로 읽어 오고 연결 로드맵도 같이 가져온다.
   @EntityGraph(attributePaths = "linkedRoadmap")
-  List<RoadmapHubItem> findAllBySectionIdInOrderBySectionIdAscSortOrderAscIdAsc(Collection<Long> sectionIds);
+  List<RoadmapHubItem> findAllBySectionIdInOrderBySectionIdAscSortOrderAscIdAsc(
+      Collection<Long> sectionIds);
 }

@@ -7,7 +7,7 @@ import lombok.Getter;
 @Builder
 public class UnansweredSummaryResponse {
 
-    private long unansweredQnaCount;
-    private long unansweredReviewCount;
-    private long totalUnansweredCount;
+  private long unansweredQnaCount;
+  private long unansweredReviewCount;
+  private long totalUnansweredCount;
 }

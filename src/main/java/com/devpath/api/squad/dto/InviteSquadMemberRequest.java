@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class InviteSquadMemberRequest {
 
-    @NotNull(message = "초대할 사용자 ID는 필수입니다.")
-    private Long inviteeId;
+  @NotNull(message = "초대할 사용자 ID는 필수입니다.")
+  private Long inviteeId;
 }

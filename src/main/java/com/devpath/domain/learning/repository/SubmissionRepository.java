@@ -11,23 +11,20 @@ import org.springframework.data.repository.query.Param;
 
 public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
-    Optional<Submission> findByIdAndIsDeletedFalse(Long id);
+  Optional<Submission> findByIdAndIsDeletedFalse(Long id);
 
-    List<Submission> findAllByAssignmentIdAndIsDeletedFalseOrderBySubmittedAtDesc(Long assignmentId);
+  List<Submission> findAllByAssignmentIdAndIsDeletedFalseOrderBySubmittedAtDesc(Long assignmentId);
 
-    List<Submission> findAllByLearnerIdAndIsDeletedFalseOrderBySubmittedAtDesc(Long learnerId);
+  List<Submission> findAllByLearnerIdAndIsDeletedFalseOrderBySubmittedAtDesc(Long learnerId);
 
-    Optional<Submission> findTopByAssignmentIdAndLearnerIdAndIsDeletedFalseOrderBySubmittedAtDesc(
-        Long assignmentId,
-        Long learnerId
-    );
+  Optional<Submission> findTopByAssignmentIdAndLearnerIdAndIsDeletedFalseOrderBySubmittedAtDesc(
+      Long assignmentId, Long learnerId);
 
-    List<Submission> findAllByAssignmentIdAndSubmissionStatusAndIsDeletedFalseOrderBySubmittedAtDesc(
-        Long assignmentId,
-        SubmissionStatus submissionStatus
-    );
+  List<Submission> findAllByAssignmentIdAndSubmissionStatusAndIsDeletedFalseOrderBySubmittedAtDesc(
+      Long assignmentId, SubmissionStatus submissionStatus);
 
-    @Query("""
+  @Query(
+      """
         select s
         from Submission s
         join fetch s.assignment a
@@ -37,7 +34,6 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
           and rn.nodeId in :nodeIds
         order by s.submittedAt desc
         """)
-    List<Submission> findAllByAssignmentRoadmapNodeNodeIdInAndIsDeletedFalseOrderBySubmittedAtDesc(
-        @Param("nodeIds") Collection<Long> nodeIds
-    );
+  List<Submission> findAllByAssignmentRoadmapNodeNodeIdInAndIsDeletedFalseOrderBySubmittedAtDesc(
+      @Param("nodeIds") Collection<Long> nodeIds);
 }

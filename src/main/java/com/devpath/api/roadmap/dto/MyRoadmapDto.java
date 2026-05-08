@@ -3,9 +3,9 @@ package com.devpath.api.roadmap.dto;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
-import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.DisplayNodeStatus;
 import com.devpath.domain.roadmap.entity.NodeStatus;
+import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNodeResource;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -79,7 +79,10 @@ public class MyRoadmapDto {
     public static Item from(CustomRoadmap entity, LocalDateTime lastStudiedAt) {
       return Item.builder()
           .customRoadmapId(entity.getId())
-          .originalRoadmapId(entity.getOriginalRoadmap() != null ? entity.getOriginalRoadmap().getRoadmapId() : null)
+          .originalRoadmapId(
+              entity.getOriginalRoadmap() != null
+                  ? entity.getOriginalRoadmap().getRoadmapId()
+                  : null)
           .title(entity.getTitle())
           .createdAt(entity.getCreatedAt())
           .updatedAt(entity.getUpdatedAt())
@@ -175,13 +178,16 @@ public class MyRoadmapDto {
                                   ? clearanceByNodeId.get(node.getOriginalNode().getNodeId())
                                   : null,
                               node.getOriginalNode() != null
-                                  ? resourcesByNodeId.getOrDefault(node.getOriginalNode().getNodeId(), List.of())
+                                  ? resourcesByNodeId.getOrDefault(
+                                      node.getOriginalNode().getNodeId(), List.of())
                                   : List.of(),
                               node.getOriginalNode() != null
-                                  ? requiredTagsByNodeId.getOrDefault(node.getOriginalNode().getNodeId(), List.of())
+                                  ? requiredTagsByNodeId.getOrDefault(
+                                      node.getOriginalNode().getNodeId(), List.of())
                                   : List.of(),
                               node.getOriginalNode() != null
-                                  ? requiredTagsSatisfiedByNodeId.get(node.getOriginalNode().getNodeId())
+                                  ? requiredTagsSatisfiedByNodeId.get(
+                                      node.getOriginalNode().getNodeId())
                                   : null))
                   .toList())
           .build();
@@ -296,16 +302,20 @@ public class MyRoadmapDto {
 
       if (isBuilderOrigin) {
         title = node.getBuilderModule().getTitle();
-        chips = node.getBuilderModule().getTopics() != null ? node.getBuilderModule().getTopics() : List.of();
+        chips =
+            node.getBuilderModule().getTopics() != null
+                ? node.getBuilderModule().getTopics()
+                : List.of();
         branchGroup = node.getBuilderBranchGroup();
         content = null;
         originalNodeId = null;
       } else {
         title = node.getOriginalNode().getTitle();
         String raw = node.getOriginalNode().getSubTopics();
-        chips = (raw != null && !raw.isBlank())
-            ? Arrays.stream(raw.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList()
-            : List.of();
+        chips =
+            (raw != null && !raw.isBlank())
+                ? Arrays.stream(raw.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList()
+                : List.of();
         branchGroup = node.getOriginalNode().getBranchGroup();
         content = node.getOriginalNode().getContent();
         originalNodeId = node.getOriginalNode().getNodeId();
@@ -317,20 +327,26 @@ public class MyRoadmapDto {
       } else if (node.getStatus() == NodeStatus.IN_PROGRESS) {
         displayStatus = DisplayNodeStatus.IN_PROGRESS;
       } else {
-        boolean isLocked = !prerequisiteCustomNodeIds.isEmpty()
-            && prerequisiteCustomNodeIds.stream().anyMatch(
-                prereqId -> statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
-                    != NodeStatus.COMPLETED);
+        boolean isLocked =
+            !prerequisiteCustomNodeIds.isEmpty()
+                && prerequisiteCustomNodeIds.stream()
+                    .anyMatch(
+                        prereqId ->
+                            statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
+                                != NodeStatus.COMPLETED);
         displayStatus = isLocked ? DisplayNodeStatus.LOCKED : DisplayNodeStatus.PENDING;
       }
 
-      double lessonRate = clearance != null && clearance.getLessonCompletionRate() != null
-          ? clearance.getLessonCompletionRate().doubleValue() : 0.0;
-      boolean tagsSatisfied = isBuilderOrigin
-          || requiredTags.isEmpty()
-          || (requiredTagsSatisfied != null
-              ? requiredTagsSatisfied
-              : clearance != null && Boolean.TRUE.equals(clearance.getRequiredTagsSatisfied()));
+      double lessonRate =
+          clearance != null && clearance.getLessonCompletionRate() != null
+              ? clearance.getLessonCompletionRate().doubleValue()
+              : 0.0;
+      boolean tagsSatisfied =
+          isBuilderOrigin
+              || requiredTags.isEmpty()
+              || (requiredTagsSatisfied != null
+                  ? requiredTagsSatisfied
+                  : clearance != null && Boolean.TRUE.equals(clearance.getRequiredTagsSatisfied()));
 
       return NodeItem.builder()
           .customNodeId(node.getId())

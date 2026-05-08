@@ -15,25 +15,25 @@ import lombok.NoArgsConstructor;
 @Schema(description = "AI 맞춤 성장 제안 응답")
 public class DashboardGrowthRecommendationResponse {
 
-    @Schema(description = "AI 역량 분석 텍스트")
-    private String analysisText;
+  @Schema(description = "AI 역량 분석 텍스트")
+  private String analysisText;
 
-    @Schema(description = "추천 항목 목록")
-    private List<RecommendationItem> recommendations;
+  @Schema(description = "추천 항목 목록")
+  private List<RecommendationItem> recommendations;
 
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
-    public static class RecommendationItem {
+  @Getter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor(access = AccessLevel.PRIVATE)
+  public static class RecommendationItem {
 
-        @Schema(description = "추천 강의명", example = "Advanced SQL & Tuning")
-        private String courseTitle;
+    @Schema(description = "추천 강의명", example = "Advanced SQL & Tuning")
+    private String courseTitle;
 
-        @Schema(description = "매칭률 상승 수치 (%)", example = "20")
-        private int matchRateIncrease;
+    @Schema(description = "매칭률 상승 수치 (%)", example = "20")
+    private int matchRateIncrease;
 
-        @Schema(description = "Font Awesome 아이콘 클래스", example = "fa-database")
-        private String iconClass;
-    }
+    @Schema(description = "Font Awesome 아이콘 클래스", example = "fa-database")
+    private String iconClass;
+  }
 }

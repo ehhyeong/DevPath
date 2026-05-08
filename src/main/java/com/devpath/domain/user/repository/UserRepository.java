@@ -8,13 +8,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findByEmail(String email);
+  Optional<User> findByEmail(String email);
 
-    boolean existsByEmail(String email);
+  boolean existsByEmail(String email);
 
-    // 관리자 계정 목록은 최신 가입순으로 조회한다.
-    List<User> findAllByOrderByCreatedAtDesc();
+  // 관리자 계정 목록은 최신 가입순으로 조회한다.
+  List<User> findAllByOrderByCreatedAtDesc();
 
-    // 운영 화면 필터를 위해 계정 상태별 목록 조회를 추가한다.
-    List<User> findAllByAccountStatusOrderByCreatedAtDesc(AccountStatus accountStatus);
+  // 운영 화면 필터를 위해 계정 상태별 목록 조회를 추가한다.
+  List<User> findAllByAccountStatusOrderByCreatedAtDesc(AccountStatus accountStatus);
 }

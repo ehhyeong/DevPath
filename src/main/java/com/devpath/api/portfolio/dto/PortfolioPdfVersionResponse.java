@@ -10,21 +10,21 @@ import lombok.Getter;
 @Builder
 public class PortfolioPdfVersionResponse {
 
-    private Long versionId;
-    private Long portfolioId;
-    private int version;
-    private PortfolioPdfStatus status;
-    private String filePath;
-    private LocalDateTime createdAt;
+  private Long versionId;
+  private Long portfolioId;
+  private int version;
+  private PortfolioPdfStatus status;
+  private String filePath;
+  private LocalDateTime createdAt;
 
-    public static PortfolioPdfVersionResponse from(PortfolioPdfVersion pdfVersion) {
-        return PortfolioPdfVersionResponse.builder()
-                .versionId(pdfVersion.getId())
-                .portfolioId(pdfVersion.getPortfolioId())
-                .version(pdfVersion.getVersion())
-                .status(pdfVersion.getStatus())
-                .filePath(pdfVersion.getFilePath())
-                .createdAt(pdfVersion.getCreatedAt())
-                .build();
-    }
+  public static PortfolioPdfVersionResponse from(PortfolioPdfVersion pdfVersion) {
+    return PortfolioPdfVersionResponse.builder()
+        .versionId(pdfVersion.getId())
+        .portfolioId(pdfVersion.getPortfolioId())
+        .version(pdfVersion.getVersion())
+        .status(pdfVersion.getStatus())
+        .filePath(pdfVersion.getFilePath())
+        .createdAt(pdfVersion.getCreatedAt())
+        .build();
+  }
 }

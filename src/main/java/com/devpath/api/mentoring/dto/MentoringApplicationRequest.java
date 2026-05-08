@@ -13,8 +13,7 @@ public class MentoringApplicationRequest {
   public record Create(
 
       // 현재 인증 사용자 연동 전 Swagger 테스트를 위해 applicantId를 요청으로 받는다.
-      @Schema(description = "신청자 사용자 ID", example = "2")
-          @NotNull(message = "신청자 ID는 필수입니다.")
+      @Schema(description = "신청자 사용자 ID", example = "2") @NotNull(message = "신청자 ID는 필수입니다.")
           Long applicantId,
 
       // 멘토에게 전달할 신청 메시지다.
@@ -27,16 +26,14 @@ public class MentoringApplicationRequest {
   public record Approve(
 
       // 공고 작성자 검증을 위해 멘토 ID를 받는다.
-      @Schema(description = "멘토 사용자 ID", example = "1")
-          @NotNull(message = "멘토 ID는 필수입니다.")
+      @Schema(description = "멘토 사용자 ID", example = "1") @NotNull(message = "멘토 ID는 필수입니다.")
           Long mentorId) {}
 
   @Schema(name = "MentoringApplicationRejectRequest", description = "멘토링 신청 거절 요청")
   public record Reject(
 
       // 공고 작성자 검증을 위해 멘토 ID를 받는다.
-      @Schema(description = "멘토 사용자 ID", example = "1")
-          @NotNull(message = "멘토 ID는 필수입니다.")
+      @Schema(description = "멘토 사용자 ID", example = "1") @NotNull(message = "멘토 ID는 필수입니다.")
           Long mentorId,
 
       // 신청자에게 전달할 거절 사유다.

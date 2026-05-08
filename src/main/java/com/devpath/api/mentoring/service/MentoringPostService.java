@@ -64,7 +64,8 @@ public class MentoringPostService {
     MentoringPost post = getActivePost(postId);
 
     // setter 대신 Entity의 의미 있는 비즈니스 메서드로 상태를 변경한다.
-    post.update(request.title(), request.content(), request.requiredStacks(), request.maxParticipants());
+    post.update(
+        request.title(), request.content(), request.requiredStacks(), request.maxParticipants());
 
     return MentoringPostResponse.Detail.from(post);
   }

@@ -25,27 +25,25 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class DmMessage {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long roomId;
+  @Column(nullable = false)
+  private Long roomId;
 
-    @Column(nullable = false)
-    private Long senderId;
+  @Column(nullable = false)
+  private Long senderId;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String message;
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String message;
 
-    @Builder.Default
-    private Boolean isDeleted = false;
+  @Builder.Default private Boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    // 메시지는 soft delete 처리한다.
-    public void delete() {
-        this.isDeleted = true;
-    }
+  // 메시지는 soft delete 처리한다.
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

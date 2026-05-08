@@ -167,17 +167,14 @@ public class Course {
     this.videoAssetKey = videoAssetKey;
     this.durationSeconds = durationSeconds;
   }
-    /**
-     * 강의 승인 처리 (상태를 PUBLISHED로 변경)
-     */
-    public void approve() {
-        this.changeStatus(CourseStatus.PUBLISHED);
-    }
 
-    /**
-     * 강의 반려 처리 (상태를 다시 DRAFT로 돌려보냄)
-     */
-    public void reject() {
-        this.changeStatus(CourseStatus.DRAFT);
-    }
+  /** 강의 승인 처리 (상태를 PUBLISHED로 변경) */
+  public void approve() {
+    this.changeStatus(CourseStatus.PUBLISHED);
+  }
+
+  /** 강의 반려 처리 (상태를 다시 DRAFT로 돌려보냄) */
+  public void reject() {
+    this.changeStatus(CourseStatus.DRAFT);
+  }
 }

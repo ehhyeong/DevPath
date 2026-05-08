@@ -25,25 +25,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProofCardShareController {
 
-    // Proof Card 공유 서비스다.
-    private final ProofCardShareService proofCardShareService;
+  // Proof Card 공유 서비스다.
+  private final ProofCardShareService proofCardShareService;
 
-    // 공유 링크를 생성한다.
-    @Operation(summary = "Proof Card 공유 링크 생성", description = "특정 Proof Card의 공유 링크를 생성합니다.")
-    @PostMapping
-    public ResponseEntity<ApiResponse<ProofCardShareResponse.Detail>> create(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Valid @RequestBody ProofCardShareRequest.Create request
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(proofCardShareService.create(userId, request)));
-    }
+  // 공유 링크를 생성한다.
+  @Operation(summary = "Proof Card 공유 링크 생성", description = "특정 Proof Card의 공유 링크를 생성합니다.")
+  @PostMapping
+  public ResponseEntity<ApiResponse<ProofCardShareResponse.Detail>> create(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody ProofCardShareRequest.Create request) {
+    return ResponseEntity.ok(ApiResponse.ok(proofCardShareService.create(userId, request)));
+  }
 
-    // 공유 토큰으로 Proof Card를 조회한다.
-    @Operation(summary = "공유 링크 조회", description = "공유 토큰으로 공개된 Proof Card를 조회합니다.")
-    @GetMapping("/{shareToken}")
-    public ResponseEntity<ApiResponse<ProofCardShareResponse.PublicDetail>> getSharedProofCard(
-        @Parameter(description = "공유 토큰", example = "proof-share-token-123") @PathVariable String shareToken
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(proofCardShareService.getSharedProofCard(shareToken)));
-    }
+  // 공유 토큰으로 Proof Card를 조회한다.
+  @Operation(summary = "공유 링크 조회", description = "공유 토큰으로 공개된 Proof Card를 조회합니다.")
+  @GetMapping("/{shareToken}")
+  public ResponseEntity<ApiResponse<ProofCardShareResponse.PublicDetail>> getSharedProofCard(
+      @Parameter(description = "공유 토큰", example = "proof-share-token-123") @PathVariable
+          String shareToken) {
+    return ResponseEntity.ok(ApiResponse.ok(proofCardShareService.getSharedProofCard(shareToken)));
+  }
 }

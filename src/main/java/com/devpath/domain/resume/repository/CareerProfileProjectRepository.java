@@ -11,4 +11,3 @@ public interface CareerProfileProjectRepository extends JpaRepository<CareerProf
   List<CareerProfileProject> findAllByCareerProfile_IdAndIsDeletedFalseOrderByCreatedAtDesc(
       Long profileId);
 }
-

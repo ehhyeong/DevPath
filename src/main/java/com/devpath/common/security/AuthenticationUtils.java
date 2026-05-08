@@ -5,13 +5,12 @@ import com.devpath.common.exception.ErrorCode;
 
 public final class AuthenticationUtils {
 
-    private AuthenticationUtils() {
-    }
+  private AuthenticationUtils() {}
 
-    public static Long requireUserId(Long userId) {
-        if (userId == null) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-        return userId;
+  public static Long requireUserId(Long userId) {
+    if (userId == null) {
+      throw new CustomException(ErrorCode.UNAUTHORIZED);
     }
+    return userId;
+  }
 }

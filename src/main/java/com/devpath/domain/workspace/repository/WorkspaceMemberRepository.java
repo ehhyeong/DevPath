@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember, Long> {
 
-    List<WorkspaceMember> findAllByLearnerId(Long learnerId);
+  List<WorkspaceMember> findAllByLearnerId(Long learnerId);
 
-    List<WorkspaceMember> findAllByWorkspaceId(Long workspaceId);
+  List<WorkspaceMember> findAllByWorkspaceId(Long workspaceId);
 
-    List<WorkspaceMember> findAllByWorkspaceIdIn(Collection<Long> workspaceIds);
+  List<WorkspaceMember> findAllByWorkspaceIdIn(Collection<Long> workspaceIds);
 
-    boolean existsByWorkspaceIdAndLearnerId(Long workspaceId, Long learnerId);
+  boolean existsByWorkspaceIdAndLearnerId(Long workspaceId, Long learnerId);
 }

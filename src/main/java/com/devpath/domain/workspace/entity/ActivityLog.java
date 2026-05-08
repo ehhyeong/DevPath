@@ -27,24 +27,24 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 public class ActivityLog {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "workspace_id", nullable = false)
-    private Long workspaceId;
+  @Column(name = "workspace_id", nullable = false)
+  private Long workspaceId;
 
-    @Column(name = "actor_id", nullable = false)
-    private Long actorId;
+  @Column(name = "actor_id", nullable = false)
+  private Long actorId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "activity_type", nullable = false)
-    private ActivityLogType activityType;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "activity_type", nullable = false)
+  private ActivityLogType activityType;
 
-    @Column(nullable = false)
-    private String description;
+  @Column(nullable = false)
+  private String description;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 }

@@ -6,4 +6,3 @@ public record LearningSkillGap(
     Boolean owned,
     Integer priorityScore,
     String reason) {}
-

@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
-    Optional<Comment> findByIdAndIsDeletedFalse(Long commentId);
+  Optional<Comment> findByIdAndIsDeletedFalse(Long commentId);
 
-    List<Comment> findAllByPostIdAndIsDeletedFalseOrderByCreatedAtAsc(Long postId);
+  List<Comment> findAllByPostIdAndIsDeletedFalseOrderByCreatedAtAsc(Long postId);
 
-    List<Comment> findAllByParentCommentIdAndIsDeletedFalseOrderByCreatedAtAsc(Long parentCommentId);
+  List<Comment> findAllByParentCommentIdAndIsDeletedFalseOrderByCreatedAtAsc(Long parentCommentId);
 }

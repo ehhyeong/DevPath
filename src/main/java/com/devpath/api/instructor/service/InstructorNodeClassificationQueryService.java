@@ -134,7 +134,8 @@ public class InstructorNodeClassificationQueryService {
 
   // 현재 로그인한 강사가 소유한 강의인지 검증하며 조회한다.
   private Course getOwnedCourse(Long instructorId, Long courseId) {
-    return courseRepository.findByCourseIdAndInstructorId(courseId, instructorId)
+    return courseRepository
+        .findByCourseIdAndInstructorId(courseId, instructorId)
         .orElseGet(
             () -> {
               if (courseRepository.existsById(courseId)) {

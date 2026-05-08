@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UpdateProjectVisibilityRequest {
 
-    @NotNull(message = "공개 범위는 필수입니다.")
-    private ProjectVisibility visibility;
+  @NotNull(message = "공개 범위는 필수입니다.")
+  private ProjectVisibility visibility;
 }

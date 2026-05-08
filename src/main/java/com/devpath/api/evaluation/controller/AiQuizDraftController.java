@@ -41,8 +41,7 @@ public class AiQuizDraftController {
       @Parameter(description = "강사 ID", example = "3") @RequestParam Long userId,
       @Valid @RequestBody CreateAiQuizDraftRequest request) {
     return ResponseEntity.ok(
-        ApiResponse.success(
-            "AI 퀴즈 초안이 생성되었습니다.", aiQuizDraftService.createDraft(userId, request)));
+        ApiResponse.success("AI 퀴즈 초안이 생성되었습니다.", aiQuizDraftService.createDraft(userId, request)));
   }
 
   @Operation(
@@ -56,8 +55,7 @@ public class AiQuizDraftController {
       @Valid @RequestBody AdoptAiQuizDraftRequest request) {
     return ResponseEntity.ok(
         ApiResponse.success(
-            "AI 퀴즈 초안이 채택되었습니다.",
-            aiQuizDraftService.adoptDraft(userId, draftId, request)));
+            "AI 퀴즈 초안이 채택되었습니다.", aiQuizDraftService.adoptDraft(userId, draftId, request)));
   }
 
   @Operation(
@@ -71,8 +69,7 @@ public class AiQuizDraftController {
       @Valid @RequestBody RejectAiQuizDraftRequest request) {
     return ResponseEntity.ok(
         ApiResponse.success(
-            "AI 퀴즈 초안이 거부되었습니다.",
-            aiQuizDraftService.rejectDraft(userId, draftId, request)));
+            "AI 퀴즈 초안이 거부되었습니다.", aiQuizDraftService.rejectDraft(userId, draftId, request)));
   }
 
   @Operation(
@@ -86,8 +83,7 @@ public class AiQuizDraftController {
       @Valid @RequestBody UpdateAiQuizDraftRequest request) {
     return ResponseEntity.ok(
         ApiResponse.success(
-            "AI 퀴즈 초안이 수정되었습니다.",
-            aiQuizDraftService.updateDraft(userId, draftId, request)));
+            "AI 퀴즈 초안이 수정되었습니다.", aiQuizDraftService.updateDraft(userId, draftId, request)));
   }
 
   @Operation(

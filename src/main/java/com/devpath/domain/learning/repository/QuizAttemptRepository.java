@@ -10,21 +10,18 @@ import org.springframework.data.repository.query.Param;
 
 public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> {
 
-    Optional<QuizAttempt> findByIdAndIsDeletedFalse(Long id);
+  Optional<QuizAttempt> findByIdAndIsDeletedFalse(Long id);
 
-    Optional<QuizAttempt> findTopByQuizIdAndLearnerIdAndIsDeletedFalseOrderByAttemptNumberDesc(
-        Long quizId,
-        Long learnerId
-    );
+  Optional<QuizAttempt> findTopByQuizIdAndLearnerIdAndIsDeletedFalseOrderByAttemptNumberDesc(
+      Long quizId, Long learnerId);
 
-    boolean existsByQuizIdAndLearnerIdAndCompletedAtIsNotNullAndIsPassedTrueAndIsDeletedFalse(
-        Long quizId,
-        Long learnerId
-    );
+  boolean existsByQuizIdAndLearnerIdAndCompletedAtIsNotNullAndIsPassedTrueAndIsDeletedFalse(
+      Long quizId, Long learnerId);
 
-    List<QuizAttempt> findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(Long learnerId);
+  List<QuizAttempt> findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(Long learnerId);
 
-    @Query("""
+  @Query(
+      """
         select qa
         from QuizAttempt qa
         join fetch qa.quiz q
@@ -34,7 +31,6 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
           and rn.nodeId in :nodeIds
         order by qa.createdAt desc
         """)
-    List<QuizAttempt> findAllByQuizRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(
-        @Param("nodeIds") Collection<Long> nodeIds
-    );
+  List<QuizAttempt> findAllByQuizRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(
+      @Param("nodeIds") Collection<Long> nodeIds);
 }

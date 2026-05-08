@@ -27,29 +27,28 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class InstructorNotification {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long instructorId;
+  @Column(nullable = false)
+  private Long instructorId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private InstructorNotificationType type;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 30)
+  private InstructorNotificationType type;
 
-    @Column(nullable = false)
-    private String message;
+  @Column(nullable = false)
+  private String message;
 
-    @Builder.Default
-    @Column(name = "is_read", nullable = false)
-    private Boolean isRead = false;
+  @Builder.Default
+  @Column(name = "is_read", nullable = false)
+  private Boolean isRead = false;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    // 알림 읽음 상태를 명시적으로 변경한다.
-    public void markAsRead() {
-        this.isRead = true;
-    }
+  // 알림 읽음 상태를 명시적으로 변경한다.
+  public void markAsRead() {
+    this.isRead = true;
+  }
 }

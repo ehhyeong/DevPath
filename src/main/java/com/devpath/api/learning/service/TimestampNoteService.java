@@ -20,119 +20,129 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TimestampNoteService {
 
-    private final TimestampNoteRepository timestampNoteRepository;
-    private final LessonRepository lessonRepository;
-    private final UserRepository userRepository;
+  private final TimestampNoteRepository timestampNoteRepository;
+  private final LessonRepository lessonRepository;
+  private final UserRepository userRepository;
 
-    @Transactional
-    public TimestampNoteResponse createNote(Long userId, Long lessonId, TimestampNoteRequest.Create request) {
-        Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+  @Transactional
+  public TimestampNoteResponse createNote(
+      Long userId, Long lessonId, TimestampNoteRequest.Create request) {
+    Lesson lesson =
+        lessonRepository
+            .findById(lessonId)
+            .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        TimestampNote note = TimestampNote.builder()
-                .user(user)
-                .lesson(lesson)
-                .timestampSecond(resolveTimestampSecond(request.getTimestampSecond(), request.getTimestampText()))
-                .content(request.getContent())
-                .build();
+    TimestampNote note =
+        TimestampNote.builder()
+            .user(user)
+            .lesson(lesson)
+            .timestampSecond(
+                resolveTimestampSecond(request.getTimestampSecond(), request.getTimestampText()))
+            .content(request.getContent())
+            .build();
 
-        return TimestampNoteResponse.from(timestampNoteRepository.save(note));
+    return TimestampNoteResponse.from(timestampNoteRepository.save(note));
+  }
+
+  @Transactional(readOnly = true)
+  public List<TimestampNoteResponse> getNotes(Long userId, Long lessonId) {
+    return timestampNoteRepository
+        .findByUserIdAndLessonLessonIdAndIsDeletedFalseOrderByTimestampSecondAsc(userId, lessonId)
+        .stream()
+        .map(TimestampNoteResponse::from)
+        .collect(Collectors.toList());
+  }
+
+  @Transactional
+  public TimestampNoteResponse updateNote(
+      Long userId, Long lessonId, Long noteId, TimestampNoteRequest.Update request) {
+    TimestampNote note =
+        timestampNoteRepository
+            .findByIdAndUserIdAndIsDeletedFalse(noteId, userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND));
+
+    validateLessonScope(note, lessonId);
+
+    note.updateContent(
+        resolveTimestampSecond(request.getTimestampSecond(), request.getTimestampText()),
+        request.getContent());
+
+    return TimestampNoteResponse.from(note);
+  }
+
+  @Transactional
+  public void deleteNote(Long userId, Long lessonId, Long noteId) {
+    TimestampNote note =
+        timestampNoteRepository
+            .findByIdAndUserIdAndIsDeletedFalse(noteId, userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND));
+
+    // 한글 주석: 삭제도 수정과 동일하게 lessonId 범위를 검증해 path semantics를 맞춘다.
+    validateLessonScope(note, lessonId);
+    note.delete();
+  }
+
+  private void validateLessonScope(TimestampNote note, Long lessonId) {
+    if (!note.getLesson().getLessonId().equals(lessonId)) {
+      throw new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND);
+    }
+  }
+
+  private Integer resolveTimestampSecond(Integer timestampSecond, String timestampText) {
+    if (timestampSecond != null) {
+      return normalizeTimestampSecond(timestampSecond);
     }
 
-    @Transactional(readOnly = true)
-    public List<TimestampNoteResponse> getNotes(Long userId, Long lessonId) {
-        return timestampNoteRepository
-                .findByUserIdAndLessonLessonIdAndIsDeletedFalseOrderByTimestampSecondAsc(userId, lessonId)
-                .stream()
-                .map(TimestampNoteResponse::from)
-                .collect(Collectors.toList());
+    if (timestampText != null && !timestampText.isBlank()) {
+      return parseTimestampText(timestampText);
     }
 
-    @Transactional
-    public TimestampNoteResponse updateNote(Long userId, Long lessonId, Long noteId, TimestampNoteRequest.Update request) {
-        TimestampNote note = timestampNoteRepository
-                .findByIdAndUserIdAndIsDeletedFalse(noteId, userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND));
+    return 0;
+  }
 
-        validateLessonScope(note, lessonId);
+  private Integer normalizeTimestampSecond(Integer timestampSecond) {
+    if (timestampSecond == null || timestampSecond < 0) {
+      return 0;
+    }
+    return timestampSecond;
+  }
 
-        note.updateContent(
-                resolveTimestampSecond(request.getTimestampSecond(), request.getTimestampText()),
-                request.getContent()
-        );
+  private Integer parseTimestampText(String timestampText) {
+    String normalizedText = timestampText == null ? "" : timestampText.trim();
 
-        return TimestampNoteResponse.from(note);
+    if (normalizedText.isEmpty()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "타임스탬프 문자열이 비어 있습니다.");
     }
 
-    @Transactional
-    public void deleteNote(Long userId, Long lessonId, Long noteId) {
-        TimestampNote note = timestampNoteRepository
-                .findByIdAndUserIdAndIsDeletedFalse(noteId, userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND));
-
-        // 한글 주석: 삭제도 수정과 동일하게 lessonId 범위를 검증해 path semantics를 맞춘다.
-        validateLessonScope(note, lessonId);
-        note.delete();
+    if (normalizedText.matches("\\d+")) {
+      return normalizeTimestampSecond(Integer.parseInt(normalizedText));
     }
 
-    private void validateLessonScope(TimestampNote note, Long lessonId) {
-        if (!note.getLesson().getLessonId().equals(lessonId)) {
-            throw new CustomException(ErrorCode.TIMESTAMP_NOTE_NOT_FOUND);
-        }
+    String[] parts = normalizedText.split(":");
+    if (parts.length != 2 && parts.length != 3) {
+      throw new CustomException(
+          ErrorCode.INVALID_INPUT, "타임스탬프 형식은 초, mm:ss, hh:mm:ss 중 하나여야 합니다.");
     }
 
-    private Integer resolveTimestampSecond(Integer timestampSecond, String timestampText) {
-        if (timestampSecond != null) {
-            return normalizeTimestampSecond(timestampSecond);
-        }
+    int totalSeconds = 0;
+    for (int index = 0; index < parts.length; index++) {
+      String part = parts[index].trim();
+      if (!part.matches("\\d+")) {
+        throw new CustomException(ErrorCode.INVALID_INPUT, "타임스탬프에는 숫자만 사용할 수 있습니다.");
+      }
 
-        if (timestampText != null && !timestampText.isBlank()) {
-            return parseTimestampText(timestampText);
-        }
+      int value = Integer.parseInt(part);
+      if (index > 0 && value >= 60) {
+        throw new CustomException(ErrorCode.INVALID_INPUT, "분과 초는 60 미만이어야 합니다.");
+      }
 
-        return 0;
+      totalSeconds = (totalSeconds * 60) + value;
     }
 
-    private Integer normalizeTimestampSecond(Integer timestampSecond) {
-        if (timestampSecond == null || timestampSecond < 0) {
-            return 0;
-        }
-        return timestampSecond;
-    }
-
-    private Integer parseTimestampText(String timestampText) {
-        String normalizedText = timestampText == null ? "" : timestampText.trim();
-
-        if (normalizedText.isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT, "타임스탬프 문자열이 비어 있습니다.");
-        }
-
-        if (normalizedText.matches("\\d+")) {
-            return normalizeTimestampSecond(Integer.parseInt(normalizedText));
-        }
-
-        String[] parts = normalizedText.split(":");
-        if (parts.length != 2 && parts.length != 3) {
-            throw new CustomException(ErrorCode.INVALID_INPUT, "타임스탬프 형식은 초, mm:ss, hh:mm:ss 중 하나여야 합니다.");
-        }
-
-        int totalSeconds = 0;
-        for (int index = 0; index < parts.length; index++) {
-            String part = parts[index].trim();
-            if (!part.matches("\\d+")) {
-                throw new CustomException(ErrorCode.INVALID_INPUT, "타임스탬프에는 숫자만 사용할 수 있습니다.");
-            }
-
-            int value = Integer.parseInt(part);
-            if (index > 0 && value >= 60) {
-                throw new CustomException(ErrorCode.INVALID_INPUT, "분과 초는 60 미만이어야 합니다.");
-            }
-
-            totalSeconds = (totalSeconds * 60) + value;
-        }
-
-        return normalizeTimestampSecond(totalSeconds);
-    }
+    return normalizeTimestampSecond(totalSeconds);
+  }
 }

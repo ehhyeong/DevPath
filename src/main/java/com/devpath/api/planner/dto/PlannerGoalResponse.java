@@ -10,20 +10,20 @@ import lombok.Getter;
 @Builder
 @Schema(description = "학습 플래너 목표 응답 DTO")
 public class PlannerGoalResponse {
-    @Schema(description = "목표 ID", example = "1")
-    private Long id;
+  @Schema(description = "목표 ID", example = "1")
+  private Long id;
 
-    @Schema(description = "목표 타입", example = "WEEKLY_NODE_CLEAR")
-    private PlannerGoalType goalType;
+  @Schema(description = "목표 타입", example = "WEEKLY_NODE_CLEAR")
+  private PlannerGoalType goalType;
 
-    @Schema(description = "목표 수치", example = "3")
-    private Integer targetValue;
+  @Schema(description = "목표 수치", example = "3")
+  private Integer targetValue;
 
-    public static PlannerGoalResponse from(LearnerGoal goal) {
-        return PlannerGoalResponse.builder()
-                .id(goal.getId())
-                .goalType(goal.getGoalType())
-                .targetValue(goal.getTargetValue())
-                .build();
-    }
+  public static PlannerGoalResponse from(LearnerGoal goal) {
+    return PlannerGoalResponse.builder()
+        .id(goal.getId())
+        .goalType(goal.getGoalType())
+        .targetValue(goal.getTargetValue())
+        .build();
+  }
 }

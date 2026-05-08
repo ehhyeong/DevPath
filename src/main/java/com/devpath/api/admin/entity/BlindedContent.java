@@ -25,30 +25,29 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class BlindedContent {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long contentId;
+  @Column(nullable = false)
+  private Long contentId;
 
-    @Column(nullable = false)
-    private Long adminId;
+  @Column(nullable = false)
+  private Long adminId;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String reason;
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String reason;
 
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean isActive = true;
+  @Builder.Default
+  @Column(nullable = false)
+  private Boolean isActive = true;
 
-    @CreatedDate
-    private LocalDateTime blindedAt;
+  @CreatedDate private LocalDateTime blindedAt;
 
-    // 같은 콘텐츠를 다시 블라인드하면 사유와 처리자만 최신값으로 갱신한다.
-    public void blind(Long adminId, String reason) {
-        this.adminId = adminId;
-        this.reason = reason;
-        this.isActive = true;
-    }
+  // 같은 콘텐츠를 다시 블라인드하면 사유와 처리자만 최신값으로 갱신한다.
+  public void blind(Long adminId, String reason) {
+    this.adminId = adminId;
+    this.reason = reason;
+    this.isActive = true;
+  }
 }

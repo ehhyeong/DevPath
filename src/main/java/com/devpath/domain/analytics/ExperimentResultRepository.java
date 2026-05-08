@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ExperimentResultRepository extends JpaRepository<ExperimentResult, Long> {
 
-    Optional<ExperimentResult> findByExperimentId(String experimentId);
+  Optional<ExperimentResult> findByExperimentId(String experimentId);
 }

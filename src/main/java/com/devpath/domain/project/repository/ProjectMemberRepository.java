@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
 
-    boolean existsByProjectIdAndLearnerId(Long projectId, Long learnerId);
+  boolean existsByProjectIdAndLearnerId(Long projectId, Long learnerId);
 
-    Optional<ProjectMember> findByProjectIdAndLearnerId(Long projectId, Long learnerId);
+  Optional<ProjectMember> findByProjectIdAndLearnerId(Long projectId, Long learnerId);
 
-    List<ProjectMember> findAllByProjectId(Long projectId);
+  List<ProjectMember> findAllByProjectId(Long projectId);
 
-    List<ProjectMember> findAllByLearnerIdOrderByJoinedAtDesc(Long learnerId);
+  List<ProjectMember> findAllByLearnerIdOrderByJoinedAtDesc(Long learnerId);
 }

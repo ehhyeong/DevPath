@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
-    List<Project> findAllByIsDeletedFalseOrderByCreatedAtDesc();
+  List<Project> findAllByIsDeletedFalseOrderByCreatedAtDesc();
 
-    long countByIsDeletedFalse();
+  long countByIsDeletedFalse();
 
-    List<Project> findTop3ByIsDeletedFalseOrderByCreatedAtDesc();
+  List<Project> findTop3ByIsDeletedFalseOrderByCreatedAtDesc();
 
-    Optional<Project> findByIdAndIsDeletedFalse(Long projectId);
+  Optional<Project> findByIdAndIsDeletedFalse(Long projectId);
 }

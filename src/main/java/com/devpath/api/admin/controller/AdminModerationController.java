@@ -56,9 +56,7 @@ public class AdminModerationController {
   @Operation(summary = "제재 통계 조회")
   @GetMapping("/stats")
   public ApiResponse<ModerationStatsResponse> getModerationStats() {
-    return ApiResponse.success(
-        "제재 통계를 조회했습니다.",
-        adminModerationService.getModerationStats());
+    return ApiResponse.success("제재 통계를 조회했습니다.", adminModerationService.getModerationStats());
   }
 
   @Operation(summary = "신고 목록 조회")
@@ -66,8 +64,6 @@ public class AdminModerationController {
   // 상태 기준으로 신고 목록을 조회한다.
   public ApiResponse<List<ModerationReportSummaryResponse>> getReports(
       @RequestParam(defaultValue = "PENDING") ModerationReportStatus status) {
-    return ApiResponse.success(
-        "신고 목록을 조회했습니다.",
-        adminModerationService.getReports(status));
+    return ApiResponse.success("신고 목록을 조회했습니다.", adminModerationService.getReports(status));
   }
 }

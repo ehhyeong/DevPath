@@ -20,20 +20,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RecommendationHistoryController {
 
-    private final RecommendationHistoryService recommendationHistoryService;
+  private final RecommendationHistoryService recommendationHistoryService;
 
-    @Operation(
-        summary = "기존 추천 이력 조회",
-        description = "추천 ID 또는 로드맵 노드 ID 기준으로 기존 추천 이력을 조회합니다."
-    )
-    @GetMapping
-    public ResponseEntity<ApiResponse<RecommendationHistoryResponse.ListResult>> getHistories(
-        @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-        @Parameter(description = "추천 ID", example = "10") @RequestParam(required = false) Long recommendationId,
-        @Parameter(description = "로드맵 노드 ID", example = "100") @RequestParam(required = false) Long nodeId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-            recommendationHistoryService.getHistories(userId, recommendationId, nodeId)
-        ));
-    }
+  @Operation(summary = "기존 추천 이력 조회", description = "추천 ID 또는 로드맵 노드 ID 기준으로 기존 추천 이력을 조회합니다.")
+  @GetMapping
+  public ResponseEntity<ApiResponse<RecommendationHistoryResponse.ListResult>> getHistories(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "추천 ID", example = "10") @RequestParam(required = false)
+          Long recommendationId,
+      @Parameter(description = "로드맵 노드 ID", example = "100") @RequestParam(required = false)
+          Long nodeId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(
+            recommendationHistoryService.getHistories(userId, recommendationId, nodeId)));
+  }
 }

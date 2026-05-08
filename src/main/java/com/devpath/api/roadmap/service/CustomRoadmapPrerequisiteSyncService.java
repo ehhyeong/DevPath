@@ -50,7 +50,8 @@ public class CustomRoadmapPrerequisiteSyncService {
     Map<Long, CustomRoadmapNode> customNodeByOriginalId =
         customNodes.stream()
             .filter(node -> node.getOriginalNode() != null)
-            .collect(Collectors.toMap(node -> node.getOriginalNode().getNodeId(), Function.identity()));
+            .collect(
+                Collectors.toMap(node -> node.getOriginalNode().getNodeId(), Function.identity()));
 
     Set<EdgeKey> desiredEdges =
         resolveDesiredEdges(customRoadmap, customNodes, customNodeByOriginalId);
@@ -92,8 +93,7 @@ public class CustomRoadmapPrerequisiteSyncService {
       Set<EdgeKey> officialEdges = new LinkedHashSet<>();
 
       for (Prerequisite prerequisite : officialPrerequisites) {
-        CustomRoadmapNode node =
-            customNodeByOriginalId.get(prerequisite.getNode().getNodeId());
+        CustomRoadmapNode node = customNodeByOriginalId.get(prerequisite.getNode().getNodeId());
         CustomRoadmapNode preNode =
             customNodeByOriginalId.get(prerequisite.getPreNode().getNodeId());
         addEdge(officialEdges, node, preNode);
@@ -122,9 +122,17 @@ public class CustomRoadmapPrerequisiteSyncService {
     }
 
     int minBranchOrder =
-        branchNodes.stream().map(this::sortOrderOf).filter(Objects::nonNull).min(Integer::compareTo).orElse(0);
+        branchNodes.stream()
+            .map(this::sortOrderOf)
+            .filter(Objects::nonNull)
+            .min(Integer::compareTo)
+            .orElse(0);
     int maxBranchOrder =
-        branchNodes.stream().map(this::sortOrderOf).filter(Objects::nonNull).max(Integer::compareTo).orElse(0);
+        branchNodes.stream()
+            .map(this::sortOrderOf)
+            .filter(Objects::nonNull)
+            .max(Integer::compareTo)
+            .orElse(0);
 
     List<CustomRoadmapNode> spineNodes =
         orderedNodes.stream().filter(node -> branchGroupOf(node) == null).toList();
@@ -212,8 +220,7 @@ public class CustomRoadmapPrerequisiteSyncService {
   }
 
   private Comparator<CustomRoadmapNode> nodeComparator() {
-    return Comparator.comparing(
-            this::sortOrderOf, Comparator.nullsLast(Integer::compareTo))
+    return Comparator.comparing(this::sortOrderOf, Comparator.nullsLast(Integer::compareTo))
         .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
   }
 

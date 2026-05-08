@@ -30,12 +30,16 @@ public class PublicHomeService {
   private final TagRepository tagRepository;
 
   public PublicHomeDto.OverviewResponse getOverview() {
-    List<Roadmap> officialRoadmaps = roadmapRepository.findAllByIsOfficialTrueAndIsDeletedFalse().stream()
-        .sorted(Comparator.comparing(Roadmap::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-        .toList();
+    List<Roadmap> officialRoadmaps =
+        roadmapRepository.findAllByIsOfficialTrueAndIsDeletedFalse().stream()
+            .sorted(
+                Comparator.comparing(
+                    Roadmap::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
     List<Course> featuredCourses =
         courseRepository.findTop3ByStatusOrderByPublishedAtDescCourseIdDesc(CourseStatus.PUBLISHED);
-    List<Project> featuredProjects = projectRepository.findTop3ByIsDeletedFalseOrderByCreatedAtDesc();
+    List<Project> featuredProjects =
+        projectRepository.findTop3ByIsDeletedFalseOrderByCreatedAtDesc();
     List<StudyGroup> featuredStudyGroups =
         studyGroupRepository.findTop3ByIsDeletedFalseOrderByCreatedAtDesc();
 
@@ -56,11 +60,7 @@ public class PublicHomeService {
 
   private List<PublicHomeDto.ActionLink> buildActions() {
     return List.of(
-        PublicHomeDto.ActionLink.builder()
-            .label("로드맵 시작하기")
-            .href("#learn")
-            .tone("primary")
-            .build(),
+        PublicHomeDto.ActionLink.builder().label("로드맵 시작하기").href("#learn").tone("primary").build(),
         PublicHomeDto.ActionLink.builder()
             .label("프로젝트 둘러보기")
             .href("#build")
@@ -75,8 +75,14 @@ public class PublicHomeService {
             "출시 강의",
             formatCount(courseRepository.countByStatus(CourseStatus.PUBLISHED)),
             "바로 수강 가능한 공개 강의"),
-        metric("실전 프로젝트", formatCount(projectRepository.countByIsDeletedFalse()), "협업과 포트폴리오를 위한 프로젝트"),
-        metric("스터디 그룹", formatCount(studyGroupRepository.countByIsDeletedFalse()), "함께 학습하는 커뮤니티 그룹"));
+        metric(
+            "실전 프로젝트",
+            formatCount(projectRepository.countByIsDeletedFalse()),
+            "협업과 포트폴리오를 위한 프로젝트"),
+        metric(
+            "스터디 그룹",
+            formatCount(studyGroupRepository.countByIsDeletedFalse()),
+            "함께 학습하는 커뮤니티 그룹"));
   }
 
   private PublicHomeDto.MetricCard metric(String label, String value, String description) {
@@ -88,11 +94,11 @@ public class PublicHomeService {
   }
 
   private List<String> resolveTrendingSkills() {
-    List<String> skillNames = tagRepository.findTop6ByIsOfficialTrueAndIsDeletedFalseOrderByTagIdAsc()
-        .stream()
-        .map(Tag::getName)
-        .filter(name -> name != null && !name.isBlank())
-        .toList();
+    List<String> skillNames =
+        tagRepository.findTop6ByIsOfficialTrueAndIsDeletedFalseOrderByTagIdAsc().stream()
+            .map(Tag::getName)
+            .filter(name -> name != null && !name.isBlank())
+            .toList();
 
     if (!skillNames.isEmpty()) {
       return skillNames;
@@ -102,35 +108,52 @@ public class PublicHomeService {
   }
 
   private List<PublicHomeDto.ContentPreview> buildRoadmapPreviews(List<Roadmap> roadmaps) {
-    List<PublicHomeDto.ContentPreview> previews = roadmaps.stream()
-        .limit(3)
-        .map(roadmap -> preview(
-            roadmap.getRoadmapId(),
-            "로드맵",
-            roadmap.getTitle(),
-            defaultIfBlank(roadmap.getDescription(), "기초부터 실무까지 이어지는 공식 학습 경로입니다."),
-            "/roadmaps/" + roadmap.getRoadmapId()))
-        .toList();
+    List<PublicHomeDto.ContentPreview> previews =
+        roadmaps.stream()
+            .limit(3)
+            .map(
+                roadmap ->
+                    preview(
+                        roadmap.getRoadmapId(),
+                        "로드맵",
+                        roadmap.getTitle(),
+                        defaultIfBlank(roadmap.getDescription(), "기초부터 실무까지 이어지는 공식 학습 경로입니다."),
+                        "/roadmaps/" + roadmap.getRoadmapId()))
+            .toList();
 
     if (!previews.isEmpty()) {
       return previews;
     }
 
     return List.of(
-        preview(null, "로드맵", "Backend Engineer Path", "Java, Spring, 데이터베이스, 배포까지 단계적으로 학습합니다.", "#learn"),
-        preview(null, "로드맵", "Frontend Engineer Path", "TypeScript, React, 상태관리, 테스트 흐름으로 확장합니다.", "#learn"),
+        preview(
+            null,
+            "로드맵",
+            "Backend Engineer Path",
+            "Java, Spring, 데이터베이스, 배포까지 단계적으로 학습합니다.",
+            "#learn"),
+        preview(
+            null,
+            "로드맵",
+            "Frontend Engineer Path",
+            "TypeScript, React, 상태관리, 테스트 흐름으로 확장합니다.",
+            "#learn"),
         preview(null, "로드맵", "DevOps Path", "Docker, CI/CD, 인프라 운영 감각을 빠르게 익힙니다.", "#learn"));
   }
 
   private List<PublicHomeDto.ContentPreview> buildCoursePreviews(List<Course> courses) {
     if (!courses.isEmpty()) {
       return courses.stream()
-          .map(course -> preview(
-              course.getCourseId(),
-              "강의",
-              course.getTitle(),
-              defaultIfBlank(course.getSubtitle(), defaultIfBlank(course.getDescription(), "실무 중심 커리큘럼으로 연결되는 강의입니다.")),
-              "/courses/" + course.getCourseId()))
+          .map(
+              course ->
+                  preview(
+                      course.getCourseId(),
+                      "강의",
+                      course.getTitle(),
+                      defaultIfBlank(
+                          course.getSubtitle(),
+                          defaultIfBlank(course.getDescription(), "실무 중심 커리큘럼으로 연결되는 강의입니다.")),
+                      "/courses/" + course.getCourseId()))
           .toList();
     }
 
@@ -143,12 +166,14 @@ public class PublicHomeService {
   private List<PublicHomeDto.ContentPreview> buildProjectPreviews(List<Project> projects) {
     if (!projects.isEmpty()) {
       return projects.stream()
-          .map(project -> preview(
-              project.getId(),
-              "프로젝트",
-              project.getName(),
-              defaultIfBlank(project.getDescription(), "실전 협업 경험을 쌓을 수 있는 프로젝트입니다."),
-              "/projects/" + project.getId()))
+          .map(
+              project ->
+                  preview(
+                      project.getId(),
+                      "프로젝트",
+                      project.getName(),
+                      defaultIfBlank(project.getDescription(), "실전 협업 경험을 쌓을 수 있는 프로젝트입니다."),
+                      "/projects/" + project.getId()))
           .toList();
     }
 
@@ -161,12 +186,14 @@ public class PublicHomeService {
   private List<PublicHomeDto.ContentPreview> buildStudyGroupPreviews(List<StudyGroup> studyGroups) {
     if (!studyGroups.isEmpty()) {
       return studyGroups.stream()
-          .map(studyGroup -> preview(
-              studyGroup.getId(),
-              "스터디",
-              studyGroup.getName(),
-              defaultIfBlank(studyGroup.getDescription(), "같이 성장할 팀을 찾는 학습 그룹입니다."),
-              "/study-groups/" + studyGroup.getId()))
+          .map(
+              studyGroup ->
+                  preview(
+                      studyGroup.getId(),
+                      "스터디",
+                      studyGroup.getName(),
+                      defaultIfBlank(studyGroup.getDescription(), "같이 성장할 팀을 찾는 학습 그룹입니다."),
+                      "/study-groups/" + studyGroup.getId()))
           .toList();
     }
 
@@ -178,18 +205,31 @@ public class PublicHomeService {
 
   private List<PublicHomeDto.JourneyStep> buildJourneySteps() {
     return List.of(
-        step("01", "Learn", "AI 진단과 로드맵으로 학습 방향을 잡습니다.", "현재 실력과 목표를 기준으로 필요한 주제를 빠르게 정리합니다.", "로드맵 보러가기", "#learn"),
-        step("02", "Build", "강의와 프로젝트로 배운 내용을 결과물로 바꿉니다.", "실전 과제와 협업 경험을 통해 포트폴리오를 쌓는 단계입니다.", "프로젝트 살펴보기", "#build"),
-        step("03", "Career", "누적된 학습 기록으로 다음 기회를 연결합니다.", "성장 데이터, 산출물, 커뮤니티 활동을 바탕으로 커리어를 확장합니다.", "성장 흐름 확인하기", "#career"));
+        step(
+            "01",
+            "Learn",
+            "AI 진단과 로드맵으로 학습 방향을 잡습니다.",
+            "현재 실력과 목표를 기준으로 필요한 주제를 빠르게 정리합니다.",
+            "로드맵 보러가기",
+            "#learn"),
+        step(
+            "02",
+            "Build",
+            "강의와 프로젝트로 배운 내용을 결과물로 바꿉니다.",
+            "실전 과제와 협업 경험을 통해 포트폴리오를 쌓는 단계입니다.",
+            "프로젝트 살펴보기",
+            "#build"),
+        step(
+            "03",
+            "Career",
+            "누적된 학습 기록으로 다음 기회를 연결합니다.",
+            "성장 데이터, 산출물, 커뮤니티 활동을 바탕으로 커리어를 확장합니다.",
+            "성장 흐름 확인하기",
+            "#career"));
   }
 
   private PublicHomeDto.JourneyStep step(
-      String step,
-      String eyebrow,
-      String title,
-      String description,
-      String ctaLabel,
-      String href) {
+      String step, String eyebrow, String title, String description, String ctaLabel, String href) {
     return PublicHomeDto.JourneyStep.builder()
         .step(step)
         .eyebrow(eyebrow)
@@ -201,11 +241,7 @@ public class PublicHomeService {
   }
 
   private PublicHomeDto.ContentPreview preview(
-      Long id,
-      String badge,
-      String title,
-      String description,
-      String href) {
+      Long id, String badge, String title, String description, String href) {
     return PublicHomeDto.ContentPreview.builder()
         .id(id)
         .badge(badge)

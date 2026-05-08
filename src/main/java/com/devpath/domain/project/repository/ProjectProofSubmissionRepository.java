@@ -4,9 +4,10 @@ import com.devpath.domain.project.entity.ProjectProofSubmission;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ProjectProofSubmissionRepository extends JpaRepository<ProjectProofSubmission, Long> {
+public interface ProjectProofSubmissionRepository
+    extends JpaRepository<ProjectProofSubmission, Long> {
 
-    boolean existsByProjectIdAndProofCardRefId(Long projectId, String proofCardRefId);
+  boolean existsByProjectIdAndProofCardRefId(Long projectId, String proofCardRefId);
 
-    List<ProjectProofSubmission> findAllByProjectIdOrderBySubmittedAtDesc(Long projectId);
+  List<ProjectProofSubmission> findAllByProjectIdOrderBySubmittedAtDesc(Long projectId);
 }

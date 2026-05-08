@@ -55,7 +55,15 @@ class AdminLectureCatalogServiceIntegrationTest {
 
     assertThat(firstResponse.getCategories()).hasSize(2);
     assertThat(firstResponse.getCategories().get(0).getCategoryKey()).isEqualTo("all");
-    assertThat(firstResponse.getCategories().get(0).getGroups().get(0).getItems().get(0).getLinkedCategoryKey())
+    assertThat(
+            firstResponse
+                .getCategories()
+                .get(0)
+                .getGroups()
+                .get(0)
+                .getItems()
+                .get(0)
+                .getLinkedCategoryKey())
         .isEqualTo("dev");
     assertThat(firstResponse.getCategories().get(1).getMegaMenuItems())
         .extracting(LectureCatalogMenuResponse.MegaMenuItem::getLabel)
@@ -94,11 +102,7 @@ class AdminLectureCatalogServiceIntegrationTest {
                 "fas fa-th-large",
                 true,
                 0,
-                group(
-                    "탐색 분야",
-                    0,
-                    groupItem("웹 개발", "dev", 0),
-                    groupItem("직접 선택", null, 1))),
+                group("탐색 분야", 0, groupItem("웹 개발", "dev", 0), groupItem("직접 선택", null, 1))),
             category(
                 "dev",
                 "개발",
@@ -121,8 +125,7 @@ class AdminLectureCatalogServiceIntegrationTest {
   }
 
   private LectureCatalogMenuUpdateRequest request(
-      LectureCatalogMenuUpdateRequest.CategoryRequest... categories
-  ) {
+      LectureCatalogMenuUpdateRequest.CategoryRequest... categories) {
     LectureCatalogMenuUpdateRequest request = new LectureCatalogMenuUpdateRequest();
     ReflectionTestUtils.setField(request, "categories", java.util.List.of(categories));
     return request;
@@ -135,8 +138,7 @@ class AdminLectureCatalogServiceIntegrationTest {
       String iconClass,
       boolean active,
       int sortOrder,
-      Object... children
-  ) {
+      Object... children) {
     LectureCatalogMenuUpdateRequest.CategoryRequest request =
         new LectureCatalogMenuUpdateRequest.CategoryRequest();
     ReflectionTestUtils.setField(request, "categoryKey", categoryKey);
@@ -162,7 +164,8 @@ class AdminLectureCatalogServiceIntegrationTest {
     return request;
   }
 
-  private LectureCatalogMenuUpdateRequest.MegaMenuItemRequest megaMenuItem(String label, int sortOrder) {
+  private LectureCatalogMenuUpdateRequest.MegaMenuItemRequest megaMenuItem(
+      String label, int sortOrder) {
     LectureCatalogMenuUpdateRequest.MegaMenuItemRequest request =
         new LectureCatalogMenuUpdateRequest.MegaMenuItemRequest();
     ReflectionTestUtils.setField(request, "label", label);
@@ -171,11 +174,9 @@ class AdminLectureCatalogServiceIntegrationTest {
   }
 
   private LectureCatalogMenuUpdateRequest.GroupRequest group(
-      String name,
-      int sortOrder,
-      LectureCatalogMenuUpdateRequest.GroupItemRequest... items
-  ) {
-    LectureCatalogMenuUpdateRequest.GroupRequest request = new LectureCatalogMenuUpdateRequest.GroupRequest();
+      String name, int sortOrder, LectureCatalogMenuUpdateRequest.GroupItemRequest... items) {
+    LectureCatalogMenuUpdateRequest.GroupRequest request =
+        new LectureCatalogMenuUpdateRequest.GroupRequest();
     ReflectionTestUtils.setField(request, "name", name);
     ReflectionTestUtils.setField(request, "sortOrder", sortOrder);
     ReflectionTestUtils.setField(request, "items", java.util.List.of(items));
@@ -183,10 +184,7 @@ class AdminLectureCatalogServiceIntegrationTest {
   }
 
   private LectureCatalogMenuUpdateRequest.GroupItemRequest groupItem(
-      String name,
-      String linkedCategoryKey,
-      int sortOrder
-  ) {
+      String name, String linkedCategoryKey, int sortOrder) {
     LectureCatalogMenuUpdateRequest.GroupItemRequest request =
         new LectureCatalogMenuUpdateRequest.GroupItemRequest();
     ReflectionTestUtils.setField(request, "name", name);

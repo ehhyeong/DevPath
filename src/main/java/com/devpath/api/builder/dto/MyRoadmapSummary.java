@@ -12,7 +12,8 @@ public class MyRoadmapSummary {
   private final long moduleCount;
 
   // JPQL constructor expression 전용
-  public MyRoadmapSummary(Long myRoadmapId, String title, LocalDateTime createdAt, Long moduleCount) {
+  public MyRoadmapSummary(
+      Long myRoadmapId, String title, LocalDateTime createdAt, Long moduleCount) {
     this.myRoadmapId = myRoadmapId;
     this.title = title;
     this.createdAt = createdAt;

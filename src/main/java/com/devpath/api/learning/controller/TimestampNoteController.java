@@ -28,58 +28,48 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TimestampNoteController {
 
-    private final TimestampNoteService timestampNoteService;
+  private final TimestampNoteService timestampNoteService;
 
-    @Operation(
-            summary = "타임스탬프 노트 저장",
-            description = "timestampSecond 또는 timestampText 값을 받아 정규화된 초 단위 값으로 노트를 저장합니다."
-    )
-    @PostMapping("/{lessonId}/notes")
-    public ResponseEntity<ApiResponse<TimestampNoteResponse>> createNote(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId,
-            @Valid @RequestBody TimestampNoteRequest.Create request
-    ) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(timestampNoteService.createNote(userId, lessonId, request)));
-    }
+  @Operation(
+      summary = "타임스탬프 노트 저장",
+      description = "timestampSecond 또는 timestampText 값을 받아 정규화된 초 단위 값으로 노트를 저장합니다.")
+  @PostMapping("/{lessonId}/notes")
+  public ResponseEntity<ApiResponse<TimestampNoteResponse>> createNote(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId,
+      @Valid @RequestBody TimestampNoteRequest.Create request) {
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(ApiResponse.ok(timestampNoteService.createNote(userId, lessonId, request)));
+  }
 
-    @Operation(
-            summary = "타임스탬프 노트 목록 조회",
-            description = "특정 레슨의 노트를 timestampSecond 오름차순으로 조회합니다."
-    )
-    @GetMapping("/{lessonId}/notes")
-    public ResponseEntity<ApiResponse<List<TimestampNoteResponse>>> getNotes(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(timestampNoteService.getNotes(userId, lessonId)));
-    }
+  @Operation(summary = "타임스탬프 노트 목록 조회", description = "특정 레슨의 노트를 timestampSecond 오름차순으로 조회합니다.")
+  @GetMapping("/{lessonId}/notes")
+  public ResponseEntity<ApiResponse<List<TimestampNoteResponse>>> getNotes(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId) {
+    return ResponseEntity.ok(ApiResponse.ok(timestampNoteService.getNotes(userId, lessonId)));
+  }
 
-    @Operation(
-            summary = "타임스탬프 노트 수정",
-            description = "timestampSecond 또는 timestampText 값을 다시 받아 노트의 위치와 내용을 수정합니다."
-    )
-    @PutMapping("/{lessonId}/notes/{noteId}")
-    public ResponseEntity<ApiResponse<TimestampNoteResponse>> updateNote(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId,
-            @Parameter(description = "노트 ID", example = "1") @PathVariable Long noteId,
-            @Valid @RequestBody TimestampNoteRequest.Update request
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-                timestampNoteService.updateNote(userId, lessonId, noteId, request)
-        ));
-    }
+  @Operation(
+      summary = "타임스탬프 노트 수정",
+      description = "timestampSecond 또는 timestampText 값을 다시 받아 노트의 위치와 내용을 수정합니다.")
+  @PutMapping("/{lessonId}/notes/{noteId}")
+  public ResponseEntity<ApiResponse<TimestampNoteResponse>> updateNote(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId,
+      @Parameter(description = "노트 ID", example = "1") @PathVariable Long noteId,
+      @Valid @RequestBody TimestampNoteRequest.Update request) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(timestampNoteService.updateNote(userId, lessonId, noteId, request)));
+  }
 
-    @Operation(summary = "타임스탬프 노트 삭제", description = "저장된 노트를 삭제합니다.")
-    @DeleteMapping("/{lessonId}/notes/{noteId}")
-    public ResponseEntity<ApiResponse<Void>> deleteNote(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId,
-            @Parameter(description = "노트 ID", example = "1") @PathVariable Long noteId
-    ) {
-        timestampNoteService.deleteNote(userId, lessonId, noteId);
-        return ResponseEntity.ok(ApiResponse.ok());
-    }
+  @Operation(summary = "타임스탬프 노트 삭제", description = "저장된 노트를 삭제합니다.")
+  @DeleteMapping("/{lessonId}/notes/{noteId}")
+  public ResponseEntity<ApiResponse<Void>> deleteNote(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "레슨 ID", example = "10") @PathVariable Long lessonId,
+      @Parameter(description = "노트 ID", example = "1") @PathVariable Long noteId) {
+    timestampNoteService.deleteNote(userId, lessonId, noteId);
+    return ResponseEntity.ok(ApiResponse.ok());
+  }
 }

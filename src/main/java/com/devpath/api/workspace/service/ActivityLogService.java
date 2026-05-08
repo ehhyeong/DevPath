@@ -16,42 +16,39 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ActivityLogService {
 
-    private final ActivityLogRepository activityLogRepository;
-    private final WorkspaceRepository workspaceRepository;
-    private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final ActivityLogRepository activityLogRepository;
+  private final WorkspaceRepository workspaceRepository;
+  private final WorkspaceMemberRepository workspaceMemberRepository;
 
-    public List<ActivityLogResponse> getActivityLogs(Long workspaceId, Long userId) {
-        validateWorkspaceExists(workspaceId);
-        validateMember(workspaceId, userId);
+  public List<ActivityLogResponse> getActivityLogs(Long workspaceId, Long userId) {
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
 
-        return activityLogRepository
-                .findAllByWorkspaceIdOrderByCreatedAtDesc(workspaceId)
-                .stream()
-                .map(ActivityLogResponse::from)
-                .toList();
+    return activityLogRepository.findAllByWorkspaceIdOrderByCreatedAtDesc(workspaceId).stream()
+        .map(ActivityLogResponse::from)
+        .toList();
+  }
+
+  public List<ActivityLogResponse> getRecentActivityLogs(Long workspaceId, Long userId) {
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
+
+    return activityLogRepository.findTop10ByWorkspaceIdOrderByCreatedAtDesc(workspaceId).stream()
+        .map(ActivityLogResponse::from)
+        .toList();
+  }
+
+  // --- 내부 헬퍼 ---
+
+  private void validateWorkspaceExists(Long workspaceId) {
+    workspaceRepository
+        .findByIdAndIsDeletedFalse(workspaceId)
+        .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_NOT_FOUND));
+  }
+
+  private void validateMember(Long workspaceId, Long userId) {
+    if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
+      throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
     }
-
-    public List<ActivityLogResponse> getRecentActivityLogs(Long workspaceId, Long userId) {
-        validateWorkspaceExists(workspaceId);
-        validateMember(workspaceId, userId);
-
-        return activityLogRepository
-                .findTop10ByWorkspaceIdOrderByCreatedAtDesc(workspaceId)
-                .stream()
-                .map(ActivityLogResponse::from)
-                .toList();
-    }
-
-    // --- 내부 헬퍼 ---
-
-    private void validateWorkspaceExists(Long workspaceId) {
-        workspaceRepository.findByIdAndIsDeletedFalse(workspaceId)
-                .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_NOT_FOUND));
-    }
-
-    private void validateMember(Long workspaceId, Long userId) {
-        if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
-            throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
-        }
-    }
+  }
 }

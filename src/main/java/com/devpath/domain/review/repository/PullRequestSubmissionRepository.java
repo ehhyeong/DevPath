@@ -6,7 +6,8 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PullRequestSubmissionRepository extends JpaRepository<PullRequestSubmission, Long> {
+public interface PullRequestSubmissionRepository
+    extends JpaRepository<PullRequestSubmission, Long> {
 
   // 멘토링별 PR 제출 목록을 최신순으로 조회한다.
   @EntityGraph(

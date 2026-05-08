@@ -7,8 +7,8 @@ import lombok.Getter;
 @Builder
 public class CommunitySummaryResponse {
 
-    private long totalPostCount;
-    private long totalCommentCount;
-    private long totalLikeCount;
-    private long recentPostCount;
+  private long totalPostCount;
+  private long totalCommentCount;
+  private long totalLikeCount;
+  private long recentPostCount;
 }

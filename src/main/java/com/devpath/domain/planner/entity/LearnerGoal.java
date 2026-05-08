@@ -11,25 +11,25 @@ import lombok.*;
 @Builder
 public class LearnerGoal {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "learner_id", nullable = false)
-    private Long learnerId;
+  @Column(name = "learner_id", nullable = false)
+  private Long learnerId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PlannerGoalType goalType;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private PlannerGoalType goalType;
 
-    @Column(name = "target_value", nullable = false)
-    private Integer targetValue;
+  @Column(name = "target_value", nullable = false)
+  private Integer targetValue;
 
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
+  @Column(name = "is_active", nullable = false)
+  @Builder.Default
+  private Boolean isActive = true;
 
-    public void deactivate() {
-        this.isActive = false;
-    }
+  public void deactivate() {
+    this.isActive = false;
+  }
 }

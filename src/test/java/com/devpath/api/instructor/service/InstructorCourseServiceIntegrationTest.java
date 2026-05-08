@@ -14,10 +14,6 @@ import com.devpath.api.instructor.dto.InstructorSectionDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
-import com.devpath.domain.roadmap.entity.NodeRequiredTag;
-import com.devpath.domain.roadmap.entity.Roadmap;
-import com.devpath.domain.roadmap.entity.RoadmapNode;
-import com.devpath.domain.roadmap.service.TagValidationService;
 import com.devpath.domain.course.entity.CourseNodeMapping;
 import com.devpath.domain.course.repository.CourseAnnouncementRepository;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
@@ -26,6 +22,10 @@ import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.LessonPrerequisiteRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.roadmap.entity.NodeRequiredTag;
+import com.devpath.domain.roadmap.entity.Roadmap;
+import com.devpath.domain.roadmap.entity.RoadmapNode;
+import com.devpath.domain.roadmap.service.TagValidationService;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
@@ -41,10 +41,10 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 
 // 강사용 강의 서비스의 전체 라이프사이클을 통합 검증한다.
@@ -70,8 +70,10 @@ class InstructorCourseServiceIntegrationTest {
   @Autowired private InstructorCourseQueryService instructorCourseQueryService;
   @Autowired private InstructorAnnouncementService instructorAnnouncementService;
   @Autowired private InstructorAnnouncementQueryService instructorAnnouncementQueryService;
+
   @Autowired
   private InstructorNodeClassificationQueryService instructorNodeClassificationQueryService;
+
   @Autowired private InstructorNodeCoverageQueryService instructorNodeCoverageQueryService;
 
   @Autowired private UserRepository userRepository;
@@ -121,14 +123,12 @@ class InstructorCourseServiceIntegrationTest {
             .build());
 
     Tag javaTag =
-        tagRepository.save(
-            Tag.builder().name("Java").category("Backend").isOfficial(true).build());
+        tagRepository.save(Tag.builder().name("Java").category("Backend").isOfficial(true).build());
     Tag springBootTag =
         tagRepository.save(
             Tag.builder().name("Spring Boot").category("Backend").isOfficial(true).build());
     Tag jpaTag =
-        tagRepository.save(
-            Tag.builder().name("JPA").category("Backend").isOfficial(true).build());
+        tagRepository.save(Tag.builder().name("JPA").category("Backend").isOfficial(true).build());
     Tag springSecurityTag =
         tagRepository.save(
             Tag.builder().name("Spring Security").category("Backend").isOfficial(true).build());
@@ -221,7 +221,8 @@ class InstructorCourseServiceIntegrationTest {
 
     assertThat(courseMaterialRepository.findById(materialId)).isPresent();
 
-    CourseDetailResponse detail = instructorCourseQueryService.getCourseDetail(instructorId, courseId);
+    CourseDetailResponse detail =
+        instructorCourseQueryService.getCourseDetail(instructorId, courseId);
 
     assertThat(detail.getCourseId()).isEqualTo(courseId);
     assertThat(detail.getTitle()).isEqualTo("Spring Security 실전");
@@ -249,7 +250,8 @@ class InstructorCourseServiceIntegrationTest {
     assertThat(detail.getInstructor().getProfileImage())
         .isEqualTo("/images/profiles/test-instructor.png");
     assertThat(detail.getInstructor().getHeadline()).isNotBlank();
-    assertThat(detail.getInstructor().getSpecialties()).containsExactlyInAnyOrder("Java", "Spring Boot");
+    assertThat(detail.getInstructor().getSpecialties())
+        .containsExactlyInAnyOrder("Java", "Spring Boot");
     assertThat(detail.getInstructor().getChannelApiPath())
         .isEqualTo("/api/instructors/" + instructorId + "/channel");
     assertThat(detail.getNews()).isEmpty();
@@ -302,7 +304,8 @@ class InstructorCourseServiceIntegrationTest {
 
     assertThat(courseRepository.findById(courseId)).isEmpty();
     assertThat(courseAnnouncementRepository.findById(announcementId)).isEmpty();
-    assertThat(courseSectionRepository.findAllByCourseCourseIdOrderByOrderIndexAsc(courseId)).isEmpty();
+    assertThat(courseSectionRepository.findAllByCourseCourseIdOrderByOrderIndexAsc(courseId))
+        .isEmpty();
     assertThat(lessonRepository.findAllBySectionSectionIdOrderByOrderIndexAsc(sectionId)).isEmpty();
     assertThat(courseMaterialRepository.findAllByLessonLessonIdOrderByDisplayOrderAsc(lessonId1))
         .isEmpty();
@@ -363,7 +366,8 @@ class InstructorCourseServiceIntegrationTest {
     Long otherCourseId =
         instructorCourseService.createCourse(instructorId, createSecondCourseRequest());
     Long otherSectionId =
-        instructorCourseService.createSection(instructorId, otherCourseId, createSecondSectionRequest());
+        instructorCourseService.createSection(
+            instructorId, otherCourseId, createSecondSectionRequest());
     Long otherLessonId =
         instructorCourseService.createLesson(
             instructorId, otherSectionId, createOtherCourseLessonRequest());
@@ -381,9 +385,7 @@ class InstructorCourseServiceIntegrationTest {
     assertThatThrownBy(
             () ->
                 instructorCourseService.updateLessonPrerequisites(
-                    instructorId,
-                    lessonId3,
-                    updateLessonPrerequisitesRequest(List.of(lessonId3))))
+                    instructorId, lessonId3, updateLessonPrerequisitesRequest(List.of(lessonId3))))
         .isInstanceOf(CustomException.class)
         .extracting("errorCode")
         .isEqualTo(ErrorCode.INVALID_INPUT);
@@ -686,7 +688,8 @@ class InstructorCourseServiceIntegrationTest {
     Tag jwtTag = tagRepository.findById(jwtTagId).orElseThrow();
     Tag javaTag = tagRepository.findById(javaTagId).orElseThrow();
 
-    entityManager.persist(NodeRequiredTag.builder().node(matchedConceptNode).tag(springBootTag).build());
+    entityManager.persist(
+        NodeRequiredTag.builder().node(matchedConceptNode).tag(springBootTag).build());
     entityManager.persist(
         NodeRequiredTag.builder().node(matchedConceptNode).tag(springSecurityTag).build());
     entityManager.persist(NodeRequiredTag.builder().node(matchedConceptNode).tag(jwtTag).build());
@@ -709,8 +712,7 @@ class InstructorCourseServiceIntegrationTest {
 
     assertThat(response.getCourseId()).isEqualTo(courseId);
     assertThat(response.getCourseTitle()).isEqualTo("Spring Security 완전 정복");
-    assertThat(response.getCourseTags())
-        .containsExactly("JWT", "Spring Boot", "Spring Security");
+    assertThat(response.getCourseTags()).containsExactly("JWT", "Spring Boot", "Spring Security");
     assertThat(response.getTotalMatchedNodes()).isEqualTo(2);
     assertThat(response.getMatchedNodes()).hasSize(2);
     assertThat(response.getMatchedNodes())
@@ -830,8 +832,7 @@ class InstructorCourseServiceIntegrationTest {
         instructorNodeCoverageQueryService.getNodeCoverages(instructorId, courseId);
 
     assertThat(response.getCourseId()).isEqualTo(courseId);
-    assertThat(response.getCourseTags())
-        .containsExactly("JWT", "Spring Boot", "Spring Security");
+    assertThat(response.getCourseTags()).containsExactly("JWT", "Spring Boot", "Spring Security");
     assertThat(response.getTotalNodes()).isEqualTo(3);
     assertThat(response.getNodeCoverages()).hasSize(3);
     assertThat(response.getNodeCoverages())
@@ -850,11 +851,9 @@ class InstructorCourseServiceIntegrationTest {
         .containsExactly("Spring Security");
     assertThat(response.getNodeCoverages().get(1).getMissingTags()).containsExactly("JPA");
 
-    assertThat(response.getNodeCoverages().get(2).getCoveragePercent())
-        .isEqualByComparingTo("0.0");
+    assertThat(response.getNodeCoverages().get(2).getCoveragePercent()).isEqualByComparingTo("0.0");
     assertThat(response.getNodeCoverages().get(2).getMatchedTags()).isEmpty();
-    assertThat(response.getNodeCoverages().get(2).getMissingTags())
-        .containsExactly("Java", "JPA");
+    assertThat(response.getNodeCoverages().get(2).getMissingTags()).containsExactly("Java", "JPA");
   }
 
   @Test
@@ -935,7 +934,8 @@ class InstructorCourseServiceIntegrationTest {
                 instructorAnnouncementService.updateAnnouncementDisplayOrder(
                     otherInstructorId,
                     courseId,
-                    updateAnnouncementOrderRequest(List.of(announcementOrderItem(announcementId, 0)))))
+                    updateAnnouncementOrderRequest(
+                        List.of(announcementOrderItem(announcementId, 0)))))
         .isInstanceOf(CustomException.class)
         .extracting("errorCode")
         .isEqualTo(ErrorCode.FORBIDDEN);
@@ -1007,7 +1007,8 @@ class InstructorCourseServiceIntegrationTest {
   }
 
   private InstructorSectionDto.CreateSectionRequest createSectionRequest() {
-    InstructorSectionDto.CreateSectionRequest request = new InstructorSectionDto.CreateSectionRequest();
+    InstructorSectionDto.CreateSectionRequest request =
+        new InstructorSectionDto.CreateSectionRequest();
     ReflectionTestUtils.setField(request, "title", "Section 1. Spring Security 핵심");
     ReflectionTestUtils.setField(request, "description", "인증과 인가, 필터 체인을 학습한다.");
     ReflectionTestUtils.setField(request, "orderIndex", 1);
@@ -1021,7 +1022,8 @@ class InstructorCourseServiceIntegrationTest {
     ReflectionTestUtils.setField(request, "description", "JWT 인증 필터를 구현한다.");
     ReflectionTestUtils.setField(request, "lessonType", "video");
     ReflectionTestUtils.setField(request, "videoId", "video-asset-001");
-    ReflectionTestUtils.setField(request, "videoUrl", "https://cdn.devpath.com/lessons/video-1.mp4");
+    ReflectionTestUtils.setField(
+        request, "videoUrl", "https://cdn.devpath.com/lessons/video-1.mp4");
     ReflectionTestUtils.setField(request, "videoProvider", "r2");
     ReflectionTestUtils.setField(
         request, "thumbnailUrl", "https://cdn.devpath.com/lessons/thumbnails/video-1.png");
@@ -1038,7 +1040,8 @@ class InstructorCourseServiceIntegrationTest {
     ReflectionTestUtils.setField(request, "description", "인증 객체 저장 흐름을 학습한다.");
     ReflectionTestUtils.setField(request, "lessonType", "video");
     ReflectionTestUtils.setField(request, "videoId", "video-asset-002");
-    ReflectionTestUtils.setField(request, "videoUrl", "https://cdn.devpath.com/lessons/video-2.mp4");
+    ReflectionTestUtils.setField(
+        request, "videoUrl", "https://cdn.devpath.com/lessons/video-2.mp4");
     ReflectionTestUtils.setField(request, "videoProvider", "r2");
     ReflectionTestUtils.setField(
         request, "thumbnailUrl", "https://cdn.devpath.com/lessons/thumbnails/video-2.png");
@@ -1058,7 +1061,8 @@ class InstructorCourseServiceIntegrationTest {
         "Creates a third lesson that receives prerequisite links during the test.");
     ReflectionTestUtils.setField(request, "lessonType", "video");
     ReflectionTestUtils.setField(request, "videoId", "video-asset-003");
-    ReflectionTestUtils.setField(request, "videoUrl", "https://cdn.devpath.com/lessons/video-3.mp4");
+    ReflectionTestUtils.setField(
+        request, "videoUrl", "https://cdn.devpath.com/lessons/video-3.mp4");
     ReflectionTestUtils.setField(request, "videoProvider", "r2");
     ReflectionTestUtils.setField(
         request, "thumbnailUrl", "https://cdn.devpath.com/lessons/thumbnails/video-3.png");
@@ -1072,7 +1076,8 @@ class InstructorCourseServiceIntegrationTest {
   private InstructorCourseDto.CreateCourseRequest createSecondCourseRequest() {
     InstructorCourseDto.CreateCourseRequest request = new InstructorCourseDto.CreateCourseRequest();
     ReflectionTestUtils.setField(request, "title", "Second backend course");
-    ReflectionTestUtils.setField(request, "subtitle", "Used to validate cross-course prerequisites");
+    ReflectionTestUtils.setField(
+        request, "subtitle", "Used to validate cross-course prerequisites");
     ReflectionTestUtils.setField(
         request,
         "description",
@@ -1168,32 +1173,37 @@ class InstructorCourseServiceIntegrationTest {
     return request;
   }
 
-  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidEventRequestWithoutBanner() {
+  private InstructorAnnouncementDto.CreateAnnouncementRequest
+      createInvalidEventRequestWithoutBanner() {
     InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
     ReflectionTestUtils.setField(request, "eventBannerText", null);
     return request;
   }
 
-  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidEventRequestWithoutLink() {
+  private InstructorAnnouncementDto.CreateAnnouncementRequest
+      createInvalidEventRequestWithoutLink() {
     InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
     ReflectionTestUtils.setField(request, "eventLink", null);
     return request;
   }
 
-  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidEventRequestWithoutExposure() {
+  private InstructorAnnouncementDto.CreateAnnouncementRequest
+      createInvalidEventRequestWithoutExposure() {
     InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
     ReflectionTestUtils.setField(request, "exposureStartAt", null);
     ReflectionTestUtils.setField(request, "exposureEndAt", null);
     return request;
   }
 
-  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidEventRequestWithUnsupportedUrl() {
+  private InstructorAnnouncementDto.CreateAnnouncementRequest
+      createInvalidEventRequestWithUnsupportedUrl() {
     InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
     ReflectionTestUtils.setField(request, "eventLink", "ftp://devpath.com/events/security-special");
     return request;
   }
 
-  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidNormalRequestWithEventFields() {
+  private InstructorAnnouncementDto.CreateAnnouncementRequest
+      createInvalidNormalRequestWithEventFields() {
     InstructorAnnouncementDto.CreateAnnouncementRequest request =
         new InstructorAnnouncementDto.CreateAnnouncementRequest();
     ReflectionTestUtils.setField(request, "type", "normal");
@@ -1211,7 +1221,8 @@ class InstructorCourseServiceIntegrationTest {
     return request;
   }
 
-  private InstructorAnnouncementDto.CreateAnnouncementRequest createInvalidRequestWithReversedExposurePeriod() {
+  private InstructorAnnouncementDto.CreateAnnouncementRequest
+      createInvalidRequestWithReversedExposurePeriod() {
     InstructorAnnouncementDto.CreateAnnouncementRequest request = createEventAnnouncementRequest();
     ReflectionTestUtils.setField(
         request, "exposureStartAt", java.time.LocalDateTime.of(2026, 3, 31, 23, 59, 59));
@@ -1221,9 +1232,11 @@ class InstructorCourseServiceIntegrationTest {
   }
 
   private InstructorSectionDto.CreateSectionRequest createSecondSectionRequest() {
-    InstructorSectionDto.CreateSectionRequest request = new InstructorSectionDto.CreateSectionRequest();
+    InstructorSectionDto.CreateSectionRequest request =
+        new InstructorSectionDto.CreateSectionRequest();
     ReflectionTestUtils.setField(request, "title", "Section 1. Other course");
-    ReflectionTestUtils.setField(request, "description", "Section used for foreign lesson validation.");
+    ReflectionTestUtils.setField(
+        request, "description", "Section used for foreign lesson validation.");
     ReflectionTestUtils.setField(request, "orderIndex", 1);
     ReflectionTestUtils.setField(request, "isPublished", true);
     return request;
@@ -1232,10 +1245,12 @@ class InstructorCourseServiceIntegrationTest {
   private InstructorLessonDto.CreateLessonRequest createOtherCourseLessonRequest() {
     InstructorLessonDto.CreateLessonRequest request = new InstructorLessonDto.CreateLessonRequest();
     ReflectionTestUtils.setField(request, "title", "Other course lesson");
-    ReflectionTestUtils.setField(request, "description", "Lesson that belongs to a different course.");
+    ReflectionTestUtils.setField(
+        request, "description", "Lesson that belongs to a different course.");
     ReflectionTestUtils.setField(request, "lessonType", "video");
     ReflectionTestUtils.setField(request, "videoId", "video-asset-004");
-    ReflectionTestUtils.setField(request, "videoUrl", "https://cdn.devpath.com/lessons/video-4.mp4");
+    ReflectionTestUtils.setField(
+        request, "videoUrl", "https://cdn.devpath.com/lessons/video-4.mp4");
     ReflectionTestUtils.setField(request, "videoProvider", "r2");
     ReflectionTestUtils.setField(
         request, "thumbnailUrl", "https://cdn.devpath.com/lessons/thumbnails/video-4.png");
@@ -1272,7 +1287,8 @@ class InstructorCourseServiceIntegrationTest {
   }
 
   private InstructorCourseDto.UpdateMetadataRequest updateMetadataRequest() {
-    InstructorCourseDto.UpdateMetadataRequest request = new InstructorCourseDto.UpdateMetadataRequest();
+    InstructorCourseDto.UpdateMetadataRequest request =
+        new InstructorCourseDto.UpdateMetadataRequest();
     ReflectionTestUtils.setField(request, "prerequisites", List.of("Java 기본 문법", "HTTP 기초"));
     ReflectionTestUtils.setField(request, "jobRelevance", List.of("백엔드 개발자", "서버 엔지니어"));
     ReflectionTestUtils.setField(request, "tagIds", List.of(jpaTagId, springSecurityTagId));
@@ -1283,9 +1299,7 @@ class InstructorCourseServiceIntegrationTest {
     InstructorCourseDto.ReplaceObjectivesRequest request =
         new InstructorCourseDto.ReplaceObjectivesRequest();
     ReflectionTestUtils.setField(
-        request,
-        "objectives",
-        List.of("JWT 인증 구조를 이해한다.", "Spring Security 필터 체인을 설명할 수 있다."));
+        request, "objectives", List.of("JWT 인증 구조를 이해한다.", "Spring Security 필터 체인을 설명할 수 있다."));
     return request;
   }
 
@@ -1298,15 +1312,19 @@ class InstructorCourseServiceIntegrationTest {
   }
 
   private InstructorCourseDto.UploadThumbnailRequest uploadThumbnailRequest() {
-    InstructorCourseDto.UploadThumbnailRequest request = new InstructorCourseDto.UploadThumbnailRequest();
-    ReflectionTestUtils.setField(request, "thumbnailUrl", "https://cdn.devpath.com/courses/thumb.png");
+    InstructorCourseDto.UploadThumbnailRequest request =
+        new InstructorCourseDto.UploadThumbnailRequest();
+    ReflectionTestUtils.setField(
+        request, "thumbnailUrl", "https://cdn.devpath.com/courses/thumb.png");
     ReflectionTestUtils.setField(request, "originalFileName", "thumb.png");
     return request;
   }
 
   private InstructorCourseDto.UploadTrailerRequest uploadTrailerRequest() {
-    InstructorCourseDto.UploadTrailerRequest request = new InstructorCourseDto.UploadTrailerRequest();
-    ReflectionTestUtils.setField(request, "trailerUrl", "https://cdn.devpath.com/courses/trailer.mp4");
+    InstructorCourseDto.UploadTrailerRequest request =
+        new InstructorCourseDto.UploadTrailerRequest();
+    ReflectionTestUtils.setField(
+        request, "trailerUrl", "https://cdn.devpath.com/courses/trailer.mp4");
     ReflectionTestUtils.setField(request, "videoAssetKey", "courses/trailers/course-1.mp4");
     ReflectionTestUtils.setField(request, "durationSeconds", 95);
     ReflectionTestUtils.setField(request, "originalFileName", "intro.mp4");
@@ -1314,7 +1332,8 @@ class InstructorCourseServiceIntegrationTest {
   }
 
   private InstructorMaterialDto.CreateMaterialRequest createMaterialRequest() {
-    InstructorMaterialDto.CreateMaterialRequest request = new InstructorMaterialDto.CreateMaterialRequest();
+    InstructorMaterialDto.CreateMaterialRequest request =
+        new InstructorMaterialDto.CreateMaterialRequest();
     ReflectionTestUtils.setField(request, "materialType", "SLIDE");
     ReflectionTestUtils.setField(
         request, "materialUrl", "https://cdn.devpath.com/materials/lesson-10-slide.pdf");
@@ -1329,7 +1348,8 @@ class InstructorCourseServiceIntegrationTest {
     Number count =
         (Number)
             entityManager
-                .createNativeQuery("select count(*) from " + tableName + " where course_id = :courseId")
+                .createNativeQuery(
+                    "select count(*) from " + tableName + " where course_id = :courseId")
                 .setParameter("courseId", courseId)
                 .getSingleResult();
     return count.intValue();

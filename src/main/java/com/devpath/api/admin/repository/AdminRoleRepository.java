@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AdminRoleRepository extends JpaRepository<AdminRole, Long> {
 
-    Optional<AdminRole> findByIdAndIsDeletedFalse(Long id);
+  Optional<AdminRole> findByIdAndIsDeletedFalse(Long id);
 
-    List<AdminRole> findByIsDeletedFalse();
+  List<AdminRole> findByIsDeletedFalse();
 
-    boolean existsByRoleNameAndIsDeletedFalse(String roleName);
+  boolean existsByRoleNameAndIsDeletedFalse(String roleName);
 
-    boolean existsByRoleNameAndIsDeletedFalseAndIdNot(String roleName, Long id);
+  boolean existsByRoleNameAndIsDeletedFalseAndIdNot(String roleName, Long id);
 }

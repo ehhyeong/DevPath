@@ -71,7 +71,8 @@ public class QuizCommandService {
   }
 
   // 강사가 특정 퀴즈에 문항과 선택지를 추가한다.
-  public QuizDetailResponse addQuestion(Long instructorUserId, Long quizId, CreateQuizQuestionRequest request) {
+  public QuizDetailResponse addQuestion(
+      Long instructorUserId, Long quizId, CreateQuizQuestionRequest request) {
     validateUserExists(instructorUserId);
 
     Quiz quiz =
@@ -179,7 +180,8 @@ public class QuizCommandService {
       throw new CustomException(ErrorCode.INVALID_INPUT, "문항 생성 시 선택지는 최소 1개 이상 필요합니다.");
     }
 
-    if (request.getQuestionType() == QuestionType.MULTIPLE_CHOICE && request.getOptions().size() < 2) {
+    if (request.getQuestionType() == QuestionType.MULTIPLE_CHOICE
+        && request.getOptions().size() < 2) {
       throw new CustomException(ErrorCode.INVALID_INPUT, "객관식 문항은 선택지가 최소 2개 이상 필요합니다.");
     }
 
@@ -188,7 +190,8 @@ public class QuizCommandService {
     }
 
     // 주관식은 현재 엔티티 구조상 정답 텍스트를 optionText 1개에 저장하는 방식으로 처리한다.
-    if (request.getQuestionType() == QuestionType.SHORT_ANSWER && request.getOptions().size() != 1) {
+    if (request.getQuestionType() == QuestionType.SHORT_ANSWER
+        && request.getOptions().size() != 1) {
       throw new CustomException(ErrorCode.INVALID_INPUT, "주관식 문항은 정답 텍스트 저장용 선택지 1개가 필요합니다.");
     }
   }

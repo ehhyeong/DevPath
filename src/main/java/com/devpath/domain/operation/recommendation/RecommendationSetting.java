@@ -23,35 +23,35 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class RecommendationSetting {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "setting_key", nullable = false, unique = true, length = 100)
-    private String settingKey;
+  @Column(name = "setting_key", nullable = false, unique = true, length = 100)
+  private String settingKey;
 
-    @Column(name = "setting_value", nullable = false)
-    private String settingValue;
+  @Column(name = "setting_value", nullable = false)
+  private String settingValue;
 
-    @Column(length = 255)
-    private String description;
+  @Column(length = 255)
+  private String description;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    @Builder
-    public RecommendationSetting(String settingKey, String settingValue, String description) {
-        this.settingKey = settingKey;
-        this.settingValue = settingValue;
-        this.description = description;
-    }
+  @Builder
+  public RecommendationSetting(String settingKey, String settingValue, String description) {
+    this.settingKey = settingKey;
+    this.settingValue = settingValue;
+    this.description = description;
+  }
 
-    public void updateValue(String settingValue) {
-        this.settingValue = settingValue;
-    }
+  public void updateValue(String settingValue) {
+    this.settingValue = settingValue;
+  }
 }

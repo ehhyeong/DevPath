@@ -10,20 +10,23 @@ import org.springframework.data.repository.query.Param;
 
 public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
-    Optional<Quiz> findByIdAndIsDeletedFalse(Long id);
+  Optional<Quiz> findByIdAndIsDeletedFalse(Long id);
 
-    Optional<Quiz> findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(Long nodeId);
+  Optional<Quiz> findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(Long nodeId);
 
-    @Query("""
+  @Query(
+      """
         select q
         from Quiz q
         where q.roadmapNode.nodeId = :nodeId
           and q.isDeleted = false
         order by q.createdAt desc
         """)
-    List<Quiz> findAllByRoadmapNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(@Param("nodeId") Long nodeId);
+  List<Quiz> findAllByRoadmapNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(
+      @Param("nodeId") Long nodeId);
 
-    @Query("""
+  @Query(
+      """
         select q
         from Quiz q
         join fetch q.roadmapNode rn
@@ -31,7 +34,6 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
           and q.isDeleted = false
         order by q.createdAt desc
         """)
-    List<Quiz> findAllByRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(
-        @Param("nodeIds") Collection<Long> nodeIds
-    );
+  List<Quiz> findAllByRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(
+      @Param("nodeIds") Collection<Long> nodeIds);
 }

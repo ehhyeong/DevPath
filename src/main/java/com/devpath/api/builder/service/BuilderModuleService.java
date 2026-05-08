@@ -15,8 +15,7 @@ public class BuilderModuleService {
 
   @Transactional(readOnly = true)
   public List<BuilderModuleDto> getModulesByCategory(String category) {
-    return builderModuleRepository.findByCategoryOrderBySortOrder(category)
-        .stream()
+    return builderModuleRepository.findByCategoryOrderBySortOrder(category).stream()
         .map(BuilderModuleDto::from)
         .toList();
   }

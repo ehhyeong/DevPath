@@ -30,8 +30,7 @@ public class JobRecommendationResponse {
       @Schema(description = "추천 점수", example = "35") Integer recommendationScore,
       @Schema(description = "매칭된 기술 태그 목록", example = "[\"Java\", \"Spring Boot\"]")
           List<String> matchedSkillTags,
-      @Schema(description = "추천 사유", example = "보유/검증/로드맵 스킬과 2개 기술이 일치합니다.")
-          String reason) {
+      @Schema(description = "추천 사유", example = "보유/검증/로드맵 스킬과 2개 기술이 일치합니다.") String reason) {
 
     public static Recommendation from(
         JobPosting jobPosting, Integer recommendationScore, List<String> matchedSkillTags) {

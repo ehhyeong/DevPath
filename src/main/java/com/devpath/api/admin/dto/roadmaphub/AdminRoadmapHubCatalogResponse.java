@@ -10,11 +10,9 @@ import lombok.Getter;
 @Builder
 public class AdminRoadmapHubCatalogResponse {
 
-  @Builder.Default
-  private List<RoadmapHubCatalogResponse.SectionItem> sections = List.of();
+  @Builder.Default private List<RoadmapHubCatalogResponse.SectionItem> sections = List.of();
 
-  @Builder.Default
-  private List<OfficialRoadmapOption> officialRoadmaps = List.of();
+  @Builder.Default private List<OfficialRoadmapOption> officialRoadmaps = List.of();
 
   @Getter
   @Builder

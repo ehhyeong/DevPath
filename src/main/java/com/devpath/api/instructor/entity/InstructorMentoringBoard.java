@@ -17,43 +17,40 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class InstructorMentoringBoard {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, unique = true)
-    private Long instructorId;
+  @Column(nullable = false, unique = true)
+  private Long instructorId;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String payloadJson;
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String payloadJson;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    private LocalDateTime updatedAt;
+  @LastModifiedDate private LocalDateTime updatedAt;
 
-    protected InstructorMentoringBoard() {
-    }
+  protected InstructorMentoringBoard() {}
 
-    public InstructorMentoringBoard(Long instructorId, String payloadJson) {
-        this.instructorId = instructorId;
-        this.payloadJson = payloadJson;
-    }
+  public InstructorMentoringBoard(Long instructorId, String payloadJson) {
+    this.instructorId = instructorId;
+    this.payloadJson = payloadJson;
+  }
 
-    public Long getId() {
-        return id;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    public Long getInstructorId() {
-        return instructorId;
-    }
+  public Long getInstructorId() {
+    return instructorId;
+  }
 
-    public String getPayloadJson() {
-        return payloadJson;
-    }
+  public String getPayloadJson() {
+    return payloadJson;
+  }
 
-    public void updatePayload(String payloadJson) {
-        this.payloadJson = payloadJson;
-    }
+  public void updatePayload(String payloadJson) {
+    this.payloadJson = payloadJson;
+  }
 }

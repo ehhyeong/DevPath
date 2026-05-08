@@ -39,8 +39,7 @@ public class InstructorRubricController {
       @Valid @RequestBody CreateRubricRequest request) {
     return ResponseEntity.ok(
         ApiResponse.success(
-            "루브릭이 생성되었습니다.",
-            rubricCommandService.createRubric(userId, assignmentId, request)));
+            "루브릭이 생성되었습니다.", rubricCommandService.createRubric(userId, assignmentId, request)));
   }
 
   @Operation(

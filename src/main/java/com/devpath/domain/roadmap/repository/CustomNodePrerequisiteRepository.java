@@ -16,17 +16,18 @@ public interface CustomNodePrerequisiteRepository
 
   List<CustomNodePrerequisite> findAllByCustomNode(CustomRoadmapNode customNode);
 
-  @Query("SELECT COUNT(p) FROM CustomNodePrerequisite p " +
-         "WHERE p.customNode = :node " +
-         "AND p.prerequisiteCustomNode.status <> :status")
+  @Query(
+      "SELECT COUNT(p) FROM CustomNodePrerequisite p "
+          + "WHERE p.customNode = :node "
+          + "AND p.prerequisiteCustomNode.status <> :status")
   long countByCustomNodeAndPrerequisiteNotCompleted(
-      @Param("node") CustomRoadmapNode node,
-      @Param("status") NodeStatus status);
+      @Param("node") CustomRoadmapNode node, @Param("status") NodeStatus status);
 
   void deleteAllByCustomRoadmap(CustomRoadmap customRoadmap);
 
   /** 삭제 대상 노드가 subject이거나 prerequisite인 레코드를 모두 제거 */
   @Modifying
-  @Query("DELETE FROM CustomNodePrerequisite c WHERE c.customNode = :node OR c.prerequisiteCustomNode = :node")
+  @Query(
+      "DELETE FROM CustomNodePrerequisite c WHERE c.customNode = :node OR c.prerequisiteCustomNode = :node")
   void deleteAllByCustomNodeOrPrerequisiteCustomNode(@Param("node") CustomRoadmapNode node);
 }

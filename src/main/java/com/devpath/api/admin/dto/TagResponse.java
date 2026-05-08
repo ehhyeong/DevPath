@@ -12,22 +12,22 @@ import lombok.NoArgsConstructor;
 @Schema(description = "태그 응답 DTO")
 public class TagResponse {
 
-    private Long tagId;
-    private String name;
-    private String category;
+  private Long tagId;
+  private String name;
+  private String category;
 
-    @Builder
-    public TagResponse(Long tagId, String name, String category) {
-        this.tagId = tagId;
-        this.name = name;
-        this.category = category;
-    }
+  @Builder
+  public TagResponse(Long tagId, String name, String category) {
+    this.tagId = tagId;
+    this.name = name;
+    this.category = category;
+  }
 
-    public static TagResponse from(Tag tag) {
-        return TagResponse.builder()
-                .tagId(tag.getTagId())
-                .name(tag.getName())
-                .category(tag.getCategory())
-                .build();
-    }
+  public static TagResponse from(Tag tag) {
+    return TagResponse.builder()
+        .tagId(tag.getTagId())
+        .name(tag.getName())
+        .category(tag.getCategory())
+        .build();
+  }
 }

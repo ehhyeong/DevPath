@@ -27,22 +27,21 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class PortfolioPdfVersion {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long portfolioId;
+  @Column(nullable = false)
+  private Long portfolioId;
 
-    @Column(nullable = false)
-    private int version;
+  @Column(nullable = false)
+  private int version;
 
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private PortfolioPdfStatus status = PortfolioPdfStatus.PENDING;
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  private PortfolioPdfStatus status = PortfolioPdfStatus.PENDING;
 
-    private String filePath;
+  private String filePath;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 }

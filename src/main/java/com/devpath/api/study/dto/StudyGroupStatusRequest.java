@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Schema(description = "스터디 그룹 모집 상태 변경 요청 DTO")
 public class StudyGroupStatusRequest {
 
-    @NotNull(message = "변경할 상태값은 필수입니다.")
-    @Schema(description = "변경할 상태", example = "IN_PROGRESS")
-    private StudyGroupStatus status;
+  @NotNull(message = "변경할 상태값은 필수입니다.")
+  @Schema(description = "변경할 상태", example = "IN_PROGRESS")
+  private StudyGroupStatus status;
 }

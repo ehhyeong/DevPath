@@ -24,24 +24,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AdminSettlementController {
 
-    private final AdminSettlementService adminSettlementService;
+  private final AdminSettlementService adminSettlementService;
 
-    @Operation(summary = "정산 보류 처리", description = "정산을 보류 상태로 변경합니다.")
-    @PostMapping("/{settlementId}/hold")
-    public ApiResponse<Void> holdSettlement(
-            @PathVariable Long settlementId,
-            @RequestBody @Valid SettlementHoldRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        adminSettlementService.holdSettlement(settlementId, userId, request);
-        return ApiResponse.success("정산이 보류 처리되었습니다.", null);
-    }
+  @Operation(summary = "정산 보류 처리", description = "정산을 보류 상태로 변경합니다.")
+  @PostMapping("/{settlementId}/hold")
+  public ApiResponse<Void> holdSettlement(
+      @PathVariable Long settlementId,
+      @RequestBody @Valid SettlementHoldRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    adminSettlementService.holdSettlement(settlementId, userId, request);
+    return ApiResponse.success("정산이 보류 처리되었습니다.", null);
+  }
 
-    @Operation(summary = "정산 가능 여부 계산", description = "환불 요청 기준으로 정산 가능 여부를 계산합니다.")
-    @GetMapping("/eligibility")
-    public ApiResponse<SettlementEligibilityResponse> checkEligibility(
-            @Parameter(description = "환불 요청 ID") @RequestParam Long refundRequestId
-    ) {
-        return ApiResponse.success("정산 가능 여부를 조회했습니다.", adminSettlementService.checkEligibility(refundRequestId));
-    }
+  @Operation(summary = "정산 가능 여부 계산", description = "환불 요청 기준으로 정산 가능 여부를 계산합니다.")
+  @GetMapping("/eligibility")
+  public ApiResponse<SettlementEligibilityResponse> checkEligibility(
+      @Parameter(description = "환불 요청 ID") @RequestParam Long refundRequestId) {
+    return ApiResponse.success(
+        "정산 가능 여부를 조회했습니다.", adminSettlementService.checkEligibility(refundRequestId));
+  }
 }

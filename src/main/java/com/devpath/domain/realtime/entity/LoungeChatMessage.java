@@ -24,52 +24,48 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class LoungeChatMessage {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "lounge_chat_message_id")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "lounge_chat_message_id")
+  private Long id;
 
-    // A 담당 라운지/워크스페이스 Entity와 충돌을 줄이기 위해 ID만 느슨하게 참조한다.
-    @Column(name = "lounge_id", nullable = false)
-    private Long loungeId;
+  // A 담당 라운지/워크스페이스 Entity와 충돌을 줄이기 위해 ID만 느슨하게 참조한다.
+  @Column(name = "lounge_id", nullable = false)
+  private Long loungeId;
 
-    // 메시지를 보낸 사용자다.
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id", nullable = false)
-    private User sender;
+  // 메시지를 보낸 사용자다.
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "sender_id", nullable = false)
+  private User sender;
 
-    // 라운지 채팅 메시지 본문이다.
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String content;
+  // 라운지 채팅 메시지 본문이다.
+  @Column(nullable = false, columnDefinition = "TEXT")
+  private String content;
 
-    // 채팅 이력 보존을 위해 물리 삭제 대신 논리 삭제를 사용한다.
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted;
+  // 채팅 이력 보존을 위해 물리 삭제 대신 논리 삭제를 사용한다.
+  @Column(name = "is_deleted", nullable = false)
+  private Boolean isDeleted;
 
-    // 최초 작성 시간을 자동 기록한다.
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+  // 최초 작성 시간을 자동 기록한다.
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
 
-    // 마지막 수정 시간을 자동 기록한다.
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+  // 마지막 수정 시간을 자동 기록한다.
+  @UpdateTimestamp
+  @Column(name = "updated_at", nullable = false)
+  private LocalDateTime updatedAt;
 
-    @Builder
-    private LoungeChatMessage(
-            Long loungeId,
-            User sender,
-            String content
-    ) {
-        this.loungeId = loungeId;
-        this.sender = sender;
-        this.content = content;
-        this.isDeleted = false;
-    }
+  @Builder
+  private LoungeChatMessage(Long loungeId, User sender, String content) {
+    this.loungeId = loungeId;
+    this.sender = sender;
+    this.content = content;
+    this.isDeleted = false;
+  }
 
-    // 메시지를 논리 삭제한다.
-    public void delete() {
-        this.isDeleted = true;
-    }
+  // 메시지를 논리 삭제한다.
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

@@ -22,21 +22,19 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "학습자 - 스터디 매칭", description = "학습자 스터디 매칭 및 추천 API")
 public class StudyMatchController {
 
-    private final StudyMatchService studyMatchService;
+  private final StudyMatchService studyMatchService;
 
-    @GetMapping
-    @Operation(summary = "내 스터디 매칭 조회")
-    public ApiResponse<List<StudyMatchResponse>> getMyMatches(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId
-    ) {
-        return ApiResponse.ok(studyMatchService.getMyMatches(requireUserId(learnerId)));
-    }
+  @GetMapping
+  @Operation(summary = "내 스터디 매칭 조회")
+  public ApiResponse<List<StudyMatchResponse>> getMyMatches(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId) {
+    return ApiResponse.ok(studyMatchService.getMyMatches(requireUserId(learnerId)));
+  }
 
-    @GetMapping("/recommendations")
-    @Operation(summary = "스터디 매칭 추천 조회")
-    public ApiResponse<List<StudyMatchRecommendationResponse>> getRecommendations(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId
-    ) {
-        return ApiResponse.ok(studyMatchService.getRecommendations(requireUserId(learnerId)));
-    }
+  @GetMapping("/recommendations")
+  @Operation(summary = "스터디 매칭 추천 조회")
+  public ApiResponse<List<StudyMatchRecommendationResponse>> getRecommendations(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId) {
+    return ApiResponse.ok(studyMatchService.getRecommendations(requireUserId(learnerId)));
+  }
 }

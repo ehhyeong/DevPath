@@ -65,4 +65,3 @@ public class CareerProfileVersion {
     this.versionContent = versionContent;
   }
 }
-

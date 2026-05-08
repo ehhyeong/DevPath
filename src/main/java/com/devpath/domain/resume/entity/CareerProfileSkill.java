@@ -66,4 +66,3 @@ public class CareerProfileSkill {
     this.isDeleted = true;
   }
 }
-

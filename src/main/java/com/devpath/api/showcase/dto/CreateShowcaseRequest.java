@@ -10,15 +10,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateShowcaseRequest {
 
-    @NotBlank
-    private String title;
+  @NotBlank private String title;
 
-    private String description;
+  private String description;
 
-    private String thumbnailUrl;
+  private String thumbnailUrl;
 
-    @NotNull
-    private ShowcaseCategory category;
+  @NotNull private ShowcaseCategory category;
 
-    private boolean isPublic = true;
+  private boolean isPublic = true;
 }

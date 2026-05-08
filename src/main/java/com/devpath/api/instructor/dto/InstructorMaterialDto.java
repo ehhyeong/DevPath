@@ -18,7 +18,9 @@ public class InstructorMaterialDto {
     private String materialType;
 
     @NotBlank(message = "자료 URL은 필수입니다.")
-    @Schema(description = "자료 URL", example = "https://cdn.devpath.com/materials/lesson-10-slide.pdf")
+    @Schema(
+        description = "자료 URL",
+        example = "https://cdn.devpath.com/materials/lesson-10-slide.pdf")
     private String materialUrl;
 
     @Schema(description = "스토리지 에셋 키", example = "lesson/materials/10/week1-slide.pdf")

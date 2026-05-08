@@ -18,23 +18,23 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class InstructorChannelController {
 
-    private final InstructorChannelService instructorChannelService;
+  private final InstructorChannelService instructorChannelService;
 
-    @Operation(summary = "강사 프로필 수정", description = "소개글, 링크, 전문분야 등을 수정합니다.")
-    @PutMapping("/profile")
-    public ApiResponse<Void> updateProfile(
-            @RequestBody @Valid ChannelProfileUpdateRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-        instructorChannelService.updateProfile(userId, request);
-        return ApiResponse.success("프로필이 수정되었습니다.", null);
-    }
+  @Operation(summary = "강사 프로필 수정", description = "소개글, 링크, 전문분야 등을 수정합니다.")
+  @PutMapping("/profile")
+  public ApiResponse<Void> updateProfile(
+      @RequestBody @Valid ChannelProfileUpdateRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    instructorChannelService.updateProfile(userId, request);
+    return ApiResponse.success("프로필이 수정되었습니다.", null);
+  }
 
-    @Operation(summary = "강사 채널 정보 수정", description = "채널명, 채널 설명을 수정합니다.")
-    @PutMapping("/info")
-    public ApiResponse<Void> updateChannelInfo(
-            @RequestBody @Valid ChannelInfoUpdateRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-        instructorChannelService.updateChannelInfo(userId, request);
-        return ApiResponse.success("채널 정보가 수정되었습니다.", null);
-    }
+  @Operation(summary = "강사 채널 정보 수정", description = "채널명, 채널 설명을 수정합니다.")
+  @PutMapping("/info")
+  public ApiResponse<Void> updateChannelInfo(
+      @RequestBody @Valid ChannelInfoUpdateRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    instructorChannelService.updateChannelInfo(userId, request);
+    return ApiResponse.success("채널 정보가 수정되었습니다.", null);
+  }
 }

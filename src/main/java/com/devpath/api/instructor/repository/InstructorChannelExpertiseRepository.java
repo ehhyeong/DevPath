@@ -5,9 +5,8 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InstructorChannelExpertiseRepository
-        extends JpaRepository<InstructorChannelExpertise, Long> {
+    extends JpaRepository<InstructorChannelExpertise, Long> {
 
-    List<InstructorChannelExpertise> findAllByInstructorIdAndIsDeletedFalseOrderBySortOrderAsc(
-            Long instructorId
-    );
+  List<InstructorChannelExpertise> findAllByInstructorIdAndIsDeletedFalseOrderBySortOrderAsc(
+      Long instructorId);
 }

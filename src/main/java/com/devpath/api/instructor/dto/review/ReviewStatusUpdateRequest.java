@@ -10,6 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReviewStatusUpdateRequest {
 
-    @NotNull
-    private ReviewStatus status;
+  @NotNull private ReviewStatus status;
 }

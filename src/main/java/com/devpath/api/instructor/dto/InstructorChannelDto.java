@@ -18,9 +18,7 @@ public class InstructorChannelDto {
     @Schema(description = "강사 프로필 요약 정보")
     private InstructorPublicProfileDto.ProfileResponse profile;
 
-    @Schema(
-        description = "강사 채널 소개",
-        example = "Spring Boot와 Security를 실전 중심으로 가르치는 강사입니다.")
+    @Schema(description = "강사 채널 소개", example = "Spring Boot와 Security를 실전 중심으로 가르치는 강사입니다.")
     private String intro;
 
     @Schema(description = "강사 전문분야 목록")
@@ -58,14 +56,10 @@ public class InstructorChannelDto {
     @Schema(description = "강의 제목", example = "Spring Security 완전 정복")
     private String title;
 
-    @Schema(
-        description = "강의 부제목",
-        example = "JWT, OAuth2, SecurityFilterChain 실전 가이드")
+    @Schema(description = "강의 부제목", example = "JWT, OAuth2, SecurityFilterChain 실전 가이드")
     private String subtitle;
 
-    @Schema(
-        description = "강의 썸네일 URL",
-        example = "https://cdn.devpath.com/course/12/thumbnail.png")
+    @Schema(description = "강의 썸네일 URL", example = "https://cdn.devpath.com/course/12/thumbnail.png")
     private String thumbnailUrl;
   }
 }

@@ -24,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AdminRoadmapHubService {
 
-  private static final Set<String> SUPPORTED_LAYOUT_TYPES = Set.of("CARD_GRID", "CHIP_GRID", "LINK_LIST");
+  private static final Set<String> SUPPORTED_LAYOUT_TYPES =
+      Set.of("CARD_GRID", "CHIP_GRID", "LINK_LIST");
   private static final Pattern HEX_COLOR_PATTERN = Pattern.compile("^#[0-9a-fA-F]{6}$");
 
   private final RoadmapHubSectionRepository roadmapHubSectionRepository;
@@ -40,7 +41,8 @@ public class AdminRoadmapHubService {
 
     Set<String> sectionKeys = new LinkedHashSet<>();
     for (RoadmapHubCatalogUpdateRequest.SectionRequest sectionRequest : requestedSections) {
-      String sectionKey = normalizeSectionKey(sectionRequest == null ? null : sectionRequest.getSectionKey());
+      String sectionKey =
+          normalizeSectionKey(sectionRequest == null ? null : sectionRequest.getSectionKey());
       if (!sectionKeys.add(sectionKey)) {
         throw new CustomException(ErrorCode.INVALID_INPUT);
       }
@@ -50,42 +52,49 @@ public class AdminRoadmapHubService {
     roadmapHubSectionRepository.deleteAllInBatch();
 
     for (int sectionIndex = 0; sectionIndex < requestedSections.size(); sectionIndex += 1) {
-      RoadmapHubCatalogUpdateRequest.SectionRequest sectionRequest = requestedSections.get(sectionIndex);
-      RoadmapHubSection savedSection = roadmapHubSectionRepository.save(
-          RoadmapHubSection.builder()
-              .sectionKey(normalizeSectionKey(sectionRequest.getSectionKey()))
-              .title(normalizeRequiredValue(sectionRequest.getTitle()))
-              .description(normalizeOptionalValue(sectionRequest.getDescription()))
-              .layoutType(normalizeLayoutType(sectionRequest.getLayoutType()))
-              .sortOrder(normalizeSortOrder(sectionRequest.getSortOrder(), sectionIndex))
-              .active(sectionRequest.getActive() == null || sectionRequest.getActive())
-              .build());
+      RoadmapHubCatalogUpdateRequest.SectionRequest sectionRequest =
+          requestedSections.get(sectionIndex);
+      RoadmapHubSection savedSection =
+          roadmapHubSectionRepository.save(
+              RoadmapHubSection.builder()
+                  .sectionKey(normalizeSectionKey(sectionRequest.getSectionKey()))
+                  .title(normalizeRequiredValue(sectionRequest.getTitle()))
+                  .description(normalizeOptionalValue(sectionRequest.getDescription()))
+                  .layoutType(normalizeLayoutType(sectionRequest.getLayoutType()))
+                  .sortOrder(normalizeSortOrder(sectionRequest.getSortOrder(), sectionIndex))
+                  .active(sectionRequest.getActive() == null || sectionRequest.getActive())
+                  .build());
 
       saveItems(savedSection, sectionRequest.getItems());
     }
   }
 
   private void saveItems(
-      RoadmapHubSection section,
-      List<RoadmapHubCatalogUpdateRequest.ItemRequest> items
-  ) {
+      RoadmapHubSection section, List<RoadmapHubCatalogUpdateRequest.ItemRequest> items) {
     if (items == null || items.isEmpty()) {
       return;
     }
 
     for (int itemIndex = 0; itemIndex < items.size(); itemIndex += 1) {
       RoadmapHubCatalogUpdateRequest.ItemRequest itemRequest = items.get(itemIndex);
-      Roadmap linkedRoadmap = resolveLinkedRoadmap(itemRequest == null ? null : itemRequest.getLinkedRoadmapId());
+      Roadmap linkedRoadmap =
+          resolveLinkedRoadmap(itemRequest == null ? null : itemRequest.getLinkedRoadmapId());
 
       roadmapHubItemRepository.save(
           RoadmapHubItem.builder()
               .section(section)
               .title(normalizeRequiredValue(itemRequest == null ? null : itemRequest.getTitle()))
-              .subtitle(normalizeOptionalValue(itemRequest == null ? null : itemRequest.getSubtitle()))
-              .iconClass(normalizeOptionalValue(itemRequest == null ? null : itemRequest.getIconClass()))
-              .iconColor(normalizeColorValue(itemRequest == null ? null : itemRequest.getIconColor()))
-              .sortOrder(normalizeSortOrder(itemRequest == null ? null : itemRequest.getSortOrder(), itemIndex))
-              .active(itemRequest == null || itemRequest.getActive() == null || itemRequest.getActive())
+              .subtitle(
+                  normalizeOptionalValue(itemRequest == null ? null : itemRequest.getSubtitle()))
+              .iconClass(
+                  normalizeOptionalValue(itemRequest == null ? null : itemRequest.getIconClass()))
+              .iconColor(
+                  normalizeColorValue(itemRequest == null ? null : itemRequest.getIconColor()))
+              .sortOrder(
+                  normalizeSortOrder(
+                      itemRequest == null ? null : itemRequest.getSortOrder(), itemIndex))
+              .active(
+                  itemRequest == null || itemRequest.getActive() == null || itemRequest.getActive())
               .featured(itemRequest != null && Boolean.TRUE.equals(itemRequest.getFeatured()))
               .linkedRoadmap(linkedRoadmap)
               .build());
@@ -97,7 +106,8 @@ public class AdminRoadmapHubService {
       return null;
     }
 
-    return roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(linkedRoadmapId)
+    return roadmapRepository
+        .findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(linkedRoadmapId)
         .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NOT_FOUND));
   }
 

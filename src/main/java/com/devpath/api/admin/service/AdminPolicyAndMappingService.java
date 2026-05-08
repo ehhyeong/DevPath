@@ -47,7 +47,8 @@ public class AdminPolicyAndMappingService {
       BigDecimal.valueOf(85.0).setScale(1, RoundingMode.HALF_UP);
   private static final Boolean DEFAULT_HLS_ENCRYPTED = true;
   private static final Integer DEFAULT_MAX_CONCURRENT_DEVICES = 3;
-  private static final BigDecimal HUNDRED = BigDecimal.valueOf(100).setScale(1, RoundingMode.HALF_UP);
+  private static final BigDecimal HUNDRED =
+      BigDecimal.valueOf(100).setScale(1, RoundingMode.HALF_UP);
 
   private final CourseRepository courseRepository;
   private final CourseTagMapRepository courseTagMapRepository;
@@ -89,8 +90,7 @@ public class AdminPolicyAndMappingService {
     Map<Long, List<String>> requiredTagsByNodeId =
         candidateNodes.isEmpty()
             ? Map.of()
-            : buildRequiredTagsMap(
-                candidateNodes.stream().map(RoadmapNode::getNodeId).toList());
+            : buildRequiredTagsMap(candidateNodes.stream().map(RoadmapNode::getNodeId).toList());
 
     List<Long> courseIds = courses.stream().map(Course::getCourseId).toList();
     Map<Long, List<Long>> mappedNodeIdsByCourseId = buildMappedNodeIdsMap(courseIds);
@@ -126,7 +126,9 @@ public class AdminPolicyAndMappingService {
     }
 
     List<CourseNodeMapping> mappings =
-        nodes.stream().map(node -> CourseNodeMapping.builder().course(course).node(node).build()).toList();
+        nodes.stream()
+            .map(node -> CourseNodeMapping.builder().course(course).node(node).build())
+            .toList();
 
     courseNodeMappingRepository.saveAll(mappings);
   }
@@ -182,10 +184,14 @@ public class AdminPolicyAndMappingService {
     List<NodeCandidateItem> candidates =
         candidateNodes.stream()
             .filter(node -> requiredTagsByNodeId.containsKey(node.getNodeId()))
-            .map(node -> toNodeCandidateItem(node, courseTags, requiredTagsByNodeId.get(node.getNodeId())))
+            .map(
+                node ->
+                    toNodeCandidateItem(
+                        node, courseTags, requiredTagsByNodeId.get(node.getNodeId())))
             .filter(candidate -> !candidate.getMatchedTags().isEmpty())
             .sorted(
-                Comparator.comparing(NodeCandidateItem::getCoveragePercent).reversed()
+                Comparator.comparing(NodeCandidateItem::getCoveragePercent)
+                    .reversed()
                     .thenComparing(candidate -> candidate.getMissingTags().size())
                     .thenComparing(NodeCandidateItem::getRoadmapId)
                     .thenComparing(NodeCandidateItem::getSortOrder)
@@ -193,7 +199,9 @@ public class AdminPolicyAndMappingService {
             .toList();
 
     List<Long> mappedNodeIds =
-        mappedNodeIdsByCourseId.getOrDefault(course.getCourseId(), List.of()).stream().sorted().toList();
+        mappedNodeIdsByCourseId.getOrDefault(course.getCourseId(), List.of()).stream()
+            .sorted()
+            .toList();
 
     return CourseMappingCandidateItem.builder()
         .courseId(course.getCourseId())
@@ -209,7 +217,8 @@ public class AdminPolicyAndMappingService {
   private NodeCandidateItem toNodeCandidateItem(
       RoadmapNode node, List<String> courseTags, List<String> requiredTags) {
     LinkedHashSet<String> courseTagSet = new LinkedHashSet<>(courseTags);
-    List<String> missingTags = requiredTags.stream().filter(tag -> !courseTagSet.contains(tag)).toList();
+    List<String> missingTags =
+        requiredTags.stream().filter(tag -> !courseTagSet.contains(tag)).toList();
     List<String> matchedTags = requiredTags.stream().filter(courseTagSet::contains).toList();
     BigDecimal coveragePercent = calculateCoveragePercent(matchedTags.size(), requiredTags.size());
     boolean fullyMatched = tagValidationService.validateTags(requiredTags, courseTags);
@@ -243,10 +252,10 @@ public class AdminPolicyAndMappingService {
         continue;
       }
 
-      tempMap.computeIfAbsent(row.getNodeId(), key -> new LinkedHashSet<>()).add(row.getTagName().trim());
+      tempMap
+          .computeIfAbsent(row.getNodeId(), key -> new LinkedHashSet<>())
+          .add(row.getTagName().trim());
     }
-
-
 
     Map<Long, List<String>> requiredTagsByNodeId = new LinkedHashMap<>();
     for (Map.Entry<Long, LinkedHashSet<String>> entry : tempMap.entrySet()) {
@@ -262,7 +271,8 @@ public class AdminPolicyAndMappingService {
     }
 
     Map<Long, LinkedHashSet<Long>> tempMap = new LinkedHashMap<>();
-    for (CourseNodeMapping mapping : courseNodeMappingRepository.findAllByCourseCourseIdIn(courseIds)) {
+    for (CourseNodeMapping mapping :
+        courseNodeMappingRepository.findAllByCourseCourseIdIn(courseIds)) {
       tempMap
           .computeIfAbsent(mapping.getCourse().getCourseId(), key -> new LinkedHashSet<>())
           .add(mapping.getNode().getNodeId());
@@ -354,32 +364,46 @@ public class AdminPolicyAndMappingService {
     // TODO: 추후 AI 기반 태그 매칭 알고리즘 연동 예정
     MappingCandidatesResponse existing = getMappingCandidates();
     return existing.getCourses().stream()
-        .map(item -> CourseNodeMappingCandidateResponse.builder()
-            .courseId(item.getCourseId())
-            .courseTitle(item.getCourseTitle())
-            .suggestedNodeIds(item.getCandidates().stream()
-                .map(NodeCandidateItem::getNodeId)
-                .collect(Collectors.toList()))
-            .tagMatchRate(item.getCandidates().isEmpty() ? 0.0 :
-                item.getCandidates().stream()
-                    .mapToDouble(c -> c.getCoveragePercent().doubleValue())
-                    .average().orElse(0.0))
-            .build())
+        .map(
+            item ->
+                CourseNodeMappingCandidateResponse.builder()
+                    .courseId(item.getCourseId())
+                    .courseTitle(item.getCourseTitle())
+                    .suggestedNodeIds(
+                        item.getCandidates().stream()
+                            .map(NodeCandidateItem::getNodeId)
+                            .collect(Collectors.toList()))
+                    .tagMatchRate(
+                        item.getCandidates().isEmpty()
+                            ? 0.0
+                            : item.getCandidates().stream()
+                                .mapToDouble(c -> c.getCoveragePercent().doubleValue())
+                                .average()
+                                .orElse(0.0))
+                    .build())
         .collect(Collectors.toList());
   }
 
   public void applyNodeMapping(Long courseId, CourseNodeMappingRequest request) {
-    Course course = courseRepository.findById(courseId)
-        .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+    Course course =
+        courseRepository
+            .findById(courseId)
+            .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
     List<Long> nodeIds = normalizeUniqueIds(request == null ? null : request.getNodeIds());
     List<RoadmapNode> nodes = loadNodes(nodeIds);
     courseNodeMappingRepository.deleteAllByCourseCourseId(courseId);
     if (nodes.isEmpty()) {
       return;
     }
-    List<com.devpath.domain.course.entity.CourseNodeMapping> mappings = nodes.stream()
-        .map(node -> com.devpath.domain.course.entity.CourseNodeMapping.builder().course(course).node(node).build())
-        .toList();
+    List<com.devpath.domain.course.entity.CourseNodeMapping> mappings =
+        nodes.stream()
+            .map(
+                node ->
+                    com.devpath.domain.course.entity.CourseNodeMapping.builder()
+                        .course(course)
+                        .node(node)
+                        .build())
+            .toList();
     courseNodeMappingRepository.saveAll(mappings);
   }
 
@@ -387,8 +411,7 @@ public class AdminPolicyAndMappingService {
   public com.devpath.api.admin.dto.governance.SystemPolicyResponse getSystemPoliciesSimple() {
     // TODO: refundPolicyDays, maxCoursePrice DB 연동 예정
     SystemSetting setting = systemSettingRepository.findTopByOrderBySettingIdAsc().orElse(null);
-    Integer platformFeeRate =
-        setting != null ? setting.getPlatformFeeRate().intValue() : 20;
+    Integer platformFeeRate = setting != null ? setting.getPlatformFeeRate().intValue() : 20;
 
     // 이번 단계에서는 DB 스키마 확장 없이 기본 응답값만 안정적으로 유지한다.
     Integer refundPolicyDays = 7;
@@ -416,8 +439,10 @@ public class AdminPolicyAndMappingService {
   public void updateStreamingPolicySimple(StreamingPolicyUpdateRequest request) {
     // TODO: maxResolution, watermarkEnabled 실제 정책 저장 연동 예정
     SystemSetting setting = getOrCreateSystemSetting();
-    Boolean hlsEncrypted = request != null && request.getHlsEnabled() != null
-        ? request.getHlsEnabled() : setting.getIsHlsEncrypted();
+    Boolean hlsEncrypted =
+        request != null && request.getHlsEnabled() != null
+            ? request.getHlsEnabled()
+            : setting.getIsHlsEncrypted();
     Integer maxConcurrentDevices = setting.getMaxConcurrentDevices();
 
     if (hlsEncrypted == null || maxConcurrentDevices == null || maxConcurrentDevices <= 0) {

@@ -40,11 +40,9 @@ public interface RoadmapNodeRepository extends JpaRepository<RoadmapNode, Long> 
               and r.isPublic = true
               and r.isDeleted = false
             order by rn.nodeId asc
-            """
-  )
+            """)
   List<RoadmapNode> findOfficialPublicNodesByNodeTypeAndSubTopicsInAndBranchGroupIn(
       @Param("nodeType") String nodeType,
       @Param("subTopics") Collection<String> subTopics,
-      @Param("branchGroups") Collection<Integer> branchGroups
-  );
+      @Param("branchGroups") Collection<Integer> branchGroups);
 }

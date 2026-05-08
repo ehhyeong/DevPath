@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AdminPermissionRepository extends JpaRepository<AdminPermission, Long> {
 
-    List<AdminPermission> findByAdminRoleIdAndIsDeletedFalse(Long adminRoleId);
+  List<AdminPermission> findByAdminRoleIdAndIsDeletedFalse(Long adminRoleId);
 }

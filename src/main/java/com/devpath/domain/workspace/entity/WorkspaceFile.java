@@ -25,40 +25,40 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 public class WorkspaceFile {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "workspace_id", nullable = false)
-    private Long workspaceId;
+  @Column(name = "workspace_id", nullable = false)
+  private Long workspaceId;
 
-    @Column(name = "original_file_name", nullable = false)
-    private String originalFileName;
+  @Column(name = "original_file_name", nullable = false)
+  private String originalFileName;
 
-    @Column(name = "stored_file_name", nullable = false)
-    private String storedFileName;
+  @Column(name = "stored_file_name", nullable = false)
+  private String storedFileName;
 
-    @Column(name = "file_path", nullable = false)
-    private String filePath;
+  @Column(name = "file_path", nullable = false)
+  private String filePath;
 
-    @Column(name = "file_size", nullable = false)
-    private long fileSize;
+  @Column(name = "file_size", nullable = false)
+  private long fileSize;
 
-    @Column(name = "content_type")
-    private String contentType;
+  @Column(name = "content_type")
+  private String contentType;
 
-    @Column(name = "uploaded_by_id", nullable = false)
-    private Long uploadedById;
+  @Column(name = "uploaded_by_id", nullable = false)
+  private Long uploadedById;
 
-    @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+  @Builder.Default
+  @Column(name = "is_deleted", nullable = false)
+  private boolean isDeleted = false;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    public void delete() {
-        this.isDeleted = true;
-    }
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

@@ -23,94 +23,96 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AdminSettlementService {
 
-    private static final long REFUND_AVAILABLE_DAYS = 7L;
-    private static final int MAX_REFUNDABLE_PROGRESS_PERCENT = 30;
+  private static final long REFUND_AVAILABLE_DAYS = 7L;
+  private static final int MAX_REFUNDABLE_PROGRESS_PERCENT = 30;
 
-    private final SettlementRepository settlementRepository;
-    private final SettlementHoldRepository settlementHoldRepository;
-    private final RefundRepository refundRepository;
+  private final SettlementRepository settlementRepository;
+  private final SettlementHoldRepository settlementHoldRepository;
+  private final RefundRepository refundRepository;
 
-    public void holdSettlement(Long settlementId, Long adminId, SettlementHoldRequest request) {
-        Settlement settlement = settlementRepository.findByIdAndIsDeletedFalse(settlementId)
-                .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
+  public void holdSettlement(Long settlementId, Long adminId, SettlementHoldRequest request) {
+    Settlement settlement =
+        settlementRepository
+            .findByIdAndIsDeletedFalse(settlementId)
+            .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
 
-        settlement.hold();
+    settlement.hold();
 
-        settlementHoldRepository.save(
-                SettlementHold.builder()
-                        .settlementId(settlement.getId())
-                        .adminId(adminId)
-                        .reason(request.getReason())
-                        .build()
-        );
-    }
+    settlementHoldRepository.save(
+        SettlementHold.builder()
+            .settlementId(settlement.getId())
+            .adminId(adminId)
+            .reason(request.getReason())
+            .build());
+  }
 
-    @Transactional(readOnly = true)
-    public SettlementEligibilityResponse checkEligibility(Long refundRequestId) {
-        RefundRequest refundRequest = refundRepository.findByIdAndIsDeletedFalse(refundRequestId)
-                .orElseThrow(() -> new CustomException(ErrorCode.REFUND_NOT_FOUND));
+  @Transactional(readOnly = true)
+  public SettlementEligibilityResponse checkEligibility(Long refundRequestId) {
+    RefundRequest refundRequest =
+        refundRepository
+            .findByIdAndIsDeletedFalse(refundRequestId)
+            .orElseThrow(() -> new CustomException(ErrorCode.REFUND_NOT_FOUND));
 
-        LocalDateTime purchasedAt = refundRequest.getEnrolledAt();
-        LocalDateTime refundDeadline = purchasedAt.plusDays(REFUND_AVAILABLE_DAYS);
-        LocalDateTime now = LocalDateTime.now();
+    LocalDateTime purchasedAt = refundRequest.getEnrolledAt();
+    LocalDateTime refundDeadline = purchasedAt.plusDays(REFUND_AVAILABLE_DAYS);
+    LocalDateTime now = LocalDateTime.now();
 
-        Integer progressPercent = refundRequest.getProgressPercentSnapshot() == null
-                ? 0
-                : refundRequest.getProgressPercentSnapshot();
+    Integer progressPercent =
+        refundRequest.getProgressPercentSnapshot() == null
+            ? 0
+            : refundRequest.getProgressPercentSnapshot();
 
-        boolean withinRefundPeriod = !now.isAfter(refundDeadline);
-        boolean progressEligible = progressPercent <= MAX_REFUNDABLE_PROGRESS_PERCENT;
+    boolean withinRefundPeriod = !now.isAfter(refundDeadline);
+    boolean progressEligible = progressPercent <= MAX_REFUNDABLE_PROGRESS_PERCENT;
 
-        // 실제 환불 승인 가능 여부는 기간/진도율/PENDING 상태를 모두 만족해야 한다.
-        boolean refundApprovable = refundRequest.getStatus() == RefundStatus.PENDING
-                && withinRefundPeriod
-                && progressEligible;
+    // 실제 환불 승인 가능 여부는 기간/진도율/PENDING 상태를 모두 만족해야 한다.
+    boolean refundApprovable =
+        refundRequest.getStatus() == RefundStatus.PENDING && withinRefundPeriod && progressEligible;
 
-        Settlement pendingSettlement = settlementRepository
-                .findTopByInstructorIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
-                        refundRequest.getInstructorId(),
-                        SettlementStatus.PENDING
-                )
-                .orElse(null);
+    Settlement pendingSettlement =
+        settlementRepository
+            .findTopByInstructorIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+                refundRequest.getInstructorId(), SettlementStatus.PENDING)
+            .orElse(null);
 
-        Settlement heldSettlement = settlementRepository
-                .findTopByInstructorIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
-                        refundRequest.getInstructorId(),
-                        SettlementStatus.HELD
-                )
-                .orElse(null);
+    Settlement heldSettlement =
+        settlementRepository
+            .findTopByInstructorIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+                refundRequest.getInstructorId(), SettlementStatus.HELD)
+            .orElse(null);
 
-        boolean hasPendingSettlement = pendingSettlement != null;
+    boolean hasPendingSettlement = pendingSettlement != null;
 
-        // HOLD만 있고 PENDING이 없으면 현재 차감 가능한 정산이 없는 상태로 본다.
-        boolean holdBlocked = pendingSettlement == null && heldSettlement != null;
+    // HOLD만 있고 PENDING이 없으면 현재 차감 가능한 정산이 없는 상태로 본다.
+    boolean holdBlocked = pendingSettlement == null && heldSettlement != null;
 
-        // settlement eligibility는 read-only 계산이며 DB 상태를 바꾸지 않는다.
-        boolean isEligible = refundRequest.getStatus() != RefundStatus.APPROVED
-                && !refundApprovable
-                && hasPendingSettlement
-                && !holdBlocked;
+    // settlement eligibility는 read-only 계산이며 DB 상태를 바꾸지 않는다.
+    boolean isEligible =
+        refundRequest.getStatus() != RefundStatus.APPROVED
+            && !refundApprovable
+            && hasPendingSettlement
+            && !holdBlocked;
 
-        long remainingDays = Math.max(0, ChronoUnit.DAYS.between(now, refundDeadline));
+    long remainingDays = Math.max(0, ChronoUnit.DAYS.between(now, refundDeadline));
 
-        return SettlementEligibilityResponse.builder()
-                .refundRequestId(refundRequestId)
-                .courseId(refundRequest.getCourseId())
-                .learnerId(refundRequest.getLearnerId())
-                .instructorId(refundRequest.getInstructorId())
-                .purchasedAt(purchasedAt)
-                .refundDeadline(refundDeadline)
-                .progressPercent(progressPercent)
-                .refundAmount(refundRequest.getRefundAmount())
-                .withinRefundPeriod(withinRefundPeriod)
-                .progressEligible(progressEligible)
-                .refundApprovable(refundApprovable)
-                .holdBlocked(holdBlocked)
-                .hasPendingSettlement(hasPendingSettlement)
-                .candidateSettlementId(pendingSettlement == null ? null : pendingSettlement.getId())
-                .candidateSettlementAmount(pendingSettlement == null ? 0L : pendingSettlement.getAmount())
-                .isEligible(isEligible)
-                .remainingDays(remainingDays)
-                .build();
-    }
+    return SettlementEligibilityResponse.builder()
+        .refundRequestId(refundRequestId)
+        .courseId(refundRequest.getCourseId())
+        .learnerId(refundRequest.getLearnerId())
+        .instructorId(refundRequest.getInstructorId())
+        .purchasedAt(purchasedAt)
+        .refundDeadline(refundDeadline)
+        .progressPercent(progressPercent)
+        .refundAmount(refundRequest.getRefundAmount())
+        .withinRefundPeriod(withinRefundPeriod)
+        .progressEligible(progressEligible)
+        .refundApprovable(refundApprovable)
+        .holdBlocked(holdBlocked)
+        .hasPendingSettlement(hasPendingSettlement)
+        .candidateSettlementId(pendingSettlement == null ? null : pendingSettlement.getId())
+        .candidateSettlementAmount(pendingSettlement == null ? 0L : pendingSettlement.getAmount())
+        .isEligible(isEligible)
+        .remainingDays(remainingDays)
+        .build();
+  }
 }

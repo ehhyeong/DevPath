@@ -33,8 +33,7 @@ public class RoadmapController {
   @Operation(summary = "로드맵 허브 카탈로그 조회")
   @GetMapping("/hub-catalog")
   public ApiResponse<RoadmapHubCatalogResponse> getRoadmapHubCatalog() {
-    return ApiResponse.success(
-        "로드맵 허브 카탈로그를 조회했습니다.", roadmapHubQueryService.getPublicCatalog());
+    return ApiResponse.success("로드맵 허브 카탈로그를 조회했습니다.", roadmapHubQueryService.getPublicCatalog());
   }
 
   @Operation(summary = "공식 로드맵 상세 조회", description = "특정 로드맵의 기본 정보와 하위 노드 목록을 정렬해서 조회합니다.")

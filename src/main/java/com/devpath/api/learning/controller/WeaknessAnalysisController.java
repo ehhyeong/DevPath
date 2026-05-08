@@ -19,33 +19,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class WeaknessAnalysisController {
 
-    private final WeaknessAnalysisService weaknessAnalysisService;
+  private final WeaknessAnalysisService weaknessAnalysisService;
 
-    @Operation(
-        summary = "진단 결과 기준 취약점 분석 조회",
-        description = "진단 결과의 취약 태그와 추천 노드를 조회합니다."
-    )
-    @GetMapping("/results/{resultId}")
-    public ResponseEntity<ApiResponse<WeaknessAnalysisResponse>> getAnalysisByResultId(
-        @AuthenticationPrincipal Long userId,
-        @PathVariable Long resultId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-            weaknessAnalysisService.getAnalysisByResultId(userId, resultId)
-        ));
-    }
+  @Operation(summary = "진단 결과 기준 취약점 분석 조회", description = "진단 결과의 취약 태그와 추천 노드를 조회합니다.")
+  @GetMapping("/results/{resultId}")
+  public ResponseEntity<ApiResponse<WeaknessAnalysisResponse>> getAnalysisByResultId(
+      @AuthenticationPrincipal Long userId, @PathVariable Long resultId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(weaknessAnalysisService.getAnalysisByResultId(userId, resultId)));
+  }
 
-    @Operation(
-        summary = "로드맵 최신 취약점 분석 조회",
-        description = "로드맵 기준 최신 취약점 분석 결과를 조회합니다."
-    )
-    @GetMapping("/roadmaps/{roadmapId}/latest")
-    public ResponseEntity<ApiResponse<WeaknessAnalysisResponse>> getLatestAnalysis(
-        @AuthenticationPrincipal Long userId,
-        @PathVariable Long roadmapId
-    ) {
-        return ResponseEntity.ok(ApiResponse.ok(
-            weaknessAnalysisService.getLatestAnalysis(userId, roadmapId)
-        ));
-    }
+  @Operation(summary = "로드맵 최신 취약점 분석 조회", description = "로드맵 기준 최신 취약점 분석 결과를 조회합니다.")
+  @GetMapping("/roadmaps/{roadmapId}/latest")
+  public ResponseEntity<ApiResponse<WeaknessAnalysisResponse>> getLatestAnalysis(
+      @AuthenticationPrincipal Long userId, @PathVariable Long roadmapId) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(weaknessAnalysisService.getLatestAnalysis(userId, roadmapId)));
+  }
 }

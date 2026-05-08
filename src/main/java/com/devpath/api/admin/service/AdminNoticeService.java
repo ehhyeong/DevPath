@@ -16,53 +16,51 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AdminNoticeService {
 
-    private final NoticeRepository noticeRepository;
+  private final NoticeRepository noticeRepository;
 
-    @Transactional
-    public NoticeResponse createNotice(Long adminId, NoticeCreateRequest request) {
-        Notice notice = Notice.builder()
-                .authorId(adminId)
-                .title(request.getTitle())
-                .content(request.getContent())
-                .isPinned(Boolean.TRUE.equals(request.getIsPinned()))
-                .build();
+  @Transactional
+  public NoticeResponse createNotice(Long adminId, NoticeCreateRequest request) {
+    Notice notice =
+        Notice.builder()
+            .authorId(adminId)
+            .title(request.getTitle())
+            .content(request.getContent())
+            .isPinned(Boolean.TRUE.equals(request.getIsPinned()))
+            .build();
 
-        return NoticeResponse.from(noticeRepository.save(notice));
-    }
+    return NoticeResponse.from(noticeRepository.save(notice));
+  }
 
-    @Transactional
-    public NoticeResponse updateNotice(Long noticeId, Long adminId, NoticeCreateRequest request) {
-        Notice notice = getActiveNotice(noticeId);
+  @Transactional
+  public NoticeResponse updateNotice(Long noticeId, Long adminId, NoticeCreateRequest request) {
+    Notice notice = getActiveNotice(noticeId);
 
-        // 공지는 전사 운영 자산이라 관리자라면 누구나 수정 가능하게 둔다.
-        notice.update(
-                request.getTitle(),
-                request.getContent(),
-                Boolean.TRUE.equals(request.getIsPinned())
-        );
-        return NoticeResponse.from(notice);
-    }
+    // 공지는 전사 운영 자산이라 관리자라면 누구나 수정 가능하게 둔다.
+    notice.update(
+        request.getTitle(), request.getContent(), Boolean.TRUE.equals(request.getIsPinned()));
+    return NoticeResponse.from(notice);
+  }
 
-    @Transactional
-    public void deleteNotice(Long noticeId, Long adminId) {
-        Notice notice = getActiveNotice(noticeId);
-        notice.delete();
-    }
+  @Transactional
+  public void deleteNotice(Long noticeId, Long adminId) {
+    Notice notice = getActiveNotice(noticeId);
+    notice.delete();
+  }
 
-    public List<NoticeResponse> getNotices() {
-        return noticeRepository.findByIsDeletedFalseOrderByIsPinnedDescCreatedAtDesc()
-                .stream()
-                .map(NoticeResponse::from)
-                .toList();
-    }
+  public List<NoticeResponse> getNotices() {
+    return noticeRepository.findByIsDeletedFalseOrderByIsPinnedDescCreatedAtDesc().stream()
+        .map(NoticeResponse::from)
+        .toList();
+  }
 
-    public NoticeResponse getNotice(Long noticeId) {
-        return NoticeResponse.from(getActiveNotice(noticeId));
-    }
+  public NoticeResponse getNotice(Long noticeId) {
+    return NoticeResponse.from(getActiveNotice(noticeId));
+  }
 
-    // 공지 조회 공통 로직을 묶어서 NPE/중복 코드를 줄인다.
-    private Notice getActiveNotice(Long noticeId) {
-        return noticeRepository.findByIdAndIsDeletedFalse(noticeId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOTICE_NOT_FOUND));
-    }
+  // 공지 조회 공통 로직을 묶어서 NPE/중복 코드를 줄인다.
+  private Notice getActiveNotice(Long noticeId) {
+    return noticeRepository
+        .findByIdAndIsDeletedFalse(noticeId)
+        .orElseThrow(() -> new CustomException(ErrorCode.NOTICE_NOT_FOUND));
+  }
 }

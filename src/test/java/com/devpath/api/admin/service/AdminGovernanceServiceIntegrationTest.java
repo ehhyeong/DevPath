@@ -105,14 +105,18 @@ class AdminGovernanceServiceIntegrationTest {
         course.getCourseId(), courseApproveRequest("Approved for publication"));
     flushAndClear();
 
-    assertThat(courseRepository.findById(course.getCourseId())).get().extracting(Course::getStatus)
+    assertThat(courseRepository.findById(course.getCourseId()))
+        .get()
+        .extracting(Course::getStatus)
         .isEqualTo(CourseStatus.PUBLISHED);
 
     adminCourseGovernanceService.rejectCourse(
         course.getCourseId(), courseRejectRequest("Needs more work"));
     flushAndClear();
 
-    assertThat(courseRepository.findById(course.getCourseId())).get().extracting(Course::getStatus)
+    assertThat(courseRepository.findById(course.getCourseId()))
+        .get()
+        .extracting(Course::getStatus)
         .isEqualTo(CourseStatus.DRAFT);
   }
 
@@ -142,10 +146,12 @@ class AdminGovernanceServiceIntegrationTest {
   void updateRequiredTagsReplacesMappings() {
     Tag springBoot = saveTag("Spring Boot");
     Tag springSecurity = saveTag("Spring Security");
-    RoadmapNode node = saveNode(saveOfficialRoadmap("Backend Roadmap"), "Security Node", "CONCEPT", 1);
+    RoadmapNode node =
+        saveNode(saveOfficialRoadmap("Backend Roadmap"), "Security Node", "CONCEPT", 1);
 
     adminNodeGovernanceService.updateRequiredTags(
-        node.getNodeId(), updateRequiredTagsRequest(List.of(springBoot.getName(), springSecurity.getName())));
+        node.getNodeId(),
+        updateRequiredTagsRequest(List.of(springBoot.getName(), springSecurity.getName())));
     flushAndClear();
 
     assertThat(nodeRequiredTagRepository.findTagNamesByNodeId(node.getNodeId()))
@@ -160,7 +166,9 @@ class AdminGovernanceServiceIntegrationTest {
     adminNodeGovernanceService.updateNodeType(node.getNodeId(), updateNodeTypeRequest("project"));
     flushAndClear();
 
-    assertThat(roadmapNodeRepository.findById(node.getNodeId())).get().extracting(RoadmapNode::getNodeType)
+    assertThat(roadmapNodeRepository.findById(node.getNodeId()))
+        .get()
+        .extracting(RoadmapNode::getNodeType)
         .isEqualTo("PROJECT");
   }
 
@@ -230,11 +238,13 @@ class AdminGovernanceServiceIntegrationTest {
 
     adminNodeGovernanceService.updatePrerequisites(
         targetNode.getNodeId(),
-        updatePrerequisitesRequest(List.of(prerequisiteOne.getNodeId(), prerequisiteTwo.getNodeId())));
+        updatePrerequisitesRequest(
+            List.of(prerequisiteOne.getNodeId(), prerequisiteTwo.getNodeId())));
     flushAndClear();
 
     List<Prerequisite> prerequisites =
-        prerequisiteRepository.findAllByNode(roadmapNodeRepository.findById(targetNode.getNodeId()).orElseThrow());
+        prerequisiteRepository.findAllByNode(
+            roadmapNodeRepository.findById(targetNode.getNodeId()).orElseThrow());
 
     assertThat(prerequisites).hasSize(2);
     assertThat(prerequisites.stream().map(item -> item.getPreNode().getNodeId()).toList())
@@ -260,7 +270,8 @@ class AdminGovernanceServiceIntegrationTest {
         () ->
             adminNodeGovernanceService.updatePrerequisites(
                 targetNode.getNodeId(),
-                updatePrerequisitesRequest(List.of(sameRoadmapNode.getNodeId(), sameRoadmapNode.getNodeId()))));
+                updatePrerequisitesRequest(
+                    List.of(sameRoadmapNode.getNodeId(), sameRoadmapNode.getNodeId()))));
 
     assertInvalidInput(
         () ->
@@ -272,7 +283,8 @@ class AdminGovernanceServiceIntegrationTest {
   @Test
   @DisplayName("노드 완료 기준을 생성하고 수정한다")
   void updateCompletionRuleCreatesAndUpdatesRule() {
-    RoadmapNode node = saveNode(saveOfficialRoadmap("Completion Rule Roadmap"), "JWT", "PRACTICE", 1);
+    RoadmapNode node =
+        saveNode(saveOfficialRoadmap("Completion Rule Roadmap"), "JWT", "PRACTICE", 1);
 
     adminNodeGovernanceService.updateCompletionRule(
         node.getNodeId(), updateCompletionRuleRequest("tag_coverage", 100));
@@ -280,7 +292,8 @@ class AdminGovernanceServiceIntegrationTest {
         node.getNodeId(), updateCompletionRuleRequest("quiz_pass", 80));
     flushAndClear();
 
-    NodeCompletionRule rule = nodeCompletionRuleRepository.findByNodeNodeId(node.getNodeId()).orElseThrow();
+    NodeCompletionRule rule =
+        nodeCompletionRuleRepository.findByNodeNodeId(node.getNodeId()).orElseThrow();
     assertThat(rule.getCriteriaType()).isEqualTo("QUIZ_PASS");
     assertThat(rule.getCriteriaValue()).isEqualTo("80");
   }
@@ -320,7 +333,8 @@ class AdminGovernanceServiceIntegrationTest {
     assertThat(courseItem.getTotalCandidates()).isEqualTo(2);
     assertThat(courseItem.getCandidates()).hasSize(2);
     assertThat(courseItem.getCandidates().get(0).getNodeId()).isEqualTo(perfectNode.getNodeId());
-    assertThat(courseItem.getCandidates().get(0).getCoveragePercent()).isEqualByComparingTo("100.0");
+    assertThat(courseItem.getCandidates().get(0).getCoveragePercent())
+        .isEqualByComparingTo("100.0");
     assertThat(courseItem.getCandidates().get(1).getNodeId()).isEqualTo(partialNode.getNodeId());
     assertThat(courseItem.getCandidates().get(1).getMissingTags()).containsExactly("OAuth2");
 
@@ -329,7 +343,8 @@ class AdminGovernanceServiceIntegrationTest {
         updateNodeMappingRequest(List.of(perfectNode.getNodeId(), partialNode.getNodeId())));
     flushAndClear();
 
-    List<CourseNodeMapping> mappings = courseNodeMappingRepository.findAllByCourseCourseId(course.getCourseId());
+    List<CourseNodeMapping> mappings =
+        courseNodeMappingRepository.findAllByCourseCourseId(course.getCourseId());
     assertThat(mappings).hasSize(2);
     assertThat(mappings.stream().map(mapping -> mapping.getNode().getNodeId()).toList())
         .containsExactlyInAnyOrder(perfectNode.getNodeId(), partialNode.getNodeId());
@@ -382,7 +397,8 @@ class AdminGovernanceServiceIntegrationTest {
     saveRequiredTag(node, sourceTag);
     flushAndClear();
 
-    adminTagGovernanceService.mergeTags(mergeTagsRequest(sourceTag.getTagId(), targetTag.getTagId()));
+    adminTagGovernanceService.mergeTags(
+        mergeTagsRequest(sourceTag.getTagId(), targetTag.getTagId()));
     flushAndClear();
 
     assertThat(tagRepository.findById(sourceTag.getTagId())).isEmpty();
@@ -403,7 +419,8 @@ class AdminGovernanceServiceIntegrationTest {
   }
 
   private Tag saveTag(String name) {
-    return tagRepository.save(Tag.builder().name(name).category("backend").isOfficial(true).build());
+    return tagRepository.save(
+        Tag.builder().name(name).category("backend").isOfficial(true).build());
   }
 
   private Course saveCourse(User instructor, String title, CourseStatus status) {
@@ -520,7 +537,8 @@ class AdminGovernanceServiceIntegrationTest {
     return request;
   }
 
-  private UpdateSystemPolicy updateSystemPolicyRequest(Double platformFeeRate, Double instructorSettlementRate) {
+  private UpdateSystemPolicy updateSystemPolicyRequest(
+      Double platformFeeRate, Double instructorSettlementRate) {
     UpdateSystemPolicy request = newInstance(UpdateSystemPolicy.class);
     ReflectionTestUtils.setField(request, "platformFeeRate", platformFeeRate);
     ReflectionTestUtils.setField(request, "instructorSettlementRate", instructorSettlementRate);
@@ -548,7 +566,8 @@ class AdminGovernanceServiceIntegrationTest {
       constructor.setAccessible(true);
       return constructor.newInstance();
     } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("Failed to create test request instance: " + type.getName(), e);
+      throw new IllegalStateException(
+          "Failed to create test request instance: " + type.getName(), e);
     }
   }
 }

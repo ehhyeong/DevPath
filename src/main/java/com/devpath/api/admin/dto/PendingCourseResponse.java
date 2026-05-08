@@ -12,28 +12,28 @@ import lombok.NoArgsConstructor;
 @Schema(description = "승인 대기(IN_REVIEW) 강의 응답 DTO")
 public class PendingCourseResponse {
 
-    @Schema(description = "강의 ID")
-    private Long courseId;
+  @Schema(description = "강의 ID")
+  private Long courseId;
 
-    @Schema(description = "강의 제목")
-    private String title;
+  @Schema(description = "강의 제목")
+  private String title;
 
-    @Schema(description = "강사 ID")
-    private Long instructorId;
+  @Schema(description = "강사 ID")
+  private Long instructorId;
 
-    @Builder
-    public PendingCourseResponse(Long courseId, String title, Long instructorId) {
-        this.courseId = courseId;
-        this.title = title;
-        this.instructorId = instructorId;
-    }
+  @Builder
+  public PendingCourseResponse(Long courseId, String title, Long instructorId) {
+    this.courseId = courseId;
+    this.title = title;
+    this.instructorId = instructorId;
+  }
 
-    // Entity -> DTO 변환 정적 메서드
-    public static PendingCourseResponse from(Course course) {
-        return PendingCourseResponse.builder()
-                .courseId(course.getCourseId())
-                .title(course.getTitle())
-                .instructorId(course.getInstructorId())
-                .build();
-    }
+  // Entity -> DTO 변환 정적 메서드
+  public static PendingCourseResponse from(Course course) {
+    return PendingCourseResponse.builder()
+        .courseId(course.getCourseId())
+        .title(course.getTitle())
+        .instructorId(course.getInstructorId())
+        .build();
+  }
 }

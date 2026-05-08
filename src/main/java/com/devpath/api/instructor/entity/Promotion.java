@@ -25,34 +25,31 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class Promotion {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false)
-    private Long instructorId;
+  @Column(nullable = false)
+  private Long instructorId;
 
-    @Column(nullable = false)
-    private Long courseId;
+  @Column(nullable = false)
+  private Long courseId;
 
-    private String promotionType;
+  private String promotionType;
 
-    private Integer discountRate;
+  private Integer discountRate;
 
-    private LocalDateTime startAt;
+  private LocalDateTime startAt;
 
-    private LocalDateTime endAt;
+  private LocalDateTime endAt;
 
-    @Builder.Default
-    private Boolean isActive = true;
+  @Builder.Default private Boolean isActive = true;
 
-    @Builder.Default
-    private Boolean isDeleted = false;
+  @Builder.Default private Boolean isDeleted = false;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+  @CreatedDate private LocalDateTime createdAt;
 
-    public void updateStatus(PromotionStatus status) {
-        this.isActive = status == PromotionStatus.ACTIVE;
-    }
+  public void updateStatus(PromotionStatus status) {
+    this.isActive = status == PromotionStatus.ACTIVE;
+  }
 }

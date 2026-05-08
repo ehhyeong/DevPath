@@ -9,15 +9,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceTaskRepository extends JpaRepository<WorkspaceTask, Long> {
 
-    Optional<WorkspaceTask> findByIdAndIsDeletedFalse(Long id);
+  Optional<WorkspaceTask> findByIdAndIsDeletedFalse(Long id);
 
-    List<WorkspaceTask> findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(Long workspaceId);
+  List<WorkspaceTask> findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(Long workspaceId);
 
-    List<WorkspaceTask> findAllByWorkspaceIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
-            Long workspaceId, WorkspaceTaskStatus status);
+  List<WorkspaceTask> findAllByWorkspaceIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+      Long workspaceId, WorkspaceTaskStatus status);
 
-    long countByWorkspaceIdAndStatusNotAndIsDeletedFalse(Long workspaceId, WorkspaceTaskStatus status);
+  long countByWorkspaceIdAndStatusNotAndIsDeletedFalse(
+      Long workspaceId, WorkspaceTaskStatus status);
 
-    long countByWorkspaceIdInAndStatusNotAndIsDeletedFalse(
-            Collection<Long> workspaceIds, WorkspaceTaskStatus status);
+  long countByWorkspaceIdInAndStatusNotAndIsDeletedFalse(
+      Collection<Long> workspaceIds, WorkspaceTaskStatus status);
 }

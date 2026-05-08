@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AccountStatusUpdateRequest {
 
-    @NotBlank
-    private String reason;
+  @NotBlank private String reason;
 }

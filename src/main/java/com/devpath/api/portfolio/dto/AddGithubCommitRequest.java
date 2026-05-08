@@ -9,13 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AddGithubCommitRequest {
 
-    @NotBlank
-    private String repoName;
+  @NotBlank private String repoName;
 
-    private String commitMessage;
+  private String commitMessage;
 
-    @NotBlank
-    private String commitUrl;
+  @NotBlank private String commitUrl;
 
-    private LocalDateTime committedAt;
+  private LocalDateTime committedAt;
 }

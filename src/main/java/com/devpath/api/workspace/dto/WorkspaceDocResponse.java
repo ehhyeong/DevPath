@@ -15,23 +15,23 @@ import lombok.NoArgsConstructor;
 @Builder
 public class WorkspaceDocResponse {
 
-    private Long docId;
-    private Long workspaceId;
-    private WorkspaceDocType docType;
-    private String content;
-    private Long updatedById;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+  private Long docId;
+  private Long workspaceId;
+  private WorkspaceDocType docType;
+  private String content;
+  private Long updatedById;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
 
-    public static WorkspaceDocResponse from(WorkspaceDoc doc) {
-        return WorkspaceDocResponse.builder()
-                .docId(doc.getId())
-                .workspaceId(doc.getWorkspaceId())
-                .docType(doc.getDocType())
-                .content(doc.getContent())
-                .updatedById(doc.getUpdatedById())
-                .createdAt(doc.getCreatedAt())
-                .updatedAt(doc.getUpdatedAt())
-                .build();
-    }
+  public static WorkspaceDocResponse from(WorkspaceDoc doc) {
+    return WorkspaceDocResponse.builder()
+        .docId(doc.getId())
+        .workspaceId(doc.getWorkspaceId())
+        .docType(doc.getDocType())
+        .content(doc.getContent())
+        .updatedById(doc.getUpdatedById())
+        .createdAt(doc.getCreatedAt())
+        .updatedAt(doc.getUpdatedAt())
+        .build();
+  }
 }

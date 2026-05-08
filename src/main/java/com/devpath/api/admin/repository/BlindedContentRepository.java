@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BlindedContentRepository extends JpaRepository<BlindedContent, Long> {
 
-    Optional<BlindedContent> findByContentIdAndIsActiveTrue(Long contentId);
+  Optional<BlindedContent> findByContentIdAndIsActiveTrue(Long contentId);
 
-    long countByIsActiveTrue();
+  long countByIsActiveTrue();
 }

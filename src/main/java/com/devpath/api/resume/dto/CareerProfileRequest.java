@@ -11,8 +11,7 @@ public class CareerProfileRequest {
 
   @Schema(name = "CareerProfileCreateRequest", description = "채용 분석용 프로필 생성 요청")
   public record Create(
-      @Schema(description = "사용자 ID", example = "2")
-          @NotNull(message = "사용자 ID는 필수입니다.")
+      @Schema(description = "사용자 ID", example = "2") @NotNull(message = "사용자 ID는 필수입니다.")
           Long userId,
       @Schema(description = "목표 직무", example = "Backend Developer")
           @NotBlank(message = "목표 직무는 필수입니다.")
@@ -74,4 +73,3 @@ public class CareerProfileRequest {
           @Size(max = 500, message = "스냅샷 메모는 500자 이하여야 합니다.")
           String memo) {}
 }
-

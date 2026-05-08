@@ -22,23 +22,23 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public class WorkspaceMember {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "workspace_id", nullable = false)
-    private Long workspaceId;
+  @Column(name = "workspace_id", nullable = false)
+  private Long workspaceId;
 
-    @Column(name = "learner_id", nullable = false)
-    private Long learnerId;
+  @Column(name = "learner_id", nullable = false)
+  private Long learnerId;
 
-    @CreatedDate
-    @Column(name = "joined_at", updatable = false)
-    private LocalDateTime joinedAt;
+  @CreatedDate
+  @Column(name = "joined_at", updatable = false)
+  private LocalDateTime joinedAt;
 
-    @Builder
-    public WorkspaceMember(Long workspaceId, Long learnerId) {
-        this.workspaceId = workspaceId;
-        this.learnerId = learnerId;
-    }
+  @Builder
+  public WorkspaceMember(Long workspaceId, Long learnerId) {
+    this.workspaceId = workspaceId;
+    this.learnerId = learnerId;
+  }
 }

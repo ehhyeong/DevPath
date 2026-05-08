@@ -9,8 +9,7 @@ import lombok.Getter;
 @Builder
 public class RoadmapHubCatalogResponse {
 
-  @Builder.Default
-  private List<SectionItem> sections = List.of();
+  @Builder.Default private List<SectionItem> sections = List.of();
 
   @Getter
   @Builder
@@ -23,8 +22,7 @@ public class RoadmapHubCatalogResponse {
     private Integer sortOrder;
     private Boolean active;
 
-    @Builder.Default
-    private List<Item> items = List.of();
+    @Builder.Default private List<Item> items = List.of();
   }
 
   @Getter

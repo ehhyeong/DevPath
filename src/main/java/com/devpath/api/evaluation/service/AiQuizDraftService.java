@@ -83,13 +83,16 @@ public class AiQuizDraftService {
 
     RoadmapNode roadmapNode = getRoadmapNode(draft.nodeId);
     int totalScore =
-        draft.questions.stream().mapToInt(question -> question.points == null ? 0 : question.points).sum();
+        draft.questions.stream()
+            .mapToInt(question -> question.points == null ? 0 : question.points)
+            .sum();
 
     Quiz quiz =
         Quiz.builder()
             .roadmapNode(roadmapNode)
             .title(isBlank(request.getTitle()) ? draft.title : request.getTitle())
-            .description(isBlank(request.getDescription()) ? draft.description : request.getDescription())
+            .description(
+                isBlank(request.getDescription()) ? draft.description : request.getDescription())
             .quizType(draft.quizType)
             .totalScore(totalScore)
             .isPublished(Boolean.TRUE.equals(request.getPublish()))
@@ -341,10 +344,18 @@ public class AiQuizDraftService {
 
     return "당신은 IT 교육 퀴즈 전문가입니다. 아래 강의 내용을 분석하여 퀴즈 문항을 생성하세요.\n\n"
         + "[입력 정보]\n"
-        + "- 강의 내용: " + request.getSourceText() + "\n"
-        + "- 문항 수: " + questionCount + "개\n"
-        + "- 난이도: " + difficultyLabel + "\n"
-        + "- 문항 유형: " + questionTypeInstruction + "\n\n"
+        + "- 강의 내용: "
+        + request.getSourceText()
+        + "\n"
+        + "- 문항 수: "
+        + questionCount
+        + "개\n"
+        + "- 난이도: "
+        + difficultyLabel
+        + "\n"
+        + "- 문항 유형: "
+        + questionTypeInstruction
+        + "\n\n"
         + "[출력 형식]\n"
         + "아래 JSON 배열만 반환하세요. 설명, 코드블록(```), 기타 텍스트 없이 순수 JSON 배열만 출력하세요.\n\n"
         + "[\n"
@@ -368,7 +379,8 @@ public class AiQuizDraftService {
         + "- questionType 값은 반드시 MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER 중 하나여야 합니다.";
   }
 
-  private List<DraftQuestionState> parseGeminiResponse(String raw, CreateAiQuizDraftRequest request) {
+  private List<DraftQuestionState> parseGeminiResponse(
+      String raw, CreateAiQuizDraftRequest request) {
     try {
       String jsonArray = extractJsonArray(raw);
       if (jsonArray == null) {

@@ -28,10 +28,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @SpringBootTest(
-    properties = {
-      "spring.sql.init.mode=always",
-      "spring.jpa.defer-datasource-initialization=true"
-    })
+    properties = {"spring.sql.init.mode=always", "spring.jpa.defer-datasource-initialization=true"})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class CommunityFlowIntegrationTest {
@@ -86,8 +83,10 @@ class CommunityFlowIntegrationTest {
     assertThat(listResponse.get("page").asInt()).isZero();
     assertThat(listResponse.get("size").asInt()).isEqualTo(10);
 
-    JsonNode firstDetail = getAsAuthenticated(authorAuthentication(), "/api/posts/{postId}", postId);
-    JsonNode secondDetail = getAsAuthenticated(authorAuthentication(), "/api/posts/{postId}", postId);
+    JsonNode firstDetail =
+        getAsAuthenticated(authorAuthentication(), "/api/posts/{postId}", postId);
+    JsonNode secondDetail =
+        getAsAuthenticated(authorAuthentication(), "/api/posts/{postId}", postId);
 
     assertThat(firstDetail.get("viewCount").asInt()).isEqualTo(1);
     assertThat(secondDetail.get("viewCount").asInt()).isEqualTo(2);
@@ -141,7 +140,8 @@ class CommunityFlowIntegrationTest {
     assertThat(createdReply.get("reply").asBoolean()).isTrue();
     assertThat(createdReply.get("parentCommentId").asLong()).isEqualTo(commentId);
 
-    JsonNode comments = getAsAuthenticated(authorAuthentication(), "/api/posts/{postId}/comments", postId);
+    JsonNode comments =
+        getAsAuthenticated(authorAuthentication(), "/api/posts/{postId}/comments", postId);
     assertThat(comments).hasSize(1);
     assertThat(comments.get(0).get("id").asLong()).isEqualTo(commentId);
     assertThat(comments.get(0).get("children")).hasSize(1);
@@ -242,31 +242,38 @@ class CommunityFlowIntegrationTest {
   }
 
   private JsonNode postAsAuthor(String url, Object body, Object... uriVariables) throws Exception {
-    return performAndReadData(post(url, uriVariables), authorAuthentication(), authorId, body, HttpStatus.OK);
+    return performAndReadData(
+        post(url, uriVariables), authorAuthentication(), authorId, body, HttpStatus.OK);
   }
 
   private JsonNode putAsAuthor(String url, Object body, Object... uriVariables) throws Exception {
-    return performAndReadData(put(url, uriVariables), authorAuthentication(), authorId, body, HttpStatus.OK);
+    return performAndReadData(
+        put(url, uriVariables), authorAuthentication(), authorId, body, HttpStatus.OK);
   }
 
   private JsonNode getAsAuthor(String url, Object... uriVariables) throws Exception {
-    return performAndReadData(get(url, uriVariables), authorAuthentication(), authorId, null, HttpStatus.OK);
+    return performAndReadData(
+        get(url, uriVariables), authorAuthentication(), authorId, null, HttpStatus.OK);
   }
 
   private JsonNode postAsActor(String url, Object body, Object... uriVariables) throws Exception {
-    return performAndReadData(post(url, uriVariables), actorAuthentication(), actorId, body, HttpStatus.OK);
+    return performAndReadData(
+        post(url, uriVariables), actorAuthentication(), actorId, body, HttpStatus.OK);
   }
 
   private JsonNode deleteAsActor(String url, Object... uriVariables) throws Exception {
-    return performAndReadData(delete(url, uriVariables), actorAuthentication(), actorId, null, HttpStatus.OK);
+    return performAndReadData(
+        delete(url, uriVariables), actorAuthentication(), actorId, null, HttpStatus.OK);
   }
 
   private void deleteOkAsAuthor(String url, Object... uriVariables) throws Exception {
-    performAndReadData(delete(url, uriVariables), authorAuthentication(), authorId, null, HttpStatus.OK);
+    performAndReadData(
+        delete(url, uriVariables), authorAuthentication(), authorId, null, HttpStatus.OK);
   }
 
   private void deleteOkAsActor(String url, Object... uriVariables) throws Exception {
-    performAndReadData(delete(url, uriVariables), actorAuthentication(), actorId, null, HttpStatus.OK);
+    performAndReadData(
+        delete(url, uriVariables), actorAuthentication(), actorId, null, HttpStatus.OK);
   }
 
   private JsonNode getAsAuthenticated(
@@ -284,7 +291,8 @@ class CommunityFlowIntegrationTest {
   private JsonNode getAsAuthenticated(
       UsernamePasswordAuthenticationToken authenticationToken, String url, Object... uriVariables)
       throws Exception {
-    return performAndReadData(get(url, uriVariables), authenticationToken, null, null, HttpStatus.OK);
+    return performAndReadData(
+        get(url, uriVariables), authenticationToken, null, null, HttpStatus.OK);
   }
 
   private JsonNode performAndReadData(

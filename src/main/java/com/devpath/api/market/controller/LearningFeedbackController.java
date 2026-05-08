@@ -25,7 +25,9 @@ public class LearningFeedbackController {
   private final LearningFeedbackService learningFeedbackService;
 
   @PostMapping("/api/market/learning-feedback/refresh")
-  @Operation(summary = "학습 데이터 재추출", description = "CareerProfile 스킬과 시장 기술 태그를 다시 비교해 스킬 갭을 계산합니다.")
+  @Operation(
+      summary = "학습 데이터 재추출",
+      description = "CareerProfile 스킬과 시장 기술 태그를 다시 비교해 스킬 갭을 계산합니다.")
   public ResponseEntity<ApiResponse<LearningFeedbackResponse.RefreshResult>> refreshLearningData(
       @Valid @RequestBody LearningFeedbackRequest.Refresh request) {
     return ResponseEntity.ok(ApiResponse.ok(learningFeedbackService.refreshLearningData(request)));
@@ -56,6 +58,7 @@ public class LearningFeedbackController {
   @Operation(summary = "스킬 갭 기반 추천 강의 조회", description = "부족 스킬 기반 추천 강의 결과를 반환합니다.")
   public ResponseEntity<ApiResponse<LearningFeedbackResponse.RecommendedCourses>>
       getRecommendedCourses(@Valid @RequestBody LearningFeedbackRequest.Courses request) {
-    return ResponseEntity.ok(ApiResponse.ok(learningFeedbackService.getRecommendedCourses(request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(learningFeedbackService.getRecommendedCourses(request)));
   }
 }

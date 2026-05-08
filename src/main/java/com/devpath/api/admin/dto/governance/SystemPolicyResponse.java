@@ -1,16 +1,15 @@
 package com.devpath.api.admin.dto.governance;
 
+import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Builder
 public class SystemPolicyResponse {
 
-    private Integer platformFeeRate;
-    private Integer refundPolicyDays;
-    private Long maxCoursePrice;
-    private LocalDateTime updatedAt;
+  private Integer platformFeeRate;
+  private Integer refundPolicyDays;
+  private Long maxCoursePrice;
+  private LocalDateTime updatedAt;
 }

@@ -28,10 +28,9 @@ public class PullRequestReviewController {
 
   @PostMapping("/api/mentoring-missions/{missionId}/pull-requests")
   @Operation(summary = "PR 링크 제출", description = "멘토링 미션에 PR 링크를 제출합니다.")
-  public ResponseEntity<ApiResponse<PullRequestReviewResponse.PullRequestDetail>>
-      submitPullRequest(
-          @PathVariable Long missionId,
-          @Valid @RequestBody PullRequestSubmissionRequest.Create request) {
+  public ResponseEntity<ApiResponse<PullRequestReviewResponse.PullRequestDetail>> submitPullRequest(
+      @PathVariable Long missionId,
+      @Valid @RequestBody PullRequestSubmissionRequest.Create request) {
     // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
     return ResponseEntity.ok(
         ApiResponse.ok(pullRequestReviewService.submitPullRequest(missionId, request)));
@@ -50,7 +49,8 @@ public class PullRequestReviewController {
   public ResponseEntity<ApiResponse<PullRequestReviewResponse.PullRequestDetail>> getPullRequest(
       @PathVariable Long pullRequestId) {
     // PR 상세와 연결된 리뷰 목록을 함께 반환한다.
-    return ResponseEntity.ok(ApiResponse.ok(pullRequestReviewService.getPullRequest(pullRequestId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(pullRequestReviewService.getPullRequest(pullRequestId)));
   }
 
   @PostMapping("/api/pull-requests/{pullRequestId}/reviews")

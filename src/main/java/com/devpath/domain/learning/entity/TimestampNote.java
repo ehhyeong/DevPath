@@ -25,58 +25,58 @@ import org.hibernate.annotations.UpdateTimestamp;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TimestampNote {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "note_id")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "note_id")
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lesson_id", nullable = false)
-    private Lesson lesson;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "lesson_id", nullable = false)
+  private Lesson lesson;
 
-    @Column(name = "timestamp_second", nullable = false)
-    private Integer timestampSecond;
+  @Column(name = "timestamp_second", nullable = false)
+  private Integer timestampSecond;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String content;
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String content;
 
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
+  @Column(name = "is_deleted", nullable = false)
+  private Boolean isDeleted = false;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    @Builder
-    public TimestampNote(User user, Lesson lesson, Integer timestampSecond, String content) {
-        this.user = user;
-        this.lesson = lesson;
-        this.timestampSecond = normalizeTimestampSecond(timestampSecond);
-        this.content = content;
-        this.isDeleted = false;
+  @Builder
+  public TimestampNote(User user, Lesson lesson, Integer timestampSecond, String content) {
+    this.user = user;
+    this.lesson = lesson;
+    this.timestampSecond = normalizeTimestampSecond(timestampSecond);
+    this.content = content;
+    this.isDeleted = false;
+  }
+
+  public void updateContent(Integer timestampSecond, String content) {
+    this.timestampSecond = normalizeTimestampSecond(timestampSecond);
+    this.content = content;
+  }
+
+  public void delete() {
+    this.isDeleted = true;
+  }
+
+  private Integer normalizeTimestampSecond(Integer timestampSecond) {
+    if (timestampSecond == null || timestampSecond < 0) {
+      return 0;
     }
-
-    public void updateContent(Integer timestampSecond, String content) {
-        this.timestampSecond = normalizeTimestampSecond(timestampSecond);
-        this.content = content;
-    }
-
-    public void delete() {
-        this.isDeleted = true;
-    }
-
-    private Integer normalizeTimestampSecond(Integer timestampSecond) {
-        if (timestampSecond == null || timestampSecond < 0) {
-            return 0;
-        }
-        return timestampSecond;
-    }
+    return timestampSecond;
+  }
 }

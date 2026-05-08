@@ -9,13 +9,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MilestoneRepository extends JpaRepository<Milestone, Long> {
 
-    Optional<Milestone> findByIdAndIsDeletedFalse(Long id);
+  Optional<Milestone> findByIdAndIsDeletedFalse(Long id);
 
-    List<Milestone> findAllByWorkspaceIdAndIsDeletedFalseOrderByDueDateAsc(Long workspaceId);
+  List<Milestone> findAllByWorkspaceIdAndIsDeletedFalseOrderByDueDateAsc(Long workspaceId);
 
-    long countByWorkspaceIdAndStatusInAndIsDeletedFalse(Long workspaceId,
-            Collection<MilestoneStatus> statuses);
+  long countByWorkspaceIdAndStatusInAndIsDeletedFalse(
+      Long workspaceId, Collection<MilestoneStatus> statuses);
 
-    long countByWorkspaceIdInAndStatusInAndIsDeletedFalse(Collection<Long> workspaceIds,
-            Collection<MilestoneStatus> statuses);
+  long countByWorkspaceIdInAndStatusInAndIsDeletedFalse(
+      Collection<Long> workspaceIds, Collection<MilestoneStatus> statuses);
 }

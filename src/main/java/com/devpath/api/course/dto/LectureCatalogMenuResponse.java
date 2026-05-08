@@ -9,52 +9,48 @@ import lombok.Getter;
 @Builder
 public class LectureCatalogMenuResponse {
 
-    @Builder.Default
-    private List<CategoryItem> categories = List.of();
+  @Builder.Default private List<CategoryItem> categories = List.of();
 
-    @Getter
-    @Builder
-    public static class CategoryItem {
+  @Getter
+  @Builder
+  public static class CategoryItem {
 
-        private String categoryKey;
-        private String label;
-        private String title;
-        private String iconClass;
-        private Integer sortOrder;
-        private Boolean active;
+    private String categoryKey;
+    private String label;
+    private String title;
+    private String iconClass;
+    private Integer sortOrder;
+    private Boolean active;
 
-        @Builder.Default
-        private List<MegaMenuItem> megaMenuItems = List.of();
+    @Builder.Default private List<MegaMenuItem> megaMenuItems = List.of();
 
-        @Builder.Default
-        private List<GroupItem> groups = List.of();
-    }
+    @Builder.Default private List<GroupItem> groups = List.of();
+  }
 
-    @Getter
-    @Builder
-    public static class MegaMenuItem {
+  @Getter
+  @Builder
+  public static class MegaMenuItem {
 
-        private String label;
-        private Integer sortOrder;
-    }
+    private String label;
+    private Integer sortOrder;
+  }
 
-    @Getter
-    @Builder
-    public static class GroupItem {
+  @Getter
+  @Builder
+  public static class GroupItem {
 
-        private String name;
-        private Integer sortOrder;
+    private String name;
+    private Integer sortOrder;
 
-        @Builder.Default
-        private List<GroupTagItem> items = List.of();
-    }
+    @Builder.Default private List<GroupTagItem> items = List.of();
+  }
 
-    @Getter
-    @Builder
-    public static class GroupTagItem {
+  @Getter
+  @Builder
+  public static class GroupTagItem {
 
-        private String name;
-        private String linkedCategoryKey;
-        private Integer sortOrder;
-    }
+    private String name;
+    private String linkedCategoryKey;
+    private Integer sortOrder;
+  }
 }

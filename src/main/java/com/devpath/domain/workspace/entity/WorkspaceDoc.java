@@ -21,8 +21,9 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "workspace_doc",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"workspace_id", "doc_type"}))
+@Table(
+    name = "workspace_doc",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"workspace_id", "doc_type"}))
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -30,33 +31,33 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 public class WorkspaceDoc {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "workspace_id", nullable = false)
-    private Long workspaceId;
+  @Column(name = "workspace_id", nullable = false)
+  private Long workspaceId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "doc_type", nullable = false)
-    private WorkspaceDocType docType;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "doc_type", nullable = false)
+  private WorkspaceDocType docType;
 
-    @Column(columnDefinition = "TEXT")
-    private String content;
+  @Column(columnDefinition = "TEXT")
+  private String content;
 
-    @Column(name = "updated_by_id", nullable = false)
-    private Long updatedById;
+  @Column(name = "updated_by_id", nullable = false)
+  private Long updatedById;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    public void update(String content, Long updatedById) {
-        this.content = content;
-        this.updatedById = updatedById;
-    }
+  public void update(String content, Long updatedById) {
+    this.content = content;
+    this.updatedById = updatedById;
+  }
 }

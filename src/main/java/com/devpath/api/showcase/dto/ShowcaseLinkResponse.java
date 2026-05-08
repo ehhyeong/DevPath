@@ -9,15 +9,15 @@ import lombok.Getter;
 @Builder
 public class ShowcaseLinkResponse {
 
-    private Long linkId;
-    private ShowcaseLinkType linkType;
-    private String url;
+  private Long linkId;
+  private ShowcaseLinkType linkType;
+  private String url;
 
-    public static ShowcaseLinkResponse from(ShowcaseLink link) {
-        return ShowcaseLinkResponse.builder()
-                .linkId(link.getId())
-                .linkType(link.getLinkType())
-                .url(link.getUrl())
-                .build();
-    }
+  public static ShowcaseLinkResponse from(ShowcaseLink link) {
+    return ShowcaseLinkResponse.builder()
+        .linkId(link.getId())
+        .linkType(link.getLinkType())
+        .url(link.getUrl())
+        .build();
+  }
 }

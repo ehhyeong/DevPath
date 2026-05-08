@@ -7,17 +7,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface OcrResultRepository extends JpaRepository<OcrResult, Long> {
 
-    Optional<OcrResult> findByIdAndUserId(Long ocrId, Long userId);
+  Optional<OcrResult> findByIdAndUserId(Long ocrId, Long userId);
 
-    List<OcrResult> findAllByUserIdAndLessonLessonIdOrderByFrameTimestampSecondAsc(Long userId, Long lessonId);
+  List<OcrResult> findAllByUserIdAndLessonLessonIdOrderByFrameTimestampSecondAsc(
+      Long userId, Long lessonId);
 
-    List<OcrResult> findAllByUserIdAndLessonLessonIdAndSearchableNormalizedTextContainingOrderByFrameTimestampSecondAsc(
-            Long userId,
-            Long lessonId,
-            String keyword
-    );
+  List<OcrResult>
+      findAllByUserIdAndLessonLessonIdAndSearchableNormalizedTextContainingOrderByFrameTimestampSecondAsc(
+          Long userId, Long lessonId, String keyword);
 
-    long countByUserId(Long userId);
+  long countByUserId(Long userId);
 
-    long countByUserIdAndLessonLessonId(Long userId, Long lessonId);
+  long countByUserIdAndLessonLessonId(Long userId, Long lessonId);
 }

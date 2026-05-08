@@ -30,59 +30,56 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstructorMarketingController {
 
-    private final InstructorMarketingService instructorMarketingService;
+  private final InstructorMarketingService instructorMarketingService;
 
-    @Operation(summary = "쿠폰 생성")
-    @PostMapping("/coupons")
-    public ApiResponse<CouponResponse> createCoupon(
-            @RequestBody @Valid CouponCreateRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("Coupon created.", instructorMarketingService.createCoupon(userId, request));
-    }
+  @Operation(summary = "쿠폰 생성")
+  @PostMapping("/coupons")
+  public ApiResponse<CouponResponse> createCoupon(
+      @RequestBody @Valid CouponCreateRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "Coupon created.", instructorMarketingService.createCoupon(userId, request));
+  }
 
-    @Operation(summary = "쿠폰 목록 조회")
-    @GetMapping("/coupons")
-    public ApiResponse<List<CouponListResponse>> getCoupons(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("Coupons loaded.", instructorMarketingService.getCoupons(userId));
-    }
+  @Operation(summary = "쿠폰 목록 조회")
+  @GetMapping("/coupons")
+  public ApiResponse<List<CouponListResponse>> getCoupons(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success("Coupons loaded.", instructorMarketingService.getCoupons(userId));
+  }
 
-    @Operation(summary = "프로모션 생성")
-    @PostMapping("/promotions")
-    public ApiResponse<Void> createPromotion(
-            @RequestBody @Valid PromotionCreateRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        instructorMarketingService.createPromotion(userId, request);
-        return ApiResponse.success("Promotion created.", null);
-    }
+  @Operation(summary = "프로모션 생성")
+  @PostMapping("/promotions")
+  public ApiResponse<Void> createPromotion(
+      @RequestBody @Valid PromotionCreateRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    instructorMarketingService.createPromotion(userId, request);
+    return ApiResponse.success("Promotion created.", null);
+  }
 
-    @Operation(summary = "프로모션 목록 조회")
-    @GetMapping("/promotions")
-    public ApiResponse<List<PromotionListResponse>> getPromotions(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("Promotions loaded.", instructorMarketingService.getPromotions(userId));
-    }
+  @Operation(summary = "프로모션 목록 조회")
+  @GetMapping("/promotions")
+  public ApiResponse<List<PromotionListResponse>> getPromotions(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "Promotions loaded.", instructorMarketingService.getPromotions(userId));
+  }
 
-    @Operation(summary = "프로모션 상태 변경")
-    @PatchMapping("/courses/{courseId}/promotion-status")
-    public ApiResponse<Void> updatePromotionStatus(
-            @PathVariable Long courseId,
-            @RequestBody @Valid PromotionStatusUpdateRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        instructorMarketingService.updatePromotionStatus(courseId, userId, request);
-        return ApiResponse.success("Promotion status updated.", null);
-    }
+  @Operation(summary = "프로모션 상태 변경")
+  @PatchMapping("/courses/{courseId}/promotion-status")
+  public ApiResponse<Void> updatePromotionStatus(
+      @PathVariable Long courseId,
+      @RequestBody @Valid PromotionStatusUpdateRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    instructorMarketingService.updatePromotionStatus(courseId, userId, request);
+    return ApiResponse.success("Promotion status updated.", null);
+  }
 
-    @Operation(summary = "전환 통계 조회")
-    @GetMapping("/conversions")
-    public ApiResponse<ConversionResponse> getConversions(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("Conversion stats loaded.", instructorMarketingService.getConversions(userId));
-    }
+  @Operation(summary = "전환 통계 조회")
+  @GetMapping("/conversions")
+  public ApiResponse<ConversionResponse> getConversions(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "Conversion stats loaded.", instructorMarketingService.getConversions(userId));
+  }
 }

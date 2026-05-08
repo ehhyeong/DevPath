@@ -7,14 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TimestampNoteRepository extends JpaRepository<TimestampNote, Long> {
 
-    List<TimestampNote> findByUserIdAndLessonLessonIdAndIsDeletedFalseOrderByTimestampSecondAsc(
-            Long userId,
-            Long lessonId
-    );
+  List<TimestampNote> findByUserIdAndLessonLessonIdAndIsDeletedFalseOrderByTimestampSecondAsc(
+      Long userId, Long lessonId);
 
-    long countByUserIdAndIsDeletedFalse(Long userId);
+  long countByUserIdAndIsDeletedFalse(Long userId);
 
-    long countByUserIdAndLessonLessonIdAndIsDeletedFalse(Long userId, Long lessonId);
+  long countByUserIdAndLessonLessonIdAndIsDeletedFalse(Long userId, Long lessonId);
 
-    Optional<TimestampNote> findByIdAndUserIdAndIsDeletedFalse(Long noteId, Long userId);
+  Optional<TimestampNote> findByIdAndUserIdAndIsDeletedFalse(Long noteId, Long userId);
 }

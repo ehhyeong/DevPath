@@ -27,9 +27,7 @@ public class RoadmapHubQueryService {
   private final RoadmapRepository roadmapRepository;
 
   public RoadmapHubCatalogResponse getPublicCatalog() {
-    return RoadmapHubCatalogResponse.builder()
-        .sections(loadSectionItems(false))
-        .build();
+    return RoadmapHubCatalogResponse.builder().sections(loadSectionItems(false)).build();
   }
 
   public AdminRoadmapHubCatalogResponse getAdminCatalog() {
@@ -40,34 +38,40 @@ public class RoadmapHubQueryService {
   }
 
   private List<RoadmapHubCatalogResponse.SectionItem> loadSectionItems(boolean includeInactive) {
-    List<RoadmapHubSection> sections = roadmapHubSectionRepository.findAllByOrderBySortOrderAscIdAsc();
-    List<RoadmapHubSection> visibleSections = includeInactive
-        ? sections
-        : sections.stream().filter(section -> Boolean.TRUE.equals(section.getActive())).toList();
+    List<RoadmapHubSection> sections =
+        roadmapHubSectionRepository.findAllByOrderBySortOrderAscIdAsc();
+    List<RoadmapHubSection> visibleSections =
+        includeInactive
+            ? sections
+            : sections.stream()
+                .filter(section -> Boolean.TRUE.equals(section.getActive()))
+                .toList();
 
     if (visibleSections.isEmpty()) {
       return List.of();
     }
 
     List<Long> sectionIds = visibleSections.stream().map(RoadmapHubSection::getId).toList();
-    Map<Long, List<RoadmapHubItem>> itemsBySectionId = roadmapHubItemRepository
-        .findAllBySectionIdInOrderBySectionIdAscSortOrderAscIdAsc(sectionIds)
-        .stream()
-        .collect(Collectors.groupingBy(
-            item -> item.getSection().getId(),
-            LinkedHashMap::new,
-            Collectors.toList()));
+    Map<Long, List<RoadmapHubItem>> itemsBySectionId =
+        roadmapHubItemRepository
+            .findAllBySectionIdInOrderBySectionIdAscSortOrderAscIdAsc(sectionIds)
+            .stream()
+            .collect(
+                Collectors.groupingBy(
+                    item -> item.getSection().getId(), LinkedHashMap::new, Collectors.toList()));
 
     return visibleSections.stream()
-        .map(section -> mapSection(section, itemsBySectionId.getOrDefault(section.getId(), List.of()), includeInactive))
+        .map(
+            section ->
+                mapSection(
+                    section,
+                    itemsBySectionId.getOrDefault(section.getId(), List.of()),
+                    includeInactive))
         .toList();
   }
 
   private RoadmapHubCatalogResponse.SectionItem mapSection(
-      RoadmapHubSection section,
-      List<RoadmapHubItem> items,
-      boolean includeInactive
-  ) {
+      RoadmapHubSection section, List<RoadmapHubItem> items, boolean includeInactive) {
     return RoadmapHubCatalogResponse.SectionItem.builder()
         .sectionKey(section.getSectionKey())
         .title(section.getTitle())
@@ -75,10 +79,11 @@ public class RoadmapHubQueryService {
         .layoutType(section.getLayoutType())
         .sortOrder(section.getSortOrder())
         .active(section.getActive())
-        .items(items.stream()
-            .filter(item -> includeInactive || Boolean.TRUE.equals(item.getActive()))
-            .map(this::mapItem)
-            .toList())
+        .items(
+            items.stream()
+                .filter(item -> includeInactive || Boolean.TRUE.equals(item.getActive()))
+                .map(this::mapItem)
+                .toList())
         .build();
   }
 
@@ -100,10 +105,12 @@ public class RoadmapHubQueryService {
 
   private List<AdminRoadmapHubCatalogResponse.OfficialRoadmapOption> loadOfficialRoadmapOptions() {
     return roadmapRepository.findAllByIsOfficialTrueAndIsDeletedFalseOrderByTitleAsc().stream()
-        .map(roadmap -> AdminRoadmapHubCatalogResponse.OfficialRoadmapOption.builder()
-            .roadmapId(roadmap.getRoadmapId())
-            .title(roadmap.getTitle())
-            .build())
+        .map(
+            roadmap ->
+                AdminRoadmapHubCatalogResponse.OfficialRoadmapOption.builder()
+                    .roadmapId(roadmap.getRoadmapId())
+                    .title(roadmap.getTitle())
+                    .build())
         .toList();
   }
 }

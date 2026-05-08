@@ -29,7 +29,8 @@ public class RubricCommandService {
   private final RubricRepository rubricRepository;
 
   // 강사가 특정 과제에 루브릭 항목을 생성한다.
-  public RubricResponse createRubric(Long instructorUserId, Long assignmentId, CreateRubricRequest request) {
+  public RubricResponse createRubric(
+      Long instructorUserId, Long assignmentId, CreateRubricRequest request) {
     validateUserExists(instructorUserId);
 
     Assignment assignment =
@@ -51,13 +52,15 @@ public class RubricCommandService {
   }
 
   // 강사가 기존 루브릭 항목을 수정한다.
-  public RubricResponse updateRubric(Long instructorUserId, Long rubricId, UpdateRubricRequest request) {
+  public RubricResponse updateRubric(
+      Long instructorUserId, Long rubricId, UpdateRubricRequest request) {
     validateUserExists(instructorUserId);
 
     Rubric rubric =
         rubricRepository
             .findByIdAndIsDeletedFalse(rubricId)
-            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "루브릭을 찾을 수 없습니다."));
+            .orElseThrow(
+                () -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND, "루브릭을 찾을 수 없습니다."));
 
     rubric.update(
         request.getCriteriaName(),

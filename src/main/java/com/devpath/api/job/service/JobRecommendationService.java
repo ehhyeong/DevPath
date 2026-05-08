@@ -162,10 +162,7 @@ public class JobRecommendationService {
       return List.of();
     }
 
-    return List.of(value.split(",")).stream()
-        .map(String::trim)
-        .filter(this::isNotBlank)
-        .toList();
+    return List.of(value.split(",")).stream().map(String::trim).filter(this::isNotBlank).toList();
   }
 
   private void validateUserIfPresent(Long userId) {

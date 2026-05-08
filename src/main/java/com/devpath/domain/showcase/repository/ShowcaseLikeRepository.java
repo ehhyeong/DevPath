@@ -5,9 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ShowcaseLikeRepository extends JpaRepository<ShowcaseLike, Long> {
 
-    boolean existsByShowcaseIdAndUserId(Long showcaseId, Long userId);
+  boolean existsByShowcaseIdAndUserId(Long showcaseId, Long userId);
 
-    long countByShowcaseId(Long showcaseId);
+  long countByShowcaseId(Long showcaseId);
 
-    void deleteByShowcaseIdAndUserId(Long showcaseId, Long userId);
+  void deleteByShowcaseIdAndUserId(Long showcaseId, Long userId);
 }

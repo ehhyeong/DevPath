@@ -11,11 +11,12 @@ import org.springframework.data.repository.query.Param;
 
 public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollment, Long> {
 
-    boolean existsByUser_IdAndCourse_CourseId(Long userId, Long courseId);
+  boolean existsByUser_IdAndCourse_CourseId(Long userId, Long courseId);
 
-    Optional<CourseEnrollment> findByUser_IdAndCourse_CourseId(Long userId, Long courseId);
+  Optional<CourseEnrollment> findByUser_IdAndCourse_CourseId(Long userId, Long courseId);
 
-    @Query("""
+  @Query(
+      """
         select e
         from CourseEnrollment e
         join fetch e.course c
@@ -23,9 +24,10 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
         where e.user.id = :userId
         order by e.enrolledAt desc
         """)
-    List<CourseEnrollment> findAllByUserIdWithCourse(@Param("userId") Long userId);
+  List<CourseEnrollment> findAllByUserIdWithCourse(@Param("userId") Long userId);
 
-    @Query("""
+  @Query(
+      """
         select e
         from CourseEnrollment e
         join fetch e.course c
@@ -34,12 +36,11 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
           and e.status = :status
         order by e.enrolledAt desc
         """)
-    List<CourseEnrollment> findAllByUserIdAndStatusWithCourse(
-        @Param("userId") Long userId,
-        @Param("status") EnrollmentStatus status
-    );
+  List<CourseEnrollment> findAllByUserIdAndStatusWithCourse(
+      @Param("userId") Long userId, @Param("status") EnrollmentStatus status);
 
-    @Query("""
+  @Query(
+      """
         select e
         from CourseEnrollment e
         join fetch e.course c
@@ -47,22 +48,22 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
         where c.instructorId = :instructorId
         order by e.enrolledAt desc
         """)
-    List<CourseEnrollment> findAllByCourseInstructorIdOrderByEnrolledAtDesc(@Param("instructorId") Long instructorId);
+  List<CourseEnrollment> findAllByCourseInstructorIdOrderByEnrolledAtDesc(
+      @Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
         select e.course.courseId
         from CourseEnrollment e
         where e.user.id = :userId
           and e.course.courseId in :courseIds
         """)
-    List<Long> findCourseIdsByUserIdAndCourseIds(
-        @Param("userId") Long userId,
-        @Param("courseIds") Collection<Long> courseIds
-    );
+  List<Long> findCourseIdsByUserIdAndCourseIds(
+      @Param("userId") Long userId, @Param("courseIds") Collection<Long> courseIds);
 
-    long countByUser_IdAndStatus(Long userId, EnrollmentStatus status);
+  long countByUser_IdAndStatus(Long userId, EnrollmentStatus status);
 
-    long countByCourseInstructorId(Long instructorId);
+  long countByCourseInstructorId(Long instructorId);
 
-    long countByCourseInstructorIdAndStatus(Long instructorId, EnrollmentStatus status);
+  long countByCourseInstructorIdAndStatus(Long instructorId, EnrollmentStatus status);
 }

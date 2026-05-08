@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class QnaDraftRequest {
 
-    @NotBlank
-    private String draftContent;
+  @NotBlank private String draftContent;
 }

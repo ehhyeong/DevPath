@@ -21,29 +21,27 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AdminRefundController {
 
-    private final AdminRefundService adminRefundService;
+  private final AdminRefundService adminRefundService;
 
-    // 승인 시에는 최신 PENDING settlement 금액을 먼저 차감한 뒤 상태를 승인으로 바꾼다.
-    @Operation(summary = "환불 승인")
-    @PostMapping("/{refundId}/approve")
-    public ApiResponse<Void> approveRefund(
-            @PathVariable Long refundId,
-            @RequestBody @Valid RefundProcessRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        adminRefundService.approveRefund(refundId, userId, request);
-        return ApiResponse.success("환불이 승인되었습니다.", null);
-    }
+  // 승인 시에는 최신 PENDING settlement 금액을 먼저 차감한 뒤 상태를 승인으로 바꾼다.
+  @Operation(summary = "환불 승인")
+  @PostMapping("/{refundId}/approve")
+  public ApiResponse<Void> approveRefund(
+      @PathVariable Long refundId,
+      @RequestBody @Valid RefundProcessRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    adminRefundService.approveRefund(refundId, userId, request);
+    return ApiResponse.success("환불이 승인되었습니다.", null);
+  }
 
-    // 반려는 상태와 심사 이력만 남기고 정산 금액은 건드리지 않는다.
-    @Operation(summary = "환불 반려")
-    @PostMapping("/{refundId}/reject")
-    public ApiResponse<Void> rejectRefund(
-            @PathVariable Long refundId,
-            @RequestBody @Valid RefundProcessRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        adminRefundService.rejectRefund(refundId, userId, request);
-        return ApiResponse.success("환불이 반려되었습니다.", null);
-    }
+  // 반려는 상태와 심사 이력만 남기고 정산 금액은 건드리지 않는다.
+  @Operation(summary = "환불 반려")
+  @PostMapping("/{refundId}/reject")
+  public ApiResponse<Void> rejectRefund(
+      @PathVariable Long refundId,
+      @RequestBody @Valid RefundProcessRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    adminRefundService.rejectRefund(refundId, userId, request);
+    return ApiResponse.success("환불이 반려되었습니다.", null);
+  }
 }

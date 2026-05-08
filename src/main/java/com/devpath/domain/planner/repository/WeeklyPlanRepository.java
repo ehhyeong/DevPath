@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WeeklyPlanRepository extends JpaRepository<WeeklyPlan, Long> {
 
-    List<WeeklyPlan> findAllByLearnerIdOrderByCreatedAtDesc(Long learnerId);
+  List<WeeklyPlan> findAllByLearnerIdOrderByCreatedAtDesc(Long learnerId);
 
-    Optional<WeeklyPlan> findByIdAndLearnerId(Long planId, Long learnerId);
+  Optional<WeeklyPlan> findByIdAndLearnerId(Long planId, Long learnerId);
 }

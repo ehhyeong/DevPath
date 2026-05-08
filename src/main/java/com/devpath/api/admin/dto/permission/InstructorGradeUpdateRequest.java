@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class InstructorGradeUpdateRequest {
 
-    @NotBlank
-    private String grade;
+  @NotBlank private String grade;
 }

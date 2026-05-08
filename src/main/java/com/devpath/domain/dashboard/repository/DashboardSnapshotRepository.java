@@ -8,9 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface DashboardSnapshotRepository extends JpaRepository<DashboardSnapshot, Long> {
 
-    List<DashboardSnapshot> findAllByLearnerIdOrderBySnapshotDateAsc(Long learnerId);
+  List<DashboardSnapshot> findAllByLearnerIdOrderBySnapshotDateAsc(Long learnerId);
 
-    Optional<DashboardSnapshot> findTopByLearnerIdOrderBySnapshotDateDesc(Long learnerId);
+  Optional<DashboardSnapshot> findTopByLearnerIdOrderBySnapshotDateDesc(Long learnerId);
 
-    Optional<DashboardSnapshot> findByLearnerIdAndSnapshotDate(Long learnerId, LocalDate snapshotDate);
+  Optional<DashboardSnapshot> findByLearnerIdAndSnapshotDate(
+      Long learnerId, LocalDate snapshotDate);
 }

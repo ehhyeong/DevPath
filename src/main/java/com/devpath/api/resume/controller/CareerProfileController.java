@@ -44,8 +44,10 @@ public class CareerProfileController {
   @PostMapping("/api/career-profiles/{profileId}/proof-cards")
   @Operation(summary = "Proof Card 선택", description = "채용 분석 프로필에 포함할 Proof Card를 선택합니다.")
   public ResponseEntity<ApiResponse<CareerProfileResponse.ProofCardDetail>> selectProofCard(
-      @PathVariable Long profileId, @Valid @RequestBody CareerProfileRequest.ProofCardSelect request) {
-    return ResponseEntity.ok(ApiResponse.ok(careerProfileService.selectProofCard(profileId, request)));
+      @PathVariable Long profileId,
+      @Valid @RequestBody CareerProfileRequest.ProofCardSelect request) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(careerProfileService.selectProofCard(profileId, request)));
   }
 
   @DeleteMapping("/api/career-profiles/{profileId}/proof-cards/{proofCardId}")
@@ -73,8 +75,10 @@ public class CareerProfileController {
   @PostMapping("/api/career-profiles/{profileId}/snapshots")
   @Operation(summary = "분석용 프로필 스냅샷 저장", description = "현재 프로필 데이터를 고정 스냅샷으로 저장하고 버전을 생성합니다.")
   public ResponseEntity<ApiResponse<CareerProfileResponse.SnapshotDetail>> createSnapshot(
-      @PathVariable Long profileId, @Valid @RequestBody CareerProfileRequest.SnapshotCreate request) {
-    return ResponseEntity.ok(ApiResponse.ok(careerProfileService.createSnapshot(profileId, request)));
+      @PathVariable Long profileId,
+      @Valid @RequestBody CareerProfileRequest.SnapshotCreate request) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(careerProfileService.createSnapshot(profileId, request)));
   }
 
   @GetMapping("/api/career-profiles/{profileId}/versions")

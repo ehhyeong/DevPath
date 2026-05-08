@@ -23,72 +23,61 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MeetingController {
 
-    private final MeetingService meetingService;
+  private final MeetingService meetingService;
 
-    @PostMapping("/api/meetings")
-    @Operation(summary = "회의방 생성", description = "멘토링 워크스페이스에 회의방을 생성합니다.")
-    public ResponseEntity<ApiResponse<MeetingResponse.RoomDetail>> create(
-            @Valid @RequestBody MeetingRequest.Create request
-    ) {
-        // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
-        return ResponseEntity.ok(ApiResponse.ok(meetingService.create(request)));
-    }
+  @PostMapping("/api/meetings")
+  @Operation(summary = "회의방 생성", description = "멘토링 워크스페이스에 회의방을 생성합니다.")
+  public ResponseEntity<ApiResponse<MeetingResponse.RoomDetail>> create(
+      @Valid @RequestBody MeetingRequest.Create request) {
+    // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
+    return ResponseEntity.ok(ApiResponse.ok(meetingService.create(request)));
+  }
 
-    @PatchMapping("/api/meetings/{meetingId}/end")
-    @Operation(summary = "회의 종료", description = "회의방을 종료 상태로 변경합니다.")
-    public ResponseEntity<ApiResponse<MeetingResponse.RoomDetail>> end(
-            @PathVariable Long meetingId,
-            @Valid @RequestBody MeetingRequest.End request
-    ) {
-        // 종료 권한과 중복 종료 검증은 Service에서 처리한다.
-        return ResponseEntity.ok(ApiResponse.ok(meetingService.end(meetingId, request)));
-    }
+  @PatchMapping("/api/meetings/{meetingId}/end")
+  @Operation(summary = "회의 종료", description = "회의방을 종료 상태로 변경합니다.")
+  public ResponseEntity<ApiResponse<MeetingResponse.RoomDetail>> end(
+      @PathVariable Long meetingId, @Valid @RequestBody MeetingRequest.End request) {
+    // 종료 권한과 중복 종료 검증은 Service에서 처리한다.
+    return ResponseEntity.ok(ApiResponse.ok(meetingService.end(meetingId, request)));
+  }
 
-    @PostMapping("/api/meetings/{meetingId}/join")
-    @Operation(summary = "회의 참가", description = "회의방에 참가하고 참가 이력을 저장합니다.")
-    public ResponseEntity<ApiResponse<MeetingResponse.ParticipantDetail>> join(
-            @PathVariable Long meetingId,
-            @Valid @RequestBody MeetingRequest.Join request
-    ) {
-        // 종료된 회의 재참가 방지와 중복 참가 검증은 Service에서 처리한다.
-        return ResponseEntity.ok(ApiResponse.ok(meetingService.join(meetingId, request)));
-    }
+  @PostMapping("/api/meetings/{meetingId}/join")
+  @Operation(summary = "회의 참가", description = "회의방에 참가하고 참가 이력을 저장합니다.")
+  public ResponseEntity<ApiResponse<MeetingResponse.ParticipantDetail>> join(
+      @PathVariable Long meetingId, @Valid @RequestBody MeetingRequest.Join request) {
+    // 종료된 회의 재참가 방지와 중복 참가 검증은 Service에서 처리한다.
+    return ResponseEntity.ok(ApiResponse.ok(meetingService.join(meetingId, request)));
+  }
 
-    @PostMapping("/api/meetings/{meetingId}/leave")
-    @Operation(summary = "회의 퇴장", description = "회의방에서 퇴장하고 퇴장 시간을 저장합니다.")
-    public ResponseEntity<ApiResponse<MeetingResponse.ParticipantDetail>> leave(
-            @PathVariable Long meetingId,
-            @Valid @RequestBody MeetingRequest.Leave request
-    ) {
-        // 현재 참가 중인 사용자만 퇴장 처리한다.
-        return ResponseEntity.ok(ApiResponse.ok(meetingService.leave(meetingId, request)));
-    }
+  @PostMapping("/api/meetings/{meetingId}/leave")
+  @Operation(summary = "회의 퇴장", description = "회의방에서 퇴장하고 퇴장 시간을 저장합니다.")
+  public ResponseEntity<ApiResponse<MeetingResponse.ParticipantDetail>> leave(
+      @PathVariable Long meetingId, @Valid @RequestBody MeetingRequest.Leave request) {
+    // 현재 참가 중인 사용자만 퇴장 처리한다.
+    return ResponseEntity.ok(ApiResponse.ok(meetingService.leave(meetingId, request)));
+  }
 
-    @GetMapping("/api/meetings/{meetingId}/participants")
-    @Operation(summary = "회의 참가자 목록 조회", description = "현재 회의방에 접속 중인 참가자 목록을 조회합니다.")
-    public ResponseEntity<ApiResponse<List<MeetingResponse.ParticipantDetail>>> getParticipants(
-            @PathVariable Long meetingId
-    ) {
-        // 현재 active=true인 참가자만 반환한다.
-        return ResponseEntity.ok(ApiResponse.ok(meetingService.getParticipants(meetingId)));
-    }
+  @GetMapping("/api/meetings/{meetingId}/participants")
+  @Operation(summary = "회의 참가자 목록 조회", description = "현재 회의방에 접속 중인 참가자 목록을 조회합니다.")
+  public ResponseEntity<ApiResponse<List<MeetingResponse.ParticipantDetail>>> getParticipants(
+      @PathVariable Long meetingId) {
+    // 현재 active=true인 참가자만 반환한다.
+    return ResponseEntity.ok(ApiResponse.ok(meetingService.getParticipants(meetingId)));
+  }
 
-    @PatchMapping("/api/meetings/{meetingId}/recording-url")
-    @Operation(summary = "회의 녹화 URL 저장", description = "회의 녹화 URL을 저장하거나 수정합니다.")
-    public ResponseEntity<ApiResponse<MeetingResponse.RoomDetail>> updateRecordingUrl(
-            @PathVariable Long meetingId,
-            @Valid @RequestBody MeetingRequest.RecordingUrl request
-    ) {
-        // 녹화 URL 수정 권한은 Service에서 검증한다.
-        return ResponseEntity.ok(ApiResponse.ok(meetingService.updateRecordingUrl(meetingId, request)));
-    }
+  @PatchMapping("/api/meetings/{meetingId}/recording-url")
+  @Operation(summary = "회의 녹화 URL 저장", description = "회의 녹화 URL을 저장하거나 수정합니다.")
+  public ResponseEntity<ApiResponse<MeetingResponse.RoomDetail>> updateRecordingUrl(
+      @PathVariable Long meetingId, @Valid @RequestBody MeetingRequest.RecordingUrl request) {
+    // 녹화 URL 수정 권한은 Service에서 검증한다.
+    return ResponseEntity.ok(ApiResponse.ok(meetingService.updateRecordingUrl(meetingId, request)));
+  }
 
-    @GetMapping("/api/meetings/{meetingId}/attendance")
-    @Operation(summary = "회의 출석 조회", description = "회의 참가/퇴장 이력을 조회합니다.")
-    public ResponseEntity<ApiResponse<List<MeetingResponse.AttendanceDetail>>> getAttendance(
-            @PathVariable Long meetingId
-    ) {
-        // 참가/퇴장 이력을 입장 시간순으로 반환한다.
-        return ResponseEntity.ok(ApiResponse.ok(meetingService.getAttendance(meetingId)));
-    }
+  @GetMapping("/api/meetings/{meetingId}/attendance")
+  @Operation(summary = "회의 출석 조회", description = "회의 참가/퇴장 이력을 조회합니다.")
+  public ResponseEntity<ApiResponse<List<MeetingResponse.AttendanceDetail>>> getAttendance(
+      @PathVariable Long meetingId) {
+    // 참가/퇴장 이력을 입장 시간순으로 반환한다.
+    return ResponseEntity.ok(ApiResponse.ok(meetingService.getAttendance(meetingId)));
+  }
 }

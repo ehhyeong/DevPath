@@ -20,21 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstructorRevenueController {
 
-    private final InstructorRevenueService instructorRevenueService;
+  private final InstructorRevenueService instructorRevenueService;
 
-    @Operation(summary = "수익 현황 조회", description = "총수익, 월간수익, 최근 거래를 조회합니다.")
-    @GetMapping
-    public ApiResponse<RevenueResponse> getRevenue(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("수익 현황을 조회했습니다.", instructorRevenueService.getRevenue(userId));
-    }
+  @Operation(summary = "수익 현황 조회", description = "총수익, 월간수익, 최근 거래를 조회합니다.")
+  @GetMapping
+  public ApiResponse<RevenueResponse> getRevenue(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success("수익 현황을 조회했습니다.", instructorRevenueService.getRevenue(userId));
+  }
 
-    @Operation(summary = "정산 현황 조회", description = "강사 정산 목록을 최신순으로 조회합니다.")
-    @GetMapping("/settlements")
-    public ApiResponse<List<SettlementResponse>> getSettlements(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("정산 현황을 조회했습니다.", instructorRevenueService.getSettlements(userId));
-    }
+  @Operation(summary = "정산 현황 조회", description = "강사 정산 목록을 최신순으로 조회합니다.")
+  @GetMapping("/settlements")
+  public ApiResponse<List<SettlementResponse>> getSettlements(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success("정산 현황을 조회했습니다.", instructorRevenueService.getSettlements(userId));
+  }
 }

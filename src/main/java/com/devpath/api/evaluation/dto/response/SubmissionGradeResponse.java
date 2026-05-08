@@ -68,7 +68,8 @@ public class SubmissionGradeResponse {
     private Integer earnedPoints;
 
     @Builder
-    public RubricGradeItem(Long rubricId, String criteriaName, Integer maxPoints, Integer earnedPoints) {
+    public RubricGradeItem(
+        Long rubricId, String criteriaName, Integer maxPoints, Integer earnedPoints) {
       this.rubricId = rubricId;
       this.criteriaName = criteriaName;
       this.maxPoints = maxPoints;

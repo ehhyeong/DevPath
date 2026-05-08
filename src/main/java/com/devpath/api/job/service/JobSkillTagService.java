@@ -43,7 +43,8 @@ public class JobSkillTagService {
   public List<JobSkillTagResponse.Detail> getSkillTags(Long jobId) {
     getActiveJob(jobId);
 
-    return jobSkillTagRepository.findAllByJobPosting_IdAndIsDeletedFalseOrderByNameAsc(jobId)
+    return jobSkillTagRepository
+        .findAllByJobPosting_IdAndIsDeletedFalseOrderByNameAsc(jobId)
         .stream()
         .map(JobSkillTagResponse.Detail::from)
         .toList();
@@ -62,7 +63,9 @@ public class JobSkillTagService {
   }
 
   private void softDeleteExistingTags(Long jobId) {
-    jobSkillTagRepository.findAllByJobPosting_IdAndIsDeletedFalse(jobId).forEach(JobSkillTag::delete);
+    jobSkillTagRepository
+        .findAllByJobPosting_IdAndIsDeletedFalse(jobId)
+        .forEach(JobSkillTag::delete);
   }
 
   private List<JobSkillTag> extractSkillTags(JobPosting jobPosting) {

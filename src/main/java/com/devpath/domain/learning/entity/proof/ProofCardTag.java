@@ -23,42 +23,40 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "proof_card_tags",
     uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_proof_card_tags_card_tag_type",
-            columnNames = {"proof_card_id", "tag_id", "skill_evidence_type"}
-        )
-    }
-)
+      @UniqueConstraint(
+          name = "uk_proof_card_tags_card_tag_type",
+          columnNames = {"proof_card_id", "tag_id", "skill_evidence_type"})
+    })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProofCardTag {
 
-    // Proof Card Tag PK다.
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "proof_card_tag_id")
-    private Long id;
+  // Proof Card Tag PK다.
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "proof_card_tag_id")
+  private Long id;
 
-    // 어떤 Proof Card에 속한 태그인지 나타낸다.
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "proof_card_id", nullable = false)
-    private ProofCard proofCard;
+  // 어떤 Proof Card에 속한 태그인지 나타낸다.
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "proof_card_id", nullable = false)
+  private ProofCard proofCard;
 
-    // 연결된 기술 태그다.
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tag_id", nullable = false)
-    private Tag tag;
+  // 연결된 기술 태그다.
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "tag_id", nullable = false)
+  private Tag tag;
 
-    // 태그 증빙 유형이다.
-    @Enumerated(EnumType.STRING)
-    @Column(name = "skill_evidence_type", nullable = false, length = 30)
-    private SkillEvidenceType evidenceType;
+  // 태그 증빙 유형이다.
+  @Enumerated(EnumType.STRING)
+  @Column(name = "skill_evidence_type", nullable = false, length = 30)
+  private SkillEvidenceType evidenceType;
 
-    // Proof Card Tag 엔티티를 생성한다.
-    @Builder
-    public ProofCardTag(ProofCard proofCard, Tag tag, SkillEvidenceType evidenceType) {
-        this.proofCard = proofCard;
-        this.tag = tag;
-        this.evidenceType = evidenceType;
-    }
+  // Proof Card Tag 엔티티를 생성한다.
+  @Builder
+  public ProofCardTag(ProofCard proofCard, Tag tag, SkillEvidenceType evidenceType) {
+    this.proofCard = proofCard;
+    this.tag = tag;
+    this.evidenceType = evidenceType;
+  }
 }

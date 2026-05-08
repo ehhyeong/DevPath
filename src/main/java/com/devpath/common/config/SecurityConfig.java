@@ -70,6 +70,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/career-profiles/**")
                     .permitAll()
                     .requestMatchers("/api/market/learning-feedback/**")
+                    .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/showcases/**")
                     .permitAll()
                     .requestMatchers("/api/admin/**")

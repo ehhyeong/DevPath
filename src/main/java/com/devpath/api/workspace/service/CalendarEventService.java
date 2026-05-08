@@ -21,85 +21,88 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CalendarEventService {
 
-    private final CalendarEventRepository calendarEventRepository;
-    private final WorkspaceRepository workspaceRepository;
-    private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final CalendarEventRepository calendarEventRepository;
+  private final WorkspaceRepository workspaceRepository;
+  private final WorkspaceMemberRepository workspaceMemberRepository;
 
-    @Transactional
-    public CalendarEventResponse createEvent(Long workspaceId, Long userId,
-            CreateCalendarEventRequest request) {
-        validateWorkspaceExists(workspaceId);
-        validateMember(workspaceId, userId);
+  @Transactional
+  public CalendarEventResponse createEvent(
+      Long workspaceId, Long userId, CreateCalendarEventRequest request) {
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
 
-        CalendarEvent event = CalendarEvent.builder()
-                .workspaceId(workspaceId)
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .startAt(request.getStartAt())
-                .endAt(request.getEndAt())
-                .createdById(userId)
-                .build();
+    CalendarEvent event =
+        CalendarEvent.builder()
+            .workspaceId(workspaceId)
+            .title(request.getTitle())
+            .description(request.getDescription())
+            .startAt(request.getStartAt())
+            .endAt(request.getEndAt())
+            .createdById(userId)
+            .build();
 
-        return CalendarEventResponse.from(calendarEventRepository.save(event));
+    return CalendarEventResponse.from(calendarEventRepository.save(event));
+  }
+
+  public List<CalendarEventResponse> getEvents(
+      Long workspaceId, Long userId, Integer year, Integer month) {
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
+
+    if (year != null && month != null) {
+      YearMonth ym = YearMonth.of(year, month);
+      LocalDateTime from = ym.atDay(1).atStartOfDay();
+      LocalDateTime to = ym.atEndOfMonth().atTime(23, 59, 59);
+      return calendarEventRepository
+          .findAllByWorkspaceIdAndStartAtBetweenAndIsDeletedFalseOrderByStartAtAsc(
+              workspaceId, from, to)
+          .stream()
+          .map(CalendarEventResponse::from)
+          .toList();
     }
 
-    public List<CalendarEventResponse> getEvents(Long workspaceId, Long userId,
-            Integer year, Integer month) {
-        validateWorkspaceExists(workspaceId);
-        validateMember(workspaceId, userId);
+    return calendarEventRepository
+        .findAllByWorkspaceIdAndIsDeletedFalseOrderByStartAtAsc(workspaceId)
+        .stream()
+        .map(CalendarEventResponse::from)
+        .toList();
+  }
 
-        if (year != null && month != null) {
-            YearMonth ym = YearMonth.of(year, month);
-            LocalDateTime from = ym.atDay(1).atStartOfDay();
-            LocalDateTime to = ym.atEndOfMonth().atTime(23, 59, 59);
-            return calendarEventRepository
-                    .findAllByWorkspaceIdAndStartAtBetweenAndIsDeletedFalseOrderByStartAtAsc(
-                            workspaceId, from, to)
-                    .stream()
-                    .map(CalendarEventResponse::from)
-                    .toList();
-        }
+  @Transactional
+  public CalendarEventResponse updateEvent(
+      Long eventId, Long userId, UpdateCalendarEventRequest request) {
+    CalendarEvent event = getEventEntity(eventId);
+    validateMember(event.getWorkspaceId(), userId);
 
-        return calendarEventRepository
-                .findAllByWorkspaceIdAndIsDeletedFalseOrderByStartAtAsc(workspaceId)
-                .stream()
-                .map(CalendarEventResponse::from)
-                .toList();
+    event.update(
+        request.getTitle(), request.getDescription(), request.getStartAt(), request.getEndAt());
+    return CalendarEventResponse.from(event);
+  }
+
+  @Transactional
+  public void deleteEvent(Long eventId, Long userId) {
+    CalendarEvent event = getEventEntity(eventId);
+    validateMember(event.getWorkspaceId(), userId);
+    event.delete();
+  }
+
+  // --- 내부 헬퍼 ---
+
+  private void validateWorkspaceExists(Long workspaceId) {
+    workspaceRepository
+        .findByIdAndIsDeletedFalse(workspaceId)
+        .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_NOT_FOUND));
+  }
+
+  private void validateMember(Long workspaceId, Long userId) {
+    if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
+      throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
     }
+  }
 
-    @Transactional
-    public CalendarEventResponse updateEvent(Long eventId, Long userId,
-            UpdateCalendarEventRequest request) {
-        CalendarEvent event = getEventEntity(eventId);
-        validateMember(event.getWorkspaceId(), userId);
-
-        event.update(request.getTitle(), request.getDescription(),
-                request.getStartAt(), request.getEndAt());
-        return CalendarEventResponse.from(event);
-    }
-
-    @Transactional
-    public void deleteEvent(Long eventId, Long userId) {
-        CalendarEvent event = getEventEntity(eventId);
-        validateMember(event.getWorkspaceId(), userId);
-        event.delete();
-    }
-
-    // --- 내부 헬퍼 ---
-
-    private void validateWorkspaceExists(Long workspaceId) {
-        workspaceRepository.findByIdAndIsDeletedFalse(workspaceId)
-                .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_NOT_FOUND));
-    }
-
-    private void validateMember(Long workspaceId, Long userId) {
-        if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
-            throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
-        }
-    }
-
-    private CalendarEvent getEventEntity(Long eventId) {
-        return calendarEventRepository.findByIdAndIsDeletedFalse(eventId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_EVENT_NOT_FOUND));
-    }
+  private CalendarEvent getEventEntity(Long eventId) {
+    return calendarEventRepository
+        .findByIdAndIsDeletedFalse(eventId)
+        .orElseThrow(() -> new CustomException(ErrorCode.CALENDAR_EVENT_NOT_FOUND));
+  }
 }

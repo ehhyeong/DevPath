@@ -66,4 +66,3 @@ public class CareerProfileProofCard {
     this.isDeleted = true;
   }
 }
-

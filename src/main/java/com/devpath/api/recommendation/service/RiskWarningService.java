@@ -17,35 +17,42 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class RiskWarningService {
 
-    private final RiskWarningRepository riskWarningRepository;
-    private final UserRepository userRepository;
+  private final RiskWarningRepository riskWarningRepository;
+  private final UserRepository userRepository;
 
-    public RiskWarningResponse.ListResult getWarnings(Long userId, Boolean onlyUnacknowledged, Long nodeId) {
-        validateUser(userId);
+  public RiskWarningResponse.ListResult getWarnings(
+      Long userId, Boolean onlyUnacknowledged, Long nodeId) {
+    validateUser(userId);
 
-        List<RiskWarning> warnings;
-        if (nodeId != null) {
-            warnings = riskWarningRepository.findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(userId, nodeId);
-        } else if (Boolean.TRUE.equals(onlyUnacknowledged)) {
-            warnings = riskWarningRepository.findAllByUserIdAndIsAcknowledgedFalseOrderByCreatedAtDesc(userId);
-        } else {
-            warnings = riskWarningRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
-        }
-
-        return RiskWarningResponse.ListResult.of(userId, warnings);
+    List<RiskWarning> warnings;
+    if (nodeId != null) {
+      warnings =
+          riskWarningRepository.findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(
+              userId, nodeId);
+    } else if (Boolean.TRUE.equals(onlyUnacknowledged)) {
+      warnings =
+          riskWarningRepository.findAllByUserIdAndIsAcknowledgedFalseOrderByCreatedAtDesc(userId);
+    } else {
+      warnings = riskWarningRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    public long getUnacknowledgedWarningCountForRecommendationChange(Long userId) {
-        validateUser(userId);
-        return riskWarningRepository.findAllByUserIdAndIsAcknowledgedFalseOrderByCreatedAtDesc(userId).size();
+    return RiskWarningResponse.ListResult.of(userId, warnings);
+  }
+
+  public long getUnacknowledgedWarningCountForRecommendationChange(Long userId) {
+    validateUser(userId);
+    return riskWarningRepository
+        .findAllByUserIdAndIsAcknowledgedFalseOrderByCreatedAtDesc(userId)
+        .size();
+  }
+
+  private User validateUser(Long userId) {
+    if (userId == null) {
+      throw new CustomException(ErrorCode.UNAUTHORIZED);
     }
 
-    private User validateUser(Long userId) {
-        if (userId == null) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
+    return userRepository
+        .findById(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+  }
 }

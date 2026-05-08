@@ -26,48 +26,48 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Builder
 public class CalendarEvent {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "workspace_id", nullable = false)
-    private Long workspaceId;
+  @Column(name = "workspace_id", nullable = false)
+  private Long workspaceId;
 
-    @Column(nullable = false)
-    private String title;
+  @Column(nullable = false)
+  private String title;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+  @Column(columnDefinition = "TEXT")
+  private String description;
 
-    @Column(name = "start_at", nullable = false)
-    private LocalDateTime startAt;
+  @Column(name = "start_at", nullable = false)
+  private LocalDateTime startAt;
 
-    @Column(name = "end_at", nullable = false)
-    private LocalDateTime endAt;
+  @Column(name = "end_at", nullable = false)
+  private LocalDateTime endAt;
 
-    @Column(name = "created_by_id", nullable = false)
-    private Long createdById;
+  @Column(name = "created_by_id", nullable = false)
+  private Long createdById;
 
-    @Builder.Default
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+  @Builder.Default
+  @Column(name = "is_deleted", nullable = false)
+  private boolean isDeleted = false;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    public void update(String title, String description, LocalDateTime startAt, LocalDateTime endAt) {
-        this.title = title;
-        this.description = description;
-        this.startAt = startAt;
-        this.endAt = endAt;
-    }
+  public void update(String title, String description, LocalDateTime startAt, LocalDateTime endAt) {
+    this.title = title;
+    this.description = description;
+    this.startAt = startAt;
+    this.endAt = endAt;
+  }
 
-    public void delete() {
-        this.isDeleted = true;
-    }
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

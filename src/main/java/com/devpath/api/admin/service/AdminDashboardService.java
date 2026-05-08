@@ -64,11 +64,13 @@ public class AdminDashboardService {
         .build();
   }
 
-  private AdminDashboardOverviewResponse.SummaryMetric buildWeeklyActiveUsersMetric(List<User> users) {
+  private AdminDashboardOverviewResponse.SummaryMetric buildWeeklyActiveUsersMetric(
+      List<User> users) {
     long totalUsers = users.size();
     long currentWeekActiveUsers = countUsersInPeriod(users, 0, TREND_DAYS - 1);
     long previousWeekActiveUsers = countUsersInPeriod(users, TREND_DAYS, TREND_DAYS * 2 - 1);
-    long displayedValue = currentWeekActiveUsers > 0 ? currentWeekActiveUsers : countActiveUsers(users);
+    long displayedValue =
+        currentWeekActiveUsers > 0 ? currentWeekActiveUsers : countActiveUsers(users);
     int progressPercent = calculateRatio(displayedValue, totalUsers);
     int deltaPercent = calculateDeltaPercent(currentWeekActiveUsers, previousWeekActiveUsers);
 
@@ -123,7 +125,10 @@ public class AdminDashboardService {
         .value(pendingReports)
         .suffix("건")
         .progressPercent(calculateRatio(pendingReports, Math.max(totalReports, 1)))
-        .changeLabel(pendingReports == 0 ? "대기 신고 없음" : String.format(Locale.KOREAN, "%d건 접수 중", pendingReports))
+        .changeLabel(
+            pendingReports == 0
+                ? "대기 신고 없음"
+                : String.format(Locale.KOREAN, "%d건 접수 중", pendingReports))
         .changeTone(pendingReports == 0 ? "positive" : "warning")
         .build();
   }
@@ -164,11 +169,13 @@ public class AdminDashboardService {
     Map<Long, String> primaryCategoryByCourseId = new LinkedHashMap<>();
     for (CourseTagMap courseTagMap : courseTagMaps) {
       Long courseId = courseTagMap.getCourse().getCourseId();
-      if (!publishedCourseIds.contains(courseId) || primaryCategoryByCourseId.containsKey(courseId)) {
+      if (!publishedCourseIds.contains(courseId)
+          || primaryCategoryByCourseId.containsKey(courseId)) {
         continue;
       }
 
-      primaryCategoryByCourseId.put(courseId, normalizeCategory(courseTagMap.getTag().getCategory()));
+      primaryCategoryByCourseId.put(
+          courseId, normalizeCategory(courseTagMap.getTag().getCategory()));
     }
 
     Map<String, Long> countsByCategory = new LinkedHashMap<>();

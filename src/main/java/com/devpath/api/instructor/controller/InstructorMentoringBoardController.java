@@ -20,22 +20,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstructorMentoringBoardController {
 
-    private final InstructorMentoringBoardService instructorMentoringBoardService;
+  private final InstructorMentoringBoardService instructorMentoringBoardService;
 
-    @Operation(summary = "멘토링 보드 조회")
-    @GetMapping("/board")
-    public ApiResponse<InstructorMentoringBoardPayload> getBoard(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("Mentoring board loaded.", instructorMentoringBoardService.getBoard(userId));
-    }
+  @Operation(summary = "멘토링 보드 조회")
+  @GetMapping("/board")
+  public ApiResponse<InstructorMentoringBoardPayload> getBoard(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "Mentoring board loaded.", instructorMentoringBoardService.getBoard(userId));
+  }
 
-    @Operation(summary = "멘토링 보드 저장")
-    @PutMapping("/board")
-    public ApiResponse<InstructorMentoringBoardPayload> saveBoard(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @RequestBody InstructorMentoringBoardPayload payload
-    ) {
-        return ApiResponse.success("Mentoring board saved.", instructorMentoringBoardService.saveBoard(userId, payload));
-    }
+  @Operation(summary = "멘토링 보드 저장")
+  @PutMapping("/board")
+  public ApiResponse<InstructorMentoringBoardPayload> saveBoard(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @RequestBody InstructorMentoringBoardPayload payload) {
+    return ApiResponse.success(
+        "Mentoring board saved.", instructorMentoringBoardService.saveBoard(userId, payload));
+  }
 }

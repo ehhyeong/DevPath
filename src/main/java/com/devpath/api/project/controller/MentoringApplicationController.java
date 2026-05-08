@@ -26,23 +26,24 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "프로젝트 - 멘토링", description = "프로젝트 멘토링 신청 API")
 public class MentoringApplicationController {
 
-    private final MentoringApplicationService mentoringApplicationService;
+  private final MentoringApplicationService mentoringApplicationService;
 
-    @PostMapping
-    @Operation(summary = "프로젝트 멘토링 신청", description = "프로젝트에 대한 멘토링을 신청합니다.")
-    public ApiResponse<MentoringResponse> applyForMentoring(
-            @Valid @RequestBody MentoringRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId
-    ) {
-        return ApiResponse.ok(mentoringApplicationService.applyForMentoring(request, requireUserId(requesterId)));
-    }
+  @PostMapping
+  @Operation(summary = "프로젝트 멘토링 신청", description = "프로젝트에 대한 멘토링을 신청합니다.")
+  public ApiResponse<MentoringResponse> applyForMentoring(
+      @Valid @RequestBody MentoringRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId) {
+    return ApiResponse.ok(
+        mentoringApplicationService.applyForMentoring(request, requireUserId(requesterId)));
+  }
 
-    @GetMapping
-    @Operation(summary = "프로젝트 멘토링 신청 목록 조회", description = "프로젝트의 멘토링 신청 목록을 조회합니다.")
-    public ApiResponse<List<MentoringResponse>> getMentoringApplications(
-            @RequestParam Long projectId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId
-    ) {
-        return ApiResponse.ok(mentoringApplicationService.getMentoringApplications(projectId, requireUserId(requesterId)));
-    }
+  @GetMapping
+  @Operation(summary = "프로젝트 멘토링 신청 목록 조회", description = "프로젝트의 멘토링 신청 목록을 조회합니다.")
+  public ApiResponse<List<MentoringResponse>> getMentoringApplications(
+      @RequestParam Long projectId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId) {
+    return ApiResponse.ok(
+        mentoringApplicationService.getMentoringApplications(
+            projectId, requireUserId(requesterId)));
+  }
 }

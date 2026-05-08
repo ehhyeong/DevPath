@@ -7,9 +7,9 @@ import lombok.Getter;
 @Builder
 public class ReviewHelpfulResponse {
 
-    private long totalReviews;
-    private long answeredCount;
-    private long unansweredCount;
-    private long unsatisfiedCount;
-    private double answerRate;
+  private long totalReviews;
+  private long answeredCount;
+  private long unansweredCount;
+  private long unsatisfiedCount;
+  private double answerRate;
 }

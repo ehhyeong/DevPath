@@ -17,34 +17,34 @@ import org.hibernate.annotations.CreationTimestamp;
 @Builder
 public class SquadInvitation {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "squad_invitation_id")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "squad_invitation_id")
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "squad_id", nullable = false)
-    private Squad squad;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "squad_id", nullable = false)
+  private Squad squad;
 
-    @Column(name = "inviter_id", nullable = false)
-    private Long inviterId;
+  @Column(name = "inviter_id", nullable = false)
+  private Long inviterId;
 
-    @Column(name = "invitee_id", nullable = false)
-    private Long inviteeId;
+  @Column(name = "invitee_id", nullable = false)
+  private Long inviteeId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private SquadInvitationStatus status;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private SquadInvitationStatus status;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    public void accept() {
-        this.status = SquadInvitationStatus.ACCEPTED;
-    }
+  public void accept() {
+    this.status = SquadInvitationStatus.ACCEPTED;
+  }
 
-    public void reject() {
-        this.status = SquadInvitationStatus.REJECTED;
-    }
+  public void reject() {
+    this.status = SquadInvitationStatus.REJECTED;
+  }
 }

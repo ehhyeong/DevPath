@@ -43,8 +43,8 @@ public class MyRoadmapModule {
   private Integer branchGroup;
 
   @Builder
-  public MyRoadmapModule(MyRoadmap myRoadmap, BuilderModule builderModule,
-      int sortOrder, Integer branchGroup) {
+  public MyRoadmapModule(
+      MyRoadmap myRoadmap, BuilderModule builderModule, int sortOrder, Integer branchGroup) {
     this.myRoadmap = myRoadmap;
     this.builderModule = builderModule;
     this.sortOrder = sortOrder;

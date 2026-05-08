@@ -21,23 +21,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstructorNotificationController {
 
-    private final InstructorNotificationService instructorNotificationService;
+  private final InstructorNotificationService instructorNotificationService;
 
-    @Operation(summary = "강사 알림 목록 조회")
-    @GetMapping
-    public ApiResponse<List<NotificationResponse>> getNotifications(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        return ApiResponse.success("Notifications loaded.", instructorNotificationService.getNotifications(userId));
-    }
+  @Operation(summary = "강사 알림 목록 조회")
+  @GetMapping
+  public ApiResponse<List<NotificationResponse>> getNotifications(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success(
+        "Notifications loaded.", instructorNotificationService.getNotifications(userId));
+  }
 
-    @Operation(summary = "강사 알림 읽음 처리")
-    @PatchMapping("/{notificationId}/read")
-    public ApiResponse<Void> markAsRead(
-            @PathVariable Long notificationId,
-            @Parameter(hidden = true) @AuthenticationPrincipal Long userId
-    ) {
-        instructorNotificationService.markAsRead(userId, notificationId);
-        return ApiResponse.success("Notification marked as read.", null);
-    }
+  @Operation(summary = "강사 알림 읽음 처리")
+  @PatchMapping("/{notificationId}/read")
+  public ApiResponse<Void> markAsRead(
+      @PathVariable Long notificationId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    instructorNotificationService.markAsRead(userId, notificationId);
+    return ApiResponse.success("Notification marked as read.", null);
+  }
 }

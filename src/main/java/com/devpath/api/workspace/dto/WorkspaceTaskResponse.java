@@ -17,31 +17,31 @@ import lombok.NoArgsConstructor;
 @Builder
 public class WorkspaceTaskResponse {
 
-    private Long taskId;
-    private Long workspaceId;
-    private String title;
-    private String description;
-    private WorkspaceTaskStatus status;
-    private WorkspaceTaskPriority priority;
-    private Long assigneeId;
-    private LocalDate dueDate;
-    private Long createdById;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+  private Long taskId;
+  private Long workspaceId;
+  private String title;
+  private String description;
+  private WorkspaceTaskStatus status;
+  private WorkspaceTaskPriority priority;
+  private Long assigneeId;
+  private LocalDate dueDate;
+  private Long createdById;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
 
-    public static WorkspaceTaskResponse from(WorkspaceTask task) {
-        return WorkspaceTaskResponse.builder()
-                .taskId(task.getId())
-                .workspaceId(task.getWorkspaceId())
-                .title(task.getTitle())
-                .description(task.getDescription())
-                .status(task.getStatus())
-                .priority(task.getPriority())
-                .assigneeId(task.getAssigneeId())
-                .dueDate(task.getDueDate())
-                .createdById(task.getCreatedById())
-                .createdAt(task.getCreatedAt())
-                .updatedAt(task.getUpdatedAt())
-                .build();
-    }
+  public static WorkspaceTaskResponse from(WorkspaceTask task) {
+    return WorkspaceTaskResponse.builder()
+        .taskId(task.getId())
+        .workspaceId(task.getWorkspaceId())
+        .title(task.getTitle())
+        .description(task.getDescription())
+        .status(task.getStatus())
+        .priority(task.getPriority())
+        .assigneeId(task.getAssigneeId())
+        .dueDate(task.getDueDate())
+        .createdById(task.getCreatedById())
+        .createdAt(task.getCreatedAt())
+        .updatedAt(task.getUpdatedAt())
+        .build();
+  }
 }

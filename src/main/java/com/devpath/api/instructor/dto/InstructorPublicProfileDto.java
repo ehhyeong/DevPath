@@ -25,9 +25,7 @@ public class InstructorPublicProfileDto {
         example = "https://cdn.devpath.com/profile/instructor-3.png")
     private String profileImageUrl;
 
-    @Schema(
-        description = "한줄 소개",
-        example = "Spring Boot와 Security를 실전 위주로 가르치는 강사입니다.")
+    @Schema(description = "한줄 소개", example = "Spring Boot와 Security를 실전 위주로 가르치는 강사입니다.")
     private String headline;
 
     @Schema(description = "프로필 공개 여부", example = "true")

@@ -21,26 +21,26 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LectureCatalogCategory {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "category_key", nullable = false, unique = true, length = 50)
-    private String categoryKey;
+  @Column(name = "category_key", nullable = false, unique = true, length = 50)
+  private String categoryKey;
 
-    @Column(nullable = false, length = 80)
-    private String label;
+  @Column(nullable = false, length = 80)
+  private String label;
 
-    @Column(nullable = false, length = 120)
-    private String title;
+  @Column(nullable = false, length = 120)
+  private String title;
 
-    @Column(name = "icon_class", nullable = false, length = 120)
-    private String iconClass;
+  @Column(name = "icon_class", nullable = false, length = 120)
+  private String iconClass;
 
-    @Column(name = "sort_order", nullable = false)
-    private Integer sortOrder;
+  @Column(name = "sort_order", nullable = false)
+  private Integer sortOrder;
 
-    @Builder.Default
-    @Column(name = "is_active", nullable = false)
-    private Boolean active = true;
+  @Builder.Default
+  @Column(name = "is_active", nullable = false)
+  private Boolean active = true;
 }

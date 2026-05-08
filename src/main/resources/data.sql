@@ -10661,7 +10661,9 @@ WHERE u.email = 'learner@devpath.com'
 -- ============================================================
 -- 강의 목록 메뉴 기본 구성
 -- ============================================================
-WITH lecture_catalog_category_seed(category_key, label, title, icon_class, sort_order, is_active) AS (
+INSERT INTO lecture_catalog_categories (category_key, label, title, icon_class, sort_order, is_active)
+SELECT seed.category_key, seed.label, seed.title, seed.icon_class, seed.sort_order, seed.is_active
+FROM (
     VALUES
         ('all', '전체', '전체 강의', 'fas fa-th-large', 0, TRUE),
         ('dev', '개발', '개발 · 프로그래밍', 'fas fa-laptop-code', 1, TRUE),
@@ -10670,17 +10672,16 @@ WITH lecture_catalog_category_seed(category_key, label, title, icon_class, sort_
         ('infra', '인프라', '인프라 · 보안', 'fas fa-server', 4, TRUE),
         ('mobile', '모바일', '모바일 앱 개발', 'fas fa-mobile-alt', 5, TRUE),
         ('career', '커리어', '커리어 · 자기계발', 'fas fa-briefcase', 6, TRUE)
-)
-INSERT INTO lecture_catalog_categories (category_key, label, title, icon_class, sort_order, is_active)
-SELECT seed.category_key, seed.label, seed.title, seed.icon_class, seed.sort_order, seed.is_active
-FROM lecture_catalog_category_seed seed
+) AS seed(category_key, label, title, icon_class, sort_order, is_active)
 WHERE NOT EXISTS (
     SELECT 1
     FROM lecture_catalog_categories category
     WHERE category.category_key = seed.category_key
 );
 
-WITH lecture_catalog_mega_menu_seed(category_key, label, sort_order) AS (
+INSERT INTO lecture_catalog_mega_menu_items (category_id, label, sort_order)
+SELECT category.id, seed.label, seed.sort_order
+FROM (
     VALUES
         ('dev', '웹 개발 (Web)', 0),
         ('dev', '프론트엔드', 1),
@@ -10717,10 +10718,7 @@ WITH lecture_catalog_mega_menu_seed(category_key, label, sort_order) AS (
         ('career', 'UX / UI 디자인', 3),
         ('career', '비즈니스 스킬', 4),
         ('career', '개발자 글쓰기', 5)
-)
-INSERT INTO lecture_catalog_mega_menu_items (category_id, label, sort_order)
-SELECT category.id, seed.label, seed.sort_order
-FROM lecture_catalog_mega_menu_seed seed
+) AS seed(category_key, label, sort_order)
 JOIN lecture_catalog_categories category
     ON category.category_key = seed.category_key
 WHERE NOT EXISTS (
@@ -10730,7 +10728,9 @@ WHERE NOT EXISTS (
       AND item.label = seed.label
 );
 
-WITH lecture_catalog_group_seed(category_key, name, sort_order) AS (
+INSERT INTO lecture_catalog_groups (category_id, name, sort_order)
+SELECT category.id, seed.name, seed.sort_order
+FROM (
     VALUES
         ('all', '탐색 분야', 0),
         ('dev', '언어 (Language)', 0),
@@ -10756,10 +10756,7 @@ WITH lecture_catalog_group_seed(category_key, name, sort_order) AS (
         ('career', '기획/디자인', 1),
         ('career', '취업', 2),
         ('career', '오피스', 3)
-)
-INSERT INTO lecture_catalog_groups (category_id, name, sort_order)
-SELECT category.id, seed.name, seed.sort_order
-FROM lecture_catalog_group_seed seed
+) AS seed(category_key, name, sort_order)
 JOIN lecture_catalog_categories category
     ON category.category_key = seed.category_key
 WHERE NOT EXISTS (
@@ -10769,7 +10766,9 @@ WHERE NOT EXISTS (
       AND group_item.name = seed.name
 );
 
-WITH lecture_catalog_group_item_seed(category_key, group_name, item_name, linked_category_key, sort_order) AS (
+INSERT INTO lecture_catalog_group_items (group_id, name, linked_category_key, sort_order)
+SELECT group_item.id, seed.item_name, seed.linked_category_key, seed.sort_order
+FROM (
     VALUES
         ('all', '탐색 분야', '웹 개발', 'dev', 0),
         ('all', '탐색 분야', 'AI/머신러닝', 'ai', 1),
@@ -10884,10 +10883,7 @@ WITH lecture_catalog_group_item_seed(category_key, group_name, item_name, linked
         ('career', '오피스', '개발자 글쓰기', NULL, 0),
         ('career', '오피스', '커뮤니케이션', NULL, 1),
         ('career', '오피스', '문서화', NULL, 2)
-)
-INSERT INTO lecture_catalog_group_items (group_id, name, linked_category_key, sort_order)
-SELECT group_item.id, seed.item_name, seed.linked_category_key, seed.sort_order
-FROM lecture_catalog_group_item_seed seed
+) AS seed(category_key, group_name, item_name, linked_category_key, sort_order)
 JOIN lecture_catalog_categories category
     ON category.category_key = seed.category_key
 JOIN lecture_catalog_groups group_item
@@ -12039,11 +12035,14 @@ UPDATE lessons l
 SET video_url = '/samples/ocr-code-demo.mp4',
     video_asset_key = NULL,
     video_provider = NULL
-FROM course_sections cs
-JOIN courses c ON c.course_id = cs.course_id
-WHERE l.section_id = cs.section_id
-  AND c.title = '로드맵 실전: Git & 버전 관리'
-  AND l.lesson_type = 'VIDEO'
+WHERE l.lesson_type = 'VIDEO'
+  AND EXISTS (
+      SELECT 1
+      FROM course_sections cs
+      JOIN courses c ON c.course_id = cs.course_id
+      WHERE cs.section_id = l.section_id
+        AND c.title = '로드맵 실전: Git & 버전 관리'
+  )
   AND (
       COALESCE(l.video_url, '') <> '/samples/ocr-code-demo.mp4'
       OR l.video_asset_key IS NOT NULL
@@ -12133,16 +12132,27 @@ WHERE c.title = '로드맵 실전: Git & 버전 관리'
   );
 
 UPDATE lessons l
-SET quiz_node_id = rn.node_id
-FROM course_sections cs
-JOIN courses c ON c.course_id = cs.course_id
-JOIN roadmap_nodes rn ON rn.title = '[ROADMAP COURSE] 로드맵 실전: Git & 버전 관리 - 1 QUIZ'
-WHERE l.section_id = cs.section_id
-  AND c.title = '로드맵 실전: Git & 버전 관리'
-  AND cs.sort_order = 1
-  AND l.sort_order = 3
+SET quiz_node_id = (
+    SELECT rn.node_id
+    FROM course_sections cs
+    JOIN courses c ON c.course_id = cs.course_id
+    JOIN roadmap_nodes rn ON rn.title = '[ROADMAP COURSE] 로드맵 실전: Git & 버전 관리 - 1 QUIZ'
+    WHERE cs.section_id = l.section_id
+      AND c.title = '로드맵 실전: Git & 버전 관리'
+      AND cs.sort_order = 1
+)
+WHERE l.sort_order = 3
   AND l.title = '섹션 마무리 퀴즈: Git 협업 흐름 점검'
-  AND l.quiz_node_id IS NULL;
+  AND l.quiz_node_id IS NULL
+  AND EXISTS (
+      SELECT 1
+      FROM course_sections cs
+      JOIN courses c ON c.course_id = cs.course_id
+      JOIN roadmap_nodes rn ON rn.title = '[ROADMAP COURSE] 로드맵 실전: Git & 버전 관리 - 1 QUIZ'
+      WHERE cs.section_id = l.section_id
+        AND c.title = '로드맵 실전: Git & 버전 관리'
+        AND cs.sort_order = 1
+  );
 
 INSERT INTO lessons (
     section_id, title, description, lesson_type, video_url, video_asset_key, video_provider,
@@ -12175,16 +12185,27 @@ WHERE c.title = '로드맵 실전: Git & 버전 관리'
   );
 
 UPDATE lessons l
-SET assignment_node_id = rn.node_id
-FROM course_sections cs
-JOIN courses c ON c.course_id = cs.course_id
-JOIN roadmap_nodes rn ON rn.title = '[ROADMAP COURSE] 로드맵 실전: Git & 버전 관리 - 2 ASSIGNMENT'
-WHERE l.section_id = cs.section_id
-  AND c.title = '로드맵 실전: Git & 버전 관리'
-  AND cs.sort_order = 2
-  AND l.sort_order = 3
+SET assignment_node_id = (
+    SELECT rn.node_id
+    FROM course_sections cs
+    JOIN courses c ON c.course_id = cs.course_id
+    JOIN roadmap_nodes rn ON rn.title = '[ROADMAP COURSE] 로드맵 실전: Git & 버전 관리 - 2 ASSIGNMENT'
+    WHERE cs.section_id = l.section_id
+      AND c.title = '로드맵 실전: Git & 버전 관리'
+      AND cs.sort_order = 2
+)
+WHERE l.sort_order = 3
   AND l.title = '실습 과제: Git 브랜치 전략과 PR 회고'
-  AND l.assignment_node_id IS NULL;
+  AND l.assignment_node_id IS NULL
+  AND EXISTS (
+      SELECT 1
+      FROM course_sections cs
+      JOIN courses c ON c.course_id = cs.course_id
+      JOIN roadmap_nodes rn ON rn.title = '[ROADMAP COURSE] 로드맵 실전: Git & 버전 관리 - 2 ASSIGNMENT'
+      WHERE cs.section_id = l.section_id
+        AND c.title = '로드맵 실전: Git & 버전 관리'
+        AND cs.sort_order = 2
+  );
 
 INSERT INTO quizzes (
     node_id, title, description, quiz_type, total_score, pass_score,
@@ -13422,16 +13443,23 @@ WHERE NOT EXISTS (
 UPDATE qna_questions q
 SET lesson_id = first_lesson.lesson_id
 FROM (
-    SELECT DISTINCT ON (c.course_id)
-        c.course_id,
-        l.lesson_id
-    FROM courses c
-    JOIN course_sections cs ON cs.course_id = c.course_id
-    JOIN lessons l ON l.section_id = cs.section_id
-    WHERE COALESCE(cs.is_published, TRUE) = TRUE
-      AND COALESCE(l.is_published, TRUE) = TRUE
-      AND l.lesson_type = 'VIDEO'
-    ORDER BY c.course_id, cs.sort_order, l.sort_order, l.lesson_id
+    SELECT ranked.course_id, ranked.lesson_id
+    FROM (
+        SELECT
+            c.course_id,
+            l.lesson_id,
+            ROW_NUMBER() OVER (
+                PARTITION BY c.course_id
+                ORDER BY cs.sort_order, l.sort_order, l.lesson_id
+            ) AS row_number
+        FROM courses c
+        JOIN course_sections cs ON cs.course_id = c.course_id
+        JOIN lessons l ON l.section_id = cs.section_id
+        WHERE COALESCE(cs.is_published, TRUE) = TRUE
+          AND COALESCE(l.is_published, TRUE) = TRUE
+          AND l.lesson_type = 'VIDEO'
+    ) ranked
+    WHERE ranked.row_number = 1
 ) first_lesson
 WHERE q.course_id = first_lesson.course_id
   AND q.lesson_id IS NULL
@@ -13701,7 +13729,16 @@ WHERE reporter.email = 'learner3@devpath.com'
 -- ============================================================
 -- 로드맵 허브 기본 구성
 -- ============================================================
-WITH roadmap_hub_official_seed(title) AS (
+INSERT INTO roadmaps (creator_id, title, description, is_official, is_public, is_deleted, created_at)
+SELECT
+    admin_user.user_id,
+    seed.title,
+    CONCAT(seed.title, ' 학습 흐름을 담은 DevPath 공식 로드맵입니다.'),
+    TRUE,
+    TRUE,
+    FALSE,
+    CURRENT_TIMESTAMP
+FROM (
     VALUES
         ('Full Stack'),
         ('DevOps'),
@@ -13780,17 +13817,7 @@ WITH roadmap_hub_official_seed(title) AS (
         ('Vibe Coding'),
         ('Scala'),
         ('OpenClaw')
-)
-INSERT INTO roadmaps (creator_id, title, description, is_official, is_public, is_deleted, created_at)
-SELECT
-    admin_user.user_id,
-    seed.title,
-    CONCAT(seed.title, ' 학습 흐름을 담은 DevPath 공식 로드맵입니다.'),
-    TRUE,
-    TRUE,
-    FALSE,
-    CURRENT_TIMESTAMP
-FROM roadmap_hub_official_seed seed
+) AS seed(title)
 JOIN users admin_user ON admin_user.email = 'admin@devpath.com'
 WHERE NOT EXISTS (
     SELECT 1
@@ -13808,14 +13835,13 @@ WHERE section_id IN (
 DELETE FROM roadmap_hub_sections
 WHERE section_key IN ('project-ideas', 'best-practices');
 
-WITH roadmap_hub_section_seed(section_key, title, description, layout_type, sort_order, is_active) AS (
+INSERT INTO roadmap_hub_sections (section_key, title, description, layout_type, sort_order, is_active)
+SELECT seed.section_key, seed.title, seed.description, seed.layout_type, seed.sort_order, seed.is_active
+FROM (
     VALUES
         ('role-based', '직무별 학습 로드맵', '직무별 학습 로드맵 허브 구성입니다.', 'CARD_GRID', 0, TRUE),
         ('skill-based', '기술별 학습 로드맵', '기술별 학습 로드맵 허브 구성입니다.', 'CHIP_GRID', 1, TRUE)
-)
-INSERT INTO roadmap_hub_sections (section_key, title, description, layout_type, sort_order, is_active)
-SELECT seed.section_key, seed.title, seed.description, seed.layout_type, seed.sort_order, seed.is_active
-FROM roadmap_hub_section_seed seed
+) AS seed(section_key, title, description, layout_type, sort_order, is_active)
 WHERE NOT EXISTS (
     SELECT 1
     FROM roadmap_hub_sections section_item
@@ -13836,16 +13862,26 @@ SET
     END
 WHERE section_key IN ('role-based', 'skill-based');
 
-WITH roadmap_hub_item_seed(
-    section_key,
-    item_title,
+INSERT INTO roadmap_hub_items (
+    section_id,
+    title,
     subtitle,
     icon_class,
-    linked_roadmap_title,
-    is_featured,
+    linked_roadmap_id,
     sort_order,
-    is_active
-) AS (
+    is_active,
+    is_featured
+)
+SELECT
+    section_item.id,
+    seed.item_title,
+    seed.subtitle,
+    seed.icon_class,
+    roadmap.roadmap_id,
+    seed.sort_order,
+    seed.is_active,
+    seed.is_featured
+FROM (
     VALUES
         ('role-based', '프론트엔드', 'Frontend', 'fas fa-desktop', 'Frontend Entry Roadmap', FALSE, 0, TRUE),
         ('role-based', '백엔드', 'Backend', 'fas fa-server', 'Backend Master Roadmap', TRUE, 1, TRUE),
@@ -13926,27 +13962,16 @@ WITH roadmap_hub_item_seed(
         ('skill-based', 'Vibe Coding', NULL, 'fas fa-star', 'Vibe Coding', FALSE, 50, TRUE),
         ('skill-based', 'Scala', NULL, 'fas fa-layer-group', 'Scala', FALSE, 51, TRUE),
         ('skill-based', 'OpenClaw', NULL, 'devpath-tech-icon devpath-icon-openclaw', 'OpenClaw', FALSE, 52, TRUE)
-)
-INSERT INTO roadmap_hub_items (
-    section_id,
-    title,
+) AS seed(
+    section_key,
+    item_title,
     subtitle,
     icon_class,
-    linked_roadmap_id,
+    linked_roadmap_title,
+    is_featured,
     sort_order,
-    is_active,
-    is_featured
+    is_active
 )
-SELECT
-    section_item.id,
-    seed.item_title,
-    seed.subtitle,
-    seed.icon_class,
-    roadmap.roadmap_id,
-    seed.sort_order,
-    seed.is_active,
-    seed.is_featured
-FROM roadmap_hub_item_seed seed
 JOIN roadmap_hub_sections section_item
     ON section_item.section_key = seed.section_key
 LEFT JOIN roadmaps roadmap
@@ -13963,8 +13988,15 @@ WHERE NOT EXISTS (
       )
 );
 
-WITH roadmap_hub_skill_icon_seed(item_title, icon_class) AS (
-    VALUES
+DROP TABLE IF EXISTS tmp_roadmap_hub_skill_icon_seed;
+
+CREATE TEMPORARY TABLE tmp_roadmap_hub_skill_icon_seed (
+    item_title VARCHAR(255) NOT NULL,
+    icon_class VARCHAR(255) NOT NULL
+);
+
+INSERT INTO tmp_roadmap_hub_skill_icon_seed (item_title, icon_class)
+VALUES
         ('SQL', 'fas fa-database'),
         ('Computer Science', 'fas fa-microchip'),
         ('React', 'fab fa-react'),
@@ -14017,18 +14049,38 @@ WITH roadmap_hub_skill_icon_seed(item_title, icon_class) AS (
         ('Claude Code', 'devpath-tech-icon devpath-icon-claude'),
         ('Vibe Coding', 'fas fa-star'),
         ('Scala', 'fas fa-layer-group'),
-        ('OpenClaw', 'devpath-tech-icon devpath-icon-openclaw')
-)
-UPDATE roadmap_hub_items item
-SET icon_class = seed.icon_class
-FROM roadmap_hub_skill_icon_seed seed
-JOIN roadmap_hub_sections section_item
-    ON section_item.section_key = 'skill-based'
-WHERE item.section_id = section_item.id
-  AND item.title = seed.item_title;
+        ('OpenClaw', 'devpath-tech-icon devpath-icon-openclaw');
 
-WITH roadmap_hub_item_color_seed(section_key, item_title, subtitle, icon_color) AS (
-    VALUES
+UPDATE roadmap_hub_items item
+SET icon_class = (
+    SELECT seed.icon_class
+    FROM tmp_roadmap_hub_skill_icon_seed seed
+    WHERE seed.item_title = item.title
+)
+WHERE item.section_id IN (
+    SELECT section_item.id
+    FROM roadmap_hub_sections section_item
+    WHERE section_item.section_key = 'skill-based'
+)
+  AND EXISTS (
+      SELECT 1
+      FROM tmp_roadmap_hub_skill_icon_seed seed
+      WHERE seed.item_title = item.title
+  );
+
+DROP TABLE IF EXISTS tmp_roadmap_hub_skill_icon_seed;
+
+DROP TABLE IF EXISTS tmp_roadmap_hub_item_color_seed;
+
+CREATE TEMPORARY TABLE tmp_roadmap_hub_item_color_seed (
+    section_key VARCHAR(100) NOT NULL,
+    item_title VARCHAR(255),
+    subtitle VARCHAR(255),
+    icon_color VARCHAR(20) NOT NULL
+);
+
+INSERT INTO tmp_roadmap_hub_item_color_seed (section_key, item_title, subtitle, icon_color)
+VALUES
         ('role-based', NULL, 'Frontend', '#38BDF8'),
         ('role-based', NULL, 'Backend', '#00C471'),
         ('role-based', NULL, 'Full Stack', '#8B5CF6'),
@@ -14107,18 +14159,33 @@ WITH roadmap_hub_item_color_seed(section_key, item_title, subtitle, icon_color) 
         ('skill-based', 'Claude Code', NULL, '#D97757'),
         ('skill-based', 'Vibe Coding', NULL, '#F59E0B'),
         ('skill-based', 'Scala', NULL, '#DC322F'),
-        ('skill-based', 'OpenClaw', NULL, '#0F172A')
-)
+        ('skill-based', 'OpenClaw', NULL, '#0F172A');
+
 UPDATE roadmap_hub_items item
-SET icon_color = seed.icon_color
-FROM roadmap_hub_item_color_seed seed
-JOIN roadmap_hub_sections section_item
-    ON section_item.section_key = seed.section_key
-WHERE item.section_id = section_item.id
-  AND (
-      (seed.item_title IS NOT NULL AND item.title = seed.item_title)
-      OR (seed.subtitle IS NOT NULL AND item.subtitle = seed.subtitle)
-  );
+SET icon_color = (
+    SELECT seed.icon_color
+    FROM tmp_roadmap_hub_item_color_seed seed
+    JOIN roadmap_hub_sections section_item
+        ON section_item.section_key = seed.section_key
+    WHERE item.section_id = section_item.id
+      AND (
+          (seed.item_title IS NOT NULL AND item.title = seed.item_title)
+          OR (seed.subtitle IS NOT NULL AND item.subtitle = seed.subtitle)
+      )
+)
+WHERE EXISTS (
+    SELECT 1
+    FROM tmp_roadmap_hub_item_color_seed seed
+    JOIN roadmap_hub_sections section_item
+        ON section_item.section_key = seed.section_key
+    WHERE item.section_id = section_item.id
+      AND (
+          (seed.item_title IS NOT NULL AND item.title = seed.item_title)
+          OR (seed.subtitle IS NOT NULL AND item.subtitle = seed.subtitle)
+      )
+);
+
+DROP TABLE IF EXISTS tmp_roadmap_hub_item_color_seed;
 
 UPDATE roadmap_hub_items item
 SET
@@ -15124,7 +15191,7 @@ SELECT
     '1주차 PR 리뷰 미션',
     '멘토링 공고, 신청, PR 제출 흐름을 Swagger로 검증하고 PR 링크를 제출합니다.',
     'OPEN',
-    NOW() + INTERVAL '7 days',
+    NOW() + INTERVAL '7' DAY,
     FALSE,
     NOW(),
     NOW()
@@ -15416,7 +15483,7 @@ SELECT
     'WEEK9 B 멘토링 회의',
     'https://meet.jit.si/devpath-week9-b-mentoring',
     'https://storage.devpath.local/recordings/week9-b-meeting.mp4',
-    NOW() + INTERVAL '1 day',
+    NOW() + INTERVAL '1' DAY,
     NOW(),
     NULL,
     'OPEN',
@@ -16498,3 +16565,741 @@ WHERE NOT EXISTS (
     WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
       AND title = '스프린트 1 회고'
 );
+
+-- ============================================================
+-- B. Mentoring / Workspace / PR Review / Meeting / Voice / Job / Resume seed
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- B-1. Users
+-- password: devpath1234
+-- ------------------------------------------------------------
+
+INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+SELECT
+    'b-learner-one@devpath.com',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
+    'B학습자일',
+    'ROLE_LEARNER',
+    TRUE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'b-learner-one@devpath.com'
+);
+
+INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+SELECT
+    'b-learner-two@devpath.com',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
+    'B학습자이',
+    'ROLE_LEARNER',
+    TRUE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'b-learner-two@devpath.com'
+);
+
+INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+SELECT
+    'b-mentor@devpath.com',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
+    'B멘토',
+    'ROLE_INSTRUCTOR',
+    TRUE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'b-mentor@devpath.com'
+);
+
+-- ------------------------------------------------------------
+-- B-2. Workspace / Workspace Member
+-- ------------------------------------------------------------
+
+INSERT INTO workspace (
+    owner_id,
+    name,
+    description,
+    type,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    owner.user_id,
+    'B Swagger Squad Workspace',
+    'B 담당 Swagger 시나리오 검증용 팀 워크스페이스입니다.',
+    'SQUAD',
+    'ACTIVE',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users owner
+WHERE owner.email = 'b-learner-one@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1 FROM workspace WHERE name = 'B Swagger Squad Workspace'
+  );
+
+INSERT INTO workspace_member (
+    workspace_id,
+    learner_id,
+    joined_at
+)
+SELECT
+    w.id,
+    u.user_id,
+    NOW()
+FROM workspace w
+JOIN users u ON u.email = 'b-learner-one@devpath.com'
+WHERE w.name = 'B Swagger Squad Workspace'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_member wm
+      WHERE wm.workspace_id = w.id
+        AND wm.learner_id = u.user_id
+  );
+
+INSERT INTO workspace_member (
+    workspace_id,
+    learner_id,
+    joined_at
+)
+SELECT
+    w.id,
+    u.user_id,
+    NOW()
+FROM workspace w
+JOIN users u ON u.email = 'b-learner-two@devpath.com'
+WHERE w.name = 'B Swagger Squad Workspace'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_member wm
+      WHERE wm.workspace_id = w.id
+        AND wm.learner_id = u.user_id
+  );
+
+-- ------------------------------------------------------------
+-- B-3. Mentoring Post / Application / Ongoing Mentoring
+-- ------------------------------------------------------------
+
+INSERT INTO mentoring_posts (
+    mentor_id,
+    title,
+    content,
+    required_stacks,
+    max_participants,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentor.user_id,
+    'B Swagger 백엔드 멘토링',
+    'PR 리뷰, 미션, 회의, Q&A 시나리오 검증용 멘토링 공고입니다.',
+    'Java,Spring Boot,JPA,PostgreSQL',
+    5,
+    'OPEN',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users mentor
+WHERE mentor.email = 'b-mentor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1 FROM mentoring_posts WHERE title = 'B Swagger 백엔드 멘토링'
+  );
+
+INSERT INTO mentoring_applications (
+    mentoring_post_id,
+    applicant_id,
+    message,
+    status,
+    reject_reason,
+    processed_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    applicant.user_id,
+    'B Swagger 시나리오 테스트를 위해 멘토링에 신청합니다.',
+    'APPROVED',
+    NULL,
+    NOW(),
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_posts post
+JOIN users applicant ON applicant.email = 'b-learner-one@devpath.com'
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_applications ma
+      WHERE ma.mentoring_post_id = post.mentoring_post_id
+        AND ma.applicant_id = applicant.user_id
+  );
+
+INSERT INTO mentorings (
+    mentoring_post_id,
+    mentor_id,
+    mentee_id,
+    status,
+    started_at,
+    ended_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    mentor.user_id,
+    mentee.user_id,
+    'ONGOING',
+    NOW(),
+    NULL,
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_posts post
+JOIN users mentor ON mentor.email = 'b-mentor@devpath.com'
+JOIN users mentee ON mentee.email = 'b-learner-one@devpath.com'
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentorings m
+      WHERE m.mentoring_post_id = post.mentoring_post_id
+        AND m.mentor_id = mentor.user_id
+        AND m.mentee_id = mentee.user_id
+        AND m.is_deleted = FALSE
+  );
+
+-- ------------------------------------------------------------
+-- B-4. Mentoring Mission / Material
+-- ------------------------------------------------------------
+
+INSERT INTO mentoring_missions (
+    mentoring_id,
+    week_number,
+    title,
+    description,
+    due_at,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    m.mentoring_id,
+    1,
+    'B 1주차 PR 리뷰 미션',
+    '멘토링 Q&A, PR 제출, 코드 리뷰, 미션 Pass/Reject 흐름을 검증합니다.',
+    NOW() + INTERVAL '7' DAY,
+    'OPEN',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentorings m
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_missions mm
+      WHERE mm.mentoring_id = m.mentoring_id
+        AND mm.week_number = 1
+        AND mm.title = 'B 1주차 PR 리뷰 미션'
+  );
+
+INSERT INTO mentoring_materials (
+    mentoring_mission_id,
+    type,
+    title,
+    content,
+    url,
+    sort_order,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mission.mentoring_mission_id,
+    'TEXT',
+    'B 1주차 가이드라인',
+    'Controller는 Thin하게 유지하고, 검증과 상태 전이는 Service에서 처리합니다.',
+    NULL,
+    1,
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_missions mission
+JOIN mentorings m ON m.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND mission.title = 'B 1주차 PR 리뷰 미션'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_materials material
+      WHERE material.mentoring_mission_id = mission.mentoring_mission_id
+        AND material.title = 'B 1주차 가이드라인'
+  );
+
+-- ------------------------------------------------------------
+-- B-5. PR Submission seed
+-- ------------------------------------------------------------
+
+INSERT INTO mission_submissions (
+    mentoring_mission_id,
+    submitter_id,
+    status,
+    feedback,
+    graded_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mission.mentoring_mission_id,
+    submitter.user_id,
+    'SUBMITTED',
+    NULL,
+    NULL,
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_missions mission
+JOIN mentorings m ON m.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+JOIN users submitter ON submitter.email = 'b-learner-one@devpath.com'
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND mission.title = 'B 1주차 PR 리뷰 미션'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mission_submissions ms
+      WHERE ms.mentoring_mission_id = mission.mentoring_mission_id
+        AND ms.submitter_id = submitter.user_id
+        AND ms.is_deleted = FALSE
+  );
+
+INSERT INTO pull_request_submissions (
+    mission_submission_id,
+    pr_url,
+    title,
+    description,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    ms.mission_submission_id,
+    'https://github.com/yongha03/DevPath/pull/9001',
+    'B 1주차 멘토링 미션 PR',
+    'B Swagger 테스트용 PR 제출 데이터입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mission_submissions ms
+JOIN mentoring_missions mission ON mission.mentoring_mission_id = ms.mentoring_mission_id
+JOIN mentorings m ON m.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND mission.title = 'B 1주차 PR 리뷰 미션'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM pull_request_submissions prs
+      WHERE prs.mission_submission_id = ms.mission_submission_id
+  );
+
+-- ------------------------------------------------------------
+-- B-6. Notification seed
+-- ------------------------------------------------------------
+
+INSERT INTO learner_notification (
+    learner_id,
+    type,
+    message,
+    is_read,
+    created_at
+)
+SELECT
+    learner.user_id,
+    'SYSTEM',
+    'B Swagger 알림 조회 테스트용 알림입니다.',
+    FALSE,
+    NOW()
+FROM users learner
+WHERE learner.email = 'b-learner-one@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learner_notification ln
+      WHERE ln.learner_id = learner.user_id
+        AND ln.message = 'B Swagger 알림 조회 테스트용 알림입니다.'
+  );
+
+-- ------------------------------------------------------------
+-- B-7. Meeting / Voice seed
+-- ------------------------------------------------------------
+
+INSERT INTO meeting_rooms (
+    mentoring_id,
+    host_id,
+    title,
+    meeting_url,
+    recording_url,
+    scheduled_at,
+    started_at,
+    ended_at,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    m.mentoring_id,
+    mentor.user_id,
+    'B Swagger 멘토링 회의방',
+    'https://meet.devpath.local/b-swagger-mentoring',
+    NULL,
+    NOW() + INTERVAL '1' DAY,
+    NOW(),
+    NULL,
+    'OPEN',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentorings m
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+JOIN users mentor ON mentor.email = 'b-mentor@devpath.com'
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM meeting_rooms mr
+      WHERE mr.mentoring_id = m.mentoring_id
+        AND mr.title = 'B Swagger 멘토링 회의방'
+        AND mr.is_deleted = FALSE
+  );
+
+INSERT INTO voice_channels (
+    workspace_id,
+    creator_id,
+    name,
+    description,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    w.id,
+    creator.user_id,
+    'B Swagger 보이스 채널',
+    'B Swagger 보이스 이벤트 테스트용 채널입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM workspace w
+JOIN users creator ON creator.email = 'b-learner-one@devpath.com'
+WHERE w.name = 'B Swagger Squad Workspace'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM voice_channels vc
+      WHERE vc.workspace_id = w.id
+        AND vc.name = 'B Swagger 보이스 채널'
+        AND vc.is_deleted = FALSE
+  );
+
+-- ------------------------------------------------------------
+-- B-8. Company / Job / Skill Tags seed
+-- ------------------------------------------------------------
+
+INSERT INTO companies (
+    name,
+    description,
+    website_url,
+    logo_url,
+    industry,
+    location,
+    verification_status,
+    verification_memo,
+    verified_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    'DevPath Labs',
+    'B Swagger 채용/시장 분석 테스트용 기업입니다.',
+    'https://devpath.example.com',
+    NULL,
+    'Education Tech',
+    'SEOUL',
+    'VERIFIED',
+    'B 시나리오 테스트용 인증 기업',
+    NOW(),
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM companies WHERE name = 'DevPath Labs'
+);
+
+INSERT INTO job_postings (
+    company_id,
+    title,
+    job_role,
+    description,
+    required_skills,
+    region,
+    career_level,
+    source_url,
+    source,
+    status,
+    deadline,
+    external_job_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    c.company_id,
+    '주니어 백엔드 개발자',
+    'BACKEND',
+    'Spring Boot 기반 REST API와 JPA 도메인 설계를 담당합니다.',
+    'Java, Spring Boot, JPA, PostgreSQL',
+    'SEOUL',
+    'JUNIOR',
+    'https://devpath.example.com/jobs/backend-junior',
+    'INTERNAL',
+    'OPEN',
+    CURRENT_DATE + 30,
+    'B-JOB-BACKEND-001',
+    FALSE,
+    NOW(),
+    NOW()
+FROM companies c
+WHERE c.name = 'DevPath Labs'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_postings jp
+      WHERE jp.external_job_id = 'B-JOB-BACKEND-001'
+  );
+
+INSERT INTO job_postings (
+    company_id,
+    title,
+    job_role,
+    description,
+    required_skills,
+    region,
+    career_level,
+    source_url,
+    source,
+    status,
+    deadline,
+    external_job_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    c.company_id,
+    '풀스택 개발자 인턴',
+    'FULLSTACK',
+    'React와 Spring Boot를 활용해 학습 플랫폼 기능을 개발합니다.',
+    'React, TypeScript, Java, Spring Boot',
+    'GYEONGGI',
+    'INTERN',
+    'https://devpath.example.com/jobs/fullstack-intern',
+    'INTERNAL',
+    'OPEN',
+    CURRENT_DATE + 45,
+    'B-JOB-FULLSTACK-001',
+    FALSE,
+    NOW(),
+    NOW()
+FROM companies c
+WHERE c.name = 'DevPath Labs'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_postings jp
+      WHERE jp.external_job_id = 'B-JOB-FULLSTACK-001'
+  );
+
+INSERT INTO job_skill_tags (
+    job_posting_id,
+    name,
+    source,
+    confidence_score,
+    matched_keyword,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    jp.job_posting_id,
+    skill.name,
+    'JD_RULE_BASED',
+    skill.confidence_score,
+    skill.matched_keyword,
+    FALSE,
+    NOW(),
+    NOW()
+FROM job_postings jp
+CROSS JOIN (
+    VALUES
+        ('Java', 0.95, 'Java'),
+        ('Spring Boot', 0.98, 'Spring Boot'),
+        ('JPA', 0.91, 'JPA')
+) AS skill(name, confidence_score, matched_keyword)
+WHERE jp.external_job_id = 'B-JOB-BACKEND-001'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_skill_tags tag
+      WHERE tag.job_posting_id = jp.job_posting_id
+        AND tag.name = skill.name
+  );
+
+INSERT INTO job_skill_tags (
+    job_posting_id,
+    name,
+    source,
+    confidence_score,
+    matched_keyword,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    jp.job_posting_id,
+    skill.name,
+    'JD_RULE_BASED',
+    skill.confidence_score,
+    skill.matched_keyword,
+    FALSE,
+    NOW(),
+    NOW()
+FROM job_postings jp
+CROSS JOIN (
+    VALUES
+        ('React', 0.93, 'React'),
+        ('TypeScript', 0.9, 'TypeScript')
+) AS skill(name, confidence_score, matched_keyword)
+WHERE jp.external_job_id = 'B-JOB-FULLSTACK-001'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_skill_tags tag
+      WHERE tag.job_posting_id = jp.job_posting_id
+        AND tag.name = skill.name
+  );
+
+-- ------------------------------------------------------------
+-- B-9. Career Profile / Proof Card link seed
+-- ------------------------------------------------------------
+
+INSERT INTO career_profiles (
+    user_id,
+    target_role,
+    headline,
+    summary,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    learner.user_id,
+    'BACKEND',
+    'Spring Boot 기반 주니어 백엔드 개발자',
+    '멘토링 PR 리뷰와 학습 이력을 기반으로 백엔드 역량을 정리한 B 테스트 프로필입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users learner
+WHERE learner.email = 'b-learner-one@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM career_profiles cp
+      WHERE cp.user_id = learner.user_id
+        AND cp.target_role = 'BACKEND'
+        AND cp.is_deleted = FALSE
+  );
+
+INSERT INTO career_profile_proof_cards (
+    career_profile_id,
+    proof_card_id,
+    title,
+    summary,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    cp.career_profile_id,
+    9001,
+    'B Swagger Proof Card',
+    'B Swagger 시나리오 검증용 Proof Card 연결 샘플입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM career_profiles cp
+JOIN users learner ON learner.user_id = cp.user_id
+WHERE learner.email = 'b-learner-one@devpath.com'
+  AND cp.target_role = 'BACKEND'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM career_profile_proof_cards cpc
+      WHERE cpc.career_profile_id = cp.career_profile_id
+        AND cpc.proof_card_id = 9001
+        AND cpc.is_deleted = FALSE
+  );
+
+-- ------------------------------------------------------------
+-- B-9a. Evaluation Swagger compatibility roadmap node
+-- ------------------------------------------------------------
+
+INSERT INTO roadmap_nodes (
+    roadmap_id,
+    title,
+    content,
+    node_type,
+    sort_order
+)
+SELECT
+    r.roadmap_id,
+    'Security and JWT',
+    'Build authentication and authorization flows with Spring Security and JWT.',
+    'CONCEPT',
+    COALESCE((SELECT MAX(rn.sort_order) FROM roadmap_nodes rn WHERE rn.roadmap_id = r.roadmap_id), 0) + 1
+FROM roadmaps r
+WHERE r.title = 'Backend Master Roadmap'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM roadmap_nodes rn
+      WHERE rn.roadmap_id = r.roadmap_id
+        AND rn.title = 'Security and JWT'
+  );
+
+-- ------------------------------------------------------------
+-- B-10. Sequence correction
+-- ------------------------------------------------------------
+
+SELECT setval(pg_get_serial_sequence('users', 'user_id'), COALESCE((SELECT MAX(user_id) FROM users), 1));
+SELECT setval(pg_get_serial_sequence('workspace', 'id'), COALESCE((SELECT MAX(id) FROM workspace), 1));
+SELECT setval(pg_get_serial_sequence('workspace_member', 'id'), COALESCE((SELECT MAX(id) FROM workspace_member), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_posts', 'mentoring_post_id'), COALESCE((SELECT MAX(mentoring_post_id) FROM mentoring_posts), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_applications', 'mentoring_application_id'), COALESCE((SELECT MAX(mentoring_application_id) FROM mentoring_applications), 1));
+SELECT setval(pg_get_serial_sequence('mentorings', 'mentoring_id'), COALESCE((SELECT MAX(mentoring_id) FROM mentorings), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_missions', 'mentoring_mission_id'), COALESCE((SELECT MAX(mentoring_mission_id) FROM mentoring_missions), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_materials', 'mentoring_material_id'), COALESCE((SELECT MAX(mentoring_material_id) FROM mentoring_materials), 1));
+SELECT setval(pg_get_serial_sequence('mission_submissions', 'mission_submission_id'), COALESCE((SELECT MAX(mission_submission_id) FROM mission_submissions), 1));
+SELECT setval(pg_get_serial_sequence('pull_request_submissions', 'pull_request_submission_id'), COALESCE((SELECT MAX(pull_request_submission_id) FROM pull_request_submissions), 1));
+SELECT setval(pg_get_serial_sequence('learner_notification', 'id'), COALESCE((SELECT MAX(id) FROM learner_notification), 1));
+SELECT setval(pg_get_serial_sequence('meeting_rooms', 'meeting_room_id'), COALESCE((SELECT MAX(meeting_room_id) FROM meeting_rooms), 1));
+SELECT setval(pg_get_serial_sequence('voice_channels', 'voice_channel_id'), COALESCE((SELECT MAX(voice_channel_id) FROM voice_channels), 1));
+SELECT setval(pg_get_serial_sequence('companies', 'company_id'), COALESCE((SELECT MAX(company_id) FROM companies), 1));
+SELECT setval(pg_get_serial_sequence('job_postings', 'job_posting_id'), COALESCE((SELECT MAX(job_posting_id) FROM job_postings), 1));
+SELECT setval(pg_get_serial_sequence('job_skill_tags', 'job_skill_tag_id'), COALESCE((SELECT MAX(job_skill_tag_id) FROM job_skill_tags), 1));
+SELECT setval(pg_get_serial_sequence('career_profiles', 'career_profile_id'), COALESCE((SELECT MAX(career_profile_id) FROM career_profiles), 1));
+SELECT setval(pg_get_serial_sequence('career_profile_proof_cards', 'career_profile_proof_card_id'), COALESCE((SELECT MAX(career_profile_proof_card_id) FROM career_profile_proof_cards), 1));
+SELECT setval(pg_get_serial_sequence('qna_questions', 'question_id'), COALESCE((SELECT MAX(question_id) FROM qna_questions), 1));
+SELECT setval(pg_get_serial_sequence('qna_answers', 'answer_id'), COALESCE((SELECT MAX(answer_id) FROM qna_answers), 1));

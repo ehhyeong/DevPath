@@ -29,16 +29,16 @@ public interface CustomRoadmapNodeRepository extends JpaRepository<CustomRoadmap
 
   void deleteAllByCustomRoadmap(CustomRoadmap customRoadmap);
 
-  @Query("SELECT c FROM CustomRoadmapNode c WHERE c.originalNode.nodeId = :nodeId AND c.customRoadmap.user.id = :userId")
+  @Query(
+      "SELECT c FROM CustomRoadmapNode c WHERE c.originalNode.nodeId = :nodeId AND c.customRoadmap.user.id = :userId")
   List<CustomRoadmapNode> findAllByOriginalNodeIdAndUserId(
-      @Param("nodeId") Long nodeId,
-      @Param("userId") Long userId);
+      @Param("nodeId") Long nodeId, @Param("userId") Long userId);
 
   @Query("SELECT COUNT(n) FROM CustomRoadmapNode n WHERE n.customRoadmap = :roadmap")
   long countByCustomRoadmap(@Param("roadmap") CustomRoadmap roadmap);
 
-  @Query("SELECT COUNT(n) FROM CustomRoadmapNode n WHERE n.customRoadmap = :roadmap AND n.status = :status")
+  @Query(
+      "SELECT COUNT(n) FROM CustomRoadmapNode n WHERE n.customRoadmap = :roadmap AND n.status = :status")
   long countByCustomRoadmapAndStatus(
-      @Param("roadmap") CustomRoadmap roadmap,
-      @Param("status") NodeStatus status);
+      @Param("roadmap") CustomRoadmap roadmap, @Param("status") NodeStatus status);
 }

@@ -25,44 +25,43 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class LearningMetricSample {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "learning_metric_sample_id")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "learning_metric_sample_id")
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id")
-    private Course course;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "course_id")
+  private Course course;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "metric_type", nullable = false, length = 50)
-    private AnalyticsMetricType metricType;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "metric_type", nullable = false, length = 50)
+  private AnalyticsMetricType metricType;
 
-    @Column(name = "metric_label", nullable = false, length = 100)
-    private String metricLabel;
+  @Column(name = "metric_label", nullable = false, length = 100)
+  private String metricLabel;
 
-    @Column(name = "metric_value", nullable = false)
-    private Double metricValue;
+  @Column(name = "metric_value", nullable = false)
+  private Double metricValue;
 
-    @Column(name = "sampled_at", nullable = false)
-    private LocalDateTime sampledAt;
+  @Column(name = "sampled_at", nullable = false)
+  private LocalDateTime sampledAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreationTimestamp
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @Builder
-    public LearningMetricSample(
-        Course course,
-        AnalyticsMetricType metricType,
-        String metricLabel,
-        Double metricValue,
-        LocalDateTime sampledAt
-    ) {
-        this.course = course;
-        this.metricType = metricType;
-        this.metricLabel = metricLabel;
-        this.metricValue = metricValue;
-        this.sampledAt = sampledAt == null ? LocalDateTime.now() : sampledAt;
-    }
+  @Builder
+  public LearningMetricSample(
+      Course course,
+      AnalyticsMetricType metricType,
+      String metricLabel,
+      Double metricValue,
+      LocalDateTime sampledAt) {
+    this.course = course;
+    this.metricType = metricType;
+    this.metricLabel = metricLabel;
+    this.metricValue = metricValue;
+    this.sampledAt = sampledAt == null ? LocalDateTime.now() : sampledAt;
+  }
 }

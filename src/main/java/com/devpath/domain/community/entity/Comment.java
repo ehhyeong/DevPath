@@ -22,52 +22,52 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Comment {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "comment_id")
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "comment_id")
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
-    private Post post;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "post_id", nullable = false)
+  private Post post;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_comment_id")
-    private Comment parentComment;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "parent_comment_id")
+  private Comment parentComment;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String content;
+  @Column(columnDefinition = "TEXT", nullable = false)
+  private String content;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted;
+  @Column(name = "is_deleted", nullable = false)
+  private boolean isDeleted;
 
-    @Column(name = "created_at", updatable = false, nullable = false)
-    private LocalDateTime createdAt;
+  @Column(name = "created_at", updatable = false, nullable = false)
+  private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+  @Column(name = "updated_at", nullable = false)
+  private LocalDateTime updatedAt;
 
-    @Builder
-    public Comment(Post post, User user, Comment parentComment, String content) {
-        this.post = post;
-        this.user = user;
-        this.parentComment = parentComment;
-        this.content = content;
-        this.isDeleted = false;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+  @Builder
+  public Comment(Post post, User user, Comment parentComment, String content) {
+    this.post = post;
+    this.user = user;
+    this.parentComment = parentComment;
+    this.content = content;
+    this.isDeleted = false;
+    this.createdAt = LocalDateTime.now();
+    this.updatedAt = LocalDateTime.now();
+  }
 
-    public boolean isRootComment() {
-        return this.parentComment == null;
-    }
+  public boolean isRootComment() {
+    return this.parentComment == null;
+  }
 
-    public void deleteComment() {
-        this.isDeleted = true;
-        this.updatedAt = LocalDateTime.now();
-    }
+  public void deleteComment() {
+    this.isDeleted = true;
+    this.updatedAt = LocalDateTime.now();
+  }
 }

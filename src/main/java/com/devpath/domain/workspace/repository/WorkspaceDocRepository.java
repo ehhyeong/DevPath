@@ -7,5 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface WorkspaceDocRepository extends JpaRepository<WorkspaceDoc, Long> {
 
-    Optional<WorkspaceDoc> findByWorkspaceIdAndDocType(Long workspaceId, WorkspaceDocType docType);
+  Optional<WorkspaceDoc> findByWorkspaceIdAndDocType(Long workspaceId, WorkspaceDocType docType);
 }

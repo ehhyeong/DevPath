@@ -26,7 +26,8 @@ public class CreateQuizQuestionOptionRequest {
   private Integer displayOrder;
 
   @Builder
-  public CreateQuizQuestionOptionRequest(String optionText, Boolean isCorrect, Integer displayOrder) {
+  public CreateQuizQuestionOptionRequest(
+      String optionText, Boolean isCorrect, Integer displayOrder) {
     this.optionText = optionText;
     this.isCorrect = isCorrect;
     this.displayOrder = displayOrder;

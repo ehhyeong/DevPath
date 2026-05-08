@@ -2,6 +2,7 @@ package com.devpath.api.application.service;
 
 import com.devpath.api.application.dto.LoungeApplicationRequest;
 import com.devpath.api.application.dto.LoungeApplicationResponse;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.application.entity.LoungeApplication;
@@ -20,6 +21,7 @@ public class LoungeApplicationService {
 
   private final LoungeApplicationRepository loungeApplicationRepository;
   private final UserRepository userRepository;
+  private final NotificationEventService notificationEventService;
 
   @Transactional
   public LoungeApplicationResponse.Detail create(LoungeApplicationRequest.Create request) {
@@ -88,6 +90,8 @@ public class LoungeApplicationService {
     validatePending(application);
 
     application.approve();
+    notificationEventService.notifyApplicationApproved(
+        application.getSender().getId(), application.getTitle());
 
     return LoungeApplicationResponse.Detail.from(application);
   }
@@ -104,6 +108,8 @@ public class LoungeApplicationService {
     validatePending(application);
 
     application.reject(request.rejectReason());
+    notificationEventService.notifyApplicationRejected(
+        application.getSender().getId(), application.getTitle());
 
     return LoungeApplicationResponse.Detail.from(application);
   }

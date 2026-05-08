@@ -7,9 +7,9 @@ import lombok.Getter;
 @Builder
 public class ModerationStatsResponse {
 
-    private long totalReports;
-    private long resolvedReports;
-    private long pendingReports;
-    private long blindedContents;
-    private long suspendedUsers;
+  private long totalReports;
+  private long resolvedReports;
+  private long pendingReports;
+  private long blindedContents;
+  private long suspendedUsers;
 }

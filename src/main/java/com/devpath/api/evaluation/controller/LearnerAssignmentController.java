@@ -41,7 +41,8 @@ public class LearnerAssignmentController {
       @Parameter(description = "학습자 ID", example = "1") @RequestParam Long userId,
       @Parameter(description = "과제 ID", example = "10") @PathVariable Long assignmentId,
       @Valid @RequestBody AssignmentPrecheckRequest request) {
-    return ResponseEntity.ok(ApiResponse.ok(assignmentPrecheckService.precheck(userId, assignmentId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(assignmentPrecheckService.precheck(userId, assignmentId, request)));
   }
 
   @Operation(
@@ -66,6 +67,7 @@ public class LearnerAssignmentController {
   @GetMapping("/submissions/history")
   public ResponseEntity<ApiResponse<SubmissionHistoryResponse>> getSubmissionHistory(
       @Parameter(description = "학습자 ID", example = "1") @RequestParam Long userId) {
-    return ResponseEntity.ok(ApiResponse.ok(assignmentSubmissionService.getSubmissionHistory(userId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(assignmentSubmissionService.getSubmissionHistory(userId)));
   }
 }

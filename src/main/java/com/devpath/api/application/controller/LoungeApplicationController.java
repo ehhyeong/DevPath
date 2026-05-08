@@ -41,7 +41,8 @@ public class LoungeApplicationController {
   public ResponseEntity<ApiResponse<List<LoungeApplicationResponse.Summary>>> getSentApplications(
       @RequestParam Long senderId) {
     // 인증 연동 전이므로 senderId query parameter로 보낸 신청을 조회한다.
-    return ResponseEntity.ok(ApiResponse.ok(loungeApplicationService.getSentApplications(senderId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(loungeApplicationService.getSentApplications(senderId)));
   }
 
   @GetMapping("/received")
@@ -58,7 +59,8 @@ public class LoungeApplicationController {
   public ResponseEntity<ApiResponse<LoungeApplicationResponse.Detail>> getApplication(
       @PathVariable Long applicationId) {
     // Entity를 직접 반환하지 않고 상세 DTO로 변환된 결과를 반환한다.
-    return ResponseEntity.ok(ApiResponse.ok(loungeApplicationService.getApplication(applicationId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(loungeApplicationService.getApplication(applicationId)));
   }
 
   @PatchMapping("/{applicationId}/approve")
@@ -67,7 +69,8 @@ public class LoungeApplicationController {
       @PathVariable Long applicationId,
       @Valid @RequestBody LoungeApplicationRequest.Approve request) {
     // 승인 권한과 중복 처리 검증은 Service에서 처리한다.
-    return ResponseEntity.ok(ApiResponse.ok(loungeApplicationService.approve(applicationId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(loungeApplicationService.approve(applicationId, request)));
   }
 
   @PatchMapping("/{applicationId}/reject")
@@ -76,7 +79,8 @@ public class LoungeApplicationController {
       @PathVariable Long applicationId,
       @Valid @RequestBody LoungeApplicationRequest.Reject request) {
     // 거절 권한과 중복 처리 검증은 Service에서 처리한다.
-    return ResponseEntity.ok(ApiResponse.ok(loungeApplicationService.reject(applicationId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(loungeApplicationService.reject(applicationId, request)));
   }
 
   @GetMapping("/{applicationId}/status")

@@ -15,56 +15,60 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class InstructorSubscriptionService {
 
-    private final InstructorSubscriptionRepository subscriptionRepository;
-    private final UserProfileRepository userProfileRepository;
+  private final InstructorSubscriptionRepository subscriptionRepository;
+  private final UserProfileRepository userProfileRepository;
 
-    public SubscriptionResponse subscribe(Long channelId, Long learnerId) {
-        validateChannel(channelId);
+  public SubscriptionResponse subscribe(Long channelId, Long learnerId) {
+    validateChannel(channelId);
 
-        if (channelId.equals(learnerId)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
+    if (channelId.equals(learnerId)) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
 
-        InstructorSubscription subscription = subscriptionRepository.findByChannelIdAndLearnerId(
-                        channelId,
-                        learnerId
-                )
-                .map(existing -> {
-                    if (Boolean.FALSE.equals(existing.getIsDeleted())) {
-                        throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
-                    }
-                    existing.resubscribe();
-                    return existing;
+    InstructorSubscription subscription =
+        subscriptionRepository
+            .findByChannelIdAndLearnerId(channelId, learnerId)
+            .map(
+                existing -> {
+                  if (Boolean.FALSE.equals(existing.getIsDeleted())) {
+                    throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
+                  }
+                  existing.resubscribe();
+                  return existing;
                 })
-                .orElseGet(() -> subscriptionRepository.save(
+            .orElseGet(
+                () ->
+                    subscriptionRepository.save(
                         InstructorSubscription.builder()
-                                .channelId(channelId)
-                                .learnerId(learnerId)
-                                .build()
-                ));
+                            .channelId(channelId)
+                            .learnerId(learnerId)
+                            .build()));
 
-        return SubscriptionResponse.from(subscription);
-    }
+    return SubscriptionResponse.from(subscription);
+  }
 
-    public void unsubscribe(Long channelId, Long learnerId) {
-        InstructorSubscription subscription = subscriptionRepository
-                .findByChannelIdAndLearnerIdAndIsDeletedFalse(channelId, learnerId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+  public void unsubscribe(Long channelId, Long learnerId) {
+    InstructorSubscription subscription =
+        subscriptionRepository
+            .findByChannelIdAndLearnerIdAndIsDeletedFalse(channelId, learnerId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        subscription.unsubscribe();
-    }
+    subscription.unsubscribe();
+  }
 
-    public void updateNotification(Long channelId, Long learnerId, boolean notificationEnabled) {
-        InstructorSubscription subscription = subscriptionRepository
-                .findByChannelIdAndLearnerIdAndIsDeletedFalse(channelId, learnerId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+  public void updateNotification(Long channelId, Long learnerId, boolean notificationEnabled) {
+    InstructorSubscription subscription =
+        subscriptionRepository
+            .findByChannelIdAndLearnerIdAndIsDeletedFalse(channelId, learnerId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-        subscription.updateNotification(notificationEnabled);
-    }
+    subscription.updateNotification(notificationEnabled);
+  }
 
-    // Only real instructor channels can be followed.
-    private void validateChannel(Long channelId) {
-        userProfileRepository.findByUserId(channelId)
-                .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-    }
+  // Only real instructor channels can be followed.
+  private void validateChannel(Long channelId) {
+    userProfileRepository
+        .findByUserId(channelId)
+        .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+  }
 }

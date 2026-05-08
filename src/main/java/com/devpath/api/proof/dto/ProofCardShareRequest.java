@@ -8,18 +8,18 @@ import lombok.NoArgsConstructor;
 // Proof Card Share 요청 DTO 모음
 public class ProofCardShareRequest {
 
-    // 공유 링크 생성 요청 DTO
-    @Getter
-    @NoArgsConstructor
-    @Schema(description = "Proof Card 공유 링크 생성 요청 DTO")
-    public static class Create {
+  // 공유 링크 생성 요청 DTO
+  @Getter
+  @NoArgsConstructor
+  @Schema(description = "Proof Card 공유 링크 생성 요청 DTO")
+  public static class Create {
 
-        // Proof Card ID
-        @Schema(description = "Proof Card ID", example = "1")
-        private Long proofCardId;
+    // Proof Card ID
+    @Schema(description = "Proof Card ID", example = "1")
+    private Long proofCardId;
 
-        // 만료 시각
-        @Schema(description = "만료 시각", example = "2026-04-27T23:59:59")
-        private LocalDateTime expiresAt;
-    }
+    // 만료 시각
+    @Schema(description = "만료 시각", example = "2026-04-27T23:59:59")
+    private LocalDateTime expiresAt;
+  }
 }

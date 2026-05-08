@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DmRoomCreateRequest {
 
-    @NotNull
-    private Long learnerId;
+  @NotNull private Long learnerId;
 }

@@ -9,34 +9,33 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CourseRepository extends JpaRepository<Course, Long> {
 
-    Optional<Course> findByCourseIdAndInstructorId(Long courseId, Long instructorId);
+  Optional<Course> findByCourseIdAndInstructorId(Long courseId, Long instructorId);
 
-    boolean existsByCourseIdAndInstructorId(Long courseId, Long instructorId);
+  boolean existsByCourseIdAndInstructorId(Long courseId, Long instructorId);
 
-    @EntityGraph(attributePaths = "instructor")
-    List<Course> findByStatus(CourseStatus status);
+  @EntityGraph(attributePaths = "instructor")
+  List<Course> findByStatus(CourseStatus status);
 
-    long countByStatus(CourseStatus status);
+  long countByStatus(CourseStatus status);
 
-    List<Course> findTop3ByStatusOrderByPublishedAtDescCourseIdDesc(CourseStatus status);
+  List<Course> findTop3ByStatusOrderByPublishedAtDescCourseIdDesc(CourseStatus status);
 
-    @EntityGraph(attributePaths = "instructor")
-    Optional<Course> findByCourseIdAndStatus(Long courseId, CourseStatus status);
+  @EntityGraph(attributePaths = "instructor")
+  Optional<Course> findByCourseIdAndStatus(Long courseId, CourseStatus status);
 
-    List<Course> findTop4ByInstructorIdAndStatusOrderByPublishedAtDescCourseIdDesc(
-        Long instructorId,
-        CourseStatus status
-    );
+  List<Course> findTop4ByInstructorIdAndStatusOrderByPublishedAtDescCourseIdDesc(
+      Long instructorId, CourseStatus status);
 
-    List<Course> findAllByInstructorIdOrderByCourseIdDesc(Long instructorId);
+  List<Course> findAllByInstructorIdOrderByCourseIdDesc(Long instructorId);
 
-    List<Course> findAllByInstructorIdAndStatusOrderByCourseIdDesc(Long instructorId, CourseStatus status);
+  List<Course> findAllByInstructorIdAndStatusOrderByCourseIdDesc(
+      Long instructorId, CourseStatus status);
 
-    long countByInstructorId(Long instructorId);
+  long countByInstructorId(Long instructorId);
 
-    long countByInstructorIdAndStatus(Long instructorId, CourseStatus status);
+  long countByInstructorIdAndStatus(Long instructorId, CourseStatus status);
 
-    // [TEMP] 추천 무료 강좌 조회용 — 임시 하드코딩, 추후 삭제 예정
-    Optional<Course> findFirstByTitleAndStatus(String title, CourseStatus status);
-    // [/TEMP]
+  // [TEMP] 추천 무료 강좌 조회용 — 임시 하드코딩, 추후 삭제 예정
+  Optional<Course> findFirstByTitleAndStatus(String title, CourseStatus status);
+  // [/TEMP]
 }

@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CommunityCommentRequest {
 
-    @NotBlank
-    private String content;
+  @NotBlank private String content;
 }

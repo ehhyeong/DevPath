@@ -118,7 +118,8 @@ class AdminDashboardServiceIntegrationTest {
     assertThat(reports.get(0).getStatus()).isEqualTo("PENDING");
     assertThat(reports.get(0).getTargetType()).isEqualTo("USER");
     assertThat(reports.get(0).getTargetLabel()).isEqualTo("회원 신고");
-    assertThat(reports.get(0).getTargetSummary()).contains(instructor.getName(), instructor.getEmail());
+    assertThat(reports.get(0).getTargetSummary())
+        .contains(instructor.getName(), instructor.getEmail());
   }
 
   @Test
@@ -152,13 +153,19 @@ class AdminDashboardServiceIntegrationTest {
     assertThat(reports).hasSize(1);
     assertThat(reports.get(0).getTargetType()).isEqualTo("CONTENT");
     assertThat(reports.get(0).getTargetLabel()).isEqualTo("리뷰 신고");
-    assertThat(reports.get(0).getTargetSummary()).contains("Readable Review Course", learner.getName());
+    assertThat(reports.get(0).getTargetSummary())
+        .contains("Readable Review Course", learner.getName());
   }
 
   private User saveUser(String email, UserRole role) {
     User user =
         userRepository.save(
-            User.builder().email(email).password("encoded-password").name(email).role(role).build());
+            User.builder()
+                .email(email)
+                .password("encoded-password")
+                .name(email)
+                .role(role)
+                .build());
     ReflectionTestUtils.setField(user, "lastLoginAt", LocalDateTime.now());
     return userRepository.save(user);
   }

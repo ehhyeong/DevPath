@@ -7,9 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ReviewReplyRepository extends JpaRepository<ReviewReply, Long> {
 
-    Optional<ReviewReply> findByIdAndIsDeletedFalse(Long id);
+  Optional<ReviewReply> findByIdAndIsDeletedFalse(Long id);
 
-    Optional<ReviewReply> findByReviewIdAndIsDeletedFalse(Long reviewId);
+  Optional<ReviewReply> findByReviewIdAndIsDeletedFalse(Long reviewId);
 
-    List<ReviewReply> findAllByReviewIdInAndIsDeletedFalse(List<Long> reviewIds);
+  List<ReviewReply> findAllByReviewIdInAndIsDeletedFalse(List<Long> reviewIds);
 }

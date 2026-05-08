@@ -10,15 +10,16 @@ import org.springframework.data.repository.query.Param;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-    List<Review> findByCourseIdAndIsDeletedFalseAndIsHiddenFalseOrderByCreatedAtDesc(Long courseId);
+  List<Review> findByCourseIdAndIsDeletedFalseAndIsHiddenFalseOrderByCreatedAtDesc(Long courseId);
 
-    Optional<Review> findByIdAndIsDeletedFalse(Long id);
+  Optional<Review> findByIdAndIsDeletedFalse(Long id);
 
-    Optional<Review> findByIdAndIsDeletedFalseAndIsHiddenFalse(Long id);
+  Optional<Review> findByIdAndIsDeletedFalseAndIsHiddenFalse(Long id);
 
-    boolean existsByCourseIdAndLearnerIdAndIsDeletedFalse(Long courseId, Long learnerId);
+  boolean existsByCourseIdAndLearnerIdAndIsDeletedFalse(Long courseId, Long learnerId);
 
-    @Query("""
+  @Query(
+      """
             SELECT COUNT(r)
             FROM Review r
             WHERE r.courseId IN (
@@ -28,9 +29,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             )
             AND r.isDeleted = false
             """)
-    long countByInstructorId(@Param("instructorId") Long instructorId);
+  long countByInstructorId(@Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
             SELECT COUNT(r)
             FROM Review r
             WHERE r.courseId IN (
@@ -41,12 +43,11 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             AND r.isDeleted = false
             AND r.status = :status
             """)
-    long countByInstructorIdAndStatus(
-            @Param("instructorId") Long instructorId,
-            @Param("status") ReviewStatus status
-    );
+  long countByInstructorIdAndStatus(
+      @Param("instructorId") Long instructorId, @Param("status") ReviewStatus status);
 
-    @Query("""
+  @Query(
+      """
             SELECT COUNT(r)
             FROM Review r
             WHERE r.courseId IN (
@@ -62,9 +63,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                 AND rr.isDeleted = false
             )
             """)
-    long countUnansweredByInstructorId(@Param("instructorId") Long instructorId);
+  long countUnansweredByInstructorId(@Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
             SELECT COUNT(r)
             FROM Review r
             WHERE r.courseId IN (
@@ -80,9 +82,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                 AND rr.isDeleted = false
             )
             """)
-    long countAnsweredByInstructorId(@Param("instructorId") Long instructorId);
+  long countAnsweredByInstructorId(@Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
             SELECT AVG(r.rating)
             FROM Review r
             WHERE r.courseId IN (
@@ -92,9 +95,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             )
             AND r.isDeleted = false
             """)
-    Double findAverageRatingByInstructorId(@Param("instructorId") Long instructorId);
+  Double findAverageRatingByInstructorId(@Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
             SELECT r.rating, COUNT(r)
             FROM Review r
             WHERE r.courseId IN (
@@ -105,9 +109,10 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             AND r.isDeleted = false
             GROUP BY r.rating
             """)
-    List<Object[]> findRatingDistributionByInstructorId(@Param("instructorId") Long instructorId);
+  List<Object[]> findRatingDistributionByInstructorId(@Param("instructorId") Long instructorId);
 
-    @Query("""
+  @Query(
+      """
             SELECT r
             FROM Review r
             WHERE r.courseId IN (
@@ -118,5 +123,5 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             AND r.isDeleted = false
             ORDER BY r.createdAt DESC
             """)
-    List<Review> findAllByInstructorIdOrderByCreatedAtDesc(@Param("instructorId") Long instructorId);
+  List<Review> findAllByInstructorIdOrderByCreatedAtDesc(@Param("instructorId") Long instructorId);
 }

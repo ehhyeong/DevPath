@@ -23,115 +23,121 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class CommunityCommentService {
 
-    private final CommentRepository commentRepository;
-    private final PostRepository postRepository;
-    private final UserRepository userRepository;
+  private final CommentRepository commentRepository;
+  private final PostRepository postRepository;
+  private final UserRepository userRepository;
 
-    @Transactional
-    public CommentResponse createComment(Long userId, Long postId, CommentCreateRequest request) {
-        User user = getUser(userId);
-        Post post = getActivePost(postId);
+  @Transactional
+  public CommentResponse createComment(Long userId, Long postId, CommentCreateRequest request) {
+    User user = getUser(userId);
+    Post post = getActivePost(postId);
 
-        Comment comment = Comment.builder()
-                .post(post)
-                .user(user)
-                .content(request.getContent())
-                .build();
+    Comment comment = Comment.builder().post(post).user(user).content(request.getContent()).build();
 
-        Comment savedComment = commentRepository.save(comment);
-        return CommentResponse.from(savedComment, List.of());
+    Comment savedComment = commentRepository.save(comment);
+    return CommentResponse.from(savedComment, List.of());
+  }
+
+  @Transactional
+  public CommentResponse createReply(
+      Long userId, Long postId, Long parentCommentId, CommentCreateRequest request) {
+    User user = getUser(userId);
+    Post post = getActivePost(postId);
+    Comment parentComment = getActiveComment(parentCommentId);
+
+    if (!parentComment.getPost().getId().equals(post.getId())) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "해당 게시글에 속한 댓글에만 대댓글을 작성할 수 있습니다.");
     }
 
-    @Transactional
-    public CommentResponse createReply(Long userId, Long postId, Long parentCommentId, CommentCreateRequest request) {
-        User user = getUser(userId);
-        Post post = getActivePost(postId);
-        Comment parentComment = getActiveComment(parentCommentId);
+    Comment reply =
+        Comment.builder()
+            .post(post)
+            .user(user)
+            .parentComment(parentComment)
+            .content(request.getContent())
+            .build();
 
-        if (!parentComment.getPost().getId().equals(post.getId())) {
-            throw new CustomException(ErrorCode.INVALID_INPUT, "해당 게시글에 속한 댓글에만 대댓글을 작성할 수 있습니다.");
-        }
+    Comment savedReply = commentRepository.save(reply);
+    return CommentResponse.from(savedReply, List.of());
+  }
 
-        Comment reply = Comment.builder()
-                .post(post)
-                .user(user)
-                .parentComment(parentComment)
-                .content(request.getContent())
-                .build();
+  public List<CommentResponse> getComments(Long postId) {
+    Post post = getActivePost(postId);
+    List<Comment> comments =
+        commentRepository.findAllByPostIdAndIsDeletedFalseOrderByCreatedAtAsc(post.getId());
 
-        Comment savedReply = commentRepository.save(reply);
-        return CommentResponse.from(savedReply, List.of());
+    Map<Long, List<Comment>> childrenByParentId =
+        comments.stream()
+            .filter(comment -> comment.getParentComment() != null)
+            .collect(
+                Collectors.groupingBy(
+                    comment -> comment.getParentComment().getId(),
+                    LinkedHashMap::new,
+                    Collectors.toList()));
+
+    return comments.stream()
+        .filter(Comment::isRootComment)
+        .map(comment -> toCommentResponse(comment, childrenByParentId))
+        .toList();
+  }
+
+  @Transactional
+  public void deleteComment(Long userId, Long commentId) {
+    Comment comment = getActiveComment(commentId);
+    validateCommentOwner(userId, comment);
+    softDeleteRecursively(comment);
+  }
+
+  private CommentResponse toCommentResponse(
+      Comment comment, Map<Long, List<Comment>> childrenByParentId) {
+    List<CommentResponse> childResponses =
+        childrenByParentId.getOrDefault(comment.getId(), List.of()).stream()
+            .map(child -> toCommentResponse(child, childrenByParentId))
+            .toList();
+
+    return CommentResponse.from(comment, childResponses);
+  }
+
+  private void softDeleteRecursively(Comment comment) {
+    List<Comment> childComments =
+        commentRepository.findAllByParentCommentIdAndIsDeletedFalseOrderByCreatedAtAsc(
+            comment.getId());
+
+    for (Comment childComment : childComments) {
+      softDeleteRecursively(childComment);
     }
 
-    public List<CommentResponse> getComments(Long postId) {
-        Post post = getActivePost(postId);
-        List<Comment> comments = commentRepository.findAllByPostIdAndIsDeletedFalseOrderByCreatedAtAsc(post.getId());
+    comment.deleteComment();
+  }
 
-        Map<Long, List<Comment>> childrenByParentId = comments.stream()
-                .filter(comment -> comment.getParentComment() != null)
-                .collect(Collectors.groupingBy(
-                        comment -> comment.getParentComment().getId(),
-                        LinkedHashMap::new,
-                        Collectors.toList()
-                ));
+  private User getUser(Long userId) {
+    return userRepository
+        .findById(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+  }
 
-        return comments.stream()
-                .filter(Comment::isRootComment)
-                .map(comment -> toCommentResponse(comment, childrenByParentId))
-                .toList();
+  private Post getActivePost(Long postId) {
+    Post post =
+        postRepository
+            .findById(postId)
+            .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+    if (post.isDeleted()) {
+      throw new CustomException(ErrorCode.POST_NOT_FOUND);
     }
 
-    @Transactional
-    public void deleteComment(Long userId, Long commentId) {
-        Comment comment = getActiveComment(commentId);
-        validateCommentOwner(userId, comment);
-        softDeleteRecursively(comment);
+    return post;
+  }
+
+  private Comment getActiveComment(Long commentId) {
+    return commentRepository
+        .findByIdAndIsDeletedFalse(commentId)
+        .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+  }
+
+  private void validateCommentOwner(Long userId, Comment comment) {
+    if (!comment.getUser().getId().equals(userId)) {
+      throw new CustomException(ErrorCode.UNAUTHORIZED_ACTION);
     }
-
-    private CommentResponse toCommentResponse(Comment comment, Map<Long, List<Comment>> childrenByParentId) {
-        List<CommentResponse> childResponses = childrenByParentId.getOrDefault(comment.getId(), List.of())
-                .stream()
-                .map(child -> toCommentResponse(child, childrenByParentId))
-                .toList();
-
-        return CommentResponse.from(comment, childResponses);
-    }
-
-    private void softDeleteRecursively(Comment comment) {
-        List<Comment> childComments = commentRepository
-                .findAllByParentCommentIdAndIsDeletedFalseOrderByCreatedAtAsc(comment.getId());
-
-        for (Comment childComment : childComments) {
-            softDeleteRecursively(childComment);
-        }
-
-        comment.deleteComment();
-    }
-
-    private User getUser(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private Post getActivePost(Long postId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-
-        if (post.isDeleted()) {
-            throw new CustomException(ErrorCode.POST_NOT_FOUND);
-        }
-
-        return post;
-    }
-
-    private Comment getActiveComment(Long commentId) {
-        return commentRepository.findByIdAndIsDeletedFalse(commentId)
-                .orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
-    }
-
-    private void validateCommentOwner(Long userId, Comment comment) {
-        if (!comment.getUser().getId().equals(userId)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED_ACTION);
-        }
-    }
+  }
 }

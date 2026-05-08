@@ -22,53 +22,50 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(
     name = "external_integration",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"workspace_id", "provider"})
-    }
-)
+    uniqueConstraints = {@UniqueConstraint(columnNames = {"workspace_id", "provider"})})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
 public class ExternalIntegration {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "workspace_id", nullable = false)
-    private Long workspaceId;
+  @Column(name = "workspace_id", nullable = false)
+  private Long workspaceId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private IntegrationProvider provider;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 50)
+  private IntegrationProvider provider;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+  @Column(name = "is_active", nullable = false)
+  private boolean isActive;
 
-    @Column(name = "connected_at")
-    private LocalDateTime connectedAt;
+  @Column(name = "connected_at")
+  private LocalDateTime connectedAt;
 
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+  @CreatedDate
+  @Column(name = "created_at", updatable = false)
+  private LocalDateTime createdAt;
 
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
 
-    @Builder
-    public ExternalIntegration(Long workspaceId, IntegrationProvider provider) {
-        this.workspaceId = workspaceId;
-        this.provider = provider;
-        this.isActive = false;
-    }
+  @Builder
+  public ExternalIntegration(Long workspaceId, IntegrationProvider provider) {
+    this.workspaceId = workspaceId;
+    this.provider = provider;
+    this.isActive = false;
+  }
 
-    public void activate() {
-        this.isActive = true;
-        this.connectedAt = LocalDateTime.now();
-    }
+  public void activate() {
+    this.isActive = true;
+    this.connectedAt = LocalDateTime.now();
+  }
 
-    public void deactivate() {
-        this.isActive = false;
-    }
+  public void deactivate() {
+    this.isActive = false;
+  }
 }

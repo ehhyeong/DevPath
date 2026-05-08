@@ -10,20 +10,21 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class ProjectRole {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "project_id", nullable = false)
-    private Long projectId;
+  @Column(name = "project_id", nullable = false)
+  private Long projectId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role_type", nullable = false)
-    private ProjectRoleType roleType;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "role_type", nullable = false)
+  private ProjectRoleType roleType;
 
-    @Column(name = "required_count", nullable = false)
-    private Integer requiredCount;
+  @Column(name = "required_count", nullable = false)
+  private Integer requiredCount;
 
-    public void updateCount(Integer requiredCount) {
-        this.requiredCount = requiredCount;
-    }
+  public void updateCount(Integer requiredCount) {
+    this.requiredCount = requiredCount;
+  }
 }
