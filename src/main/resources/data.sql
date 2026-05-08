@@ -16498,3 +16498,715 @@ WHERE NOT EXISTS (
     WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
       AND title = '스프린트 1 회고'
 );
+
+-- ============================================================
+-- B. Mentoring / Workspace / PR Review / Meeting / Voice / Job / Resume seed
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- B-1. Users
+-- password: devpath1234
+-- ------------------------------------------------------------
+
+INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+SELECT
+    'b-learner-one@devpath.com',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
+    'B학습자일',
+    'ROLE_LEARNER',
+    TRUE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'b-learner-one@devpath.com'
+);
+
+INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+SELECT
+    'b-learner-two@devpath.com',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
+    'B학습자이',
+    'ROLE_LEARNER',
+    TRUE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'b-learner-two@devpath.com'
+);
+
+INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+SELECT
+    'b-mentor@devpath.com',
+    '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
+    'B멘토',
+    'ROLE_INSTRUCTOR',
+    TRUE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'b-mentor@devpath.com'
+);
+
+-- ------------------------------------------------------------
+-- B-2. Workspace / Workspace Member
+-- ------------------------------------------------------------
+
+INSERT INTO workspace (
+    owner_id,
+    name,
+    description,
+    type,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    owner.user_id,
+    'B Swagger Squad Workspace',
+    'B 담당 Swagger 시나리오 검증용 팀 워크스페이스입니다.',
+    'SQUAD',
+    'ACTIVE',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users owner
+WHERE owner.email = 'b-learner-one@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1 FROM workspace WHERE name = 'B Swagger Squad Workspace'
+  );
+
+INSERT INTO workspace_member (
+    workspace_id,
+    learner_id,
+    joined_at
+)
+SELECT
+    w.id,
+    u.user_id,
+    NOW()
+FROM workspace w
+JOIN users u ON u.email = 'b-learner-one@devpath.com'
+WHERE w.name = 'B Swagger Squad Workspace'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_member wm
+      WHERE wm.workspace_id = w.id
+        AND wm.learner_id = u.user_id
+  );
+
+INSERT INTO workspace_member (
+    workspace_id,
+    learner_id,
+    joined_at
+)
+SELECT
+    w.id,
+    u.user_id,
+    NOW()
+FROM workspace w
+JOIN users u ON u.email = 'b-learner-two@devpath.com'
+WHERE w.name = 'B Swagger Squad Workspace'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_member wm
+      WHERE wm.workspace_id = w.id
+        AND wm.learner_id = u.user_id
+  );
+
+-- ------------------------------------------------------------
+-- B-3. Mentoring Post / Application / Ongoing Mentoring
+-- ------------------------------------------------------------
+
+INSERT INTO mentoring_posts (
+    mentor_id,
+    title,
+    content,
+    required_stacks,
+    max_participants,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentor.user_id,
+    'B Swagger 백엔드 멘토링',
+    'PR 리뷰, 미션, 회의, Q&A 시나리오 검증용 멘토링 공고입니다.',
+    'Java,Spring Boot,JPA,PostgreSQL',
+    5,
+    'OPEN',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users mentor
+WHERE mentor.email = 'b-mentor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1 FROM mentoring_posts WHERE title = 'B Swagger 백엔드 멘토링'
+  );
+
+INSERT INTO mentoring_applications (
+    mentoring_post_id,
+    applicant_id,
+    message,
+    status,
+    reject_reason,
+    processed_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    applicant.user_id,
+    'B Swagger 시나리오 테스트를 위해 멘토링에 신청합니다.',
+    'APPROVED',
+    NULL,
+    NOW(),
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_posts post
+JOIN users applicant ON applicant.email = 'b-learner-one@devpath.com'
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_applications ma
+      WHERE ma.mentoring_post_id = post.mentoring_post_id
+        AND ma.applicant_id = applicant.user_id
+  );
+
+INSERT INTO mentorings (
+    mentoring_post_id,
+    mentor_id,
+    mentee_id,
+    status,
+    started_at,
+    ended_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    mentor.user_id,
+    mentee.user_id,
+    'ONGOING',
+    NOW(),
+    NULL,
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_posts post
+JOIN users mentor ON mentor.email = 'b-mentor@devpath.com'
+JOIN users mentee ON mentee.email = 'b-learner-one@devpath.com'
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentorings m
+      WHERE m.mentoring_post_id = post.mentoring_post_id
+        AND m.mentor_id = mentor.user_id
+        AND m.mentee_id = mentee.user_id
+        AND m.is_deleted = FALSE
+  );
+
+-- ------------------------------------------------------------
+-- B-4. Mentoring Mission / Material
+-- ------------------------------------------------------------
+
+INSERT INTO mentoring_missions (
+    mentoring_id,
+    week_number,
+    title,
+    description,
+    due_at,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    m.mentoring_id,
+    1,
+    'B 1주차 PR 리뷰 미션',
+    '멘토링 Q&A, PR 제출, 코드 리뷰, 미션 Pass/Reject 흐름을 검증합니다.',
+    NOW() + INTERVAL '7 days',
+    'OPEN',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentorings m
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_missions mm
+      WHERE mm.mentoring_id = m.mentoring_id
+        AND mm.week_number = 1
+        AND mm.title = 'B 1주차 PR 리뷰 미션'
+  );
+
+INSERT INTO mentoring_materials (
+    mentoring_mission_id,
+    type,
+    title,
+    content,
+    url,
+    sort_order,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mission.mentoring_mission_id,
+    'TEXT',
+    'B 1주차 가이드라인',
+    'Controller는 Thin하게 유지하고, 검증과 상태 전이는 Service에서 처리합니다.',
+    NULL,
+    1,
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_missions mission
+JOIN mentorings m ON m.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND mission.title = 'B 1주차 PR 리뷰 미션'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_materials material
+      WHERE material.mentoring_mission_id = mission.mentoring_mission_id
+        AND material.title = 'B 1주차 가이드라인'
+  );
+
+-- ------------------------------------------------------------
+-- B-5. PR Submission seed
+-- ------------------------------------------------------------
+
+INSERT INTO mission_submissions (
+    mentoring_mission_id,
+    submitter_id,
+    status,
+    feedback,
+    graded_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mission.mentoring_mission_id,
+    submitter.user_id,
+    'SUBMITTED',
+    NULL,
+    NULL,
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentoring_missions mission
+JOIN mentorings m ON m.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+JOIN users submitter ON submitter.email = 'b-learner-one@devpath.com'
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND mission.title = 'B 1주차 PR 리뷰 미션'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mission_submissions ms
+      WHERE ms.mentoring_mission_id = mission.mentoring_mission_id
+        AND ms.submitter_id = submitter.user_id
+        AND ms.is_deleted = FALSE
+  );
+
+INSERT INTO pull_request_submissions (
+    mission_submission_id,
+    pr_url,
+    title,
+    description,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    ms.mission_submission_id,
+    'https://github.com/yongha03/DevPath/pull/9001',
+    'B 1주차 멘토링 미션 PR',
+    'B Swagger 테스트용 PR 제출 데이터입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mission_submissions ms
+JOIN mentoring_missions mission ON mission.mentoring_mission_id = ms.mentoring_mission_id
+JOIN mentorings m ON m.mentoring_id = mission.mentoring_id
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND mission.title = 'B 1주차 PR 리뷰 미션'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM pull_request_submissions prs
+      WHERE prs.mission_submission_id = ms.mission_submission_id
+  );
+
+-- ------------------------------------------------------------
+-- B-6. Notification seed
+-- ------------------------------------------------------------
+
+INSERT INTO learner_notification (
+    learner_id,
+    type,
+    message,
+    is_read,
+    created_at
+)
+SELECT
+    learner.user_id,
+    'SYSTEM',
+    'B Swagger 알림 조회 테스트용 알림입니다.',
+    FALSE,
+    NOW()
+FROM users learner
+WHERE learner.email = 'b-learner-one@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learner_notification ln
+      WHERE ln.learner_id = learner.user_id
+        AND ln.message = 'B Swagger 알림 조회 테스트용 알림입니다.'
+  );
+
+-- ------------------------------------------------------------
+-- B-7. Meeting / Voice seed
+-- ------------------------------------------------------------
+
+INSERT INTO meeting_rooms (
+    mentoring_id,
+    host_id,
+    title,
+    meeting_url,
+    recording_url,
+    scheduled_at,
+    started_at,
+    ended_at,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    m.mentoring_id,
+    mentor.user_id,
+    'B Swagger 멘토링 회의방',
+    'https://meet.devpath.local/b-swagger-mentoring',
+    NULL,
+    NOW() + INTERVAL '1 day',
+    NOW(),
+    NULL,
+    'OPEN',
+    FALSE,
+    NOW(),
+    NOW()
+FROM mentorings m
+JOIN mentoring_posts post ON post.mentoring_post_id = m.mentoring_post_id
+JOIN users mentor ON mentor.email = 'b-mentor@devpath.com'
+WHERE post.title = 'B Swagger 백엔드 멘토링'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM meeting_rooms mr
+      WHERE mr.mentoring_id = m.mentoring_id
+        AND mr.title = 'B Swagger 멘토링 회의방'
+        AND mr.is_deleted = FALSE
+  );
+
+INSERT INTO voice_channels (
+    workspace_id,
+    creator_id,
+    name,
+    description,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    w.id,
+    creator.user_id,
+    'B Swagger 보이스 채널',
+    'B Swagger 보이스 이벤트 테스트용 채널입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM workspace w
+JOIN users creator ON creator.email = 'b-learner-one@devpath.com'
+WHERE w.name = 'B Swagger Squad Workspace'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM voice_channels vc
+      WHERE vc.workspace_id = w.id
+        AND vc.name = 'B Swagger 보이스 채널'
+        AND vc.is_deleted = FALSE
+  );
+
+-- ------------------------------------------------------------
+-- B-8. Company / Job / Skill Tags seed
+-- ------------------------------------------------------------
+
+INSERT INTO companies (
+    name,
+    description,
+    website_url,
+    logo_url,
+    industry,
+    location,
+    verification_status,
+    verification_memo,
+    verified_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    'DevPath Labs',
+    'B Swagger 채용/시장 분석 테스트용 기업입니다.',
+    'https://devpath.example.com',
+    NULL,
+    'Education Tech',
+    'SEOUL',
+    'VERIFIED',
+    'B 시나리오 테스트용 인증 기업',
+    NOW(),
+    FALSE,
+    NOW(),
+    NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM companies WHERE name = 'DevPath Labs'
+);
+
+INSERT INTO job_postings (
+    company_id,
+    title,
+    job_role,
+    description,
+    required_skills,
+    region,
+    career_level,
+    source_url,
+    source,
+    status,
+    deadline,
+    external_job_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    c.company_id,
+    '주니어 백엔드 개발자',
+    'BACKEND',
+    'Spring Boot 기반 REST API와 JPA 도메인 설계를 담당합니다.',
+    'Java, Spring Boot, JPA, PostgreSQL',
+    'SEOUL',
+    'JUNIOR',
+    'https://devpath.example.com/jobs/backend-junior',
+    'INTERNAL',
+    'OPEN',
+    CURRENT_DATE + 30,
+    'B-JOB-BACKEND-001',
+    FALSE,
+    NOW(),
+    NOW()
+FROM companies c
+WHERE c.name = 'DevPath Labs'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_postings jp
+      WHERE jp.external_job_id = 'B-JOB-BACKEND-001'
+  );
+
+INSERT INTO job_postings (
+    company_id,
+    title,
+    job_role,
+    description,
+    required_skills,
+    region,
+    career_level,
+    source_url,
+    source,
+    status,
+    deadline,
+    external_job_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    c.company_id,
+    '풀스택 개발자 인턴',
+    'FULLSTACK',
+    'React와 Spring Boot를 활용해 학습 플랫폼 기능을 개발합니다.',
+    'React, TypeScript, Java, Spring Boot',
+    'GYEONGGI',
+    'INTERN',
+    'https://devpath.example.com/jobs/fullstack-intern',
+    'INTERNAL',
+    'OPEN',
+    CURRENT_DATE + 45,
+    'B-JOB-FULLSTACK-001',
+    FALSE,
+    NOW(),
+    NOW()
+FROM companies c
+WHERE c.name = 'DevPath Labs'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_postings jp
+      WHERE jp.external_job_id = 'B-JOB-FULLSTACK-001'
+  );
+
+INSERT INTO job_skill_tags (
+    job_posting_id,
+    name,
+    source,
+    confidence_score,
+    matched_keyword,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    jp.job_posting_id,
+    skill.name,
+    'JD_RULE_BASED',
+    skill.confidence_score,
+    skill.matched_keyword,
+    FALSE,
+    NOW(),
+    NOW()
+FROM job_postings jp
+CROSS JOIN (
+    VALUES
+        ('Java', 0.95, 'Java'),
+        ('Spring Boot', 0.98, 'Spring Boot'),
+        ('JPA', 0.91, 'JPA')
+) AS skill(name, confidence_score, matched_keyword)
+WHERE jp.external_job_id = 'B-JOB-BACKEND-001'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_skill_tags tag
+      WHERE tag.job_posting_id = jp.job_posting_id
+        AND tag.name = skill.name
+  );
+
+INSERT INTO job_skill_tags (
+    job_posting_id,
+    name,
+    source,
+    confidence_score,
+    matched_keyword,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    jp.job_posting_id,
+    skill.name,
+    'JD_RULE_BASED',
+    skill.confidence_score,
+    skill.matched_keyword,
+    FALSE,
+    NOW(),
+    NOW()
+FROM job_postings jp
+CROSS JOIN (
+    VALUES
+        ('React', 0.93, 'React'),
+        ('TypeScript', 0.9, 'TypeScript')
+) AS skill(name, confidence_score, matched_keyword)
+WHERE jp.external_job_id = 'B-JOB-FULLSTACK-001'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM job_skill_tags tag
+      WHERE tag.job_posting_id = jp.job_posting_id
+        AND tag.name = skill.name
+  );
+
+-- ------------------------------------------------------------
+-- B-9. Career Profile / Proof Card link seed
+-- ------------------------------------------------------------
+
+INSERT INTO career_profiles (
+    user_id,
+    target_role,
+    headline,
+    summary,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    learner.user_id,
+    'BACKEND',
+    'Spring Boot 기반 주니어 백엔드 개발자',
+    '멘토링 PR 리뷰와 학습 이력을 기반으로 백엔드 역량을 정리한 B 테스트 프로필입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users learner
+WHERE learner.email = 'b-learner-one@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM career_profiles cp
+      WHERE cp.user_id = learner.user_id
+        AND cp.target_role = 'BACKEND'
+        AND cp.is_deleted = FALSE
+  );
+
+INSERT INTO career_profile_proof_cards (
+    career_profile_id,
+    proof_card_id,
+    title,
+    summary,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    cp.career_profile_id,
+    9001,
+    'B Swagger Proof Card',
+    'B Swagger 시나리오 검증용 Proof Card 연결 샘플입니다.',
+    FALSE,
+    NOW(),
+    NOW()
+FROM career_profiles cp
+JOIN users learner ON learner.user_id = cp.user_id
+WHERE learner.email = 'b-learner-one@devpath.com'
+  AND cp.target_role = 'BACKEND'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM career_profile_proof_cards cpc
+      WHERE cpc.career_profile_id = cp.career_profile_id
+        AND cpc.proof_card_id = 9001
+        AND cpc.is_deleted = FALSE
+  );
+
+-- ------------------------------------------------------------
+-- B-10. Sequence correction
+-- ------------------------------------------------------------
+
+SELECT setval(pg_get_serial_sequence('users', 'user_id'), COALESCE((SELECT MAX(user_id) FROM users), 1));
+SELECT setval(pg_get_serial_sequence('workspace', 'id'), COALESCE((SELECT MAX(id) FROM workspace), 1));
+SELECT setval(pg_get_serial_sequence('workspace_member', 'id'), COALESCE((SELECT MAX(id) FROM workspace_member), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_posts', 'mentoring_post_id'), COALESCE((SELECT MAX(mentoring_post_id) FROM mentoring_posts), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_applications', 'mentoring_application_id'), COALESCE((SELECT MAX(mentoring_application_id) FROM mentoring_applications), 1));
+SELECT setval(pg_get_serial_sequence('mentorings', 'mentoring_id'), COALESCE((SELECT MAX(mentoring_id) FROM mentorings), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_missions', 'mentoring_mission_id'), COALESCE((SELECT MAX(mentoring_mission_id) FROM mentoring_missions), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_materials', 'mentoring_material_id'), COALESCE((SELECT MAX(mentoring_material_id) FROM mentoring_materials), 1));
+SELECT setval(pg_get_serial_sequence('mission_submissions', 'mission_submission_id'), COALESCE((SELECT MAX(mission_submission_id) FROM mission_submissions), 1));
+SELECT setval(pg_get_serial_sequence('pull_request_submissions', 'pull_request_submission_id'), COALESCE((SELECT MAX(pull_request_submission_id) FROM pull_request_submissions), 1));
+SELECT setval(pg_get_serial_sequence('learner_notification', 'id'), COALESCE((SELECT MAX(id) FROM learner_notification), 1));
+SELECT setval(pg_get_serial_sequence('meeting_rooms', 'meeting_room_id'), COALESCE((SELECT MAX(meeting_room_id) FROM meeting_rooms), 1));
+SELECT setval(pg_get_serial_sequence('voice_channels', 'voice_channel_id'), COALESCE((SELECT MAX(voice_channel_id) FROM voice_channels), 1));
+SELECT setval(pg_get_serial_sequence('companies', 'company_id'), COALESCE((SELECT MAX(company_id) FROM companies), 1));
+SELECT setval(pg_get_serial_sequence('job_postings', 'job_posting_id'), COALESCE((SELECT MAX(job_posting_id) FROM job_postings), 1));
+SELECT setval(pg_get_serial_sequence('job_skill_tags', 'job_skill_tag_id'), COALESCE((SELECT MAX(job_skill_tag_id) FROM job_skill_tags), 1));
+SELECT setval(pg_get_serial_sequence('career_profiles', 'career_profile_id'), COALESCE((SELECT MAX(career_profile_id) FROM career_profiles), 1));
+SELECT setval(pg_get_serial_sequence('career_profile_proof_cards', 'career_profile_proof_card_id'), COALESCE((SELECT MAX(career_profile_proof_card_id) FROM career_profile_proof_cards), 1));
+SELECT setval(pg_get_serial_sequence('qna_questions', 'question_id'), COALESCE((SELECT MAX(question_id) FROM qna_questions), 1));
+SELECT setval(pg_get_serial_sequence('qna_answers', 'answer_id'), COALESCE((SELECT MAX(answer_id) FROM qna_answers), 1));
