@@ -6,7 +6,6 @@ import com.devpath.api.squad.dto.SquadMemberResponse;
 import com.devpath.api.squad.dto.SquadResponse;
 import com.devpath.api.squad.service.SquadMemberService;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.common.swagger.SwaggerErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -18,6 +17,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -51,10 +50,7 @@ public class SquadMemberController {
         content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
   })
   public ApiResponse<List<SquadResponse>> getMySquads(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          @Positive(message = "사용자 ID는 양수여야 합니다.")
-          Long userId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(squadMemberService.getMySquads(userId));
   }
 
@@ -81,10 +77,7 @@ public class SquadMemberController {
           @PathVariable
           @Positive(message = "스쿼드 ID는 양수여야 합니다.")
           Long squadId,
-      @Parameter(description = "요청자 LEADER 사용자 ID", example = "1")
-          @RequestParam
-          @Positive(message = "LEADER ID는 양수여야 합니다.")
-          Long leaderId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long leaderId,
       @Valid @RequestBody InviteSquadMemberRequest request) {
     return ApiResponse.ok(squadMemberService.addMember(squadId, leaderId, request.getInviteeId()));
   }
@@ -116,10 +109,7 @@ public class SquadMemberController {
           @PathVariable
           @Positive(message = "멤버 ID는 양수여야 합니다.")
           Long memberId,
-      @Parameter(description = "요청자 LEADER 사용자 ID", example = "1")
-          @RequestParam
-          @Positive(message = "LEADER ID는 양수여야 합니다.")
-          Long leaderId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long leaderId,
       @Valid @RequestBody ChangeSquadMemberRoleRequest request) {
     return ApiResponse.ok(
         squadMemberService.changeMemberRole(squadId, leaderId, memberId, request.getRole()));
@@ -154,10 +144,7 @@ public class SquadMemberController {
           @PathVariable
           @Positive(message = "멤버 ID는 양수여야 합니다.")
           Long memberId,
-      @Parameter(description = "요청자 LEADER 사용자 ID", example = "1")
-          @RequestParam
-          @Positive(message = "LEADER ID는 양수여야 합니다.")
-          Long leaderId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long leaderId) {
     squadMemberService.removeMember(squadId, leaderId, memberId);
     return ApiResponse.ok();
   }

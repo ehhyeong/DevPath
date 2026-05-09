@@ -17,9 +17,7 @@ public class MeetingRequest {
       @Schema(description = "멘토링 ID", example = "1") @NotNull(message = "멘토링 ID는 필수입니다.")
           Long mentoringId,
 
-      // 인증 연동 전 Swagger 테스트를 위해 회의 생성자 ID를 요청으로 받는다.
-      @Schema(description = "회의 생성자 ID", example = "1") @NotNull(message = "회의 생성자 ID는 필수입니다.")
-          Long hostId,
+      @Schema(hidden = true) Long hostId,
 
       // 회의방 제목이다.
       @Schema(description = "회의 제목", example = "1주차 멘토링 코드 리뷰 회의")
@@ -39,30 +37,22 @@ public class MeetingRequest {
   @Schema(name = "MeetingEndRequest", description = "회의 종료 요청")
   public record End(
 
-      // 회의 생성자만 종료할 수 있도록 검증한다.
-      @Schema(description = "회의 생성자 ID", example = "1") @NotNull(message = "회의 생성자 ID는 필수입니다.")
-          Long hostId) {}
+      @Schema(hidden = true) Long hostId) {}
 
   @Schema(name = "MeetingJoinRequest", description = "회의 참가 요청")
   public record Join(
 
-      // 회의에 참가할 사용자 ID다.
-      @Schema(description = "참가자 ID", example = "2") @NotNull(message = "참가자 ID는 필수입니다.")
-          Long userId) {}
+      @Schema(hidden = true) Long userId) {}
 
   @Schema(name = "MeetingLeaveRequest", description = "회의 퇴장 요청")
   public record Leave(
 
-      // 회의에서 퇴장할 사용자 ID다.
-      @Schema(description = "참가자 ID", example = "2") @NotNull(message = "참가자 ID는 필수입니다.")
-          Long userId) {}
+      @Schema(hidden = true) Long userId) {}
 
   @Schema(name = "MeetingRecordingUrlRequest", description = "회의 녹화 URL 저장 요청")
   public record RecordingUrl(
 
-      // 회의 생성자만 녹화 URL을 수정할 수 있도록 검증한다.
-      @Schema(description = "회의 생성자 ID", example = "1") @NotNull(message = "회의 생성자 ID는 필수입니다.")
-          Long hostId,
+      @Schema(hidden = true) Long hostId,
 
       // 녹화 파일 또는 외부 녹화 링크다.
       @Schema(

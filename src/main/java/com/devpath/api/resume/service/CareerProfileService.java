@@ -37,8 +37,9 @@ public class CareerProfileService {
   private final UserRepository userRepository;
 
   @Transactional
-  public CareerProfileResponse.Detail createProfile(CareerProfileRequest.Create request) {
-    User user = getUser(request.userId());
+  public CareerProfileResponse.Detail createProfile(
+      Long userId, CareerProfileRequest.Create request) {
+    User user = getUser(userId);
     validateProfileNotExists(user.getId());
 
     CareerProfile profile =
@@ -63,8 +64,8 @@ public class CareerProfileService {
 
   @Transactional
   public CareerProfileResponse.ProofCardDetail selectProofCard(
-      Long profileId, CareerProfileRequest.ProofCardSelect request) {
-    CareerProfile profile = getActiveProfile(profileId);
+      Long userId, Long profileId, CareerProfileRequest.ProofCardSelect request) {
+    CareerProfile profile = getOwnedActiveProfile(userId, profileId);
     validateProofCardNotDuplicated(profile.getId(), request.proofCardId());
 
     CareerProfileProofCard proofCard =
@@ -80,8 +81,8 @@ public class CareerProfileService {
   }
 
   @Transactional
-  public void excludeProofCard(Long profileId, Long proofCardId) {
-    getActiveProfile(profileId);
+  public void excludeProofCard(Long userId, Long profileId, Long proofCardId) {
+    getOwnedActiveProfile(userId, profileId);
 
     CareerProfileProofCard proofCard =
         careerProfileProofCardRepository
@@ -93,8 +94,8 @@ public class CareerProfileService {
 
   @Transactional
   public CareerProfileResponse.ProjectDetail addProject(
-      Long profileId, CareerProfileRequest.ProjectAdd request) {
-    CareerProfile profile = getActiveProfile(profileId);
+      Long userId, Long profileId, CareerProfileRequest.ProjectAdd request) {
+    CareerProfile profile = getOwnedActiveProfile(userId, profileId);
 
     CareerProfileProject project =
         CareerProfileProject.builder()
@@ -111,8 +112,8 @@ public class CareerProfileService {
 
   @Transactional
   public CareerProfileResponse.SkillDetail addSkill(
-      Long profileId, CareerProfileRequest.SkillAdd request) {
-    CareerProfile profile = getActiveProfile(profileId);
+      Long userId, Long profileId, CareerProfileRequest.SkillAdd request) {
+    CareerProfile profile = getOwnedActiveProfile(userId, profileId);
     validateSkillNotDuplicated(profile.getId(), request.name());
 
     CareerProfileSkill skill =
@@ -128,8 +129,8 @@ public class CareerProfileService {
 
   @Transactional
   public CareerProfileResponse.SnapshotDetail createSnapshot(
-      Long profileId, CareerProfileRequest.SnapshotCreate request) {
-    CareerProfile profile = getActiveProfile(profileId);
+      Long userId, Long profileId, CareerProfileRequest.SnapshotCreate request) {
+    CareerProfile profile = getOwnedActiveProfile(userId, profileId);
     String snapshotContent = buildSnapshotContent(profile);
     int nextVersionNumber =
         Math.toIntExact(
@@ -156,8 +157,8 @@ public class CareerProfileService {
     return CareerProfileResponse.SnapshotDetail.from(savedSnapshot, savedVersion);
   }
 
-  public List<CareerProfileResponse.VersionDetail> getVersions(Long profileId) {
-    getActiveProfile(profileId);
+  public List<CareerProfileResponse.VersionDetail> getVersions(Long userId, Long profileId) {
+    getOwnedActiveProfile(userId, profileId);
 
     return careerProfileVersionRepository
         .findAllByCareerProfile_IdOrderByVersionNumberDesc(profileId)
@@ -184,6 +185,14 @@ public class CareerProfileService {
     return careerProfileRepository
         .findByIdAndIsDeletedFalse(profileId)
         .orElseThrow(() -> new CustomException(ErrorCode.RESUME_CAREER_PROFILE_NOT_FOUND));
+  }
+
+  private CareerProfile getOwnedActiveProfile(Long userId, Long profileId) {
+    CareerProfile profile = getActiveProfile(profileId);
+    if (!profile.getUser().getId().equals(userId)) {
+      throw new CustomException(ErrorCode.FORBIDDEN);
+    }
+    return profile;
   }
 
   private User getUser(Long userId) {

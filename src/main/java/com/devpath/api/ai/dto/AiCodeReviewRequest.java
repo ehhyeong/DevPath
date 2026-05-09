@@ -2,7 +2,6 @@ package com.devpath.api.ai.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class AiCodeReviewRequest {
@@ -12,10 +11,7 @@ public class AiCodeReviewRequest {
   @Schema(name = "AiCodeReviewCreateRequest", description = "AI 코드 리뷰 요청")
   public record Create(
 
-      // 인증 연동 전 Swagger 테스트를 위해 요청자 ID를 받는다.
-      @Schema(description = "AI 리뷰 요청자 ID", example = "2")
-          @NotNull(message = "AI 리뷰 요청자 ID는 필수입니다.")
-          Long requesterId,
+      @Schema(hidden = true) Long requesterId,
 
       // PR 제출과 연결할 경우 사용한다. diffText만 리뷰할 때는 null 가능하다.
       @Schema(description = "PR 제출 ID", example = "1") Long pullRequestId,
@@ -38,7 +34,5 @@ public class AiCodeReviewRequest {
   @Schema(name = "AiReviewCommentDecisionRequest", description = "AI 리뷰 코멘트 승인/반려 요청")
   public record CommentDecision(
 
-      // 리뷰 요청자 본인만 코멘트를 승인/반려할 수 있도록 검증한다.
-      @Schema(description = "요청자 ID", example = "2") @NotNull(message = "요청자 ID는 필수입니다.")
-          Long requesterId) {}
+      @Schema(hidden = true) Long requesterId) {}
 }

@@ -5,13 +5,14 @@ import com.devpath.api.mentoring.service.MentoringHubService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerTag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = SwaggerTag.MENTORING_HUB, description = "멘토링 허브 및 내 멘토링 조회 API")
@@ -39,8 +40,7 @@ public class MentoringHubController {
   @GetMapping("/me")
   @Operation(summary = "내 멘토링 목록 조회", description = "내가 멘토 또는 멘티로 참여 중인 멘토링 목록을 조회합니다.")
   public ResponseEntity<ApiResponse<List<MentoringHubResponse.MyMentoring>>> getMyMentorings(
-      @RequestParam Long userId) {
-    // 인증 연동 전이므로 userId query parameter로 내 멘토링 목록을 조회한다.
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ResponseEntity.ok(ApiResponse.ok(mentoringHubService.getMyMentorings(userId)));
   }
 }

@@ -24,11 +24,11 @@ public class MentoringMaterialService {
 
   @Transactional
   public MentoringMaterialResponse.Detail create(
-      Long missionId, MentoringMaterialRequest.Create request) {
+      Long missionId, Long mentorId, MentoringMaterialRequest.Create request) {
     MentoringMission mission = getActiveMission(missionId);
 
     // 해당 미션이 속한 멘토링의 멘토만 자료를 등록할 수 있다.
-    validateMentorOwner(mission, request.mentorId());
+    validateMentorOwner(mission, mentorId);
 
     // URL 타입은 url 필수, TEXT 타입은 content 필수로 검증한다.
     validateMaterialPayload(request.type(), request.content(), request.url());
@@ -59,11 +59,11 @@ public class MentoringMaterialService {
 
   @Transactional
   public MentoringMaterialResponse.Detail update(
-      Long materialId, MentoringMaterialRequest.Update request) {
+      Long materialId, Long mentorId, MentoringMaterialRequest.Update request) {
     MentoringMaterial material = getActiveMaterial(materialId);
 
     // 해당 자료가 속한 멘토링의 멘토만 자료를 수정할 수 있다.
-    validateMentorOwner(material.getMission(), request.mentorId());
+    validateMentorOwner(material.getMission(), mentorId);
 
     // 수정 시에도 타입별 필수값을 동일하게 검증한다.
     validateMaterialPayload(request.type(), request.content(), request.url());

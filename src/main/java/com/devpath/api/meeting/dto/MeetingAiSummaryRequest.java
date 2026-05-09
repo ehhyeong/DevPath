@@ -2,7 +2,6 @@ package com.devpath.api.meeting.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class MeetingAiSummaryRequest {
@@ -12,10 +11,7 @@ public class MeetingAiSummaryRequest {
   @Schema(name = "MeetingAiSummarySaveRequest", description = "AI 회의 요약 저장 요청")
   public record Save(
 
-      // 인증 연동 전 Swagger 테스트를 위해 저장 요청자 ID를 받는다.
-      @Schema(description = "요약 저장 요청자 ID", example = "1")
-          @NotNull(message = "요약 저장 요청자 ID는 필수입니다.")
-          Long requesterId,
+      @Schema(hidden = true) Long requesterId,
 
       // 회의 전체 내용을 요약한 본문이다.
       @Schema(description = "회의 요약", example = "이번 회의에서는 멘토링 미션 진행 상황과 PR 리뷰 기준을 정리했습니다.")

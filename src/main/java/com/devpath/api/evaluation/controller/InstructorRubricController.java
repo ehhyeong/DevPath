@@ -10,13 +10,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "강의 평가 - 루브릭", description = "강사용 과제 채점 루브릭 생성 및 수정 API")
@@ -34,7 +34,7 @@ public class InstructorRubricController {
           "강사가 특정 과제에 연결할 채점 루브릭 항목을 생성합니다. JWT 적용 전까지 Swagger 테스트용으로 userId를 요청 파라미터로 받습니다. 응답 데이터는 ApiResponse.data에 감싸져 반환됩니다.")
   @PostMapping("/assignments/{assignmentId}/rubrics")
   public ResponseEntity<ApiResponse<RubricResponse>> createRubric(
-      @Parameter(description = "강사 ID", example = "1") @RequestParam Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "과제 ID", example = "20") @PathVariable Long assignmentId,
       @Valid @RequestBody CreateRubricRequest request) {
     return ResponseEntity.ok(
@@ -48,7 +48,7 @@ public class InstructorRubricController {
           "강사가 특정 루브릭의 기준명, 설명, 배점, 표시 순서를 수정합니다. JWT 적용 전까지 Swagger 테스트용으로 userId를 요청 파라미터로 받습니다. 응답 데이터는 ApiResponse.data에 감싸져 반환됩니다.")
   @PatchMapping("/rubrics/{rubricId}")
   public ResponseEntity<ApiResponse<RubricResponse>> updateRubric(
-      @Parameter(description = "강사 ID", example = "1") @RequestParam Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "루브릭 ID", example = "301") @PathVariable Long rubricId,
       @Valid @RequestBody UpdateRubricRequest request) {
     return ResponseEntity.ok(

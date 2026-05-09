@@ -7,11 +7,13 @@ import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerTag;
 import com.devpath.domain.mentoring.entity.MentoringPostStatus;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,9 +35,10 @@ public class MentoringPostController {
   @PostMapping
   @Operation(summary = "멘토링 공고 등록", description = "멘토가 멘토링 공고를 등록합니다.")
   public ResponseEntity<ApiResponse<MentoringPostResponse.Detail>> create(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long mentorId,
       @Valid @RequestBody MentoringPostRequest.Create request) {
     // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
-    return ResponseEntity.ok(ApiResponse.ok(mentoringPostService.create(request)));
+    return ResponseEntity.ok(ApiResponse.ok(mentoringPostService.create(mentorId, request)));
   }
 
   @GetMapping
@@ -57,16 +60,20 @@ public class MentoringPostController {
   @PatchMapping("/{postId}")
   @Operation(summary = "멘토링 공고 수정", description = "멘토링 공고 정보를 수정합니다.")
   public ResponseEntity<ApiResponse<MentoringPostResponse.Detail>> update(
-      @PathVariable Long postId, @Valid @RequestBody MentoringPostRequest.Update request) {
+      @PathVariable Long postId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long mentorId,
+      @Valid @RequestBody MentoringPostRequest.Update request) {
     // 수정 검증은 DTO validation과 Service 비즈니스 검증으로 분리한다.
-    return ResponseEntity.ok(ApiResponse.ok(mentoringPostService.update(postId, request)));
+    return ResponseEntity.ok(ApiResponse.ok(mentoringPostService.update(postId, mentorId, request)));
   }
 
   @DeleteMapping("/{postId}")
   @Operation(summary = "멘토링 공고 삭제", description = "멘토링 공고를 Soft Delete 처리합니다.")
-  public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long postId) {
+  public ResponseEntity<ApiResponse<Void>> delete(
+      @PathVariable Long postId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long mentorId) {
     // 삭제 응답은 data 없이 성공 공통 포맷만 반환한다.
-    mentoringPostService.delete(postId);
+    mentoringPostService.delete(postId, mentorId);
     return ResponseEntity.ok(ApiResponse.ok());
   }
 }

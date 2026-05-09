@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,9 +58,7 @@ public class CommunityController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<PostResponse> createPost(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody PostRequest request) {
     PostResponse response = communityService.createPost(userId, request);
     return ApiResponse.ok(response);
@@ -145,9 +144,7 @@ public class CommunityController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<PostResponse> updatePost(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "수정할 게시글 ID입니다.", example = "10") @PathVariable Long postId,
       @Valid @RequestBody PostUpdateRequest request) {
     PostResponse response = communityService.updatePost(userId, postId, request);
@@ -171,9 +168,7 @@ public class CommunityController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<Void> deletePost(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "삭제할 게시글 ID입니다.", example = "10") @PathVariable Long postId) {
     communityService.deletePost(userId, postId);
     return ApiResponse.ok();
@@ -192,9 +187,7 @@ public class CommunityController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<List<MyPostResponse>> getMyPosts(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     List<MyPostResponse> responses = communityService.getMyPosts(userId);
     return ApiResponse.ok(responses);
   }

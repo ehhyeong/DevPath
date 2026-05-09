@@ -6,18 +6,19 @@ import com.devpath.api.application.service.LoungeApplicationService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerTag;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = SwaggerTag.LOUNGE_APPLICATION, description = "라운지 신청서, 제안서, 승인/거절 API")
@@ -31,16 +32,16 @@ public class LoungeApplicationController {
   @PostMapping
   @Operation(summary = "라운지 신청 작성", description = "스쿼드 지원서 또는 제안서를 작성합니다.")
   public ResponseEntity<ApiResponse<LoungeApplicationResponse.Detail>> create(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long senderId,
       @Valid @RequestBody LoungeApplicationRequest.Create request) {
     // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
-    return ResponseEntity.ok(ApiResponse.ok(loungeApplicationService.create(request)));
+    return ResponseEntity.ok(ApiResponse.ok(loungeApplicationService.create(senderId, request)));
   }
 
   @GetMapping("/sent")
   @Operation(summary = "보낸 라운지 신청 조회", description = "내가 보낸 라운지 신청 목록을 조회합니다.")
   public ResponseEntity<ApiResponse<List<LoungeApplicationResponse.Summary>>> getSentApplications(
-      @RequestParam Long senderId) {
-    // 인증 연동 전이므로 senderId query parameter로 보낸 신청을 조회한다.
+      @Parameter(hidden = true) @AuthenticationPrincipal Long senderId) {
     return ResponseEntity.ok(
         ApiResponse.ok(loungeApplicationService.getSentApplications(senderId)));
   }
@@ -48,8 +49,7 @@ public class LoungeApplicationController {
   @GetMapping("/received")
   @Operation(summary = "받은 라운지 요청 조회", description = "내가 받은 라운지 요청 목록을 조회합니다.")
   public ResponseEntity<ApiResponse<List<LoungeApplicationResponse.Summary>>>
-      getReceivedApplications(@RequestParam Long receiverId) {
-    // 인증 연동 전이므로 receiverId query parameter로 받은 요청을 조회한다.
+      getReceivedApplications(@Parameter(hidden = true) @AuthenticationPrincipal Long receiverId) {
     return ResponseEntity.ok(
         ApiResponse.ok(loungeApplicationService.getReceivedApplications(receiverId)));
   }
@@ -67,20 +67,22 @@ public class LoungeApplicationController {
   @Operation(summary = "라운지 신청 승인", description = "라운지 신청을 승인 상태로 변경합니다.")
   public ResponseEntity<ApiResponse<LoungeApplicationResponse.Detail>> approve(
       @PathVariable Long applicationId,
-      @Valid @RequestBody LoungeApplicationRequest.Approve request) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long receiverId,
+      @Valid @RequestBody(required = false) LoungeApplicationRequest.Approve request) {
     // 승인 권한과 중복 처리 검증은 Service에서 처리한다.
     return ResponseEntity.ok(
-        ApiResponse.ok(loungeApplicationService.approve(applicationId, request)));
+        ApiResponse.ok(loungeApplicationService.approve(applicationId, receiverId, request)));
   }
 
   @PatchMapping("/{applicationId}/reject")
   @Operation(summary = "라운지 신청 거절", description = "라운지 신청을 거절 상태로 변경합니다.")
   public ResponseEntity<ApiResponse<LoungeApplicationResponse.Detail>> reject(
       @PathVariable Long applicationId,
-      @Valid @RequestBody LoungeApplicationRequest.Reject request) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long receiverId,
+      @Valid @RequestBody(required = false) LoungeApplicationRequest.Reject request) {
     // 거절 권한과 중복 처리 검증은 Service에서 처리한다.
     return ResponseEntity.ok(
-        ApiResponse.ok(loungeApplicationService.reject(applicationId, request)));
+        ApiResponse.ok(loungeApplicationService.reject(applicationId, receiverId, request)));
   }
 
   @GetMapping("/{applicationId}/status")

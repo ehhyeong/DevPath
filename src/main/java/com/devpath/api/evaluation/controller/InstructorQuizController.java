@@ -11,13 +11,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "강의 평가 - 퀴즈 출제", description = "강사용 퀴즈 생성, 문항 추가, 정답/해설 관리 API")
@@ -35,7 +35,7 @@ public class InstructorQuizController {
           "강사가 로드맵 노드에 연결할 퀴즈 기본 정보를 생성합니다. JWT 적용 전까지 Swagger 테스트용으로 userId를 요청 파라미터로 받습니다. 응답 데이터는 ApiResponse.data에 감싸져 반환됩니다.")
   @PostMapping
   public ResponseEntity<ApiResponse<QuizDetailResponse>> createQuiz(
-      @Parameter(description = "강사 ID", example = "1") @RequestParam Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody CreateQuizRequest request) {
     return ResponseEntity.ok(
         ApiResponse.success("퀴즈가 생성되었습니다.", quizCommandService.createQuiz(userId, request)));
@@ -47,7 +47,7 @@ public class InstructorQuizController {
           "강사가 특정 퀴즈에 문항과 선택지를 추가합니다. JWT 적용 전까지 Swagger 테스트용으로 userId를 요청 파라미터로 받습니다. 응답 데이터는 ApiResponse.data에 감싸져 반환됩니다.")
   @PostMapping("/{quizId}/questions")
   public ResponseEntity<ApiResponse<QuizDetailResponse>> addQuestion(
-      @Parameter(description = "강사 ID", example = "1") @RequestParam Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "퀴즈 ID", example = "10") @PathVariable Long quizId,
       @Valid @RequestBody CreateQuizQuestionRequest request) {
     return ResponseEntity.ok(
@@ -61,7 +61,7 @@ public class InstructorQuizController {
           "강사가 특정 문항의 정답 선택지와 해설을 수정합니다. JWT 적용 전까지 Swagger 테스트용으로 userId를 요청 파라미터로 받습니다. 응답 데이터는 ApiResponse.data에 감싸져 반환됩니다.")
   @PatchMapping("/{quizId}/questions/{questionId}/answer-explanation")
   public ResponseEntity<ApiResponse<QuizDetailResponse>> updateAnswerAndExplanation(
-      @Parameter(description = "강사 ID", example = "1") @RequestParam Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "퀴즈 ID", example = "10") @PathVariable Long quizId,
       @Parameter(description = "문항 ID", example = "101") @PathVariable Long questionId,
       @Valid @RequestBody UpdateQuizAnswerExplanationRequest request) {

@@ -32,8 +32,9 @@ public class AiCodeReviewService {
   private final NotificationEventService notificationEventService;
 
   @Transactional
-  public AiCodeReviewResponse.Detail createReview(AiCodeReviewRequest.Create request) {
-    User requester = getUser(request.requesterId());
+  public AiCodeReviewResponse.Detail createReview(
+      Long requesterId, AiCodeReviewRequest.Create request) {
+    User requester = getUser(requesterId);
     PullRequestSubmission pullRequestSubmission =
         getPullRequestSubmissionIfPresent(request.pullRequestId());
 
@@ -99,12 +100,11 @@ public class AiCodeReviewService {
   }
 
   @Transactional
-  public AiCodeReviewResponse.CommentDetail acceptComment(
-      Long commentId, AiCodeReviewRequest.CommentDecision request) {
+  public AiCodeReviewResponse.CommentDetail acceptComment(Long commentId, Long requesterId) {
     AiReviewComment comment = getActiveComment(commentId);
 
     // AI 리뷰 요청자 본인만 코멘트를 수용할 수 있다.
-    validateReviewRequester(comment, request.requesterId());
+    validateReviewRequester(comment, requesterId);
 
     comment.accept();
 
@@ -112,12 +112,11 @@ public class AiCodeReviewService {
   }
 
   @Transactional
-  public AiCodeReviewResponse.CommentDetail rejectComment(
-      Long commentId, AiCodeReviewRequest.CommentDecision request) {
+  public AiCodeReviewResponse.CommentDetail rejectComment(Long commentId, Long requesterId) {
     AiReviewComment comment = getActiveComment(commentId);
 
     // AI 리뷰 요청자 본인만 코멘트를 반려할 수 있다.
-    validateReviewRequester(comment, request.requesterId());
+    validateReviewRequester(comment, requesterId);
 
     comment.reject();
 

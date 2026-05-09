@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,7 +26,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -54,9 +54,7 @@ public class SquadController {
         content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
   })
   public ApiResponse<SquadResponse> createSquad(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody CreateSquadRequest request) {
     return ApiResponse.ok(squadService.createSquad(userId, request));
   }
@@ -98,9 +96,7 @@ public class SquadController {
   })
   public ApiResponse<SquadInvitationResponse> inviteMember(
       @Parameter(description = "스쿼드 ID", example = "1") @PathVariable Long squadId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody InviteSquadMemberRequest request) {
     return ApiResponse.ok(squadService.inviteMember(squadId, userId, request));
   }
@@ -124,9 +120,7 @@ public class SquadController {
   })
   public ApiResponse<SquadSettingsResponse> getSettings(
       @Parameter(description = "스쿼드 ID", example = "1") @PathVariable Long squadId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(squadService.getSettings(squadId, userId));
   }
 
@@ -147,9 +141,7 @@ public class SquadController {
   })
   public ApiResponse<SquadResponse> updateSettings(
       @Parameter(description = "스쿼드 ID", example = "1") @PathVariable Long squadId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody UpdateSquadSettingsRequest request) {
     return ApiResponse.ok(squadService.updateSettings(squadId, userId, request));
   }
@@ -175,9 +167,7 @@ public class SquadController {
   })
   public ApiResponse<SquadResponse> archiveSquad(
       @Parameter(description = "스쿼드 ID", example = "1") @PathVariable Long squadId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(squadService.archiveSquad(squadId, userId));
   }
 
@@ -202,9 +192,7 @@ public class SquadController {
   })
   public ApiResponse<SquadResponse> restoreSquad(
       @Parameter(description = "스쿼드 ID", example = "1") @PathVariable Long squadId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(squadService.restoreSquad(squadId, userId));
   }
 
@@ -225,9 +213,7 @@ public class SquadController {
   })
   public ApiResponse<Void> deleteSquad(
       @Parameter(description = "스쿼드 ID", example = "1") @PathVariable Long squadId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     squadService.deleteSquad(squadId, userId);
     return ApiResponse.ok();
   }

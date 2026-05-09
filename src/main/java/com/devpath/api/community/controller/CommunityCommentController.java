@@ -15,13 +15,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -52,9 +52,7 @@ public class CommunityCommentController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<CommentResponse> createComment(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "댓글을 작성할 게시글 ID입니다.", example = "10") @PathVariable Long postId,
       @Valid @RequestBody CommentCreateRequest request) {
     CommentResponse response = communityCommentService.createComment(userId, postId, request);
@@ -78,9 +76,7 @@ public class CommunityCommentController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<CommentResponse> createReply(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "대댓글을 작성할 게시글 ID입니다.", example = "10") @PathVariable Long postId,
       @Parameter(description = "부모 댓글 ID입니다.", example = "101") @PathVariable Long commentId,
       @Valid @RequestBody CommentCreateRequest request) {
@@ -124,9 +120,7 @@ public class CommunityCommentController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<Void> deleteComment(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "삭제할 댓글 ID입니다.", example = "101") @PathVariable Long commentId) {
     communityCommentService.deleteComment(userId, commentId);
     return ApiResponse.ok();

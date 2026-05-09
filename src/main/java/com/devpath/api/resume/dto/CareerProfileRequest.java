@@ -11,8 +11,7 @@ public class CareerProfileRequest {
 
   @Schema(name = "CareerProfileCreateRequest", description = "채용 분석용 프로필 생성 요청")
   public record Create(
-      @Schema(description = "사용자 ID", example = "2") @NotNull(message = "사용자 ID는 필수입니다.")
-          Long userId,
+      @Schema(hidden = true) Long userId,
       @Schema(description = "목표 직무", example = "Backend Developer")
           @NotBlank(message = "목표 직무는 필수입니다.")
           @Size(max = 100, message = "목표 직무는 100자 이하여야 합니다.")

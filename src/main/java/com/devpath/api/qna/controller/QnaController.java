@@ -61,12 +61,9 @@ public class QnaController {
       })
   public ApiResponse<QuestionDetailResponse> createQuestion(
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam(required = false)
-          Long userId,
       @Valid @RequestBody QuestionCreateRequest request) {
     QuestionDetailResponse response =
-        qnaService.createQuestion(resolveUserId(authenticatedUserId, userId), request);
+        qnaService.createQuestion(resolveUserId(authenticatedUserId, null), request);
     return ApiResponse.ok(response);
   }
 
@@ -145,13 +142,10 @@ public class QnaController {
       })
   public ApiResponse<AnswerResponse> createAnswer(
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
-          @RequestParam(required = false)
-          Long userId,
       @Parameter(description = "답변을 등록할 질문 ID입니다.", example = "1") @PathVariable Long questionId,
       @Valid @RequestBody AnswerCreateRequest request) {
     AnswerResponse response =
-        qnaService.createAnswer(resolveUserId(authenticatedUserId, userId), questionId, request);
+        qnaService.createAnswer(resolveUserId(authenticatedUserId, null), questionId, request);
     return ApiResponse.ok(response);
   }
 
@@ -177,13 +171,10 @@ public class QnaController {
       })
   public ApiResponse<QuestionDetailResponse> adoptAnswer(
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam(required = false)
-          Long userId,
       @Parameter(description = "질문 ID입니다.", example = "1") @PathVariable Long questionId,
       @Parameter(description = "채택할 답변 ID입니다.", example = "1") @PathVariable Long answerId) {
     QuestionDetailResponse response =
-        qnaService.adoptAnswer(resolveUserId(authenticatedUserId, userId), questionId, answerId);
+        qnaService.adoptAnswer(resolveUserId(authenticatedUserId, null), questionId, answerId);
     return ApiResponse.ok(response);
   }
 

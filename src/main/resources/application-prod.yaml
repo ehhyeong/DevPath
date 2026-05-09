@@ -1,0 +1,23 @@
+spring:
+  sql:
+    init:
+      mode: never
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+    defer-datasource-initialization: false
+
+app:
+  security:
+    require-https: ${DEVPATH_REQUIRE_HTTPS:${REQUIRE_HTTPS:true}}
+
+jwt:
+  secret: ${JWT_SECRET}
+
+ocr:
+  allow-source-text-fallback: false
+
+blog:
+  publish:
+    allow-mock-provider: false

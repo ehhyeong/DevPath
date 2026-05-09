@@ -32,7 +32,7 @@ public class MentoringApplicationService {
 
   @Transactional
   public MentoringApplicationResponse.Detail apply(
-      Long postId, MentoringApplicationRequest.Create request) {
+      Long postId, Long applicantId, MentoringApplicationRequest.Create request) {
     // 삭제되지 않은 공고만 신청 대상으로 허용한다.
     MentoringPost post = getActivePost(postId);
 
@@ -41,7 +41,7 @@ public class MentoringApplicationService {
 
     User applicant =
         userRepository
-            .findById(request.applicantId())
+            .findById(applicantId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
     // 멘토가 본인 공고에 신청하는 잘못된 흐름을 막는다.
@@ -89,11 +89,11 @@ public class MentoringApplicationService {
 
   @Transactional
   public MentoringApplicationResponse.Detail approve(
-      Long applicationId, MentoringApplicationRequest.Approve request) {
+      Long applicationId, Long mentorId, MentoringApplicationRequest.Approve request) {
     MentoringApplication application = getActiveApplication(applicationId);
 
     // 공고 작성자인 멘토만 신청을 승인할 수 있다.
-    validatePostOwner(application, request.mentorId());
+    validatePostOwner(application, mentorId);
 
     // 이미 승인 또는 거절된 신청은 다시 처리하지 못하게 막는다.
     validatePending(application);
@@ -116,16 +116,16 @@ public class MentoringApplicationService {
 
   @Transactional
   public MentoringApplicationResponse.Detail reject(
-      Long applicationId, MentoringApplicationRequest.Reject request) {
+      Long applicationId, Long mentorId, MentoringApplicationRequest.Reject request) {
     MentoringApplication application = getActiveApplication(applicationId);
 
     // 공고 작성자인 멘토만 신청을 거절할 수 있다.
-    validatePostOwner(application, request.mentorId());
+    validatePostOwner(application, mentorId);
 
     // 이미 승인 또는 거절된 신청은 다시 처리하지 못하게 막는다.
     validatePending(application);
 
-    application.reject(request.rejectReason());
+    application.reject(request == null ? null : request.rejectReason());
     notificationEventService.notifyApplicationRejected(
         application.getApplicant().getId(), application.getPost().getTitle());
 

@@ -29,8 +29,9 @@ public class VoiceChannelService {
   private final UserRepository userRepository;
 
   @Transactional
-  public VoiceResponse.ChannelDetail createChannel(VoiceRequest.ChannelCreate request) {
-    User creator = getUser(request.creatorId());
+  public VoiceResponse.ChannelDetail createChannel(
+      Long creatorId, VoiceRequest.ChannelCreate request) {
+    User creator = getUser(creatorId);
 
     VoiceChannel channel =
         VoiceChannel.builder()
@@ -57,9 +58,9 @@ public class VoiceChannelService {
   }
 
   @Transactional
-  public VoiceResponse.ParticipantDetail join(Long channelId, VoiceRequest.Join request) {
+  public VoiceResponse.ParticipantDetail join(Long channelId, Long userId) {
     VoiceChannel channel = getActiveChannel(channelId);
-    User user = getUser(request.userId());
+    User user = getUser(userId);
 
     // 이미 현재 접속 중인 사용자는 중복 참여할 수 없다.
     validateNotAlreadyJoined(channel.getId(), user.getId());
@@ -81,10 +82,10 @@ public class VoiceChannelService {
   }
 
   @Transactional
-  public VoiceResponse.ParticipantDetail leave(Long channelId, VoiceRequest.Leave request) {
+  public VoiceResponse.ParticipantDetail leave(Long channelId, Long userId) {
     VoiceParticipant participant =
         voiceParticipantRepository
-            .findByChannel_IdAndUser_IdAndActiveTrueAndIsDeletedFalse(channelId, request.userId())
+            .findByChannel_IdAndUser_IdAndActiveTrueAndIsDeletedFalse(channelId, userId)
             .orElseThrow(() -> new CustomException(ErrorCode.VOICE_PARTICIPANT_NOT_FOUND));
 
     // 퇴장 시 음소거, 손들기, 발언 상태를 모두 초기화한다.
@@ -94,9 +95,10 @@ public class VoiceChannelService {
   }
 
   @Transactional
-  public VoiceResponse.EventDetail createEvent(Long channelId, VoiceRequest.EventCreate request) {
+  public VoiceResponse.EventDetail createEvent(
+      Long channelId, Long actorId, VoiceRequest.EventCreate request) {
     VoiceChannel channel = getActiveChannel(channelId);
-    User actor = getUser(request.actorId());
+    User actor = getUser(actorId);
 
     VoiceParticipant participant =
         voiceParticipantRepository

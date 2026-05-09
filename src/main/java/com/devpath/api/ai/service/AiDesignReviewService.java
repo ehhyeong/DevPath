@@ -28,8 +28,9 @@ public class AiDesignReviewService {
   private final UserRepository userRepository;
 
   @Transactional
-  public AiDesignReviewResponse.Detail createReview(AiDesignReviewRequest.Create request) {
-    User requester = getUser(request.requesterId());
+  public AiDesignReviewResponse.Detail createReview(
+      Long requesterId, AiDesignReviewRequest.Create request) {
+    User requester = getUser(requesterId);
 
     String summary = generateRuleBasedSummary(request.erdText(), request.apiSpecText());
 
@@ -59,9 +60,9 @@ public class AiDesignReviewService {
 
   @Transactional
   public AiDesignReviewResponse.SuggestionDetail createSuggestion(
-      Long reviewId, AiDesignReviewRequest.SuggestionCreate request) {
+      Long reviewId, Long createdByUserId, AiDesignReviewRequest.SuggestionCreate request) {
     AiDesignReview review = getActiveReview(reviewId);
-    User createdBy = getUser(request.createdByUserId());
+    User createdBy = getUser(createdByUserId);
 
     AiDesignSuggestion suggestion =
         AiDesignSuggestion.builder()

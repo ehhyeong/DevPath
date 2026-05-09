@@ -45,15 +45,22 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     tokenRedisService.saveRefreshTokenJti(
         userId, refreshClaims.jti(), jwtTokenProvider.getRefreshTokenExpiration());
 
-    String targetUrl =
-        UriComponentsBuilder.fromUriString(oauth2RedirectUrl)
+    String tokenFragment =
+        UriComponentsBuilder.newInstance()
             .queryParam("accessToken", accessToken)
             .queryParam("refreshToken", refreshToken)
             .queryParam("tokenType", "Bearer")
             .build()
+            .encode()
             .toUriString();
+    if (tokenFragment.startsWith("?")) {
+      tokenFragment = tokenFragment.substring(1);
+    }
 
-    log.info("OAuth2 login success. userId={}, target={}", userId, targetUrl);
+    String targetUrl =
+        UriComponentsBuilder.fromUriString(oauth2RedirectUrl).fragment(tokenFragment).build().toUriString();
+
+    log.info("OAuth2 login success. userId={}, redirect={}", userId, oauth2RedirectUrl);
     getRedirectStrategy().sendRedirect(request, response, targetUrl);
   }
 
