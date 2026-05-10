@@ -7,7 +7,6 @@ import com.devpath.api.instructor.dto.InstructorSectionDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
-import com.devpath.domain.course.entity.CourseDifficultyLevel;
 import com.devpath.domain.course.entity.CourseMaterial;
 import com.devpath.domain.course.entity.CourseObjective;
 import com.devpath.domain.course.entity.CourseSection;
@@ -16,7 +15,6 @@ import com.devpath.domain.course.entity.CourseTagMap;
 import com.devpath.domain.course.entity.CourseTargetAudience;
 import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.entity.LessonPrerequisite;
-import com.devpath.domain.course.entity.LessonType;
 import com.devpath.domain.course.repository.CourseAnnouncementRepository;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
@@ -35,7 +33,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -62,6 +59,7 @@ public class InstructorCourseService {
   private final CourseObjectiveRepository courseObjectiveRepository;
   private final CourseTargetAudienceRepository courseTargetAudienceRepository;
   private final CourseTagMapRepository courseTagMapRepository;
+  private final InstructorCourseValueParser valueParser;
 
   // 강의를 생성한다.
   @Transactional
@@ -81,7 +79,7 @@ public class InstructorCourseService {
             .price(request.getPrice())
             .originalPrice(request.getOriginalPrice())
             .currency(request.getCurrency())
-            .difficultyLevel(toDifficultyLevel(request.getDifficultyLevel()))
+            .difficultyLevel(valueParser.toDifficultyLevel(request.getDifficultyLevel()))
             .status(CourseStatus.DRAFT)
             .language(request.getLanguage())
             .hasCertificate(request.getHasCertificate())
@@ -106,7 +104,7 @@ public class InstructorCourseService {
         request.getPrice(),
         request.getOriginalPrice(),
         request.getCurrency(),
-        toDifficultyLevel(request.getDifficultyLevel()),
+        valueParser.toDifficultyLevel(request.getDifficultyLevel()),
         request.getLanguage(),
         request.getHasCertificate());
   }
@@ -118,7 +116,7 @@ public class InstructorCourseService {
     validateAuthenticatedUser(instructorId);
 
     Course course = getOwnedCourse(instructorId, courseId);
-    course.changeStatus(toCourseStatus(request.getStatus()));
+    course.changeStatus(valueParser.toCourseStatus(request.getStatus()));
   }
 
   // 강의를 삭제한다.
@@ -207,7 +205,7 @@ public class InstructorCourseService {
             .section(section)
             .title(request.getTitle())
             .description(request.getDescription())
-            .lessonType(toLessonType(request.getLessonType()))
+            .lessonType(valueParser.toLessonType(request.getLessonType()))
             .videoId(request.getVideoId())
             .videoUrl(request.getVideoUrl())
             .videoProvider(request.getVideoProvider())
@@ -232,7 +230,7 @@ public class InstructorCourseService {
     lesson.updateInfo(
         request.getTitle(),
         request.getDescription(),
-        toLessonType(request.getLessonType()),
+        valueParser.toLessonType(request.getLessonType()),
         request.getVideoId(),
         request.getVideoUrl(),
         request.getVideoProvider(),
@@ -593,34 +591,4 @@ public class InstructorCourseService {
         lessonIds, lessonIds);
   }
 
-  // 문자열을 강의 상태 enum으로 변환한다.
-  private CourseStatus toCourseStatus(String status) {
-    try {
-      return CourseStatus.valueOf(status.toUpperCase(Locale.ROOT));
-    } catch (IllegalArgumentException e) {
-      throw new CustomException(ErrorCode.INVALID_COURSE_STATUS);
-    }
-  }
-
-  // 문자열을 난이도 enum으로 변환한다.
-  private CourseDifficultyLevel toDifficultyLevel(String difficultyLevel) {
-    if (difficultyLevel == null || difficultyLevel.isBlank()) {
-      return null;
-    }
-
-    try {
-      return CourseDifficultyLevel.valueOf(difficultyLevel.toUpperCase(Locale.ROOT));
-    } catch (IllegalArgumentException e) {
-      throw new CustomException(ErrorCode.INVALID_COURSE_DIFFICULTY_LEVEL);
-    }
-  }
-
-  // 문자열을 레슨 타입 enum으로 변환한다.
-  private LessonType toLessonType(String lessonType) {
-    try {
-      return LessonType.valueOf(lessonType.toUpperCase(Locale.ROOT));
-    } catch (IllegalArgumentException | NullPointerException e) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-  }
 }

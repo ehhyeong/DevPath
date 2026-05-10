@@ -1,5 +1,7 @@
 package com.devpath.api.mentoring.controller;
 
+import static com.devpath.common.security.AuthenticationUtils.requireUserId;
+
 import com.devpath.api.mentoring.service.MentoringQuestionService;
 import com.devpath.api.qna.dto.AnswerCreateRequest;
 import com.devpath.api.qna.dto.AnswerResponse;
@@ -7,8 +9,6 @@ import com.devpath.api.qna.dto.QuestionCreateRequest;
 import com.devpath.api.qna.dto.QuestionDetailResponse;
 import com.devpath.api.qna.dto.QuestionStatusUpdateRequest;
 import com.devpath.api.qna.dto.QuestionSummaryResponse;
-import com.devpath.common.exception.CustomException;
-import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.common.swagger.SwaggerTag;
@@ -52,7 +52,7 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.createQuestion(
-                resolveUserId(authenticatedUserId, null), mentoringId, request)));
+                requireUserId(authenticatedUserId), mentoringId, request)));
   }
 
   @GetMapping("/mentorings/{mentoringId}/questions")
@@ -66,7 +66,7 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.getQuestions(
-                resolveUserId(authenticatedUserId, null), mentoringId)));
+                requireUserId(authenticatedUserId), mentoringId)));
   }
 
   @GetMapping("/mentoring-questions/{questionId}")
@@ -80,7 +80,7 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.getQuestion(
-                resolveUserId(authenticatedUserId, null), questionId)));
+                requireUserId(authenticatedUserId), questionId)));
   }
 
   @PostMapping("/mentoring-questions/{questionId}/answers")
@@ -95,7 +95,7 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.createAnswer(
-                resolveUserId(authenticatedUserId, null), questionId, request)));
+                requireUserId(authenticatedUserId), questionId, request)));
   }
 
   @PatchMapping("/mentoring-questions/{questionId}/status")
@@ -110,18 +110,6 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.updateStatus(
-                resolveUserId(authenticatedUserId, null), questionId, request)));
-  }
-
-  private Long resolveUserId(Long authenticatedUserId, Long requestUserId) {
-    if (authenticatedUserId != null) {
-      return authenticatedUserId;
-    }
-
-    if (requestUserId != null) {
-      return requestUserId;
-    }
-
-    throw new CustomException(ErrorCode.INVALID_INPUT, "userId is required.");
+                requireUserId(authenticatedUserId), questionId, request)));
   }
 }

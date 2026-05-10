@@ -1,5 +1,7 @@
 package com.devpath.api.workspace;
 
+import static com.devpath.common.security.AuthenticationUtils.requireUserId;
+
 import com.devpath.api.qna.dto.AnswerCreateRequest;
 import com.devpath.api.qna.dto.AnswerResponse;
 import com.devpath.api.qna.dto.QuestionCreateRequest;
@@ -7,8 +9,6 @@ import com.devpath.api.qna.dto.QuestionDetailResponse;
 import com.devpath.api.qna.dto.QuestionStatusUpdateRequest;
 import com.devpath.api.qna.dto.QuestionSummaryResponse;
 import com.devpath.api.workspace.service.WorkspaceQuestionService;
-import com.devpath.common.exception.CustomException;
-import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.common.swagger.SwaggerTag;
@@ -52,7 +52,7 @@ public class WorkspaceQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             workspaceQuestionService.createQuestion(
-                resolveUserId(authenticatedUserId, null), workspaceId, request)));
+                requireUserId(authenticatedUserId), workspaceId, request)));
   }
 
   @GetMapping("/workspaces/{workspaceId}/questions")
@@ -66,7 +66,7 @@ public class WorkspaceQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             workspaceQuestionService.getQuestions(
-                resolveUserId(authenticatedUserId, null), workspaceId)));
+                requireUserId(authenticatedUserId), workspaceId)));
   }
 
   @GetMapping("/workspace-questions/{questionId}")
@@ -80,7 +80,7 @@ public class WorkspaceQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             workspaceQuestionService.getQuestion(
-                resolveUserId(authenticatedUserId, null), questionId)));
+                requireUserId(authenticatedUserId), questionId)));
   }
 
   @PostMapping("/workspace-questions/{questionId}/answers")
@@ -97,7 +97,7 @@ public class WorkspaceQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             workspaceQuestionService.createAnswer(
-                resolveUserId(authenticatedUserId, null), questionId, request)));
+                requireUserId(authenticatedUserId), questionId, request)));
   }
 
   @PatchMapping("/workspace-questions/{questionId}/status")
@@ -112,18 +112,6 @@ public class WorkspaceQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             workspaceQuestionService.updateStatus(
-                resolveUserId(authenticatedUserId, null), questionId, request)));
-  }
-
-  private Long resolveUserId(Long authenticatedUserId, Long requestUserId) {
-    if (authenticatedUserId != null) {
-      return authenticatedUserId;
-    }
-
-    if (requestUserId != null) {
-      return requestUserId;
-    }
-
-    throw new CustomException(ErrorCode.INVALID_INPUT, "userId is required.");
+                requireUserId(authenticatedUserId), questionId, request)));
   }
 }
