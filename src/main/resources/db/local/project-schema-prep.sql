@@ -53,3 +53,20 @@ BEGIN
     ALTER TABLE public.project ALTER COLUMN recruiting_status SET NOT NULL;
 END $$;
 ^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
+    IF to_regclass('public.squad_members') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.squad_members ADD COLUMN IF NOT EXISTS is_deleted boolean;
+
+    UPDATE public.squad_members
+       SET is_deleted = false
+     WHERE is_deleted IS NULL;
+
+    ALTER TABLE public.squad_members ALTER COLUMN is_deleted SET DEFAULT false;
+    ALTER TABLE public.squad_members ALTER COLUMN is_deleted SET NOT NULL;
+    ALTER TABLE public.squad_members ADD COLUMN IF NOT EXISTS deleted_at timestamp(6);
+END $$;
+^^^ END OF SCRIPT ^^^
