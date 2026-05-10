@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.devpath.api.common.dto.CourseDetailResponse;
 import com.devpath.api.common.dto.CourseListItemResponse;
 import com.devpath.api.learner.dto.SkillCheckDto;
+import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
+import com.devpath.api.roadmap.service.RoadmapProgressService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -29,6 +31,9 @@ import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.CourseTargetAudienceRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.learning.entity.LessonProgress;
+import com.devpath.domain.learning.entity.TimestampNote;
+import com.devpath.domain.learning.entity.ocr.OcrResult;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.NodeRecommendation;
 import com.devpath.domain.roadmap.entity.Prerequisite;
@@ -64,6 +69,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest(
     properties = {
@@ -72,6 +78,7 @@ import org.springframework.context.annotation.Import;
       "spring.jpa.defer-datasource-initialization=false"
     })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+@ActiveProfiles("test")
 @Import({
   LearnerCourseService.class,
   CourseWishlistService.class,
@@ -79,7 +86,9 @@ import org.springframework.context.annotation.Import;
   SkillCheckService.class,
   com.devpath.api.recommendation.service.NodeRecommendationService.class,
   CustomRoadmapCopyService.class,
+  CustomRoadmapPrerequisiteSyncService.class,
   JpaOfficialRoadmapReader.class,
+  RoadmapProgressService.class,
   TagValidationService.class
 })
 class LearnerFlowIntegrationTest {
@@ -127,6 +136,7 @@ class LearnerFlowIntegrationTest {
   private Tag dockerTag;
   private Course publishedCourse;
   private Course draftCourse;
+  private Lesson lesson;
   private Roadmap roadmap;
   private RoadmapNode javaNode;
   private RoadmapNode springNode;
@@ -178,6 +188,7 @@ class LearnerFlowIntegrationTest {
             Tag.builder().name("Docker").category("DevOps").isOfficial(true).build());
 
     userTechStackRepository.save(UserTechStack.builder().user(learner).tag(javaTag).build());
+    userTechStackRepository.save(UserTechStack.builder().user(learner).tag(dockerTag).build());
 
     publishedCourse = createCourse("Spring Security 완전 정복", CourseStatus.PUBLISHED);
     draftCourse = createCourse("비공개 초안 강의", CourseStatus.DRAFT);
@@ -208,7 +219,7 @@ class LearnerFlowIntegrationTest {
                 .orderIndex(1)
                 .isPublished(true)
                 .build());
-    Lesson lesson =
+    lesson =
         lessonRepository.save(
             Lesson.builder()
                 .section(section)
@@ -261,6 +272,7 @@ class LearnerFlowIntegrationTest {
 
     courseWishlistService.addToWishlist(learner.getId(), publishedCourse.getCourseId());
     courseEnrollmentService.enroll(learner.getId(), publishedCourse.getCourseId());
+    seedLearningSignals();
 
     roadmap =
         roadmapRepository.save(
@@ -510,6 +522,31 @@ class LearnerFlowIntegrationTest {
             .durationSeconds(120)
             .prerequisites(List.of("Java 기본"))
             .jobRelevance(List.of("백엔드 개발자"))
+            .build());
+  }
+
+  private void seedLearningSignals() {
+    LessonProgress progress = LessonProgress.builder().user(learner).lesson(lesson).build();
+    progress.updateProgress(90, 600);
+    entityManager.persist(progress);
+    entityManager.persist(
+        TimestampNote.builder()
+            .user(learner)
+            .lesson(lesson)
+            .timestampSecond(30)
+            .content("JWT note")
+            .build());
+    entityManager.persist(
+        OcrResult.builder()
+            .user(learner)
+            .lesson(lesson)
+            .frameTimestampSecond(30)
+            .sourceImageUrl("https://cdn.devpath.com/frame.png")
+            .status("COMPLETED")
+            .extractedText("JWT authentication")
+            .searchableNormalizedText("jwt authentication")
+            .timestampMappings("[]")
+            .confidence(0.95D)
             .build());
   }
 
