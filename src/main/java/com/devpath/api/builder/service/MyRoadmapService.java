@@ -130,7 +130,15 @@ public class MyRoadmapService {
 
   @Transactional(readOnly = true)
   public List<MyRoadmapSummary> findAll(Long userId) {
-    return myRoadmapRepository.findSummariesByUserId(userId);
+    return myRoadmapRepository.findSummariesByUserId(userId).stream()
+        .map(
+            summary ->
+                new MyRoadmapSummary(
+                    summary.getMyRoadmapId(),
+                    summary.getTitle(),
+                    summary.getCreatedAt(),
+                    summary.getModuleCount()))
+        .toList();
   }
 
   @Transactional(readOnly = true)

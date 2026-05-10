@@ -1,5 +1,6 @@
 package com.devpath.api.recommendation.service;
 
+import com.devpath.api.recommendation.dto.NodeRecommendationDto;
 import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -231,6 +232,42 @@ public class NodeRecommendationService {
     getUser(userId);
     getRoadmap(roadmapId);
     return nodeRecommendationRepository.findByUser_IdAndRoadmap_RoadmapId(userId, roadmapId);
+  }
+
+  @Transactional
+  public NodeRecommendationDto.RoadmapRecommendationsResponse getRoadmapRecommendations(
+      Long userId, Long roadmapId, Boolean pendingOnly) {
+    processExpiredRecommendations(userId, roadmapId);
+
+    Roadmap roadmap = getRoadmap(roadmapId);
+    List<NodeRecommendation> recommendations =
+        Boolean.TRUE.equals(pendingOnly)
+            ? getPendingRecommendations(userId, roadmapId)
+            : getRecommendations(userId, roadmapId);
+
+    long pendingCount =
+        recommendations.stream()
+            .filter(recommendation -> recommendation.getStatus() == RecommendationStatus.PENDING)
+            .count();
+    long acceptedCount =
+        recommendations.stream()
+            .filter(recommendation -> recommendation.getStatus() == RecommendationStatus.ACCEPTED)
+            .count();
+    long rejectedCount =
+        recommendations.stream()
+            .filter(recommendation -> recommendation.getStatus() == RecommendationStatus.REJECTED)
+            .count();
+
+    return NodeRecommendationDto.RoadmapRecommendationsResponse.builder()
+        .roadmapId(roadmapId)
+        .roadmapTitle(roadmap.getTitle())
+        .totalRecommendations(recommendations.size())
+        .pendingCount((int) pendingCount)
+        .acceptedCount((int) acceptedCount)
+        .rejectedCount((int) rejectedCount)
+        .recommendations(
+            recommendations.stream().map(NodeRecommendationDto.RecommendationResponse::from).toList())
+        .build();
   }
 
   public List<NodeRecommendation> getPendingRecommendations(Long userId, Long roadmapId) {
