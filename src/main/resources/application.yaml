@@ -8,6 +8,9 @@ spring:
   application:
     name: devpath
 
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
   security:
     oauth2:
       client:
