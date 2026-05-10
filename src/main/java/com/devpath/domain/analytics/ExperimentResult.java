@@ -12,6 +12,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -32,6 +34,7 @@ public class ExperimentResult {
   @Column(name = "experiment_name", nullable = false)
   private String experimentName;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(columnDefinition = "JSON", nullable = false)
   private String metricsJson;
 

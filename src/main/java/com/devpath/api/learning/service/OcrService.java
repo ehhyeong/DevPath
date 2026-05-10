@@ -69,6 +69,25 @@ public class OcrService {
     return OcrResponse.Detail.from(saved);
   }
 
+  public OcrResponse.ImmediateExtract extractTextFromBase64(
+      Long userId, OcrRequest.ExtractBase64 request) {
+    if (userId == null) {
+      throw new CustomException(ErrorCode.UNAUTHORIZED);
+    }
+
+    String base64 = request.getImageBase64();
+    try {
+      OcrProvider.OcrResult result = ocrProvider.extractTextWithPreprocessing(base64);
+      return buildImmediateOcrResponse(
+          result.getText() != null ? result.getText() : "",
+          result.getConfidence() != null ? result.getConfidence() : 0.0D,
+          result.getLines() != null ? result.getLines() : List.of(),
+          "python");
+    } catch (RuntimeException e) {
+      return buildImmediateOcrResponse("", 0.0D, List.of(), "none");
+    }
+  }
+
   @Transactional(readOnly = true)
   public OcrResponse.Detail getOcrResult(Long userId, Long ocrId) {
     OcrResult ocrResult =
@@ -124,6 +143,16 @@ public class OcrService {
         buildTimestampMappings(
             request.getFrameTimestampSecond(), providerResult.getLines(), extractedText),
         providerResult.getConfidence() == null ? 0.0D : providerResult.getConfidence());
+  }
+
+  private OcrResponse.ImmediateExtract buildImmediateOcrResponse(
+      String text, Double confidence, List<String> lines, String engine) {
+    return OcrResponse.ImmediateExtract.builder()
+        .text(text)
+        .confidence(confidence)
+        .lines(lines)
+        .engine(engine)
+        .build();
   }
 
   private boolean canUseHintFallback(OcrRequest.Extract request) {

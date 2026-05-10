@@ -14,9 +14,7 @@ public class MentoringPostRequest {
   @Schema(name = "MentoringPostCreateRequest", description = "멘토링 공고 등록 요청")
   public record Create(
 
-      // 현재 인증 사용자 연동 전 Swagger 테스트를 위해 mentorId를 요청으로 받는다.
-      @Schema(description = "멘토 사용자 ID", example = "1") @NotNull(message = "멘토 ID는 필수입니다.")
-          Long mentorId,
+      @Schema(hidden = true) Long mentorId,
 
       // 공고 목록과 상세 화면에 표시되는 제목이다.
       @Schema(description = "멘토링 공고 제목", example = "Spring Boot 포트폴리오 멘토링")

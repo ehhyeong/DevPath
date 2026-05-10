@@ -52,6 +52,43 @@ public class SkillCheckService {
   private final CustomRoadmapNodeRepository customRoadmapNodeRepository;
   private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
 
+  public SkillCheckDto.RegisterSkillsResponse registerSkills(
+      Long userId, SkillCheckDto.RegisterSkillsRequest request) {
+    List<String> requestedTagNames =
+        request == null || request.getTagNames() == null ? List.of() : request.getTagNames();
+    List<String> existingSkills = getUserSkills(userId);
+    List<String> registeredSkills = registerUserSkills(userId, requestedTagNames);
+    List<String> alreadyOwned =
+        requestedTagNames.stream().filter(existingSkills::contains).toList();
+
+    return SkillCheckDto.RegisterSkillsResponse.builder()
+        .registeredSkills(registeredSkills)
+        .existingSkills(alreadyOwned)
+        .build();
+  }
+
+  public SkillCheckDto.SuggestedSkillsResponse getSuggestedSkills(Long userId, Long roadmapId) {
+    Roadmap roadmap =
+        roadmapRepository
+            .findById(roadmapId)
+            .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NOT_FOUND));
+
+    List<String> userSkills = getUserSkills(userId);
+    List<String> suggestedSkills = suggestSkillsForRoadmap(userId, roadmapId);
+    int totalRequiredSkills = userSkills.size() + suggestedSkills.size();
+    double coveragePercent =
+        totalRequiredSkills > 0 ? (double) userSkills.size() / totalRequiredSkills * 100 : 0.0;
+
+    return SkillCheckDto.SuggestedSkillsResponse.builder()
+        .roadmapId(roadmapId)
+        .roadmapTitle(roadmap.getTitle())
+        .userSkills(userSkills)
+        .suggestedSkills(suggestedSkills)
+        .totalRequiredSkills(totalRequiredSkills)
+        .skillCoveragePercent(Math.round(coveragePercent * 10) / 10.0)
+        .build();
+  }
+
   public List<String> suggestSkillsForRoadmap(Long userId, Long roadmapId) {
     validateUser(userId);
 

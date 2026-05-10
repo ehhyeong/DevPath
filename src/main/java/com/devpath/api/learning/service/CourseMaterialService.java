@@ -41,4 +41,13 @@ public class CourseMaterialService {
         .findByMaterialIdAndLessonLessonId(materialId, lessonId)
         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
   }
+
+  @Transactional(readOnly = true)
+  public CourseMaterialDownloadTarget getDownloadMaterialTarget(Long lessonId, Long materialId) {
+    CourseMaterial material = getDownloadMaterial(lessonId, materialId);
+    return new CourseMaterialDownloadTarget(
+        material.getMaterialUrl(), material.getOriginalFileName());
+  }
+
+  public record CourseMaterialDownloadTarget(String materialUrl, String originalFileName) {}
 }

@@ -1,5 +1,6 @@
 package com.devpath.api.learner.service;
 
+import com.devpath.api.learner.dto.CourseWishlistDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -25,33 +26,31 @@ public class CourseWishlistService {
   private final CourseRepository courseRepository;
   private final UserRepository userRepository;
 
-  /** 찜 추가 */
   @Transactional
   public void addToWishlist(Long userId, Long courseId) {
-    // 1. 이미 찜했는지 확인
     if (courseWishlistRepository.existsByUser_IdAndCourse_CourseId(userId, courseId)) {
       throw new CustomException(ErrorCode.ALREADY_EXISTS, "이미 찜한 강의입니다.");
     }
 
-    // 2. User 조회
     User user =
         userRepository
             .findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-    // 3. Course 조회
     Course course =
         courseRepository
             .findById(courseId)
             .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
-
-    // 4. Wishlist 생성 및 저장
     CourseWishlist wishlist = CourseWishlist.builder().user(user).course(course).build();
 
     courseWishlistRepository.save(wishlist);
   }
 
-  /** 찜 삭제 */
+  @Transactional
+  public CourseWishlistDto.AddWishlistResponse addToWishlistResponse(Long userId, Long courseId) {
+    addToWishlist(userId, courseId);
+    return CourseWishlistDto.AddWishlistResponse.of(courseId);
+  }
+
   @Transactional
   public void removeFromWishlist(Long userId, Long courseId) {
     CourseWishlist wishlist =
@@ -62,12 +61,21 @@ public class CourseWishlistService {
     courseWishlistRepository.delete(wishlist);
   }
 
-  /** 내 찜 목록 조회 */
+  @Transactional
+  public CourseWishlistDto.RemoveWishlistResponse removeFromWishlistResponse(
+      Long userId, Long courseId) {
+    removeFromWishlist(userId, courseId);
+    return CourseWishlistDto.RemoveWishlistResponse.of(courseId);
+  }
+
   public List<CourseWishlist> getMyWishlist(Long userId) {
     return courseWishlistRepository.findAllByUserIdWithCourse(userId);
   }
 
-  /** 찜 여부 확인 */
+  public List<CourseWishlistDto.WishlistResponse> getMyWishlistResponses(Long userId) {
+    return getMyWishlist(userId).stream().map(CourseWishlistDto.WishlistResponse::from).toList();
+  }
+
   public boolean isWishlisted(Long userId, Long courseId) {
     return courseWishlistRepository.existsByUser_IdAndCourse_CourseId(userId, courseId);
   }

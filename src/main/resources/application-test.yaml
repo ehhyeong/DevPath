@@ -35,3 +35,24 @@ spring:
       host: localhost
       port: 6379
       password:
+
+app:
+  oauth2:
+    redirect-url: http://localhost:8084/oauth2/redirect
+    allowed-origins: http://localhost:8084
+  security:
+    require-https: false
+  cors:
+    allowed-origins: http://localhost:8084
+
+jwt:
+  secret: c3ByaW5nLWJvb3QtZGV2cGF0aC1zZWNyZXQta2V5LXRlc3QtZ2VuZXJhdGUtMjAyNjAyMjQ=
+  access-token-expiration: 3600000
+  refresh-token-expiration: 1209600000
+
+ocr:
+  allow-source-text-fallback: true
+
+blog:
+  publish:
+    allow-mock-provider: true

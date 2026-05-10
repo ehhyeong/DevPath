@@ -1,5 +1,7 @@
 package com.devpath.api.mentoring.controller;
 
+import static com.devpath.common.security.AuthenticationUtils.requireUserId;
+
 import com.devpath.api.mentoring.service.MentoringQuestionService;
 import com.devpath.api.qna.dto.AnswerCreateRequest;
 import com.devpath.api.qna.dto.AnswerResponse;
@@ -7,8 +9,6 @@ import com.devpath.api.qna.dto.QuestionCreateRequest;
 import com.devpath.api.qna.dto.QuestionDetailResponse;
 import com.devpath.api.qna.dto.QuestionStatusUpdateRequest;
 import com.devpath.api.qna.dto.QuestionSummaryResponse;
-import com.devpath.common.exception.CustomException;
-import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.common.swagger.SwaggerTag;
@@ -44,9 +44,6 @@ public class MentoringQuestionController {
   @Operation(summary = "멘토링 질문 작성", description = "진행 중인 멘토링에 전용 질문을 작성합니다.")
   public ResponseEntity<ApiResponse<QuestionDetailResponse>> createQuestion(
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
-          @RequestParam(required = false)
-          Long userId,
       @Parameter(description = "멘토링 ID", example = "1")
           @Positive(message = "mentoringId는 양수여야 합니다.")
           @PathVariable
@@ -55,16 +52,13 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.createQuestion(
-                resolveUserId(authenticatedUserId, userId), mentoringId, request)));
+                requireUserId(authenticatedUserId), mentoringId, request)));
   }
 
   @GetMapping("/mentorings/{mentoringId}/questions")
   @Operation(summary = "멘토링 질문 목록 조회", description = "특정 멘토링의 전용 질문 목록을 최신순으로 조회합니다.")
   public ResponseEntity<ApiResponse<List<QuestionSummaryResponse>>> getQuestions(
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam(required = false)
-          Long userId,
       @Parameter(description = "멘토링 ID", example = "1")
           @Positive(message = "mentoringId는 양수여야 합니다.")
           @PathVariable
@@ -72,16 +66,13 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.getQuestions(
-                resolveUserId(authenticatedUserId, userId), mentoringId)));
+                requireUserId(authenticatedUserId), mentoringId)));
   }
 
   @GetMapping("/mentoring-questions/{questionId}")
   @Operation(summary = "멘토링 질문 상세 조회", description = "멘토링 전용 질문 상세와 답변 목록을 조회합니다.")
   public ResponseEntity<ApiResponse<QuestionDetailResponse>> getQuestion(
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam(required = false)
-          Long userId,
       @Parameter(description = "멘토링 질문 ID", example = "1")
           @Positive(message = "questionId는 양수여야 합니다.")
           @PathVariable
@@ -89,16 +80,13 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.getQuestion(
-                resolveUserId(authenticatedUserId, userId), questionId)));
+                requireUserId(authenticatedUserId), questionId)));
   }
 
   @PostMapping("/mentoring-questions/{questionId}/answers")
   @Operation(summary = "멘토링 질문 답변 작성", description = "멘토링 전용 질문에 답변을 작성하고 질문 작성자에게 알림을 발송합니다.")
   public ResponseEntity<ApiResponse<AnswerResponse>> createAnswer(
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam(required = false)
-          Long userId,
       @Parameter(description = "멘토링 질문 ID", example = "1")
           @Positive(message = "questionId는 양수여야 합니다.")
           @PathVariable
@@ -107,16 +95,13 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.createAnswer(
-                resolveUserId(authenticatedUserId, userId), questionId, request)));
+                requireUserId(authenticatedUserId), questionId, request)));
   }
 
   @PatchMapping("/mentoring-questions/{questionId}/status")
   @Operation(summary = "멘토링 질문 상태 변경", description = "멘토링 질문 상태를 답변 대기 또는 답변 완료로 변경합니다.")
   public ResponseEntity<ApiResponse<QuestionDetailResponse>> updateStatus(
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam(required = false)
-          Long userId,
       @Parameter(description = "멘토링 질문 ID", example = "1")
           @Positive(message = "questionId는 양수여야 합니다.")
           @PathVariable
@@ -125,18 +110,6 @@ public class MentoringQuestionController {
     return ResponseEntity.ok(
         ApiResponse.ok(
             mentoringQuestionService.updateStatus(
-                resolveUserId(authenticatedUserId, userId), questionId, request)));
-  }
-
-  private Long resolveUserId(Long authenticatedUserId, Long requestUserId) {
-    if (authenticatedUserId != null) {
-      return authenticatedUserId;
-    }
-
-    if (requestUserId != null) {
-      return requestUserId;
-    }
-
-    throw new CustomException(ErrorCode.INVALID_INPUT, "userId is required.");
+                requireUserId(authenticatedUserId), questionId, request)));
   }
 }

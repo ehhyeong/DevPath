@@ -24,8 +24,9 @@ public class LoungeApplicationService {
   private final NotificationEventService notificationEventService;
 
   @Transactional
-  public LoungeApplicationResponse.Detail create(LoungeApplicationRequest.Create request) {
-    User sender = getUser(request.senderId());
+  public LoungeApplicationResponse.Detail create(
+      Long senderId, LoungeApplicationRequest.Create request) {
+    User sender = getUser(senderId);
     User receiver = getUser(request.receiverId());
 
     // 자기 자신에게 신청서나 제안서를 보내는 잘못된 흐름을 막는다.
@@ -80,11 +81,11 @@ public class LoungeApplicationService {
 
   @Transactional
   public LoungeApplicationResponse.Detail approve(
-      Long applicationId, LoungeApplicationRequest.Approve request) {
+      Long applicationId, Long receiverId, LoungeApplicationRequest.Approve request) {
     LoungeApplication application = getActiveApplication(applicationId);
 
     // 신청을 받은 사용자만 승인할 수 있다.
-    validateReceiverOwner(application, request.receiverId());
+    validateReceiverOwner(application, receiverId);
 
     // 이미 처리된 신청은 다시 승인할 수 없다.
     validatePending(application);
@@ -98,16 +99,16 @@ public class LoungeApplicationService {
 
   @Transactional
   public LoungeApplicationResponse.Detail reject(
-      Long applicationId, LoungeApplicationRequest.Reject request) {
+      Long applicationId, Long receiverId, LoungeApplicationRequest.Reject request) {
     LoungeApplication application = getActiveApplication(applicationId);
 
     // 신청을 받은 사용자만 거절할 수 있다.
-    validateReceiverOwner(application, request.receiverId());
+    validateReceiverOwner(application, receiverId);
 
     // 이미 처리된 신청은 다시 거절할 수 없다.
     validatePending(application);
 
-    application.reject(request.rejectReason());
+    application.reject(request == null ? null : request.rejectReason());
     notificationEventService.notifyApplicationRejected(
         application.getSender().getId(), application.getTitle());
 

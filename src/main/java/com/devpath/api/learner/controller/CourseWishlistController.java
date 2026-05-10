@@ -3,11 +3,9 @@ package com.devpath.api.learner.controller;
 import com.devpath.api.learner.dto.CourseWishlistDto;
 import com.devpath.api.learner.service.CourseWishlistService;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.domain.course.entity.CourseWishlist;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,10 +25,8 @@ public class CourseWishlistController {
   @PostMapping("/{courseId}")
   public ResponseEntity<ApiResponse<CourseWishlistDto.AddWishlistResponse>> addToWishlist(
       @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
-    courseWishlistService.addToWishlist(userId, courseId);
-
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(ApiResponse.ok(CourseWishlistDto.AddWishlistResponse.of(courseId)));
+        .body(ApiResponse.ok(courseWishlistService.addToWishlistResponse(userId, courseId)));
   }
 
   /** 찜 삭제 */
@@ -38,9 +34,8 @@ public class CourseWishlistController {
   @DeleteMapping("/{courseId}")
   public ResponseEntity<ApiResponse<CourseWishlistDto.RemoveWishlistResponse>> removeFromWishlist(
       @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
-    courseWishlistService.removeFromWishlist(userId, courseId);
-
-    return ResponseEntity.ok(ApiResponse.ok(CourseWishlistDto.RemoveWishlistResponse.of(courseId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(courseWishlistService.removeFromWishlistResponse(userId, courseId)));
   }
 
   /** 내 찜 목록 조회 */
@@ -48,13 +43,6 @@ public class CourseWishlistController {
   @GetMapping
   public ResponseEntity<ApiResponse<List<CourseWishlistDto.WishlistResponse>>> getMyWishlist(
       @AuthenticationPrincipal Long userId) {
-    List<CourseWishlist> wishlists = courseWishlistService.getMyWishlist(userId);
-
-    List<CourseWishlistDto.WishlistResponse> response =
-        wishlists.stream()
-            .map(CourseWishlistDto.WishlistResponse::from)
-            .collect(Collectors.toList());
-
-    return ResponseEntity.ok(ApiResponse.ok(response));
+    return ResponseEntity.ok(ApiResponse.ok(courseWishlistService.getMyWishlistResponses(userId)));
   }
 }

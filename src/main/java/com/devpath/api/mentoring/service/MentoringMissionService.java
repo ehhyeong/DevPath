@@ -23,11 +23,11 @@ public class MentoringMissionService {
 
   @Transactional
   public MentoringMissionResponse.Detail create(
-      Long mentoringId, MentoringMissionRequest.Create request) {
+      Long mentoringId, Long mentorId, MentoringMissionRequest.Create request) {
     Mentoring mentoring = getActiveMentoring(mentoringId);
 
     // 해당 멘토링의 멘토만 미션을 생성할 수 있다.
-    validateMentorOwner(mentoring, request.mentorId());
+    validateMentorOwner(mentoring, mentorId);
 
     // 같은 멘토링 안에서 같은 주차 미션 중복 생성을 방지한다.
     validateWeekNumberNotDuplicated(mentoring.getId(), request.weekNumber());
@@ -61,11 +61,11 @@ public class MentoringMissionService {
 
   @Transactional
   public MentoringMissionResponse.Detail update(
-      Long missionId, MentoringMissionRequest.Update request) {
+      Long missionId, Long mentorId, MentoringMissionRequest.Update request) {
     MentoringMission mission = getActiveMission(missionId);
 
     // 해당 멘토링의 멘토만 미션을 수정할 수 있다.
-    validateMentorOwner(mission.getMentoring(), request.mentorId());
+    validateMentorOwner(mission.getMentoring(), mentorId);
 
     // 자기 자신을 제외하고 같은 주차 미션이 이미 있는지 확인한다.
     validateWeekNumberNotDuplicatedOnUpdate(

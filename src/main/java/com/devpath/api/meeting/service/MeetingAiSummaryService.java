@@ -26,9 +26,9 @@ public class MeetingAiSummaryService {
 
   @Transactional
   public MeetingAiSummaryResponse saveSummary(
-      Long meetingId, MeetingAiSummaryRequest.Save request) {
+      Long meetingId, Long requesterId, MeetingAiSummaryRequest.Save request) {
     MeetingRoom meeting = getActiveMeeting(meetingId);
-    User requester = getUser(request.requesterId());
+    User requester = getUser(requesterId);
 
     // 해당 회의가 속한 멘토링의 참여자만 AI 요약을 저장할 수 있다.
     validateMentoringParticipant(meeting.getMentoring(), requester.getId());

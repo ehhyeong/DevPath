@@ -79,4 +79,13 @@ public class DiagnosisQuizDto {
           .build();
     }
   }
+
+  @Getter
+  @Builder
+  public static class TestRunResponse {
+    private Integer score;
+    private Integer maxScore;
+    private String branchType;
+    private String recommendedNodes;
+  }
 }

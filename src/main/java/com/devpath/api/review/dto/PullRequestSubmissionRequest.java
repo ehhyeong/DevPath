@@ -2,7 +2,6 @@ package com.devpath.api.review.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -13,9 +12,7 @@ public class PullRequestSubmissionRequest {
   @Schema(name = "PullRequestSubmitRequest", description = "PR 제출 요청")
   public record Create(
 
-      // 인증 연동 전 Swagger 테스트를 위해 제출자 ID를 요청으로 받는다.
-      @Schema(description = "제출자 사용자 ID", example = "2") @NotNull(message = "제출자 ID는 필수입니다.")
-          Long submitterId,
+      @Schema(hidden = true) Long submitterId,
 
       // GitHub PR URL 형식만 허용한다.
       @Schema(description = "GitHub PR URL", example = "https://github.com/yongha03/DevPath/pull/1")

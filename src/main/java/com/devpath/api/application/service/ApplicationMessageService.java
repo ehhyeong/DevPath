@@ -26,9 +26,9 @@ public class ApplicationMessageService {
 
   @Transactional
   public ApplicationMessageResponse.Detail create(
-      Long applicationId, ApplicationMessageRequest.Create request) {
+      Long applicationId, Long senderId, ApplicationMessageRequest.Create request) {
     LoungeApplication application = getActiveApplication(applicationId);
-    User sender = getUser(request.senderId());
+    User sender = getUser(senderId);
 
     // 라운지 신청서의 발신자 또는 수신자만 메시지를 작성할 수 있다.
     validateParticipant(application, sender.getId());

@@ -33,9 +33,9 @@ public class MeetingService {
   private final UserRepository userRepository;
 
   @Transactional
-  public MeetingResponse.RoomDetail create(MeetingRequest.Create request) {
+  public MeetingResponse.RoomDetail create(Long hostId, MeetingRequest.Create request) {
     Mentoring mentoring = getActiveMentoring(request.mentoringId());
-    User host = getUser(request.hostId());
+    User host = getUser(hostId);
 
     // 멘토링 참여자만 회의방을 생성할 수 있다.
     validateMentoringParticipant(mentoring, host.getId());
@@ -53,11 +53,11 @@ public class MeetingService {
   }
 
   @Transactional
-  public MeetingResponse.RoomDetail end(Long meetingId, MeetingRequest.End request) {
+  public MeetingResponse.RoomDetail end(Long meetingId, Long hostId) {
     MeetingRoom meeting = getActiveMeeting(meetingId);
 
     // 회의 생성자만 회의방을 종료할 수 있다.
-    validateHost(meeting, request.hostId());
+    validateHost(meeting, hostId);
 
     // 이미 종료된 회의는 다시 종료하지 않는다.
     validateMeetingNotEnded(meeting);
@@ -68,13 +68,13 @@ public class MeetingService {
   }
 
   @Transactional
-  public MeetingResponse.ParticipantDetail join(Long meetingId, MeetingRequest.Join request) {
+  public MeetingResponse.ParticipantDetail join(Long meetingId, Long userId) {
     MeetingRoom meeting = getActiveMeeting(meetingId);
 
     // 종료된 회의에는 재참가할 수 없다.
     validateMeetingNotEnded(meeting);
 
-    User user = getUser(request.userId());
+    User user = getUser(userId);
 
     // 해당 멘토링의 참여자만 회의에 참가할 수 있다.
     validateMentoringParticipant(meeting.getMentoring(), user.getId());
@@ -103,9 +103,9 @@ public class MeetingService {
   }
 
   @Transactional
-  public MeetingResponse.ParticipantDetail leave(Long meetingId, MeetingRequest.Leave request) {
+  public MeetingResponse.ParticipantDetail leave(Long meetingId, Long userId) {
     MeetingRoom meeting = getActiveMeeting(meetingId);
-    User user = getUser(request.userId());
+    User user = getUser(userId);
 
     MeetingParticipant participant =
         meetingParticipantRepository
@@ -138,11 +138,11 @@ public class MeetingService {
 
   @Transactional
   public MeetingResponse.RoomDetail updateRecordingUrl(
-      Long meetingId, MeetingRequest.RecordingUrl request) {
+      Long meetingId, Long hostId, MeetingRequest.RecordingUrl request) {
     MeetingRoom meeting = getActiveMeeting(meetingId);
 
     // 회의 생성자만 녹화 URL을 저장하거나 수정할 수 있다.
-    validateHost(meeting, request.hostId());
+    validateHost(meeting, hostId);
 
     meeting.updateRecordingUrl(request.recordingUrl());
 

@@ -2,8 +2,8 @@ package com.devpath.api.learning.controller;
 
 import com.devpath.api.learning.dto.CourseMaterialResponse;
 import com.devpath.api.learning.service.CourseMaterialService;
+import com.devpath.api.learning.service.CourseMaterialService.CourseMaterialDownloadTarget;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.domain.course.entity.CourseMaterial;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
@@ -38,15 +38,16 @@ public class CourseMaterialController {
   @GetMapping("/{lessonId}/materials/{materialId}/download")
   public ResponseEntity<Void> downloadMaterial(
       @PathVariable Long lessonId, @PathVariable Long materialId) {
-    CourseMaterial material = courseMaterialService.getDownloadMaterial(lessonId, materialId);
+    CourseMaterialDownloadTarget material =
+        courseMaterialService.getDownloadMaterialTarget(lessonId, materialId);
     String contentDisposition =
         ContentDisposition.attachment()
-            .filename(material.getOriginalFileName(), StandardCharsets.UTF_8)
+            .filename(material.originalFileName(), StandardCharsets.UTF_8)
             .build()
             .toString();
 
     return ResponseEntity.status(HttpStatus.FOUND)
-        .location(URI.create(material.getMaterialUrl()))
+        .location(URI.create(material.materialUrl()))
         .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
         .build();
   }

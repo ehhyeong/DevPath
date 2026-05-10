@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -86,9 +85,7 @@ public class ProjectIdeaBoardController {
   })
   public ApiResponse<IdeaPostResponse> updateProjectIdeaByPatch(
       @Parameter(description = "프로젝트 아이디어 ID", example = "1") @PathVariable Long ideaId,
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "1")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody IdeaPostRequest request) {
     return ApiResponse.ok(projectIdeaBoardService.updateIdeaPost(ideaId, request, userId));
   }

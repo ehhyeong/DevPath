@@ -3,13 +3,11 @@ package com.devpath.api.learner.controller;
 import com.devpath.api.learner.dto.CourseEnrollmentDto;
 import com.devpath.api.learner.service.CourseEnrollmentService;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,10 +28,8 @@ public class CourseEnrollmentController {
   public ResponseEntity<ApiResponse<CourseEnrollmentDto.EnrollResponse>> enroll(
       @AuthenticationPrincipal Long userId,
       @Valid @RequestBody CourseEnrollmentDto.EnrollRequest request) {
-    CourseEnrollment enrollment = courseEnrollmentService.enroll(userId, request.getCourseId());
-
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(ApiResponse.ok(CourseEnrollmentDto.EnrollResponse.from(enrollment)));
+        .body(ApiResponse.ok(courseEnrollmentService.enrollCourse(userId, request.getCourseId())));
   }
 
   /** 내 수강 내역 조회 (전체) */
@@ -41,14 +37,8 @@ public class CourseEnrollmentController {
   @GetMapping
   public ResponseEntity<ApiResponse<List<CourseEnrollmentDto.EnrollmentResponse>>> getMyEnrollments(
       @AuthenticationPrincipal Long userId) {
-    List<CourseEnrollment> enrollments = courseEnrollmentService.getMyEnrollments(userId);
-
-    List<CourseEnrollmentDto.EnrollmentResponse> response =
-        enrollments.stream()
-            .map(CourseEnrollmentDto.EnrollmentResponse::from)
-            .collect(Collectors.toList());
-
-    return ResponseEntity.ok(ApiResponse.ok(response));
+    return ResponseEntity.ok(
+        ApiResponse.ok(courseEnrollmentService.getMyEnrollmentResponses(userId)));
   }
 
   /** 상태별 수강 내역 조회 */
@@ -59,15 +49,8 @@ public class CourseEnrollmentController {
   public ResponseEntity<ApiResponse<List<CourseEnrollmentDto.EnrollmentResponse>>>
       getEnrollmentsByStatus(
           @AuthenticationPrincipal Long userId, @PathVariable EnrollmentStatus status) {
-    List<CourseEnrollment> enrollments =
-        courseEnrollmentService.getMyEnrollmentsByStatus(userId, status);
-
-    List<CourseEnrollmentDto.EnrollmentResponse> response =
-        enrollments.stream()
-            .map(CourseEnrollmentDto.EnrollmentResponse::from)
-            .collect(Collectors.toList());
-
-    return ResponseEntity.ok(ApiResponse.ok(response));
+    return ResponseEntity.ok(
+        ApiResponse.ok(courseEnrollmentService.getMyEnrollmentResponsesByStatus(userId, status)));
   }
 
   /** 진도율 업데이트 */

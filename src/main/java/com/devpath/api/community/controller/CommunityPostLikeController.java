@@ -12,11 +12,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -46,9 +46,7 @@ public class CommunityPostLikeController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<PostLikeResponse> likePost(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "좋아요를 누를 게시글 ID입니다.", example = "10") @PathVariable Long postId) {
     PostLikeResponse response = communityPostLikeService.likePost(userId, postId);
     return ApiResponse.ok(response);
@@ -67,9 +65,7 @@ public class CommunityPostLikeController {
             content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
       })
   public ApiResponse<PostLikeResponse> unlikePost(
-      @Parameter(description = SwaggerDocConstants.DUMMY_USER_ID_DESCRIPTION, example = "2")
-          @RequestParam
-          Long userId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "좋아요를 취소할 게시글 ID입니다.", example = "10") @PathVariable Long postId) {
     PostLikeResponse response = communityPostLikeService.unlikePost(userId, postId);
     return ApiResponse.ok(response);

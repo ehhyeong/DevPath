@@ -40,13 +40,13 @@ public class PullRequestReviewService {
 
   @Transactional
   public PullRequestReviewResponse.PullRequestDetail submitPullRequest(
-      Long missionId, PullRequestSubmissionRequest.Create request) {
+      Long missionId, Long submitterId, PullRequestSubmissionRequest.Create request) {
     MentoringMission mission = getActiveMission(missionId);
 
     // 마감된 미션에는 PR을 제출할 수 없다.
     validateMissionOpen(mission);
 
-    User submitter = getUser(request.submitterId());
+    User submitter = getUser(submitterId);
 
     // 해당 멘토링의 멘티만 PR을 제출할 수 있다.
     validateMenteeOwner(mission, submitter.getId());
@@ -97,9 +97,9 @@ public class PullRequestReviewService {
 
   @Transactional
   public PullRequestReviewResponse.ReviewDetail createReview(
-      Long pullRequestId, PullRequestReviewRequest.Create request) {
+      Long pullRequestId, Long reviewerId, PullRequestReviewRequest.Create request) {
     PullRequestSubmission pullRequestSubmission = getActivePullRequest(pullRequestId);
-    User reviewer = getUser(request.reviewerId());
+    User reviewer = getUser(reviewerId);
 
     // 해당 멘토링의 멘토만 코드 리뷰를 작성할 수 있다.
     validateMentorOwner(pullRequestSubmission, reviewer.getId());
@@ -122,12 +122,11 @@ public class PullRequestReviewService {
   }
 
   @Transactional
-  public PullRequestReviewResponse.ReviewDetail approveReview(
-      Long reviewId, PullRequestReviewRequest.ReviewDecision request) {
+  public PullRequestReviewResponse.ReviewDetail approveReview(Long reviewId, Long reviewerId) {
     PullRequestReview review = getActiveReview(reviewId);
 
     // 리뷰 작성자 본인만 해당 리뷰를 승인 처리할 수 있다.
-    validateReviewerOwner(review, request.reviewerId());
+    validateReviewerOwner(review, reviewerId);
     validateReviewCommented(review);
 
     review.approve();
@@ -136,12 +135,11 @@ public class PullRequestReviewService {
   }
 
   @Transactional
-  public PullRequestReviewResponse.ReviewDetail rejectReview(
-      Long reviewId, PullRequestReviewRequest.ReviewDecision request) {
+  public PullRequestReviewResponse.ReviewDetail rejectReview(Long reviewId, Long reviewerId) {
     PullRequestReview review = getActiveReview(reviewId);
 
     // 리뷰 작성자 본인만 해당 리뷰를 반려 처리할 수 있다.
-    validateReviewerOwner(review, request.reviewerId());
+    validateReviewerOwner(review, reviewerId);
     validateReviewCommented(review);
 
     review.reject();
@@ -151,32 +149,32 @@ public class PullRequestReviewService {
 
   @Transactional
   public PullRequestReviewResponse.MissionSubmissionDetail passSubmission(
-      Long submissionId, PullRequestReviewRequest.MissionDecision request) {
+      Long submissionId, Long mentorId, PullRequestReviewRequest.MissionDecision request) {
     MissionSubmission submission = getActiveMissionSubmission(submissionId);
 
     // 해당 멘토링의 멘토만 미션 제출물을 최종 통과 처리할 수 있다.
-    validateMentorOwner(submission, request.mentorId());
+    validateMentorOwner(submission, mentorId);
 
     // 이미 Pass/Reject 된 제출물은 다시 판정하지 않는다.
     validateSubmissionSubmitted(submission);
 
-    submission.pass(request.feedback());
+    submission.pass(request == null ? null : request.feedback());
 
     return PullRequestReviewResponse.MissionSubmissionDetail.from(submission);
   }
 
   @Transactional
   public PullRequestReviewResponse.MissionSubmissionDetail rejectSubmission(
-      Long submissionId, PullRequestReviewRequest.MissionDecision request) {
+      Long submissionId, Long mentorId, PullRequestReviewRequest.MissionDecision request) {
     MissionSubmission submission = getActiveMissionSubmission(submissionId);
 
     // 해당 멘토링의 멘토만 미션 제출물을 최종 반려 처리할 수 있다.
-    validateMentorOwner(submission, request.mentorId());
+    validateMentorOwner(submission, mentorId);
 
     // 이미 Pass/Reject 된 제출물은 다시 판정하지 않는다.
     validateSubmissionSubmitted(submission);
 
-    submission.reject(request.feedback());
+    submission.reject(request == null ? null : request.feedback());
 
     return PullRequestReviewResponse.MissionSubmissionDetail.from(submission);
   }

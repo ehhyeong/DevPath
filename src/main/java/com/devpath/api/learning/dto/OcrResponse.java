@@ -12,6 +12,24 @@ public class OcrResponse {
 
   @Getter
   @Builder
+  @Schema(description = "Base64 이미지 즉시 OCR 응답 DTO")
+  public static class ImmediateExtract {
+
+    @Schema(description = "추출 텍스트", example = "Spring Security 인증 흐름")
+    private String text;
+
+    @Schema(description = "OCR 신뢰도", example = "0.92")
+    private Double confidence;
+
+    @Schema(description = "줄 단위 OCR 결과")
+    private List<String> lines;
+
+    @Schema(description = "사용한 OCR 엔진", example = "python")
+    private String engine;
+  }
+
+  @Getter
+  @Builder
   @Schema(description = "OCR 단건 응답 DTO")
   public static class Detail {
 

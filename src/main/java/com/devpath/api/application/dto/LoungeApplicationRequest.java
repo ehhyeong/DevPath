@@ -13,9 +13,7 @@ public class LoungeApplicationRequest {
   @Schema(name = "LoungeApplicationCreateRequest", description = "라운지 신청서/제안서 작성 요청")
   public record Create(
 
-      // 인증 연동 전 Swagger 테스트를 위해 발신자 ID를 요청으로 받는다.
-      @Schema(description = "보낸 사용자 ID", example = "2") @NotNull(message = "보낸 사용자 ID는 필수입니다.")
-          Long senderId,
+      @Schema(hidden = true) Long senderId,
 
       // 신청서 또는 제안서를 받을 사용자 ID다.
       @Schema(description = "받는 사용자 ID", example = "1") @NotNull(message = "받는 사용자 ID는 필수입니다.")
@@ -51,16 +49,12 @@ public class LoungeApplicationRequest {
   @Schema(name = "LoungeApplicationApproveRequest", description = "라운지 신청 승인 요청")
   public record Approve(
 
-      // 받은 사용자 본인만 승인할 수 있도록 검증한다.
-      @Schema(description = "받는 사용자 ID", example = "1") @NotNull(message = "받는 사용자 ID는 필수입니다.")
-          Long receiverId) {}
+      @Schema(hidden = true) Long receiverId) {}
 
   @Schema(name = "LoungeApplicationRejectRequest", description = "라운지 신청 거절 요청")
   public record Reject(
 
-      // 받은 사용자 본인만 거절할 수 있도록 검증한다.
-      @Schema(description = "받는 사용자 ID", example = "1") @NotNull(message = "받는 사용자 ID는 필수입니다.")
-          Long receiverId,
+      @Schema(hidden = true) Long receiverId,
 
       // 거절 사유를 신청자에게 전달한다.
       @Schema(description = "거절 사유", example = "현재 백엔드 포지션이 마감되었습니다.")

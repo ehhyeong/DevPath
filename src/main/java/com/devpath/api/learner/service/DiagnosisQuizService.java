@@ -1,5 +1,6 @@
 package com.devpath.api.learner.service;
 
+import com.devpath.api.learner.dto.DiagnosisQuizDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.provider.GeminiProvider;
@@ -53,7 +54,8 @@ public class DiagnosisQuizService {
 
   /** 진단 퀴즈 생성 */
   @Transactional
-  public DiagnosisQuiz createDiagnosisQuiz(Long userId, Long roadmapId, QuizDifficulty difficulty) {
+  public DiagnosisQuizDto.QuizResponse createDiagnosisQuiz(
+      Long userId, Long roadmapId, QuizDifficulty difficulty) {
     if (diagnosisQuizRepository.existsByUser_IdAndRoadmap_RoadmapId(userId, roadmapId)) {
       throw new CustomException(ErrorCode.QUIZ_ALREADY_TAKEN);
     }
@@ -72,12 +74,12 @@ public class DiagnosisQuizService {
             .questionCount(determineQuestionCount(difficulty))
             .difficulty(difficulty)
             .build();
-    return diagnosisQuizRepository.save(quiz);
+    return DiagnosisQuizDto.QuizResponse.from(diagnosisQuizRepository.save(quiz));
   }
 
   /** 진단 퀴즈 제출 — clearedNodeId: 방금 클리어한 노드의 originalNodeId */
   @Transactional
-  public DiagnosisResult submitQuizAnswer(
+  public DiagnosisQuizDto.QuizResultResponse submitQuizAnswer(
       Long userId, Long quizId, Long clearedNodeId, Map<Integer, String> answers) {
 
     DiagnosisQuiz quiz =
@@ -106,21 +108,25 @@ public class DiagnosisQuizService {
             .weakAreas("")
             .recommendedNodes(recommendedNodes)
             .build();
-    return diagnosisResultRepository.save(result);
+    return DiagnosisQuizDto.QuizResultResponse.from(diagnosisResultRepository.save(result));
   }
 
   /** 진단 결과 조회 */
-  public DiagnosisResult getDiagnosisResult(Long userId, Long resultId) {
-    return diagnosisResultRepository
-        .findByResultIdAndUser_Id(resultId, userId)
-        .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+  public DiagnosisQuizDto.QuizResultResponse getDiagnosisResult(Long userId, Long resultId) {
+    DiagnosisResult result =
+        diagnosisResultRepository
+            .findByResultIdAndUser_Id(resultId, userId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    return DiagnosisQuizDto.QuizResultResponse.from(result);
   }
 
   /** 최근 진단 결과 조회 */
-  public DiagnosisResult getLatestDiagnosisResult(Long userId, Long roadmapId) {
-    return diagnosisResultRepository
-        .findLatestByUserAndRoadmap(userId, roadmapId)
-        .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+  public DiagnosisQuizDto.QuizResultResponse getLatestDiagnosisResult(Long userId, Long roadmapId) {
+    DiagnosisResult result =
+        diagnosisResultRepository
+            .findLatestByUserAndRoadmap(userId, roadmapId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    return DiagnosisQuizDto.QuizResultResponse.from(result);
   }
 
   // ── 핵심 분기 로직 ─────────────────────────────────────────────────────────
@@ -310,7 +316,8 @@ public class DiagnosisQuizService {
 
   /** [TEST] 진단 퀴즈 없이 랜덤 점수로 즉시 분기 추천을 생성한다. 노드 완료 시 추천 동작을 확인하기 위한 테스트 전용 메서드. */
   @Transactional
-  public Map<String, Object> testRunRecommend(Long userId, Long roadmapId, Long originalNodeId) {
+  public DiagnosisQuizDto.TestRunResponse testRunRecommend(
+      Long userId, Long roadmapId, Long originalNodeId) {
     int score = 60 + RANDOM.nextInt(41);
     int maxScore = 100;
 
@@ -318,11 +325,12 @@ public class DiagnosisQuizService {
         analyzeAndRecommend(userId, originalNodeId, score, maxScore, roadmapId);
 
     boolean isLowScore = (double) score / maxScore < REVIEW_THRESHOLD;
-    return Map.of(
-        "score", score,
-        "maxScore", maxScore,
-        "branchType", isLowScore ? "REVIEW" : "ADVANCED",
-        "recommendedNodes", recommendedNodes);
+    return DiagnosisQuizDto.TestRunResponse.builder()
+        .score(score)
+        .maxScore(maxScore)
+        .branchType(isLowScore ? "REVIEW" : "ADVANCED")
+        .recommendedNodes(recommendedNodes)
+        .build();
   }
 
   // ── 유틸 ───────────────────────────────────────────────────────────────────

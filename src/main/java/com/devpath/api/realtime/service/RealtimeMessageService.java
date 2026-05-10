@@ -27,8 +27,8 @@ public class RealtimeMessageService {
 
   @Transactional
   public RealtimeMessageResponse.LoungeChatDetail createLoungeMessage(
-      RealtimeMessageRequest.LoungeChatCreate request) {
-    User sender = getUser(request.senderId());
+      Long senderId, RealtimeMessageRequest.LoungeChatCreate request) {
+    User sender = getUser(senderId);
 
     LoungeChatMessage message =
         LoungeChatMessage.builder()
@@ -62,8 +62,8 @@ public class RealtimeMessageService {
 
   @Transactional
   public RealtimeMessageResponse.DirectDetail createDirectMessage(
-      RealtimeMessageRequest.DirectCreate request) {
-    User sender = getUser(request.senderId());
+      Long senderId, RealtimeMessageRequest.DirectCreate request) {
+    User sender = getUser(senderId);
     User receiver = getUser(request.receiverId());
 
     // 자기 자신에게 1:1 메시지를 보내는 잘못된 흐름을 막는다.

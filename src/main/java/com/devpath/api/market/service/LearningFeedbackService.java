@@ -34,8 +34,8 @@ public class LearningFeedbackService {
   private final JobSkillTagRepository jobSkillTagRepository;
 
   public LearningFeedbackResponse.RefreshResult refreshLearningData(
-      LearningFeedbackRequest.Refresh request) {
-    CareerProfile profile = getActiveProfile(request.profileId());
+      Long userId, LearningFeedbackRequest.Refresh request) {
+    CareerProfile profile = getOwnedActiveProfile(userId, request.profileId());
     List<CareerProfileSkill> ownedSkills = getOwnedSkills(profile.getId());
     List<JobSkillTagRepository.PopularSkillTagProjection> marketSkills =
         jobSkillTagRepository.findPopularSkillTags();
@@ -51,8 +51,8 @@ public class LearningFeedbackService {
         skillGaps.stream().map(LearningFeedbackResponse.SkillGapDetail::from).toList());
   }
 
-  public LearningFeedbackResponse.NextSteps getNextSteps(Long profileId) {
-    CareerProfile profile = getActiveProfile(profileId);
+  public LearningFeedbackResponse.NextSteps getNextSteps(Long userId, Long profileId) {
+    CareerProfile profile = getOwnedActiveProfile(userId, profileId);
     List<LearningSkillGap> skillGaps = calculateSkillGaps(profile.getId());
 
     List<LearningNextStep> nextSteps =
@@ -65,8 +65,8 @@ public class LearningFeedbackService {
   }
 
   public LearningFeedbackResponse.RelatedRoadmaps getRelatedRoadmaps(
-      LearningFeedbackRequest.RelatedRoadmaps request) {
-    CareerProfile profile = getActiveProfile(request.profileId());
+      Long userId, LearningFeedbackRequest.RelatedRoadmaps request) {
+    CareerProfile profile = getOwnedActiveProfile(userId, request.profileId());
 
     List<RelatedLearningResource> roadmaps =
         calculateSkillGaps(profile.getId()).stream()
@@ -88,8 +88,8 @@ public class LearningFeedbackService {
   }
 
   public LearningFeedbackResponse.AddToRoadmapResult addToRoadmap(
-      LearningFeedbackRequest.AddToRoadmap request) {
-    CareerProfile profile = getActiveProfile(request.profileId());
+      Long userId, LearningFeedbackRequest.AddToRoadmap request) {
+    CareerProfile profile = getOwnedActiveProfile(userId, request.profileId());
     List<LearningSkillGap> skillGaps = calculateSkillGaps(profile.getId());
 
     boolean skillGapExists =
@@ -108,8 +108,8 @@ public class LearningFeedbackService {
   }
 
   public LearningFeedbackResponse.RecommendedCourses getRecommendedCourses(
-      LearningFeedbackRequest.Courses request) {
-    CareerProfile profile = getActiveProfile(request.profileId());
+      Long userId, LearningFeedbackRequest.Courses request) {
+    CareerProfile profile = getOwnedActiveProfile(userId, request.profileId());
 
     List<RelatedLearningResource> courses =
         calculateSkillGaps(profile.getId()).stream()
@@ -176,6 +176,14 @@ public class LearningFeedbackService {
     return careerProfileRepository
         .findByIdAndIsDeletedFalse(profileId)
         .orElseThrow(() -> new CustomException(ErrorCode.RESUME_CAREER_PROFILE_NOT_FOUND));
+  }
+
+  private CareerProfile getOwnedActiveProfile(Long userId, Long profileId) {
+    CareerProfile profile = getActiveProfile(profileId);
+    if (!profile.getUser().getId().equals(userId)) {
+      throw new CustomException(ErrorCode.FORBIDDEN);
+    }
+    return profile;
   }
 
   private List<CareerProfileSkill> getOwnedSkills(Long profileId) {

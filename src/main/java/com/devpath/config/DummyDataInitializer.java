@@ -30,13 +30,13 @@ public class DummyDataInitializer implements CommandLineRunner {
   @Override
   @Transactional
   public void run(String... args) throws Exception {
-    log.info("C 파트 단독 테스트용 더미 데이터 초기화를 시작합니다.");
+    log.debug("C 파트 단독 테스트용 더미 데이터 초기화를 시작합니다.");
 
     initWorkspaceNotices();
     initExternalIntegrations();
     initAdminSettings();
 
-    log.info("더미 데이터 초기화가 완료되었습니다.");
+    log.debug("더미 데이터 초기화가 완료되었습니다.");
   }
 
   private void initWorkspaceNotices() {

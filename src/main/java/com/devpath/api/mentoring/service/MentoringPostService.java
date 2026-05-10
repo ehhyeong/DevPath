@@ -23,11 +23,10 @@ public class MentoringPostService {
   private final UserRepository userRepository;
 
   @Transactional
-  public MentoringPostResponse.Detail create(MentoringPostRequest.Create request) {
-    // mentorId가 잘못된 경우 공고 생성 전에 명확한 비즈니스 예외를 발생시킨다.
+  public MentoringPostResponse.Detail create(Long mentorId, MentoringPostRequest.Create request) {
     User mentor =
         userRepository
-            .findById(request.mentorId())
+            .findById(mentorId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
     // Entity 생성은 Service에서 처리하고 Controller에는 노출하지 않는다.
@@ -60,8 +59,10 @@ public class MentoringPostService {
   }
 
   @Transactional
-  public MentoringPostResponse.Detail update(Long postId, MentoringPostRequest.Update request) {
+  public MentoringPostResponse.Detail update(
+      Long postId, Long mentorId, MentoringPostRequest.Update request) {
     MentoringPost post = getActivePost(postId);
+    validatePostOwner(post, mentorId);
 
     // setter 대신 Entity의 의미 있는 비즈니스 메서드로 상태를 변경한다.
     post.update(
@@ -71,8 +72,9 @@ public class MentoringPostService {
   }
 
   @Transactional
-  public void delete(Long postId) {
+  public void delete(Long postId, Long mentorId) {
     MentoringPost post = getActivePost(postId);
+    validatePostOwner(post, mentorId);
 
     // 물리 삭제 대신 Soft Delete를 적용한다.
     post.delete();
@@ -83,5 +85,11 @@ public class MentoringPostService {
     return mentoringPostRepository
         .findByIdAndIsDeletedFalse(postId)
         .orElseThrow(() -> new CustomException(ErrorCode.MENTORING_POST_NOT_FOUND));
+  }
+
+  private void validatePostOwner(MentoringPost post, Long mentorId) {
+    if (!post.getMentor().getId().equals(mentorId)) {
+      throw new CustomException(ErrorCode.MENTORING_POST_FORBIDDEN);
+    }
   }
 }

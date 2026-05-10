@@ -14,9 +14,7 @@ public class MentoringMaterialRequest {
   @Schema(name = "MentoringMaterialCreateRequest", description = "멘토링 미션 자료 등록 요청")
   public record Create(
 
-      // 인증 연동 전 Swagger 테스트를 위해 멘토 ID를 요청으로 받는다.
-      @Schema(description = "멘토 사용자 ID", example = "1") @NotNull(message = "멘토 ID는 필수입니다.")
-          Long mentorId,
+      @Schema(hidden = true) Long mentorId,
 
       // URL 자료인지 TEXT 가이드라인인지 구분한다.
       @Schema(description = "자료 타입", example = "URL") @NotNull(message = "자료 타입은 필수입니다.")
@@ -48,9 +46,7 @@ public class MentoringMaterialRequest {
   @Schema(name = "MentoringMaterialUpdateRequest", description = "멘토링 미션 자료 수정 요청")
   public record Update(
 
-      // 해당 자료가 속한 멘토링의 멘토 권한 검증에 사용한다.
-      @Schema(description = "멘토 사용자 ID", example = "1") @NotNull(message = "멘토 ID는 필수입니다.")
-          Long mentorId,
+      @Schema(hidden = true) Long mentorId,
 
       // 수정 후 자료 타입이다.
       @Schema(description = "자료 타입", example = "TEXT") @NotNull(message = "자료 타입은 필수입니다.")
