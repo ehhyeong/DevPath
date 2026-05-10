@@ -14,8 +14,8 @@ const headerLinks = [
   { key: 'roadmap', href: 'roadmap-hub.html', label: '로드맵' },
   { key: 'lecture', href: 'lecture-list.html', label: '강의' },
   { key: 'project', href: 'lounge-dashboard.html', label: '프로젝트' },
-  { key: 'community', href: 'community-list.html', label: '커뮤니티' },
   { key: 'jobMatching', href: 'job-matching.html', label: '채용분석' },
+  { key: 'community', href: 'community-list.html', label: '커뮤니티' },
 ]
 
 const instructorHeaderLink = { key: 'instructorDashboard', href: 'instructor-dashboard.html', label: '강사 대시보드' }
