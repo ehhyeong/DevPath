@@ -316,7 +316,8 @@ public class DiagnosisQuizService {
 
   /** [TEST] 진단 퀴즈 없이 랜덤 점수로 즉시 분기 추천을 생성한다. 노드 완료 시 추천 동작을 확인하기 위한 테스트 전용 메서드. */
   @Transactional
-  public Map<String, Object> testRunRecommend(Long userId, Long roadmapId, Long originalNodeId) {
+  public DiagnosisQuizDto.TestRunResponse testRunRecommend(
+      Long userId, Long roadmapId, Long originalNodeId) {
     int score = 60 + RANDOM.nextInt(41);
     int maxScore = 100;
 
@@ -324,11 +325,12 @@ public class DiagnosisQuizService {
         analyzeAndRecommend(userId, originalNodeId, score, maxScore, roadmapId);
 
     boolean isLowScore = (double) score / maxScore < REVIEW_THRESHOLD;
-    return Map.of(
-        "score", score,
-        "maxScore", maxScore,
-        "branchType", isLowScore ? "REVIEW" : "ADVANCED",
-        "recommendedNodes", recommendedNodes);
+    return DiagnosisQuizDto.TestRunResponse.builder()
+        .score(score)
+        .maxScore(maxScore)
+        .branchType(isLowScore ? "REVIEW" : "ADVANCED")
+        .recommendedNodes(recommendedNodes)
+        .build();
   }
 
   // ── 유틸 ───────────────────────────────────────────────────────────────────
