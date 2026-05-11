@@ -1865,3 +1865,30 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   z-index: -1; border-radius: 1.1rem; animation: borderGlow 3s linear infinite; background-size: 300%;
 }
 @keyframes borderGlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+/* DevSquad lounge baseline styles from the supplied HTML */
+body.community-lounge-body { overflow: hidden; }
+
+.hide-scroll::-webkit-scrollbar { display: none; }
+.hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+.modal { transition: opacity 0.2s, visibility 0.2s; opacity: 0; visibility: hidden; z-index: 50; }
+.modal.active { opacity: 1; visibility: visible; }
+
+#viewLounge .tab-btn {
+  padding: 0.5rem 1rem;
+  margin-right: 0;
+  border-bottom: 2px solid transparent;
+}
+
+#viewLounge .tab-btn.font-medium { font-weight: 500; }
+#viewLounge .tab-btn.font-bold { font-weight: 700; }
+#viewLounge .tab-btn.text-gray-500 { color: #6B7280; }
+#viewLounge .tab-btn.text-brand { color: #00C471; }
+#viewLounge .tab-btn.active { border-bottom: 2px solid #00C471; color: #00C471; font-weight: 700; }
+.tab-btn.active { border-bottom: 2px solid #00C471; color: #00C471; font-weight: 700; }
+.card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+.modal-enter { animation: modalScaleIn 0.2s ease-out forwards; }
+@keyframes modalScaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+input[type="checkbox"]:checked { background-color: #00C471; border-color: #00C471; }
