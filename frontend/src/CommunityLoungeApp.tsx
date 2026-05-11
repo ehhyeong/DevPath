@@ -216,6 +216,91 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
         </main>
     </div>
 
+    <div id="detailModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh] modal-enter">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50">
+                <div class="flex items-center gap-4">
+                    <div id="d-icon" class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-sm"></div>
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h2 id="d-title" class="text-xl font-bold text-gray-900 mb-1"></h2>
+                            <span id="d-type" class="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded font-bold uppercase"></span>
+                        </div>
+                        <p id="d-author" class="text-sm text-gray-500 font-medium"></p>
+                    </div>
+                </div>
+                <button onclick="toggleModal('detailModal')" class="text-gray-400 hover:text-gray-900 text-lg"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-8 overflow-y-auto space-y-8 flex-1">
+                <div>
+                    <h3 class="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">소개</h3>
+                    <div class="bg-white border border-gray-100 p-5 rounded-xl text-sm text-gray-700 leading-loose shadow-sm whitespace-pre-wrap font-medium" id="d-desc"></div>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">기술 스택</h3>
+                    <div id="d-tags" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+            <div class="p-5 border-t border-gray-100 bg-white flex justify-end gap-3" id="detailModalFooter"></div>
+        </div>
+    </div>
+
+    <div id="applyModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 overflow-hidden modal-enter">
+            <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-900">📝 신청서 / 제안서 작성</h2>
+                <button onclick="toggleModal('applyModal')" class="text-gray-400 hover:text-gray-900"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto" id="apply-form-content"></div>
+            <div class="p-5 border-t border-gray-100 bg-white flex justify-end gap-2">
+                <button onclick="toggleModal('applyModal')" class="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50">취소</button>
+                <button onclick="submitApplication()" class="px-6 py-2.5 rounded-xl bg-brand text-white text-sm font-bold hover:bg-green-600 shadow-md">보내기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="memberProfileModal" class="modal fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative overflow-hidden modal-enter">
+            <div class="relative bg-brand/10 h-24">
+                <button onclick="toggleModal('memberProfileModal')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="px-6 pb-6 -mt-10 text-center">
+                <img id="mp-img" src="" class="w-20 h-20 rounded-full border-4 border-white shadow-md mx-auto mb-3">
+                <h3 id="mp-name" class="text-xl font-bold text-gray-900"></h3>
+                <p id="mp-role" class="text-sm text-gray-500 mb-6"></p>
+                <div class="space-y-3">
+                    <textarea id="mp-msg" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm h-24 resize-none focus:border-brand outline-none" placeholder="간단한 메시지를 남겨보세요..."></textarea>
+                    <button onclick="sendDM()" class="w-full py-3 bg-brand text-white rounded-xl text-sm font-bold hover:bg-green-600 shadow-lg transition flex items-center justify-center gap-2">
+                        <i class="fas fa-paper-plane"></i> 메시지 보내기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewMsgModal" class="modal fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative overflow-hidden modal-enter">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <div class="flex items-center gap-3">
+                    <img id="vm-img" src="" class="w-10 h-10 rounded-full border">
+                    <div>
+                        <h3 id="vm-sender" class="font-bold text-sm text-gray-900"></h3>
+                        <p id="vm-date" class="text-xs text-gray-400"></p>
+                    </div>
+                </div>
+                <button onclick="toggleModal('viewMsgModal')" class="text-gray-400 hover:text-gray-900"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6">
+                <div class="bg-gray-50 p-4 rounded-xl text-sm text-gray-700 leading-relaxed whitespace-pre-line border border-gray-100" id="vm-content"></div>
+            </div>
+            <div class="p-5 border-t border-gray-100 bg-white">
+                <button onclick="toggleModal('viewMsgModal'); openMemberProfile(document.getElementById('vm-sender').innerText, 'Member', 'ReplyUser')" class="w-full py-3 bg-brand text-white rounded-xl text-sm font-bold hover:bg-green-600 shadow-sm transition">
+                    <i class="fas fa-reply mr-2"></i>답장하기
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="createModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 p-8 modal-enter overflow-y-auto max-h-[90vh]">
             <h2 class="text-2xl font-bold text-gray-900 mb-6" id="createModalTitle">새 스쿼드 만들기</h2>
@@ -248,6 +333,10 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
                     <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">기술 스택</label>
                     <input type="text" id="c-tags" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none" placeholder="#React #Spring">
                 </div>
+                <div id="rolesContainer">
+                    <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">모집 역할</label>
+                    <input type="text" id="c-roles" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none" placeholder="Frontend Backend Designer">
+                </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">소개글</label>
                     <textarea id="c-desc" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm h-56 resize-none focus:border-brand outline-none"></textarea>
@@ -276,50 +365,50 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
         </div>
     </div>
 
-    <script>
+    <div id="receivedAppModal" class="modal fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden modal-enter">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h2 class="text-lg font-bold text-gray-900">📄 받은 신청서 확인</h2>
+                <button onclick="toggleModal('receivedAppModal')" class="text-gray-400 hover:text-gray-900"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+                <div class="flex items-center gap-3 pb-4 border-b border-gray-100">
+                    <img id="ra-img" src="" class="w-12 h-12 rounded-full border">
+                    <div>
+                        <p id="ra-name" class="font-bold text-gray-900"></p>
+                        <p id="ra-date" class="text-xs text-gray-400"></p>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 mb-1">지원 제목</p>
+                    <p id="ra-title" class="text-sm font-medium"></p>
+                </div>
+                <div id="ra-type-badge" class="inline-block"></div>
+                <div id="ra-content" class="text-sm text-gray-700 bg-gray-50 p-4 rounded-xl leading-relaxed whitespace-pre-line border border-gray-100"></div>
+            </div>
+            <div class="p-5 border-t border-gray-100 bg-white flex gap-2">
+                <button onclick="processRequest('reject')" class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition">거절하기</button>
+                <button onclick="processRequest('approve')" class="flex-1 py-3 rounded-xl bg-brand text-white text-sm font-bold hover:bg-green-600 shadow-md transition">승인하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>__DEVPATH_LOUNGE_RUNTIME__</script>
+</body>
+</html>`
+
+const LOUNGE_RUNTIME_SCRIPT = String.raw`
+        const AUTH_STORAGE_KEY = 'devpath.auth.session';
         let currentPage = 1;
         const itemsPerPage = 6;
         let activeStatusTab = 'sent';
-        let myMessages = [{ id: 1, sender: "김데브", senderImg: "Felix", text: "안녕하세요! 포트폴리오 잘 봤습니다.", date: "방금 전", read: false }];
+        let myMessages = [];
         let myApplications = [];
-        let receivedRequests = [
-            { id: 101, type: "project_apply", title: "사이드 프로젝트 백엔드 구함", sender: "열정맨", senderImg: "Newbie", date: "2026-05-11", status: "대기중", content: "[희망 직군]: Backend\n[지원 동기]: 열심히 하겠습니다!" }
-        ];
-
-        let squads = [
-            { id: 1, author: "김데브", authorImg: "Felix", title: "여행 기록 공유 서비스 모집", type: "project", deadline: "2026-06-01", icon: '<i class="fas fa-plane"></i>', iconBg: 'bg-blue-50', iconCol: 'text-blue-600', tags: ["React", "Spring"], desc: "[프로젝트 핵심 목표 (한줄 소개)]\n- 여행 경로를 시각화하여 공유하는 SNS 개발\n\n[상세 기획 및 주요 기능]\n- 지도 API 연동 및 마커 표시\n- 소셜 로그인 및 피드 기능\n\n[모집 역할 및 진행 방식]\n- 프론트엔드 1명\n- 주 2회 디스코드 회의", roles: ["Frontend", "Backend", "Designer"], members: [], current: 1, max: 4, views: 1250, date: "2026-05-10", isClosed: false },
-            { id: 2, author: "나(사용자)", authorImg: "MyUser", title: "사이드 프로젝트 백엔드 구함", type: "project", deadline: "2026-05-20", icon: '<i class="fas fa-user-check"></i>', iconBg: 'bg-green-50', iconCol: 'text-brand', tags: ["Node.js", "Express"], desc: "[프로젝트 핵심 목표 (한줄 소개)]\n- 일상생활에 쓰일 간단한 투두앱 만들기\n\n[상세 기획 및 주요 기능]\n- CRUD 기본 기능 충실히 구현\n\n[모집 역할 및 진행 방식]\n- 백엔드 1명 구합니다.", roles: ["Backend"], members: [{name: "코딩왕", role: "Backend", img: "Bob"}, {name: "디자이너A", role: "Designer", img: "Alice"}], current: 2, max: 3, views: 500, date: "2026-05-08", isClosed: false },
-            { id: 3, author: "이코드", authorImg: "Ana", title: "CS 전공지식 스터디", type: "study", deadline: "2026-05-15", icon: '<i class="fas fa-book"></i>', iconBg: 'bg-purple-50', iconCol: 'text-purple-600', tags: ["CS", "면접"], desc: "[스터디 목표]\n- 목표: CS 완전 정복\n- 시간: 매주 화요일 8시", roles: [], members: [], current: 5, max: 6, views: 2300, date: "2026-05-01", isClosed: false },
-            { id: 4, author: "최모각", authorImg: "Zoe", title: "강남 주말 모각코", type: "networking", deadline: "2026-05-12", icon: '<i class="fas fa-coffee"></i>', iconBg: 'bg-orange-50', iconCol: 'text-orange-600', tags: ["강남", "주말"], desc: "[모임 주제]\n- 장소: 강남역 투썸\n- 시간: 토요일 13시", roles: [], members: [], current: 1, max: 4, views: 890, date: "2026-05-05", isClosed: false }
-        ];
-
-        const dummyTypes = ['project', 'join_wish', 'study', 'networking'];
-        const dummyAvatars = ['Aneka', 'Jocelyn', 'Destiny', 'George', 'Jasper'];
-        for(let i=5; i<=25; i++) {
-            const randomType = dummyTypes[i % 4];
-            squads.push({
-                id: i,
-                author: '데브유저' + i,
-                authorImg: dummyAvatars[i % 5],
-                title: '[테스트] ' + randomType.toUpperCase() + ' 스쿼드 모집 ' + i + '번',
-                type: randomType,
-                deadline: '2026-05-' + (i%20+10).toString().padStart(2,'0'),
-                icon: '<i class="fas fa-star"></i>',
-                iconBg: 'bg-gray-100',
-                iconCol: 'text-gray-500',
-                tags: ['React', 'Spring', 'UI/UX', 'Figma', 'AWS'].slice(0, (i%3)+2),
-                desc: '이것은 페이지네이션 테스트를 위해 자동 생성된 ' + i + '번째 스쿼드 데이터입니다.\n페이지네이션과 필터가 함께 잘 연동되는지 확인해보세요!',
-                roles: [],
-                members: [],
-                current: (i%3)+1,
-                max: (i%3)+4,
-                views: i * 37,
-                date: '2026-05-' + (i%10+1).toString().padStart(2,'0'),
-                isClosed: i % 6 === 0
-            });
-        }
-
+        let receivedRequests = [];
+        let squads = [];
         let filteredSquads = [];
+        let currentSelectedId = null;
+        let currentRequestId = null;
 
         const templates = {
             project: "[프로젝트 핵심 목표 (한줄 소개)]\n- \n\n[상세 기획 및 주요 기능]\n- \n\n[모집 역할 및 진행 방식]\n- ",
@@ -327,6 +416,167 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
             study: "[스터디 목표]\n- \n- 진행 시간: \n\n[모집 대상]\n- ",
             networking: "[모임 주제]\n- \n- 일시 및 장소: "
         };
+
+        const typeConfig = {
+            project: { icon: '<i class="fas fa-plane"></i>', iconBg: 'bg-blue-50', iconCol: 'text-blue-600' },
+            join_wish: { icon: '<i class="fas fa-user-check"></i>', iconBg: 'bg-green-50', iconCol: 'text-brand' },
+            study: { icon: '<i class="fas fa-book"></i>', iconBg: 'bg-purple-50', iconCol: 'text-purple-600' },
+            networking: { icon: '<i class="fas fa-coffee"></i>', iconBg: 'bg-orange-50', iconCol: 'text-orange-600' }
+        };
+
+        function readSession() {
+            for (const storage of [localStorage, sessionStorage]) {
+                const raw = storage.getItem(AUTH_STORAGE_KEY);
+                if (!raw) continue;
+                try { return JSON.parse(raw); } catch { storage.removeItem(AUTH_STORAGE_KEY); }
+            }
+            return null;
+        }
+
+        function parseJwtUserId(accessToken) {
+            try {
+                const payload = accessToken.split('.')[1];
+                if (!payload) return null;
+                const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+                const decoded = JSON.parse(atob(normalized.padEnd(normalized.length + (4 - normalized.length % 4) % 4, '=')));
+                const userId = Number(decoded.sub);
+                return Number.isFinite(userId) ? userId : null;
+            } catch {
+                return null;
+            }
+        }
+
+        function getSessionUserId() {
+            const session = readSession();
+            if (!session) return null;
+            const directId = Number(session.userId);
+            if (Number.isFinite(directId)) return directId;
+            return session.accessToken ? parseJwtUserId(session.accessToken) : null;
+        }
+
+        function buildHeaders(requireAuth = false) {
+            const headers = new Headers({ Accept: 'application/json' });
+            const session = readSession();
+            if (session?.accessToken) headers.set('Authorization', 'Bearer ' + session.accessToken);
+            if (requireAuth && !session?.accessToken) throw new Error('로그인이 필요합니다.');
+            return headers;
+        }
+
+        async function apiRequest(path, init = {}, requireAuth = false) {
+            const headers = buildHeaders(requireAuth);
+            if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+            const response = await fetch(path, { ...init, headers });
+            if (!response.ok) {
+                let message = '요청에 실패했습니다.';
+                try {
+                    const body = await response.json();
+                    message = body.message || body.error || message;
+                } catch {}
+                throw new Error(message);
+            }
+            if (response.status === 204) return null;
+            const body = await response.json();
+            return body.data ?? body;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function toDateText(value) {
+            if (!value) return '';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toISOString().slice(0, 10);
+        }
+
+        function toDateTime(value) {
+            const time = Date.parse(value || '');
+            return Number.isFinite(time) ? time : 0;
+        }
+
+        function toDeadlineTime(value) {
+            const time = Date.parse(value || '');
+            return Number.isFinite(time) ? time : Number.MAX_SAFE_INTEGER;
+        }
+
+        function isMyUser(userId) {
+            const currentUserId = getSessionUserId();
+            return currentUserId !== null && Number(userId) === currentUserId;
+        }
+
+        function mapApplication(item) {
+            return {
+                id: item.applicationId,
+                type: item.type === 'SQUAD_APPLICATION' ? 'project_apply' : 'scout',
+                title: item.targetTitle || item.title || '제목 없음',
+                sender: item.senderName || '사용자',
+                senderImg: 'sender-' + item.senderId,
+                date: toDateText(item.createdAt),
+                status: item.status === 'APPROVED' ? '승인됨' : (item.status === 'REJECTED' ? '거절됨' : '대기중'),
+                content: item.title || ''
+            };
+        }
+
+        function mapSquadPost(post) {
+            const type = post.type || 'project';
+            const cfg = typeConfig[type] || typeConfig.project;
+            const members = Array.isArray(post.members) ? post.members : [];
+            return {
+                id: Number(post.id),
+                authorId: post.authorId ?? null,
+                author: post.authorName || '사용자',
+                authorImg: 'squad-' + (post.authorId ?? post.id),
+                title: post.title || '제목 없음',
+                type,
+                deadline: post.deadline || '',
+                icon: cfg.icon,
+                iconBg: cfg.iconBg,
+                iconCol: cfg.iconCol,
+                tags: Array.isArray(post.tags) ? post.tags : [],
+                desc: post.description || '',
+                roles: Array.isArray(post.roles) ? post.roles : [],
+                members: members.map(member => ({
+                    name: member.userName || ('사용자 #' + member.userId),
+                    role: member.role || 'Member',
+                    img: 'member-' + member.userId
+                })),
+                current: Number(post.currentMembers) || members.length || 0,
+                max: Number(post.maxMembers) || Math.max(members.length, 1),
+                views: Number(post.views) || 0,
+                date: toDateText(post.createdAt),
+                sortDate: post.createdAt || post.updatedAt,
+                isClosed: post.closed === true,
+                isMine: isMyUser(post.authorId)
+            };
+        }
+
+        async function loadLoungeData() {
+            const [squadsResult, sentResult, receivedResult] = await Promise.allSettled([
+                apiRequest('/api/lounge/squads'),
+                apiRequest('/api/lounge/applications/sent', {}, true),
+                apiRequest('/api/lounge/applications/received', {}, true)
+            ]);
+
+            squads = squadsResult.status === 'fulfilled' && Array.isArray(squadsResult.value)
+                ? squadsResult.value.map(mapSquadPost)
+                : [];
+            myApplications = sentResult.status === 'fulfilled' && Array.isArray(sentResult.value)
+                ? sentResult.value.map(mapApplication)
+                : [];
+            receivedRequests = receivedResult.status === 'fulfilled' && Array.isArray(receivedResult.value)
+                ? receivedResult.value.map(mapApplication)
+                : [];
+
+            applyFilters(false);
+            updateStatusList();
+            renderMessages();
+        }
 
         function toggleModal(id) { document.getElementById(id).classList.toggle('active'); }
         function toggleNoti() { document.getElementById('notiPopup').classList.toggle('hidden'); document.getElementById('msgPopup').classList.add('hidden'); }
@@ -336,13 +586,19 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
         function renderMessages() {
             const list = document.getElementById('msgList');
             if (!list) return;
-            list.innerHTML = myMessages.map(msg =>
-                '<div class="p-3 hover:bg-gray-50 border-b border-gray-50 cursor-pointer flex gap-3 items-start">' +
-                    '<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + msg.senderImg + '" class="w-8 h-8 rounded-full border border-gray-200">' +
-                    '<div class="flex-1"><div class="flex justify-between items-center mb-0.5"><span class="text-xs font-bold text-gray-900">' + msg.sender + '</span><span class="text-[9px] text-gray-400">' + msg.date + '</span></div><p class="text-xs text-gray-600 line-clamp-1">' + msg.text + '</p></div>' +
-                    (!msg.read ? '<span class="w-1.5 h-1.5 bg-red-500 rounded-full mt-1.5"></span>' : '') +
-                '</div>'
-            ).join('');
+            if (!myMessages.length) {
+                list.innerHTML = '<p class="p-4 text-xs text-gray-400 text-center">받은 메시지가 없습니다.</p>';
+            } else {
+                list.innerHTML = myMessages.map(msg =>
+                    '<div class="p-3 hover:bg-gray-50 border-b border-gray-50 cursor-pointer flex gap-3 items-start">' +
+                        '<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(msg.senderImg) + '" class="w-8 h-8 rounded-full border border-gray-200">' +
+                        '<div class="flex-1"><div class="flex justify-between items-center mb-0.5"><span class="text-xs font-bold text-gray-900">' + escapeHtml(msg.sender) + '</span><span class="text-[9px] text-gray-400">' + escapeHtml(msg.date) + '</span></div><p class="text-xs text-gray-600 line-clamp-1">' + escapeHtml(msg.text) + '</p></div>' +
+                        (!msg.read ? '<span class="w-1.5 h-1.5 bg-red-500 rounded-full mt-1.5"></span>' : '') +
+                    '</div>'
+                ).join('');
+            }
+            const badge = document.getElementById('msgBadge');
+            if (badge) badge.style.display = myMessages.some(msg => !msg.read) ? 'block' : 'none';
         }
 
         function applyFilters(resetPage = true) {
@@ -358,7 +614,7 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
             const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
             filteredSquads = squads.slice();
             if(activeFilter !== 'all') {
-                if(activeFilter === 'my_posts') filteredSquads = filteredSquads.filter(s => s.author === "나(사용자)");
+                if(activeFilter === 'my_posts') filteredSquads = filteredSquads.filter(s => s.isMine);
                 else filteredSquads = filteredSquads.filter(s => s.type === activeFilter);
             }
             if(hideClosed) filteredSquads = filteredSquads.filter(s => !s.isClosed);
@@ -373,9 +629,9 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
                 if (a.isClosed && !b.isClosed) return 1;
                 if (!a.isClosed && b.isClosed) return -1;
                 if (sortCriteria === 'views') return b.views - a.views;
-                if (sortCriteria === 'deadline') return new Date(a.deadline) - new Date(b.deadline);
+                if (sortCriteria === 'deadline') return toDeadlineTime(a.deadline) - toDeadlineTime(b.deadline);
                 if (sortCriteria === 'available') return (a.max - a.current) - (b.max - b.current);
-                return new Date(b.date) - new Date(a.date);
+                return toDateTime(b.sortDate || b.date) - toDateTime(a.sortDate || a.date);
             });
             renderCardsList();
         }
@@ -400,11 +656,11 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
             }
             container.innerHTML = paginatedCards.map(s => {
                 const isJoin = s.type === 'join_wish';
-                const isMyPost = s.author === "나(사용자)";
+                const isMyPost = s.isMine === true;
                 let membersHtml = '';
                 if(isMyPost && s.members && s.members.length > 0) {
                     membersHtml = '<div class="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2"><span class="text-[10px] font-bold text-gray-400">참여 멤버:</span><div class="flex -space-x-2">' +
-                        s.members.map(m => '<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + m.img + '" class="w-6 h-6 rounded-full border border-white cursor-pointer hover:scale-110 transition" title="' + m.name + '">').join('') +
+                        s.members.map(m => '<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(m.img) + '" class="w-6 h-6 rounded-full border border-white cursor-pointer hover:scale-110 transition" title="' + escapeHtml(m.name) + '" data-name="' + escapeHtml(m.name) + '" data-role="' + escapeHtml(m.role) + '" data-img="' + escapeHtml(m.img) + '" onclick="event.stopPropagation(); openMemberProfileFromElement(this)">').join('') +
                         '</div></div>';
                 }
                 const badgeSpan = s.isClosed
@@ -415,11 +671,11 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
                 const editBtn = isMyPost && !s.isClosed
                     ? '<button onclick="event.stopPropagation(); openCreateModal(' + s.id + ')" class="bg-white border border-gray-200 hover:bg-gray-100 text-gray-500 w-6 h-6 rounded flex items-center justify-center transition shadow-sm" title="수정"><i class="fas fa-edit text-[10px]"></i></button>'
                     : '';
-                return '<div class="bg-white rounded-2xl p-6 border ' + (isJoin ? 'border-brand/30' : 'border-gray-200') + ' shadow-[0_2px_10px_rgba(0,0,0,0.02)] card-hover transition cursor-pointer relative flex flex-col group ' + (s.isClosed ? 'opacity-70 grayscale-[0.3]' : '') + '">' +
+                return '<div class="bg-white rounded-2xl p-6 border ' + (isJoin ? 'border-brand/30' : 'border-gray-200') + ' shadow-[0_2px_10px_rgba(0,0,0,0.02)] card-hover transition cursor-pointer relative flex flex-col group ' + (s.isClosed ? 'opacity-70 grayscale-[0.3]' : '') + '" onclick="openDetailModal(' + s.id + ')">' +
                     '<div class="absolute top-5 right-5 flex items-center gap-1.5 z-10">' + editBtn + badgeSpan + '</div>' +
-                    '<div class="flex items-center gap-3 mb-4 pr-16"><div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm ' + s.iconBg + ' ' + s.iconCol + '">' + s.icon + '</div><div class="min-w-0"><h3 class="font-bold text-gray-900 leading-tight truncate">' + s.title + '</h3><span class="text-[10px] text-gray-400 font-bold">' + s.type.toUpperCase().replace('_',' ') + '</span></div></div>' +
-                    '<p class="text-sm text-gray-500 mb-4 line-clamp-2 h-10 font-medium whitespace-pre-line">' + s.desc.substring(0,60) + '...</p>' +
-                    '<div class="mt-auto pt-4 border-t flex justify-between items-center"><div class="flex items-center gap-2"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + s.authorImg + '" class="w-6 h-6 rounded-full border shadow-sm"><span class="text-xs font-bold text-gray-600">' + s.author + '</span></div><div class="flex items-center gap-3"><span class="text-[10px] text-gray-400 font-medium"><i class="far fa-eye mr-1"></i>' + (s.views > 1000 ? (s.views/1000).toFixed(1)+'k' : s.views) + '</span><span class="text-xs font-bold text-gray-500"><i class="fas fa-user-friends mr-1"></i>' + s.current + '/' + s.max + '</span><span class="text-[10px] text-red-500 font-bold">~ ' + s.deadline + '</span></div></div>' + membersHtml +
+                    '<div class="flex items-center gap-3 mb-4 pr-16"><div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-sm ' + s.iconBg + ' ' + s.iconCol + '">' + s.icon + '</div><div class="min-w-0"><h3 class="font-bold text-gray-900 leading-tight truncate">' + escapeHtml(s.title) + '</h3><span class="text-[10px] text-gray-400 font-bold">' + escapeHtml(s.type.toUpperCase().replace('_',' ')) + '</span></div></div>' +
+                    '<p class="text-sm text-gray-500 mb-4 line-clamp-2 h-10 font-medium whitespace-pre-line">' + escapeHtml((s.desc || '').substring(0,60)) + '...</p>' +
+                    '<div class="mt-auto pt-4 border-t flex justify-between items-center"><div class="flex items-center gap-2"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(s.authorImg) + '" class="w-6 h-6 rounded-full border shadow-sm"><span class="text-xs font-bold text-gray-600">' + escapeHtml(s.author) + '</span></div><div class="flex items-center gap-3"><span class="text-[10px] text-gray-400 font-medium"><i class="far fa-eye mr-1"></i>' + (s.views > 1000 ? (s.views/1000).toFixed(1)+'k' : s.views) + '</span><span class="text-xs font-bold text-gray-500"><i class="fas fa-user-friends mr-1"></i>' + s.current + '/' + s.max + '</span><span class="text-[10px] text-red-500 font-bold">~ ' + escapeHtml(s.deadline) + '</span></div></div>' + membersHtml +
                     '</div>';
             }).join('');
             renderPagination(Math.ceil(filteredSquads.length / itemsPerPage));
@@ -449,17 +705,28 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
         }
 
         function openCreateModal(editId = null) {
+            const data = squads.find(s => Number(s.id) === Number(editId));
             document.getElementById('createModalTitle').innerText = editId ? "스쿼드 수정하기" : "새 스쿼드 만들기";
             document.getElementById('createSubmitBtn').innerText = editId ? "수정 완료" : "생성하기";
             document.getElementById('edit-id').value = editId || "";
-            if(!editId) {
+            if(data) {
+                document.getElementById('c-title').value = data.title;
+                document.getElementById('c-type').value = data.type;
+                document.getElementById('c-deadline').value = data.deadline || "";
+                document.getElementById('c-max').value = data.max || "";
+                document.getElementById('c-tags').value = data.tags.map(tag => '#' + tag).join(' ');
+                document.getElementById('c-roles').value = data.roles.join(' ');
+                document.getElementById('c-desc').value = data.desc;
+            } else {
                 document.getElementById('c-title').value = "";
                 document.getElementById('c-type').value = "project";
                 document.getElementById('c-deadline').value = "";
                 document.getElementById('c-max').value = "";
                 document.getElementById('c-tags').value = "";
+                document.getElementById('c-roles').value = "";
                 document.getElementById('c-desc').value = templates.project;
             }
+            applyTemplate();
             toggleModal('createModal');
         }
 
@@ -467,9 +734,141 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
             const type = document.getElementById('c-type').value;
             if (!document.getElementById('edit-id').value) document.getElementById('c-desc').value = templates[type] || "";
             document.getElementById('maxMemberContainer').style.display = 'block';
+            document.getElementById('rolesContainer').style.display = type === 'project' ? 'block' : 'none';
         }
 
-        function submitSquad() { alert("등록되었습니다."); toggleModal('createModal'); }
+        function readCreatePayload() {
+            const tags = document.getElementById('c-tags').value
+                .split(/\s+/)
+                .map(tag => tag.replace(/^#/, '').trim())
+                .filter(Boolean);
+            const roles = document.getElementById('c-roles').value
+                .split(/\s+/)
+                .map(role => role.trim())
+                .filter(Boolean);
+            return {
+                title: document.getElementById('c-title').value.trim(),
+                type: document.getElementById('c-type').value,
+                deadline: document.getElementById('c-deadline').value || null,
+                maxMembers: Number(document.getElementById('c-max').value || 1),
+                tags,
+                description: document.getElementById('c-desc').value.trim(),
+                roles: document.getElementById('c-type').value === 'project' ? roles : []
+            };
+        }
+
+        async function submitSquad() {
+            const editId = document.getElementById('edit-id').value;
+            const existing = editId ? squads.find(s => Number(s.id) === Number(editId)) : null;
+            const payload = readCreatePayload();
+            if(!payload.title || !payload.description) return alert("필수 항목을 입력해주세요.");
+            const path = existing ? '/api/lounge/squads/' + existing.id : '/api/lounge/squads';
+            const method = existing ? 'PUT' : 'POST';
+
+            try {
+                await apiRequest(path, { method, body: JSON.stringify(payload) }, true);
+                alert(existing ? "수정되었습니다." : "등록되었습니다.");
+                toggleModal('createModal');
+                await loadLoungeData();
+            } catch (error) {
+                alert(error.message || "저장에 실패했습니다.");
+            }
+        }
+
+        async function openDetailModal(id) {
+            currentSelectedId = id;
+            const existing = squads.find(s => Number(s.id) === Number(id));
+            let data = existing;
+            try {
+                const detail = await apiRequest('/api/lounge/squads/' + id);
+                data = mapSquadPost(detail);
+                squads = squads.map(item => Number(item.id) === Number(id) ? data : item);
+            } catch {}
+            if (!data) return;
+
+            document.getElementById('d-title').innerText = data.title;
+            document.getElementById('d-type').innerText = data.type;
+            document.getElementById('d-author').innerText = 'Leader: ' + data.author;
+            document.getElementById('d-desc').innerText = data.desc;
+            document.getElementById('d-icon').innerHTML = data.icon;
+            document.getElementById('d-icon').className = 'w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-sm ' + data.iconBg + ' ' + data.iconCol;
+            document.getElementById('d-tags').innerHTML = data.tags.map(t => '<span class="text-xs bg-gray-100 px-2 py-1 rounded font-bold mr-1">#' + escapeHtml(t) + '</span>').join('');
+
+            const footer = document.getElementById('detailModalFooter');
+            footer.innerHTML = '<button onclick="toggleModal(\'detailModal\')" class="px-6 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition">닫기</button>';
+            if (data.isMine) {
+                if (!data.isClosed) {
+                    footer.innerHTML += '<button onclick="closeSquadOnly()" class="px-4 py-3 rounded-xl text-red-400 text-sm font-bold hover:bg-red-50 transition">단순 마감</button>';
+                    footer.innerHTML += '<button onclick="openCreateModal(' + data.id + '); toggleModal(\'detailModal\')" class="px-4 py-3 rounded-xl border border-gray-200 text-gray-700 text-sm font-bold hover:bg-gray-50 transition">수정</button>';
+                    footer.innerHTML += '<button onclick="closeAndCreateWorkspace()" class="px-6 py-3 rounded-xl bg-brand text-white text-sm font-bold hover:bg-green-600 transition shadow-sm flex items-center gap-2"><i class="fas fa-rocket"></i> 마감 및 워크스페이스 생성</button>';
+                }
+            } else if (!data.isClosed) {
+                const btnText = data.type === 'join_wish' ? "스카우트 제안하기" : "참여 신청하기";
+                footer.innerHTML += '<button onclick="openApplyForm()" class="px-8 py-3 rounded-xl bg-brand text-white text-sm font-bold hover:bg-green-600 transition flex items-center gap-2"><i class="fas fa-hand-sparkles"></i> ' + btnText + '</button>';
+            }
+            toggleModal('detailModal');
+            applyFilters(false);
+        }
+
+        async function closeSquadOnly() {
+            if(!currentSelectedId || !confirm("모집을 단순 마감 처리하시겠습니까?")) return;
+            await apiRequest('/api/lounge/squads/' + currentSelectedId + '/close', { method: 'PATCH' }, true);
+            toggleModal('detailModal');
+            await loadLoungeData();
+        }
+
+        async function closeAndCreateWorkspace() {
+            const data = squads.find(s => Number(s.id) === Number(currentSelectedId));
+            if(!data) return;
+            if(confirm("모집을 마감하고, 팀원들과 함께할 '워크스페이스'를 바로 생성하시겠습니까?\n(작성하신 스쿼드 제목, 기술 스택, 소개글이 자동으로 넘어갑니다.)")) {
+                await apiRequest('/api/lounge/squads/' + currentSelectedId + '/close', { method: 'PATCH' }, true);
+                const params = new URLSearchParams({ title: data.title, tech: data.tags.join(','), desc: data.desc });
+                location.href = 'project-create.html?' + params.toString();
+            }
+        }
+
+        function openApplyForm() {
+            const container = document.getElementById('apply-form-content');
+            const data = squads.find(s => Number(s.id) === Number(currentSelectedId));
+            if(!data) return;
+            if(data.type === 'project') {
+                const roleOptions = data.roles && data.roles.length ? data.roles.map(r => '<option value="' + escapeHtml(r) + '">' + escapeHtml(r) + '</option>').join('') : '<option>직군 미정</option>';
+                container.innerHTML = '<div><label class="block text-xs font-bold text-gray-500 mb-1">희망 직군 <span class="text-red-500">*</span></label><select id="apply-role" class="w-full border rounded-xl px-3 py-2 text-sm bg-white">' + roleOptions + '</select></div><div><label class="block text-xs font-bold text-gray-500 mb-1">포트폴리오</label><input id="apply-portfolio" class="w-full border rounded-xl px-3 py-2 text-sm" placeholder="https://..."></div><div><label class="block text-xs font-bold text-gray-500 mb-1">지원 동기</label><textarea id="apply-content" class="w-full border rounded-xl px-3 py-2 text-sm h-24"></textarea></div>';
+            } else if(data.type === 'study') {
+                container.innerHTML = '<div><label class="block text-xs font-bold text-gray-500 mb-1">학습 수준</label><input id="apply-role" class="w-full border rounded-xl px-3 py-2 text-sm"></div><div><label class="block text-xs font-bold text-gray-500 mb-1">목표</label><textarea id="apply-content" class="w-full border rounded-xl px-3 py-2 text-sm h-24"></textarea></div>';
+            } else {
+                container.innerHTML = '<div><label class="block text-xs font-bold text-gray-500 mb-1">자기소개</label><textarea id="apply-content" class="w-full border rounded-xl px-3 py-2 text-sm h-24"></textarea></div>';
+            }
+            toggleModal('applyModal');
+        }
+
+        async function submitApplication() {
+            const data = squads.find(s => Number(s.id) === Number(currentSelectedId));
+            if(!data || !data.authorId) return alert("신청 대상을 찾을 수 없습니다.");
+            const contentInput = document.getElementById('apply-content');
+            const roleInput = document.getElementById('apply-role');
+            const portfolioInput = document.getElementById('apply-portfolio');
+            const content = [
+                roleInput ? '[희망 직군]: ' + roleInput.value : '',
+                portfolioInput ? '[포트폴리오]: ' + portfolioInput.value : '',
+                contentInput ? contentInput.value : ''
+            ].filter(Boolean).join('\n');
+            await apiRequest('/api/lounge/applications', {
+                method: 'POST',
+                body: JSON.stringify({
+                    receiverId: data.authorId,
+                    type: data.type === 'join_wish' ? 'SQUAD_PROPOSAL' : 'SQUAD_APPLICATION',
+                    targetId: data.id,
+                    targetTitle: data.title,
+                    title: (data.type === 'join_wish' ? '스카우트 제안: ' : '참여 신청: ') + data.title,
+                    content: content || '참여하고 싶습니다.'
+                })
+            }, true);
+            alert("전송되었습니다!");
+            toggleModal('applyModal');
+            toggleModal('detailModal');
+            await loadLoungeData();
+        }
 
         function switchStatusTab(tab) {
             activeStatusTab = tab;
@@ -484,28 +883,89 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
 
         function updateStatusList() {
             const container = document.getElementById('statusListContent');
+            if (!container) return;
             const data = activeStatusTab === 'sent' ? myApplications : receivedRequests;
             if(!data.length) {
                 container.innerHTML = '<p class="text-center text-gray-400 text-xs py-10">내역이 없습니다.</p>';
                 return;
             }
-            container.innerHTML = data.map(item => '<div class="p-4 border rounded-xl bg-white flex flex-col gap-2 shadow-sm"><div class="flex justify-between items-center"><span class="text-[9px] font-extrabold text-gray-400 uppercase">' + item.date + '</span><span class="text-[10px] font-bold text-brand bg-green-50 px-2 py-0.5 rounded">' + item.status + '</span></div><p class="text-sm font-bold text-gray-900">' + item.title + '</p></div>').join('');
+            container.innerHTML = data.map(item => '<div class="p-4 border rounded-xl bg-white flex flex-col gap-2 shadow-sm ' + (activeStatusTab==='received' ? 'cursor-pointer hover:border-brand' : '') + '" onclick="' + (activeStatusTab==='received' ? 'openReceivedRequest(' + item.id + ')' : '') + '"><div class="flex justify-between items-center"><span class="text-[9px] font-extrabold text-gray-400 uppercase">' + escapeHtml(item.date) + '</span><span class="text-[10px] font-bold text-brand bg-green-50 px-2 py-0.5 rounded">' + escapeHtml(item.status) + '</span></div><p class="text-sm font-bold text-gray-900">' + escapeHtml(item.title) + '</p></div>').join('');
+        }
+
+        async function openReceivedRequest(id) {
+            let req = receivedRequests.find(r => Number(r.id) === Number(id));
+            try {
+                const detail = await apiRequest('/api/lounge/applications/' + id, {}, true);
+                req = {
+                    id: detail.applicationId,
+                    type: detail.type === 'SQUAD_APPLICATION' ? 'project_apply' : 'scout',
+                    title: detail.targetTitle || detail.title || '제목 없음',
+                    sender: detail.senderName || '사용자',
+                    senderImg: 'sender-' + detail.senderId,
+                    date: toDateText(detail.createdAt),
+                    status: detail.status === 'APPROVED' ? '승인됨' : (detail.status === 'REJECTED' ? '거절됨' : '대기중'),
+                    content: detail.content || ''
+                };
+            } catch {}
+            if (!req) return;
+            currentRequestId = id;
+            document.getElementById('ra-name').innerText = req.sender;
+            document.getElementById('ra-date').innerText = req.date;
+            document.getElementById('ra-img').src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(req.senderImg);
+            document.getElementById('ra-title').innerText = req.title;
+            document.getElementById('ra-type-badge').innerHTML = req.type === 'project_apply'
+                ? '<span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-1 rounded">프로젝트 지원</span>'
+                : '<span class="bg-green-100 text-green-600 text-[10px] font-bold px-2 py-1 rounded">스카우트 제안</span>';
+            document.getElementById('ra-content').innerText = req.content;
+            toggleModal('receivedAppModal');
+        }
+
+        async function processRequest(action) {
+            if (!currentRequestId) return;
+            await apiRequest('/api/lounge/applications/' + currentRequestId + '/' + (action === 'approve' ? 'approve' : 'reject'), { method: 'PATCH', body: JSON.stringify({}) }, true);
+            toggleModal('receivedAppModal');
+            await loadLoungeData();
+        }
+
+        function openMemberProfile(name, role, img) {
+            document.getElementById('mp-name').innerText = name;
+            document.getElementById('mp-role').innerText = role || 'Member';
+            document.getElementById('mp-img').src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(img);
+            document.getElementById('mp-msg').value = '';
+            toggleModal('memberProfileModal');
+        }
+
+        function openMemberProfileFromElement(element) {
+            openMemberProfile(element.dataset.name || '', element.dataset.role || 'Member', element.dataset.img || 'Member');
+        }
+
+        function sendDM() {
+            if(!document.getElementById('mp-msg').value.trim()) return alert("메시지 입력...");
+            alert("메시지 전송됨!");
+            toggleModal('memberProfileModal');
         }
 
         window.onload = function() {
             renderMessages();
             applyFilters();
+            loadLoungeData().catch(error => {
+                console.error(error);
+                renderCardsList();
+            });
         };
-    </script>
-</body>
-</html>`
+`
+
+const LOUNGE_HTML = STATIC_LOUNGE_HTML.replace(
+  '__DEVPATH_LOUNGE_RUNTIME__',
+  LOUNGE_RUNTIME_SCRIPT,
+)
 
 export default function CommunityLoungeApp() {
   return (
     <iframe
       title="DevPath - 스쿼드 라운지"
       className="w-full h-screen border-0 block"
-      srcDoc={STATIC_LOUNGE_HTML}
+      srcDoc={LOUNGE_HTML}
     />
   )
 }
