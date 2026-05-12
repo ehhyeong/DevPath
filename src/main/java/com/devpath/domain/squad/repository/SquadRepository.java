@@ -9,6 +9,8 @@ public interface SquadRepository extends JpaRepository<Squad, Long> {
 
   List<Squad> findAllByIsDeletedFalseOrderByCreatedAtDesc();
 
+  Optional<Squad> findByNameAndIsDeletedFalse(String name);
+
   Optional<Squad> findByIdAndIsDeletedFalse(Long id);
 
   Optional<Squad> findByIdAndIsDeletedFalseAndIsArchivedFalse(Long id);

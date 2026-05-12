@@ -204,7 +204,7 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
                             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition whitespace-nowrap" onclick="filterTab('join_wish', this)">🙋 참여 희망</button>
                             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition whitespace-nowrap" onclick="filterTab('study', this)">📚 스터디</button>
                             <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition whitespace-nowrap" onclick="filterTab('networking', this)">☕ 모각코</button>
-                            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-brand hover:bg-gray-50 transition whitespace-nowrap" onclick="filterTab('my_posts', this)">💪 내가 쓴 글</button>
+                            <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition whitespace-nowrap" onclick="filterTab('my_posts', this)">💪 내가 쓴 글</button>
                         </div>
                     </div>
 
