@@ -13,6 +13,7 @@ public class ShowcaseSummaryResponse {
   private Long showcaseId;
   private Long userId;
   private String title;
+  private String description;
   private String thumbnailUrl;
   private ShowcaseCategory category;
   private boolean isPublic;
@@ -25,6 +26,7 @@ public class ShowcaseSummaryResponse {
         .showcaseId(showcase.getId())
         .userId(showcase.getUserId())
         .title(showcase.getTitle())
+        .description(showcase.getDescription())
         .thumbnailUrl(showcase.getThumbnailUrl())
         .category(showcase.getCategory())
         .isPublic(showcase.isPublic())

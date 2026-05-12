@@ -10,6 +10,8 @@ public interface ShowcaseRepository extends JpaRepository<Showcase, Long> {
 
   Optional<Showcase> findByIdAndIsDeletedFalse(Long id);
 
+  Optional<Showcase> findByTitleAndUserIdAndIsDeletedFalse(String title, Long userId);
+
   List<Showcase> findAllByIsDeletedFalseOrderByCreatedAtDesc();
 
   List<Showcase> findAllByCategoryAndIsDeletedFalseOrderByCreatedAtDesc(ShowcaseCategory category);
