@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from 'react'
-import AccountUserMenu from './components/AccountUserMenu'
+import ProjectAside from './components/ProjectAside'
+import ProjectHeader from './components/ProjectHeader'
 import { authApi } from './lib/api'
 import { clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
 
@@ -46,15 +47,17 @@ type JobRecommendationResponse = {
   jobId: number
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
+type LoungeShellSquad = {
+  id: number
+  name: string
+  colorClass?: string | null
+}
 
-const headerLinks = [
-  { href: 'roadmap-hub.html', label: '로드맵' },
-  { href: 'lecture-list.html', label: '강의' },
-  { href: 'lounge-dashboard.html', label: '프로젝트' },
-  { href: 'job-matching.html', label: '채용분석' },
-  { href: 'community-list.html', label: '커뮤니티' },
-]
+type LoungeShellResponse = {
+  mySquads?: LoungeShellSquad[]
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 
 const fallbackProject: ProjectResponse = {
   projectId: 1,
@@ -109,9 +112,23 @@ export default function LoungeDashboardApp() {
   const [projects, setProjects] = useState<ProjectResponse[]>([])
   const [showcases, setShowcases] = useState<ShowcaseSummaryResponse[]>([])
   const [jobRecommendations, setJobRecommendations] = useState<JobRecommendationResponse[]>([])
+  const [shell, setShell] = useState<LoungeShellResponse | null>(null)
 
   useEffect(() => {
     document.title = 'DevPath - 프로젝트 라운지'
+  }, [])
+
+  useEffect(() => {
+    const previousHtmlOverflow = document.documentElement.style.overflow
+    const previousBodyOverflow = document.body.style.overflow
+
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.documentElement.style.overflow = previousHtmlOverflow
+      document.body.style.overflow = previousBodyOverflow
+    }
   }, [])
 
   useEffect(() => {
@@ -119,7 +136,9 @@ export default function LoungeDashboardApp() {
     const controller = new AbortController()
 
     async function loadLoungeData() {
+      const hasSession = Boolean(readStoredAuthSession()?.accessToken)
       const results = await Promise.allSettled([
+        apiGet<LoungeShellResponse>('/api/lounge/shell', controller.signal, hasSession),
         apiGet<UserProfileResponse>('/api/users/me/profile', controller.signal, true),
         apiGet<WorkspaceResponse[]>('/api/workspaces/projects/me', controller.signal, true),
         apiGet<ProjectResponse[]>('/api/projects', controller.signal),
@@ -131,7 +150,11 @@ export default function LoungeDashboardApp() {
         return
       }
 
-      const [profileResult, workspaceResult, projectResult, showcaseResult, jobResult] = results
+      const [shellResult, profileResult, workspaceResult, projectResult, showcaseResult, jobResult] = results
+
+      if (isFulfilled(shellResult)) {
+        setShell(shellResult.value)
+      }
 
       if (isFulfilled(profileResult)) {
         setProfile(profileResult.value)
@@ -183,6 +206,12 @@ export default function LoungeDashboardApp() {
   const hasActiveWorkspaces = workspaces.length > 0
   const primaryWorkspace = workspaces.find((workspace) => workspace.type !== 'MENTORING') ?? workspaces[0]
   const visibleWorkspaces = workspaces.slice(0, 2)
+  const fallbackAsideSquads = visibleWorkspaces.map((workspace, index) => ({
+    id: workspace.workspaceId,
+    name: workspace.name,
+    colorClass: workspace.type === 'MENTORING' || index === 1 ? 'bg-purple-500' : 'bg-blue-500',
+  }))
+  const projectAsideSquads = shell?.mySquads ?? fallbackAsideSquads
   const recommendedProject = projects.find((project) => project.recruitingStatus === 'OPEN') ?? projects[0] ?? fallbackProject
   const hotShowcase = showcases[0] ?? fallbackShowcase
   const activeWorkspaceCount = workspaces.length
@@ -226,105 +255,10 @@ export default function LoungeDashboardApp() {
 
   return (
     <div className="flex h-screen overflow-hidden text-gray-800">
-      <aside className="w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-xl">
-        <div className="h-20 flex items-center px-5 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 shrink-0" onClick={() => goTo('home.html')}>
-          <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-brand text-xl shrink-0 shadow-md">
-            <i className="fas fa-layer-group"></i>
-          </div>
-          <div className="sidebar-text flex flex-col">
-            <p className="font-bold text-gray-900 text-lg tracking-tight">DevSquad</p>
-            <p className="text-[10px] text-gray-400">Team Building</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 px-3 space-y-2 mt-4 overflow-y-auto overflow-x-hidden">
-          <p className="px-4 text-xs font-bold text-gray-400 sidebar-section-title">MENU</p>
-          <a href="lounge-dashboard.html" className="nav-item active">
-          <i className="fas fa-home w-6 text-center text-lg"></i>
-          <span className="sidebar-text">대시보드</span>
-          </a>
-          <a href="community-lounge.html" className="nav-item">
-            <i className="fas fa-rocket w-6 text-center text-lg"></i>
-            <span className="sidebar-text">라운지 (팀 찾기)</span>
-          </a>
-          <a href="mentoring-hub.html" className="nav-item">
-            <i className="fas fa-chalkboard-teacher w-6 text-center text-lg"></i>
-            <span className="sidebar-text">멘토링 찾기</span>
-          </a>
-          <a href="workspace-hub.html" className="nav-item">
-            <i className="fas fa-laptop-code w-6 text-center text-lg"></i>
-            <span className="sidebar-text">워크스페이스</span>
-          </a>
-          <a href="dev-showcase.html" className="nav-item">
-            <i className="fas fa-trophy w-6 text-center text-lg"></i>
-            <span className="sidebar-text">런칭 쇼케이스</span>
-          </a>
-
-          <p className="px-4 text-xs font-bold text-gray-400 sidebar-section-title">MY SQUADS</p>
-          <div id="mySquadList">
-            {hasActiveWorkspaces ? (
-              visibleWorkspaces.map((workspace, index) => (
-                <a key={workspace.workspaceId} href="squad-dashboard.html" className="nav-item">
-                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 mx-2 ${workspace.type === 'MENTORING' || index === 1 ? 'bg-purple-500' : 'bg-blue-500'}`}></span>
-                  <span className="sidebar-text truncate">{workspace.name}</span>
-                </a>
-              ))
-            ) : (
-              <div className="nav-item opacity-50 cursor-default hover:bg-transparent">
-                <i className="fas fa-ghost w-6 text-center text-sm"></i>
-                <span className="sidebar-text text-[11px]">참여 중인 팀 없음</span>
-              </div>
-            )}
-          </div>
-        </nav>
-      </aside>
+      <ProjectAside activeKey="dashboard" mySquads={projectAsideSquads} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-8 sticky top-0 z-30 shrink-0 shadow-sm">
-          <div className="flex-1"></div>
-          <nav className="-translate-x-[20px] flex items-center gap-10 text-sm font-bold text-gray-500">
-            {headerLinks.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className={item.href === 'lounge-dashboard.html' ? 'site-header-nav-link site-header-nav-link--active' : 'site-header-nav-link'}
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-          <div className="flex flex-1 items-center justify-end gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-label="받은 메시지"
-                className="relative cursor-pointer rounded-full p-2.5 text-gray-500 transition hover:bg-gray-100 hover:text-brand"
-              >
-                <i className="far fa-envelope text-lg"></i>
-                <span className="pointer-events-none absolute right-2 top-[5px] h-2 w-2 rounded-full border border-white bg-red-500"></span>
-              </button>
-              <button
-                type="button"
-                aria-label="알림"
-                className="relative cursor-pointer rounded-full p-2.5 text-gray-500 transition hover:bg-gray-100 hover:text-brand"
-              >
-                <i className="far fa-bell text-lg"></i>
-                <span className="pointer-events-none absolute right-2 top-[5px] h-2 w-2 rounded-full border border-white bg-red-500"></span>
-              </button>
-            </div>
-            {session ? (
-              <AccountUserMenu session={session} profileImage={profileImage} onLogout={handleLogout} />
-            ) : (
-              <button
-                type="button"
-                onClick={() => goTo('login.html')}
-                className="rounded-full bg-gray-900 px-5 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-black"
-              >
-                로그인
-              </button>
-            )}
-          </div>
-        </header>
+        <ProjectHeader session={session} profileImage={profileImage} onLoginClick={() => goTo('login.html')} onLogout={handleLogout} />
 
         <main className="flex-1 overflow-y-auto bg-[#F8F9FA] p-4 md:p-8 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-8">

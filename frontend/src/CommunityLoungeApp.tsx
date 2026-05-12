@@ -1,3 +1,6 @@
+import { useEffect } from 'react'
+import { createProjectAsideHtml, createProjectHeaderHtml } from './project-shell'
+
 const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -44,68 +47,19 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
 
 <body class="flex h-screen overflow-hidden text-gray-800">
 
-    <aside class="w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-xl">
-        <div class="h-20 flex items-center px-5 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 shrink-0" onclick="location.href='home.html'">
-            <div class="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-brand text-xl shrink-0 shadow-md">
-                <i class="fas fa-layer-group"></i>
-            </div>
-            <div class="sidebar-text flex flex-col">
-                <p class="font-bold text-gray-900 text-lg tracking-tight">DevSquad</p>
-                <p class="text-[10px] text-gray-400">Team Building</p>
-            </div>
-        </div>
-
-        <nav class="flex-1 px-3 space-y-2 mt-4 overflow-y-auto overflow-x-hidden">
-            <p class="px-4 text-xs font-bold text-gray-400 sidebar-section-title">MENU</p>
-
-            <a href="lounge-dashboard.html" class="nav-item">
-                <i class="fas fa-home w-6 text-center text-lg"></i>
-                <span class="sidebar-text">대시보드</span>
-            </a>
-
-            <a href="project-lounge.html" class="nav-item active" id="navLounge">
-                <i class="fas fa-rocket w-6 text-center text-lg"></i>
-                <span class="sidebar-text">라운지 (팀 찾기)</span>
-            </a>
-
-            <a href="mentoring-hub.html" class="nav-item">
-                <i class="fas fa-chalkboard-teacher w-6 text-center text-lg"></i>
-                <span class="sidebar-text">멘토링 찾기</span>
-            </a>
-
-            <a href="workspace-hub.html" class="nav-item">
-                <i class="fas fa-laptop-code w-6 text-center text-lg"></i>
-                <span class="sidebar-text">워크스페이스</span>
-            </a>
-
-            <a href="dev-showcase.html" class="nav-item">
-                <i class="fas fa-trophy w-6 text-center text-lg"></i>
-                <span class="sidebar-text">런칭 쇼케이스</span>
-            </a>
-
-            <p class="px-4 text-xs font-bold text-gray-400 sidebar-section-title">MY SQUADS</p>
-            <div id="mySquadList">
-                <a href="squad-dashboard.html" class="nav-item">
-                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0 mx-2"></span>
-                    <span class="sidebar-text truncate">🔥 배달비 절약팀</span>
-                </a>
-                <a href="squad-dashboard.html" class="nav-item">
-                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0 mx-2"></span>
-                    <span class="sidebar-text truncate">CS 전공지식 스터디</span>
-                </a>
-            </div>
-        </nav>
-    </aside>
+    ${createProjectAsideHtml('lounge')}
 
     <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
 
-        <header class="h-16 bg-white border-b border-gray-100 flex items-center px-8 sticky top-0 z-30 shrink-0">
+        ${createProjectHeaderHtml()}
+
+        <template>
             <div class="flex-1"></div>
 
             <div class="flex items-center gap-10 text-sm font-bold text-gray-500">
                 <a href="roadmap-hub.html" class="hover:text-brand transition">로드맵</a>
                 <a href="lecture-list.html" class="hover:text-brand transition">강의</a>
-                <a href="project-lounge.html" class="text-brand transition border-b-2 border-brand pb-1">프로젝트</a>
+                <a href="lounge-dashboard.html" class="text-brand transition border-b-2 border-brand pb-1">프로젝트</a>
                 <a href="community-list.html" class="hover:text-brand transition">커뮤니티</a>
                 <a href="job-matching.html" class="hover:text-brand transition">채용분석</a>
             </div>
@@ -151,7 +105,7 @@ const STATIC_LOUNGE_HTML = String.raw`<!DOCTYPE html>
                     <img id="shellUserImage" src="https://api.dicebear.com/7.x/avataaars/svg?seed=MyUser" class="w-9 h-9 rounded-full border border-gray-200 shadow-sm" />
                 </div>
             </div>
-        </header>
+        </template>
 
         <main class="flex-1 overflow-hidden flex flex-col bg-[#F8F9FA] relative">
             <div id="viewLounge" class="flex-1 overflow-y-auto">
@@ -523,6 +477,17 @@ const LOUNGE_RUNTIME_SCRIPT = String.raw`
             if (userName) userName.innerText = user.name || '게스트';
             if (userImage) userImage.src = user.profileImage || diceAvatar(user.name || 'Guest');
 
+            const menuList = document.getElementById('shellMenuList');
+            if (menuList && Array.isArray(shell.menu)) {
+                menuList.innerHTML = shell.menu.map(item => {
+                    const active = item.key === 'lounge' ? ' active' : '';
+                    return '<a href="' + escapeHtml(item.href) + '" class="nav-item' + active + '">' +
+                        '<i class="fas ' + escapeHtml(item.icon) + ' w-6 text-center text-lg"></i>' +
+                        '<span class="sidebar-text">' + escapeHtml(item.label) + '</span>' +
+                    '</a>';
+                }).join('');
+            }
+
             const squadList = document.getElementById('mySquadList');
             if (squadList && Array.isArray(shell.mySquads)) {
                 squadList.innerHTML = shell.mySquads.length
@@ -633,6 +598,7 @@ const LOUNGE_RUNTIME_SCRIPT = String.raw`
         function toggleNoti() { document.getElementById('notiPopup').classList.toggle('hidden'); document.getElementById('msgPopup').classList.add('hidden'); renderNotis(); }
         function toggleMsg() { document.getElementById('msgPopup').classList.toggle('hidden'); document.getElementById('notiPopup').classList.add('hidden'); renderMessages(); }
         function clearNoti() { document.getElementById('notiList').innerHTML = '<p class="p-3 text-xs text-gray-400 text-center">알림이 없습니다.</p>'; const badge = document.getElementById('notiBadge'); if (badge) badge.style.display = 'none'; }
+        function markAllMsgRead() { myMessages.forEach(msg => msg.read = true); renderMessages(); }
 
         function renderMessages() {
             const list = document.getElementById('msgList');
@@ -1030,10 +996,26 @@ const LOUNGE_HTML = STATIC_LOUNGE_HTML.replace(
 )
 
 export default function CommunityLoungeApp() {
+  useEffect(() => {
+    const previousHtmlOverflow = document.documentElement.style.overflow
+    const previousBodyOverflow = document.body.style.overflow
+    const previousBodyMargin = document.body.style.margin
+
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    document.body.style.margin = '0'
+
+    return () => {
+      document.documentElement.style.overflow = previousHtmlOverflow
+      document.body.style.overflow = previousBodyOverflow
+      document.body.style.margin = previousBodyMargin
+    }
+  }, [])
+
   return (
     <iframe
       title="DevPath - 스쿼드 라운지"
-      className="w-full h-screen border-0 block"
+      className="fixed inset-0 block h-dvh w-dvw border-0"
       srcDoc={LOUNGE_HTML}
     />
   )
