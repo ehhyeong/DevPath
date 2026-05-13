@@ -3,7 +3,6 @@ package com.devpath.api.workspace.service;
 import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
-import com.devpath.domain.workspace.repository.WorkspaceHubProjectRepository;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import java.util.List;
@@ -18,18 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class WorkspaceHubProjectService {
 
-  private final WorkspaceHubProjectRepository workspaceHubProjectRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final WorkspaceRepository workspaceRepository;
 
   public List<WorkspaceHubProjectResponse> getProjects(Long userId) {
-    if (userId != null) {
-      return getUserWorkspaceProjects(userId);
+    if (userId == null) {
+      return List.of();
     }
 
-    return workspaceHubProjectRepository.findAllByIsDeletedFalseOrderBySortOrderAscIdAsc().stream()
-        .map(WorkspaceHubProjectResponse::from)
-        .toList();
+    return getUserWorkspaceProjects(userId);
   }
 
   private List<WorkspaceHubProjectResponse> getUserWorkspaceProjects(Long userId) {

@@ -1,9 +1,11 @@
 import axios from 'axios'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
+import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from './components/ProjectAside'
 import { ProjectCreatePanel } from './ProjectCreateApp'
 import ProjectHeader from './components/ProjectHeader'
-import { clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
+import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { showAuthToast } from './lib/auth-toast'
 
 type ProjectType = 'all' | 'solo' | 'squad' | 'mentoring'
 type ProjectStatus = 'all' | 'progress' | 'completed'
@@ -46,6 +48,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 
 export default function WorkspaceHubApp() {
   const [session, setSession] = useState(() => readStoredAuthSession())
+  const [authView, setAuthView] = useState<AuthView | null>(null)
+  const [dataReloadKey, setDataReloadKey] = useState(0)
   const [asideSquads, setAsideSquads] = useState<ProjectAsideSquad[]>([])
   const [projects, setProjects] = useState<WorkspaceHubProject[]>([])
   const [typeFilter, setTypeFilter] = useState<ProjectType>('all')
@@ -109,7 +113,7 @@ export default function WorkspaceHubApp() {
     void load()
 
     return () => controller.abort()
-  }, [])
+  }, [dataReloadKey])
 
   const visibleProjects = useMemo(
     () =>
@@ -127,6 +131,36 @@ export default function WorkspaceHubApp() {
   function handleLogout() {
     clearStoredAuthSession()
     setSession(null)
+    setAsideSquads([])
+    setProjects([])
+  }
+
+  function openAuthModal(message?: string) {
+    if (message) {
+      showAuthToast({
+        message,
+        durationMs: 2200,
+      })
+    }
+
+    setAuthView('login')
+  }
+
+  function closeAuthModal() {
+    setAuthView(null)
+  }
+
+  function handleAuthenticated() {
+    const nextSession = readStoredAuthSession()
+
+    if (nextSession?.role === 'ROLE_ADMIN') {
+      window.location.replace(getPostLoginRedirect(nextSession.role))
+      return
+    }
+
+    setSession(nextSession)
+    setAuthView(null)
+    setDataReloadKey((current) => current + 1)
   }
 
   function closeAllDropdowns(event: MouseEvent<HTMLElement>) {
@@ -153,6 +187,19 @@ export default function WorkspaceHubApp() {
   function openProjectCreateModal(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation()
     setActiveMenuId(null)
+    if (!readStoredAuthSession()?.accessToken) {
+      openAuthModal('프로젝트 시작은 로그인 후 이용할 수 있습니다.')
+      return
+    }
+    setProjectCreateModalOpen(true)
+  }
+
+  function openProjectCreateFromCard() {
+    setActiveMenuId(null)
+    if (!readStoredAuthSession()?.accessToken) {
+      openAuthModal('프로젝트 시작은 로그인 후 이용할 수 있습니다.')
+      return
+    }
     setProjectCreateModalOpen(true)
   }
 
@@ -165,7 +212,7 @@ export default function WorkspaceHubApp() {
       <ProjectAside activeKey="workspace" mySquads={asideSquads} />
 
       <div className="flex-1 flex min-w-0 flex-col h-screen overflow-hidden">
-        <ProjectHeader session={session} activeHref="lounge-dashboard.html" onLoginClick={() => window.location.assign('login.html')} onLogout={handleLogout} />
+        <ProjectHeader session={session} activeHref="lounge-dashboard.html" onLoginClick={() => openAuthModal()} onLogout={handleLogout} />
 
         <main className="flex-1 flex flex-col h-full overflow-hidden" onClick={closeAllDropdowns}>
           <div className="px-8 pt-7 pb-4 shrink-0">
@@ -220,7 +267,7 @@ export default function WorkspaceHubApp() {
                 </div>
               ) : null}
 
-              {!loading && showCreateCard ? <CreateProjectCard /> : null}
+              {!loading && showCreateCard ? <CreateProjectCard onCreate={openProjectCreateFromCard} /> : null}
             </div>
           </div>
         </main>
@@ -233,6 +280,15 @@ export default function WorkspaceHubApp() {
         onClose={() => setProjectCreateModalOpen(false)}
         onCreated={handleProjectCreated}
       />
+
+      {authView ? (
+        <AuthModal
+          view={authView}
+          onClose={closeAuthModal}
+          onViewChange={setAuthView}
+          onAuthenticated={handleAuthenticated}
+        />
+      ) : null}
     </div>
   )
 }
@@ -433,9 +489,9 @@ function ProjectMenu({
   )
 }
 
-function CreateProjectCard() {
+function CreateProjectCard({ onCreate }: { onCreate: () => void }) {
   return (
-    <div id="create-new-card" onClick={() => window.location.assign('project-create.html')} className="rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-5 cursor-pointer hover:border-brand hover:bg-green-50 transition group h-full min-h-[180px]">
+    <div id="create-new-card" onClick={onCreate} className="rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-5 cursor-pointer hover:border-brand hover:bg-green-50 transition group h-full min-h-[180px]">
       <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-white transition">
         <i className="fas fa-plus text-gray-400 group-hover:text-brand text-lg"></i>
       </div>
