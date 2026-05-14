@@ -18,6 +18,7 @@ type ShowcaseSummary = {
   description?: string | null
   thumbnailUrl?: string | null
   category: ShowcaseCategory
+  isPublic?: boolean
   viewCount: number
   likeCount: number
   createdAt?: string | null
@@ -65,39 +66,6 @@ type CompletedWorkspaceProject = {
   category: ShowcaseCategory
 }
 
-const fallbackShowcases: ShowcaseSummary[] = [
-  {
-    showcaseId: 1,
-    userId: 101,
-    title: 'DevPath 포트폴리오 빌더',
-    description: '학습 기록과 프로젝트 경험을 모아 PDF 포트폴리오로 정리하는 웹 서비스입니다.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900',
-    category: 'FULLSTACK',
-    viewCount: 36,
-    likeCount: 4,
-  },
-  {
-    showcaseId: 2,
-    userId: 102,
-    title: 'AI 코드 리뷰 대시보드',
-    description: 'PR 리뷰 결과를 위험도, 수정 가이드, 히스토리로 분류해서 팀 단위로 추적합니다.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=900',
-    category: 'AI',
-    viewCount: 42,
-    likeCount: 4,
-  },
-  {
-    showcaseId: 3,
-    userId: 103,
-    title: '스터디 매칭 모바일 MVP',
-    description: '관심 스택과 시간대를 기반으로 스터디원을 추천하고 출석을 관리하는 모바일 MVP입니다.',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=900',
-    category: 'MOBILE',
-    viewCount: 28,
-    likeCount: 4,
-  },
-]
-
 const categoryLabels: Record<ShowcaseCategory, string> = {
   FRONTEND: 'Web',
   BACKEND: 'Backend',
@@ -114,20 +82,6 @@ const categoryQueries: Record<Exclude<CategoryFilter, 'all'>, ShowcaseCategory> 
   app: 'MOBILE',
   ai: 'AI',
   game: 'ETC',
-}
-
-const authorNames = ['김하늘', '이서준', '정다은', '최민지', '오서연', '박도윤']
-const authorImages = ['TeamTrip', 'Linux', 'Mood', 'Habit', 'DevPath', 'Root']
-const statusLabels = ['Featured', 'Hot', 'New', 'Trending']
-const techByCategory: Record<ShowcaseCategory, string[]> = {
-  FRONTEND: ['React', 'TypeScript', 'Tailwind'],
-  BACKEND: ['Spring Boot', 'PostgreSQL', 'Redis'],
-  FULLSTACK: ['React', 'Spring Boot', 'PostgreSQL'],
-  MOBILE: ['React Native', 'Expo', 'Firebase'],
-  AI: ['Python', 'OpenAI API', 'Spring Boot'],
-  DATA: ['Python', 'Pandas', 'Superset'],
-  DEVOPS: ['Docker', 'GitHub Actions', 'AWS'],
-  ETC: ['Unity', 'TypeScript', 'WebSocket'],
 }
 
 function getWorkspaceProjectCategory(project: WorkspaceHubProject): ShowcaseCategory {
@@ -171,24 +125,27 @@ function mapCompletedWorkspaceProject(project: WorkspaceHubProject): CompletedWo
   }
 }
 
-function getAuthorName(userId: number) {
-  return authorNames[userId % authorNames.length]
-}
-
 function getShowcaseTeam(showcase: ShowcaseSummary) {
-  const index = showcase.userId % authorNames.length
   return {
-    name: index % 2 === 0 ? `Team ${authorNames[index]}` : `${authorNames[index]} 팀`,
-    image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${authorImages[index]}`,
+    name: `작성자 ${showcase.userId}`,
+    image: `https://api.dicebear.com/7.x/avataaars/svg?seed=showcase-user-${showcase.userId}`,
   }
 }
 
 function getShowcaseStatus(showcase: ShowcaseSummary) {
-  return statusLabels[(showcase.showcaseId - 1) % statusLabels.length]
+  return showcase.isPublic === false ? 'Private' : 'Public'
 }
 
 function getShowcaseShort(showcase: ShowcaseSummary) {
   return showcase.description || '완성된 프로젝트를 공유하고 피드백을 받는 쇼케이스입니다.'
+}
+
+function getShowcaseTechStack(showcase: ShowcaseSummary) {
+  return [categoryLabels[showcase.category] ?? 'Project']
+}
+
+function getCommentAuthorName(userId: number) {
+  return `작성자 ${userId}`
 }
 
 function formatViews(value: number) {
@@ -235,7 +192,7 @@ export default function DevShowcaseApp() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dataReloadKey, setDataReloadKey] = useState(0)
-  const [showcases, setShowcases] = useState<ShowcaseSummary[]>(fallbackShowcases)
+  const [showcases, setShowcases] = useState<ShowcaseSummary[]>([])
   const [asideSquads, setAsideSquads] = useState<ProjectAsideSquad[]>([])
   const [completedProjects, setCompletedProjects] = useState<CompletedWorkspaceProject[]>([])
   const [category, setCategory] = useState<CategoryFilter>('all')
@@ -293,11 +250,11 @@ export default function DevShowcaseApp() {
             : Promise.resolve([]),
         ])
         setAsideSquads(shell?.mySquads ?? [])
-        setShowcases(list.length > 0 ? list : fallbackShowcases)
+        setShowcases(list)
         setCompletedProjects(workspaceProjects.filter((project) => project.status === 'completed').map(mapCompletedWorkspaceProject))
       } catch (error) {
         console.error(error)
-        setShowcases(fallbackShowcases)
+        setShowcases([])
         setCompletedProjects([])
       } finally {
         setLoading(false)
@@ -315,7 +272,7 @@ export default function DevShowcaseApp() {
         return true
       }
 
-      return `${showcase.title} ${showcase.description ?? ''} ${getShowcaseTeam(showcase).name} ${techByCategory[showcase.category].join(' ')}`
+      return `${showcase.title} ${showcase.description ?? ''} ${getShowcaseTeam(showcase).name} ${getShowcaseTechStack(showcase).join(' ')}`
         .toLowerCase()
         .includes(lowered)
     })
@@ -478,8 +435,10 @@ export default function DevShowcaseApp() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden text-gray-800">
-      <ProjectAside activeKey="showcase" mySquads={asideSquads} />
+    <div className="dev-showcase-page relative h-screen overflow-hidden text-gray-800">
+      <div className="fixed inset-y-0 left-0 z-50 flex">
+        <ProjectAside activeKey="showcase" mySquads={asideSquads} />
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col h-screen overflow-hidden">
         <ProjectHeader session={session} activeHref="lounge-dashboard.html" onLoginClick={() => openAuthModal()} onLogout={handleLogout} />
@@ -495,26 +454,26 @@ export default function DevShowcaseApp() {
                 <button
                   type="button"
                   onClick={openUploadModal}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black"
+                  className="dev-showcase-upload-trigger bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-lg flex items-center gap-2"
                 >
                   <i className="fas fa-upload"></i>
                   프로젝트 등록
                 </button>
               </div>
 
-              <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                  <div className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <section className="dev-showcase-filter-panel bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                <div className="dev-showcase-filter-row flex flex-col lg:flex-row lg:items-center gap-3">
+                  <div className="dev-showcase-search-shell flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
                     <i className="fas fa-search text-gray-400"></i>
                     <input
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
-                      className="w-full bg-transparent text-sm outline-none"
+                      className="dev-showcase-search-input bg-transparent outline-none w-full text-sm"
                       placeholder="프로젝트 제목/설명/팀 이름 검색"
                     />
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="dev-showcase-chip-list flex flex-wrap gap-2">
                     <FilterChip active={category === 'all'} icon="fa-layer-group" label="전체" onClick={() => setCategory('all')} />
                     <FilterChip active={category === 'web'} icon="fa-globe" label="Web" onClick={() => setCategory('web')} />
                     <FilterChip active={category === 'app'} icon="fa-mobile-alt" label="App" onClick={() => setCategory('app')} />
@@ -526,7 +485,7 @@ export default function DevShowcaseApp() {
                     <select
                       value={sort}
                       onChange={(event) => setSort(event.target.value as SortFilter)}
-                      className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none"
+                      className="dev-showcase-sort-select text-sm border border-gray-200 rounded-xl px-4 py-3 bg-white outline-none"
                     >
                       <option value="popular">인기순 (좋아요)</option>
                       <option value="recent">최신순</option>
@@ -581,21 +540,21 @@ export default function DevShowcaseApp() {
       {uploadOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="닫기" onClick={() => setUploadOpen(false)}></button>
-          <form onSubmit={createShowcase} className="modal-enter relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl transition-all">
-            <h3 className="mb-6 flex items-center gap-2 text-xl font-extrabold text-gray-900">
+          <form onSubmit={createShowcase} className="dev-showcase-upload-modal bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 p-8 transform transition-all dev-showcase-modal-enter max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center gap-2">
               <i className="fas fa-upload text-brand"></i>
               완성 프로젝트 등록
             </h3>
 
-            <div className="mb-6 border-b border-gray-100 pb-6">
-              <label className="mb-2 flex items-center gap-2 text-xs font-bold text-gray-600">
+            <div className="mb-6 pb-6 border-b border-gray-100">
+              <label className="block text-xs font-bold text-gray-600 mb-2 flex items-center gap-2">
                 <i className="fas fa-archive text-brand"></i>
                 내 워크스페이스에서 바로 불러오기
               </label>
               <select
                 value=""
                 onChange={(event) => importWorkspaceProject(event.target.value)}
-                className="w-full cursor-pointer rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-bold text-brand transition focus:outline-none focus:ring-1 focus:ring-brand"
+                className="w-full border border-green-200 bg-green-50 text-brand font-bold rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand transition cursor-pointer"
               >
                 <option value="">-- 완료된 프로젝트 선택 --</option>
                 {completedProjects.map((project) => (
@@ -605,19 +564,19 @@ export default function DevShowcaseApp() {
                 ))}
                 {completedProjects.length === 0 && <option disabled>등록 가능한 완료 프로젝트가 없습니다</option>}
               </select>
-              <p className="mt-2 text-[10px] text-gray-400">
+              <p className="text-[10px] text-gray-400 mt-2">
                 <i className="fas fa-info-circle"></i>
                 {' '}종료/완료된 프로젝트만 쇼케이스에 등록 가능합니다.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-5">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="dev-showcase-upload-grid grid grid-cols-1 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <UploadField label="카테고리">
                   <select
                     value={newShowcase.category}
                     onChange={(event) => setNewShowcase((current) => ({ ...current, category: event.target.value as ShowcaseCategory }))}
-                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-brand"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none bg-white"
                   >
                     <option value="FULLSTACK">Web</option>
                     <option value="MOBILE">App</option>
@@ -629,7 +588,7 @@ export default function DevShowcaseApp() {
                   <input
                     value={newShowcase.team}
                     onChange={(event) => setNewShowcase((current) => ({ ...current, team: event.target.value }))}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brand"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
                     placeholder="Team DevPath"
                   />
                 </UploadField>
@@ -640,7 +599,7 @@ export default function DevShowcaseApp() {
                   required
                   value={newShowcase.title}
                   onChange={(event) => setNewShowcase((current) => ({ ...current, title: event.target.value }))}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brand"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
                   placeholder="눈에 띄는 제목을 작성해주세요."
                 />
               </UploadField>
@@ -649,7 +608,7 @@ export default function DevShowcaseApp() {
                 <input
                   value={newShowcase.short}
                   onChange={(event) => setNewShowcase((current) => ({ ...current, short: event.target.value }))}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brand"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
                   placeholder="프로젝트의 핵심 가치를 한 줄로 요약해주세요."
                 />
               </UploadField>
@@ -659,7 +618,7 @@ export default function DevShowcaseApp() {
                   required
                   value={newShowcase.description}
                   onChange={(event) => setNewShowcase((current) => ({ ...current, description: event.target.value }))}
-                  className="h-32 w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brand"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm h-32 resize-none focus:border-brand outline-none"
                   placeholder="프로젝트 기획 의도, 구현된 핵심 기능, 배운 점 등을 상세히 적어주세요."
                 />
               </UploadField>
@@ -668,17 +627,17 @@ export default function DevShowcaseApp() {
                 <input
                   value={newShowcase.tech}
                   onChange={(event) => setNewShowcase((current) => ({ ...current, tech: event.target.value }))}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brand"
+                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
                   placeholder="React, Spring Boot, MySQL"
                 />
               </UploadField>
 
-              <div className="grid grid-cols-1 gap-4 border-t border-gray-100 pt-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 pt-4">
                 <UploadField label="GitHub 저장소 URL">
                   <input
                     value={newShowcase.githubUrl}
                     onChange={(event) => setNewShowcase((current) => ({ ...current, githubUrl: event.target.value }))}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brand"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
                     placeholder="https://github.com/..."
                   />
                 </UploadField>
@@ -686,7 +645,7 @@ export default function DevShowcaseApp() {
                   <input
                     value={newShowcase.demoUrl}
                     onChange={(event) => setNewShowcase((current) => ({ ...current, demoUrl: event.target.value }))}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brand"
+                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
                     placeholder="https://..."
                   />
                 </UploadField>
@@ -694,10 +653,10 @@ export default function DevShowcaseApp() {
             </div>
 
             <div className="mt-8 flex justify-end gap-3">
-              <button type="button" onClick={() => setUploadOpen(false)} className="rounded-xl bg-gray-100 px-6 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-200">
+              <button type="button" onClick={() => setUploadOpen(false)} className="px-6 py-3 bg-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition">
                 취소
               </button>
-              <button type="submit" disabled={submitting} className="rounded-xl bg-gray-900 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black disabled:opacity-60">
+              <button type="submit" disabled={submitting} className="px-8 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black shadow-lg transition disabled:opacity-60">
                 {submitting ? '등록 중' : '등록하기'}
               </button>
             </div>
@@ -724,8 +683,8 @@ function FilterChip({ active, icon, label, onClick }: { active: boolean; icon: s
       onClick={onClick}
       className={
         active
-          ? 'inline-flex items-center gap-1.5 rounded-full border border-brand bg-[#EBFDF5] px-2.5 py-1.5 text-xs font-bold text-brand transition'
-          : 'inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100'
+          ? 'chip active'
+          : 'chip'
       }
     >
       <i className={`fas ${icon} text-[11px]`}></i>
@@ -747,7 +706,7 @@ function ShowcaseCard({
   onLike: () => void
   onOpen: () => void
 }) {
-  const techStack = techByCategory[showcase.category]
+  const techStack = getShowcaseTechStack(showcase)
   const team = getShowcaseTeam(showcase)
   const likeCount = showcase.likeCount + (liked ? 1 : 0)
 
@@ -839,15 +798,15 @@ function DetailModal({
   onSubmitComment: () => void
   onToggleLike: () => void
 }) {
-  const techStack = techByCategory[showcase.category]
+  const techStack = getShowcaseTechStack(showcase)
   const team = getShowcaseTeam(showcase)
   const likeCount = showcase.likeCount + (liked ? 1 : 0)
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="닫기" onClick={onClose}></button>
-      <div className="modal-enter relative z-10 flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="relative flex h-44 shrink-0 flex-col justify-end bg-gradient-to-br from-gray-800 to-gray-950 p-8">
+      <div className="dev-showcase-modal-enter relative z-10 flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="relative flex h-44 shrink-0 flex-col justify-end bg-gradient-to-br from-gray-800 to-gray-900 p-8">
           <button type="button" onClick={onClose} className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
             <i className="fas fa-times"></i>
           </button>
@@ -920,7 +879,7 @@ function DetailModal({
                         <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.userId}`} alt="" className="h-10 w-10 rounded-full border border-gray-200 bg-white" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-extrabold text-gray-900">{getAuthorName(comment.userId)}</p>
+                            <p className="text-sm font-extrabold text-gray-900">{getCommentAuthorName(comment.userId)}</p>
                             <div className="flex items-center gap-2">
                               <span className="text-[11px] font-bold text-gray-400">{formatDate(comment.createdAt)}</span>
                               <button type="button" className="text-gray-300 transition hover:text-red-500" title="댓글 삭제">
@@ -1020,7 +979,7 @@ function DetailMetric({ label, value }: { label: string; value: number }) {
 function UploadField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-bold text-gray-500">{label}</label>
+      <label className="block text-xs font-bold text-gray-500 mb-1.5">{label}</label>
       {children}
     </div>
   )
