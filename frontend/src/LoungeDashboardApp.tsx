@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside from './components/ProjectAside'
 import ProjectHeader from './components/ProjectHeader'
@@ -551,7 +551,7 @@ export default function LoungeDashboardApp() {
                     <h2 className="text-lg font-extrabold text-transparent select-none leading-none">Spacer</h2>
                   </div>
 
-                  <div className="bg-gray-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden group cursor-pointer hover:bg-gray-800 transition flex flex-col" onClick={() => isAuthenticated ? goTo('job-matching.html') : openAuthModal('커리어 추천은 로그인 후 이용할 수 있습니다.')}>
+                  <div className="bg-gray-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden group cursor-pointer hover:bg-gray-800 transition flex flex-col" onClick={() => isAuthenticated ? goTo('/job-matching') : openAuthModal('커리어 추천은 로그인 후 이용할 수 있습니다.')}>
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 opacity-20 rounded-full blur-2xl group-hover:opacity-30 transition"></div>
 
                     <div>

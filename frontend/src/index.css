@@ -2290,3 +2290,145 @@ input[type="checkbox"]:checked { background-color: #00C471; border-color: #00C47
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Job matching styles from the supplied job-matching.html head block */
+.job-matching-page {
+  font-family: 'Pretendard', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.job-matching-page .match-bar {
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.job-matching-page button,
+.job-matching-page input,
+.job-matching-page select,
+.job-matching-page textarea {
+  font-family: 'Pretendard', sans-serif;
+}
+
+.job-matching-page .text-sm,
+.job-matching-page button,
+.job-matching-page input,
+.job-matching-page select,
+.job-matching-page textarea {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.job-matching-page .text-xs {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.job-matching-page .text-\[10px\] {
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.job-matching-page .text-\[11px\] {
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.job-matching-page select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239CA3AF'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  padding-right: 36px !important;
+  padding-left: 12px !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  line-height: 1.2 !important;
+}
+
+.job-matching-page .job-matching-missing-skill {
+  min-height: 32px;
+  padding: 8px !important;
+  margin-right: -8px !important;
+  margin-left: -8px !important;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.job-matching-page .job-matching-reason-row,
+.job-matching-page .job-matching-missing-skill {
+  text-align: left;
+}
+
+.job-matching-page .job-matching-reason-row > span:first-child,
+.job-matching-page .job-matching-missing-skill > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 12px;
+}
+
+.job-matching-page .job-matching-reason-row > span:last-child,
+.job-matching-page .job-matching-missing-skill > span:nth-child(2),
+.job-matching-page .job-matching-missing-skill > span:nth-child(3) {
+  flex: 0 0 auto;
+  margin-left: auto;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.job-matching-page .job-matching-missing-skill i {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.job-matching-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.4s ease, visibility 0.4s;
+}
+
+.job-matching-loader.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.smooth-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(0, 196, 113, 0.15);
+  border-top-color: #00C471;
+  border-radius: 50%;
+  animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 0 15px rgba(0, 196, 113, 0.2);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.pulse-text {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}

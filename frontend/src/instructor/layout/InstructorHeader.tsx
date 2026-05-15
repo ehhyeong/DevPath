@@ -8,7 +8,7 @@ const headerLinks = [
   { href: 'lecture-list.html', label: '강의' },
   { href: 'lounge-dashboard.html', label: '프로젝트' },
   { href: 'community-list.html', label: '커뮤니티' },
-  { href: 'job-matching.html', label: '채용분석' },
+  { href: '/job-matching', label: '채용분석' },
 ]
 
 function getMoveStyle(offset: { x: number; y: number }): CSSProperties {

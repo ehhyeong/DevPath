@@ -1868,7 +1868,7 @@ export default function RoadmapDetailPage() {
               <a href="lecture-list.html" className="hover:text-[#00c471] transition">강의</a>
               <a href="project-list.html" className="hover:text-[#00c471] transition">프로젝트</a>
               <a href="community-list.html" className="hover:text-[#00c471] transition">커뮤니티</a>
-              <a href="job-matching.html" className="hover:text-[#00c471] transition">채용분석</a>
+              <a href="/job-matching" className="hover:text-[#00c471] transition">채용분석</a>
             </div>
           </nav>
 

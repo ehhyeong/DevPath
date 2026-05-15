@@ -14,7 +14,7 @@ const headerLinks = [
   { key: 'roadmap', href: 'roadmap-hub.html', label: '로드맵' },
   { key: 'lecture', href: 'lecture-list.html', label: '강의' },
   { key: 'project', href: 'lounge-dashboard.html', label: '프로젝트' },
-  { key: 'jobMatching', href: 'job-matching.html', label: '채용분석' },
+  { key: 'jobMatching', href: '/job-matching', label: '채용분석' },
   { key: 'community', href: 'community-list.html', label: '커뮤니티' },
 ]
 
@@ -32,7 +32,7 @@ const serviceLinks = [
   { href: 'roadmap-hub.html', label: '로드맵' },
   { href: 'lecture-list.html', label: '강의' },
   { href: 'workspace-hub.html', label: '워크스페이스' },
-  { href: 'job-matching.html', label: '채용 분석' },
+  { href: '/job-matching', label: '채용 분석' },
 ]
 
 const communityLinks = [
@@ -637,7 +637,7 @@ function App() {
 
           <button
             type="button"
-            onClick={() => go('job-matching.html')}
+            onClick={() => go('/job-matching')}
             className="rounded-full bg-white px-8 py-3 font-bold text-gray-900 transition hover:bg-gray-100"
           >
             내 시장 가치 확인하기
