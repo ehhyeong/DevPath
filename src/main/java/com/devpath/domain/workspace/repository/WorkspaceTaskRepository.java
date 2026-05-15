@@ -16,6 +16,10 @@ public interface WorkspaceTaskRepository extends JpaRepository<WorkspaceTask, Lo
   List<WorkspaceTask> findAllByWorkspaceIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
       Long workspaceId, WorkspaceTaskStatus status);
 
+  List<WorkspaceTask>
+      findAllByWorkspaceIdInAndAssigneeIdAndStatusAndIsDeletedFalseOrderByUpdatedAtDesc(
+          Collection<Long> workspaceIds, Long assigneeId, WorkspaceTaskStatus status);
+
   long countByWorkspaceIdAndStatusNotAndIsDeletedFalse(
       Long workspaceId, WorkspaceTaskStatus status);
 

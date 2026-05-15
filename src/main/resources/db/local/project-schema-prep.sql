@@ -577,3 +577,146 @@ BEGIN
     ALTER TABLE public.squad_members ADD COLUMN IF NOT EXISTS deleted_at timestamp(6);
 END $$;
 ^^^ END OF SCRIPT ^^^
+DO $$
+DECLARE
+    v_backend_company_id bigint;
+    v_devops_company_id bigint;
+    v_ai_company_id bigint;
+BEGIN
+    IF to_regclass('public.companies') IS NULL
+        OR to_regclass('public.job_postings') IS NULL THEN
+        RETURN;
+    END IF;
+
+    INSERT INTO public.companies (
+        name,
+        description,
+        website_url,
+        logo_url,
+        industry,
+        location,
+        verification_status,
+        is_deleted,
+        created_at,
+        updated_at
+    )
+    SELECT
+        seed.name,
+        seed.description,
+        seed.website_url,
+        seed.logo_url,
+        seed.industry,
+        seed.location,
+        'VERIFIED',
+        false,
+        now(),
+        now()
+    FROM (
+        VALUES
+            ('DevPath Labs', 'Developer education and career platform', 'https://devpath.local/jobs', NULL, 'EdTech', '서울 강남구'),
+            ('Cloud Native Studio', 'Cloud infrastructure consulting team', 'https://cloud-native.local/jobs', NULL, 'Cloud', '성남 판교'),
+            ('Data Sprint AI', 'AI product analytics startup', 'https://datasprint.local/jobs', NULL, 'AI', '서울 마포구')
+    ) AS seed(name, description, website_url, logo_url, industry, location)
+    WHERE NOT EXISTS (
+        SELECT 1
+          FROM public.companies c
+         WHERE c.name = seed.name
+           AND COALESCE(c.is_deleted, false) = false
+    );
+
+    SELECT company_id INTO v_backend_company_id
+      FROM public.companies
+     WHERE name = 'DevPath Labs'
+     LIMIT 1;
+
+    SELECT company_id INTO v_devops_company_id
+      FROM public.companies
+     WHERE name = 'Cloud Native Studio'
+     LIMIT 1;
+
+    SELECT company_id INTO v_ai_company_id
+      FROM public.companies
+     WHERE name = 'Data Sprint AI'
+     LIMIT 1;
+
+    INSERT INTO public.job_postings (
+        company_id,
+        title,
+        job_role,
+        description,
+        required_skills,
+        region,
+        career_level,
+        source_url,
+        source,
+        status,
+        deadline,
+        external_job_id,
+        is_deleted,
+        created_at,
+        updated_at
+    )
+    SELECT
+        seed.company_id,
+        seed.title,
+        seed.job_role,
+        seed.description,
+        seed.required_skills,
+        seed.region,
+        seed.career_level,
+        seed.source_url,
+        'INTERNAL',
+        'OPEN',
+        CURRENT_DATE + seed.deadline_days,
+        seed.external_job_id,
+        false,
+        now(),
+        now()
+    FROM (
+        VALUES
+            (
+                v_backend_company_id,
+                '백엔드 개발자 Java/Spring 주니어 채용',
+                'Backend Developer',
+                'Spring Boot 기반 API와 PostgreSQL 데이터 모델을 함께 개발할 주니어 백엔드 개발자를 찾습니다.',
+                'Java, Spring Boot, JPA, PostgreSQL, AWS',
+                '서울 강남구',
+                'JUNIOR',
+                'https://devpath.local/jobs/backend-junior',
+                'local-job-backend-001',
+                42
+            ),
+            (
+                v_devops_company_id,
+                '클라우드 인프라 엔지니어 신입 채용',
+                'DevOps Engineer',
+                'Linux, Docker, Kubernetes 기반 운영 자동화와 CI/CD 파이프라인을 함께 구축합니다.',
+                'Linux, Docker, Kubernetes, AWS, GitHub Actions',
+                '성남 판교',
+                'JUNIOR',
+                'https://cloud-native.local/jobs/devops-junior',
+                'local-job-devops-001',
+                35
+            ),
+            (
+                v_ai_company_id,
+                'AI 서비스 백엔드/데이터 엔지니어 채용',
+                'Data Engineer',
+                '추천 시스템과 로그 파이프라인을 운영하며 Python, SQL, Spring Boot 서비스를 함께 다룹니다.',
+                'Python, SQL, Spring Boot, Kafka, MLOps',
+                '서울 마포구',
+                'JUNIOR',
+                'https://datasprint.local/jobs/data-ai-junior',
+                'local-job-ai-001',
+                50
+            )
+    ) AS seed(company_id, title, job_role, description, required_skills, region, career_level, source_url, external_job_id, deadline_days)
+    WHERE seed.company_id IS NOT NULL
+      AND NOT EXISTS (
+          SELECT 1
+            FROM public.job_postings jp
+           WHERE jp.external_job_id = seed.external_job_id
+             AND COALESCE(jp.is_deleted, false) = false
+      );
+END $$;
+^^^ END OF SCRIPT ^^^

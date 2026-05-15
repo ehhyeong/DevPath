@@ -1,7 +1,9 @@
 package com.devpath.api.job.controller;
 
+import com.devpath.api.job.dto.JobActivityProfileResponse;
 import com.devpath.api.job.dto.JobRecommendationRequest;
 import com.devpath.api.job.dto.JobRecommendationResponse;
+import com.devpath.api.job.service.JobActivityProfileService;
 import com.devpath.api.job.service.JobRecommendationService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerTag;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class JobRecommendationController {
 
   private final JobRecommendationService jobRecommendationService;
+  private final JobActivityProfileService jobActivityProfileService;
 
   @GetMapping("/api/jobs/recommendations/me")
   @Operation(
@@ -49,5 +52,14 @@ public class JobRecommendationController {
 
     return ResponseEntity.ok(
         ApiResponse.ok(jobRecommendationService.getMyRecommendations(condition)));
+  }
+
+  @GetMapping("/api/jobs/activity-profile/me")
+  @Operation(
+      summary = "내부 프로젝트 활동 기반 스킬 프로필 조회",
+      description = "워크스페이스 완료 티켓, 스쿼드 역할, Proof Card에서 채용 매칭용 스킬 신호를 추출합니다.")
+  public ResponseEntity<ApiResponse<JobActivityProfileResponse.Summary>> getMyActivityProfile(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ResponseEntity.ok(ApiResponse.ok(jobActivityProfileService.getMyActivityProfile(userId)));
   }
 }

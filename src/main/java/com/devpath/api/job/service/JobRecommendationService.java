@@ -32,6 +32,7 @@ public class JobRecommendationService {
   private final JobPostingRepository jobPostingRepository;
   private final JobSkillTagRepository jobSkillTagRepository;
   private final UserRepository userRepository;
+  private final JobActivityProfileService jobActivityProfileService;
 
   public List<JobRecommendationResponse.Recommendation> getMyRecommendations(
       JobRecommendationRequest.SearchCondition condition) {
@@ -106,6 +107,9 @@ public class JobRecommendationService {
   private Set<String> buildUserSkillSignals(JobRecommendationRequest.SearchCondition condition) {
     Set<String> skills = new LinkedHashSet<>();
 
+    if (condition.userId() != null) {
+      skills.addAll(jobActivityProfileService.collectSkillSignals(condition.userId()));
+    }
     skills.addAll(parseCsv(condition.skillTags()));
     skills.addAll(parseCsv(condition.proofCardSkills()));
     skills.addAll(parseCsv(condition.completedRoadmapSkills()));

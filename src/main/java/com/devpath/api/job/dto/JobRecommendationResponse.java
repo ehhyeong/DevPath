@@ -57,7 +57,7 @@ public class JobRecommendationResponse {
         return "지역/경력 조건에 맞는 공개 채용 공고입니다.";
       }
 
-      return "보유/검증/로드맵 스킬과 " + matchedSkillTags.size() + "개 기술이 일치합니다.";
+      return "DevPath 프로젝트 활동 스킬과 " + matchedSkillTags.size() + "개 기술이 일치합니다.";
     }
   }
 }
