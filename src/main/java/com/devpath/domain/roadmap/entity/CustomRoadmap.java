@@ -79,4 +79,9 @@ public class CustomRoadmap {
   public void updateProgressRate(Integer newRate) {
     this.progressRate = newRate;
   }
+
+  // 제목 변경 비즈니스 메서드
+  public void changeTitle(String newTitle) {
+    this.title = newTitle;
+  }
 }

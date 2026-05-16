@@ -4,7 +4,8 @@ import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from './components/ProjectAside'
 import { ProjectCreatePanel } from './ProjectCreateApp'
 import ProjectHeader from './components/ProjectHeader'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredView from './components/LoginRequiredView'
 import { showAuthToast } from './lib/auth-toast'
 
 type ProjectType = 'all' | 'solo' | 'squad' | 'mentoring'
@@ -115,6 +116,16 @@ export default function WorkspaceHubApp() {
     return () => controller.abort()
   }, [dataReloadKey])
 
+  useEffect(() => {
+    const syncSession = () => setSession(readStoredAuthSession())
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    }
+  }, [])
+
   const visibleProjects = useMemo(
     () =>
       projects.filter((project) => {
@@ -206,6 +217,8 @@ export default function WorkspaceHubApp() {
   function handleProjectCreated() {
     window.location.assign('workspace-hub.html')
   }
+
+  if (!session) return <LoginRequiredView />
 
   return (
     <div className="flex h-screen overflow-hidden text-gray-800">

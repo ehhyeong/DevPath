@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from './components/ProjectAside'
 import ProjectHeader from './components/ProjectHeader'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredView from './components/LoginRequiredView'
 import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
 
@@ -325,6 +326,16 @@ export default function CommunityLoungeApp() {
   useEffect(() => {
     setCurrentPage(1)
   }, [activeFilter, hideClosed, search, sort])
+
+  useEffect(() => {
+    const syncSession = () => setSession(readStoredAuthSession())
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    }
+  }, [])
 
   const filteredSquads = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -673,6 +684,8 @@ export default function CommunityLoungeApp() {
     setMemberProfile(null)
     setMemberMessage('')
   }
+
+  if (!session) return <LoginRequiredView />
 
   return (
     <div className="flex h-screen overflow-hidden text-gray-800">

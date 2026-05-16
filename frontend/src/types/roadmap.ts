@@ -91,6 +91,9 @@ export interface MyRoadmapSummary {
   customRoadmapId: number
   originalRoadmapId: number | null
   title: string
+  progressRate: number
+  isBuilderOrigin: boolean
+  builderRoadmapId?: number | null
   createdAt: string
   updatedAt?: string | null
   lastStudiedAt?: string | null

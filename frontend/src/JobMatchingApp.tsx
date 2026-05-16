@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import SiteHeader from './components/SiteHeader'
 import { authApi, userApi } from './lib/api'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredView from './components/LoginRequiredView'
 import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
 
@@ -61,6 +62,28 @@ type RecommendedJob = ApiJob & {
   matchedSkillTags?: string[] | null
   reason?: string | null
 }
+
+type GeminiRecommendation = {
+  externalId?: string | null
+  companyName?: string | null
+  title?: string | null
+  keywords?: string[] | null
+  areaCode?: string | null
+  careerCode?: string | null
+  deadline?: string | null
+  postedDate?: string | null
+  jobkoreaUrl?: string | null
+  aiMatchScore: number
+  aiReason?: string | null
+}
+
+type GeminiAnalysis = {
+  recommendations: GeminiRecommendation[]
+  aiAnalyzed: boolean
+  analysisNote?: string | null
+}
+
+type LoadingStep = 'profile' | 'jobkorea' | 'gemini' | 'finishing' | 'fallback' | null
 
 type UserProfile = {
   name?: string | null
@@ -161,6 +184,7 @@ type MatchingJob = {
   matchScore: number
   matchedReasons: string[]
   missingSkills: string[]
+  aiAnalyzed?: boolean
 }
 
 const roleOptions: RoleOption[] = [
@@ -223,6 +247,34 @@ const careerOptions: CareerOption[] = [
   { value: 'lead', label: '리드/테크리드', aliases: ['리드', '테크리드', 'lead', 'architect'] },
   { value: 'manager', label: '파트장/매니저', aliases: ['파트장', '매니저', 'manager', '팀장'] },
 ]
+
+const STEP_MESSAGES: Record<NonNullable<LoadingStep>, string[]> = {
+  profile: [
+    'DevPath 학습 이력을 분석하고 있습니다...',
+    'Proof Card와 프로젝트 데이터를 수집 중입니다...',
+    '보유 스킬 신호를 추출하고 있습니다...',
+  ],
+  jobkorea: [
+    '잡코리아에서 최신 채용공고를 수집하고 있습니다...',
+    '실시간 채용 데이터를 불러오는 중입니다...',
+    '검색 조건에 맞는 공고를 필터링하고 있습니다...',
+  ],
+  gemini: [
+    'Gemini AI가 직무 적합도를 분석 중입니다...',
+    'AI가 공고별 매칭 포인트를 계산하고 있습니다...',
+    '보유 스킬과 채용 요건을 비교하고 있습니다...',
+    '당신에게 딱 맞는 공고를 선별하고 있습니다...',
+  ],
+  finishing: [
+    'AI 분석 결과를 정리하고 있습니다...',
+    '맞춤 추천 목록을 구성하고 있습니다...',
+  ],
+  fallback: [
+    'AI 분석을 완료하지 못했습니다. 기본 매칭으로 전환합니다...',
+    '잡코리아 공고와 스킬 데이터를 매칭하고 있습니다...',
+    '채용공고를 분석 중입니다...',
+  ],
+}
 
 function optionOf<T extends { value: string }>(items: T[], value: T['value']): T {
   return items.find((item) => item.value === value) ?? items[0]
@@ -457,6 +509,9 @@ export default function JobMatchingApp() {
   const [sourceWarnings, setSourceWarnings] = useState<string[]>([])
   const [jobkoreaAttribution, setJobkoreaAttribution] = useState<JobkoreaResult['attribution']>(null)
   const [activityProfile, setActivityProfile] = useState<ActivityProfile | null>(null)
+  const [geminiMode, setGeminiMode] = useState(false)
+  const [loadingStep, setLoadingStep] = useState<LoadingStep>(null)
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
   const [pageSize, setPageSize] = useState(20)
 
   const role = useMemo(() => optionOf(roleOptions, roleFilter), [roleFilter])
@@ -469,9 +524,23 @@ export default function JobMatchingApp() {
     ? activityProfile.skillSignals.slice(0, 8)
     : role.skills
 
+  const currentLoadingMessage = loadingStep
+    ? (STEP_MESSAGES[loadingStep][loadingMsgIdx] ?? STEP_MESSAGES[loadingStep][0])
+    : '분석 중입니다...'
+
   useEffect(() => {
     document.title = 'DevPath - AI 채용 매칭'
   }, [])
+
+  useEffect(() => {
+    if (!loadingStep) return
+    setLoadingMsgIdx(0)
+    const msgs = STEP_MESSAGES[loadingStep]
+    const interval = setInterval(() => {
+      setLoadingMsgIdx((prev) => (prev + 1) % msgs.length)
+    }, 1800)
+    return () => clearInterval(interval)
+  }, [loadingStep])
 
   useEffect(() => {
     if (!session) {
@@ -495,6 +564,16 @@ export default function JobMatchingApp() {
       controller.abort()
     }
   }, [session])
+
+  useEffect(() => {
+    const syncSession = () => setSession(readStoredAuthSession())
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    }
+  }, [])
 
   async function handleLogout() {
     const currentSession = readStoredAuthSession()
@@ -551,64 +630,119 @@ export default function JobMatchingApp() {
     const selectedRole = optionOf(roleOptions, roleFilter)
     const selectedRegion = optionOf(regionOptions, regionFilter)
     const selectedCareer = optionOf(careerOptions, careerFilter)
-    const warnings: string[] = []
 
     setLoading(true)
     setSourceWarnings([])
+    setGeminiMode(false)
 
     try {
-      const jobkoreaQuery = buildQuery({
-        size,
-        page: 1,
-        order: 1,
-        keyword: selectedRole.keyword,
-        industryCode: '10031',
-        jobCode: selectedRole.value === 'all' ? undefined : selectedRole.jobCode,
-        areaCode: selectedRegion.areaCode,
-        starter: selectedCareer.value === 'intern',
-      })
-
-      const [activityResult, dbResult, jobkoreaResult] = await Promise.allSettled([
-        projectApiRequest<ActivityProfile>('/api/jobs/activity-profile/me'),
-        projectApiRequest<RecommendedJob[]>('/api/jobs/recommendations/me'),
-        projectApiRequest<JobkoreaResult>(`/api/jobs/jobkorea${jobkoreaQuery}`),
-      ])
-
-      const nextJobs: MatchingJob[] = []
-
-      if (activityResult.status === 'fulfilled') {
-        setActivityProfile(activityResult.value)
-      } else {
+      // ── Step 1: 사용자 프로필 fetch ──
+      setLoadingStep('profile')
+      try {
+        const profile = await projectApiRequest<ActivityProfile>('/api/jobs/activity-profile/me')
+        setActivityProfile(profile)
+      } catch {
         setActivityProfile(null)
-        warnings.push('DevPath 프로젝트 활동 데이터를 불러오지 못했습니다.')
       }
 
-      if (dbResult.status === 'fulfilled') {
-        nextJobs.push(
-          ...filterDbJobs(dbResult.value, selectedRole, selectedRegion, selectedCareer).map((job) =>
-            mapRecommendedJob(job, selectedRole, selectedRegion, selectedCareer),
-          ),
+      // ── Step 2~3: Gemini 시도 ──
+      // jobkorea 단계 표시 후 2초 뒤 gemini 단계로 자동 전환 (백엔드 내부 JobKorea 호출 흐름 반영)
+      setLoadingStep('jobkorea')
+      const stepTimer = setTimeout(() => setLoadingStep('gemini'), 2000)
+
+      let geminiSuccess = false
+      try {
+        const geminiQuery = buildQuery({
+          keyword: selectedRole.keyword,
+          areaCode: selectedRegion.areaCode,
+          jobCode: selectedRole.value === 'all' ? undefined : selectedRole.jobCode,
+        })
+        const analysis = await projectApiRequest<GeminiAnalysis>(
+          `/api/jobs/gemini-recommendations/me${geminiQuery}`,
         )
-      } else {
-        warnings.push('DevPath DB 채용공고를 불러오지 못했습니다.')
+        clearTimeout(stepTimer)
+        setLoadingStep('finishing')
+
+        const geminiJobs: MatchingJob[] = analysis.recommendations.map((rec, i) => ({
+          id: `gemini-${rec.externalId ?? i}`,
+          source: 'jobkorea',
+          title: rec.title ?? '채용공고',
+          companyName: rec.companyName ?? '기업명 미공개',
+          regionLabel: rec.areaCode ?? selectedRegion.label,
+          careerLabel: rec.careerCode ?? '상세 조건 확인',
+          skills: rec.keywords ?? [],
+          url: rec.jobkoreaUrl,
+          deadline: rec.deadline,
+          createdAt: rec.postedDate,
+          matchScore: rec.aiMatchScore,
+          matchedReasons: rec.aiReason ? [rec.aiReason] : ['AI 매칭 완료'],
+          missingSkills: [],
+          aiAnalyzed: true,
+        }))
+
+        setJobs(geminiJobs)
+        setGeminiMode(true)
+        geminiSuccess = true
+
+      } catch {
+        clearTimeout(stepTimer)
       }
 
-      if (jobkoreaResult.status === 'fulfilled') {
-        setJobkoreaAttribution(jobkoreaResult.value.attribution ?? null)
-        nextJobs.push(
-          ...(jobkoreaResult.value.items ?? []).map((posting, index) =>
-            mapJobkoreaPosting(posting, index, selectedRole, selectedRegion, selectedCareer),
-          ),
+      // ── Fallback: 기존 rule-based 로직 ──
+      if (!geminiSuccess) {
+        setLoadingStep('fallback')
+        const warnings: string[] = ['Gemini AI 분석에 실패했습니다. 기본 매칭으로 전환합니다.']
+
+        const jobkoreaQuery = buildQuery({
+          size,
+          page: 1,
+          order: 1,
+          keyword: selectedRole.keyword,
+          industryCode: '10031',
+          jobCode: selectedRole.value === 'all' ? undefined : selectedRole.jobCode,
+          areaCode: selectedRegion.areaCode,
+          starter: selectedCareer.value === 'intern',
+        })
+
+        const [dbResult, jobkoreaResult] = await Promise.allSettled([
+          projectApiRequest<RecommendedJob[]>('/api/jobs/recommendations/me'),
+          projectApiRequest<JobkoreaResult>(`/api/jobs/jobkorea${jobkoreaQuery}`),
+        ])
+
+        const nextJobs: MatchingJob[] = []
+
+        if (dbResult.status === 'fulfilled') {
+          nextJobs.push(
+            ...filterDbJobs(dbResult.value, selectedRole, selectedRegion, selectedCareer).map(
+              (job) => mapRecommendedJob(job, selectedRole, selectedRegion, selectedCareer),
+            ),
+          )
+        } else {
+          warnings.push('DevPath DB 채용공고를 불러오지 못했습니다.')
+        }
+
+        if (jobkoreaResult.status === 'fulfilled') {
+          setJobkoreaAttribution(jobkoreaResult.value.attribution ?? null)
+          nextJobs.push(
+            ...(jobkoreaResult.value.items ?? []).map((posting, index) =>
+              mapJobkoreaPosting(posting, index, selectedRole, selectedRegion, selectedCareer),
+            ),
+          )
+        } else {
+          warnings.push('잡코리아 실시간 공고를 불러오지 못했습니다.')
+        }
+
+        const uniqueJobs = Array.from(
+          new Map(sortJobs(nextJobs).map((job) => [job.id, job])).values(),
         )
-      } else {
-        warnings.push('잡코리아 실시간 공고를 불러오지 못했습니다.')
+        setJobs(uniqueJobs)
+        setSourceWarnings(warnings)
+        setGeminiMode(false)
       }
 
-      const uniqueJobs = Array.from(new Map(sortJobs(nextJobs).map((job) => [job.id, job])).values())
-      setJobs(uniqueJobs)
       setScanned(true)
-      setSourceWarnings(warnings)
     } finally {
+      setLoadingStep(null)
       setLoading(false)
     }
   }
@@ -640,6 +774,8 @@ export default function JobMatchingApp() {
   const activityProjectLabel = activityProfile ? `${activityProfile.projectCount}개` : '스캔 전'
   const proofCardLabel = activityProfile ? `${activityProfile.proofCardCount}개` : '스캔 전'
   const proofScoreLabel = activityProfile ? `${averageProofCardScore}점` : '-'
+
+  if (!session) return <LoginRequiredView />
 
   return (
     <>
@@ -784,10 +920,14 @@ export default function JobMatchingApp() {
                 </div>
               ) : (
                 <div id="job-results" className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex justify-between items-center">
+                  <div className={`border rounded-xl p-4 mb-6 flex justify-between items-center ${geminiMode ? 'bg-purple-50 border-purple-100' : 'bg-blue-50 border-blue-100'}`}>
                     <div>
-                      <span className="text-sm text-blue-800">{displayName}님의 조건과 채용 데이터를 분석하여</span>
-                      <div className="font-bold text-lg text-gray-900">총 <span className="text-blue-600">{visibleJobs.length}건</span>의 핏한 공고를 찾았습니다.</div>
+                      <span className={`text-sm ${geminiMode ? 'text-purple-800' : 'text-blue-800'}`}>
+                        {geminiMode
+                          ? <><i className="fas fa-robot mr-1"></i>Gemini AI가 {displayName}님의 프로필을 분석하여</>
+                          : `${displayName}님의 조건과 채용 데이터를 분석하여`}
+                      </span>
+                      <div className="font-bold text-lg text-gray-900">총 <span className={geminiMode ? 'text-purple-600' : 'text-blue-600'}>{visibleJobs.length}건</span>의 핏한 공고를 찾았습니다.</div>
                     </div>
                     <div className="text-right hidden md:block">
                       <span className="text-xs text-gray-500">평균 점수</span>
@@ -819,10 +959,12 @@ export default function JobMatchingApp() {
                         onClick={() => openJob(job)}
                       >
                         <div className={index === 0
-                          ? 'absolute top-4 right-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm'
-                          : 'absolute top-4 right-4 bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full'}
+                          ? `absolute top-4 right-4 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm ${job.aiAnalyzed ? 'bg-purple-600' : 'bg-primary'}`
+                          : `absolute top-4 right-4 text-xs font-bold px-3 py-1 rounded-full ${job.aiAnalyzed ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-gray-100 text-gray-600'}`}
                         >
-                          {job.matchScore}% 일치{index === 0 ? ' (강력 추천)' : ''}
+                          {job.aiAnalyzed
+                            ? `AI 추천 ${job.matchScore}점${index === 0 ? ' ✦' : ''}`
+                            : `${job.matchScore}% 일치${index === 0 ? ' (강력 추천)' : ''}`}
                         </div>
 
                         <div className="flex items-start gap-4 mb-4 pr-24">
@@ -834,7 +976,9 @@ export default function JobMatchingApp() {
                         </div>
 
                         <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                          <p className="text-xs text-gray-500 mb-2 font-bold">🎯 매칭 포인트 (Why?)</p>
+                          <p className="text-xs text-gray-500 mb-2 font-bold">
+                            {job.aiAnalyzed ? '🤖 AI 추천 이유' : '🎯 매칭 포인트 (Why?)'}
+                          </p>
                           <div className="space-y-2">
                             {job.matchedReasons.map((reason) => (
                               <div key={reason} className="job-matching-reason-row flex justify-between items-center text-xs">
@@ -871,7 +1015,7 @@ export default function JobMatchingApp() {
                     ))
                   )}
 
-                  {visibleJobs.length > 0 ? (
+                  {visibleJobs.length > 0 && !geminiMode ? (
                     <button
                       type="button"
                       onClick={loadMore}
@@ -905,7 +1049,7 @@ export default function JobMatchingApp() {
         <div className="smooth-spinner"></div>
         <div className="text-center">
           <h2 className="text-white text-lg font-bold mb-2 drop-shadow-md tracking-wide">DevPath AI</h2>
-          <p className="text-green-400 text-sm font-bold h-5 drop-shadow-md pulse-text">실시간 채용공고와 매칭 점수를 계산 중입니다...</p>
+          <p className="text-green-400 text-sm font-bold h-5 drop-shadow-md pulse-text">{currentLoadingMessage}</p>
         </div>
         <div className="absolute bottom-8 left-8 text-[11px] text-green-400/40 font-mono space-y-1">
           <p>&gt; applying preference filters...</p>

@@ -1,5 +1,6 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AuthModal, { type AuthView } from '../components/AuthModal'
+import LoginRequiredView from '../components/LoginRequiredView'
 import RoadmapInfoContent from '../components/RoadmapInfoContent'
 import SiteHeader from '../components/SiteHeader'
 import { authApi, roadmapApi, userApi } from '../lib/api'
@@ -1347,12 +1348,18 @@ function ChangesPanel({
 
 // ── 메인 페이지 ───────────────────────────────────────────────────────────────
 
-interface RoadmapPageToolbarProps {
+interface RoadmapMetricsProps {
   changesCount: number
   totalNodes: number
   doneNodes: number
   progressPct: number
   onToggleChangesPanel: () => void
+}
+
+interface RoadmapPageToolbarProps extends RoadmapMetricsProps {
+  currentCustomRoadmapId: number
+  currentTitle: string
+  roadmaps: MyRoadmapSummary[]
 }
 
 function RoadmapHeaderMetrics({
@@ -1361,7 +1368,7 @@ function RoadmapHeaderMetrics({
   doneNodes,
   progressPct,
   onToggleChangesPanel,
-}: RoadmapPageToolbarProps) {
+}: RoadmapMetricsProps) {
   return (
     <div className="roadmap-header-metrics">
       <button
@@ -1400,15 +1407,96 @@ function RoadmapHeaderMetrics({
   )
 }
 
-function RoadmapHeaderListLink() {
+function RoadmapSwitcherDropdown({
+  currentCustomRoadmapId,
+  currentTitle,
+  roadmaps,
+  badgeStyle = false,
+}: {
+  currentCustomRoadmapId: number
+  currentTitle: string
+  roadmaps: MyRoadmapSummary[]
+  badgeStyle?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const btnClass = badgeStyle
+    ? 'flex items-center gap-2 text-sm font-extrabold text-gray-800 bg-white/80 backdrop-blur px-3 py-2 rounded-lg border border-gray-200 shadow-sm hover:bg-white transition'
+    : 'flex items-center gap-1.5 text-sm font-bold text-gray-700 hover:text-gray-900 max-w-[220px] transition'
+
   return (
-    <a
-      href="roadmap-hub.html"
-      className="text-gray-500 hover:text-gray-800 font-bold text-sm flex items-center gap-1"
-    >
-      <i className="fas fa-arrow-left" />
-      <span>{'\uBAA9\uB85D'}</span>
-    </a>
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={btnClass}
+      >
+        <i className="fas fa-server text-[#00c471] shrink-0" />
+        <span className="truncate max-w-[180px]">{currentTitle || '로드맵'}</span>
+        <i className={`fas fa-chevron-down text-[10px] text-gray-400 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+          <div className="px-3 py-2 border-b border-gray-100">
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">내 로드맵 전환</p>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {roadmaps.length === 0 ? (
+              <p className="px-3 py-3 text-xs text-gray-400 text-center">로드맵이 없습니다.</p>
+            ) : (
+              roadmaps.map((rm) => (
+                <button
+                  key={rm.customRoadmapId}
+                  type="button"
+                  onClick={() => {
+                    setOpen(false)
+                    if (rm.customRoadmapId !== currentCustomRoadmapId) {
+                      window.location.assign(`roadmap.html?id=${rm.customRoadmapId}`)
+                    }
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-50 transition ${rm.customRoadmapId === currentCustomRoadmapId ? 'bg-green-50' : ''}`}
+                >
+                  <div className={`shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold ${rm.originalRoadmapId === null ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                    {rm.originalRoadmapId === null ? 'B' : 'R'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-800 truncate">{rm.title}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">
+                      {rm.originalRoadmapId === null ? '빌더 생성' : '공식 로드맵'}
+                    </p>
+                  </div>
+                  {rm.customRoadmapId === currentCustomRoadmapId && (
+                    <i className="fas fa-check text-[#00c471] text-xs shrink-0" />
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+
+          <div className="border-t border-gray-100 px-3 py-2">
+            <a
+              href="my-roadmap-list.html"
+              className="text-xs font-bold text-gray-500 hover:text-gray-700 flex items-center gap-1.5 transition"
+            >
+              <i className="fas fa-list text-[10px]" />
+              로드맵 관리
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -1418,12 +1506,19 @@ function RoadmapPageToolbar({
   doneNodes,
   progressPct,
   onToggleChangesPanel,
+  currentCustomRoadmapId,
+  currentTitle,
+  roadmaps,
 }: RoadmapPageToolbarProps) {
   return (
     <div className="roadmap-page-toolbar">
       <div className="roadmap-page-toolbar__inner">
         <div className="roadmap-page-toolbar__left roadmap-page-toolbar__left--mobile">
-          <RoadmapHeaderListLink />
+          <RoadmapSwitcherDropdown
+            currentCustomRoadmapId={currentCustomRoadmapId}
+            currentTitle={currentTitle}
+            roadmaps={roadmaps}
+          />
         </div>
 
         <div className="roadmap-page-toolbar__right roadmap-page-toolbar__right--mobile">
@@ -1483,6 +1578,8 @@ export default function RoadmapDetailPage() {
   const [infoOpen, setInfoOpen]     = useState(false)
   const [processing, setProcessing] = useState(false)
   const [drawerNode, setDrawerNode] = useState<RoadmapNodeItem | null>(null)
+  const [myRoadmaps, setMyRoadmaps] = useState<MyRoadmapSummary[]>([])
+  const [existingRoadmapUrl, setExistingRoadmapUrl] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const resetRoadmapPageState = useCallback((options?: { keepRoadmap?: boolean }) => {
@@ -1492,6 +1589,7 @@ export default function RoadmapDetailPage() {
     setChanges([])
     setHistories([])
     setProofCards([])
+    setMyRoadmaps([])
     setError(null)
     setPanelOpen(false)
     setInfoOpen(false)
@@ -1561,15 +1659,22 @@ export default function RoadmapDetailPage() {
             try {
               const data = await roadmapApi.copyRoadmap(originalRoadmapId)
               window.location.replace(`roadmap.html?id=${data.customRoadmapId}`)
-            } catch {
-              // 이미 복사된 경우 기존 로드맵으로 이동
-              const list = await roadmapApi.getMyRoadmaps(ctrl.signal)
-              const existingRoadmap = findRoadmapByOriginalId(list.roadmaps, originalRoadmapId)
-
-              if (existingRoadmap) {
-                window.location.replace(`roadmap.html?id=${existingRoadmap.customRoadmapId}`)
+            } catch (copyError) {
+              const isAlreadyExists = (copyError as any)?.status === 409
+              if (isAlreadyExists) {
+                // 이미 복사된 로드맵 → 확인 다이얼로그 표시
+                const list = await roadmapApi.getMyRoadmaps(ctrl.signal)
+                const existingRoadmap = findRoadmapByOriginalId(list.roadmaps, originalRoadmapId)
+                if (existingRoadmap) {
+                  setExistingRoadmapUrl(`roadmap.html?id=${existingRoadmap.customRoadmapId}`)
+                  setLoading(false)
+                } else {
+                  setError('이미 복사된 로드맵을 찾을 수 없습니다.')
+                  setLoading(false)
+                }
               } else {
-                window.location.replace('roadmap-hub.html')
+                setError(copyError instanceof Error ? copyError.message : '로드맵을 생성할 수 없습니다.')
+                setLoading(false)
               }
             }
           } else {
@@ -1595,12 +1700,14 @@ export default function RoadmapDetailPage() {
       roadmapApi.getPendingChanges(signal),
       roadmapApi.getChangeHistories(signal),
       roadmapApi.getProofCards(signal),
+      roadmapApi.getMyRoadmaps(signal),
     ])
-      .then(([roadmapData, changesData, historiesData, proofCardsData]) => {
+      .then(([roadmapData, changesData, historiesData, proofCardsData, roadmapsData]) => {
         setRoadmap(roadmapData)
         setChanges(changesData)
         setHistories(historiesData)
         setProofCards(proofCardsData)
+        setMyRoadmaps(roadmapsData.roadmaps)
 
         if (changesData.length > 0) {
           setTimeout(() => setPanelOpen(true), 800)
@@ -1788,6 +1895,40 @@ export default function RoadmapDetailPage() {
     )
   }
 
+  if (existingRoadmapUrl) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="w-full max-w-sm rounded-3xl border border-gray-200 bg-white p-8 shadow-lg text-center">
+          <div className="mb-4 flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 mx-auto">
+            <i className="fas fa-route text-2xl text-[#00c471]" />
+          </div>
+          <h2 className="text-lg font-black text-gray-900">이미 진행 중인 로드맵입니다</h2>
+          <p className="mt-2 text-sm text-gray-500 leading-6">
+            이 로드맵의 복사본을 이미 보유하고 있습니다.<br />기존 로드맵으로 이동하시겠습니까?
+          </p>
+          <div className="mt-6 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => window.location.replace(existingRoadmapUrl)}
+              className="rounded-2xl bg-[#00c471] px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-500"
+            >
+              기존 로드맵으로 이동
+            </button>
+            <button
+              type="button"
+              onClick={() => window.location.replace('roadmap-hub.html')}
+              className="rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+            >
+              로드맵 허브로 돌아가기
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) return <LoginRequiredView />
+
   if (error || !roadmap) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -1815,13 +1956,6 @@ export default function RoadmapDetailPage() {
         onLogout={handleLogout}
         onLoginClick={() => openAuthModal('login')}
         activeNavHref="roadmap-hub.html"
-        startOverlay={(
-          <div className="roadmap-header-list-shell">
-            <div className="roadmap-header-list-shell__inner">
-              <RoadmapHeaderListLink />
-            </div>
-          </div>
-        )}
         endOverlay={(
           <div className="roadmap-header-metrics-shell">
             <div className="roadmap-header-metrics-shell__inner">
@@ -1843,6 +1977,9 @@ export default function RoadmapDetailPage() {
         doneNodes={doneNodes}
         progressPct={progressPct}
         onToggleChangesPanel={() => setPanelOpen((value) => !value)}
+        currentCustomRoadmapId={customRoadmapId}
+        currentTitle={roadmap?.title ?? ''}
+        roadmaps={myRoadmaps}
       />
 
       {false ? <header className="app-header">
@@ -1958,12 +2095,14 @@ export default function RoadmapDetailPage() {
       {/* ── 메인 콘텐츠 ───────────────────────────────────────────────────────── */}
       <main className={`roadmap-main${panelOpen ? ' panel-open' : ''} relative pb-24 w-full min-h-screen`}>
 
-        {/* 로드맵 카테고리 라벨 */}
+        {/* 로드맵 카테고리 라벨 (전환 드롭다운) */}
         <div className="roadmap-category-badge fixed left-8 z-[60]">
-          <div className="flex items-center gap-2 text-sm font-extrabold text-gray-800 bg-white/80 backdrop-blur px-3 py-2 rounded-lg border border-gray-200 shadow-sm">
-            <i className="fas fa-server text-[#00c471]" />
-            <span>{roadmap.title}</span>
-          </div>
+          <RoadmapSwitcherDropdown
+            currentCustomRoadmapId={customRoadmapId}
+            currentTitle={roadmap.title}
+            roadmaps={myRoadmaps}
+            badgeStyle
+          />
         </div>
 
         <div className="relative flex flex-col items-center w-full">

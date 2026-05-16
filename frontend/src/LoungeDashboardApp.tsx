@@ -3,7 +3,8 @@ import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside from './components/ProjectAside'
 import ProjectHeader from './components/ProjectHeader'
 import { authApi } from './lib/api'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredView from './components/LoginRequiredView'
 import { showAuthToast } from './lib/auth-toast'
 
 type ApiEnvelope<T> = {
@@ -181,6 +182,16 @@ export default function LoungeDashboardApp() {
     }
   }, [dataReloadKey])
 
+  useEffect(() => {
+    const syncSession = () => setSession(readStoredAuthSession())
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    }
+  }, [])
+
   async function handleLogout() {
     const currentSession = readStoredAuthSession()
 
@@ -281,6 +292,8 @@ export default function LoungeDashboardApp() {
     },
   ]
   const shouldScrollLiveFeed = liveFeedItems.length > 4
+
+  if (!session) return <LoginRequiredView />
 
   return (
     <div className="flex h-screen overflow-hidden text-gray-800">
