@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import SiteHeader from '../components/SiteHeader'
 import type { AccountPageKey } from '../lib/account-navigation'
+import { useInternalPageScroll } from '../lib/useInternalPageScroll'
 import type { AuthSession } from '../types/auth'
 
 const myMenuItems: Array<{
@@ -18,6 +19,8 @@ const myMenuItems: Array<{
 ]
 
 export function LearnerPageShell({ children }: { children: ReactNode }) {
+  useInternalPageScroll()
+
   return (
     <main className="app-main flex-1 overflow-y-auto bg-[#F8F9FA]">
       <div className="app-responsive-container pt-6 pb-10 md:pt-8 md:pb-12">{children}</div>

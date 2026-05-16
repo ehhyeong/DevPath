@@ -146,6 +146,16 @@ function App() {
   }, [])
 
   useEffect(() => {
+    document.documentElement.classList.add('home-page-document')
+    document.body.classList.add('home-page-body')
+
+    return () => {
+      document.documentElement.classList.remove('home-page-document')
+      document.body.classList.remove('home-page-body')
+    }
+  }, [])
+
+  useEffect(() => {
     // 로그인/로그아웃이 다른 탭에서 발생해도 홈 헤더 상태를 바로 반영합니다.
     const syncSession = () => {
       setSession(readStoredAuthSession())
@@ -226,7 +236,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen text-gray-800">
+    <div className="home-page-shell text-gray-800">
       <SiteHeader
         session={session}
         profileImage={profileImage}
@@ -313,6 +323,7 @@ function App() {
         </div>
       </nav> : null}
 
+      <main className="home-page-main">
       <section className="hero-bg relative overflow-hidden px-6 pt-40 pb-20">
         <div className="animate-blob absolute top-20 left-10 h-72 w-72 rounded-full bg-green-200 opacity-20 mix-blend-multiply blur-3xl filter" />
         <div className="animate-blob animation-delay-2000 absolute top-20 right-10 h-72 w-72 rounded-full bg-blue-200 opacity-20 mix-blend-multiply blur-3xl filter" />
@@ -723,6 +734,7 @@ function App() {
           </div>
         </div>
       </footer>
+      </main>
 
       {authView ? (
         <AuthModal

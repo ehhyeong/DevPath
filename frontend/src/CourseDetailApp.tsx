@@ -29,6 +29,7 @@ import {
 import { buildInstructorChannelHref } from './instructor-channel-support'
 import { authApi, courseApi, enrollmentApi, reviewApi, userApi } from './lib/api'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
+import { useInternalPageScroll } from './lib/useInternalPageScroll'
 import type { CourseReview } from './types/course'
 import type { LearningCourseDetail } from './types/learning'
 
@@ -125,6 +126,8 @@ function LoadingOverlay() {
 }
 
 export default function CourseDetailApp() {
+  useInternalPageScroll()
+
   const courseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const isStudentPreview = useMemo(() => readStudentPreviewFromLocation(), [])
   const studentPreviewReturnHref = useMemo(() => readStudentPreviewReturnHref(courseId), [courseId])
@@ -490,7 +493,7 @@ export default function CourseDetailApp() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-gray-800">
+    <div className="h-screen min-h-0 overflow-hidden bg-white text-gray-800">
       {isStudentPreview ? (
         <div className="fixed top-0 left-0 right-0 z-[1200] flex min-h-[44px] flex-wrap items-center justify-center gap-2 bg-gray-800 px-4 py-2 text-center text-sm font-bold text-white shadow-lg">
           <span className="inline-flex items-center gap-2">

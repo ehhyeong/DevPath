@@ -38,6 +38,7 @@ import {
 } from './instructor-channel-support'
 import { authApi, instructorSubscriptionApi, publicInstructorApi, userApi } from './lib/api'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
+import { useInternalPageScroll } from './lib/useInternalPageScroll'
 import type { InstructorChannel } from './types/instructor'
 
 type WriteCategory = Exclude<CommunityCategory, 'notice'>
@@ -91,6 +92,8 @@ function LoadingOverlay() {
 }
 
 export default function InstructorChannelApp() {
+  useInternalPageScroll()
+
   const instructorId = useMemo(() => readNumberSearchParam('instructorId') ?? 17, [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [customization, setCustomization] = useState(() => readInstructorChannelCustomization(instructorId))
@@ -432,7 +435,7 @@ export default function InstructorChannelApp() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] text-gray-800">
+    <div className="h-screen min-h-0 overflow-hidden bg-[#f9fafb] text-gray-800">
       {loadingChannel ? <LoadingOverlay /> : null}
       <SiteHeader
         session={session}

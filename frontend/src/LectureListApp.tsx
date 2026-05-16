@@ -18,6 +18,7 @@ import {
 } from './lecture-list-support'
 import { authApi, courseApi, userApi, wishlistApi } from './lib/api'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
+import { useInternalPageScroll } from './lib/useInternalPageScroll'
 import type { CourseCatalogMenu } from './types/course-catalog'
 
 const COURSES_PER_PAGE = 8
@@ -85,6 +86,8 @@ function getCourseDisplayTitle(title: string) {
 }
 
 export default function LectureListApp() {
+  useInternalPageScroll()
+
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
@@ -359,7 +362,7 @@ export default function LectureListApp() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-gray-800">
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-white text-gray-800">
       <SiteHeader
         session={session}
         profileImage={profileImage}

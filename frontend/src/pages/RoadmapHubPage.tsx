@@ -8,6 +8,7 @@ import {
   getPostLoginRedirect,
   readStoredAuthSession,
 } from '../lib/auth-session'
+import { useInternalPageScroll } from '../lib/useInternalPageScroll'
 import type { RoadmapHubCatalog, RoadmapHubItem } from '../types/roadmap-hub'
 
 function buildRoadmapHref(linkedRoadmapId: number | null) {
@@ -247,6 +248,8 @@ function RoadmapHubSections({
 }
 
 function RoadmapHubPage() {
+  useInternalPageScroll()
+
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
@@ -383,7 +386,7 @@ function RoadmapHubPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-gray-50 text-gray-900">
       <SiteHeader
         session={session}
         profileImage={profileImage}
