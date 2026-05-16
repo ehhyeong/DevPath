@@ -67,6 +67,9 @@ public class MyRoadmapDto {
     @com.fasterxml.jackson.annotation.JsonProperty("isBuilderOrigin")
     private boolean isBuilderOrigin;
 
+    @Schema(description = "빌더 로드맵 ID (isBuilderOrigin=true일 때만 존재, 편집에 사용)")
+    private Long builderRoadmapId;
+
     @Builder
     private Item(
         Long customRoadmapId,
@@ -74,6 +77,7 @@ public class MyRoadmapDto {
         String title,
         Integer progressRate,
         boolean isBuilderOrigin,
+        Long builderRoadmapId,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         LocalDateTime lastStudiedAt) {
@@ -82,12 +86,13 @@ public class MyRoadmapDto {
       this.title = title;
       this.progressRate = progressRate;
       this.isBuilderOrigin = isBuilderOrigin;
+      this.builderRoadmapId = builderRoadmapId;
       this.createdAt = createdAt;
       this.updatedAt = updatedAt;
       this.lastStudiedAt = lastStudiedAt;
     }
 
-    public static Item from(CustomRoadmap entity, LocalDateTime lastStudiedAt) {
+    public static Item from(CustomRoadmap entity, LocalDateTime lastStudiedAt, Long builderRoadmapId) {
       return Item.builder()
           .customRoadmapId(entity.getId())
           .originalRoadmapId(
@@ -97,6 +102,7 @@ public class MyRoadmapDto {
           .title(entity.getTitle())
           .progressRate(entity.getProgressRate() != null ? entity.getProgressRate() : 0)
           .isBuilderOrigin(entity.isBuilderOrigin())
+          .builderRoadmapId(builderRoadmapId)
           .createdAt(entity.getCreatedAt())
           .updatedAt(entity.getUpdatedAt())
           .lastStudiedAt(lastStudiedAt)

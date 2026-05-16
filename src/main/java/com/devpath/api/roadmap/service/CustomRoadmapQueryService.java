@@ -18,6 +18,7 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeResourceRepository;
+import com.devpath.domain.builder.repository.MyRoadmapRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
@@ -39,6 +40,7 @@ public class CustomRoadmapQueryService {
 
   private final UserRepository userRepository;
   private final CustomRoadmapRepository customRoadmapRepository;
+  private final MyRoadmapRepository myRoadmapRepository;
   private final CustomRoadmapNodeRepository customRoadmapNodeRepository;
   private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
   private final NodeClearanceRepository nodeClearanceRepository;
@@ -54,14 +56,18 @@ public class CustomRoadmapQueryService {
 
   // [/TEMP]
 
-  @Transactional(readOnly = true)
+  @Transactional
   public List<MyRoadmapDto.Item> getMyRoadmaps(Long userId) {
     User user =
         userRepository
             .findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    Map<Long, Long> customToBuilderIdMap = repairAndBuildCustomToBuilderIdMap(userId, user);
     return customRoadmapRepository.findAllByUserOrderByUpdatedAtDescCreatedAtDesc(user).stream()
-        .map(roadmap -> MyRoadmapDto.Item.from(roadmap, resolveLastStudiedAt(userId, roadmap)))
+        .map(roadmap -> MyRoadmapDto.Item.from(
+            roadmap,
+            resolveLastStudiedAt(userId, roadmap),
+            customToBuilderIdMap.get(roadmap.getId())))
         .sorted(
             Comparator.comparing(
                     this::resolveListItemActivityAt,
@@ -183,7 +189,8 @@ public class CustomRoadmapQueryService {
     CustomRoadmap roadmap = getOwnedRoadmap(userId, customRoadmapId);
     roadmap.changeTitle(newTitle);
     LocalDateTime lastStudiedAt = resolveLastStudiedAt(userId, roadmap);
-    return MyRoadmapDto.Item.from(roadmap, lastStudiedAt);
+    Long builderRoadmapId = myRoadmapRepository.buildCustomToMyRoadmapIdMap(userId).get(roadmap.getId());
+    return MyRoadmapDto.Item.from(roadmap, lastStudiedAt, builderRoadmapId);
   }
 
   @Transactional
@@ -192,6 +199,42 @@ public class CustomRoadmapQueryService {
     customNodePrerequisiteRepository.deleteAllByCustomRoadmap(roadmap);
     customRoadmapNodeRepository.deleteAllByCustomRoadmap(roadmap);
     customRoadmapRepository.delete(roadmap);
+  }
+
+  /**
+   * customRoadmapId → myRoadmapId 매핑을 반환한다.
+   * linkCustomRoadmap() 이전에 생성된 기존 로드맵은 title+user 기준으로 매핑을 복구하고 DB에 저장한다.
+   */
+  /**
+   * customRoadmapId → myRoadmapId 매핑을 반환한다.
+   * customRoadmapId 링크가 없는 기존 로드맵은 title+user 기준으로 임시 매핑한다 (DB 수정 없음).
+   */
+  private Map<Long, Long> repairAndBuildCustomToBuilderIdMap(Long userId, User user) {
+    Map<Long, Long> existing = myRoadmapRepository.buildCustomToMyRoadmapIdMap(userId);
+
+    List<com.devpath.domain.builder.entity.MyRoadmap> unlinked =
+        myRoadmapRepository.findAllByUserIdAndCustomRoadmapIdIsNull(userId);
+    if (unlinked.isEmpty()) return existing;
+
+    // 아직 매핑되지 않은 빌더 기원 CustomRoadmap (title → customRoadmapId)
+    Map<String, Long> builderCustomByTitle =
+        customRoadmapRepository.findAllByUserOrderByUpdatedAtDescCreatedAtDesc(user).stream()
+            .filter(cr -> cr.isBuilderOrigin() && !existing.containsKey(cr.getId()))
+            .collect(java.util.stream.Collectors.toMap(
+                com.devpath.domain.roadmap.entity.CustomRoadmap::getTitle,
+                com.devpath.domain.roadmap.entity.CustomRoadmap::getId,
+                (a, b) -> a));
+
+    Map<Long, Long> result = new java.util.HashMap<>(existing);
+    for (com.devpath.domain.builder.entity.MyRoadmap mr : unlinked) {
+      Long customId = builderCustomByTitle.get(mr.getTitle());
+      if (customId != null) {
+        mr.linkCustomRoadmap(customId);
+        result.put(customId, mr.getMyRoadmapId());
+      }
+    }
+
+    return result;
   }
 
   private CustomRoadmap getOwnedRoadmap(Long userId, Long customRoadmapId) {

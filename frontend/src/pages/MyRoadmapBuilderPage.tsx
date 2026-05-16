@@ -268,6 +268,13 @@ function filterRoadmapTemplates(
 // 메인 컴포넌트
 // ────────────────────────────────────────────
 
+function readEditIdFromLocation(): number | null {
+  const raw = new URLSearchParams(window.location.search).get('edit')
+  if (!raw) return null
+  const n = Number(raw)
+  return Number.isInteger(n) && n > 0 ? n : null
+}
+
 function MyRoadmapBuilderPage() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -291,6 +298,10 @@ function MyRoadmapBuilderPage() {
   const [savedCustomRoadmapId, setSavedCustomRoadmapId] = useState<number | null>(null)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null)
+  // 편집 모드: URL ?edit={myRoadmapId}
+  const [editMyRoadmapId] = useState<number | null>(() => readEditIdFromLocation())
+  const [editLoading, setEditLoading] = useState(false)
+  const [editLoadError, setEditLoadError] = useState<string | null>(null)
   const mainRef = useRef<HTMLDivElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
@@ -325,6 +336,86 @@ function MyRoadmapBuilderPage() {
 
     return () => controller.abort()
   }, [session])
+
+  // 편집 모드: 기존 로드맵 로드
+  useEffect(() => {
+    if (!editMyRoadmapId || !session) return
+    const controller = new AbortController()
+    setEditLoading(true)
+    setEditLoadError(null)
+
+    fetch(`/api/builder/roadmaps/${editMyRoadmapId}`, {
+      headers: { Authorization: `Bearer ${session.accessToken ?? ''}` },
+      signal: controller.signal,
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`로드맵 로드 실패 (${res.status})`)
+        return res.json() as Promise<{ data: {
+          myRoadmapId: number
+          title: string
+          customRoadmapId: number | null
+          modules: Array<{
+            source: 'BUILDER_MODULE' | 'OFFICIAL_NODE'
+            builderModuleId: number | null
+            originalNodeId: number | null
+            moduleId: string
+            category: string
+            title: string
+            icon: string
+            color: string
+            bgColor: string
+            topics: string[]
+            sortOrder: number
+            branchGroup: number | null
+          }>
+        }}>
+      })
+      .then(({ data }) => {
+        setRoadmapTitle(data.title)
+        setNodes(
+          data.modules.map((m) => ({
+            instanceId: makeInstanceId(),
+            sortOrder: m.sortOrder,
+            branchGroup: m.branchGroup,
+            module:
+              m.source === 'OFFICIAL_NODE'
+                ? {
+                    dbId: -(m.originalNodeId!),
+                    source: 'OFFICIAL_NODE' as const,
+                    builderModuleId: null,
+                    originalNodeId: m.originalNodeId,
+                    id: m.moduleId,
+                    title: m.title,
+                    category: m.category,
+                    icon: m.icon,
+                    color: m.color,
+                    bgColor: m.bgColor,
+                    topics: m.topics ?? [],
+                  }
+                : {
+                    dbId: m.builderModuleId!,
+                    source: 'BUILDER_MODULE' as const,
+                    builderModuleId: m.builderModuleId,
+                    originalNodeId: null,
+                    id: m.moduleId,
+                    title: m.title,
+                    category: m.category,
+                    icon: m.icon,
+                    color: m.color,
+                    bgColor: m.bgColor,
+                    topics: m.topics ?? [],
+                  },
+          })),
+        )
+      })
+      .catch((err) => {
+        if ((err as DOMException).name === 'AbortError') return
+        setEditLoadError(err instanceof Error ? err.message : '로드맵을 불러오지 못했습니다.')
+      })
+      .finally(() => setEditLoading(false))
+
+    return () => controller.abort()
+  }, [editMyRoadmapId, session])
 
   async function handleLogout() {
     const currentSession = readStoredAuthSession()
@@ -625,9 +716,10 @@ function MyRoadmapBuilderPage() {
   // 저장 모달 열기
   const openSaveModal = useCallback(() => {
     setSaveError(null)
-    setRoadmapTitle('')
+    // 편집 모드가 아닐 때만 제목 초기화 (편집 시 기존 제목 유지)
+    if (!editMyRoadmapId) setRoadmapTitle('')
     setSaveModalOpen(true)
-  }, [])
+  }, [editMyRoadmapId])
 
   // 로드맵 저장
   const handleSave = useCallback(async () => {
@@ -640,9 +732,13 @@ function MyRoadmapBuilderPage() {
     setSaving(true)
     setSaveError(null)
 
+    const isEdit = editMyRoadmapId !== null
+    const url = isEdit ? `/api/builder/roadmaps/${editMyRoadmapId}` : `/api/builder/roadmaps`
+    const method = isEdit ? 'PUT' : 'POST'
+
     try {
-      const res = await fetch(`/api/builder/roadmaps`, {
-        method: 'POST',
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.accessToken ?? ''}`,
@@ -667,16 +763,18 @@ function MyRoadmapBuilderPage() {
       const customRoadmapId = (data.data as { customRoadmapId?: number }).customRoadmapId ?? null
       setSavedCustomRoadmapId(customRoadmapId)
       setSaveModalOpen(false)
-      setNodes([])
-      setBranchTarget(null)
-      setRoadmapTitle('')
+      if (!isEdit) {
+        setNodes([])
+        setBranchTarget(null)
+        setRoadmapTitle('')
+      }
       setShowSuccessModal(true)
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : '저장 중 오류가 발생했습니다.')
     } finally {
       setSaving(false)
     }
-  }, [session?.accessToken, session?.userId, roadmapTitle, nodes])
+  }, [session?.accessToken, session?.userId, roadmapTitle, nodes, editMyRoadmapId])
 
   // ── 드래그 핸들러 ──
   function handleDragStart(event: DragStartEvent) {
@@ -842,8 +940,14 @@ function MyRoadmapBuilderPage() {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
               <i className="fas fa-check text-2xl text-[#00C471]" />
             </div>
-            <h2 className="mb-1 text-xl font-extrabold text-gray-900">저장 완료!</h2>
-            <p className="mb-6 text-sm text-gray-500">나만의 로드맵이 성공적으로 저장되었습니다.</p>
+            <h2 className="mb-1 text-xl font-extrabold text-gray-900">
+              {editMyRoadmapId ? '수정 완료!' : '저장 완료!'}
+            </h2>
+            <p className="mb-6 text-sm text-gray-500">
+              {editMyRoadmapId
+                ? '로드맵이 성공적으로 업데이트되었습니다.'
+                : '나만의 로드맵이 성공적으로 저장되었습니다.'}
+            </p>
             <div className="flex flex-col gap-3">
               {savedCustomRoadmapId != null && (
                 <button
@@ -852,6 +956,15 @@ function MyRoadmapBuilderPage() {
                   className="w-full rounded-lg bg-[#00C471] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-600"
                 >
                   <i className="fas fa-map mr-2" />나의 학습 로드맵으로 이동
+                </button>
+              )}
+              {editMyRoadmapId && (
+                <button
+                  type="button"
+                  onClick={() => { window.location.href = 'my-roadmap-list.html' }}
+                  className="w-full rounded-lg border border-blue-200 bg-blue-50 px-5 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                >
+                  <i className="fas fa-list mr-2" />로드맵 관리로 돌아가기
                 </button>
               )}
               <button
@@ -1095,6 +1208,30 @@ function MyRoadmapBuilderPage() {
 
         {/* ── 메인 캔버스 ── */}
         <main ref={mainRef} className="builder-dot-pattern relative flex-1 overflow-y-auto p-8">
+
+          {/* 편집 모드 배너 */}
+          {editMyRoadmapId && !editLoading && !editLoadError && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700">
+              <i className="fas fa-pen-ruler" />
+              편집 모드 — 수정 후 저장하면 기존 로드맵이 업데이트됩니다.
+              <a href="my-roadmap-list.html" className="ml-auto text-xs font-bold text-blue-500 hover:underline">
+                관리 페이지로
+              </a>
+            </div>
+          )}
+          {editLoading && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500 shadow-sm">
+              <i className="fas fa-circle-notch animate-spin text-[#00C471]" />
+              기존 로드맵을 불러오는 중입니다...
+            </div>
+          )}
+          {editLoadError && (
+            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600">
+              <i className="fas fa-exclamation-circle mr-2" />
+              {editLoadError}
+            </div>
+          )}
+
           <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
             <div className="rounded-lg border border-gray-200 bg-white/95 px-3 py-1.5 text-sm font-bold text-gray-500 shadow-sm">
               총 <span className="font-black text-[#00C471]">{rows.length}</span> 챕터
@@ -1113,7 +1250,7 @@ function MyRoadmapBuilderPage() {
               disabled={nodes.length === 0}
               className="flex items-center gap-2 rounded-lg bg-[#00C471] px-5 py-2 text-sm font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <i className="fas fa-save" /> 로드맵 저장
+              <i className="fas fa-save" /> {editMyRoadmapId ? '로드맵 수정' : '로드맵 저장'}
             </button>
           </div>
           <div className="mx-auto max-w-3xl">

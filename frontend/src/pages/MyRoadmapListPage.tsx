@@ -194,7 +194,9 @@ function RoadmapCard({
         </a>
         {isBuilder && (
           <a
-            href={`my-roadmap.html?edit=${roadmap.customRoadmapId}`}
+            href={roadmap.builderRoadmapId
+              ? `my-roadmap.html?edit=${roadmap.builderRoadmapId}`
+              : 'my-roadmap.html'}
             className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-bold rounded-xl transition"
           >
             <i className="fas fa-pen-ruler text-xs" />
