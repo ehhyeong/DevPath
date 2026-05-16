@@ -28,6 +28,27 @@ type WorkspaceResponse = {
   type?: string | null
   status?: string | null
   memberCount?: number | null
+  createdAt?: string | null
+  nextEventTitle?: string | null
+  nextEventStartAt?: string | null
+  nextEventEndAt?: string | null
+}
+
+type WorkspaceHubProjectResponse = {
+  projectId: number
+  type?: string | null
+  status?: string | null
+  dashboardUrl?: string | null
+  title: string
+  description?: string | null
+  progressPercent?: number | null
+  footerDateLabel?: string | null
+  memberAvatarSeeds?: string[] | null
+  extraMemberCount?: number | null
+  footerKind?: string | null
+  footerAvatarSeed?: string | null
+  footerText?: string | null
+  footerMetaText?: string | null
 }
 
 type ProjectRecommendationResponse = {
@@ -97,12 +118,153 @@ function goTo(path: string) {
   window.location.href = path
 }
 
+function getWorkspaceType(workspace: WorkspaceResponse) {
+  return workspace.type?.trim().toUpperCase() ?? ''
+}
+
+function isCollaborativeWorkspace(workspace: WorkspaceResponse) {
+  const type = getWorkspaceType(workspace)
+
+  return type === 'SQUAD' || type === 'MENTORING'
+}
+
+function parseDateTime(value?: string | null) {
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(value)
+
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function isSameLocalDate(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  )
+}
+
+function isTomorrow(left: Date, right: Date) {
+  const tomorrow = new Date(right)
+  tomorrow.setDate(right.getDate() + 1)
+
+  return isSameLocalDate(left, tomorrow)
+}
+
+function formatEventTime(value?: string | null) {
+  const date = parseDateTime(value)
+
+  if (!date) {
+    return '일정 확인'
+  }
+
+  const now = new Date()
+  const time = date.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' })
+
+  if (isSameLocalDate(date, now)) {
+    return `오늘 ${time}`
+  }
+
+  if (isTomorrow(date, now)) {
+    return `내일 ${time}`
+  }
+
+  return `${date.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })} ${time}`
+}
+
+function compareUrgentWorkspaces(left: WorkspaceResponse, right: WorkspaceResponse) {
+  const now = new Date()
+  const leftEvent = parseDateTime(left.nextEventStartAt)
+  const rightEvent = parseDateTime(right.nextEventStartAt)
+  const leftToday = leftEvent ? isSameLocalDate(leftEvent, now) : false
+  const rightToday = rightEvent ? isSameLocalDate(rightEvent, now) : false
+
+  if (leftToday !== rightToday) {
+    return leftToday ? -1 : 1
+  }
+
+  if (leftEvent && rightEvent) {
+    return leftEvent.getTime() - rightEvent.getTime()
+  }
+
+  if (leftEvent) {
+    return -1
+  }
+
+  if (rightEvent) {
+    return 1
+  }
+
+  return (parseDateTime(right.createdAt)?.getTime() ?? 0) - (parseDateTime(left.createdAt)?.getTime() ?? 0)
+}
+
+function getDefaultCollaborativeEventTitle(workspace?: WorkspaceResponse | null) {
+  if (!workspace) {
+    return '스쿼드 일정 확인'
+  }
+
+  return getWorkspaceType(workspace) === 'MENTORING' ? '멘토링 일정 확인' : '스쿼드 일정 확인'
+}
+
+function getHubProjectType(project: WorkspaceHubProjectResponse) {
+  return project.type?.trim().toLowerCase() ?? 'squad'
+}
+
+function isMentoringHubProject(project: WorkspaceHubProjectResponse) {
+  return getHubProjectType(project) === 'mentoring'
+}
+
+function getHubProjectTypeLabel(project: WorkspaceHubProjectResponse) {
+  const type = getHubProjectType(project)
+
+  if (type === 'mentoring') {
+    return '멘토링 프로젝트'
+  }
+
+  if (type === 'solo') {
+    return '개인 프로젝트'
+  }
+
+  return '스쿼드 프로젝트'
+}
+
+function getHubProjectAccentClass(project: WorkspaceHubProjectResponse) {
+  const type = getHubProjectType(project)
+
+  if (type === 'mentoring') {
+    return 'bg-mentor'
+  }
+
+  if (type === 'solo') {
+    return 'bg-brand'
+  }
+
+  return 'bg-blue-500'
+}
+
+function getHubProjectProgressClass(project: WorkspaceHubProjectResponse) {
+  const type = getHubProjectType(project)
+
+  if (type === 'mentoring') {
+    return 'bg-mentor'
+  }
+
+  if (type === 'solo') {
+    return 'bg-brand'
+  }
+
+  return 'bg-blue-500'
+}
+
 export default function LoungeDashboardApp() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dataReloadKey, setDataReloadKey] = useState(0)
   const [profile, setProfile] = useState<UserProfileResponse | null>(null)
   const [workspaces, setWorkspaces] = useState<WorkspaceResponse[]>([])
+  const [hubProjects, setHubProjects] = useState<WorkspaceHubProjectResponse[]>([])
   const [projectRecommendations, setProjectRecommendations] = useState<ProjectRecommendationResponse[]>([])
   const [showcases, setShowcases] = useState<ShowcaseSummaryResponse[]>([])
   const [jobRecommendations, setJobRecommendations] = useState<JobRecommendationResponse[]>([])
@@ -134,7 +296,8 @@ export default function LoungeDashboardApp() {
       const results = await Promise.allSettled([
         apiGet<LoungeShellResponse>('/api/lounge/shell', controller.signal, hasSession),
         apiGet<UserProfileResponse>('/api/users/me/profile', controller.signal, true),
-        apiGet<WorkspaceResponse[]>('/api/workspaces/projects/me', controller.signal, true),
+        apiGet<WorkspaceResponse[]>('/api/workspaces/me', controller.signal, true),
+        apiGet<WorkspaceHubProjectResponse[]>('/api/workspaces/hub/projects', controller.signal, true),
         hasSession
           ? apiGet<ProjectRecommendationResponse[]>('/api/projects/recommendations/me', controller.signal, true)
           : Promise.resolve([]),
@@ -146,7 +309,15 @@ export default function LoungeDashboardApp() {
         return
       }
 
-      const [shellResult, profileResult, workspaceResult, projectRecommendationResult, showcaseResult, jobResult] = results
+      const [
+        shellResult,
+        profileResult,
+        workspaceResult,
+        hubProjectResult,
+        projectRecommendationResult,
+        showcaseResult,
+        jobResult,
+      ] = results
 
       if (isFulfilled(shellResult)) {
         setShell(shellResult.value)
@@ -158,6 +329,10 @@ export default function LoungeDashboardApp() {
 
       if (isFulfilled(workspaceResult) && Array.isArray(workspaceResult.value)) {
         setWorkspaces(workspaceResult.value)
+      }
+
+      if (isFulfilled(hubProjectResult) && Array.isArray(hubProjectResult.value)) {
+        setHubProjects(hubProjectResult.value)
       }
 
       if (isFulfilled(projectRecommendationResult) && Array.isArray(projectRecommendationResult.value)) {
@@ -196,6 +371,7 @@ export default function LoungeDashboardApp() {
       setProfile(null)
       setShell(null)
       setWorkspaces([])
+      setHubProjects([])
       setProjectRecommendations([])
       setJobRecommendations([])
     }
@@ -232,9 +408,17 @@ export default function LoungeDashboardApp() {
   const isAuthenticated = Boolean(session?.accessToken)
   const userName = isAuthenticated ? profile?.name?.trim() || profile?.nickname?.trim() || session?.name || '사용자' : null
   const profileImage = profile?.profileImage ?? null
-  const hasActiveWorkspaces = isAuthenticated && workspaces.length > 0
-  const primaryWorkspace = workspaces.find((workspace) => workspace.type !== 'MENTORING') ?? workspaces[0]
+  const collaborativeWorkspaces = isAuthenticated
+    ? workspaces.filter(isCollaborativeWorkspace).sort(compareUrgentWorkspaces)
+    : []
+  const primaryWorkspace = collaborativeWorkspaces[0] ?? null
+  const hasCollaborativeBanner = Boolean(primaryWorkspace)
+  const primaryWorkspaceEventTitle = primaryWorkspace?.nextEventTitle?.trim() || getDefaultCollaborativeEventTitle(primaryWorkspace)
+  const primaryWorkspaceEventDate = parseDateTime(primaryWorkspace?.nextEventStartAt)
+  const primaryWorkspaceEventTime = formatEventTime(primaryWorkspace?.nextEventStartAt)
   const visibleWorkspaces = isAuthenticated ? workspaces.slice(0, 2) : []
+  const visibleHubProjects = isAuthenticated ? hubProjects.slice(0, 2) : []
+  const hasVisibleHubProjects = visibleHubProjects.length > 0
   const fallbackAsideSquads = visibleWorkspaces.map((workspace, index) => ({
     id: workspace.workspaceId,
     name: workspace.name,
@@ -243,7 +427,7 @@ export default function LoungeDashboardApp() {
   const projectAsideSquads = isAuthenticated ? shell?.mySquads ?? fallbackAsideSquads : []
   const recommendedProject = isAuthenticated ? projectRecommendations[0] ?? null : null
   const hotShowcase = showcases[0] ?? null
-  const activeWorkspaceCount = workspaces.length
+  const collaborativeWorkspaceCount = collaborativeWorkspaces.length
   const jobRecommendationCount = isAuthenticated ? jobRecommendations.length : 0
   const liveFeedItems = [
     {
@@ -306,33 +490,36 @@ export default function LoungeDashboardApp() {
 
                   <h1 className="text-2xl lg:text-3xl font-black mb-3 leading-tight text-white tracking-tight">
                     {!isAuthenticated ? (
-                      <>로그인하고 <span className="text-brand">프로젝트 라운지</span>를 시작해 보세요!</>
-                    ) : hasActiveWorkspaces ? (
-                      <>오늘 <span className="text-brand">{primaryWorkspace?.name}</span>의 화상 회의가 있습니다.</>
+                      <>로그인하고 <span className="text-brand">프로젝트 라운지</span>를 시작해 보세요.</>
+                    ) : hasCollaborativeBanner ? (
+                      <>
+                        {primaryWorkspaceEventDate && isSameLocalDate(primaryWorkspaceEventDate, new Date()) ? '오늘' : '다가오는'}{' '}
+                        <span className="text-brand">{primaryWorkspace?.name}</span>의 {primaryWorkspaceEventTitle} 일정이 있습니다.
+                      </>
                     ) : (
-                      <>DevPath에서 <span className="text-brand">새로운 프로젝트</span>를 시작해 보세요!</>
+                      <>DevPath에서 <span className="text-brand">스쿼드/멘토링 프로젝트</span>를 찾아보세요.</>
                     )}
                   </h1>
 
-                  {isAuthenticated && hasActiveWorkspaces ? (
+                  {isAuthenticated && hasCollaborativeBanner ? (
                     <div className="bg-gray-800/80 border border-gray-700 rounded-lg px-4 py-2.5 mb-5 inline-flex items-center gap-3 shadow-inner">
-                      <span className="bg-brand text-white text-[10px] font-black px-2 py-1 rounded tracking-wider">오후 8:00</span>
-                      <span className="text-xs font-bold text-gray-200">주간 스프린트 및 결제 API 리뷰</span>
+                      <span className="bg-brand text-white text-[10px] font-black px-2 py-1 rounded tracking-wider">{primaryWorkspaceEventTime}</span>
+                      <span className="text-xs font-bold text-gray-200">{primaryWorkspaceEventTitle}</span>
                     </div>
                   ) : null}
 
                   <p className="text-gray-400 text-xs mb-5 leading-relaxed max-w-xl">
                     {!isAuthenticated ? (
                       <>
-                        로그인하면 참여 중인 스쿼드, 프로젝트, 학습 기술 기반 AI 추천을<br />
-                        한 곳에서 확인할 수 있습니다.
+                        로그인하면 참여 중인 스쿼드/멘토링 일정과 학습 기술 기반 추천을 한곳에서 확인할 수 있습니다.
                       </>
-                    ) : hasActiveWorkspaces ? (
-                      <>현재 {activeWorkspaceCount}개의 스쿼드에 참여 중이며, 1건의 새로운 멘토링 코멘트가 도착했습니다.</>
+                    ) : hasCollaborativeBanner ? (
+                      <>
+                        현재 {collaborativeWorkspaceCount}개의 스쿼드/멘토링 프로젝트에 참여 중입니다. 오늘 날짜 기준으로 가장 가까운 일정부터 보여드립니다.
+                      </>
                     ) : (
                       <>
-                        현재 참여 중인 스쿼드가 없습니다. 라운지에서 마음이 맞는 팀원을 찾거나,<br />
-                        직접 새로운 스터디 및 프로젝트를 개설하여 개발 여정을 시작해 보세요.
+                        현재 배너에 표시할 스쿼드/멘토링 프로젝트가 없습니다. 라운지에서 팀원을 찾거나 멘토링 프로젝트를 시작해 보세요.
                       </>
                     )}
                   </p>
@@ -347,7 +534,7 @@ export default function LoungeDashboardApp() {
                           <i className="fas fa-rocket"></i> 라운지 둘러보기
                         </button>
                       </>
-                    ) : hasActiveWorkspaces ? (
+                    ) : hasCollaborativeBanner ? (
                       <>
                         <button onClick={() => goTo('squad-meeting.html')} className="bg-brand hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition shadow-[0_4px_15px_rgba(0,196,113,0.3)] flex items-center gap-2">
                           <i className="fas fa-video"></i> 회의실 바로 입장
@@ -373,14 +560,14 @@ export default function LoungeDashboardApp() {
                   <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 w-full md:w-56 text-center shadow-lg">
                     <p className="text-[10px] text-gray-300 font-bold mb-1 uppercase tracking-widest">Dev Focus Score</p>
                     <div className="text-3xl font-black text-white mb-2">
-                      {isAuthenticated ? (hasActiveWorkspaces ? 92 : 0) : '--'}
+                      {isAuthenticated ? (hasCollaborativeBanner ? 92 : 0) : '--'}
                       {isAuthenticated ? <span className="text-sm text-gray-400 font-medium">/100</span> : null}
                     </div>
                     <div className="w-full bg-gray-800 rounded-full h-1.5 mb-2 overflow-hidden">
-                      <div className={isAuthenticated && hasActiveWorkspaces ? 'bg-brand h-1.5 rounded-full w-[92%]' : 'bg-gray-600 h-1.5 rounded-full w-[0%]'}></div>
+                      <div className={isAuthenticated && hasCollaborativeBanner ? 'bg-brand h-1.5 rounded-full w-[92%]' : 'bg-gray-600 h-1.5 rounded-full w-[0%]'}></div>
                     </div>
                     <p className="text-[9px] text-gray-300">
-                      {!isAuthenticated ? '로그인 후 활동 점수를 확인할 수 있습니다.' : hasActiveWorkspaces ? '상위 5%의 꾸준한 활동량입니다! 🔥' : '첫 활동을 시작하고 점수를 올려보세요! 🚀'}
+                      {!isAuthenticated ? '로그인 후 활동 점수를 확인할 수 있습니다.' : hasCollaborativeBanner ? '스쿼드/멘토링 협업 활동 기준 점수입니다.' : '스쿼드/멘토링 프로젝트 활동을 시작하면 점수가 올라갑니다.'}
                     </p>
                   </div>
                 </div>
@@ -396,31 +583,33 @@ export default function LoungeDashboardApp() {
                     </h2>
                   </div>
 
-                  {hasActiveWorkspaces ? (
+                  {hasVisibleHubProjects ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      {visibleWorkspaces.map((workspace, index) => {
-                        const isMentoring = workspace.type === 'MENTORING' || index === 1
+                      {visibleHubProjects.map((project) => {
+                        const isMentoring = isMentoringHubProject(project)
+                        const progressPercent = Math.max(0, Math.min(project.progressPercent ?? 0, 100))
+                        const memberAvatarSeeds = project.memberAvatarSeeds ?? []
 
                         return (
-                          <div key={workspace.workspaceId} className="bg-white rounded-2xl p-5 hover-card cursor-pointer flex flex-col justify-between relative h-[220px]" onClick={() => goTo('squad-dashboard.html')}>
-                            <div className={`absolute top-0 left-0 w-1 h-full rounded-l-2xl ${isMentoring ? 'bg-mentor' : 'bg-blue-500'}`}></div>
+                          <div key={project.projectId} className="bg-white rounded-2xl p-5 hover-card cursor-pointer flex flex-col justify-between relative h-[220px]" onClick={() => goTo(project.dashboardUrl ?? 'workspace-hub.html')}>
+                            <div className={`absolute top-0 left-0 w-1 h-full rounded-l-2xl ${getHubProjectAccentClass(project)}`}></div>
                             <div>
                               <div className="flex justify-between items-start mb-3">
                                 <span className={isMentoring ? 'bg-purple-50 text-mentor px-2 py-0.5 rounded text-[10px] font-extrabold flex items-center gap-1' : 'bg-blue-50 text-blue-600 px-2 py-0.5 rounded text-[10px] font-extrabold'}>
-                                  {isMentoring ? <><i className="fas fa-chalkboard-teacher"></i> 멘토링 스터디</> : '일반 스쿼드'}
+                                  {isMentoring ? <><i className="fas fa-chalkboard-teacher"></i> {getHubProjectTypeLabel(project)}</> : getHubProjectTypeLabel(project)}
                                 </span>
-                                <span className="text-[10px] text-gray-400 font-bold">{isMentoring ? '매주 화요일' : <><i className="fas fa-clock"></i> D-14</>}</span>
+                                <span className="text-[10px] text-gray-400 font-bold">{project.footerDateLabel ?? '최근 등록'}</span>
                               </div>
-                              <h3 className="text-lg font-black text-gray-900 mb-1 truncate">{workspace.name}</h3>
-                              <p className="text-xs text-gray-500 mb-4 line-clamp-2">{workspace.description ?? (isMentoring ? '멘토링 스터디를 진행 중입니다.' : '프로젝트를 진행 중입니다.')}</p>
+                              <h3 className="text-lg font-black text-gray-900 mb-1 truncate">{project.title}</h3>
+                              <p className="text-xs text-gray-500 mb-4 line-clamp-2">{project.description ?? (isMentoring ? '멘토링 프로젝트를 진행 중입니다.' : '프로젝트를 진행 중입니다.')}</p>
                             </div>
                             {isMentoring ? (
                               <div className="mt-auto">
                                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex items-start gap-3">
-                                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mentor" className="w-7 h-7 rounded-full border border-gray-200 shrink-0" />
+                                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(project.footerAvatarSeed ?? String(project.projectId))}`} className="w-7 h-7 rounded-full border border-gray-200 shrink-0" />
                                   <div>
-                                    <p className="text-[10px] text-gray-500 font-bold mb-0.5">시니어 멘토 코멘트</p>
-                                    <p className="text-xs font-bold text-gray-800 line-clamp-1">"운영체제 페이징 기법 복습 필수입니다!"</p>
+                                    <p className="text-[10px] text-gray-500 font-bold mb-0.5">{project.footerText ?? '멘토링 워크스페이스'}</p>
+                                    <p className="text-xs font-bold text-gray-800 line-clamp-1">{project.footerMetaText ?? '진행 중'}</p>
                                   </div>
                                 </div>
                               </div>
@@ -428,13 +617,16 @@ export default function LoungeDashboardApp() {
                               <div>
                                 <div className="flex justify-between text-xs font-bold mb-1.5">
                                   <span className="text-gray-600">스프린트 달성률</span>
-                                  <span className="text-blue-500">65%</span>
+                                  <span className={getHubProjectType(project) === 'solo' ? 'text-brand' : 'text-blue-500'}>{progressPercent}%</span>
                                 </div>
-                                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4"><div className="bg-blue-500 h-1.5 rounded-full" style={{ width: '65%' }}></div></div>
+                                <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4"><div className={`${getHubProjectProgressClass(project)} h-1.5 rounded-full`} style={{ width: `${progressPercent}%` }}></div></div>
                                 <div className="flex -space-x-2">
-                                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=A" className="w-7 h-7 rounded-full border-2 border-white bg-gray-100" />
-                                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=B" className="w-7 h-7 rounded-full border-2 border-white bg-gray-100" />
-                                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=C" className="w-7 h-7 rounded-full border-2 border-white bg-gray-100" />
+                                  {memberAvatarSeeds.map((seed) => (
+                                    <img key={seed} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`} className="w-7 h-7 rounded-full border-2 border-white bg-gray-100" />
+                                  ))}
+                                  {project.extraMemberCount ? (
+                                    <span className="w-7 h-7 rounded-full border-2 border-white bg-gray-100 text-[10px] font-bold text-gray-500 flex items-center justify-center">+{project.extraMemberCount}</span>
+                                  ) : null}
                                 </div>
                               </div>
                             )}
@@ -583,7 +775,7 @@ export default function LoungeDashboardApp() {
                     </h3>
                   </div>
 
-                  {hasActiveWorkspaces ? (
+                  {hasCollaborativeBanner ? (
                     <div className={`flex-1 min-h-0 overflow-x-hidden space-y-4 ${shouldScrollLiveFeed ? 'overflow-y-auto custom-scrollbar pr-2' : 'overflow-y-hidden pr-0'}`}>
                       {liveFeedItems.map((item) => (
                         <div key={item.id} className={`flex min-w-0 gap-3 items-start cursor-pointer hover:bg-gray-50 p-1 rounded transition ${item.muted ? 'opacity-80' : ''}`}>

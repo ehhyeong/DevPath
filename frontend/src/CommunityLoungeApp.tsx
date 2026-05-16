@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from './components/ProjectAside'
 import ProjectHeader from './components/ProjectHeader'
+import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
+import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
 import { projectApiRequest } from './project-api'
 
 type LoungeType = 'project' | 'join_wish' | 'study' | 'networking'
@@ -321,6 +323,19 @@ export default function CommunityLoungeApp() {
       controller.abort()
     }
   }, [reloadKey])
+
+  useEffect(() => {
+    const syncProfile = (event: Event) => {
+      const profileEvent = event as CustomEvent<ProfileSyncPayload>
+      setProfileImage(profileEvent.detail?.profileImage ?? null)
+    }
+
+    window.addEventListener(PROFILE_UPDATED_EVENT, syncProfile)
+
+    return () => {
+      window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
+    }
+  }, [])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -795,6 +810,7 @@ export default function CommunityLoungeApp() {
                     <SquadCard
                       key={squad.id}
                       squad={squad}
+                      currentUserProfileImage={profileImage}
                       onOpen={() => openDetailModal(squad)}
                       onEdit={() => openCreateModal(squad)}
                       onMemberOpen={(member) => {
@@ -946,11 +962,13 @@ function FilterTab({ active, label, onClick }: { active: boolean; label: string;
 
 function SquadCard({
   squad,
+  currentUserProfileImage,
   onOpen,
   onEdit,
   onMemberOpen,
 }: {
   squad: SquadPost
+  currentUserProfileImage: string | null
   onOpen: () => void
   onEdit: () => void
   onMemberOpen: (member: SquadMember) => void
@@ -1009,7 +1027,16 @@ function SquadCard({
 
       <div className="mt-auto pt-4 border-t flex justify-between items-center">
         <div className="flex items-center gap-2 min-w-0">
-          <img src={diceAvatar(squad.authorImg)} className="w-6 h-6 rounded-full border shadow-sm" />
+          {squad.isMine ? (
+            <UserAvatar
+              name={squad.author}
+              imageUrl={currentUserProfileImage}
+              className="w-6 h-6 shadow-sm"
+              iconClassName="text-[10px]"
+            />
+          ) : (
+            <img src={diceAvatar(squad.authorImg)} className="w-6 h-6 rounded-full border shadow-sm" />
+          )}
           <span className="text-xs font-bold text-gray-600 truncate">{squad.author}</span>
         </div>
         <div className="flex items-center gap-3">
@@ -1273,7 +1300,7 @@ function CreateSquadModal({
               <select
                 value={form.type}
                 onChange={(event) => onTypeChange(event.target.value as LoungeType)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm outline-none bg-white font-medium"
+                className="community-lounge-create-type-select w-full border border-gray-300 rounded-xl px-3 py-3 text-sm outline-none bg-white font-medium"
               >
                 <option value="project">팀 프로젝트 모집</option>
                 <option value="join_wish">참여 희망 (Hire Me)</option>

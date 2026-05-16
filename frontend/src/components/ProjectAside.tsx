@@ -43,7 +43,7 @@ export default function ProjectAside({ activeKey, mySquads = [] }: ProjectAsideP
         <div id="mySquadList">
           {mySquads.length > 0 ? (
             mySquads.map((squad) => (
-              <a key={`${squad.href || 'squad'}-${squad.id}`} href={squad.href || `squad-dashboard.html?squadId=${encodeURIComponent(squad.id)}`} className="nav-item">
+              <a key={`${squad.href || 'squad'}-${squad.id}`} href={squad.href || `/squad-dashboard?workspaceId=${encodeURIComponent(squad.id)}`} className="nav-item">
                 <span className={`w-2.5 h-2.5 rounded-full ${squad.colorClass || 'bg-blue-500'} shrink-0 mx-2`} />
                 <span className="sidebar-text truncate">{squad.name}</span>
               </a>

@@ -44,13 +44,13 @@ public class WorkspaceHubProjectService {
             .collect(Collectors.groupingBy(WorkspaceMember::getWorkspaceId));
 
     return workspaceRepository.findAllByIdInAndIsDeletedFalseOrderByCreatedAtDesc(workspaceIds).stream()
-        .map(workspace -> toResponse(workspace, membersByWorkspaceId))
+        .map(workspace -> toResponse(workspace, membersByWorkspaceId, userId))
         .toList();
   }
 
   private WorkspaceHubProjectResponse toResponse(
-      Workspace workspace, Map<Long, List<WorkspaceMember>> membersByWorkspaceId) {
+      Workspace workspace, Map<Long, List<WorkspaceMember>> membersByWorkspaceId, Long userId) {
     return WorkspaceHubProjectResponse.fromWorkspace(
-        workspace, membersByWorkspaceId.getOrDefault(workspace.getId(), List.of()));
+        workspace, membersByWorkspaceId.getOrDefault(workspace.getId(), List.of()), userId);
   }
 }

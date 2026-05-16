@@ -4,8 +4,10 @@ import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from './components/ProjectAside'
 import { ProjectCreatePanel } from './ProjectCreateApp'
 import ProjectHeader from './components/ProjectHeader'
+import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
+import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
 
 type ProjectType = 'all' | 'solo' | 'squad' | 'mentoring'
 type ProjectStatus = 'all' | 'progress' | 'completed'
@@ -41,6 +43,9 @@ type ApiEnvelope<T> = {
 }
 
 type LoungeShellResponse = {
+  user?: {
+    profileImage?: string | null
+  } | null
   mySquads?: ProjectAsideSquad[]
 }
 
@@ -51,6 +56,7 @@ export default function WorkspaceHubApp() {
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dataReloadKey, setDataReloadKey] = useState(0)
   const [asideSquads, setAsideSquads] = useState<ProjectAsideSquad[]>([])
+  const [profileImage, setProfileImage] = useState<string | null>(null)
   const [projects, setProjects] = useState<WorkspaceHubProject[]>([])
   const [typeFilter, setTypeFilter] = useState<ProjectType>('all')
   const [statusFilter, setStatusFilter] = useState<ProjectStatus>('all')
@@ -98,6 +104,7 @@ export default function WorkspaceHubApp() {
         ])
 
         setAsideSquads(shellResponse?.data.data.mySquads ?? [])
+        setProfileImage(shellResponse?.data.data.user?.profileImage ?? null)
         setProjects(projectsResponse.data.data ?? [])
       } catch (error) {
         if ((error as Error).name !== 'CanceledError') {
@@ -114,6 +121,19 @@ export default function WorkspaceHubApp() {
 
     return () => controller.abort()
   }, [dataReloadKey])
+
+  useEffect(() => {
+    const syncProfile = (event: Event) => {
+      const profileEvent = event as CustomEvent<ProfileSyncPayload>
+      setProfileImage(profileEvent.detail?.profileImage ?? null)
+    }
+
+    window.addEventListener(PROFILE_UPDATED_EVENT, syncProfile)
+
+    return () => {
+      window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
+    }
+  }, [])
 
   const visibleProjects = useMemo(
     () =>
@@ -132,6 +152,7 @@ export default function WorkspaceHubApp() {
     clearStoredAuthSession()
     setSession(null)
     setAsideSquads([])
+    setProfileImage(null)
     setProjects([])
   }
 
@@ -212,7 +233,13 @@ export default function WorkspaceHubApp() {
       <ProjectAside activeKey="workspace" mySquads={asideSquads} />
 
       <div className="flex-1 flex min-w-0 flex-col h-screen overflow-hidden">
-        <ProjectHeader session={session} activeHref="lounge-dashboard.html" onLoginClick={() => openAuthModal()} onLogout={handleLogout} />
+        <ProjectHeader
+          session={session}
+          profileImage={profileImage}
+          activeHref="lounge-dashboard.html"
+          onLoginClick={() => openAuthModal()}
+          onLogout={handleLogout}
+        />
 
         <main className="flex-1 flex flex-col h-full overflow-hidden" onClick={closeAllDropdowns}>
           <div className="px-8 pt-7 pb-4 shrink-0">
@@ -255,6 +282,8 @@ export default function WorkspaceHubApp() {
                     key={project.domId}
                     project={project}
                     activeMenuId={activeMenuId}
+                    currentUserId={session?.userId ?? null}
+                    currentUserProfileImage={profileImage}
                     setActiveMenuId={setActiveMenuId}
                     openSettingsModal={openSettingsModal}
                     openMembersModal={openMembersModal}
@@ -274,7 +303,11 @@ export default function WorkspaceHubApp() {
       </div>
 
       <SettingsModal project={settingsProject} onClose={() => setSettingsProject(null)} />
-      <MembersModal open={membersModalOpen} onClose={() => setMembersModalOpen(false)} />
+      <MembersModal
+        open={membersModalOpen}
+        currentUserProfileImage={profileImage}
+        onClose={() => setMembersModalOpen(false)}
+      />
       <ProjectCreateModal
         open={projectCreateModalOpen}
         onClose={() => setProjectCreateModalOpen(false)}
@@ -296,16 +329,22 @@ export default function WorkspaceHubApp() {
 function WorkspaceProjectCard({
   project,
   activeMenuId,
+  currentUserId,
+  currentUserProfileImage,
   setActiveMenuId,
   openSettingsModal,
   openMembersModal,
 }: {
   project: WorkspaceHubProject
   activeMenuId: string | null
+  currentUserId: number | null
+  currentUserProfileImage: string | null
   setActiveMenuId: (menuId: string | null) => void
   openSettingsModal: (event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) => void
   openMembersModal: (event: MouseEvent<HTMLElement>) => void
 }) {
+  const currentUserMemberSeed = currentUserId == null ? null : `workspace-member-${currentUserId}`
+
   function toggleDropdown(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation()
     setActiveMenuId(activeMenuId === project.menuId ? null : project.menuId)
@@ -413,7 +452,17 @@ function WorkspaceProjectCard({
           </span>
           <div className="flex -space-x-2">
             {project.memberAvatarSeeds.map((seed) => (
-              <img key={seed} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} className="w-6 h-6 rounded-full border border-white" />
+              seed === currentUserMemberSeed ? (
+                <UserAvatar
+                  key={seed}
+                  name="나"
+                  imageUrl={currentUserProfileImage}
+                  className="w-6 h-6 border-white"
+                  iconClassName="text-[10px]"
+                />
+              ) : (
+                <img key={seed} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} className="w-6 h-6 rounded-full border border-white" />
+              )
             ))}
             {project.extraMemberCount ? <div className="w-6 h-6 rounded-full bg-gray-100 border border-white flex items-center justify-center text-[9px] font-bold">+{project.extraMemberCount}</div> : null}
           </div>
@@ -466,11 +515,6 @@ function ProjectMenu({
         </ul>
       ) : (
         <ul className="py-1 text-sm text-gray-700">
-          <li>
-            <a href={project.roleLabel ? 'team-ws-dashboard' : '#'} onClick={(event) => openSettingsModal(event, project)} className="block px-4 py-2 hover:bg-gray-50 hover:text-brand">
-              <i className="fas fa-cog mr-2"></i>설정
-            </a>
-          </li>
           {project.roleLabel ? (
             <li>
               <a href="#" onClick={openMembersModal} className="block px-4 py-2 hover:bg-gray-50 hover:text-brand">
@@ -501,39 +545,44 @@ function CreateProjectCard({ onCreate }: { onCreate: () => void }) {
 }
 
 function SettingsModal({ project, onClose }: { project: WorkspaceHubProject | null; onClose: () => void }) {
+  function handleSave() {
+    onClose()
+    showAuthToast({ message: '변경사항이 저장되었습니다.', durationMs: 2200 })
+  }
+
   return (
-    <div id="settingsModal" className={project ? 'modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active' : 'modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4'}>
-      <div className="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-extrabold text-gray-900 text-lg">
+    <div id="settingsModal" className={project ? 'workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active' : 'workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4'}>
+      <div className="workspace-hub-modal-content workspace-hub-settings-modal bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+        <div className="workspace-hub-settings-header p-6 border-b border-gray-100 flex justify-between items-center">
+          <h3 className="workspace-hub-settings-title font-extrabold text-gray-900 text-lg">
             <i className="fas fa-cog text-brand mr-2"></i>프로젝트 설정
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
+          <button onClick={onClose} className="workspace-hub-settings-close text-gray-400 hover:text-gray-600 transition">
             <i className="fas fa-times text-xl"></i>
           </button>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="workspace-hub-settings-body p-6 space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5">프로젝트 이름</label>
-            <input value={project?.title ?? ''} readOnly className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition" />
+            <label className="workspace-hub-settings-label block text-xs font-bold text-gray-600 mb-1.5">프로젝트 이름</label>
+            <input value={project?.title ?? ''} readOnly className="workspace-hub-settings-control w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5">설명</label>
-            <textarea value={project?.description ?? ''} readOnly rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition resize-none"></textarea>
+            <label className="workspace-hub-settings-label block text-xs font-bold text-gray-600 mb-1.5">설명</label>
+            <textarea value={project?.description ?? ''} readOnly rows={3} className="workspace-hub-settings-control workspace-hub-settings-textarea w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition resize-none"></textarea>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5">공개 범위</label>
-            <select className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand outline-none transition bg-white" defaultValue="팀원만 보기 (Private)">
+            <label className="workspace-hub-settings-label block text-xs font-bold text-gray-600 mb-1.5">공개 범위</label>
+            <select className="workspace-hub-settings-control w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand outline-none transition bg-white" defaultValue="팀원만 보기 (Private)">
               <option>팀원만 보기 (Private)</option>
               <option>라운지 공개 (Public)</option>
             </select>
           </div>
         </div>
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
-          <button onClick={onClose} className="px-5 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition">
+        <div className="workspace-hub-settings-footer p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+          <button onClick={onClose} className="workspace-hub-settings-secondary-btn px-5 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition">
             취소
           </button>
-          <button onClick={onClose} className="px-5 py-2 rounded-xl text-sm font-bold bg-brand text-white hover:bg-green-600 transition">
+          <button onClick={handleSave} className="workspace-hub-settings-primary-btn px-5 py-2 rounded-xl text-sm font-bold bg-brand text-white hover:bg-green-600 transition">
             변경사항 저장
           </button>
         </div>
@@ -542,10 +591,18 @@ function SettingsModal({ project, onClose }: { project: WorkspaceHubProject | nu
   )
 }
 
-function MembersModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function MembersModal({
+  open,
+  currentUserProfileImage,
+  onClose,
+}: {
+  open: boolean
+  currentUserProfileImage: string | null
+  onClose: () => void
+}) {
   return (
-    <div id="membersModal" className={open ? 'modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active' : 'modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4'}>
-      <div className="modal-content bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+    <div id="membersModal" className={open ? 'workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active' : 'workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4'}>
+      <div className="workspace-hub-modal-content workspace-hub-members-modal bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <h3 className="font-extrabold text-gray-900 text-lg">
             <i className="fas fa-users text-blue-500 mr-2"></i>멤버 관리
@@ -554,37 +611,42 @@ function MembersModal({ open, onClose }: { open: boolean; onClose: () => void })
             <i className="fas fa-times text-xl"></i>
           </button>
         </div>
-        <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-blue-50">
-          <span className="text-sm font-bold text-blue-800">초대 링크 공유하기</span>
-          <button className="bg-white border border-blue-200 text-blue-600 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition shadow-sm">
+        <div className="workspace-hub-members-invite p-4 border-b border-gray-50 flex justify-between items-center bg-blue-50">
+          <span className="workspace-hub-members-invite-text text-sm font-bold text-blue-800">초대 링크 공유하기</span>
+          <button className="workspace-hub-members-copy bg-white border border-blue-200 text-blue-600 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition shadow-sm">
             <i className="fas fa-copy mr-1"></i>복사
           </button>
         </div>
-        <div className="p-2 max-h-60 overflow-y-auto">
-          <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition">
+        <div className="workspace-hub-members-list p-2 max-h-60 overflow-y-auto">
+          <div className="workspace-hub-member-row flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition">
             <div className="flex items-center gap-3">
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=MyUser" className="w-10 h-10 rounded-full border border-gray-200 shadow-sm" />
+              <UserAvatar
+                name="나"
+                imageUrl={currentUserProfileImage}
+                className="workspace-hub-member-avatar w-10 h-10 shadow-sm"
+                iconClassName="text-sm"
+              />
               <div>
-                <p className="text-sm font-bold text-gray-900 flex items-center gap-1">
+                <p className="workspace-hub-member-name text-sm font-bold text-gray-900 flex items-center gap-1">
                   나 <span className="bg-brand text-white text-[9px] px-1.5 py-0.5 rounded">팀장</span>
                 </p>
-                <p className="text-[10px] text-gray-400">Backend</p>
+                <p className="workspace-hub-member-role text-[10px] text-gray-400">Backend</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition">
+          <div className="workspace-hub-member-row flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition">
             <div className="flex items-center gap-3">
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=A" className="w-10 h-10 rounded-full border border-gray-200 shadow-sm" />
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=A" className="workspace-hub-member-avatar w-10 h-10 rounded-full border border-gray-200 shadow-sm" />
               <div>
-                <p className="text-sm font-bold text-gray-900">김데브</p>
-                <p className="text-[10px] text-gray-400">Frontend</p>
+                <p className="workspace-hub-member-name text-sm font-bold text-gray-900">김데브</p>
+                <p className="workspace-hub-member-role text-[10px] text-gray-400">Frontend</p>
               </div>
             </div>
-            <button className="text-xs font-bold text-red-400 bg-red-50 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition">내보내기</button>
+            <button className="workspace-hub-member-remove-btn text-xs font-bold text-red-400 bg-red-50 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition">내보내기</button>
           </div>
         </div>
-        <div className="p-4 border-t border-gray-100 bg-gray-50 text-center">
-          <button onClick={onClose} className="w-full py-2.5 rounded-xl text-sm font-bold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition shadow-sm">
+        <div className="workspace-hub-members-footer p-4 border-t border-gray-100 bg-gray-50 text-center">
+          <button onClick={onClose} className="workspace-hub-members-footer-button w-full py-2.5 rounded-xl text-sm font-bold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition shadow-sm">
             닫기
           </button>
         </div>
@@ -607,8 +669,8 @@ function ProjectCreateModal({
   }
 
   return (
-    <div className="modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active" onClick={onClose}>
-      <div className="modal-content w-full max-w-4xl" onClick={(event) => event.stopPropagation()}>
+    <div className="workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active" onClick={onClose}>
+      <div className="workspace-hub-modal-content workspace-hub-project-create-modal w-full max-w-4xl" onClick={(event) => event.stopPropagation()}>
         <ProjectCreatePanel onClose={onClose} onCreated={onCreated} />
       </div>
     </div>

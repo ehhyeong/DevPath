@@ -37,7 +37,25 @@ public class WorkspaceResponse {
   @Schema(description = "생성 일시")
   private LocalDateTime createdAt;
 
+  @Schema(description = "Next calendar event title")
+  private String nextEventTitle;
+
+  @Schema(description = "Next calendar event start time")
+  private LocalDateTime nextEventStartAt;
+
+  @Schema(description = "Next calendar event end time")
+  private LocalDateTime nextEventEndAt;
+
   public static WorkspaceResponse from(Workspace workspace, int memberCount) {
+    return from(workspace, memberCount, null, null, null);
+  }
+
+  public static WorkspaceResponse from(
+      Workspace workspace,
+      int memberCount,
+      String nextEventTitle,
+      LocalDateTime nextEventStartAt,
+      LocalDateTime nextEventEndAt) {
     return builder()
         .workspaceId(workspace.getId())
         .name(workspace.getName())
@@ -47,6 +65,9 @@ public class WorkspaceResponse {
         .ownerId(workspace.getOwnerId())
         .memberCount(memberCount)
         .createdAt(workspace.getCreatedAt())
+        .nextEventTitle(nextEventTitle)
+        .nextEventStartAt(nextEventStartAt)
+        .nextEventEndAt(nextEventEndAt)
         .build();
   }
 }

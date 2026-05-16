@@ -64,9 +64,10 @@ public class WorkspaceHubProjectResponse {
   }
 
   public static WorkspaceHubProjectResponse fromWorkspace(
-      Workspace workspace, List<WorkspaceMember> members) {
+      Workspace workspace, List<WorkspaceMember> members, Long currentUserId) {
     String type = typeOf(workspace.getType());
     String status = statusOf(workspace.getStatus());
+    String mentoringModeLabel = mentoringModeLabel(workspace);
 
     return WorkspaceHubProjectResponse.builder()
         .projectId(workspace.getId())
@@ -74,17 +75,17 @@ public class WorkspaceHubProjectResponse {
         .menuId("workspace-menu-" + workspace.getId())
         .type(type)
         .status(status)
-        .dashboardUrl("workspace-hub.html?workspaceId=" + workspace.getId())
+        .dashboardUrl(dashboardUrl(workspace))
         .title(workspace.getName())
         .description(workspace.getDescription() == null ? "" : workspace.getDescription())
         .progressPercent("completed".equals(status) ? 100 : defaultProgress(workspace.getType()))
-        .mentoringModeLabel(workspace.getType() == WorkspaceType.MENTORING ? "공통 과제형" : null)
-        .mentoringModeIcon(workspace.getType() == WorkspaceType.MENTORING ? "fas fa-users mr-1" : null)
+        .mentoringModeLabel(mentoringModeLabel)
+        .mentoringModeIcon(mentoringModeIcon(mentoringModeLabel))
         .categoryLabel(workspace.getType() == WorkspaceType.MENTORING ? "Mentoring" : null)
         .roleLabel(null)
         .footerKind(workspace.getType() == WorkspaceType.MENTORING ? "mentor" : "avatars")
         .footerDateLabel(dateText(workspace.getCreatedAt()))
-        .memberAvatarSeeds(memberSeeds(members))
+        .memberAvatarSeeds(memberSeeds(members, currentUserId))
         .extraMemberCount(extraMemberCount(members))
         .footerAvatarSeed(workspace.getType() == WorkspaceType.MENTORING ? "workspace-" + workspace.getId() : null)
         .footerText(workspace.getType() == WorkspaceType.MENTORING ? "멘토링 워크스페이스" : null)
@@ -111,8 +112,32 @@ public class WorkspaceHubProjectResponse {
     return "squad";
   }
 
+  private static String dashboardUrl(Workspace workspace) {
+    if (workspace.getType() == WorkspaceType.SQUAD) {
+      return "/squad-dashboard?workspaceId=" + workspace.getId();
+    }
+
+    return "workspace-hub.html?workspaceId=" + workspace.getId();
+  }
+
   private static String statusOf(WorkspaceStatus status) {
     return status == WorkspaceStatus.ARCHIVED ? "completed" : "progress";
+  }
+
+  private static String mentoringModeLabel(Workspace workspace) {
+    if (workspace.getType() != WorkspaceType.MENTORING) {
+      return null;
+    }
+
+    String text = (workspace.getName() + " " + (workspace.getDescription() == null ? "" : workspace.getDescription()));
+    return text.contains("팀 프로젝트형") || text.contains("팀 프로젝트") ? "팀 프로젝트형" : "공통 과제형";
+  }
+
+  private static String mentoringModeIcon(String mentoringModeLabel) {
+    if (mentoringModeLabel == null) {
+      return null;
+    }
+    return "팀 프로젝트형".equals(mentoringModeLabel) ? "fas fa-puzzle-piece mr-1" : "fas fa-users mr-1";
   }
 
   private static int defaultProgress(WorkspaceType type) {
@@ -129,8 +154,21 @@ public class WorkspaceHubProjectResponse {
     return createdAt == null ? "방금" : createdAt.toLocalDate().toString();
   }
 
-  private static List<String> memberSeeds(List<WorkspaceMember> members) {
+  private static List<String> memberSeeds(List<WorkspaceMember> members, Long currentUserId) {
     return members.stream()
+        .sorted(
+            (left, right) -> {
+              boolean leftIsCurrent =
+                  currentUserId != null && currentUserId.equals(left.getLearnerId());
+              boolean rightIsCurrent =
+                  currentUserId != null && currentUserId.equals(right.getLearnerId());
+
+              if (leftIsCurrent == rightIsCurrent) {
+                return 0;
+              }
+
+              return leftIsCurrent ? -1 : 1;
+            })
         .limit(2)
         .map(member -> "workspace-member-" + member.getLearnerId())
         .toList();

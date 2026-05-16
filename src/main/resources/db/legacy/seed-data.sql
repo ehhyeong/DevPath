@@ -15868,6 +15868,158 @@ SELECT setval(pg_get_serial_sequence('career_profile_versions', 'career_profile_
 -- TASK-22: Workspace 샘플 데이터
 -- =============================================
 
+DELETE FROM workspace_member wm
+USING workspace w
+WHERE wm.workspace_id = w.id
+  AND wm.learner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+  AND w.name NOT IN (
+      '배달비 절약 플랫폼',
+      '대용량 트래픽 커머스 서버',
+      'Next.js 블로그 플랫폼 구축'
+  );
+
+DELETE FROM workspace_answers
+WHERE workspace_question_id IN (
+    SELECT workspace_question_id FROM workspace_questions
+    WHERE workspace_id IN (
+        SELECT id FROM workspace
+        WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+          AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+    )
+);
+
+DELETE FROM workspace_questions
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM qna_answers
+WHERE question_id IN (
+    SELECT question_id FROM qna_questions
+    WHERE workspace_id IN (
+        SELECT id FROM workspace
+        WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+          AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+    )
+);
+
+DELETE FROM qna_questions
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM workspace_notice_read
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM workspace_notice
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM voice_events
+WHERE voice_channel_id IN (
+    SELECT voice_channel_id FROM voice_channels
+    WHERE workspace_id IN (
+        SELECT id FROM workspace
+        WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+          AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+    )
+);
+
+DELETE FROM voice_participants
+WHERE voice_channel_id IN (
+    SELECT voice_channel_id FROM voice_channels
+    WHERE workspace_id IN (
+        SELECT id FROM workspace
+        WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+          AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+    )
+);
+
+DELETE FROM voice_channels
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM external_integration
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM meeting_note
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM workspace_doc
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM workspace_file
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM activity_log
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM calendar_event
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM milestone
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM workspace_task
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM workspace_member
+WHERE workspace_id IN (
+    SELECT id FROM workspace
+    WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+      AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스')
+);
+
+DELETE FROM workspace
+WHERE owner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+  AND name IN ('포트폴리오 빌더 솔로', '멘토링 세션 워크스페이스', '공통 과제형 멘토링 워크스페이스', '팀 프로젝트형 멘토링 워크스페이스');
+
 INSERT INTO workspace (owner_id, name, description, type, status, is_deleted, created_at, updated_at)
 SELECT
     (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
@@ -15885,64 +16037,322 @@ WHERE NOT EXISTS (
 INSERT INTO workspace (owner_id, name, description, type, status, is_deleted, created_at, updated_at)
 SELECT
     (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
-    '포트폴리오 빌더 솔로',
-    '개인 포트폴리오 제작을 위한 솔로 워크스페이스',
-    'SOLO',
+    '배달비 절약 플랫폼',
+    '위치 기반 실시간 공동 구매 매칭 서비스 MVP 개발',
+    'SQUAD',
     'ACTIVE',
     FALSE,
-    '2026-03-24 10:00:00',
-    '2026-03-24 10:00:00'
+    '2026-03-23 15:00:00',
+    '2026-03-23 15:00:00'
 WHERE NOT EXISTS (
-    SELECT 1 FROM workspace WHERE name = '포트폴리오 빌더 솔로'
+    SELECT 1 FROM workspace WHERE name = '배달비 절약 플랫폼'
 );
 
 INSERT INTO workspace (owner_id, name, description, type, status, is_deleted, created_at, updated_at)
 SELECT
     (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
-    '멘토링 세션 워크스페이스',
-    '멘토와 함께하는 학습 워크스페이스',
+    '대용량 트래픽 커머스 서버',
+    '공통 과제형 멘토링으로 Spring Boot와 Redis를 활용한 선착순 쿠폰 시스템을 구현하는 워크스페이스',
     'MENTORING',
     'ACTIVE',
     FALSE,
     '2026-03-25 09:00:00',
     '2026-03-25 09:00:00'
 WHERE NOT EXISTS (
-    SELECT 1 FROM workspace WHERE name = '멘토링 세션 워크스페이스'
+    SELECT 1 FROM workspace WHERE name = '대용량 트래픽 커머스 서버'
 );
 
--- workspace_member 샘플 데이터 (learner가 모든 워크스페이스 멤버)
+INSERT INTO workspace (owner_id, name, description, type, status, is_deleted, created_at, updated_at)
+SELECT
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    'Next.js 블로그 플랫폼 구축',
+    '팀 프로젝트형 멘토링으로 역할을 나누어 Next.js 블로그 플랫폼을 완성하는 워크스페이스',
+    'MENTORING',
+    'ACTIVE',
+    FALSE,
+    '2026-03-26 09:00:00',
+    '2026-03-26 09:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM workspace WHERE name = 'Next.js 블로그 플랫폼 구축'
+);
+
+-- workspace_member 샘플 데이터 (learner는 스쿼드 1개, 멘토링 2개만 연결)
 INSERT INTO workspace_member (workspace_id, learner_id, joined_at)
 SELECT
-    (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
+    (SELECT id FROM workspace WHERE name = '배달비 절약 플랫폼'),
     (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     '2026-03-23 14:00:00'
 WHERE NOT EXISTS (
     SELECT 1 FROM workspace_member
-    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = '배달비 절약 플랫폼')
       AND learner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
 );
 
 INSERT INTO workspace_member (workspace_id, learner_id, joined_at)
 SELECT
-    (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로'),
-    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
-    '2026-03-24 10:00:00'
-WHERE NOT EXISTS (
-    SELECT 1 FROM workspace_member
-    WHERE workspace_id = (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로')
-      AND learner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
-);
-
-INSERT INTO workspace_member (workspace_id, learner_id, joined_at)
-SELECT
-    (SELECT id FROM workspace WHERE name = '멘토링 세션 워크스페이스'),
+    (SELECT id FROM workspace WHERE name = '대용량 트래픽 커머스 서버'),
     (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     '2026-03-25 09:00:00'
 WHERE NOT EXISTS (
     SELECT 1 FROM workspace_member
-    WHERE workspace_id = (SELECT id FROM workspace WHERE name = '멘토링 세션 워크스페이스')
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = '대용량 트래픽 커머스 서버')
       AND learner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
 );
+
+INSERT INTO workspace_member (workspace_id, learner_id, joined_at)
+SELECT
+    (SELECT id FROM workspace WHERE name = 'Next.js 블로그 플랫폼 구축'),
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
+    '2026-03-26 09:00:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM workspace_member
+    WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'Next.js 블로그 플랫폼 구축')
+      AND learner_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+);
+
+DELETE FROM mentorings mentoring
+USING mentoring_posts post
+WHERE mentoring.mentoring_post_id = post.mentoring_post_id
+  AND mentoring.mentee_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+  AND post.title NOT IN ('대용량 트래픽 커머스 서버', 'Next.js 블로그 플랫폼 구축');
+
+DELETE FROM mentoring_applications application
+USING mentoring_posts post
+WHERE application.mentoring_post_id = post.mentoring_post_id
+  AND application.applicant_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com')
+  AND post.title NOT IN ('대용량 트래픽 커머스 서버', 'Next.js 블로그 플랫폼 구축');
+
+DELETE FROM mentorings mentoring
+USING mentoring_posts post
+WHERE mentoring.mentoring_post_id = post.mentoring_post_id
+  AND post.mentor_id = (SELECT user_id FROM users WHERE email = 'instructor@devpath.com')
+  AND post.title = '스쿼드 런칭 팀 프로젝트 멘토링';
+
+DELETE FROM mentoring_applications application
+USING mentoring_posts post
+WHERE application.mentoring_post_id = post.mentoring_post_id
+  AND post.mentor_id = (SELECT user_id FROM users WHERE email = 'instructor@devpath.com')
+  AND post.title = '스쿼드 런칭 팀 프로젝트 멘토링';
+
+DELETE FROM mentoring_posts
+WHERE mentor_id = (SELECT user_id FROM users WHERE email = 'instructor@devpath.com')
+  AND title = '스쿼드 런칭 팀 프로젝트 멘토링';
+
+INSERT INTO mentoring_posts (
+    mentor_id,
+    title,
+    content,
+    required_stacks,
+    category,
+    mentoring_type,
+    duration_weeks,
+    curriculum,
+    deadline_at,
+    current_participants,
+    max_participants,
+    view_count,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentor.user_id,
+    '대용량 트래픽 커머스 서버',
+    '실제 운영 환경과 유사한 트래픽 시나리오를 경험합니다. 선착순 쿠폰 발급, 재고 동시성 이슈 등을 해결해보는 백엔드 심화 과정입니다. 각자 동일한 과제를 수행하며 개별 피드백을 받습니다.',
+    'Spring Boot,Redis,Kafka',
+    'Backend',
+    'study',
+    4,
+    E'요구사항 분석 및 ERD 설계, 아키텍처 리뷰\n회원/상품 기능 구현 및 단위 테스트 작성\n대용량 트래픽 처리를 위한 Redis/Kafka 도입\n부하 테스트 및 성능 최적화, 최종 발표',
+    CURRENT_DATE + 14,
+    5,
+    10,
+    0,
+    'OPEN',
+    FALSE,
+    '2026-03-25 10:00:00',
+    '2026-03-25 10:00:00'
+FROM users mentor
+WHERE mentor.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_posts post
+      WHERE post.title = '대용량 트래픽 커머스 서버'
+        AND post.is_deleted = FALSE
+  );
+
+INSERT INTO mentoring_applications (
+    mentoring_post_id,
+    applicant_id,
+    message,
+    status,
+    reject_reason,
+    processed_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    learner.user_id,
+    '공통 과제형 멘토링으로 대용량 트래픽 과제를 수행하며 피드백을 받고 싶습니다.',
+    'APPROVED',
+    NULL,
+    '2026-03-25 10:20:00',
+    FALSE,
+    '2026-03-25 10:15:00',
+    '2026-03-25 10:20:00'
+FROM mentoring_posts post
+JOIN users learner ON learner.email = 'learner@devpath.com'
+WHERE post.title = '대용량 트래픽 커머스 서버'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_applications application
+      WHERE application.mentoring_post_id = post.mentoring_post_id
+        AND application.applicant_id = learner.user_id
+  );
+
+INSERT INTO mentorings (
+    mentoring_post_id,
+    mentor_id,
+    mentee_id,
+    status,
+    started_at,
+    ended_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    mentor.user_id,
+    learner.user_id,
+    'ONGOING',
+    '2026-03-25 11:00:00',
+    NULL,
+    FALSE,
+    '2026-03-25 11:00:00',
+    '2026-03-25 11:00:00'
+FROM mentoring_posts post
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+JOIN users learner ON learner.email = 'learner@devpath.com'
+WHERE post.title = '대용량 트래픽 커머스 서버'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentorings mentoring
+      WHERE mentoring.mentoring_post_id = post.mentoring_post_id
+        AND mentoring.mentee_id = learner.user_id
+  );
+
+INSERT INTO mentoring_posts (
+    mentor_id,
+    title,
+    content,
+    required_stacks,
+    category,
+    mentoring_type,
+    duration_weeks,
+    curriculum,
+    deadline_at,
+    current_participants,
+    max_participants,
+    view_count,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentor.user_id,
+    'Next.js 블로그 플랫폼 구축',
+    '하나의 블로그 플랫폼을 팀원들과 역할을 나누어 기획부터 배포까지 완성합니다. SEO 최적화, 마크다운 파싱, 다크모드 등 모던 프론트엔드의 실무 스킬을 멘토와 함께 적용해봅니다.',
+    'React,Next.js 14,Tailwind',
+    'Frontend',
+    'team',
+    4,
+    E'기획 리뷰 및 Next.js 14 App Router 뼈대 세팅\n각 파트별 기능 구현\n디자인 시스템 적용 및 다크모드 통합\nVercel 배포 및 성능 튜닝, 팀 회고',
+    CURRENT_DATE + 2,
+    3,
+    4,
+    0,
+    'OPEN',
+    FALSE,
+    '2026-03-26 10:00:00',
+    '2026-03-26 10:00:00'
+FROM users mentor
+WHERE mentor.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_posts post
+      WHERE post.title = 'Next.js 블로그 플랫폼 구축'
+        AND post.is_deleted = FALSE
+  );
+
+INSERT INTO mentoring_applications (
+    mentoring_post_id,
+    applicant_id,
+    message,
+    status,
+    reject_reason,
+    processed_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    learner.user_id,
+    '팀 프로젝트형 멘토링으로 Next.js 블로그 플랫폼을 역할 분담해서 완성하고 싶습니다.',
+    'APPROVED',
+    NULL,
+    '2026-03-26 10:20:00',
+    FALSE,
+    '2026-03-26 10:15:00',
+    '2026-03-26 10:20:00'
+FROM mentoring_posts post
+JOIN users learner ON learner.email = 'learner@devpath.com'
+WHERE post.title = 'Next.js 블로그 플랫폼 구축'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_applications application
+      WHERE application.mentoring_post_id = post.mentoring_post_id
+        AND application.applicant_id = learner.user_id
+        AND application.is_deleted = FALSE
+  );
+
+INSERT INTO mentorings (
+    mentoring_post_id,
+    mentor_id,
+    mentee_id,
+    status,
+    started_at,
+    ended_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    mentor.user_id,
+    learner.user_id,
+    'ONGOING',
+    '2026-03-26 11:00:00',
+    NULL,
+    FALSE,
+    '2026-03-26 11:00:00',
+    '2026-03-26 11:00:00'
+FROM mentoring_posts post
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+JOIN users learner ON learner.email = 'learner@devpath.com'
+WHERE post.title = 'Next.js 블로그 플랫폼 구축'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentorings mentoring
+      WHERE mentoring.mentoring_post_id = post.mentoring_post_id
+        AND mentoring.mentee_id = learner.user_id
+        AND mentoring.is_deleted = FALSE
+  );
 
 -- workspace_task 샘플 데이터
 INSERT INTO workspace_task (workspace_id, title, description, status, priority, assignee_id, due_date, created_by_id, is_deleted, created_at, updated_at)
@@ -16002,25 +16412,6 @@ WHERE NOT EXISTS (
       AND title = 'ERD 다이어그램 작성'
 );
 
-INSERT INTO workspace_task (workspace_id, title, description, status, priority, assignee_id, due_date, created_by_id, is_deleted, created_at, updated_at)
-SELECT
-    (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로'),
-    '포트폴리오 초안 작성',
-    '개인 포트폴리오 초안 작성 및 프로젝트 정리',
-    'TODO',
-    'MEDIUM',
-    NULL,
-    '2026-06-20',
-    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
-    FALSE,
-    '2026-03-24 10:00:00',
-    '2026-03-24 10:00:00'
-WHERE NOT EXISTS (
-    SELECT 1 FROM workspace_task
-    WHERE workspace_id = (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로')
-      AND title = '포트폴리오 초안 작성'
-);
-
 -- milestone 샘플 데이터
 INSERT INTO milestone (workspace_id, title, description, start_date, due_date, status, created_by_id, is_deleted, created_at, updated_at)
 SELECT
@@ -16056,24 +16447,6 @@ WHERE NOT EXISTS (
     SELECT 1 FROM milestone
     WHERE workspace_id = (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스')
       AND title = '코드 리뷰 프로세스 정립'
-);
-
-INSERT INTO milestone (workspace_id, title, description, start_date, due_date, status, created_by_id, is_deleted, created_at, updated_at)
-SELECT
-    (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로'),
-    '포트폴리오 v1 완성',
-    '개인 포트폴리오 초안 작성 및 공개 링크 발급',
-    '2026-06-01',
-    '2026-07-31',
-    'OPEN',
-    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
-    FALSE,
-    '2026-03-24 10:00:00',
-    '2026-03-24 10:00:00'
-WHERE NOT EXISTS (
-    SELECT 1 FROM milestone
-    WHERE workspace_id = (SELECT id FROM workspace WHERE name = '포트폴리오 빌더 솔로')
-      AND title = '포트폴리오 v1 완성'
 );
 
 -- calendar_event 샘플 데이터
