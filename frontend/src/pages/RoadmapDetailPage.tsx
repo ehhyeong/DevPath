@@ -1658,15 +1658,16 @@ export default function RoadmapDetailPage() {
             try {
               const data = await roadmapApi.copyRoadmap(originalRoadmapId)
               window.location.replace(`roadmap.html?id=${data.customRoadmapId}`)
-            } catch {
-              // 이미 복사된 경우 기존 로드맵으로 이동
+            } catch (copyError) {
+              // 이미 복사된 경우 기존 로드맵으로 이동; 다른 오류면 에러 표시
               const list = await roadmapApi.getMyRoadmaps(ctrl.signal)
               const existingRoadmap = findRoadmapByOriginalId(list.roadmaps, originalRoadmapId)
 
               if (existingRoadmap) {
                 window.location.replace(`roadmap.html?id=${existingRoadmap.customRoadmapId}`)
               } else {
-                window.location.replace('roadmap-hub.html')
+                setError(copyError instanceof Error ? copyError.message : '로드맵을 생성할 수 없습니다.')
+                setLoading(false)
               }
             }
           } else {
@@ -1887,6 +1888,8 @@ export default function RoadmapDetailPage() {
     )
   }
 
+  if (!session) return <LoginRequiredView />
+
   if (error || !roadmap) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -1903,8 +1906,6 @@ export default function RoadmapDetailPage() {
       </div>
     )
   }
-
-  if (!session) return <LoginRequiredView />
 
   return (
     <div className="overflow-x-hidden text-gray-800">

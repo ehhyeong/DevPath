@@ -7,11 +7,11 @@ import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Profile("!local")
 @Component
 @RequiredArgsConstructor
 public class JpaOfficialRoadmapReader implements OfficialRoadmapReader {
@@ -34,8 +34,14 @@ public class JpaOfficialRoadmapReader implements OfficialRoadmapReader {
             .map(this::toNodeItem)
             .toList();
 
+    Set<Long> nodeIdSet = nodes.stream()
+        .map(OfficialRoadmapSnapshot.NodeItem::nodeId)
+        .collect(Collectors.toSet());
+
+    // preNode가 현재 로드맵 소속이 아닌 edge는 제외 (데이터 불일치 방어)
     List<OfficialRoadmapSnapshot.PrerequisiteEdge> edges =
         prerequisiteRepository.findAllByNodeRoadmapRoadmapId(roadmap.getRoadmapId()).stream()
+            .filter(p -> nodeIdSet.contains(p.getPreNode().getNodeId()))
             .map(this::toPrerequisiteEdge)
             .toList();
 
