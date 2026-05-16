@@ -86,7 +86,7 @@ public class GeminiJobAnalysisService {
       JobActivityProfileResponse.Summary profile, List<JobkoreaJobResponse.Posting> postings) {
 
     StringBuilder sb = new StringBuilder();
-    sb.append("당신은 IT 채용 매칭 전문가입니다. 아래 개발자 프로필을 바탕으로 채용공고 목록의 적합도를 평가해주세요.\n\n");
+    sb.append("당신은 IT 채용 매칭 전문가입니다. 아래 채점 기준에 따라 개발자 프로필과 채용공고의 적합도를 평가하세요.\n\n");
 
     sb.append("## 개발자 프로필\n");
     if (profile != null && !profile.skillSignals().isEmpty()) {
@@ -121,11 +121,34 @@ public class GeminiJobAnalysisService {
       sb.append("\n");
     }
 
+    sb.append("\n## 채점 기준 (합계 100점)\n");
+    sb.append("### 1. 스킬 키워드 매칭 (60점 만점)\n");
+    sb.append("- 공고 키워드 중 보유 기술과 일치하는 비율로 산정\n");
+    sb.append("- 70% 이상 일치 → 54~60점 / 40~70% → 30~53점 / 40% 미만 → 0~29점\n");
+    sb.append("- 보유 기술 없거나 키워드 미제공 → 20점 고정\n");
+
+    sb.append("### 2. 학습 깊이 (25점 만점)\n");
+    sb.append("- Proof Card 5개 이상 + 평균 80점↑ → 21~25점\n");
+    sb.append("- Proof Card 3~4개 또는 평균 60~79점 → 13~20점\n");
+    sb.append("- Proof Card 1~2개 또는 평균 60점 미만 → 5~12점\n");
+    sb.append("- Proof Card 없음 → 0점\n");
+
+    sb.append("### 3. 프로젝트 경험 (15점 만점)\n");
+    sb.append("- 프로젝트 3개 이상 → 13~15점\n");
+    sb.append("- 프로젝트 1~2개 → 6~12점\n");
+    sb.append("- 프로젝트 없음 → 0점\n");
+
+    sb.append("\n## 점수 구간 기준\n");
+    sb.append("- 80~100: 핵심 기술 70%↑ 일치, 즉시 지원 추천\n");
+    sb.append("- 60~79: 핵심 기술 40~70% 일치, 보완 학습 후 지원 가능\n");
+    sb.append("- 40~59: 기술 일치 낮음, 장기 목표로 고려\n");
+    sb.append("- 0~39: 기술 스택 불일치, 비추천\n");
+
     sb.append("\n## 응답 규칙\n");
     sb.append("- 순수 JSON 배열만 반환하세요. 설명, 마크다운 코드블록 없이.\n");
     sb.append("- 형식: [{\"index\": 0, \"matchScore\": 87, \"reason\": \"추천 이유\"}]\n");
-    sb.append("- matchScore: 0~100 정수\n");
-    sb.append("- reason: 30자 이내 한국어 추천 이유\n");
+    sb.append("- matchScore: 위 채점 기준 3개 항목 합산 0~100 정수\n");
+    sb.append("- reason: 점수의 주요 근거를 30자 이내 한국어로 (예: \"Spring·JPA 일치, 프로젝트 경험 풍부\")\n");
     sb.append("- 모든 공고(").append(postings.size()).append("건)에 대해 응답 필수\n");
 
     return sb.toString();
