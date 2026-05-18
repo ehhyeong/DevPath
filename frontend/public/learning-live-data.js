@@ -205,6 +205,9 @@
     }
 
     const currentMedia = playerShell.querySelector('video, img');
+    if (currentMedia?.tagName === 'VIDEO') {
+      VIDEO_QUALITIES.forEach((quality) => currentMedia.removeAttribute(`data-quality-${quality}`));
+    }
     const videoSources = resolveVideoQualitySources();
     const activeQuality = getAvailableVideoQuality(state.videoQuality, videoSources);
     const videoUrl = activeQuality
@@ -218,7 +221,7 @@
         : document.createElement('video');
 
       if (video !== currentMedia && currentMedia) {
-        video.className = currentMedia.className || 'w-full h-full object-cover opacity-60';
+        video.className = currentMedia.className || 'w-full h-full object-contain';
         currentMedia.replaceWith(video);
       }
 
@@ -1389,13 +1392,24 @@
     const media = getMediaElement();
     const paused = !media || media.tagName !== 'VIDEO' || media.paused;
     const playerShell = getPlayerShell();
-    const centerIcon = playerShell?.querySelector('button.absolute i');
+    const centerBtn = playerShell?.querySelector('button.absolute');
+    const centerIcon = centerBtn?.querySelector('i');
     const controlIcon = getPlayPauseButton()?.querySelector('i');
 
     if (centerIcon) {
       centerIcon.className = paused
         ? 'far fa-play-circle text-7xl drop-shadow-lg'
         : 'far fa-pause-circle text-7xl drop-shadow-lg';
+    }
+
+    if (centerBtn) {
+      if (paused) {
+        centerBtn.classList.remove('opacity-0');
+        centerBtn.classList.add('opacity-100');
+      } else {
+        centerBtn.classList.remove('opacity-100');
+        centerBtn.classList.add('opacity-0');
+      }
     }
 
     if (controlIcon) {

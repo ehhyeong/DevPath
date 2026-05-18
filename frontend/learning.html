@@ -63,10 +63,10 @@
                 
                 <!-- Video Player Placeholder -->
                 <div class="w-full h-full relative flex items-center justify-center bg-gray-900">
-                    <video src="/samples/sample-intro.mp4" poster="https://images.unsplash.com/photo-1550439062-609e1531270e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80" class="w-full h-full object-cover opacity-60" playsinline preload="metadata" data-quality-1080="/samples/sample-intro.mp4"></video>
-                    
+                    <video class="w-full h-full object-contain" playsinline preload="metadata"></video>
+
                     <!-- 재생 버튼 (가운데) -->
-                    <button class="absolute text-white/80 hover:text-[#00C471] transition transform hover:scale-110">
+                    <button class="absolute text-white/80 hover:text-[#00C471] transition transform hover:scale-110 group-hover:opacity-100 opacity-0 duration-300">
                         <i class="far fa-play-circle text-7xl drop-shadow-lg"></i>
                     </button>
                     

@@ -720,3 +720,23 @@ BEGIN
       );
 END $$;
 ^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
+    IF to_regclass('public.lessons') IS NULL
+        OR to_regclass('public.course_sections') IS NULL THEN
+        RETURN;
+    END IF;
+
+    UPDATE public.lessons
+       SET video_url = '/samples/devpath_ocr.mp4'
+     WHERE section_id IN (
+         SELECT section_id FROM public.course_sections WHERE sort_order = 1
+     );
+
+    UPDATE public.lessons
+       SET video_url = '/samples/devpath_ocr_ver2.mp4'
+     WHERE section_id IN (
+         SELECT section_id FROM public.course_sections WHERE sort_order = 2
+     );
+END $$;
+^^^ END OF SCRIPT ^^^
