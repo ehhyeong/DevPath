@@ -2859,3 +2859,2129 @@ body.squad-dashboard-body .app-viewport {
     opacity: 1;
   }
 }
+
+.squad-workspace-page .kanban-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: grab;
+}
+
+.squad-workspace-page .kanban-card:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.squad-workspace-page .kanban-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.08);
+  border-color: #00C471;
+}
+
+.squad-workspace-page .filter-tab {
+  transition: all 0.2s;
+  height: 30px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.squad-workspace-page .filter-tab.active {
+  background-color: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+.squad-workspace-page .filter-tab:hover:not(.active) {
+  background-color: #F9FAFB;
+}
+
+.squad-workspace-page .kanban-col {
+  position: relative;
+  min-height: 150px;
+}
+
+.squad-workspace-page .kanban-col:empty::after {
+  content: attr(data-empty);
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #E5E7EB;
+  border-radius: 0.75rem;
+  color: #9CA3AF;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.squad-workspace-page #col-todo:empty::after {
+  background-color: rgba(249, 250, 251, 0.5);
+}
+
+.squad-workspace-page .squad-workspace-add-task-button {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.squad-workspace-page .squad-workspace-task-modal {
+  transition: opacity 0.2s, visibility 0.2s;
+  opacity: 0;
+  visibility: hidden;
+  z-index: 1050;
+}
+
+.squad-workspace-page .squad-workspace-task-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.squad-workspace-page .squad-workspace-task-modal-content {
+  max-width: 448px !important;
+}
+
+.squad-workspace-page .squad-workspace-task-modal input,
+.squad-workspace-page .squad-workspace-task-modal select,
+.squad-workspace-page .squad-workspace-task-modal textarea,
+.squad-workspace-page .squad-workspace-task-modal button {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.squad-workspace-page .squad-workspace-task-modal input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  line-height: normal;
+}
+
+.squad-schedule-page .schedule-page-toolbar {
+  min-height: 97px;
+  padding: 24px 32px !important;
+}
+
+.squad-schedule-page .schedule-page-title {
+  margin: 0;
+  font-size: 24px !important;
+  line-height: 32px !important;
+}
+
+.squad-schedule-page .schedule-view-group {
+  height: 40px;
+  padding: 4px !important;
+  border-radius: 12px;
+  margin-right: 8px !important;
+}
+
+.squad-schedule-page .schedule-view-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 98px;
+  padding: 0 16px !important;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.squad-schedule-page .schedule-view-tab.active {
+  background-color: #fff;
+  color: #111827;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.squad-schedule-page .schedule-add-button {
+  height: 42px;
+  padding: 0 20px !important;
+  border-radius: 12px;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.squad-schedule-page .schedule-content-wrap {
+  padding: 24px !important;
+  gap: 24px !important;
+}
+
+.squad-schedule-page .schedule-calendar-header {
+  min-height: 69px;
+  padding: 20px !important;
+}
+
+.squad-schedule-page .schedule-current-date {
+  margin: 0;
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
+.squad-schedule-page .schedule-calendar-header button {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.squad-schedule-page .schedule-weekday {
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-schedule-page .schedule-upcoming-header {
+  min-height: 65px;
+  padding: 20px !important;
+  background-image: linear-gradient(to right, #F9FAFB, #fff);
+}
+
+.squad-schedule-page .schedule-upcoming-title {
+  margin: 0;
+  font-size: 16px !important;
+  line-height: 24px !important;
+}
+
+.squad-schedule-page .schedule-month-grid {
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  min-height: 0 !important;
+  height: 100%;
+}
+
+.squad-schedule-page .schedule-week-grid {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.squad-schedule-page .calendar-cell {
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.squad-schedule-page .month-calendar-cell {
+  min-height: 0;
+  padding: 8px !important;
+  overflow: hidden;
+}
+
+.squad-schedule-page .schedule-week-grid .calendar-cell {
+  min-height: 100%;
+}
+
+.squad-schedule-page .month-date-wrap {
+  margin-bottom: 6px !important;
+}
+
+.squad-schedule-page .month-date-badge {
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-schedule-page .event-pill {
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.squad-schedule-page .event-pill:hover {
+  transform: translateY(-1px);
+}
+
+.squad-schedule-page .month-event-pill {
+  min-height: 24px;
+  padding: 4px 6px !important;
+  margin-bottom: 4px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  line-height: 12px !important;
+  gap: 4px !important;
+}
+
+.squad-schedule-page .month-event-pill i,
+.squad-schedule-page .month-event-pill span {
+  font-size: 10px !important;
+  line-height: 12px !important;
+}
+
+.squad-schedule-page .deadline-event-pill {
+  border-color: #fecaca !important;
+  box-shadow: inset 3px 0 0 #ef4444, 0 1px 2px rgba(185, 28, 28, 0.08) !important;
+}
+
+.squad-schedule-page .deadline-event-dday {
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 9px !important;
+  line-height: 16px !important;
+}
+
+.squad-schedule-page .deadline-upcoming-card {
+  border-color: #fecaca !important;
+  box-shadow: inset 3px 0 0 #ef4444, 0 1px 3px rgba(185, 28, 28, 0.08) !important;
+}
+
+.squad-schedule-page .deadline-upcoming-badge {
+  background: #ef4444 !important;
+  color: #fff !important;
+  border: 1px solid #ef4444 !important;
+}
+
+.squad-schedule-page .squad-schedule-modal {
+  transition: opacity 0.2s, visibility 0.2s;
+  opacity: 0;
+  visibility: hidden;
+  z-index: 1050;
+}
+
+.squad-schedule-page .squad-schedule-modal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.squad-schedule-page .squad-schedule-modal-content {
+  width: 448px !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100vh - 32px);
+  border-radius: 16px;
+}
+
+.squad-schedule-page .squad-schedule-modal-header {
+  min-height: 72px;
+  padding: 20px 24px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-title {
+  margin: 0;
+  font-size: 18px !important;
+  line-height: 28px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-close {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-body {
+  padding: 18px 24px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-body > * + * {
+  margin-top: 14px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-body .grid {
+  gap: 12px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-label {
+  margin-bottom: 6px !important;
+  font-size: 11px !important;
+  line-height: 16px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-control {
+  height: 38px !important;
+  padding: 0 14px !important;
+  border-radius: 12px;
+  font-size: 13px !important;
+  line-height: 18px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-textarea {
+  height: 68px !important;
+  padding: 10px 14px !important;
+  border-radius: 12px;
+  font-size: 13px !important;
+  line-height: 18px !important;
+}
+
+.squad-schedule-page .squad-schedule-deadline-toggle {
+  min-height: 42px;
+  padding: 8px 12px !important;
+  border-radius: 12px;
+}
+
+.squad-schedule-page .squad-schedule-deadline-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 11px !important;
+  line-height: 26px !important;
+}
+
+.squad-schedule-page .squad-schedule-deadline-title {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-schedule-page .squad-schedule-deadline-copy {
+  font-size: 10px !important;
+  line-height: 12px !important;
+}
+
+.squad-schedule-page .squad-schedule-deadline-input {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-footer {
+  min-height: 66px;
+  padding: 14px 20px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal-action {
+  height: 38px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-radius: 12px;
+  font-size: 13px !important;
+  line-height: 18px !important;
+}
+
+.squad-schedule-page .squad-schedule-modal input,
+.squad-schedule-page .squad-schedule-modal select,
+.squad-schedule-page .squad-schedule-modal textarea,
+.squad-schedule-page .squad-schedule-modal button {
+  box-sizing: border-box;
+}
+
+.squad-review-page .code-line {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  min-height: 28px;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 28px;
+  position: relative;
+}
+
+.squad-review-page .code-num {
+  color: #9CA3AF;
+  user-select: none;
+  text-align: right;
+  padding-right: 12px;
+  border-right: 1px solid #F3F4F6;
+  background: rgba(249, 250, 251, 0.72);
+}
+
+.squad-review-page .code-line > div:last-child {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.squad-review-page .line-add {
+  background-color: #ECFDF5;
+  color: #047857;
+}
+
+.squad-review-page .line-add .code-num {
+  background-color: #D1FAE5;
+  color: #059669;
+}
+
+.squad-review-page .line-remove {
+  background-color: #FEF2F2;
+  color: #B91C1C;
+}
+
+.squad-review-page .line-remove .code-num {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.squad-review-page .ai-gradient-text {
+  background: linear-gradient(90deg, #4F46E5, #9333EA);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.squad-review-page .pr-card {
+  min-height: 110px;
+}
+
+.squad-review-page .squad-review-create-modal {
+  max-width: 512px !important;
+}
+
+.squad-review-page .squad-review-create-modal input,
+.squad-review-page .squad-review-create-modal textarea,
+.squad-review-page .squad-review-create-modal button {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.squad-erd-page {
+  background-color: #F3F4F6;
+  color: #374151;
+}
+
+.squad-erd-page .erd-topbar {
+  height: 64px !important;
+  padding-right: 24px !important;
+  padding-left: 24px !important;
+}
+
+.squad-erd-page .erd-toolbar {
+  gap: 8px !important;
+}
+
+.squad-erd-page .erd-toolbar-help {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 9999px !important;
+}
+
+.squad-erd-page .erd-toolbar-help i {
+  font-size: 18px !important;
+  line-height: 28px !important;
+}
+
+.squad-erd-page .erd-toolbar-button {
+  height: 34px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap;
+}
+
+.squad-erd-page .erd-toolbar-button i {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-toolbar-export {
+  padding: 0 20px !important;
+  gap: 8px !important;
+}
+
+.squad-erd-page .erd-toolbar-chat {
+  width: 36px !important;
+  height: 36px !important;
+  margin-left: 4px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  font-size: 16px !important;
+  line-height: 20px !important;
+}
+
+.squad-erd-page .erd-schema-panel {
+  width: 384px !important;
+  flex: 0 0 384px !important;
+}
+
+.squad-erd-page .erd-schema-tabs {
+  height: 41px !important;
+}
+
+.squad-erd-page .erd-schema-tab {
+  height: 40px !important;
+  padding: 0 !important;
+  border-bottom-width: 2px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-schema-action-wrap {
+  padding: 16px !important;
+}
+
+.squad-erd-page .erd-schema-actions {
+  gap: 8px !important;
+}
+
+.squad-erd-page .erd-schema-action-button {
+  height: 38px !important;
+  padding: 0 !important;
+  gap: 6px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-schema-action-button i {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-schema-list-container {
+  padding: 16px !important;
+}
+
+.squad-erd-page .erd-schema-list-heading {
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+  min-height: 16px;
+}
+
+.squad-erd-page .erd-schema-list-title {
+  font-size: 10px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-schema-list > * + * {
+  margin-top: 16px !important;
+}
+
+.squad-erd-page .erd-schema-empty {
+  padding: 24px !important;
+  border-radius: 12px !important;
+}
+
+.squad-erd-page .erd-schema-empty p,
+.squad-erd-page .erd-schema-empty button {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-table-card {
+  border-radius: 12px !important;
+}
+
+.squad-erd-page .erd-table-card-header {
+  min-height: 41px;
+  padding: 12px !important;
+}
+
+.squad-erd-page .erd-table-name-input {
+  width: 128px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-table-card-actions {
+  gap: 4px !important;
+}
+
+.squad-erd-page .erd-table-icon-button {
+  width: 22px !important;
+  height: 22px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-column-list {
+  padding: 8px !important;
+}
+
+.squad-erd-page .erd-column-list > * + * {
+  margin-top: 4px !important;
+}
+
+.squad-erd-page .erd-column-editor {
+  padding: 8px !important;
+}
+
+.squad-erd-page .erd-column-row {
+  min-height: 26px;
+  gap: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-column-name-input {
+  width: 80px !important;
+  height: 26px !important;
+  padding: 4px 6px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-column-type-select {
+  width: 80px !important;
+  height: 26px !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-column-flag-button,
+.squad-erd-page .erd-column-delete-button {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-column-flag-button {
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  font-size: 9px !important;
+  font-weight: 800;
+  line-height: 18px !important;
+}
+
+.squad-erd-page .erd-column-flags,
+.squad-erd-page .erd-column-extra-row {
+  gap: 4px !important;
+}
+
+.squad-erd-page .erd-column-extra-input {
+  height: 24px;
+  min-width: 0;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 0 6px;
+  font-size: 10px;
+  outline: none;
+}
+
+.squad-erd-page .erd-column-extra-input:focus {
+  border-color: #00C471;
+}
+
+.squad-erd-page .erd-validation-box {
+  margin-bottom: 12px !important;
+}
+
+.squad-erd-page .erd-relationship-list {
+  margin-top: 16px !important;
+}
+
+.squad-erd-page .erd-relationship-item {
+  font-size: 10px !important;
+}
+
+.squad-erd-page .erd-code-panel {
+  height: 256px !important;
+  padding: 8px !important;
+}
+
+.squad-erd-page .ide-container {
+  background-color: #1E1E1E;
+  color: #D4D4D4;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #333333;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+.squad-erd-page .erd-ide-header {
+  height: 28px !important;
+  padding: 0 12px !important;
+}
+
+.squad-erd-page .erd-ide-title {
+  gap: 4px !important;
+  font-size: 10px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-ide-title i {
+  font-size: 10px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-ide-status {
+  font-size: 9px !important;
+  line-height: 14px !important;
+}
+
+.squad-erd-page .erd-code-body {
+  padding: 4px !important;
+}
+
+.squad-erd-page .erd-line-numbers {
+  width: 16px;
+  padding-top: 4px !important;
+  font-size: 10px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .code-editor {
+  background: #1E1E1E;
+  color: #9CDCFE;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: 'Consolas', 'JetBrains Mono', monospace;
+  line-height: 1.5;
+  width: 100%;
+  height: 100%;
+}
+
+.squad-erd-page .erd-code-textarea {
+  padding: 4px !important;
+  font-size: 11px !important;
+  line-height: 16.5px !important;
+}
+
+.squad-erd-page .erd-relation-modal-overlay {
+  padding: 0 !important;
+}
+
+.squad-erd-page .erd-relation-modal-panel {
+  width: 320px !important;
+  max-width: 320px !important;
+  padding: 24px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.squad-erd-page .erd-relation-modal-title {
+  margin: 0 0 16px !important;
+  gap: 8px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-relation-modal-title i {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-erd-page .erd-relation-field-list > * + * {
+  margin-top: 16px !important;
+}
+
+.squad-erd-page .erd-relation-grid {
+  gap: 8px !important;
+}
+
+.squad-erd-page .erd-relation-checkbox {
+  min-height: 22px;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-relation-label {
+  margin-bottom: 4px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-relation-control {
+  width: 100% !important;
+  height: 34px !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page select.erd-relation-control {
+  padding-right: 28px !important;
+}
+
+.squad-erd-page .erd-relation-actions {
+  gap: 8px !important;
+  margin-top: 24px !important;
+}
+
+.squad-erd-page .erd-relation-cancel,
+.squad-erd-page .erd-relation-submit {
+  height: 34px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.squad-erd-page .erd-relation-cancel {
+  padding-right: 16px !important;
+  padding-left: 16px !important;
+}
+
+.squad-erd-page .erd-relation-submit {
+  padding-right: 20px !important;
+  padding-left: 20px !important;
+}
+
+.squad-erd-page .erd-sql-import-panel {
+  max-width: 672px !important;
+}
+
+.squad-erd-page .erd-sql-import-textarea {
+  height: 288px !important;
+  font-family: 'Consolas', 'JetBrains Mono', monospace;
+}
+
+.squad-erd-page .erd-version-modal-panel {
+  max-width: 1024px !important;
+  max-height: 88vh !important;
+}
+
+.squad-erd-page .erd-comment-modal-panel {
+  max-width: 448px !important;
+}
+
+.squad-erd-page .erd-diagram-wrapper {
+  background-color: #ffffff;
+  background-image: radial-gradient(#E2E8F0 1px, transparent 1px);
+  background-size: 20px 20px;
+  cursor: grab;
+  overflow: hidden;
+}
+
+.squad-erd-page .erd-diagram-wrapper:active {
+  cursor: grabbing;
+}
+
+.squad-erd-page .erd-pan-zoom-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  transition: transform 0.1s ease-out;
+}
+
+.squad-erd-page .help-card {
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.squad-erd-page .erd-help-modal-overlay {
+  padding: 16px !important;
+}
+
+.squad-erd-page .erd-help-modal-panel {
+  width: 100%;
+  max-width: 1024px !important;
+  max-height: 90vh !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.squad-erd-page .erd-help-modal-header {
+  padding: 20px 32px !important;
+  min-height: 73px;
+  box-sizing: border-box;
+}
+
+.squad-erd-page .erd-help-modal-title {
+  margin: 0;
+  gap: 12px !important;
+  font-size: 20px !important;
+  line-height: 28px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-help-modal-icon {
+  width: 32px !important;
+  height: 32px !important;
+  flex: 0 0 32px;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-erd-page .erd-help-modal-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 24px !important;
+  line-height: 28px !important;
+}
+
+.squad-erd-page .erd-help-modal-body {
+  padding: 32px !important;
+  background: #ffffff !important;
+}
+
+.squad-erd-page .erd-help-modal-grid {
+  gap: 32px !important;
+}
+
+.squad-erd-page .erd-help-modal-section-title {
+  margin: 0 0 12px;
+  gap: 8px !important;
+  font-size: 18px !important;
+  line-height: 28px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-help-key-chip {
+  margin-top: 4px !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-help-action-grid {
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.squad-erd-page .erd-help-modal-footer {
+  padding: 20px !important;
+  min-height: 81px;
+  box-sizing: border-box;
+}
+
+.squad-erd-page .erd-help-modal-confirm {
+  min-width: 96px;
+  height: 40px;
+  padding: 0 24px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 700 !important;
+}
+
+.squad-erd-page .erd-help-modal-body .help-card {
+  padding: 16px !important;
+  border-radius: 12px !important;
+}
+
+.squad-erd-page .erd-help-modal-body .text-xl {
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
+.squad-erd-page .erd-help-modal-body .text-sm {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-erd-page .erd-help-modal-body .text-xs {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .erd-help-modal-body .text-\[10px\] {
+  font-size: 10px !important;
+  line-height: 16px !important;
+}
+
+.squad-erd-page .modal-enter {
+  animation: modalScaleIn 0.2s ease-out forwards;
+}
+
+.squad-erd-page .erd-chat-drawer {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 60;
+}
+
+.squad-files-page .file-row {
+  transition: background-color 0.15s ease;
+}
+
+.squad-files-page .file-row:hover {
+  background-color: #F9FAFB;
+}
+
+.squad-files-page .file-action-btn {
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.squad-files-page .file-row:hover .file-action-btn,
+.squad-files-page .file-row:focus-within .file-action-btn,
+.squad-files-page .file-action-btn.is-open {
+  opacity: 1;
+}
+
+.squad-files-page .dropzone {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.squad-files-page .dropzone.dragover {
+  background-color: #EBFDF5;
+  border-color: #00C471;
+}
+
+.squad-files-page {
+  font-size: 16px;
+}
+
+.squad-files-page .squad-files-toolbar {
+  min-height: 129px;
+  padding: 24px 32px !important;
+  gap: 16px !important;
+}
+
+.squad-files-page .squad-files-toolbar h1 {
+  margin-bottom: 8px !important;
+  gap: 8px !important;
+  font-size: 24px !important;
+  line-height: 32px !important;
+}
+
+.squad-files-page .squad-files-toolbar h1 i {
+  font-size: 24px !important;
+  line-height: 32px !important;
+}
+
+.squad-files-page .squad-files-search-input {
+  width: 256px !important;
+  height: 38px !important;
+  padding: 0 16px 0 32px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-files-page .squad-files-new-folder-button,
+.squad-files-page .squad-files-upload-button {
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-files-page .squad-files-new-folder-button {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+.squad-files-page .squad-files-upload-button {
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+
+.squad-files-page .squad-files-content {
+  padding: 32px !important;
+}
+
+.squad-files-page .squad-files-inner {
+  max-width: 1152px !important;
+}
+
+.squad-files-page .squad-files-filter-bar {
+  padding: 4px !important;
+  gap: 4px !important;
+  border-radius: 8px !important;
+}
+
+.squad-files-page .squad-files-parent-button {
+  height: 32px !important;
+  flex-shrink: 0;
+}
+
+.squad-files-page .filter-btn {
+  height: 24px !important;
+  padding: 0 12px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-files-page .squad-files-sort-select {
+  height: 30px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 12px !important;
+  padding-right: 32px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-files-page .squad-files-table {
+  border-radius: 16px !important;
+}
+
+.squad-files-page .squad-files-table-header {
+  min-height: 49px;
+  padding: 16px !important;
+  gap: 16px !important;
+  font-size: 11px !important;
+  line-height: 16px !important;
+}
+
+.squad-files-page .squad-files-row {
+  min-height: 56px;
+  padding: 16px !important;
+  gap: 16px !important;
+}
+
+.squad-files-page .squad-files-row i.text-xl {
+  width: 24px !important;
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
+.squad-files-page .squad-files-row span.text-sm {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-files-page .squad-files-row .text-xs {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-files-page .squad-files-row .text-\[10px\] {
+  font-size: 10px !important;
+  line-height: 16px !important;
+}
+
+.squad-files-page > .modal {
+  padding: 16px !important;
+}
+
+.squad-files-page .squad-files-preview-panel {
+  width: min(1024px, calc(100vw - 32px)) !important;
+  max-width: 1024px !important;
+  height: 85vh !important;
+  max-height: 85vh !important;
+  border-radius: 16px !important;
+}
+
+.squad-files-page .squad-files-preview-header {
+  min-height: 65px;
+  padding: 16px 24px !important;
+}
+
+.squad-files-page .squad-files-preview-header h3 {
+  max-width: 576px !important;
+  font-size: 18px !important;
+  line-height: 28px !important;
+}
+
+.squad-files-page .squad-files-preview-header button {
+  box-sizing: border-box;
+}
+
+.squad-files-page .squad-files-preview-header button:first-of-type {
+  height: 32px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-files-page .squad-files-preview-header button:last-of-type {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.squad-files-page .squad-files-preview-body {
+  padding: 24px !important;
+}
+
+.squad-files-page .squad-files-upload-panel {
+  width: min(512px, calc(100vw - 32px)) !important;
+  max-width: 512px !important;
+  padding: 32px !important;
+  border-radius: 24px !important;
+}
+
+.squad-files-page .squad-files-upload-panel h3 {
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
+.squad-files-page .squad-files-upload-panel > div:first-child {
+  margin-bottom: 24px !important;
+}
+
+.squad-files-page .squad-files-upload-dropzone {
+  min-height: 196px;
+  padding: 48px 16px !important;
+  border-radius: 16px !important;
+}
+
+.squad-files-page .squad-files-upload-dropzone > div:first-child {
+  width: 64px !important;
+  height: 64px !important;
+  margin-bottom: 16px !important;
+  font-size: 24px !important;
+  line-height: 32px !important;
+}
+
+.squad-files-page .squad-files-upload-dropzone h4 {
+  margin-bottom: 4px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-files-page .squad-files-upload-dropzone p {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-files-page .squad-files-upload-panel button,
+.squad-files-page .squad-files-folder-panel button {
+  box-sizing: border-box;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-files-page .squad-files-upload-panel button {
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.squad-files-page .squad-files-folder-panel {
+  width: min(384px, calc(100vw - 32px)) !important;
+  max-width: 384px !important;
+  padding: 24px !important;
+  border-radius: 24px !important;
+}
+
+.squad-files-page .squad-files-folder-panel h3 {
+  margin-bottom: 16px !important;
+  font-size: 18px !important;
+  line-height: 28px !important;
+}
+
+.squad-files-page .squad-files-folder-panel input {
+  height: 46px !important;
+  margin-bottom: 24px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-files-page .squad-files-folder-panel button {
+  height: 38px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-radius: 12px !important;
+}
+
+@media (max-width: 768px) {
+  .squad-files-page .squad-files-toolbar,
+  .squad-files-page .squad-files-content {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+  }
+
+  .squad-files-page .squad-files-search-input {
+    width: min(256px, calc(100vw - 72px)) !important;
+  }
+}
+
+.squad-meeting-page .audio-meter-bar {
+  width: 0%;
+  transition: width 0.1s ease-out;
+}
+
+.squad-meeting-page .audio-testing .audio-meter-bar {
+  animation: squadMeetingMeterBounce 0.5s infinite alternate ease-in-out;
+}
+
+.squad-meeting-page .squad-meeting-status-badge {
+  height: 34px !important;
+  padding: 0 16px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-status-badge i {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-lobby-action-button {
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.squad-meeting-page .squad-meeting-lobby-action-button i {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-meeting-page .squad-meeting-channel-button {
+  min-height: 74px !important;
+  padding: 16px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-participant-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-stage-shell {
+  overflow: hidden;
+  padding-bottom: 112px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-bottom-bar {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(18px);
+  visibility: hidden;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+}
+
+.squad-meeting-page .squad-meeting-room-stage-shell:hover .squad-meeting-room-bottom-bar,
+.squad-meeting-page .squad-meeting-room-stage-shell:focus-within .squad-meeting-room-bottom-bar {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.squad-meeting-page .squad-meeting-participant-grid {
+  --participant-card-width: 288px;
+  --participant-card-height: 176px;
+  --participant-avatar-size: 80px;
+  display: grid;
+  width: min(100%, var(--participant-grid-width, 288px));
+  height: auto;
+  max-height: 100%;
+  gap: 16px;
+  place-content: center;
+  margin: auto;
+  padding: 2px;
+  overflow-y: auto;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-view {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #020617;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #020617;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-fullscreen-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(6px);
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-fullscreen-button:hover {
+  border-color: #00c471;
+  background: rgba(17, 24, 39, 0.9);
+  transform: translateY(-1px);
+}
+
+.squad-meeting-page .squad-meeting-screen-share-label {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 2;
+  display: inline-flex;
+  max-width: calc(100% - 24px);
+  min-height: 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(6px);
+}
+
+.squad-meeting-page .squad-meeting-screen-share-label i {
+  color: #00c471;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #020617;
+  color: #fff;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  left: 16px;
+  z-index: 2;
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-title,
+.squad-meeting-page .squad-meeting-screen-share-player-controls {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(75, 85, 99, 0.88);
+  background: rgba(17, 24, 39, 0.82);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-title {
+  min-width: 0;
+  max-width: min(50vw, 420px);
+  min-height: 38px;
+  gap: 9px;
+  padding: 0 14px;
+  border-radius: 10px;
+  color: #e5e7eb;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-title i {
+  color: #00c471;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-title span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-controls {
+  height: 40px;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-button,
+.squad-meeting-page .squad-meeting-screen-share-player-zoom-button {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-button {
+  width: 32px;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-zoom-button {
+  width: 58px;
+  font-variant-numeric: tabular-nums;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-button:hover,
+.squad-meeting-page .squad-meeting-screen-share-player-zoom-button:hover {
+  background: rgba(75, 85, 99, 0.85);
+  color: #fff;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-canvas {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-canvas.is-zoomed {
+  cursor: grab;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-canvas.is-dragging {
+  cursor: grabbing;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-video {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #020617;
+  transform-origin: center center;
+  transition: transform 90ms ease-out;
+  will-change: transform;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-player-canvas.is-dragging .squad-meeting-screen-share-player-video {
+  transition: none;
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-1 {
+  --participant-grid-width: 320px;
+  --participant-card-height: 196px;
+  --participant-avatar-size: 92px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--participant-card-height);
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-2 {
+  --participant-grid-width: 592px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: var(--participant-card-height);
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-3 {
+  --participant-grid-width: 592px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, var(--participant-card-height));
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-3 .squad-meeting-participant-tile:nth-child(1) {
+  grid-column: 2 / span 2;
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-3 .squad-meeting-participant-tile:nth-child(2) {
+  grid-column: 1 / span 2;
+  grid-row: 2;
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-3 .squad-meeting-participant-tile:nth-child(3) {
+  grid-column: 3 / span 2;
+  grid-row: 2;
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-4 {
+  --participant-grid-width: 592px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, var(--participant-card-height));
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-6 {
+  --participant-grid-width: 896px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, var(--participant-card-height));
+}
+
+.squad-meeting-page .squad-meeting-participant-grid-many {
+  width: 100%;
+  height: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 288px));
+  grid-auto-rows: var(--participant-card-height);
+  align-content: start;
+  justify-content: center;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.squad-meeting-page .squad-meeting-participant-tile {
+  position: relative;
+  display: flex;
+  min-height: var(--participant-card-height);
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  background: #111827;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  isolation: isolate;
+}
+
+.squad-meeting-page .squad-meeting-participant-tile.is-speaking {
+  border-color: #00c471;
+  box-shadow: 0 0 0 2px rgba(0, 196, 113, 0.65), 0 0 26px rgba(0, 196, 113, 0.22);
+}
+
+.squad-meeting-page .squad-meeting-participant-pulse {
+  position: absolute;
+  width: calc(var(--participant-avatar-size) + 28px);
+  aspect-ratio: 1;
+  border: 4px solid #00c471;
+  border-radius: 9999px;
+  opacity: 0.65;
+  animation: squadMeetingParticipantPulse 1.8s ease-out infinite;
+}
+
+.squad-meeting-page .squad-meeting-participant-avatar {
+  width: var(--participant-avatar-size) !important;
+  height: var(--participant-avatar-size) !important;
+  position: relative;
+  z-index: 1;
+}
+
+.squad-meeting-page .squad-meeting-participant-tile.is-speaking .squad-meeting-participant-avatar {
+  border-color: #00c471 !important;
+}
+
+.squad-meeting-page .squad-meeting-participant-avatar-icon {
+  font-size: calc(var(--participant-avatar-size) * 0.42) !important;
+  line-height: 1 !important;
+}
+
+.squad-meeting-page .squad-meeting-participant-label {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 16px);
+  min-height: 26px;
+  padding: 4px 10px;
+  border: 1px solid #4b5563;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+@keyframes squadMeetingParticipantPulse {
+  0% {
+    transform: scale(0.86);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .squad-meeting-page .squad-meeting-participant-grid-2,
+  .squad-meeting-page .squad-meeting-participant-grid-3,
+  .squad-meeting-page .squad-meeting-participant-grid-4,
+  .squad-meeting-page .squad-meeting-participant-grid-6 {
+    width: min(100%, 288px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-rows: var(--participant-card-height);
+  }
+
+  .squad-meeting-page .squad-meeting-participant-grid-3 .squad-meeting-participant-tile:nth-child(1),
+  .squad-meeting-page .squad-meeting-participant-grid-3 .squad-meeting-participant-tile:nth-child(2),
+  .squad-meeting-page .squad-meeting-participant-grid-3 .squad-meeting-participant-tile:nth-child(3) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (hover: none) {
+  .squad-meeting-page .squad-meeting-room-bottom-bar {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+    transition-delay: 0s;
+  }
+}
+
+.squad-meeting-page .squad-meeting-room-security-button {
+  height: 24px !important;
+  padding: 0 8px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.squad-meeting-page .squad-meeting-room-security-button i {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-network-button {
+  height: 34px !important;
+  padding: 0 16px 0 0 !important;
+  margin-right: 16px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.squad-meeting-page .squad-meeting-room-network-button i {
+  font-size: 14px !important;
+  line-height: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-panel-toggle {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  flex: 0 0 36px;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-panel-toggle i {
+  font-size: 14px !important;
+  line-height: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-count-button {
+  height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.squad-meeting-page .squad-meeting-room-count-button i {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-control-button {
+  width: 56px !important;
+  height: 56px !important;
+  min-width: 56px !important;
+  min-height: 56px !important;
+  padding: 0 !important;
+  border-radius: 9999px !important;
+  flex: 0 0 56px;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-control-button i {
+  font-size: 20px !important;
+  line-height: 20px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-reaction-button {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  font-size: 24px !important;
+  line-height: 24px !important;
+  flex: 0 0 48px;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-reaction-menu {
+  bottom: 64px !important;
+  padding: 10px !important;
+  gap: 8px !important;
+  border-radius: 16px !important;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-reaction-container {
+  z-index: 50;
+}
+
+.squad-meeting-page .squad-meeting-floating-reaction {
+  position: absolute;
+  bottom: 80px;
+  font-size: 40px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 50;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+  animation: squadMeetingFloatUp 2.5s ease-out forwards;
+}
+
+@keyframes squadMeetingFloatUp {
+  0% {
+    transform: translate(-50%, 0) scale(0.5);
+    opacity: 0;
+  }
+
+  20% {
+    transform: translate(calc(-50% + var(--dx)), -30px) scale(1.2);
+    opacity: 1;
+  }
+
+  80% {
+    transform: translate(calc(-50% + var(--dx)), -150px) scale(1);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translate(calc(-50% + var(--dx)), -250px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.squad-meeting-page .squad-meeting-room-end-button {
+  height: 48px !important;
+  min-width: 80px !important;
+  padding: 0 20px !important;
+  border-radius: 16px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.squad-meeting-page .squad-meeting-room-end-button i {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-settings-button {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  flex: 0 0 48px;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-settings-button i {
+  font-size: 16px !important;
+  line-height: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-tab-button {
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-tab-button i {
+  font-size: 14px !important;
+  line-height: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-room-record-button {
+  height: 28px !important;
+  padding: 0 12px !important;
+  border-radius: 6px !important;
+  font-size: 10px !important;
+  line-height: 12px !important;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.squad-meeting-page .squad-meeting-room-summary-button {
+  height: 46px !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-report-button {
+  height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-report-close-button {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 9999px !important;
+  font-size: 14px !important;
+  line-height: 16px !important;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-kanban-create-button {
+  height: 46px !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  box-sizing: border-box;
+}
+
+.squad-meeting-page .squad-meeting-room-chat-send-button {
+  width: 38px !important;
+  height: 32px !important;
+  min-width: 38px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  line-height: 16px !important;
+  box-sizing: border-box;
+}
+
+@keyframes squadMeetingMeterBounce {
+  0% {
+    width: 10%;
+  }
+
+  100% {
+    width: 80%;
+  }
+}
+
+.squad-meeting-page .squad-meeting-audio-panel {
+  width: min(448px, calc(100vw - 32px)) !important;
+  max-width: 448px !important;
+  border-radius: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-audio-header {
+  height: 69px !important;
+  padding: 20px !important;
+}
+
+.squad-meeting-page .squad-meeting-audio-close {
+  width: 20px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  flex: 0 0 20px;
+  line-height: 28px !important;
+}
+
+.squad-meeting-page .squad-meeting-audio-body {
+  padding: 24px !important;
+}
+
+.squad-meeting-page .squad-meeting-audio-body > * + * {
+  margin-top: 24px !important;
+}
+
+.squad-meeting-page .squad-meeting-audio-select {
+  height: 46px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.squad-meeting-page .squad-meeting-audio-test-button,
+.squad-meeting-page .squad-meeting-audio-sound-button {
+  width: 112px !important;
+  height: 34px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  white-space: nowrap;
+}
+
+.squad-meeting-page .squad-meeting-audio-sound-button {
+  width: 122px !important;
+}
+
+.squad-meeting-page .squad-meeting-device-refresh-button {
+  height: 38px !important;
+  padding: 0 16px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.squad-meeting-page .squad-meeting-audio-footer {
+  height: 73px !important;
+  padding: 20px !important;
+}
+
+.squad-meeting-page .squad-meeting-audio-cancel,
+.squad-meeting-page .squad-meeting-audio-apply {
+  height: 36px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}

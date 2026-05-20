@@ -132,21 +132,22 @@ function copyDocumentPictureInPictureStyles(pipWindow: Window) {
   pipWindow.document.head.appendChild(baseStyle)
 
   Array.from(document.styleSheets).forEach((styleSheet) => {
+    if (styleSheet.href) {
+      const link = pipWindow.document.createElement('link')
+      link.rel = 'stylesheet'
+      link.href = styleSheet.href
+      link.media = styleSheet.media.mediaText
+      pipWindow.document.head.appendChild(link)
+      return
+    }
+
     try {
       const rules = Array.from(styleSheet.cssRules).map((rule) => rule.cssText).join('\n')
       const style = pipWindow.document.createElement('style')
       style.textContent = rules
       pipWindow.document.head.appendChild(style)
     } catch {
-      if (!styleSheet.href) {
-        return
-      }
-
-      const link = pipWindow.document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = styleSheet.href
-      link.media = styleSheet.media.mediaText
-      pipWindow.document.head.appendChild(link)
+      // Cross-origin or browser-managed inline styles can be skipped safely.
     }
   })
 }
@@ -244,6 +245,10 @@ function getDday(value: string) {
   return `D-${diff}`
 }
 
+function stripScheduleCategoryDescription(value?: string | null) {
+  return (value ?? '').replace(/^\[schedule-category:(milestone|meeting|task-fe|task-be)\]\n?/, '').trim()
+}
+
 function stripNoticePrefix(title: string) {
   return title.replace(/^\[필독]\s*/, '')
 }
@@ -271,7 +276,7 @@ function activityIcon(type?: string | null) {
     case 'FILE_UPLOADED':
       return { icon: 'fa-folder-open', className: 'bg-purple-50 text-purple-500' }
     case 'MEETING_NOTE_CREATED':
-      return { icon: 'fa-video', className: 'bg-orange-50 text-orange-500' }
+      return { icon: 'fa-headset', className: 'bg-orange-50 text-orange-500' }
     case 'MEMBER_JOINED':
       return { icon: 'fa-user-plus', className: 'bg-brand/10 text-brand' }
     default:
@@ -568,9 +573,14 @@ export default function SquadDashboardApp() {
       })
       const root = pipWindow.document.createElement('div')
 
+      pipWindow.document.title = dashboard?.name?.trim() || '스쿼드 소통방'
       root.id = 'squad-dashboard-pip-root'
-      copyDocumentPictureInPictureStyles(pipWindow)
       pipWindow.document.body.append(root)
+      try {
+        copyDocumentPictureInPictureStyles(pipWindow)
+      } catch {
+        // Keep the PiP window open even if one stylesheet cannot be mirrored.
+      }
       pipWindow.addEventListener(
         'pagehide',
         () => {
@@ -1071,33 +1081,33 @@ export default function SquadDashboardApp() {
             <i className="fas fa-chart-pie w-6 text-center text-lg"></i>
             <span className="sidebar-text">대시보드</span>
           </a>
-          <a href={navHref('squad-workspace.html', workspaceId)} className="nav-item">
+          <a href={navHref('/squad-workspace', workspaceId)} className="nav-item">
             <i className="fas fa-columns w-6 text-center text-lg"></i>
             <span className="sidebar-text">작업 현황판</span>
           </a>
-          <a href={navHref('squad-review.html', workspaceId)} className="nav-item">
+          <a href={navHref('/squad-review', workspaceId)} className="nav-item">
             <i className="fas fa-code-branch w-6 text-center text-lg"></i>
             <span className="sidebar-text flex-1">코드 피드백</span>
             {hasAnyDashboardData ? <span className="sidebar-text bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full ml-auto">1</span> : null}
           </a>
-          <a href={navHref('squad-erd.html', workspaceId)} className="nav-item">
+          <a href={navHref('/squad-erd', workspaceId)} className="nav-item">
             <i className="fas fa-project-diagram w-6 text-center text-lg"></i>
             <span className="sidebar-text">ERD 설계</span>
           </a>
-          <a href={navHref('squad-schedule.html', workspaceId)} className="nav-item">
+          <a href={navHref('/squad-schedule', workspaceId)} className="nav-item">
             <i className="fas fa-calendar-alt w-6 text-center text-lg"></i>
             <span className="sidebar-text">일정 관리</span>
           </a>
-          <a href={navHref('squad-files.html', workspaceId)} className="nav-item">
+          <a href={navHref('/squad-files', workspaceId)} className="nav-item">
             <i className="fas fa-folder-open w-6 text-center text-lg"></i>
             <span className="sidebar-text">팀 자료실</span>
           </a>
-          <a href={navHref('squad-meeting.html', workspaceId)} className="nav-item">
-            <i className="fas fa-video w-6 text-center text-lg"></i>
-            <span className="sidebar-text">화상 회의</span>
+          <a href={navHref('/squad-meeting', workspaceId)} className="nav-item">
+            <i className="fas fa-headset w-6 text-center text-lg"></i>
+            <span className="sidebar-text">음성 회의</span>
           </a>
           <div className="h-px bg-gray-100 my-4 mx-2"></div>
-          <a href={navHref('squad-settings.html', workspaceId)} className="nav-item">
+          <a href={navHref('/squad-settings', workspaceId)} className="nav-item">
             <i className="fas fa-cog w-6 text-center text-lg"></i>
             <span className="sidebar-text">스쿼드 설정</span>
           </a>
@@ -1173,11 +1183,11 @@ export default function SquadDashboardApp() {
               </div>
 
               <div className="flex gap-3 w-full md:w-auto shrink-0 z-10">
-                <a href={navHref(hasAnyDashboardData ? 'squad-workspace.html' : 'squad-settings.html', workspaceId)} className="flex-1 md:flex-none px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl text-sm hover:border-brand hover:text-brand transition shadow-sm flex items-center justify-center gap-2">
+                <a href={navHref(hasAnyDashboardData ? '/squad-workspace' : '/squad-settings', workspaceId)} className="flex-1 md:flex-none px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl text-sm hover:border-brand hover:text-brand transition shadow-sm flex items-center justify-center gap-2">
                   <i className={hasAnyDashboardData ? 'fas fa-columns' : 'fas fa-user-plus'}></i> {hasAnyDashboardData ? '내 작업 현황판' : '팀원 초대하기'}
                 </a>
-                <a href={navHref(hasAnyDashboardData ? 'squad-meeting.html' : 'squad-workspace.html', workspaceId)} className="flex-1 md:flex-none px-6 py-3 bg-gray-900 text-white font-bold rounded-xl text-sm hover:bg-black transition shadow-lg shadow-gray-900/20 flex items-center justify-center gap-2">
-                  <i className={hasAnyDashboardData ? 'fas fa-video' : 'fas fa-flag'}></i> {hasAnyDashboardData ? '회의실 입장' : '첫 목표 설정'}
+                <a href={navHref(hasAnyDashboardData ? '/squad-meeting' : '/squad-workspace', workspaceId)} className="flex-1 md:flex-none px-6 py-3 bg-gray-900 text-white font-bold rounded-xl text-sm hover:bg-black transition shadow-lg shadow-gray-900/20 flex items-center justify-center gap-2">
+                  <i className={hasAnyDashboardData ? 'fas fa-headset' : 'fas fa-flag'}></i> {hasAnyDashboardData ? '음성 회의 입장' : '첫 목표 설정'}
                 </a>
               </div>
             </div>
@@ -1190,7 +1200,7 @@ export default function SquadDashboardApp() {
                       <i className={`fas fa-tasks ${taskTotal > 0 ? 'text-brand' : 'text-gray-400'}`}></i> 내 이번 주 할 일
                     </h3>
                     {taskTotal > 0 ? (
-                      <a className="text-xs font-bold text-gray-400 hover:text-brand transition" href={navHref('squad-workspace.html', workspaceId)}>
+                      <a className="text-xs font-bold text-gray-400 hover:text-brand transition" href={navHref('/squad-workspace', workspaceId)}>
                         전체보기 <i className="fas fa-chevron-right ml-1"></i>
                       </a>
                     ) : null}
@@ -1233,7 +1243,7 @@ export default function SquadDashboardApp() {
                       </div>
                       <h4 className="text-gray-700 font-bold mb-1">아직 할당된 작업이 없습니다</h4>
                       <p className="text-xs text-gray-500 font-medium mb-5">작업 현황판에서 새로운 카드를 만들고 본인에게 할당해보세요.</p>
-                      <a href={navHref('squad-workspace.html', workspaceId)} className="text-sm font-bold text-brand bg-green-50 px-4 py-2 rounded-lg hover:bg-green-100 transition">
+                      <a href={navHref('/squad-workspace', workspaceId)} className="text-sm font-bold text-brand bg-green-50 px-4 py-2 rounded-lg hover:bg-green-100 transition">
                         <i className="fas fa-plus mr-1"></i> 작업 카드 만들기
                       </a>
                     </div>
@@ -1276,7 +1286,7 @@ export default function SquadDashboardApp() {
                             </div>
                             <div>
                               <p className="text-sm font-bold text-gray-900 mb-0.5">{event.title}</p>
-                              <p className="text-[10px] text-gray-500 font-medium">{event.description || formatChatTime(event.startAt)}</p>
+                              <p className="text-[10px] text-gray-500 font-medium">{stripScheduleCategoryDescription(event.description) || formatChatTime(event.startAt)}</p>
                             </div>
                           </div>
                           <span className={`${index === 0 ? 'bg-red-500 text-white' : 'bg-orange-100 text-orange-600 border border-orange-200'} text-[10px] font-extrabold px-2 py-1 rounded shadow-sm`}>
@@ -1394,7 +1404,7 @@ export default function SquadDashboardApp() {
                     <span className="text-[10px] font-bold text-gray-600">코드</span>
                   </button>
                   <button onClick={() => sendPlusMessage('meeting')} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-xl transition">
-                    <div className="w-10 h-10 rounded-full bg-green-50 text-brand flex items-center justify-center"><i className="fas fa-video"></i></div>
+                    <div className="w-10 h-10 rounded-full bg-green-50 text-brand flex items-center justify-center"><i className="fas fa-headset"></i></div>
                     <span className="text-[10px] font-bold text-gray-600">회의초대</span>
                   </button>
                   <button onClick={() => sendPlusMessage('remind')} className="flex flex-col items-center gap-2 p-3 hover:bg-gray-50 rounded-xl transition">

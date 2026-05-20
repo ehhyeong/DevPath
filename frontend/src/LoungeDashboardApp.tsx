@@ -536,8 +536,8 @@ export default function LoungeDashboardApp() {
                       </>
                     ) : hasCollaborativeBanner ? (
                       <>
-                        <button onClick={() => goTo('squad-meeting.html')} className="bg-brand hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition shadow-[0_4px_15px_rgba(0,196,113,0.3)] flex items-center gap-2">
-                          <i className="fas fa-video"></i> 회의실 바로 입장
+                        <button onClick={() => goTo('/squad-meeting')} className="bg-brand hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition shadow-[0_4px_15px_rgba(0,196,113,0.3)] flex items-center gap-2">
+                          <i className="fas fa-headset"></i> 음성 회의 입장
                         </button>
                         <button onClick={() => goTo('workspace-hub.html')} className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 backdrop-blur-md">
                           <i className="fas fa-laptop-code"></i> 내 워크스페이스

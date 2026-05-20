@@ -74,6 +74,10 @@ export default defineConfig({
       '/v3/api-docs': proxyToBackend,
       '/swagger-resources': proxyToBackend,
       '/webjars': proxyToBackend,
+      '/ws': {
+        ...proxyToBackend,
+        ws: true,
+      },
     },
   },
   preview: {

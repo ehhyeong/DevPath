@@ -1,0 +1,865 @@
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import AuthModal, { type AuthView } from './components/AuthModal'
+import UserAvatar from './components/UserAvatar'
+import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { showAuthToast } from './lib/auth-toast'
+import { projectApiRequest } from './project-api'
+
+type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
+type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
+type SettingsTab = 'general' | 'members' | 'integrations' | 'danger'
+type IntegrationProvider = 'GITHUB' | 'SLACK' | 'DISCORD' | 'JIRA'
+
+type WorkspaceMember = {
+  memberId: number
+  learnerId: number
+  learnerName?: string | null
+  profileImage?: string | null
+  joinedAt?: string | null
+}
+
+type WorkspaceSettings = {
+  workspaceId: number
+  name: string
+  description?: string | null
+  type: WorkspaceType
+  status: WorkspaceStatus
+  ownerId: number
+  deleted: boolean
+  canManage: boolean
+  memberCount: number
+  members: WorkspaceMember[]
+  createdAt?: string | null
+  updatedAt?: string | null
+}
+
+type ExternalIntegration = {
+  id: number
+  workspaceId: number
+  provider: IntegrationProvider
+  active?: boolean
+  isActive?: boolean
+  connectedAt?: string | null
+}
+
+type SettingsForm = {
+  name: string
+  description: string
+}
+
+const settingsTabs: Array<{ id: SettingsTab; label: string; icon: string }> = [
+  { id: 'general', label: '일반 설정', icon: 'fas fa-sliders-h' },
+  { id: 'members', label: '팀원 관리', icon: 'fas fa-users' },
+  { id: 'integrations', label: '외부 연동', icon: 'fas fa-plug' },
+  { id: 'danger', label: '보관 및 삭제', icon: 'fas fa-exclamation-triangle' },
+]
+
+const integrationMeta: Record<
+  IntegrationProvider,
+  { title: string; description: string; icon: string; iconColor: string; accent: string; button: string }
+> = {
+  GITHUB: {
+    title: 'GitHub',
+    description: '코드 저장소와 리뷰 흐름을 팀 공간에 연결합니다.',
+    icon: 'fab fa-github',
+    iconColor: 'text-gray-900',
+    accent: 'bg-gray-900',
+    button: 'bg-gray-900 text-white hover:bg-black',
+  },
+  DISCORD: {
+    title: 'Discord',
+    description: '팀 알림을 Discord 채널과 함께 확인합니다.',
+    icon: 'fab fa-discord',
+    iconColor: 'text-[#5865F2]',
+    accent: 'bg-[#5865F2]',
+    button: 'bg-[#5865F2] text-white hover:bg-[#4752C4]',
+  },
+  SLACK: {
+    title: 'Slack',
+    description: '주요 일정과 작업 변경 사항을 Slack으로 보냅니다.',
+    icon: 'fab fa-slack',
+    iconColor: 'text-[#611F69]',
+    accent: 'bg-[#611F69]',
+    button: 'bg-[#611F69] text-white hover:bg-[#4A154B]',
+  },
+  JIRA: {
+    title: 'Jira',
+    description: '칸반 작업을 이슈 관리 흐름과 맞춰 봅니다.',
+    icon: 'fab fa-jira',
+    iconColor: 'text-blue-600',
+    accent: 'bg-blue-600',
+    button: 'bg-blue-600 text-white hover:bg-blue-700',
+  },
+}
+
+function getWorkspaceIdFromUrl() {
+  const params = new URLSearchParams(window.location.search)
+  const raw = params.get('workspaceId') ?? params.get('squadId')
+  const parsed = raw ? Number(raw) : Number.NaN
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+}
+
+function navHref(path: string, workspaceId: number | null) {
+  return workspaceId ? `${path}?workspaceId=${workspaceId}` : path
+}
+
+function createForm(settings: WorkspaceSettings | null): SettingsForm {
+  return {
+    name: settings?.name ?? '',
+    description: settings?.description ?? '',
+  }
+}
+
+function memberName(member: WorkspaceMember) {
+  return member.learnerName?.trim() || `팀원 #${member.learnerId}`
+}
+
+function formatDate(value?: string | null) {
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
+
+  return new Intl.DateTimeFormat('ko-KR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}
+
+function statusLabel(status: WorkspaceStatus) {
+  return status === 'ARCHIVED' ? '보관됨' : '진행 중'
+}
+
+function typeLabel(type: WorkspaceType) {
+  switch (type) {
+    case 'SQUAD':
+      return '스쿼드 프로젝트'
+    case 'MENTORING':
+      return '멘토링 프로젝트'
+    case 'SOLO':
+      return '개인 프로젝트'
+    default:
+      return '프로젝트'
+  }
+}
+
+function isIntegrationActive(integration?: ExternalIntegration) {
+  return Boolean(integration?.active ?? integration?.isActive)
+}
+
+export default function SquadSettingsApp() {
+  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [authView, setAuthView] = useState<AuthView | null>(null)
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general')
+  const [settings, setSettings] = useState<WorkspaceSettings | null>(null)
+  const [integrations, setIntegrations] = useState<ExternalIntegration[]>([])
+  const [form, setForm] = useState<SettingsForm>(() => createForm(null))
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [busyIntegration, setBusyIntegration] = useState<IntegrationProvider | null>(null)
+  const [dangerSaving, setDangerSaving] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+
+  useEffect(() => {
+    if (!workspaceId) {
+      setError('스쿼드 설정을 열 프로젝트 정보가 없습니다.')
+      setLoading(false)
+      return
+    }
+
+    if (!session?.accessToken) {
+      setError('스쿼드 설정은 로그인 후 확인할 수 있습니다.')
+      setLoading(false)
+      setAuthView('login')
+      return
+    }
+
+    let ignore = false
+
+    async function loadSettings() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const [nextSettings, nextIntegrations] = await Promise.all([
+          projectApiRequest<WorkspaceSettings>(`/api/workspaces/${workspaceId}/settings`, {}, 'required'),
+          projectApiRequest<ExternalIntegration[]>(
+            `/api/workspaces/${workspaceId}/integrations`,
+            {},
+            'required',
+          ),
+        ])
+
+        if (ignore) {
+          return
+        }
+
+        setSettings(nextSettings)
+        setForm(createForm(nextSettings))
+        setIntegrations(nextIntegrations)
+      } catch (loadError) {
+        if (ignore) {
+          return
+        }
+
+        const message = loadError instanceof Error ? loadError.message : '스쿼드 설정을 불러오지 못했습니다.'
+        setError(message)
+        showAuthToast({ message, variant: 'error' })
+      } finally {
+        if (!ignore) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadSettings()
+
+    return () => {
+      ignore = true
+    }
+  }, [session?.accessToken, workspaceId])
+
+  function handleLogout() {
+    clearStoredAuthSession()
+    setSession(null)
+    setAuthView('login')
+  }
+
+  function handleAuthenticated() {
+    const nextSession = readStoredAuthSession()
+
+    if (nextSession?.role === 'ROLE_ADMIN') {
+      window.location.replace(getPostLoginRedirect(nextSession.role))
+      return
+    }
+
+    setSession(nextSession)
+    setAuthView(null)
+  }
+
+  async function saveGeneral(event: FormEvent) {
+    event.preventDefault()
+
+    if (!workspaceId || !settings?.canManage) {
+      return
+    }
+
+    const name = form.name.trim()
+    if (!name) {
+      showAuthToast({ message: '스쿼드 이름을 입력해 주세요.', variant: 'error' })
+      return
+    }
+
+    setSaving(true)
+
+    try {
+      const updated = await projectApiRequest<WorkspaceSettings>(
+        `/api/workspaces/${workspaceId}/settings`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            name,
+            description: form.description.trim() || null,
+          }),
+        },
+        'required',
+      )
+
+      setSettings(updated)
+      setForm(createForm(updated))
+      showAuthToast('스쿼드 설정이 저장되었습니다.')
+    } catch (saveError) {
+      const message = saveError instanceof Error ? saveError.message : '스쿼드 설정을 저장하지 못했습니다.'
+      showAuthToast({ message, variant: 'error' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function toggleIntegration(provider: IntegrationProvider) {
+    if (!workspaceId || !settings?.canManage) {
+      return
+    }
+
+    const current = integrations.find((integration) => integration.provider === provider)
+    const nextActive = !isIntegrationActive(current)
+    setBusyIntegration(provider)
+
+    try {
+      const updated = await projectApiRequest<ExternalIntegration>(
+        `/api/workspaces/${workspaceId}/integrations/${provider}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ isActive: nextActive }),
+        },
+        'required',
+      )
+
+      setIntegrations((items) => {
+        if (!items.some((item) => item.provider === provider)) {
+          return [...items, updated]
+        }
+
+        return items.map((item) => (item.provider === provider ? updated : item))
+      })
+      showAuthToast(nextActive ? '외부 연동이 켜졌습니다.' : '외부 연동이 꺼졌습니다.')
+    } catch (toggleError) {
+      const message = toggleError instanceof Error ? toggleError.message : '외부 연동 상태를 바꾸지 못했습니다.'
+      showAuthToast({ message, variant: 'error' })
+    } finally {
+      setBusyIntegration(null)
+    }
+  }
+
+  async function toggleArchive() {
+    if (!workspaceId || !settings?.canManage) {
+      return
+    }
+
+    const archive = settings.status !== 'ARCHIVED'
+    const ok = window.confirm(archive ? '이 스쿼드를 보관할까요?' : '이 스쿼드를 다시 진행 중으로 되돌릴까요?')
+    if (!ok) {
+      return
+    }
+
+    setDangerSaving(true)
+
+    try {
+      const updated = await projectApiRequest<WorkspaceSettings>(
+        `/api/workspaces/${workspaceId}/settings/${archive ? 'archive' : 'restore'}`,
+        { method: 'PATCH' },
+        'required',
+      )
+      setSettings(updated)
+      setForm(createForm(updated))
+      showAuthToast(archive ? '스쿼드가 보관되었습니다.' : '스쿼드가 다시 활성화되었습니다.')
+    } catch (archiveError) {
+      const message = archiveError instanceof Error ? archiveError.message : '상태를 변경하지 못했습니다.'
+      showAuthToast({ message, variant: 'error' })
+    } finally {
+      setDangerSaving(false)
+    }
+  }
+
+  async function deleteWorkspace() {
+    if (!workspaceId || !settings?.canManage || deleteConfirm.trim() !== settings.name) {
+      return
+    }
+
+    setDangerSaving(true)
+
+    try {
+      await projectApiRequest<void>(
+        `/api/workspaces/${workspaceId}/settings`,
+        { method: 'DELETE' },
+        'required',
+      )
+      showAuthToast('스쿼드가 삭제되었습니다.')
+      window.location.replace('workspace-hub.html')
+    } catch (deleteError) {
+      const message = deleteError instanceof Error ? deleteError.message : '스쿼드를 삭제하지 못했습니다.'
+      showAuthToast({ message, variant: 'error' })
+      setDangerSaving(false)
+    }
+  }
+
+  const canManage = Boolean(settings?.canManage)
+  const projectName = settings?.name ?? '스쿼드 설정'
+
+  return (
+    <div className="squad-dashboard-page squad-settings-page flex h-screen overflow-hidden text-gray-800">
+      <aside className="w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+        <a href="workspace-hub.html" className="h-20 flex items-center px-5 hover:bg-gray-50 transition border-b border-gray-100 shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md">
+            <i className="fas fa-arrow-left" />
+          </div>
+          <div className="sidebar-text flex flex-col justify-center">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">목록으로 돌아가기</p>
+            <p className="font-extrabold text-gray-900 truncate w-36 leading-tight">{projectName}</p>
+          </div>
+        </a>
+
+        <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
+          <a href={navHref('/squad-dashboard', workspaceId)} className="nav-item">
+            <i className="fas fa-chart-pie w-6 text-center text-lg" />
+            <span className="sidebar-text">대시보드</span>
+          </a>
+          <a href={navHref('/squad-workspace', workspaceId)} className="nav-item">
+            <i className="fas fa-columns w-6 text-center text-lg" />
+            <span className="sidebar-text">작업 현황</span>
+          </a>
+          <a href={navHref('/squad-review', workspaceId)} className="nav-item">
+            <i className="fas fa-code-branch w-6 text-center text-lg" />
+            <span className="sidebar-text flex-1">코드 피드백</span>
+          </a>
+          <a href={navHref('/squad-erd', workspaceId)} className="nav-item">
+            <i className="fas fa-project-diagram w-6 text-center text-lg" />
+            <span className="sidebar-text">ERD 설계</span>
+          </a>
+          <a href={navHref('/squad-schedule', workspaceId)} className="nav-item">
+            <i className="fas fa-calendar-alt w-6 text-center text-lg" />
+            <span className="sidebar-text">일정 관리</span>
+          </a>
+          <a href={navHref('/squad-files', workspaceId)} className="nav-item">
+            <i className="fas fa-folder-open w-6 text-center text-lg" />
+            <span className="sidebar-text">팀 자료실</span>
+          </a>
+          <a href={navHref('/squad-meeting', workspaceId)} className="nav-item">
+            <i className="fas fa-headset w-6 text-center text-lg" />
+            <span className="sidebar-text">음성 회의</span>
+          </a>
+          <div className="h-px bg-gray-100 my-4 mx-2" />
+          <a href={navHref('/squad-settings', workspaceId)} className="nav-item active">
+            <i className="fas fa-cog w-6 text-center text-lg" />
+            <span className="sidebar-text">스쿼드 설정</span>
+          </a>
+        </nav>
+      </aside>
+
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
+        <header className="h-16 bg-white border-b border-gray-100 flex items-center px-8 shrink-0 relative z-30 shadow-sm">
+          <div className="flex-1 font-bold text-gray-800 flex items-center gap-3">
+            {settings ? (
+              <span className="bg-green-50 text-brand px-2.5 py-1 rounded-md text-xs border border-green-100 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand" />
+                {statusLabel(settings.status)}
+              </span>
+            ) : null}
+            <span className="tracking-tight">{projectName}</span>
+          </div>
+
+          <div className="flex items-center gap-5 relative">
+            {settings?.members.length ? (
+              <div className="hidden md:flex items-center mr-4 pr-5 border-r border-gray-200">
+                <div className="flex -space-x-2.5 hover:-space-x-1 transition-all duration-300">
+                  {settings.members.slice(0, 4).map((member) => (
+                    <UserAvatar
+                      key={member.memberId}
+                      name={memberName(member)}
+                      imageUrl={member.profileImage}
+                      className="w-8 h-8 border-2 border-white bg-gray-100 shadow-sm hover:z-10 transition-transform hover:scale-110"
+                      iconClassName="text-xs"
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {session ? (
+              <button type="button" onClick={handleLogout} className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition">
+                로그아웃
+              </button>
+            ) : (
+              <button type="button" onClick={() => setAuthView('login')} className="text-[11px] font-bold text-brand hover:text-green-700 transition">
+                로그인
+              </button>
+            )}
+          </div>
+        </header>
+
+        <main className="flex-1 flex overflow-hidden relative">
+          <div className="w-64 bg-white border-r border-gray-100 flex flex-col shrink-0 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+            <div className="p-6 pb-4 border-b border-gray-50">
+              <h2 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
+                <i className="fas fa-cog text-brand" />
+                환경 설정
+              </h2>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+              {settingsTabs.map((tab) => {
+                const danger = tab.id === 'danger'
+                const active = activeTab === tab.id
+                const className = active
+                  ? `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition ${danger ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-brand'}`
+                  : `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition ${danger ? 'text-red-500 hover:bg-red-50' : 'text-gray-600 hover:bg-gray-50'}`
+
+                return (
+                  <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={className}>
+                    <i className={`${tab.icon} w-4 text-center`} />
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-8 lg:p-12 bg-[#F9FAFB]">
+            <div className="max-w-4xl mx-auto pb-20">
+              {loading ? (
+                <StateCard icon="fas fa-spinner fa-spin" message="스쿼드 설정을 불러오는 중입니다." />
+              ) : error ? (
+                <StateCard icon="fas fa-circle-exclamation text-red-500" message={error} />
+              ) : settings ? (
+                <>
+                  {activeTab === 'general' ? (
+                    <GeneralPanel
+                      settings={settings}
+                      form={form}
+                      saving={saving}
+                      canManage={canManage}
+                      onFormChange={setForm}
+                      onSave={saveGeneral}
+                    />
+                  ) : null}
+                  {activeTab === 'members' ? <MembersPanel settings={settings} /> : null}
+                  {activeTab === 'integrations' ? (
+                    <IntegrationsPanel
+                      integrations={integrations}
+                      canManage={canManage}
+                      busyIntegration={busyIntegration}
+                      onToggle={toggleIntegration}
+                    />
+                  ) : null}
+                  {activeTab === 'danger' ? (
+                    <DangerPanel
+                      settings={settings}
+                      canManage={canManage}
+                      saving={dangerSaving}
+                      onArchiveToggle={toggleArchive}
+                      onDeleteOpen={() => setDeleteModalOpen(true)}
+                    />
+                  ) : null}
+                </>
+              ) : null}
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {deleteModalOpen && settings ? (
+        <DeleteModal
+          settings={settings}
+          saving={dangerSaving}
+          confirmValue={deleteConfirm}
+          onConfirmChange={setDeleteConfirm}
+          onClose={() => {
+            setDeleteModalOpen(false)
+            setDeleteConfirm('')
+          }}
+          onDelete={deleteWorkspace}
+        />
+      ) : null}
+
+      {authView ? (
+        <AuthModal
+          view={authView}
+          onClose={() => setAuthView(null)}
+          onViewChange={setAuthView}
+          onAuthenticated={handleAuthenticated}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+function StateCard({ icon, message }: { icon: string; message: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+      <i className={`${icon} text-2xl mb-4`} />
+      <p className="text-sm font-bold text-gray-600">{message}</p>
+    </div>
+  )
+}
+
+function GeneralPanel({
+  settings,
+  form,
+  saving,
+  canManage,
+  onFormChange,
+  onSave,
+}: {
+  settings: WorkspaceSettings
+  form: SettingsForm
+  saving: boolean
+  canManage: boolean
+  onFormChange: (form: SettingsForm) => void
+  onSave: (event: FormEvent) => void
+}) {
+  return (
+    <section className="space-y-8 fade-in">
+      <div>
+        <h3 className="text-xl font-black text-gray-900 mb-1">일반 설정</h3>
+        <p className="text-sm text-gray-500 font-medium">스쿼드 이름과 설명을 실제 프로젝트 정보에 맞게 관리합니다.</p>
+      </div>
+
+      {!canManage ? (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-2xl p-4 text-sm font-bold">
+          스쿼드 소유자만 설정을 수정할 수 있습니다.
+        </div>
+      ) : null}
+
+      <form onSubmit={onSave} className="space-y-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              스쿼드 이름 <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-brand transition shadow-sm disabled:bg-gray-50 disabled:text-gray-400"
+              value={form.name}
+              disabled={!canManage || saving}
+              onChange={(event) => onFormChange({ ...form, name: event.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">상세 설명</label>
+            <textarea
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm h-28 custom-scrollbar resize-none disabled:bg-gray-50 disabled:text-gray-400"
+              value={form.description}
+              disabled={!canManage || saving}
+              onChange={(event) => onFormChange({ ...form, description: event.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-100 pt-6">
+            <InfoTile label="유형" value={typeLabel(settings.type)} />
+            <InfoTile label="팀원" value={`${settings.memberCount}명`} />
+            <InfoTile label="최근 수정" value={formatDate(settings.updatedAt)} />
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={!canManage || saving}
+            className="px-8 py-3 bg-gray-900 text-white font-bold rounded-xl text-sm hover:bg-black transition shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'} />
+            변경사항 저장
+          </button>
+        </div>
+      </form>
+    </section>
+  )
+}
+
+function InfoTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-gray-50 rounded-xl px-4 py-3">
+      <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-sm font-extrabold text-gray-900">{value}</p>
+    </div>
+  )
+}
+
+function MembersPanel({ settings }: { settings: WorkspaceSettings }) {
+  return (
+    <section className="space-y-8 fade-in">
+      <div>
+        <h3 className="text-xl font-black text-gray-900 mb-1">팀원 관리</h3>
+        <p className="text-sm text-gray-500 font-medium">현재 스쿼드에 참여 중인 팀원을 확인합니다.</p>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 bg-gray-50/50 text-xs font-extrabold text-gray-500 uppercase tracking-wider items-center">
+          <div className="col-span-6 pl-4">이름</div>
+          <div className="col-span-3">역할</div>
+          <div className="col-span-3 text-right pr-4">참여일</div>
+        </div>
+
+        {settings.members.length ? (
+          settings.members.map((member) => {
+            const owner = member.learnerId === settings.ownerId
+
+            return (
+              <div key={member.memberId} className="grid grid-cols-12 gap-4 p-4 border-b border-gray-50 items-center hover:bg-gray-50 transition last:border-b-0">
+                <div className="col-span-6 flex items-center gap-4 pl-4">
+                  <UserAvatar name={memberName(member)} imageUrl={member.profileImage} className="w-10 h-10 bg-white" />
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                      {memberName(member)}
+                      {owner ? <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-[9px] uppercase">Owner</span> : null}
+                    </p>
+                    <p className="text-xs text-gray-500">멤버 ID {member.memberId}</p>
+                  </div>
+                </div>
+
+                <div className="col-span-3">
+                  <span className={`px-3 py-1 rounded-lg text-xs font-bold flex w-fit items-center gap-1.5 ${owner ? 'bg-yellow-50 text-yellow-600 border border-yellow-200' : 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
+                    <i className={owner ? 'fas fa-crown' : 'fas fa-user'} />
+                    {owner ? '소유자' : '팀원'}
+                  </span>
+                </div>
+
+                <div className="col-span-3 text-right pr-4 text-xs font-bold text-gray-500">{formatDate(member.joinedAt)}</div>
+              </div>
+            )
+          })
+        ) : (
+          <div className="p-10 text-center text-sm font-bold text-gray-400">아직 참여 중인 팀원이 없습니다.</div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function IntegrationsPanel({
+  integrations,
+  canManage,
+  busyIntegration,
+  onToggle,
+}: {
+  integrations: ExternalIntegration[]
+  canManage: boolean
+  busyIntegration: IntegrationProvider | null
+  onToggle: (provider: IntegrationProvider) => void
+}) {
+  return (
+    <section className="space-y-8 fade-in">
+      <div>
+        <h3 className="text-xl font-black text-gray-900 mb-1">외부 서비스 연동</h3>
+        <p className="text-sm text-gray-500 font-medium">스쿼드에서 사용할 외부 서비스 연동 상태를 관리합니다.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {(Object.keys(integrationMeta) as IntegrationProvider[]).map((provider) => {
+          const meta = integrationMeta[provider]
+          const integration = integrations.find((item) => item.provider === provider)
+          const active = isIntegrationActive(integration)
+          const busy = busyIntegration === provider
+
+          return (
+            <div key={provider} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-gray-300 transition">
+              <div className={`absolute top-0 left-0 w-1 h-full ${meta.accent}`} />
+              <div className="flex justify-between items-start mb-4 pl-2">
+                <div className="flex items-center gap-3">
+                  <i className={`${meta.icon} text-3xl ${meta.iconColor}`} />
+                  <div>
+                    <h4 className="font-bold text-gray-900">{meta.title}</h4>
+                    <p className="text-[10px] text-gray-500 font-medium">{meta.description}</p>
+                  </div>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${active ? 'bg-green-50 text-green-600 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                  {active ? '연결됨' : '꺼짐'}
+                </span>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500 mb-4">
+                {active ? `마지막 연결: ${formatDate(integration?.connectedAt)}` : '연동을 켜면 이 스쿼드에서 사용할 준비 상태로 바뀝니다.'}
+              </div>
+
+              <button
+                type="button"
+                disabled={!canManage || busy}
+                onClick={() => onToggle(provider)}
+                className={`w-full py-2 text-xs font-bold rounded-lg transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : meta.button}`}
+              >
+                {busy ? '변경 중' : active ? '연동 끄기' : '연동 켜기'}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function DangerPanel({
+  settings,
+  canManage,
+  saving,
+  onArchiveToggle,
+  onDeleteOpen,
+}: {
+  settings: WorkspaceSettings
+  canManage: boolean
+  saving: boolean
+  onArchiveToggle: () => void
+  onDeleteOpen: () => void
+}) {
+  return (
+    <section className="space-y-8 fade-in">
+      <div>
+        <h3 className="text-xl font-black text-red-600 mb-1">보관 및 삭제</h3>
+        <p className="text-sm text-gray-500 font-medium">스쿼드 상태를 보관으로 바꾸거나 더 이상 쓰지 않는 스쿼드를 삭제합니다.</p>
+      </div>
+
+      <div className="border-2 border-red-200 bg-red-50/30 rounded-2xl p-6 flex flex-col gap-6">
+        <div className="flex justify-between items-center pb-6 border-b border-red-100 gap-6">
+          <div>
+            <h4 className="font-bold text-gray-900 mb-1">스쿼드 보관</h4>
+            <p className="text-xs text-gray-500 leading-relaxed">완료된 프로젝트를 보관 상태로 바꿔 진행 중 목록과 구분합니다.</p>
+          </div>
+          <button type="button" disabled={!canManage || saving} onClick={onArchiveToggle} className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition shadow-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+            {settings.status === 'ARCHIVED' ? '보관 해제' : '보관하기'}
+          </button>
+        </div>
+
+        <div className="flex justify-between items-center gap-6">
+          <div>
+            <h4 className="font-bold text-gray-900 mb-1">스쿼드 삭제</h4>
+            <p className="text-xs text-gray-500 leading-relaxed">삭제한 스쿼드는 목록에서 사라집니다. 필요한 자료가 있다면 먼저 확인해 주세요.</p>
+          </div>
+          <button type="button" disabled={!canManage || saving} onClick={onDeleteOpen} className="px-5 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition shadow-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+            스쿼드 삭제
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function DeleteModal({
+  settings,
+  saving,
+  confirmValue,
+  onConfirmChange,
+  onClose,
+  onDelete,
+}: {
+  settings: WorkspaceSettings
+  saving: boolean
+  confirmValue: string
+  onConfirmChange: (value: string) => void
+  onClose: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm z-[1200]">
+      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl relative overflow-hidden flex flex-col p-8 fade-in border-t-8 border-red-500">
+        <h3 className="text-xl font-black text-red-600 mb-2 flex items-center gap-2">
+          <i className="fas fa-exclamation-triangle" />
+          정말 삭제할까요?
+        </h3>
+        <p className="text-sm text-gray-600 mb-6 leading-relaxed">이 작업은 되돌릴 수 없습니다. 계속하려면 아래에 스쿼드 이름을 그대로 입력해 주세요.</p>
+
+        <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+          <label className="block text-xs font-bold text-gray-500 mb-2">
+            삭제하려면 <span className="text-red-500 font-black">{settings.name}</span> 입력
+          </label>
+          <input
+            type="text"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-bold outline-none focus:border-red-500 transition"
+            value={confirmValue}
+            onChange={(event) => onConfirmChange(event.target.value)}
+            autoFocus
+          />
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition">
+            취소
+          </button>
+          <button
+            type="button"
+            disabled={confirmValue.trim() !== settings.name || saving}
+            onClick={onDelete}
+            className="px-6 py-2.5 text-sm font-bold text-white bg-red-600 rounded-xl transition disabled:bg-red-300 disabled:cursor-not-allowed"
+          >
+            삭제합니다
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
