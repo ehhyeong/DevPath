@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -66,6 +67,17 @@ public class BuilderController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "나만의 로드맵 ID", example = "1") @PathVariable Long id) {
     return ResponseEntity.ok(ApiResponse.ok(myRoadmapService.findById(requireUserId(userId), id)));
+  }
+
+  @Operation(summary = "나만의 로드맵 수정", description = "빌더에서 구성한 로드맵을 수정합니다. 기존 모듈과 연결된 CustomRoadmap 노드를 교체합니다.")
+  @PutMapping("/roadmaps/{id}")
+  public ResponseEntity<ApiResponse<MyRoadmapResponse>> updateRoadmap(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "나만의 로드맵 ID", example = "1") @PathVariable Long id,
+      @Valid @RequestBody MyRoadmapSaveRequest request) {
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            "나만의 로드맵이 수정되었습니다.", myRoadmapService.update(requireUserId(userId), id, request)));
   }
 
   @Operation(summary = "나만의 로드맵 삭제", description = "나만의 로드맵을 삭제합니다. 모듈도 함께 삭제됩니다.")

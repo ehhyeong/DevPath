@@ -60,23 +60,39 @@ public class MyRoadmapDto {
     @Schema(description = "理쒓렐 ?숈뒿 ?쒓컖")
     private LocalDateTime lastStudiedAt;
 
+    @Schema(description = "진행률 (0~100)", example = "45")
+    private Integer progressRate;
+
+    @Schema(description = "빌더에서 직접 만든 로드맵 여부")
+    @com.fasterxml.jackson.annotation.JsonProperty("isBuilderOrigin")
+    private boolean isBuilderOrigin;
+
+    @Schema(description = "빌더 로드맵 ID (isBuilderOrigin=true일 때만 존재, 편집에 사용)")
+    private Long builderRoadmapId;
+
     @Builder
     private Item(
         Long customRoadmapId,
         Long originalRoadmapId,
         String title,
+        Integer progressRate,
+        boolean isBuilderOrigin,
+        Long builderRoadmapId,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         LocalDateTime lastStudiedAt) {
       this.customRoadmapId = customRoadmapId;
       this.originalRoadmapId = originalRoadmapId;
       this.title = title;
+      this.progressRate = progressRate;
+      this.isBuilderOrigin = isBuilderOrigin;
+      this.builderRoadmapId = builderRoadmapId;
       this.createdAt = createdAt;
       this.updatedAt = updatedAt;
       this.lastStudiedAt = lastStudiedAt;
     }
 
-    public static Item from(CustomRoadmap entity, LocalDateTime lastStudiedAt) {
+    public static Item from(CustomRoadmap entity, LocalDateTime lastStudiedAt, Long builderRoadmapId) {
       return Item.builder()
           .customRoadmapId(entity.getId())
           .originalRoadmapId(
@@ -84,10 +100,27 @@ public class MyRoadmapDto {
                   ? entity.getOriginalRoadmap().getRoadmapId()
                   : null)
           .title(entity.getTitle())
+          .progressRate(entity.getProgressRate() != null ? entity.getProgressRate() : 0)
+          .isBuilderOrigin(entity.isBuilderOrigin())
+          .builderRoadmapId(builderRoadmapId)
           .createdAt(entity.getCreatedAt())
           .updatedAt(entity.getUpdatedAt())
           .lastStudiedAt(lastStudiedAt)
           .build();
+    }
+  }
+
+  @Getter
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  @Schema(name = "MyRoadmapRenameRequest")
+  public static class RenameRequest {
+
+    @Schema(description = "변경할 로드맵 이름", example = "나의 백엔드 마스터 로드맵")
+    private String title;
+
+    @Builder
+    private RenameRequest(String title) {
+      this.title = title;
     }
   }
 

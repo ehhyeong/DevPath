@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from './components/ProjectAside'
 import ProjectHeader from './components/ProjectHeader'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredView from './components/LoginRequiredView'
 import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
 
@@ -265,6 +266,16 @@ export default function DevShowcaseApp() {
     return () => controller.abort()
   }, [category, dataReloadKey, sort])
 
+  useEffect(() => {
+    const syncSession = () => setSession(readStoredAuthSession())
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    }
+  }, [])
+
   const visibleShowcases = useMemo(() => {
     const lowered = search.trim().toLowerCase()
     const filtered = showcases.filter((showcase) => {
@@ -433,6 +444,8 @@ export default function DevShowcaseApp() {
       tech: selected.tech,
     }))
   }
+
+  if (!session) return <LoginRequiredView />
 
   return (
     <div className="dev-showcase-page relative h-screen overflow-hidden text-gray-800">

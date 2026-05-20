@@ -1,5 +1,6 @@
 package com.devpath.api.squad.service;
 
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.squad.dto.SquadMemberResponse;
 import com.devpath.api.squad.dto.SquadResponse;
 import com.devpath.common.exception.CustomException;
@@ -25,6 +26,7 @@ public class SquadMemberService {
   private final SquadRepository squadRepository;
   private final SquadMemberRepository squadMemberRepository;
   private final UserRepository userRepository;
+  private final NotificationEventService notificationEventService;
 
   public List<SquadResponse> getMySquads(Long userId) {
     User user = getUser(userId);
@@ -80,7 +82,11 @@ public class SquadMemberService {
       validateNotLastLeader(squad);
     }
 
+    Long kickedUserId = targetMember.getUser().getId();
+    String squadName = squad.getName();
     targetMember.delete();
+
+    notificationEventService.notifySquadKicked(kickedUserId, squadName);
   }
 
   private Squad findActiveSquad(Long squadId) {

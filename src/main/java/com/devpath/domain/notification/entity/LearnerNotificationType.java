@@ -32,5 +32,32 @@ public enum LearnerNotificationType {
   APPLICATION_APPROVED,
 
   @Schema(description = "신청 거절 알림")
-  APPLICATION_REJECTED
+  APPLICATION_REJECTED,
+
+  @Schema(description = "Squad 초대 수신 알림")
+  SQUAD_INVITED,
+
+  @Schema(description = "Squad 강제 퇴장 알림")
+  SQUAD_KICKED,
+
+  @Schema(description = "과제 채점 완료 알림")
+  ASSIGNMENT_GRADED,
+
+  @Schema(description = "멘토링 미션 통과 알림")
+  MISSION_PASSED,
+
+  @Schema(description = "멘토링 미션 반려 알림")
+  MISSION_REJECTED,
+
+  @Schema(description = "AI 로드맵 추천 노드 도착 알림")
+  RECOMMENDATION_ARRIVED,
+
+  @Schema(description = "라운지 신청서 수신 알림")
+  LOUNGE_APPLICATION_RECEIVED,
+
+  @Schema(description = "내 게시글 댓글 알림")
+  COMMUNITY_COMMENTED,
+
+  @Schema(description = "환불 처리 완료 알림")
+  REFUND_PROCESSED
 }

@@ -10,6 +10,7 @@ import com.devpath.domain.squad.entity.SquadInvitation;
 import com.devpath.domain.squad.entity.SquadInvitationStatus;
 import com.devpath.domain.squad.entity.SquadMember;
 import com.devpath.domain.squad.entity.SquadRole;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.domain.squad.repository.SquadInvitationRepository;
 import com.devpath.domain.squad.repository.SquadMemberRepository;
 import com.devpath.domain.squad.repository.SquadRepository;
@@ -35,6 +36,7 @@ public class SquadInviteService {
   private final SquadInvitationRepository squadInvitationRepository;
   private final SquadMemberRepository squadMemberRepository;
   private final UserRepository userRepository;
+  private final NotificationEventService notificationEventService;
 
   @Transactional
   public CreateSquadInviteLinkResponse createInviteLink(Long squadId, Long inviterId) {
@@ -84,6 +86,11 @@ public class SquadInviteService {
             .build();
 
     squadInvitationRepository.save(invitation);
+
+    // 초대 이메일이 DevPath 가입자인 경우에만 인앱 알림 발송
+    userRepository.findByEmail(normalizedEmail).ifPresent(invitee ->
+        notificationEventService.notifySquadInvited(invitee.getId(), squad.getName()));
+
     return SquadInviteResponse.from(invitation, buildInviteUrl(token));
   }
 

@@ -6,6 +6,8 @@ import { ProjectCreatePanel } from './ProjectCreateApp'
 import ProjectHeader from './components/ProjectHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredView from './components/LoginRequiredView'
 import { showAuthToast } from './lib/auth-toast'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
 
@@ -132,6 +134,12 @@ export default function WorkspaceHubApp() {
 
     return () => {
       window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
+    const syncSession = () => setSession(readStoredAuthSession())
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
   }, [])
 
@@ -227,6 +235,8 @@ export default function WorkspaceHubApp() {
   function handleProjectCreated() {
     window.location.assign('workspace-hub.html')
   }
+
+  if (!session) return <LoginRequiredView />
 
   return (
     <div className="flex h-screen overflow-hidden text-gray-800">

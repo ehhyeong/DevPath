@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import LoginRequiredView from '../components/LoginRequiredView'
 import SiteHeader from '../components/SiteHeader'
 import { authApi, userApi } from '../lib/api'
 import {
@@ -245,6 +246,8 @@ function SurveyPage() {
   const progress = Math.round((currentStep / QUESTIONS.length) * 100)
   const question = QUESTIONS[currentStep]
   const topResult = results[0] ? ROADMAPS[results[0][0]] : null
+
+  if (!session) return <LoginRequiredView />
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900">

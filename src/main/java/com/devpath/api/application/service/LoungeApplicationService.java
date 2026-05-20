@@ -46,7 +46,12 @@ public class LoungeApplicationService {
             .content(request.content())
             .build();
 
-    return LoungeApplicationResponse.Detail.from(loungeApplicationRepository.save(application));
+    LoungeApplication saved = loungeApplicationRepository.save(application);
+
+    notificationEventService.notifyLoungeApplicationReceived(
+        receiver.getId(), sender.getName(), request.title());
+
+    return LoungeApplicationResponse.Detail.from(saved);
   }
 
   public List<LoungeApplicationResponse.Summary> getSentApplications(Long senderId) {

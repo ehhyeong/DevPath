@@ -2,6 +2,7 @@ package com.devpath.api.community.service;
 
 import com.devpath.api.community.dto.CommentCreateRequest;
 import com.devpath.api.community.dto.CommentResponse;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.community.entity.Comment;
@@ -26,6 +27,7 @@ public class CommunityCommentService {
   private final CommentRepository commentRepository;
   private final PostRepository postRepository;
   private final UserRepository userRepository;
+  private final NotificationEventService notificationEventService;
 
   @Transactional
   public CommentResponse createComment(Long userId, Long postId, CommentCreateRequest request) {
@@ -35,6 +37,13 @@ public class CommunityCommentService {
     Comment comment = Comment.builder().post(post).user(user).content(request.getContent()).build();
 
     Comment savedComment = commentRepository.save(comment);
+
+    // 게시글 작성자와 댓글 작성자가 다를 때만 알림 발송
+    if (!post.getUser().getId().equals(userId)) {
+      notificationEventService.notifyCommunityCommented(
+          post.getUser().getId(), post.getTitle());
+    }
+
     return CommentResponse.from(savedComment, List.of());
   }
 
@@ -58,6 +67,13 @@ public class CommunityCommentService {
             .build();
 
     Comment savedReply = commentRepository.save(reply);
+
+    // 댓글 작성자와 대댓글 작성자가 다를 때만 알림 발송
+    if (!parentComment.getUser().getId().equals(userId)) {
+      notificationEventService.notifyCommunityCommented(
+          parentComment.getUser().getId(), post.getTitle());
+    }
+
     return CommentResponse.from(savedReply, List.of());
   }
 

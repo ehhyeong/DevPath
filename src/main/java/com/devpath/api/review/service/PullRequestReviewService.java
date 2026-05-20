@@ -160,6 +160,10 @@ public class PullRequestReviewService {
 
     submission.pass(request == null ? null : request.feedback());
 
+    notificationEventService.notifyMissionPassed(
+        submission.getSubmitter().getId(),
+        submission.getMission().getTitle());
+
     return PullRequestReviewResponse.MissionSubmissionDetail.from(submission);
   }
 
@@ -175,6 +179,10 @@ public class PullRequestReviewService {
     validateSubmissionSubmitted(submission);
 
     submission.reject(request == null ? null : request.feedback());
+
+    notificationEventService.notifyMissionRejected(
+        submission.getSubmitter().getId(),
+        submission.getMission().getTitle());
 
     return PullRequestReviewResponse.MissionSubmissionDetail.from(submission);
   }

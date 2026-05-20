@@ -2,6 +2,7 @@ package com.devpath.api.evaluation.service;
 
 import com.devpath.api.evaluation.dto.request.GradeSubmissionRequest;
 import com.devpath.api.evaluation.dto.response.SubmissionGradeResponse;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.provider.GeminiProvider;
@@ -36,6 +37,7 @@ public class SubmissionGradingService {
   private final SubmissionRepository submissionRepository;
   private final RubricRepository rubricRepository;
   private final GeminiProvider geminiProvider;
+  private final NotificationEventService notificationEventService;
 
   // 제출 직후 자동으로 호출되는 AI 채점 메서드.
   public void autoGradeOnSubmit(Submission submission) {
@@ -69,6 +71,11 @@ public class SubmissionGradingService {
 
     submission.startGrading(null);
     submission.grade(null, totalScore, null, null);
+
+    notificationEventService.notifyAssignmentGraded(
+        submission.getLearner().getId(),
+        submission.getAssignment().getTitle(),
+        totalScore);
   }
 
   public SubmissionGradeResponse gradeSubmission(
@@ -112,6 +119,11 @@ public class SubmissionGradingService {
 
     submission.startGrading(instructor);
     submission.grade(instructor, totalScore, null, null);
+
+    notificationEventService.notifyAssignmentGraded(
+        submission.getLearner().getId(),
+        submission.getAssignment().getTitle(),
+        totalScore);
 
     return SubmissionGradeResponse.builder()
         .submissionId(submission.getId())

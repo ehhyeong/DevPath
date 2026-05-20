@@ -1,6 +1,7 @@
 package com.devpath.api.admin.service;
 
 import com.devpath.api.admin.dto.refund.RefundProcessRequest;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.refund.entity.RefundRequest;
 import com.devpath.api.refund.entity.RefundReview;
 import com.devpath.api.refund.entity.RefundStatus;
@@ -26,6 +27,7 @@ public class AdminRefundService {
   private final RefundReviewRepository refundReviewRepository;
   private final SettlementRepository settlementRepository;
   private final CourseEnrollmentRepository courseEnrollmentRepository;
+  private final NotificationEventService notificationEventService;
 
   public void approveRefund(Long refundId, Long adminId, RefundProcessRequest request) {
     RefundRequest refundRequest =
@@ -60,6 +62,8 @@ public class AdminRefundService {
             .decision(RefundStatus.APPROVED)
             .reason(request.getReason())
             .build());
+
+    notificationEventService.notifyRefundProcessed(refundRequest.getLearnerId(), true);
   }
 
   public void rejectRefund(Long refundId, Long adminId, RefundProcessRequest request) {
@@ -77,5 +81,7 @@ public class AdminRefundService {
             .decision(RefundStatus.REJECTED)
             .reason(request.getReason())
             .build());
+
+    notificationEventService.notifyRefundProcessed(refundRequest.getLearnerId(), false);
   }
 }

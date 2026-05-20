@@ -43,6 +43,9 @@ public class MyRoadmap {
   @Column(nullable = false, length = 200)
   private String title;
 
+  @Column(name = "custom_roadmap_id")
+  private Long customRoadmapId;
+
   @OneToMany(mappedBy = "myRoadmap", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<MyRoadmapModule> modules = new ArrayList<>();
 
@@ -66,5 +69,9 @@ public class MyRoadmap {
 
   public void changeTitle(String title) {
     this.title = title;
+  }
+
+  public void linkCustomRoadmap(Long customRoadmapId) {
+    this.customRoadmapId = customRoadmapId;
   }
 }

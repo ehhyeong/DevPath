@@ -1279,6 +1279,10 @@ aside:hover .sidebar-text {
   height: 6px;
 }
 
+body:has(.learning-player-surface) {
+  overflow: hidden;
+}
+
 .learning-player-surface {
   font-family: 'Pretendard', sans-serif;
   font-size: 16px;

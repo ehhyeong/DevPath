@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
-import { readStoredAuthSession } from './lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredView from './components/LoginRequiredView'
 import { projectApiRequest } from './project-api'
 
 type ProjectType = 'SOLO' | 'SQUAD'
@@ -19,6 +20,8 @@ type ProjectCreatePanelProps = {
 }
 
 export default function ProjectCreateApp() {
+  const [session, setSession] = useState(() => readStoredAuthSession())
+
   useEffect(() => {
     document.title = 'DevPath - 프로젝트 생성'
     const previousHtmlOverflow = document.documentElement.style.overflow
@@ -31,6 +34,18 @@ export default function ProjectCreateApp() {
       document.body.style.overflow = previousBodyOverflow
     }
   }, [])
+
+  useEffect(() => {
+    const syncSession = () => setSession(readStoredAuthSession())
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    }
+  }, [])
+
+  if (!session) return <LoginRequiredView />
 
   return (
     <main className="flex h-screen items-center justify-center">

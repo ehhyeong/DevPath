@@ -3,6 +3,7 @@ package com.devpath.api.recommendation.service;
 import com.devpath.api.learning.service.SupplementRecommendationService;
 import com.devpath.api.learning.service.TilService;
 import com.devpath.api.learning.service.WeaknessAnalysisService;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.recommendation.dto.RecommendationChangeRequest;
 import com.devpath.api.recommendation.dto.RecommendationChangeResponse;
 import com.devpath.api.roadmap.service.RoadmapProgressService;
@@ -58,9 +59,25 @@ public class RecommendationChangeService {
   private final RoadmapProgressService roadmapProgressService;
   private final TagRepository tagRepository;
   private final NodeRequiredTagRepository nodeRequiredTagRepository;
+  private final NotificationEventService notificationEventService;
 
   @Transactional
   public List<RecommendationChangeResponse.Detail> createSuggestions(
+      Long userId, RecommendationChangeRequest.Suggestion request) {
+    List<RecommendationChangeResponse.Detail> suggestions =
+        createSuggestionsInternal(userId, request);
+
+    if (!suggestions.isEmpty()) {
+      notificationEventService.notifyRecommendationArrived(userId, suggestions.size());
+    }
+
+    return suggestions;
+  }
+
+  // 추천 생성 핵심 로직. 외부 직접 호출(createSuggestions)과
+  // 내부 재계산(recalculateNextNodes) 양쪽에서 사용하며,
+  // 알림 발송은 오직 createSuggestions()에서만 담당한다.
+  private List<RecommendationChangeResponse.Detail> createSuggestionsInternal(
       Long userId, RecommendationChangeRequest.Suggestion request) {
     if (!isRuleEnabled("RECOMMENDATION_CHANGE_ENABLED", true)) {
       throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
@@ -224,7 +241,7 @@ public class RecommendationChangeService {
     }
 
     List<RecommendationChangeResponse.Detail> regenerated =
-        createSuggestions(userId, RecommendationChangeRequest.SuggestionHolder.from(request));
+        createSuggestionsInternal(userId, RecommendationChangeRequest.SuggestionHolder.from(request));
 
     return RecommendationChangeResponse.RecalculateResult.builder()
         .recalculatedCount(currentPendingChanges.size())

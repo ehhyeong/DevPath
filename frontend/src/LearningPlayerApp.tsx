@@ -403,7 +403,7 @@ function resolveLessonAssignment(item: LearningLesson | null | undefined): Learn
 
 function isQuizLesson(item: LearningLesson | null | undefined): item is LearningLesson {
   if (!item) return false
-  return item.lessonType?.toUpperCase() === 'READING' && /퀴즈|quiz/i.test(item.title)
+  return item.lessonType?.toUpperCase() !== 'VIDEO' && /퀴즈|quiz/i.test(item.title)
 }
 
 function isLessonProgressCompleted(item: LearningLessonProgress | null | undefined) {
@@ -2541,7 +2541,7 @@ export default function LearningPlayerApp() {
   if (!course || !lesson) return <LoadingOverlay />
 
   // ─── Derived render values ────────────────────────────────────────
-  const hasVideoSource = Boolean(resolvedVideoUrl)
+  const hasVideoSource = Boolean(resolvedVideoUrl) && !Boolean(selectedLessonIsQuiz)
   const showVideoErrorOverlay = hasVideoSource && videoFailed
   const activeQuestionSummary = openQuestionId
     ? qnaQuestions.find((item) => item.id === openQuestionId) ?? null
@@ -2567,7 +2567,7 @@ export default function LearningPlayerApp() {
             {isStudentPreview ? '질문 게시판으로 돌아가기' : '로드맵으로 돌아가기'}
           </button>
           <div className="h-4 w-[1px] bg-gray-700 shrink-0" />
-          <span className="text-sm font-bold text-gray-100 truncate">{lesson.title}</span>
+          <span className="text-sm font-bold text-gray-100 truncate" title={lesson.title}>{lesson.title}</span>
         </div>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2 text-gray-400">
@@ -2588,31 +2588,19 @@ export default function LearningPlayerApp() {
         <div ref={frameRef} className="flex-1 relative flex flex-col justify-center items-center w-full overflow-hidden group">
 
           {/* 우측 상단 오버레이 버튼 */}
-          <div className="absolute right-4 top-4 z-10 flex gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 lg:right-6">
+          <div className="absolute right-6 top-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <button
               type="button"
               onClick={() => { setIsSelectMode(prev => !prev); setSelectDrag(null) }}
               disabled={ocrBusy}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[0px] font-bold shadow-lg backdrop-blur-md transition hover:text-black disabled:opacity-60 ${
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold shadow-lg backdrop-blur-md transition hover:text-black disabled:cursor-wait disabled:opacity-60 ${
                 isSelectMode
                   ? 'border-[#00C471] bg-[#00C471] text-black'
                   : 'border-white/20 bg-black/60 text-white hover:bg-[#00C471]'
               }`}
             >
               <i className={`fas ${ocrBusy ? 'fa-spinner fa-spin' : 'fa-crop-simple'} text-xs`} />
-              <span className="text-xs">{ocrBusy ? '글자 읽는 중...' : isSelectMode ? '영역 선택 중' : '화면 글자 복사'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleTogglePip()}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[0px] font-bold shadow-lg backdrop-blur-md transition hover:text-black ${
-                isPipActive
-                  ? 'border-[#00C471] bg-[#00C471] text-black'
-                  : 'border-white/20 bg-black/60 text-white hover:bg-[#00C471]'
-              }`}
-            >
-              <i className={`fas ${isPipActive ? 'fa-compress' : 'fa-up-right-from-square'} text-xs`} />
-              <span className="text-xs">{isPipActive ? 'PIP 종료' : 'PIP 모드'}</span>
+              <span>{ocrBusy ? '글자 읽는 중...' : isSelectMode ? '영역 선택 중' : '화면 글자 복사'}</span>
             </button>
           </div>
 
@@ -2625,7 +2613,7 @@ export default function LearningPlayerApp() {
                   ref={videoRef}
                   src={resolvedVideoUrl ?? undefined}
                   poster={lesson.thumbnailUrl ?? course.thumbnailUrl ?? undefined}
-                  className="w-full h-full object-cover opacity-60"
+                  className="w-full h-full object-contain"
                   playsInline
                   preload="auto"
                   onLoadedData={() => setVideoFailed(false)}
@@ -3012,116 +3000,118 @@ export default function LearningPlayerApp() {
           {/* 커리큘럼 탭 */}
           {activeTab === 'curriculum' ? (
             <div className="tab-content h-full overflow-y-auto custom-scrollbar p-4 animate-fade-in">
-              {course.sections.map((section, sectionIndex) => {
-                const sectionLockState = section.lessons[0] ? lessonLockMap.get(section.lessons[0].lessonId) : null
-                const sectionLocked = Boolean(sectionLockState?.locked)
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                {course.sections.map((section, sectionIndex) => {
+                  const sectionIsActive = section.lessons.some((item) => item.lessonId === lesson.lessonId)
+                  const sectionOpen = openSectionIds.has(section.sectionId)
+                  const isLast = sectionIndex === course.sections.length - 1
 
-                return (
-                <div key={section.sectionId} data-open={openSectionIds.has(section.sectionId)}>
-                  <h3 className={`mb-2 flex items-center gap-1.5 px-1 text-xs font-semibold ${sectionLocked ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {sectionLocked ? <i className="fas fa-lock" aria-hidden="true" /> : null}
-                    <span className="truncate">섹션 {sectionIndex + 1}. {section.title}</span>
-                  </h3>
-                  <div className="space-y-1.5">
-                    {section.lessons.map((item) => {
-                      const active = item.lessonId === lesson.lessonId
-                      const itemProgress = active ? progress ?? lessonProgressById[item.lessonId] : lessonProgressById[item.lessonId]
-                      const completed = isLessonProgressCompleted(itemProgress)
-                      const lockState = lessonLockMap.get(item.lessonId)
-                      const locked = Boolean(lockState?.locked)
-                      const lessonDurationLabel = formatTime(actualDurationByLessonId[item.lessonId] ?? item.durationSeconds ?? 0)
-                      const quizItem = isQuizLesson(item)
-                      const assignmentItem = resolveLessonAssignment(item)
-                      const assignmentHistory = assignmentItem ? assignmentHistoryByAssignmentId[assignmentItem.assignmentId] ?? null : null
+                  return (
+                    <div key={section.sectionId} className={isLast ? '' : 'border-b border-gray-200'}>
+                      {/* 섹션 아코디언 헤더 */}
+                      <button
+                        type="button"
+                        onClick={() => setOpenSectionIds((current) => {
+                          const next = new Set(current)
+                          if (next.has(section.sectionId)) next.delete(section.sectionId)
+                          else next.add(section.sectionId)
+                          return next
+                        })}
+                        className={`w-full px-5 py-4 flex justify-between items-center transition ${
+                          sectionIsActive
+                            ? 'bg-green-50/50 hover:bg-green-50 border-l-4 border-[#00C471]'
+                            : 'bg-white hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className={`flex flex-col items-start ${sectionIsActive ? '-ml-1' : ''}`}>
+                          <span className={`text-xs font-bold mb-1 ${sectionIsActive ? 'text-[#00C471]' : 'text-gray-400'}`}>
+                            SECTION {sectionIndex + 1}{sectionIsActive ? ' (현재 수강중)' : ''}
+                          </span>
+                          <span className={`font-bold ${sectionIsActive ? 'text-gray-900' : 'text-gray-800'}`}>
+                            {section.title}
+                          </span>
+                        </div>
+                        <i className={`fas ${sectionOpen ? 'fa-chevron-up' : 'fa-chevron-down'} ${sectionIsActive ? 'text-[#00C471]' : 'text-gray-400'} transition-transform`} />
+                      </button>
 
-                      return (
-                        <button
-                          key={item.lessonId}
-                          type="button"
-                          aria-disabled={locked}
-                          title={locked && lockState?.prerequisiteLessonTitle
-                            ? `${lockState.prerequisiteLessonTitle} 완료 후 열립니다.`
-                            : undefined}
-                          onClick={() => handleSelectLesson(item.lessonId)}
-                          className={`flex w-full items-center justify-between rounded-xl border p-3 text-left shadow-sm transition ${
-                            locked
-                              ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-                              : active
-                              ? 'border-green-200 bg-green-50'
-                              : 'border-gray-200 bg-white hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="flex min-w-0 items-center gap-3">
-                            <i className={`fas ${
-                              locked
-                                ? 'fa-lock text-gray-400'
-                                : quizItem
-                                  ? 'fa-circle-question text-amber-500'
+                      {/* 아코디언 콘텐츠 */}
+                      <div className={`accordion-content bg-gray-50 border-t border-gray-100 ${sectionOpen ? 'open' : ''}`}>
+                        <div className="p-3 space-y-2">
+                          {section.lessons.map((item) => {
+                            const active = item.lessonId === lesson.lessonId
+                            const itemProgress = active ? progress ?? lessonProgressById[item.lessonId] : lessonProgressById[item.lessonId]
+                            const completed = isLessonProgressCompleted(itemProgress)
+                            const lockState = lessonLockMap.get(item.lessonId)
+                            const locked = Boolean(lockState?.locked)
+                            const lessonDurationLabel = formatTime(actualDurationByLessonId[item.lessonId] ?? item.durationSeconds ?? 0)
+                            const quizItem = isQuizLesson(item)
+                            const assignmentItem = resolveLessonAssignment(item)
+                            const assignmentHistory = assignmentItem ? assignmentHistoryByAssignmentId[assignmentItem.assignmentId] ?? null : null
+
+                            if (active) {
+                              const activeIcon = quizItem
+                                ? 'fa-circle-question text-amber-500'
                                 : assignmentItem
-                                  ? assignmentHistory
-                                    ? 'fa-clipboard-check text-[#00C471]'
-                                    : 'fa-clipboard-check text-violet-500'
-                                : completed
-                                ? 'fa-check-circle text-[#00C471]'
-                                : active
-                                  ? 'fa-play-circle animate-pulse text-[#00C471]'
-                                  : 'fa-circle-play text-gray-300'
-                            }`} />
-                            <div className="min-w-0">
-                              <span className={`block truncate text-sm ${
-                                locked
-                                  ? 'font-medium text-gray-400'
-                                  : active
-                                    ? 'font-semibold text-[#00C471]'
-                                    : 'font-medium text-gray-700'
-                              }`}>
-                                {item.title}
-                              </span>
-                              {locked ? (
-                                <span className="mt-1 block truncate text-[11px] font-medium text-gray-400">
-                                  먼저 완료: {lockState?.prerequisiteLessonTitle ?? '이전 강의'}
+                                  ? 'fa-clipboard-check text-violet-500'
+                                  : 'fa-play-circle text-[#00C471]'
+                              return (
+                                <div
+                                  key={item.lessonId}
+                                  onClick={() => handleSelectLesson(item.lessonId)}
+                                  className="p-3 rounded-lg flex justify-between items-center bg-green-50 border border-[#00C471] shadow-sm relative overflow-hidden cursor-pointer"
+                                >
+                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00C471]" />
+                                  <span className="text-sm font-bold text-gray-900 ml-2 truncate" title={item.title}>
+                                    <i className={`fas ${activeIcon} mr-2`} />
+                                    {item.title}
+                                  </span>
+                                  {!quizItem && !assignmentItem && (
+                                    <span className="text-xs bg-[#00C471] text-white px-2 py-1 rounded-full font-bold animate-pulse shrink-0 ml-2">수강중</span>
+                                  )}
+                                </div>
+                              )
+                            }
+
+                            return (
+                              <div
+                                key={item.lessonId}
+                                onClick={() => !locked && handleSelectLesson(item.lessonId)}
+                                title={locked && lockState?.prerequisiteLessonTitle ? `${lockState.prerequisiteLessonTitle} 완료 후 열립니다.` : undefined}
+                                className={`p-3 rounded-lg flex justify-between items-center bg-white border border-gray-200 opacity-60 ${locked ? 'cursor-not-allowed' : 'hover:opacity-100 transition cursor-pointer'}`}
+                              >
+                                <span className="text-sm font-medium text-gray-700 truncate min-w-0" title={item.title}>
+                                  <i className={`fas ${
+                                    locked ? 'fa-lock text-gray-400'
+                                    : quizItem ? 'fa-circle-question text-amber-500'
+                                    : assignmentItem ? (assignmentHistory ? 'fa-clipboard-check text-[#00C471]' : 'fa-clipboard-check text-violet-500')
+                                    : completed ? 'fa-check-circle text-[#00C471]'
+                                    : 'fa-circle-play text-gray-300'
+                                  } mr-2`} />
+                                  {item.title}
                                 </span>
-                              ) : assignmentItem ? (
-                                <span className="mt-1 block truncate text-[11px] font-medium text-gray-400">
-                                  {assignmentHistory
-                                    ? `최근 점수 ${assignmentHistory.totalScore ?? '-'}점`
-                                    : '자동 채점 과제'}
+                                <span className={`text-xs shrink-0 ml-2 ${
+                                  (quizItem || assignmentItem) && assignmentHistory ? 'text-[#00C471] font-bold'
+                                  : quizItem ? 'text-amber-600'
+                                  : 'text-gray-400'
+                                }`}>
+                                  {quizItem
+                                    ? (assignmentHistory ? '제출완료' : '퀴즈')
+                                    : assignmentItem
+                                      ? (assignmentHistory ? `${assignmentHistory.totalScore ?? '-'}점` : '미제출')
+                                      : lessonDurationLabel}
                                 </span>
-                              ) : null}
-                            </div>
-                          </div>
-                          {locked ? (
-                            <span className="ml-3 flex shrink-0 items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-[10px] font-semibold text-gray-400">
-                              <i className="fas fa-lock" />
-                              잠김
-                            </span>
-                          ) : (
-                            assignmentItem ? (
-                              <span className={`ml-3 shrink-0 rounded-md px-2 py-1 text-[10px] font-semibold ${
-                                assignmentHistory
-                                  ? 'bg-emerald-50 text-[#00C471]'
-                                  : 'bg-violet-50 text-violet-600'
-                              }`}>
-                                {assignmentHistory ? `${assignmentHistory.totalScore ?? '-'}점` : '과제'}
-                              </span>
-                            ) : (
-                              <span className={`ml-3 shrink-0 text-xs font-medium ${
-                                quizItem ? 'text-amber-600' : active ? 'text-[#00C471]' : 'text-gray-400'
-                              }`}>
-                                {quizItem ? '퀴즈' : lessonDurationLabel}
-                              </span>
+                              </div>
                             )
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-                )
-              })}
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
 
               {lesson.materials.length ? (
-                <div>
+                <div className="mt-4">
                   <h3 className="mb-2 px-1 text-xs font-bold text-gray-500">학습 자료</h3>
                   <div className="space-y-1.5">
                     {lesson.materials.map((material) => (
@@ -3131,7 +3121,7 @@ export default function LearningPlayerApp() {
                         className="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-3 text-left shadow-sm transition hover:border-gray-300"
                       >
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-gray-700">{material.originalFileName}</div>
+                          <div className="truncate text-sm font-medium text-gray-700" title={material.originalFileName}>{material.originalFileName}</div>
                           <div className="mt-1 text-[11px] text-gray-400">{material.materialType}</div>
                         </div>
                         <i className="fas fa-download text-sm text-gray-400" />
@@ -3151,7 +3141,7 @@ export default function LearningPlayerApp() {
                   <h3 className="font-bold text-gray-900 text-lg">질문 및 답변</h3>
                   <span className="text-sm text-gray-500">총 {visibleQuestions.length}개</span>
                 </div>
-                <div className="relative mb-4">
+                <div className="relative mb-4 shrink-0">
                   <input
                     type="text"
                     value={qnaSearch}
@@ -3179,59 +3169,59 @@ export default function LearningPlayerApp() {
                     </button>
                   ))}
                 </div>
-              </div>
 
-              <div className="space-y-3 pb-20">
-                {qnaError ? (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-600">
-                    {qnaError}
-                  </div>
-                ) : null}
+                <div className="space-y-3 pb-20">
+                  {qnaError ? (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-600">
+                      {qnaError}
+                    </div>
+                  ) : null}
 
-                {loadingQna ? (
-                  <div className="flex h-full items-center justify-center py-10">
-                    <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#00C471] border-t-transparent" />
-                  </div>
-                ) : visibleQuestions.length ? (
-                  visibleQuestions.map((question) => {
-                    const answered = isQuestionAnswered(question)
-                    const detail = qnaDetails[question.id]
+                  {loadingQna ? (
+                    <div className="flex h-full items-center justify-center py-10">
+                      <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#00C471] border-t-transparent" />
+                    </div>
+                  ) : visibleQuestions.length ? (
+                    visibleQuestions.map((question) => {
+                      const answered = isQuestionAnswered(question)
+                      const detail = qnaDetails[question.id]
 
-                    return (
-                      <button
-                        key={question.id}
-                        type="button"
-                        onClick={() => void handleToggleQuestion(question.id)}
-                        className="qna-item p-4 bg-white border border-gray-200 rounded-xl hover:border-[#00C471] transition cursor-pointer shadow-sm group w-full text-left"
-                      >
-                        <div className="flex gap-2 items-start mb-2">
-                          <span className={`${answered ? 'bg-[#00C471] text-white' : 'bg-gray-200 text-gray-600'} text-[10px] font-bold px-1.5 py-0.5 rounded`}>
-                            {answered ? '해결됨' : '답변대기'}
-                          </span>
-                          <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-[#00C471] transition">
-                            {question.title}
-                          </h4>
-                        </div>
+                      return (
+                        <button
+                          key={question.id}
+                          type="button"
+                          onClick={() => void handleToggleQuestion(question.id)}
+                          className="qna-item p-4 bg-white border border-gray-200 rounded-xl hover:border-[#00C471] transition cursor-pointer shadow-sm group w-full text-left"
+                        >
+                          <div className="flex gap-2 items-start mb-2">
+                            <span className={`${answered ? 'bg-[#00C471] text-white' : 'bg-gray-200 text-gray-600'} text-[10px] font-bold px-1.5 py-0.5 rounded`}>
+                              {answered ? '해결됨' : '답변대기'}
+                            </span>
+                            <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-[#00C471] transition" title={question.title}>
+                              {question.title}
+                            </h4>
+                          </div>
 
-                        <p className="text-xs text-gray-500 line-clamp-2 mb-3">
-                          {detail?.content ?? (question.lectureTimestamp ? `${question.lectureTimestamp} 구간 질문입니다.` : '질문 상세 내용을 보려면 눌러주세요.')}
-                        </p>
-                        <div className="flex justify-between items-center text-xs text-gray-400">
-                          <span className={isOwnQnaQuestion(question, sessionUserId) ? 'font-bold text-[#00C471]' : ''}>
-                            {question.authorName}{isOwnQnaQuestion(question, sessionUserId) ? ' (나)' : ''} · {formatRelativeTime(question.createdAt)}
-                          </span>
-                          <span><i className="far fa-comment-dots mr-1" />{question.answerCount}</span>
-                        </div>
-                      </button>
-                    )
-                  })
-                ) : (
-                  <EmptyState
-                    iconClassName="fas fa-comments"
-                    title="등록된 질문이 없습니다"
-                    description="이 강의에서 궁금한 점을 커뮤니티에 남겨 보세요."
-                  />
-                )}
+                          <p className="text-xs text-gray-500 line-clamp-2 mb-3">
+                            {detail?.content ?? (question.lectureTimestamp ? `${question.lectureTimestamp} 구간 질문입니다.` : '질문 상세 내용을 보려면 눌러주세요.')}
+                          </p>
+                          <div className="flex justify-between items-center text-xs text-gray-400">
+                            <span className={isOwnQnaQuestion(question, sessionUserId) ? 'font-bold text-[#00C471]' : ''}>
+                              {question.authorName}{isOwnQnaQuestion(question, sessionUserId) ? ' (나)' : ''} · {formatRelativeTime(question.createdAt)}
+                            </span>
+                            <span><i className="far fa-comment-dots mr-1" />{question.answerCount}</span>
+                          </div>
+                        </button>
+                      )
+                    })
+                  ) : (
+                    <EmptyState
+                      iconClassName="fas fa-comments"
+                      title="등록된 질문이 없습니다"
+                      description="이 강의에서 궁금한 점을 커뮤니티에 남겨 보세요."
+                    />
+                  )}
+                </div>
               </div>
 
               {/* 질문 등록 폼 */}
@@ -3242,7 +3232,7 @@ export default function LearningPlayerApp() {
                       <i className="fas fa-play-circle text-[#00C471]" />
                       {formatTime(currentTime)}
                     </span>
-                    <span className="truncate text-[11px] font-bold text-gray-600">{lesson.title}</span>
+                    <span className="truncate text-[11px] font-bold text-gray-600" title={lesson.title}>{lesson.title}</span>
                   </div>
                   <label className="ml-2 flex shrink-0 cursor-pointer items-center gap-1.5 text-[10px] font-bold text-gray-500">
                     <input
@@ -3332,6 +3322,7 @@ export default function LearningPlayerApp() {
                   <h3 className="text-sm font-bold text-gray-900">질문 상세</h3>
                 </div>
                 {activeQuestionSummary ? (
+                  <>
                   <div className="custom-scrollbar flex-1 overflow-y-auto bg-gray-50/50 p-6">
                     <div className="mb-8">
                       <div className="mb-3 flex items-start gap-2">
@@ -3389,7 +3380,7 @@ export default function LearningPlayerApp() {
                               <div className="relative flex-1 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                                 {answer.adopted ? (
                                   <div className="absolute -top-2.5 right-4 rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                                    채택 답변
+                                    지식공유자
                                   </div>
                                 ) : null}
                                 <div className="mb-2 flex items-center justify-between">
@@ -3408,6 +3399,21 @@ export default function LearningPlayerApp() {
                       </div>
                     </div>
                   </div>
+                  <div className="p-4 border-t border-gray-200 bg-white shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
+                    <div className="relative">
+                      <textarea
+                        className="w-full h-[52px] rounded-xl border border-gray-200 bg-gray-50 py-3 pl-4 pr-12 text-sm resize-none focus:outline-none focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
+                        placeholder="답변을 입력하세요..."
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-2 w-9 h-9 bg-[#00C471] text-white rounded-lg flex items-center justify-center transition hover:bg-green-600"
+                      >
+                        <i className="fas fa-paper-plane text-xs" />
+                      </button>
+                    </div>
+                  </div>
+                  </>
                 ) : null}
               </div>
             </div>
@@ -3560,10 +3566,10 @@ export default function LearningPlayerApp() {
 
       {/* ── Q&A 모달 ── */}
       {questionComposerOpen ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 px-4 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-[500px] overflow-hidden rounded-2xl bg-white text-gray-900 shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-[90%] max-w-[500px] overflow-hidden rounded-2xl bg-white text-gray-900 shadow-2xl transform transition-all">
             <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-6 py-4">
-              <h3 className="text-lg font-bold text-gray-800">새 질문 작성</h3>
+              <h3 className="text-lg font-bold text-gray-800">새로운 질문 작성</h3>
               <button
                 type="button"
                 onClick={() => setQuestionComposerOpen(false)}
@@ -3820,7 +3826,7 @@ export default function LearningPlayerApp() {
                     {assignmentForm.files.map((file) => (
                       <div key={`${file.name}-${file.size}`} className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-bold text-gray-800">{file.name}</div>
+                          <div className="truncate text-sm font-bold text-gray-800" title={file.name}>{file.name}</div>
                           <div className="text-[11px] text-gray-400">{Math.max(1, Math.round(file.size / 1024))} KB</div>
                         </div>
                         <button
@@ -4110,11 +4116,11 @@ export default function LearningPlayerApp() {
                 <span className="mb-2 inline-flex rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
                   섹션 퀴즈
                 </span>
-                <h2 id="learning-quiz-title" className="truncate text-xl font-semibold text-gray-900">
+                <h2 id="learning-quiz-title" className="truncate text-xl font-semibold text-gray-900" title={quizModalLesson.title}>
                   {quizModalLesson.title}
                 </h2>
                 {quizModalLesson.description ? (
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">{quizModalLesson.description}</p>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500" title={quizModalLesson.description}>{quizModalLesson.description}</p>
                 ) : null}
               </div>
               <div className="shrink-0 text-right">

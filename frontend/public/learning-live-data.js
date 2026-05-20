@@ -198,13 +198,93 @@
     }
   }
 
+  function getLessonKind(lesson) {
+    if (!lesson) return 'video';
+    const type = String(lesson.lessonType || '').toUpperCase();
+    const title = String(lesson.title || '').toLowerCase();
+    if (type === 'READING' && (title.includes('퀴즈') || title.includes('quiz'))) return 'quiz';
+    if (type === 'CODING' || lesson.assignment) return 'assignment';
+    return 'video';
+  }
+
+  function renderNonVideoCard(playerShell, kind) {
+    // 기존 비디오 중지
+    const existingVideo = playerShell.querySelector('video');
+    if (existingVideo) { existingVideo.pause(); existingVideo.src = ''; }
+
+    // 컨트롤 바 및 OCR 버튼 숨김
+    const controls = getControls();
+    if (controls) controls.style.display = 'none';
+    const ocrBtn = document.getElementById('ocr-region-btn');
+    if (ocrBtn) ocrBtn.closest('div')?.style && (ocrBtn.closest('div').style.display = 'none');
+
+    const isQuiz = kind === 'quiz';
+    const isAssignment = kind === 'assignment';
+    const icon = isQuiz ? 'fa-circle-question' : isAssignment ? 'fa-clipboard-check' : 'fa-video-slash';
+    const iconColor = isQuiz ? '#f59e0b' : isAssignment ? '#8b5cf6' : '#6b7280';
+    const iconBg = isQuiz ? 'rgba(245,158,11,0.15)' : isAssignment ? 'rgba(139,92,246,0.15)' : 'rgba(107,114,128,0.15)';
+    const title = isQuiz ? '섹션 퀴즈' : isAssignment ? '과제 제출' : '영상이 연결되지 않았습니다';
+    const desc = isQuiz
+      ? '이번 섹션의 핵심 내용을 확인합니다.<br>퀴즈를 완료하면 다음 강의로 이동할 수 있습니다.'
+      : isAssignment
+        ? '이번 강의의 실습 과제를 제출합니다.<br>제출 후 자동 채점 결과를 확인할 수 있습니다.'
+        : '이 강의에는 아직 재생 가능한 영상이 없습니다.';
+    const btnColor = isQuiz ? '#d97706' : '#7c3aed';
+    const btnLabel = isQuiz ? '퀴즈 시작하기' : isAssignment ? '과제 제출하기' : null;
+    const btnId = isQuiz ? 'quiz-start-btn' : isAssignment ? 'assignment-submit-btn' : null;
+
+    playerShell.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;padding:2rem;text-align:center;">
+        <div style="width:56px;height:56px;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem;">
+          <i class="fas ${icon}" style="font-size:1.5rem;color:${iconColor};"></i>
+        </div>
+        <h2 style="font-size:1.5rem;font-weight:600;color:#fff;margin-bottom:0.75rem;">${title}</h2>
+        <p style="font-size:0.875rem;color:rgba(255,255,255,0.6);line-height:1.75;">${desc}</p>
+        ${btnLabel ? `<button id="${btnId}" style="margin-top:1.5rem;padding:0.75rem 1.5rem;background:${btnColor};color:#fff;border:none;border-radius:0.5rem;font-size:0.875rem;font-weight:600;cursor:pointer;">${btnLabel}</button>` : ''}
+      </div>`;
+
+    if (btnId) {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.onclick = isQuiz
+          ? () => window._handleQuizStart && window._handleQuizStart(state.lesson)
+          : () => window._handleAssignmentSubmit && window._handleAssignmentSubmit(state.lesson);
+      }
+    }
+  }
+
+  function restorePlayerControls() {
+    const controls = getControls();
+    if (controls) controls.style.display = '';
+    const ocrBtn = document.getElementById('ocr-region-btn');
+    if (ocrBtn) ocrBtn.closest('div')?.style && (ocrBtn.closest('div').style.display = '');
+  }
+
+  window._handleQuizStart = function(lesson) {
+    alert('퀴즈 기능은 준비 중입니다.');
+  };
+
+  window._handleAssignmentSubmit = function(lesson) {
+    alert('과제 제출 기능은 준비 중입니다.');
+  };
+
   function renderMedia() {
     const playerShell = getPlayerShell();
     if (!playerShell || !state.lesson) {
       return;
     }
 
+    const kind = getLessonKind(state.lesson);
+    if (kind !== 'video') {
+      renderNonVideoCard(playerShell, kind);
+      return;
+    }
+
+    restorePlayerControls();
     const currentMedia = playerShell.querySelector('video, img');
+    if (currentMedia?.tagName === 'VIDEO') {
+      VIDEO_QUALITIES.forEach((quality) => currentMedia.removeAttribute(`data-quality-${quality}`));
+    }
     const videoSources = resolveVideoQualitySources();
     const activeQuality = getAvailableVideoQuality(state.videoQuality, videoSources);
     const videoUrl = activeQuality
@@ -218,7 +298,7 @@
         : document.createElement('video');
 
       if (video !== currentMedia && currentMedia) {
-        video.className = currentMedia.className || 'w-full h-full object-cover opacity-60';
+        video.className = currentMedia.className || 'w-full h-full object-contain';
         currentMedia.replaceWith(video);
       }
 
@@ -1389,13 +1469,24 @@
     const media = getMediaElement();
     const paused = !media || media.tagName !== 'VIDEO' || media.paused;
     const playerShell = getPlayerShell();
-    const centerIcon = playerShell?.querySelector('button.absolute i');
+    const centerBtn = playerShell?.querySelector('button.absolute');
+    const centerIcon = centerBtn?.querySelector('i');
     const controlIcon = getPlayPauseButton()?.querySelector('i');
 
     if (centerIcon) {
       centerIcon.className = paused
         ? 'far fa-play-circle text-7xl drop-shadow-lg'
         : 'far fa-pause-circle text-7xl drop-shadow-lg';
+    }
+
+    if (centerBtn) {
+      if (paused) {
+        centerBtn.classList.remove('opacity-0');
+        centerBtn.classList.add('opacity-100');
+      } else {
+        centerBtn.classList.remove('opacity-100');
+        centerBtn.classList.add('opacity-0');
+      }
     }
 
     if (controlIcon) {
