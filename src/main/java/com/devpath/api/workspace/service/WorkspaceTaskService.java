@@ -71,6 +71,12 @@ public class WorkspaceTaskService {
             .map(WorkspaceTaskResponse::from)
             .toList();
 
+    List<WorkspaceTaskResponse> inReview =
+        all.stream()
+            .filter(t -> t.getStatus() == WorkspaceTaskStatus.IN_REVIEW)
+            .map(WorkspaceTaskResponse::from)
+            .toList();
+
     List<WorkspaceTaskResponse> done =
         all.stream()
             .filter(t -> t.getStatus() == WorkspaceTaskStatus.DONE)
@@ -81,6 +87,7 @@ public class WorkspaceTaskService {
         .workspaceId(workspaceId)
         .todo(todo)
         .inProgress(inProgress)
+        .inReview(inReview)
         .done(done)
         .build();
   }

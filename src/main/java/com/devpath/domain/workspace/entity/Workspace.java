@@ -70,6 +70,11 @@ public class Workspace {
     this.status = WorkspaceStatus.ACTIVE;
   }
 
+  public void updateSettings(String name, String description) {
+    this.name = name;
+    this.description = description;
+  }
+
   public void delete() {
     this.isDeleted = true;
   }

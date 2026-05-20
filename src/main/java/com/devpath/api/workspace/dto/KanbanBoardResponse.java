@@ -16,5 +16,6 @@ public class KanbanBoardResponse {
   private Long workspaceId;
   private List<WorkspaceTaskResponse> todo;
   private List<WorkspaceTaskResponse> inProgress;
+  private List<WorkspaceTaskResponse> inReview;
   private List<WorkspaceTaskResponse> done;
 }

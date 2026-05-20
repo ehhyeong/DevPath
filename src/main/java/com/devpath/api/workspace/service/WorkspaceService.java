@@ -1,9 +1,11 @@
 package com.devpath.api.workspace.service;
 
+import com.devpath.api.workspace.dto.UpdateWorkspaceSettingsRequest;
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
 import com.devpath.api.workspace.dto.WorkspaceHubSummaryResponse;
 import com.devpath.api.workspace.dto.WorkspaceMemberResponse;
 import com.devpath.api.workspace.dto.WorkspaceResponse;
+import com.devpath.api.workspace.dto.WorkspaceSettingsResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.user.entity.User;
@@ -100,6 +102,50 @@ public class WorkspaceService {
         workspace, memberResponses, unresolvedTaskCount, activeMilestoneCount);
   }
 
+  public WorkspaceSettingsResponse getWorkspaceSettings(Long workspaceId, Long userId) {
+    Workspace workspace = getWorkspaceEntity(workspaceId);
+    validateMember(workspaceId, userId);
+
+    return buildWorkspaceSettingsResponse(workspace, userId);
+  }
+
+  @Transactional
+  public WorkspaceSettingsResponse updateWorkspaceSettings(
+      Long workspaceId, Long userId, UpdateWorkspaceSettingsRequest request) {
+    Workspace workspace = getWorkspaceEntity(workspaceId);
+    validateOwner(workspace, userId);
+
+    workspace.updateSettings(
+        request.getName().trim(), normalizeDescription(request.getDescription()));
+
+    return buildWorkspaceSettingsResponse(workspace, userId);
+  }
+
+  @Transactional
+  public WorkspaceSettingsResponse archiveWorkspace(Long workspaceId, Long userId) {
+    Workspace workspace = getWorkspaceEntity(workspaceId);
+    validateOwner(workspace, userId);
+    workspace.archive();
+
+    return buildWorkspaceSettingsResponse(workspace, userId);
+  }
+
+  @Transactional
+  public WorkspaceSettingsResponse restoreWorkspace(Long workspaceId, Long userId) {
+    Workspace workspace = getWorkspaceEntity(workspaceId);
+    validateOwner(workspace, userId);
+    workspace.restore();
+
+    return buildWorkspaceSettingsResponse(workspace, userId);
+  }
+
+  @Transactional
+  public void deleteWorkspace(Long workspaceId, Long userId) {
+    Workspace workspace = getWorkspaceEntity(workspaceId);
+    validateOwner(workspace, userId);
+    workspace.delete();
+  }
+
   public WorkspaceHubSummaryResponse getHubSummary(Long userId) {
     List<Long> workspaceIds = getWorkspaceIdsByMember(userId);
     long total = workspaceIds.size();
@@ -149,6 +195,13 @@ public class WorkspaceService {
         .toList();
   }
 
+  private WorkspaceSettingsResponse buildWorkspaceSettingsResponse(
+      Workspace workspace, Long viewerId) {
+    List<WorkspaceMemberResponse> memberResponses =
+        buildMemberResponses(workspaceMemberRepository.findAllByWorkspaceId(workspace.getId()));
+    return WorkspaceSettingsResponse.from(workspace, memberResponses, viewerId);
+  }
+
   private Workspace getWorkspaceEntity(Long workspaceId) {
     return workspaceRepository
         .findByIdAndIsDeletedFalse(workspaceId)
@@ -159,6 +212,22 @@ public class WorkspaceService {
     if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
       throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
     }
+  }
+
+  private void validateOwner(Workspace workspace, Long userId) {
+    validateMember(workspace.getId(), userId);
+    if (!workspace.getOwnerId().equals(userId)) {
+      throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
+    }
+  }
+
+  private String normalizeDescription(String description) {
+    if (description == null) {
+      return null;
+    }
+
+    String trimmed = description.trim();
+    return trimmed.isEmpty() ? null : trimmed;
   }
 
   private List<Long> getWorkspaceIdsByMember(Long userId) {
