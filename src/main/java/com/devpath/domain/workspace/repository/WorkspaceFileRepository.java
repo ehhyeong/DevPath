@@ -9,5 +9,15 @@ public interface WorkspaceFileRepository extends JpaRepository<WorkspaceFile, Lo
 
   Optional<WorkspaceFile> findByIdAndIsDeletedFalse(Long id);
 
+  Optional<WorkspaceFile> findByIdAndWorkspaceIdAndIsDeletedFalse(Long id, Long workspaceId);
+
   List<WorkspaceFile> findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(Long workspaceId);
+
+  List<WorkspaceFile> findAllByWorkspaceIdAndParentIdIsNullAndIsDeletedFalseOrderByCreatedAtDesc(
+      Long workspaceId);
+
+  List<WorkspaceFile> findAllByWorkspaceIdAndParentIdAndIsDeletedFalseOrderByCreatedAtDesc(
+      Long workspaceId, Long parentId);
+
+  List<WorkspaceFile> findAllByParentIdAndIsDeletedFalse(Long parentId);
 }

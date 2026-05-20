@@ -36,7 +36,7 @@ public class WorkspaceDocController {
 
   private final WorkspaceDocService workspaceDocService;
 
-  @PutMapping("/workspaces/{workspaceId}/erd")
+  @PutMapping("/workspaces/{workspaceId}/docs/erd")
   @Operation(summary = "ERD 문서 저장", description = "워크스페이스 ERD 문서를 저장합니다. 없으면 생성, 있으면 수정합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -56,7 +56,7 @@ public class WorkspaceDocController {
             workspaceId, requireUserId(userId), WorkspaceDocType.ERD, request));
   }
 
-  @GetMapping("/workspaces/{workspaceId}/erd")
+  @GetMapping("/workspaces/{workspaceId}/docs/erd")
   @Operation(summary = "ERD 문서 조회", description = "워크스페이스 ERD 문서를 조회합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(

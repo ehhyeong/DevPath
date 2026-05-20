@@ -3,6 +3,8 @@ package com.devpath.domain.workspace.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -14,6 +16,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
@@ -32,6 +35,9 @@ public class WorkspaceFile {
   @Column(name = "workspace_id", nullable = false)
   private Long workspaceId;
 
+  @Column(name = "parent_id")
+  private Long parentId;
+
   @Column(name = "original_file_name", nullable = false)
   private String originalFileName;
 
@@ -47,6 +53,18 @@ public class WorkspaceFile {
   @Column(name = "content_type")
   private String contentType;
 
+  @Builder.Default
+  @Enumerated(EnumType.STRING)
+  @Column(name = "item_type", nullable = false, length = 20)
+  private WorkspaceFileType itemType = WorkspaceFileType.FILE;
+
+  @Builder.Default
+  @Column(name = "storage_provider", nullable = false, length = 50)
+  private String storageProvider = "LOCAL";
+
+  @Column(name = "object_key", length = 1000)
+  private String objectKey;
+
   @Column(name = "uploaded_by_id", nullable = false)
   private Long uploadedById;
 
@@ -58,7 +76,19 @@ public class WorkspaceFile {
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
 
+  @LastModifiedDate
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
+
   public void delete() {
     this.isDeleted = true;
+  }
+
+  public void rename(String name) {
+    this.originalFileName = name;
+  }
+
+  public boolean isFolder() {
+    return this.itemType == WorkspaceFileType.FOLDER;
   }
 }

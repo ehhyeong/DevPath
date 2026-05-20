@@ -209,6 +209,7 @@ public enum ErrorCode {
   CALENDAR_EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "캘린더 이벤트를 찾을 수 없습니다."),
   CALENDAR_EVENT_FORBIDDEN(HttpStatus.FORBIDDEN, "캘린더 이벤트를 관리할 권한이 없습니다."),
   FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
+  FILE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "파일 크기가 허용된 최대 용량을 초과했습니다."),
   FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
   DOC_NOT_FOUND(HttpStatus.NOT_FOUND, "문서를 찾을 수 없습니다."),
   MEETING_NOTE_NOT_FOUND(HttpStatus.NOT_FOUND, "회의록을 찾을 수 없습니다."),
