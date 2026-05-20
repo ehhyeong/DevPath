@@ -243,3 +243,107 @@ WHERE EXISTS (
       AND column_name = 'is_deleted'
 )
   AND is_deleted IS NULL;
+
+-- Workspace team file room metadata and folder support.
+ALTER TABLE workspace_file
+    ADD COLUMN IF NOT EXISTS parent_id BIGINT;
+
+ALTER TABLE workspace_file
+    ADD COLUMN IF NOT EXISTS item_type VARCHAR(20);
+
+ALTER TABLE workspace_file
+    ADD COLUMN IF NOT EXISTS storage_provider VARCHAR(50);
+
+ALTER TABLE workspace_file
+    ADD COLUMN IF NOT EXISTS object_key VARCHAR(1000);
+
+ALTER TABLE workspace_file
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+
+UPDATE workspace_file
+SET item_type = 'FILE'
+WHERE item_type IS NULL;
+
+UPDATE workspace_file
+SET storage_provider = 'LOCAL'
+WHERE storage_provider IS NULL;
+
+UPDATE workspace_file
+SET updated_at = COALESCE(created_at, NOW())
+WHERE updated_at IS NULL;
+
+ALTER TABLE workspace_file
+    ALTER COLUMN item_type SET DEFAULT 'FILE';
+
+ALTER TABLE workspace_file
+    ALTER COLUMN item_type SET NOT NULL;
+
+ALTER TABLE workspace_file
+    ALTER COLUMN storage_provider SET DEFAULT 'LOCAL';
+
+ALTER TABLE workspace_file
+    ALTER COLUMN storage_provider SET NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_workspace_file_workspace_parent
+    ON workspace_file (workspace_id, parent_id, is_deleted, item_type, created_at DESC);
+
+DO $$
+BEGIN
+    IF to_regclass('public.voice_channels') IS NULL OR to_regclass('public.users') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.voice_channels
+        ADD COLUMN IF NOT EXISTS current_session_started_at TIMESTAMP;
+
+    CREATE TABLE IF NOT EXISTS public.voice_lobby_presence (
+        voice_lobby_presence_id BIGSERIAL PRIMARY KEY,
+        voice_channel_id BIGINT NOT NULL REFERENCES public.voice_channels(voice_channel_id),
+        user_id BIGINT NOT NULL REFERENCES public.users(user_id),
+        last_seen_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        CONSTRAINT uk_voice_lobby_presence_channel_user UNIQUE (voice_channel_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_voice_lobby_presence_channel_seen
+        ON public.voice_lobby_presence (voice_channel_id, last_seen_at);
+
+    CREATE TABLE IF NOT EXISTS public.voice_chat_messages (
+        voice_chat_message_id BIGSERIAL PRIMARY KEY,
+        voice_channel_id BIGINT NOT NULL REFERENCES public.voice_channels(voice_channel_id),
+        sender_id BIGINT NOT NULL REFERENCES public.users(user_id),
+        content TEXT NOT NULL,
+        is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_voice_chat_messages_channel_created
+        ON public.voice_chat_messages (voice_channel_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS public.voice_chat_clear_states (
+        voice_chat_clear_state_id BIGSERIAL PRIMARY KEY,
+        voice_channel_id BIGINT NOT NULL REFERENCES public.voice_channels(voice_channel_id),
+        user_id BIGINT NOT NULL REFERENCES public.users(user_id),
+        cleared_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        CONSTRAINT uk_voice_chat_clear_state_channel_user UNIQUE (voice_channel_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_voice_chat_clear_state_channel_user
+        ON public.voice_chat_clear_states (voice_channel_id, user_id);
+
+    CREATE TABLE IF NOT EXISTS public.voice_meeting_minutes (
+        voice_meeting_minutes_id BIGSERIAL PRIMARY KEY,
+        voice_channel_id BIGINT NOT NULL UNIQUE REFERENCES public.voice_channels(voice_channel_id),
+        updated_by_user_id BIGINT NOT NULL REFERENCES public.users(user_id),
+        recording BOOLEAN NOT NULL DEFAULT FALSE,
+        transcript TEXT,
+        summary TEXT,
+        is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+    );
+END $$;

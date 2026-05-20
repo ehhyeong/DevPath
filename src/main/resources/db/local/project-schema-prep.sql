@@ -53,6 +53,67 @@ BEGIN
     ALTER TABLE public.project ALTER COLUMN recruiting_status SET NOT NULL;
 END $$;
 ^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
+    IF to_regclass('public.voice_channels') IS NULL OR to_regclass('public.users') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.voice_channels
+        ADD COLUMN IF NOT EXISTS current_session_started_at timestamp;
+
+    CREATE TABLE IF NOT EXISTS public.voice_lobby_presence (
+        voice_lobby_presence_id bigserial PRIMARY KEY,
+        voice_channel_id bigint NOT NULL REFERENCES public.voice_channels(voice_channel_id),
+        user_id bigint NOT NULL REFERENCES public.users(user_id),
+        last_seen_at timestamp NOT NULL DEFAULT now(),
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now(),
+        CONSTRAINT uk_voice_lobby_presence_channel_user UNIQUE (voice_channel_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_voice_lobby_presence_channel_seen
+        ON public.voice_lobby_presence (voice_channel_id, last_seen_at);
+
+    CREATE TABLE IF NOT EXISTS public.voice_chat_messages (
+        voice_chat_message_id bigserial PRIMARY KEY,
+        voice_channel_id bigint NOT NULL REFERENCES public.voice_channels(voice_channel_id),
+        sender_id bigint NOT NULL REFERENCES public.users(user_id),
+        content text NOT NULL,
+        is_deleted boolean NOT NULL DEFAULT false,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_voice_chat_messages_channel_created
+        ON public.voice_chat_messages (voice_channel_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS public.voice_chat_clear_states (
+        voice_chat_clear_state_id bigserial PRIMARY KEY,
+        voice_channel_id bigint NOT NULL REFERENCES public.voice_channels(voice_channel_id),
+        user_id bigint NOT NULL REFERENCES public.users(user_id),
+        cleared_at timestamp NOT NULL DEFAULT now(),
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now(),
+        CONSTRAINT uk_voice_chat_clear_state_channel_user UNIQUE (voice_channel_id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_voice_chat_clear_state_channel_user
+        ON public.voice_chat_clear_states (voice_channel_id, user_id);
+
+    CREATE TABLE IF NOT EXISTS public.voice_meeting_minutes (
+        voice_meeting_minutes_id bigserial PRIMARY KEY,
+        voice_channel_id bigint NOT NULL UNIQUE REFERENCES public.voice_channels(voice_channel_id),
+        updated_by_user_id bigint NOT NULL REFERENCES public.users(user_id),
+        recording boolean NOT NULL DEFAULT false,
+        transcript text,
+        summary text,
+        is_deleted boolean NOT NULL DEFAULT false,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+    );
+END $$;
+^^^ END OF SCRIPT ^^^
 CREATE TABLE IF NOT EXISTS public.workspace_hub_project (
     id bigserial PRIMARY KEY,
     dom_id varchar(80) NOT NULL,
@@ -559,6 +620,142 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_workspace_hub_project_dom_id
 ^^^ END OF SCRIPT ^^^
 CREATE UNIQUE INDEX IF NOT EXISTS ux_workspace_hub_project_menu_id
     ON public.workspace_hub_project(menu_id);
+^^^ END OF SCRIPT ^^^
+CREATE TABLE IF NOT EXISTS public.workspace_code_reviews (
+    id bigserial PRIMARY KEY,
+    workspace_id bigint NOT NULL,
+    title varchar(180) NOT NULL,
+    description text,
+    pr_url varchar(1000),
+    file_path varchar(300) NOT NULL DEFAULT 'src/main/java/com/devpath/auth/AuthService.java',
+    diff_text text NOT NULL,
+    source_branch varchar(120) NOT NULL DEFAULT 'feature/manual-review',
+    target_branch varchar(120) NOT NULL DEFAULT 'main',
+    author_id bigint NOT NULL,
+    status varchar(20) NOT NULL DEFAULT 'OPEN',
+    additions integer NOT NULL DEFAULT 0,
+    deletions integer NOT NULL DEFAULT 0,
+    ai_code_review_id bigint,
+    is_deleted boolean NOT NULL DEFAULT false,
+    created_at timestamp NOT NULL DEFAULT now(),
+    updated_at timestamp NOT NULL DEFAULT now()
+);
+^^^ END OF SCRIPT ^^^
+CREATE INDEX IF NOT EXISTS ix_workspace_code_reviews_workspace
+    ON public.workspace_code_reviews(workspace_id, status, created_at DESC);
+^^^ END OF SCRIPT ^^^
+CREATE INDEX IF NOT EXISTS ix_workspace_code_reviews_ai
+    ON public.workspace_code_reviews(ai_code_review_id);
+^^^ END OF SCRIPT ^^^
+CREATE TABLE IF NOT EXISTS public.workspace_code_review_comments (
+    id bigserial PRIMARY KEY,
+    review_id bigint NOT NULL,
+    workspace_id bigint NOT NULL,
+    author_id bigint NOT NULL,
+    body text NOT NULL,
+    status_label varchar(50) NOT NULL DEFAULT 'Commented',
+    is_deleted boolean NOT NULL DEFAULT false,
+    created_at timestamp NOT NULL DEFAULT now(),
+    updated_at timestamp NOT NULL DEFAULT now()
+);
+^^^ END OF SCRIPT ^^^
+CREATE INDEX IF NOT EXISTS ix_workspace_code_review_comments_review
+    ON public.workspace_code_review_comments(workspace_id, review_id, created_at ASC);
+^^^ END OF SCRIPT ^^^
+CREATE TABLE IF NOT EXISTS public.workspace_erd_documents (
+    workspace_id bigint PRIMARY KEY,
+    mermaid_code text NOT NULL,
+    schema_json text NOT NULL,
+    version integer NOT NULL DEFAULT 1,
+    updated_by_id bigint,
+    created_at timestamp NOT NULL DEFAULT now(),
+    updated_at timestamp NOT NULL DEFAULT now()
+);
+^^^ END OF SCRIPT ^^^
+CREATE TABLE IF NOT EXISTS public.workspace_erd_versions (
+    version_id bigserial PRIMARY KEY,
+    workspace_id bigint NOT NULL,
+    version integer NOT NULL,
+    mermaid_code text NOT NULL,
+    schema_json text NOT NULL,
+    summary varchar(500),
+    updated_by_id bigint,
+    discussion_message_id bigint,
+    created_at timestamp NOT NULL DEFAULT now(),
+    CONSTRAINT workspace_erd_versions_unique UNIQUE (workspace_id, version)
+);
+^^^ END OF SCRIPT ^^^
+CREATE INDEX IF NOT EXISTS idx_workspace_erd_versions_workspace
+    ON public.workspace_erd_versions(workspace_id, version DESC);
+^^^ END OF SCRIPT ^^^
+CREATE TABLE IF NOT EXISTS public.workspace_erd_comments (
+    comment_id bigserial PRIMARY KEY,
+    workspace_id bigint NOT NULL,
+    target_type varchar(30) NOT NULL,
+    target_id varchar(200) NOT NULL,
+    target_label varchar(200),
+    author_id bigint NOT NULL,
+    body text NOT NULL,
+    is_deleted boolean NOT NULL DEFAULT false,
+    created_at timestamp NOT NULL DEFAULT now(),
+    updated_at timestamp NOT NULL DEFAULT now()
+);
+^^^ END OF SCRIPT ^^^
+CREATE INDEX IF NOT EXISTS idx_workspace_erd_comments_target
+    ON public.workspace_erd_comments(workspace_id, target_type, target_id, created_at ASC);
+^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
+    IF to_regclass('public.workspace_file') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.workspace_file ADD COLUMN IF NOT EXISTS parent_id bigint;
+    ALTER TABLE public.workspace_file ADD COLUMN IF NOT EXISTS item_type varchar(20);
+    ALTER TABLE public.workspace_file ADD COLUMN IF NOT EXISTS storage_provider varchar(50);
+    ALTER TABLE public.workspace_file ADD COLUMN IF NOT EXISTS object_key varchar(1000);
+    ALTER TABLE public.workspace_file ADD COLUMN IF NOT EXISTS updated_at timestamp;
+
+    UPDATE public.workspace_file
+       SET item_type = 'FILE'
+     WHERE item_type IS NULL;
+
+    UPDATE public.workspace_file
+       SET storage_provider = 'LOCAL'
+     WHERE storage_provider IS NULL;
+
+    UPDATE public.workspace_file
+       SET updated_at = COALESCE(created_at, now())
+     WHERE updated_at IS NULL;
+
+    ALTER TABLE public.workspace_file ALTER COLUMN item_type SET DEFAULT 'FILE';
+    ALTER TABLE public.workspace_file ALTER COLUMN item_type SET NOT NULL;
+    ALTER TABLE public.workspace_file ALTER COLUMN storage_provider SET DEFAULT 'LOCAL';
+    ALTER TABLE public.workspace_file ALTER COLUMN storage_provider SET NOT NULL;
+
+    CREATE INDEX IF NOT EXISTS idx_workspace_file_workspace_parent
+        ON public.workspace_file(workspace_id, parent_id, is_deleted, item_type, created_at DESC);
+END $$;
+^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
+    IF to_regclass('public.workspace_task') IS NULL THEN
+        RETURN;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'public.workspace_task'::regclass
+          AND conname = 'workspace_task_status_check'
+    ) THEN
+        ALTER TABLE public.workspace_task DROP CONSTRAINT workspace_task_status_check;
+    END IF;
+
+    ALTER TABLE public.workspace_task
+        ADD CONSTRAINT workspace_task_status_check
+        CHECK (status IN ('TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'));
+END $$;
 ^^^ END OF SCRIPT ^^^
 DO $$
 BEGIN
