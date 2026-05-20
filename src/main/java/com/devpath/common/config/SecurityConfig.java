@@ -54,6 +54,8 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/oauth2/**", "/login/oauth2/**")
                     .permitAll()
+                    .requestMatchers("/ws/voice-signaling")
+                    .permitAll()
                     // 공통 로드맵 조회 API는 누구나 접근 가능하도록 허용
                     .requestMatchers(HttpMethod.GET, "/api/roadmaps/**")
                     .permitAll()

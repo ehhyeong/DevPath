@@ -46,6 +46,10 @@ public class VoiceChannel {
   @Column(length = 500)
   private String description;
 
+  // 현재 진행 중인 회의 세션의 시작 시간이다. 아무도 접속 중이지 않으면 비어 있다.
+  @Column(name = "current_session_started_at")
+  private LocalDateTime currentSessionStartedAt;
+
   // 운영 이력 보존을 위해 물리 삭제 대신 논리 삭제를 사용한다.
   @Column(name = "is_deleted", nullable = false)
   private Boolean isDeleted;
@@ -72,5 +76,13 @@ public class VoiceChannel {
   // 보이스 채널을 논리 삭제한다.
   public void delete() {
     this.isDeleted = true;
+  }
+
+  public void startCurrentSession(LocalDateTime startedAt) {
+    this.currentSessionStartedAt = startedAt;
+  }
+
+  public void endCurrentSession() {
+    this.currentSessionStartedAt = null;
   }
 }

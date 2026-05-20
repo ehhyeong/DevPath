@@ -23,6 +23,11 @@ public interface VoiceParticipantRepository extends JpaRepository<VoiceParticipa
   List<VoiceParticipant> findAllByChannel_IdAndActiveTrueAndIsDeletedFalseOrderByJoinedAtAsc(
       Long channelId);
 
+  // 특정 채널에서 가장 먼저 입장해 아직 남아 있는 참가자를 조회한다.
+  @EntityGraph(attributePaths = {"channel", "channel.creator", "user"})
+  Optional<VoiceParticipant> findFirstByChannel_IdAndActiveTrueAndIsDeletedFalseOrderByJoinedAtAsc(
+      Long channelId);
+
   // 채널 목록 응답에서 현재 접속자 수를 계산한다.
   long countByChannel_IdAndActiveTrueAndIsDeletedFalse(Long channelId);
 }
