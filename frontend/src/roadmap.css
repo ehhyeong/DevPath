@@ -337,11 +337,13 @@
 .rule-pick { background: #eff6ff; color: #1e40af; border-color: #3b82f6; }
 
 /* ── 노드 내부 요소 ── */
-.node-header      { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-.node-title-group { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; }
+.node-header      { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; min-width: 0; }
+.node-title-group { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; font-size: 1.05rem; }
+.node-title-group i { flex: 0 0 auto; }
+.node-title-text  { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .node-desc        { font-size: 0.75rem; font-weight: 500; opacity: 0.7; margin-top: 4px; white-space: normal; overflow-wrap: anywhere; line-height: 1.4; }
-.meta-tag         { background: rgba(0,0,0,0.06); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: normal; }
-.node-meta        { display: flex; gap: 4px; margin-left: auto; }
+.meta-tag         { display: inline-flex; align-items: center; flex: 0 0 auto; background: rgba(0,0,0,0.06); padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: normal; line-height: 1.2; white-space: nowrap; }
+.node-meta        { display: flex; flex: 0 0 auto; gap: 4px; margin-left: auto; white-space: nowrap; }
 
 .progress-container  { width: 100%; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .node-progress-bg    { flex: 1; height: 6px; background: rgba(0,0,0,0.1); border-radius: 99px; overflow: hidden; }

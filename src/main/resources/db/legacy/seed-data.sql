@@ -17721,16 +17721,18 @@ INSERT INTO squad_members (
 SELECT
     9001,
     9001,
-    1,
+    learner.user_id,
     'LEADER',
     NOW(),
     FALSE,
     NULL
-WHERE NOT EXISTS (
+FROM users learner
+WHERE learner.email = 'learner@devpath.com'
+  AND NOT EXISTS (
     SELECT 1
     FROM squad_members
     WHERE squad_member_id = 9001
-       OR (squad_id = 9001 AND user_id = 1 AND is_deleted = FALSE)
+       OR (squad_id = 9001 AND user_id = learner.user_id AND is_deleted = FALSE)
 );
 
 INSERT INTO squad_members (
@@ -17745,16 +17747,48 @@ INSERT INTO squad_members (
 SELECT
     9002,
     9001,
-    2,
+    member.user_id,
     'MEMBER',
     NOW(),
     FALSE,
     NULL
-WHERE NOT EXISTS (
+FROM users member
+WHERE member.email = 'frontend@devpath.com'
+  AND NOT EXISTS (
     SELECT 1
     FROM squad_members
     WHERE squad_member_id = 9002
-       OR (squad_id = 9001 AND user_id = 2 AND is_deleted = FALSE)
+       OR (squad_id = 9001 AND user_id = member.user_id AND is_deleted = FALSE)
+);
+
+INSERT INTO workspace (
+    id,
+    owner_id,
+    name,
+    description,
+    type,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    9001,
+    owner.user_id,
+    'DevPath A Workspace',
+    'Workspace seed for A/C Swagger scenarios.',
+    'SQUAD',
+    'ACTIVE',
+    FALSE,
+    NOW(),
+    NOW()
+FROM users owner
+WHERE owner.email = 'learner@devpath.com'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM workspace
+    WHERE id = 9001
+       OR name = 'DevPath A Workspace'
 );
 
 -- 초대 목록 조회 테스트용 PENDING 초대
@@ -17774,7 +17808,7 @@ INSERT INTO squad_invitations (
 SELECT
     9001,
     9001,
-    1,
+    inviter.user_id,
     NULL,
     'invitee@example.com',
     'DevPath A Squad에 초대합니다.',
@@ -17783,7 +17817,9 @@ SELECT
     NULL,
     'PENDING',
     NOW()
-WHERE NOT EXISTS (
+FROM users inviter
+WHERE inviter.email = 'learner@devpath.com'
+  AND NOT EXISTS (
     SELECT 1
     FROM squad_invitations
     WHERE squad_invitation_id = 9001
@@ -17807,14 +17843,14 @@ INSERT INTO workspace_task (
 )
 SELECT
     9001,
-    1,
+    9001,
     'A Swagger 칸반 TODO',
     'GET /api/workspaces/{workspaceId}/tasks 테스트용 태스크',
     'TODO',
     'MEDIUM',
-    1,
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     CURRENT_DATE + 3,
-    1,
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     FALSE,
     NOW(),
     NOW()
@@ -17822,7 +17858,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM workspace_task
     WHERE id = 9001
-       OR (workspace_id = 1 AND title = 'A Swagger 칸반 TODO' AND is_deleted = FALSE)
+       OR (workspace_id = 9001 AND title = 'A Swagger 칸반 TODO' AND is_deleted = FALSE)
 );
 
 INSERT INTO workspace_task (
@@ -17841,14 +17877,14 @@ INSERT INTO workspace_task (
 )
 SELECT
     9002,
-    1,
+    9001,
     'A Swagger 칸반 진행 중',
     'PATCH /api/tasks/{taskId}/status 테스트용 태스크',
     'IN_PROGRESS',
     'HIGH',
-    2,
+    (SELECT user_id FROM users WHERE email = 'frontend@devpath.com'),
     CURRENT_DATE + 5,
-    1,
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     FALSE,
     NOW(),
     NOW()
@@ -17856,7 +17892,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM workspace_task
     WHERE id = 9002
-       OR (workspace_id = 1 AND title = 'A Swagger 칸반 진행 중' AND is_deleted = FALSE)
+       OR (workspace_id = 9001 AND title = 'A Swagger 칸반 진행 중' AND is_deleted = FALSE)
 );
 
 INSERT INTO workspace_task (
@@ -17875,14 +17911,14 @@ INSERT INTO workspace_task (
 )
 SELECT
     9003,
-    1,
+    9001,
     'A Swagger 칸반 완료',
     'PATCH /api/tasks/{taskId}/assignee 테스트용 태스크',
     'DONE',
     'LOW',
     NULL,
     CURRENT_DATE + 7,
-    1,
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     FALSE,
     NOW(),
     NOW()
@@ -17890,7 +17926,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM workspace_task
     WHERE id = 9003
-       OR (workspace_id = 1 AND title = 'A Swagger 칸반 완료' AND is_deleted = FALSE)
+       OR (workspace_id = 9001 AND title = 'A Swagger 칸반 완료' AND is_deleted = FALSE)
 );
 
 -- 포트폴리오 PDF 테스트용 포트폴리오
@@ -17907,7 +17943,7 @@ INSERT INTO portfolio (
 )
 SELECT
     9001,
-    1,
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     'DevPath A Portfolio',
     'A 기능 테스트용 포트폴리오입니다.',
     'a-seed-public-token-9001',
@@ -17961,7 +17997,7 @@ SELECT
     9001,
     9001,
     9001,
-    1,
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     '/uploads/portfolios/9001/portfolio-v1.pdf',
     '127.0.0.1',
     NOW()
@@ -17978,6 +18014,7 @@ WHERE NOT EXISTS (
 SELECT setval(pg_get_serial_sequence('squads', 'squad_id'), COALESCE((SELECT MAX(squad_id) FROM squads), 1));
 SELECT setval(pg_get_serial_sequence('squad_members', 'squad_member_id'), COALESCE((SELECT MAX(squad_member_id) FROM squad_members), 1));
 SELECT setval(pg_get_serial_sequence('squad_invitations', 'squad_invitation_id'), COALESCE((SELECT MAX(squad_invitation_id) FROM squad_invitations), 1));
+SELECT setval(pg_get_serial_sequence('workspace', 'id'), COALESCE((SELECT MAX(id) FROM workspace), 1));
 SELECT setval(pg_get_serial_sequence('workspace_task', 'id'), COALESCE((SELECT MAX(id) FROM workspace_task), 1));
 SELECT setval(pg_get_serial_sequence('portfolio', 'id'), COALESCE((SELECT MAX(id) FROM portfolio), 1));
 SELECT setval(pg_get_serial_sequence('portfolio_pdf_version', 'portfolio_pdf_version_id'), COALESCE((SELECT MAX(portfolio_pdf_version_id) FROM portfolio_pdf_version), 1));
@@ -17998,7 +18035,7 @@ INSERT INTO workspace_notice (
 )
 SELECT
     9001,
-    1,
+    9001,
     'C Swagger workspace notice',
     'Seed notice for Workspace Notice detail, update, delete, and read APIs.',
     FALSE,
@@ -18008,7 +18045,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM workspace_notice
     WHERE id = 9001
-       OR (workspace_id = 1 AND title = 'C Swagger workspace notice' AND is_deleted = FALSE)
+       OR (workspace_id = 9001 AND title = 'C Swagger workspace notice' AND is_deleted = FALSE)
 );
 
 INSERT INTO workspace_notice (
@@ -18022,7 +18059,7 @@ INSERT INTO workspace_notice (
 )
 SELECT
     9002,
-    1,
+    9001,
     'C Swagger unread workspace notice',
     'Seed notice that remains unread for unread list and count APIs.',
     FALSE,
@@ -18032,7 +18069,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM workspace_notice
     WHERE id = 9002
-       OR (workspace_id = 1 AND title = 'C Swagger unread workspace notice' AND is_deleted = FALSE)
+       OR (workspace_id = 9001 AND title = 'C Swagger unread workspace notice' AND is_deleted = FALSE)
 );
 
 INSERT INTO workspace_notice_read (
@@ -18044,9 +18081,9 @@ INSERT INTO workspace_notice_read (
 )
 SELECT
     9001,
-    1,
     9001,
-    1,
+    9001,
+    (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     NOW()
 WHERE EXISTS (
     SELECT 1
@@ -18057,7 +18094,7 @@ AND NOT EXISTS (
     SELECT 1
     FROM workspace_notice_read
     WHERE id = 9001
-       OR (notice_id = 9001 AND user_id = 1)
+       OR (notice_id = 9001 AND user_id = (SELECT user_id FROM users WHERE email = 'learner@devpath.com'))
 );
 
 INSERT INTO external_integration (
@@ -18071,7 +18108,7 @@ INSERT INTO external_integration (
 )
 SELECT
     9001,
-    1,
+    9001,
     'GITHUB',
     TRUE,
     NOW(),
@@ -18081,7 +18118,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM external_integration
     WHERE id = 9001
-       OR (workspace_id = 1 AND provider = 'GITHUB')
+       OR (workspace_id = 9001 AND provider = 'GITHUB')
 );
 
 INSERT INTO external_integration (
@@ -18095,7 +18132,7 @@ INSERT INTO external_integration (
 )
 SELECT
     9002,
-    1,
+    9001,
     'SLACK',
     FALSE,
     NULL,
@@ -18105,7 +18142,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM external_integration
     WHERE id = 9002
-       OR (workspace_id = 1 AND provider = 'SLACK')
+       OR (workspace_id = 9001 AND provider = 'SLACK')
 );
 
 INSERT INTO recommendation_settings (

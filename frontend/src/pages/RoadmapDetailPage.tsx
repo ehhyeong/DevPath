@@ -678,7 +678,7 @@ function RoadmapNodeCard({ node, proofCard, proofSide, pendingChange, badge, onN
           {isPendingNodeStatus(node.status) && (
             <i className="fas fa-circle" style={{ color: '#cbd5e1' }} />
           )}
-          <span>{node.title}</span>
+          <span className="node-title-text" title={node.title}>{node.title}</span>
         </div>
         {node.status === 'IN_PROGRESS' && (
           <div className="node-meta">
@@ -750,7 +750,7 @@ function GhostAddCard({ change, processing, badge, onApply, onIgnore }: GhostAdd
       <div className="node-header">
         <div className="node-title-group">
           <i className="fas fa-plus-circle text-blue-500" />
-          <span>{change.nodeTitle}</span>
+          <span className="node-title-text" title={change.nodeTitle}>{change.nodeTitle}</span>
         </div>
       </div>
       <div className="node-desc">{change.contextSummary || change.reason}</div>
@@ -1487,7 +1487,7 @@ function RoadmapSwitcherDropdown({
 
           <div className="border-t border-gray-100 px-3 py-2">
             <a
-              href="my-roadmap-list.html"
+              href="/my-roadmap-list"
               className="text-xs font-bold text-gray-500 hover:text-gray-700 flex items-center gap-1.5 transition"
             >
               <i className="fas fa-list text-[10px]" />
@@ -1564,6 +1564,7 @@ export default function RoadmapDetailPage() {
   const params = new URLSearchParams(window.location.search)
   const customRoadmapId = readPositiveNumberParam(params, 'id')
   const originalRoadmapId = readPositiveNumberParam(params, 'original')
+  const initialNodeId = readPositiveNumberParam(params, 'nodeId')
 
   const [session, setSession]       = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -1660,7 +1661,11 @@ export default function RoadmapDetailPage() {
               const data = await roadmapApi.copyRoadmap(originalRoadmapId)
               window.location.replace(`roadmap.html?id=${data.customRoadmapId}`)
             } catch (copyError) {
-              const isAlreadyExists = (copyError as any)?.status === 409
+              const isAlreadyExists =
+                typeof copyError === 'object'
+                && copyError !== null
+                && 'status' in copyError
+                && (copyError as { status?: unknown }).status === 409
               if (isAlreadyExists) {
                 // 이미 복사된 로드맵 → 확인 다이얼로그 표시
                 const list = await roadmapApi.getMyRoadmaps(ctrl.signal)
@@ -1708,6 +1713,11 @@ export default function RoadmapDetailPage() {
         setHistories(historiesData)
         setProofCards(proofCardsData)
         setMyRoadmaps(roadmapsData.roadmaps)
+        setDrawerNode(
+          initialNodeId
+            ? roadmapData.nodes.find((node) => node.customNodeId === initialNodeId && node.status !== 'LOCKED') ?? null
+            : null,
+        )
 
         if (changesData.length > 0) {
           setTimeout(() => setPanelOpen(true), 800)
@@ -1721,7 +1731,7 @@ export default function RoadmapDetailPage() {
       })
 
     return () => abortRef.current?.abort()
-  }, [customRoadmapId, originalRoadmapId, resetRoadmapPageState, session?.userId])
+  }, [customRoadmapId, initialNodeId, originalRoadmapId, resetRoadmapPageState, session?.userId])
 
   // ── 이벤트 핸들러 ────────────────────────────────────────────────────────────
 
@@ -1946,6 +1956,8 @@ export default function RoadmapDetailPage() {
     )
   }
 
+  const showLegacyHeader = false
+
   return (
     <div className="overflow-x-hidden text-gray-800">
 
@@ -1982,7 +1994,7 @@ export default function RoadmapDetailPage() {
         roadmaps={myRoadmaps}
       />
 
-      {false ? <header className="app-header">
+      {showLegacyHeader ? <header className="app-header">
         <div className="max-w-[1600px] mx-auto w-full px-6 h-full grid items-center gap-4" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
           {/* 왼쪽: 뒤로 + 로고 */}
           <div className="flex items-center gap-4 shrink-0">
