@@ -11,6 +11,7 @@ import {
   readStoredAuthSession,
 } from '../lib/auth-session'
 import { showAuthToast } from '../lib/auth-toast'
+import { useInternalPageScroll } from '../lib/useInternalPageScroll'
 import type { ProofCardSummary } from '../types/learner'
 import type {
   RoadmapDetail,
@@ -70,15 +71,27 @@ function inferHistoryChangeType(history: RecommendationChangeHistory): ChangeTyp
   return null
 }
 
-function getNodeBoxClass(status: NodeStatus, change?: RecommendationChange): string {
+function getNodeLessonProgressPercent(node: RoadmapNodeItem) {
+  const rate = node.lessonCompletionRate ?? 0
+  if (!Number.isFinite(rate)) return 0
+  if (rate <= 1) return Math.max(0, Math.min(100, Math.round(rate * 100)))
+  return Math.max(0, Math.min(100, Math.round(rate)))
+}
+
+function isNodeReadyToClear(node: RoadmapNodeItem) {
+  if (node.status === 'COMPLETED' || node.status === 'LOCKED') return false
+  return node.requiredTagsSatisfied || getNodeLessonProgressPercent(node) >= 100
+}
+
+function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): string {
   if (change) {
     if (change.nodeChangeType === 'ADD')    return 'node-box node-change-add'
     if (change.nodeChangeType === 'MODIFY') return 'node-box node-change-modify'
     if (change.nodeChangeType === 'DELETE') return 'node-box node-change-delete'
   }
-  if (status === 'COMPLETED')   return 'node-box status-done'
-  if (status === 'IN_PROGRESS') return 'node-box status-active'
-  if (status === 'LOCKED')      return 'node-box status-locked'
+  if (node.status === 'COMPLETED') return 'node-box status-done'
+  if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return 'node-box status-active'
+  if (node.status === 'LOCKED') return 'node-box status-locked'
   return 'node-box'  // PENDING/NOT_STARTED: 기본 스타일 (클릭 가능)
 }
 
@@ -628,6 +641,8 @@ interface RoadmapNodeCardProps {
 }
 
 function RoadmapNodeCard({ node, proofCard, proofSide, pendingChange, badge, onNodeClick }: RoadmapNodeCardProps) {
+  const readyToClear = isNodeReadyToClear(node)
+  const progressPercent = node.requiredTagsSatisfied ? 100 : getNodeLessonProgressPercent(node)
   const visibleBadge = badge ?? {
     label: '필수',
     background: '#ecfdf5',
@@ -649,7 +664,7 @@ function RoadmapNodeCard({ node, proofCard, proofSide, pendingChange, badge, onN
   }
 
   return (
-    <div className={getNodeBoxClass(node.status, pendingChange)} onClick={handleClick}>
+    <div className={getNodeBoxClass(node, pendingChange)} onClick={handleClick}>
       {pendingChange && <ChangeLabel change={pendingChange} />}
       {proofCard && node.status === 'COMPLETED' && (
         <ProofCardBadge card={proofCard} side={proofSide} />
@@ -672,10 +687,13 @@ function RoadmapNodeCard({ node, proofCard, proofSide, pendingChange, badge, onN
           {node.status === 'IN_PROGRESS' && (
             <i className="fas fa-spinner" style={{ color: '#eab308' }} />
           )}
+          {readyToClear && node.status !== 'IN_PROGRESS' && (
+            <i className="fas fa-circle-check" style={{ color: '#eab308' }} />
+          )}
           {node.status === 'LOCKED' && (
             <i className="fas fa-lock" style={{ color: '#94a3b8' }} />
           )}
-          {isPendingNodeStatus(node.status) && (
+          {isPendingNodeStatus(node.status) && !readyToClear && (
             <i className="fas fa-circle" style={{ color: '#cbd5e1' }} />
           )}
           <span className="node-title-text" title={node.title}>{node.title}</span>
@@ -685,7 +703,12 @@ function RoadmapNodeCard({ node, proofCard, proofSide, pendingChange, badge, onN
             <span className="meta-tag">진행중</span>
           </div>
         )}
-        {isPendingNodeStatus(node.status) && (
+        {readyToClear && node.status !== 'IN_PROGRESS' && (
+          <div className="node-meta">
+            <span className="meta-tag">완료가능</span>
+          </div>
+        )}
+        {isPendingNodeStatus(node.status) && !readyToClear && (
           <div className="node-meta">
             <span className="meta-tag">대기중</span>
           </div>
@@ -704,18 +727,18 @@ function RoadmapNodeCard({ node, proofCard, proofSide, pendingChange, badge, onN
           ))}
         </div>
       )}
-      {node.status === 'IN_PROGRESS' && (
+      {(node.status === 'IN_PROGRESS' || readyToClear) && (
         <div className="progress-container">
           <div className="node-progress-bg">
             <div
               className="node-progress-bar"
               style={{
-                width: `${node.requiredTagsSatisfied ? 100 : Math.round((node.lessonCompletionRate ?? 0) * 100)}%`,
+                width: `${progressPercent}%`,
               }}
             />
           </div>
           <span className="progress-pct">
-            {node.requiredTagsSatisfied ? '100%' : `${Math.round((node.lessonCompletionRate ?? 0) * 100)}%`}
+            {progressPercent}%
           </span>
         </div>
       )}
@@ -754,18 +777,18 @@ function GhostAddCard({ change, processing, badge, onApply, onIgnore }: GhostAdd
         </div>
       </div>
       <div className="node-desc">{change.contextSummary || change.reason}</div>
-      <div className="flex gap-2 mt-2">
+      <div className="mt-2 flex gap-1.5">
         <button
           disabled={processing}
           onClick={() => onApply(change.changeId)}
-          className="text-xs bg-blue-500 text-white px-3 py-1 rounded-lg font-bold hover:bg-blue-600 disabled:opacity-50"
+          className="rounded-md bg-blue-500 px-2.5 py-0.5 text-[11px] font-bold text-white hover:bg-blue-600 disabled:opacity-50"
         >
           추가 적용
         </button>
         <button
           disabled={processing}
           onClick={() => onIgnore(change.changeId)}
-          className="text-xs bg-white text-gray-500 px-3 py-1 rounded-lg font-bold border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
+          className="rounded-md border border-gray-300 bg-white px-2.5 py-0.5 text-[11px] font-bold text-gray-500 hover:bg-gray-100 disabled:opacity-50"
         >
           무시
         </button>
@@ -987,11 +1010,29 @@ function RoadmapGraph({
   )
 }
 
-function buildLectureListUrl(tags: string[]): string {
-  const query = tags.length > 0
-    ? `?tags=${encodeURIComponent(tags.join(','))}`
-    : ''
-  return `/lecture-list${query}`
+function buildRoadmapReturnHref(customRoadmapId: number, customNodeId?: number | null) {
+  const params = new URLSearchParams({ id: String(customRoadmapId) })
+  if (customNodeId) params.set('nodeId', String(customNodeId))
+  return `/roadmap?${params.toString()}`
+}
+
+function appendReturnTo(href: string, returnTo: string) {
+  const [path, query = ''] = href.split('?')
+  const params = new URLSearchParams(query)
+  params.set('returnTo', returnTo)
+  return `${path}?${params.toString()}`
+}
+
+function buildCourseDetailUrl(courseId: number, returnTo: string) {
+  return appendReturnTo(`/course-detail?courseId=${courseId}`, returnTo)
+}
+
+function buildLectureListUrl(tags: string[], returnTo?: string): string {
+  const params = new URLSearchParams()
+  if (tags.length > 0) params.set('tags', tags.join(','))
+  if (returnTo) params.set('returnTo', returnTo)
+  const query = params.toString()
+  return `/lecture-list${query ? `?${query}` : ''}`
 }
 
 interface NodeDrawerProps {
@@ -1037,7 +1078,8 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
 
   const canClear =
     (node.status === 'PENDING' || node.status === 'IN_PROGRESS')
-    && node.requiredTagsSatisfied === true
+    && isNodeReadyToClear(node)
+  const roadmapReturnHref = buildRoadmapReturnHref(customRoadmapId, node.customNodeId)
   const resources = node.resources ?? []
   const descriptionParagraphs = splitNodeDescription(node.content)
   const concepts = (node.subTopics ?? []).map(parseEssentialConcept).filter((concept) => concept.title.length > 0)
@@ -1139,12 +1181,12 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
                     try {
                       const courseId = await roadmapApi.getRecommendedFreeCourse(customRoadmapId, node.customNodeId)
                       if (courseId) {
-                        window.location.href = `/course-detail?courseId=${courseId}`
+                        window.location.href = buildCourseDetailUrl(courseId, roadmapReturnHref)
                       } else {
-                        window.location.href = buildLectureListUrl(node.requiredTags ?? [])
+                        window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
                       }
                     } catch {
-                      window.location.href = buildLectureListUrl(node.requiredTags ?? [])
+                      window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
                     }
                   }}
                   className="w-full bg-[#00c471] hover:bg-green-600 text-white py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
@@ -1155,7 +1197,7 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
               )
           )}
           <button
-            onClick={() => { window.location.href = buildLectureListUrl(node.requiredTags ?? []) }}
+            onClick={() => { window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref) }}
             className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
           >
             <i className="fas fa-list" /> 전체 강좌 목록 보기
@@ -1250,7 +1292,7 @@ function ChangesPanel({
               <div key={change.changeId} className={getChangeItemClass(change.nodeChangeType)}>
                 <div className="flex items-start gap-3">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full"
                     style={{
                       background:
                         change.nodeChangeType === 'ADD' ? '#dbeafe' :
@@ -1258,7 +1300,7 @@ function ChangesPanel({
                     }}
                   >
                     <i
-                      className={`fas ${changeTypeIcon(change.nodeChangeType)} text-sm`}
+                      className={`fas ${changeTypeIcon(change.nodeChangeType)} text-xs`}
                       style={{
                         color:
                           change.nodeChangeType === 'ADD' ? '#2563eb' :
@@ -1280,18 +1322,18 @@ function ChangesPanel({
                       )}
                     </h4>
                     <p className="text-xs text-gray-600 mb-3 line-clamp-2">{change.reason}</p>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <button
                         disabled={processing}
                         onClick={() => onApply(change.changeId)}
-                        className="text-xs bg-[#00c471] text-white px-3 py-1.5 rounded-lg font-bold hover:bg-green-600 transition disabled:opacity-50"
+                        className="inline-flex h-[18px] items-center justify-center rounded bg-[#00c471] px-1.5 text-[10px] font-bold leading-none text-white transition hover:bg-green-600 disabled:opacity-50"
                       >
                         적용
                       </button>
                       <button
                         disabled={processing}
                         onClick={() => onIgnore(change.changeId)}
-                        className="text-xs bg-white text-gray-600 px-3 py-1.5 rounded-lg font-bold border border-gray-300 hover:bg-gray-100 transition disabled:opacity-50"
+                        className="inline-flex h-[18px] items-center justify-center rounded border border-gray-300 bg-white px-1.5 text-[10px] font-bold leading-none text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
                       >
                         무시
                       </button>
@@ -1561,6 +1603,8 @@ function RoadmapPageToolbar({
 }
 
 export default function RoadmapDetailPage() {
+  useInternalPageScroll()
+
   const params = new URLSearchParams(window.location.search)
   const customRoadmapId = readPositiveNumberParam(params, 'id')
   const originalRoadmapId = readPositiveNumberParam(params, 'original')
@@ -1580,7 +1624,6 @@ export default function RoadmapDetailPage() {
   const [processing, setProcessing] = useState(false)
   const [drawerNode, setDrawerNode] = useState<RoadmapNodeItem | null>(null)
   const [myRoadmaps, setMyRoadmaps] = useState<MyRoadmapSummary[]>([])
-  const [existingRoadmapUrl, setExistingRoadmapUrl] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const resetRoadmapPageState = useCallback((options?: { keepRoadmap?: boolean }) => {
@@ -1667,12 +1710,11 @@ export default function RoadmapDetailPage() {
                 && 'status' in copyError
                 && (copyError as { status?: unknown }).status === 409
               if (isAlreadyExists) {
-                // 이미 복사된 로드맵 → 확인 다이얼로그 표시
+                // 이미 복사된 로드맵이면 안내 화면 없이 기존 로드맵으로 이동한다.
                 const list = await roadmapApi.getMyRoadmaps(ctrl.signal)
                 const existingRoadmap = findRoadmapByOriginalId(list.roadmaps, originalRoadmapId)
                 if (existingRoadmap) {
-        setExistingRoadmapUrl(`/roadmap?id=${existingRoadmap.customRoadmapId}`)
-                  setLoading(false)
+                  window.location.replace(`/roadmap?id=${existingRoadmap.customRoadmapId}`)
                 } else {
                   setError('이미 복사된 로드맵을 찾을 수 없습니다.')
                   setLoading(false)
@@ -1905,38 +1947,6 @@ export default function RoadmapDetailPage() {
     )
   }
 
-  if (existingRoadmapUrl) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="w-full max-w-sm rounded-3xl border border-gray-200 bg-white p-8 shadow-lg text-center">
-          <div className="mb-4 flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 mx-auto">
-            <i className="fas fa-route text-2xl text-[#00c471]" />
-          </div>
-          <h2 className="text-lg font-black text-gray-900">이미 진행 중인 로드맵입니다</h2>
-          <p className="mt-2 text-sm text-gray-500 leading-6">
-            이 로드맵의 복사본을 이미 보유하고 있습니다.<br />기존 로드맵으로 이동하시겠습니까?
-          </p>
-          <div className="mt-6 flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={() => window.location.replace(existingRoadmapUrl)}
-              className="rounded-2xl bg-[#00c471] px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-500"
-            >
-              기존 로드맵으로 이동
-            </button>
-            <button
-              type="button"
-              onClick={() => window.location.replace('/roadmap-hub')}
-              className="rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-            >
-              로드맵 허브로 돌아가기
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   if (!session) return <LoginRequiredView />
 
   if (error || !roadmap) {
@@ -1959,7 +1969,7 @@ export default function RoadmapDetailPage() {
   const showLegacyHeader = false
 
   return (
-    <div className="overflow-x-hidden text-gray-800">
+    <div className="roadmap-page text-gray-800">
 
       {/* ── 헤더 ──────────────────────────────────────────────────────────────── */}
       <SiteHeader
@@ -1968,6 +1978,12 @@ export default function RoadmapDetailPage() {
         onLogout={handleLogout}
         onLoginClick={() => openAuthModal('login')}
         activeNavHref="/roadmap-hub"
+        startOverlay={(
+          <a href="/roadmap-hub" className="roadmap-header-back-link pointer-events-auto" aria-label="로드맵 목록으로 돌아가기">
+            <i className="fas fa-arrow-left" />
+            <span>로드맵 목록</span>
+          </a>
+        )}
         endOverlay={(
           <div className="roadmap-header-metrics-shell">
             <div className="roadmap-header-metrics-shell__inner">
@@ -2105,7 +2121,7 @@ export default function RoadmapDetailPage() {
       />
 
       {/* ── 메인 콘텐츠 ───────────────────────────────────────────────────────── */}
-      <main className={`roadmap-main${panelOpen ? ' panel-open' : ''} relative pb-24 w-full min-h-screen`}>
+      <main className={`roadmap-main${panelOpen ? ' panel-open' : ''} relative w-full`}>
 
         {/* 로드맵 카테고리 라벨 (전환 드롭다운) */}
         <div className="roadmap-category-badge fixed left-8 z-[60]">
@@ -2117,7 +2133,7 @@ export default function RoadmapDetailPage() {
           />
         </div>
 
-        <div className="relative flex flex-col items-center w-full">
+        <div className="roadmap-content relative flex flex-col items-center w-full">
 
           {/* ── 정보 아코디언 ────────────────────────────────────────────────── */}
           <div className="w-full max-w-4xl px-4 mt-8 mb-16 relative z-20">

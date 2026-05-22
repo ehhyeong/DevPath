@@ -76,6 +76,19 @@ function readStudentPreviewReturnHref(courseId: number | null) {
   }
 }
 
+function readSafeReturnToFromLocation() {
+  const value = new URLSearchParams(window.location.search).get('returnTo')
+  if (!value) return null
+
+  try {
+    const nextUrl = new URL(value, window.location.origin)
+    if (nextUrl.origin !== window.location.origin) return null
+    return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
+  } catch {
+    return null
+  }
+}
+
 function syncAuthViewInLocation(view: AuthView | null) {
   const url = new URL(window.location.href)
   if (view) url.searchParams.set('auth', view)
@@ -131,6 +144,7 @@ export default function CourseDetailApp() {
   const courseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const isStudentPreview = useMemo(() => readStudentPreviewFromLocation(), [])
   const studentPreviewReturnHref = useMemo(() => readStudentPreviewReturnHref(courseId), [courseId])
+  const returnToHref = useMemo(() => readSafeReturnToFromLocation(), [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
@@ -161,8 +175,8 @@ export default function CourseDetailApp() {
   const instructor = displayCourse.instructor
   const previewLesson = useMemo(() => getPreviewLesson(displayCourse), [displayCourse])
   const learningHref = useMemo(
-    () => getLearningHref(displayCourse.courseId, previewLesson),
-    [displayCourse.courseId, previewLesson],
+    () => getLearningHref(displayCourse.courseId, previewLesson, returnToHref),
+    [displayCourse.courseId, previewLesson, returnToHref],
   )
   const instructorChannelHref = useMemo(
     () => buildInstructorChannelHref(instructor?.instructorId ?? null),

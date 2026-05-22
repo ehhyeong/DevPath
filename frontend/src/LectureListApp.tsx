@@ -33,6 +33,26 @@ function readNodeTagsFromLocation(): string[] {
   return raw ? raw.split(',').map(t => t.trim()).filter(Boolean) : []
 }
 
+function readSafeReturnToFromLocation() {
+  const value = new URLSearchParams(window.location.search).get('returnTo')
+  if (!value) return null
+
+  try {
+    const nextUrl = new URL(value, window.location.origin)
+    if (nextUrl.origin !== window.location.origin) return null
+    return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
+  } catch {
+    return null
+  }
+}
+
+function buildCourseDetailHref(courseId: number) {
+  const params = new URLSearchParams({ courseId: String(courseId) })
+  const returnTo = readSafeReturnToFromLocation()
+  if (returnTo) params.set('returnTo', returnTo)
+  return `/course-detail?${params.toString()}`
+}
+
 function syncAuthViewInLocation(view: AuthView | null) {
   const url = new URL(window.location.href)
   if (view) url.searchParams.set('auth', view)
@@ -326,7 +346,7 @@ export default function LectureListApp() {
       return
     }
 
-    window.location.href = `/course-detail?courseId=${courseId}`
+    window.location.href = buildCourseDetailHref(courseId)
   }
 
   async function handleToggleBookmark(courseId: number) {

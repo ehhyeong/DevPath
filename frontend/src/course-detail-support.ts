@@ -502,8 +502,9 @@ export function createQuestionSearchText(question: CourseQuestionItem) {
   return `${question.authorName} ${question.tag} ${question.title} ${question.body}`.toLowerCase()
 }
 
-export function getLearningHref(courseId: number, lesson: LearningLesson | null) {
+export function getLearningHref(courseId: number, lesson: LearningLesson | null, returnTo?: string | null) {
   const params = new URLSearchParams({ courseId: String(courseId) })
   if (lesson?.lessonId) params.set('lessonId', String(lesson.lessonId))
+  if (returnTo) params.set('returnTo', returnTo)
   return `/learning?${params.toString()}`
 }
