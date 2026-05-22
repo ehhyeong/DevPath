@@ -108,6 +108,7 @@ export default function LectureListApp() {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [nodeTagsFilter, setNodeTagsFilter] = useState<string[]>(() => readNodeTagsFromLocation())
   const [currentPage, setCurrentPage] = useState(1)
+  const scrollRegionRef = useRef<HTMLDivElement | null>(null)
   const listTopRef = useRef<HTMLDivElement | null>(null)
   const deferredSearchTerm = useDeferredValue(searchTerm.trim().toLowerCase())
 
@@ -316,7 +317,7 @@ export default function LectureListApp() {
 
   function handlePageChange(nextPage: number) {
     setCurrentPage(Math.min(totalPages, Math.max(1, nextPage)))
-    listTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    scrollRegionRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function handleCourseOpen(courseId: number) {
@@ -325,7 +326,7 @@ export default function LectureListApp() {
       return
     }
 
-    window.location.href = `course-detail.html?courseId=${courseId}`
+    window.location.href = `/course-detail?courseId=${courseId}`
   }
 
   async function handleToggleBookmark(courseId: number) {
@@ -368,18 +369,18 @@ export default function LectureListApp() {
         profileImage={profileImage}
         onLogout={handleLogout}
         onLoginClick={() => openAuthModal('login')}
-        activeNavHref="lecture-list.html"
+        activeNavHref="/lecture-list"
       />
 
-      <main className="app-main w-full bg-white pb-20">
-        <div className="sticky top-16 z-40 border-b border-gray-200 bg-white shadow-sm" onMouseLeave={() => setMegaMenuOpen(false)}>
+      <main className="lecture-list-page app-main w-full bg-white">
+        <div className="lecture-list-category-shell sticky top-16 z-40 border-b border-gray-200 bg-white shadow-sm" onMouseLeave={() => setMegaMenuOpen(false)}>
           <div className="mx-auto max-w-7xl px-6">
             {loadingCatalogMenu ? (
               <div className="flex h-20 items-center text-sm font-medium text-gray-400">강의 메뉴를 불러오는 중입니다.</div>
             ) : categoryConfigs.length > 0 ? (
               <div className="lecture-list-hide-scroll overflow-x-auto">
                 <div
-                  className="grid h-20 min-w-full text-sm"
+                  className="lecture-list-category-grid grid h-20 min-w-full text-sm"
                   style={{ gridTemplateColumns: `repeat(${categoryConfigs.length}, minmax(112px, 1fr))` }}
                 >
                   {categoryConfigs.map((category) => {
@@ -413,36 +414,43 @@ export default function LectureListApp() {
           </div>
 
           {megaMenuOpen && desktopMegaMenuCategories.length > 0 ? (
-            <div className="fixed top-[144px] left-0 right-0 z-50 hidden border-t border-gray-200 bg-white shadow-2xl xl:block">
+            <div className="lecture-mega-panel fixed top-[144px] left-0 right-0 z-50 hidden border-t border-gray-200 bg-white shadow-2xl xl:block">
               <div className="mx-auto max-w-7xl px-6">
                 <div
-                  className="grid min-h-[400px]"
-                  style={{ gridTemplateColumns: `240px repeat(${desktopMegaMenuCategories.length}, minmax(0, 1fr))` }}
+                  className="lecture-mega-grid grid min-h-[400px]"
+                  style={{ gridTemplateColumns: `repeat(${desktopMegaMenuCategories.length + 1}, minmax(0, 1fr))` }}
                 >
-                  <div className="flex flex-col justify-center border-r border-gray-100 bg-gray-50 px-8">
+                  <div className="lecture-mega-intro flex flex-col justify-center border-r border-gray-100 bg-gray-50 px-8">
                     <h3 className="mb-2 text-base font-bold text-gray-900">전체 카테고리</h3>
                     <p className="text-xs leading-relaxed text-gray-500">원하는 분야를 선택해보세요.</p>
                   </div>
 
                   {desktopMegaMenuCategories.map((category, index) => (
-                    <button
+                    <div
                       key={category.key}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleSelectCategory(category.key)}
-                      className={`flex h-full flex-col px-8 py-7 text-left ${index < desktopMegaMenuCategories.length - 1 ? 'border-r border-gray-100' : ''}`}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          handleSelectCategory(category.key)
+                        }
+                      }}
+                      className={`lecture-mega-column p-8 text-left ${index < desktopMegaMenuCategories.length - 1 ? 'border-r border-gray-100' : ''}`}
                     >
-                      <h3 className="mb-4 flex w-full items-center gap-2 border-b-2 border-gray-900 pb-2 text-[15px] font-bold text-gray-900">
+                      <h3 className="lecture-mega-title mb-4 flex w-full items-center gap-2 border-b-2 border-gray-900 pb-2 text-sm font-bold text-gray-900">
                         <i className={`${category.icon} text-brand`} />
                         {category.label}
                       </h3>
-                      <ul className="space-y-4 text-[15px] leading-[1.15] text-gray-600">
+                      <ul className="lecture-mega-list text-sm text-gray-600">
                         {category.megaMenuItems.map((item) => (
-                          <li key={`${category.key}-${item.label}`}>
-                            <span className="block transition hover:text-brand hover:font-bold">{item.label}</span>
+                          <li key={`${category.key}-${item.label}`} className="lecture-mega-item">
+                            <span className="lecture-mega-label block transition hover:text-brand hover:font-bold">{item.label}</span>
                           </li>
                         ))}
                       </ul>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -450,8 +458,10 @@ export default function LectureListApp() {
           ) : null}
         </div>
 
-        <div className="border-b border-gray-200 bg-gray-50 py-6 transition-all duration-300">
-          <div className="mx-auto max-w-7xl px-6">
+        <div ref={scrollRegionRef} className="lecture-list-scroll-region">
+          <div className="lecture-list-body-zoom pb-20">
+            <div className="lecture-filter-section border-b border-gray-200 bg-white py-6 transition-all duration-300">
+              <div className="mx-auto max-w-7xl px-6">
             {catalogMenuError ? (
               <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {catalogMenuError}
@@ -480,7 +490,7 @@ export default function LectureListApp() {
               </div>
             ) : null}
 
-            <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-6 md:flex-row">
+            <div className="lecture-filter-toolbar mt-6 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-6 md:flex-row">
               <div className="lecture-list-hide-scroll flex w-full items-center gap-3 overflow-x-auto md:w-auto">
                 <label className="lecture-filter-select-shell">
                   <select value={difficultyFilter} onChange={(event) => setDifficultyFilter(event.target.value as LectureDifficultyFilter)} className="lecture-filter-select">
@@ -501,24 +511,24 @@ export default function LectureListApp() {
                   </select>
                   <i className="fas fa-chevron-down lecture-filter-select-icon" />
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" checked={onlyFree} onChange={(event) => setOnlyFree(event.target.checked)} className="h-4 w-4 accent-[#00C471]" />
+                <label className="lecture-discount-filter flex items-center gap-2 text-sm text-gray-700">
+                  <input type="checkbox" checked={onlyFree} onChange={(event) => setOnlyFree(event.target.checked)} className="accent-[#00C471]" />
                   무료만 보기
                 </label>
               </div>
 
-              <div className="flex w-full items-center gap-3 md:w-auto">
+              <div className="lecture-search-sort-row flex w-full items-center gap-3 md:w-auto">
                 <div className="relative flex-1 md:w-64">
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     placeholder="강의명 검색"
-                    className="w-full rounded-lg border border-gray-300 py-2 pr-4 pl-9 text-sm"
+                    className="lecture-search-input w-full rounded-lg border border-gray-300 py-2 pr-4 pl-9 text-sm"
                   />
-                  <i className="fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+                  <i className="lecture-search-icon fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
                 </div>
-                <select value={sortKey} onChange={(event) => setSortKey(event.target.value as LectureSortKey)} className="bg-transparent text-sm font-bold text-gray-700">
+                <select value={sortKey} onChange={(event) => setSortKey(event.target.value as LectureSortKey)} className="lecture-sort-select bg-transparent text-sm font-bold text-gray-700">
                   <option value="recommended">추천순</option>
                   <option value="latest">최신순</option>
                   <option value="priceAsc">가격 낮은순</option>
@@ -683,12 +693,10 @@ export default function LectureListApp() {
               ) : null}
             </>
           ) : null}
+            </div>
+          </div>
         </div>
       </main>
-
-      <footer className="mt-auto border-t border-gray-200 bg-gray-50 pt-16 pb-8 text-center text-xs text-gray-400">
-        &copy; 2026 DevPath Inc. All rights reserved.
-      </footer>
 
       {toastMessage ? (
         <div className="fixed right-6 bottom-6 z-[1200] rounded-full bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-2xl">

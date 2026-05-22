@@ -12,7 +12,7 @@ import {
 
 const headerLinks = [
   { key: 'roadmap', href: '/roadmap-hub', label: '로드맵' },
-  { key: 'lecture', href: 'lecture-list.html', label: '강의' },
+  { key: 'lecture', href: '/lecture-list', label: '강의' },
   { key: 'project', href: 'lounge-dashboard.html', label: '프로젝트' },
   { key: 'jobMatching', href: '/job-matching', label: '채용분석' },
   { key: 'community', href: 'community-list.html', label: '커뮤니티' },
@@ -30,7 +30,7 @@ const headerMoveOffsets: Record<HeaderMoveKey, { x: number; y: number }> = {
 
 const serviceLinks = [
   { href: '/roadmap-hub', label: '로드맵' },
-  { href: 'lecture-list.html', label: '강의' },
+  { href: '/lecture-list', label: '강의' },
   { href: 'workspace-hub.html', label: '워크스페이스' },
   { href: '/job-matching', label: '채용 분석' },
 ]

@@ -173,7 +173,6 @@ export default function CourseDetailApp() {
   const newsCards = useMemo(() => buildCourseNewsCards(displayCourse), [displayCourse])
   const reviewStats = useMemo(() => buildReviewStats(reviews), [reviews])
   const headerOffsetTop = isStudentPreview ? STUDENT_PREVIEW_BANNER_HEIGHT_PX : 0
-  const stickyTabOffsetTop = APP_HEADER_HEIGHT_PX + headerOffsetTop
   const appMainStyle = headerOffsetTop
     ? { paddingTop: `${APP_HEADER_HEIGHT_PX + headerOffsetTop}px` }
     : undefined
@@ -515,11 +514,12 @@ export default function CourseDetailApp() {
         profileImage={profileImage}
         onLogout={handleLogout}
         onLoginClick={() => openAuthModal('login')}
-        activeNavHref="lecture-list.html"
+        activeNavHref="/lecture-list"
         offsetTopPx={headerOffsetTop}
       />
 
-      <div className="app-main bg-white" style={appMainStyle}>
+      <div className="course-detail-page app-main bg-white" style={appMainStyle}>
+        <div className="course-detail-body-zoom">
         {courseNotice ? (
           <div className="border-b border-amber-100 bg-amber-50 px-6 py-3 text-center text-sm font-semibold text-amber-700">
             {courseNotice}
@@ -606,7 +606,7 @@ export default function CourseDetailApp() {
 
         <section className="container mx-auto flex flex-col gap-12 px-6 py-12 lg:px-20 md:flex-row">
           <div className="flex-1">
-            <div className="sticky z-10 mb-8 flex border-b border-gray-200 bg-white" style={{ top: `${stickyTabOffsetTop}px` }}>
+            <div className="course-detail-tab-bar mb-8 flex border-b border-gray-200 bg-white">
               <button
                 type="button"
                 onClick={() => startTransition(() => setActiveTab('info'))}
@@ -693,7 +693,7 @@ export default function CourseDetailApp() {
                     {displayCourse.sections.map((section) => {
                       const opened = openSectionIds.includes(section.sectionId)
                       return (
-                        <div key={section.sectionId} className="overflow-hidden rounded-xl border border-gray-200">
+                        <div key={section.sectionId} className="course-detail-section-card overflow-hidden rounded-xl border border-gray-200">
                           <button
                             type="button"
                             onClick={() => toggleSection(section.sectionId)}
@@ -974,6 +974,7 @@ export default function CourseDetailApp() {
             ) : null}
           </div>
         </section>
+        </div>
       </div>
 
       {enrollModalOpen ? (

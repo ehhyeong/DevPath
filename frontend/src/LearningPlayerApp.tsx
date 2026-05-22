@@ -850,14 +850,14 @@ function toQuestionSummary(question: QnaQuestionDetail): QnaQuestionSummary {
   }
 }
 
-function EmptyState(props: { iconClassName: string; title: string; description: string }) {
+function EmptyState(props: { iconClassName: string; title: string; description: string; className?: string }) {
   return (
-    <div className="rounded-[24px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center shadow-sm">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+    <div className={`learning-empty-state rounded-[24px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center shadow-sm ${props.className ?? ''}`}>
+      <div className="learning-empty-state-icon mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
         <i className={props.iconClassName} />
       </div>
-      <h3 className="mt-4 text-sm font-semibold text-gray-900">{props.title}</h3>
-      <p className="mt-2 text-sm leading-6 text-gray-500">{props.description}</p>
+      <h3 className="learning-empty-state-title mt-4 text-sm font-semibold text-gray-900">{props.title}</h3>
+      <p className="learning-empty-state-description mt-2 text-sm leading-6 text-gray-500">{props.description}</p>
     </div>
   )
 }
@@ -883,7 +883,7 @@ function LoginRequiredView() {
           <a href="/home?auth=login" className="rounded-full bg-[#00c471] px-6 py-3 text-sm font-bold text-white">
             로그인 하기
           </a>
-          <a href="lecture-list.html" className="rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-white/80">
+          <a href="/lecture-list" className="rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-white/80">
             강의 목록으로
           </a>
         </div>
@@ -1180,8 +1180,8 @@ export default function LearningPlayerApp() {
     ? assignmentHistoryByAssignmentId[selectedLessonAssignment.assignmentId] ?? null
     : null
   const courseDetailHref = initialCourseId
-    ? `course-detail.html?courseId=${course?.courseId ?? initialCourseId}`
-    : 'lecture-list.html'
+    ? `/course-detail?courseId=${course?.courseId ?? initialCourseId}`
+    : '/lecture-list'
   const studentPreviewReturnHref = useMemo(
     () => readSafeReturnHref(courseDetailHref),
     [courseDetailHref],
@@ -2556,18 +2556,18 @@ export default function LearningPlayerApp() {
     <div className="learning-player-surface h-screen flex flex-col overflow-hidden">
 
       {/* 상단 헤더 */}
-      <header className="bg-gray-900 text-white h-14 flex items-center justify-between px-6 shrink-0 z-50 border-b border-gray-800">
-        <div className="flex items-center gap-4 min-w-0">
+      <header className="learning-player-top-header bg-gray-900 text-white h-14 flex items-center justify-between px-6 shrink-0 z-50 border-b border-gray-800">
+        <div className="learning-player-top-header-left flex items-center gap-4 min-w-0">
           <button
             type="button"
             onClick={() => window.location.assign(isStudentPreview ? studentPreviewReturnHref : courseDetailHref)}
-            className="text-gray-400 hover:text-white transition text-sm shrink-0"
+            className="learning-player-back-link text-gray-400 hover:text-white transition text-sm shrink-0"
           >
-            <i className="fas fa-chevron-left mr-2" />
+            <i className="learning-player-back-icon fas fa-chevron-left mr-2" />
             {isStudentPreview ? '질문 게시판으로 돌아가기' : '로드맵으로 돌아가기'}
           </button>
-          <div className="h-4 w-[1px] bg-gray-700 shrink-0" />
-          <span className="text-sm font-bold text-gray-100 truncate" title={lesson.title}>{lesson.title}</span>
+          <div className="learning-player-header-divider h-4 w-[1px] bg-gray-700 shrink-0" />
+          <span className="learning-player-header-title text-sm font-bold text-gray-100 truncate" title={lesson.title}>{lesson.title}</span>
         </div>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2 text-gray-400">
@@ -2605,7 +2605,7 @@ export default function LearningPlayerApp() {
           </div>
 
           {/* 영상 또는 빈 화면 */}
-          <div className="w-full h-full relative flex items-center justify-center bg-gray-900">
+          <div className="learning-player-video-stage w-full h-full relative flex items-center justify-center bg-gray-900">
             {hasVideoSource ? (
               <>
                 <video
@@ -2613,7 +2613,7 @@ export default function LearningPlayerApp() {
                   ref={videoRef}
                   src={resolvedVideoUrl ?? undefined}
                   poster={lesson.thumbnailUrl ?? course.thumbnailUrl ?? undefined}
-                  className="w-full h-full object-contain"
+                  className="learning-player-video-element w-full h-full object-cover"
                   playsInline
                   preload="auto"
                   onLoadedData={() => setVideoFailed(false)}
@@ -2710,7 +2710,7 @@ export default function LearningPlayerApp() {
                 >
                   <i className={`far ${isPlaying ? 'fa-pause-circle' : 'fa-play-circle'} text-7xl drop-shadow-lg`} />
                 </button>
-                <div className="absolute top-6 left-6 text-white/80 font-bold text-xl drop-shadow-md">
+                <div className="learning-player-video-title absolute top-6 left-6 text-white/80 font-bold text-xl drop-shadow-md">
                   {lesson.title}
                 </div>
               </>
@@ -2968,10 +2968,10 @@ export default function LearningPlayerApp() {
       </main>
 
       {/* ── 사이드바 (우 1/4) ── */}
-      <aside className="w-[400px] bg-white border-l border-gray-200 flex flex-col shrink-0 z-40 relative">
+      <aside className="learning-player-sidebar w-[400px] bg-white border-l border-gray-200 flex flex-col shrink-0 z-40 relative">
 
         {/* 탭 버튼 */}
-        <div className="flex border-b border-gray-200 shrink-0" id="tab-buttons">
+        <div className="learning-player-tab-buttons flex border-b border-gray-200 shrink-0" id="tab-buttons">
           {(['curriculum', 'qna', 'notes'] as const).map((key) => (
             <button
               key={key}
@@ -2981,8 +2981,8 @@ export default function LearningPlayerApp() {
                 if (key !== 'qna') setOpenQuestionId(null)
               }}
               className={activeTab === key
-                ? 'tab-btn flex-1 py-4 text-sm font-bold text-[#00C471] border-b-2 border-[#00C471] bg-green-50/50 transition'
-                : 'tab-btn flex-1 py-4 text-sm font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent transition'}
+                ? 'learning-player-tab-button is-active tab-btn flex-1 py-4 text-sm font-bold text-[#00C471] border-b-2 border-[#00C471] bg-green-50/50 transition'
+                : 'learning-player-tab-button tab-btn flex-1 py-4 text-sm font-medium text-gray-500 hover:text-gray-800 border-b-2 border-transparent transition'}
             >
               {key === 'curriculum' ? '커리큘럼' : key === 'qna' ? 'Q&A' : '노트'}
             </button>
@@ -2990,7 +2990,7 @@ export default function LearningPlayerApp() {
         </div>
 
         {/* 탭 콘텐츠 */}
-        <div className="flex-1 overflow-hidden relative bg-gray-50/30 flex flex-col">
+        <div className="learning-player-tab-panel-shell flex-1 overflow-hidden relative bg-gray-50/30 flex flex-col">
           {loadingLesson ? (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/70">
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#00C471] border-t-transparent" />
@@ -2999,7 +2999,7 @@ export default function LearningPlayerApp() {
 
           {/* 커리큘럼 탭 */}
           {activeTab === 'curriculum' ? (
-            <div className="tab-content h-full overflow-y-auto custom-scrollbar p-4 animate-fade-in">
+            <div className="learning-player-tab-content learning-curriculum-panel tab-content h-full overflow-y-auto custom-scrollbar p-4 animate-fade-in">
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                 {course.sections.map((section, sectionIndex) => {
                   const sectionIsActive = section.lessons.some((item) => item.lessonId === lesson.lessonId)
@@ -3135,23 +3135,23 @@ export default function LearningPlayerApp() {
 
           {/* Q&A 탭 */}
           {activeTab === 'qna' ? (
-            <div className="tab-content block h-full relative overflow-hidden">
-              <div className="absolute inset-0 flex flex-col p-6 overflow-y-auto custom-scrollbar bg-gray-50/30 transition-transform duration-300">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="font-bold text-gray-900 text-lg">질문 및 답변</h3>
-                  <span className="text-sm text-gray-500">총 {visibleQuestions.length}개</span>
+            <div className="learning-player-tab-content learning-qna-panel tab-content block h-full relative overflow-hidden">
+              <div className="learning-qna-list-view absolute inset-0 flex flex-col p-6 overflow-y-auto custom-scrollbar bg-gray-50/30 transition-transform duration-300">
+                <div className="learning-qna-list-header mb-4 flex items-center justify-between">
+                  <h3 className="learning-qna-list-title font-bold text-gray-900 text-lg">질문 및 답변</h3>
+                  <span className="learning-qna-total-count text-sm text-gray-500">총 {visibleQuestions.length}개</span>
                 </div>
-                <div className="relative mb-4 shrink-0">
+                <div className="learning-qna-search-wrap relative mb-4 shrink-0">
                   <input
                     type="text"
                     value={qnaSearch}
                     onChange={(event) => setQnaSearch(event.target.value)}
-                    className="w-full border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
+                    className="learning-qna-search-input w-full border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
                     placeholder="궁금한 내용을 검색해보세요."
                   />
-                  <i className="fas fa-search absolute left-3.5 top-3.5 text-gray-400" />
+                  <i className="learning-qna-search-icon fas fa-search absolute left-3.5 top-3.5 text-gray-400" />
                 </div>
-                <div className="flex gap-2 mb-6 overflow-x-auto custom-scrollbar pb-1 shrink-0">
+                <div className="learning-qna-filter-row flex gap-2 mb-6 overflow-x-auto custom-scrollbar pb-1 shrink-0">
                   {([
                     ['ALL', '전체 질문'],
                     ['MINE', '내 질문'],
@@ -3162,15 +3162,15 @@ export default function LearningPlayerApp() {
                       type="button"
                       onClick={() => setQnaStatusFilter(value)}
                       className={qnaStatusFilter === value
-                        ? 'qna-filter-btn px-3.5 py-1.5 text-xs font-bold rounded-full bg-gray-900 text-white transition shrink-0'
-                        : 'qna-filter-btn px-3.5 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition shrink-0'}
+                        ? 'learning-qna-filter-button is-active qna-filter-btn px-3.5 py-1.5 text-xs font-bold rounded-full bg-gray-900 text-white transition shrink-0'
+                        : 'learning-qna-filter-button qna-filter-btn px-3.5 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition shrink-0'}
                     >
                       {label}
                     </button>
                   ))}
                 </div>
 
-                <div className="space-y-3 pb-20">
+                <div className="learning-qna-items space-y-3 pb-20">
                   {qnaError ? (
                     <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-600">
                       {qnaError}
@@ -3219,6 +3219,7 @@ export default function LearningPlayerApp() {
                       iconClassName="fas fa-comments"
                       title="등록된 질문이 없습니다"
                       description="이 강의에서 궁금한 점을 커뮤니티에 남겨 보세요."
+                      className="learning-qna-empty-state"
                     />
                   )}
                 </div>
@@ -3421,35 +3422,35 @@ export default function LearningPlayerApp() {
 
           {/* 노트 탭 */}
           {activeTab === 'notes' ? (
-            <div className="tab-content h-full overflow-y-auto custom-scrollbar p-6 animate-fade-in">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-gray-900 text-lg">내 노트</h3>
+            <div className="learning-player-tab-content learning-note-panel tab-content h-full overflow-y-auto custom-scrollbar p-6 animate-fade-in">
+              <div className="learning-note-header flex justify-between items-center mb-6">
+                <h3 className="learning-note-title font-bold text-gray-900 text-lg">내 노트</h3>
                 <button
                   type="button"
                   onClick={() => setNoteComposerOpen((current) => !current)}
-                  className="text-[#00C471] hover:text-green-600 text-sm font-bold transition flex items-center"
+                  className="learning-note-add-button text-[#00C471] hover:text-green-600 text-sm font-bold transition flex items-center"
                 >
                   <i className="fas fa-plus mr-1" />
                   새 노트
                 </button>
               </div>
               {noteComposerOpen ? (
-                <div className="bg-white border border-[#00C471] rounded-xl p-4 shadow-sm mb-6 animate-fade-in-up">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="bg-green-100 text-[#00C471] text-xs font-bold px-2 py-1 rounded">{formatTime(currentTime)}</span>
-                    <span className="text-xs text-gray-500">현재 재생 시간에 추가됩니다.</span>
+                <div className="learning-note-composer bg-white border border-[#00C471] rounded-xl p-4 shadow-sm mb-6 animate-fade-in-up">
+                  <div className="learning-note-composer-meta flex items-center gap-2 mb-3">
+                    <span className="learning-note-composer-time bg-green-100 text-[#00C471] text-xs font-bold px-2 py-1 rounded">{formatTime(currentTime)}</span>
+                    <span className="learning-note-composer-help text-xs text-gray-500">현재 재생 시간에 추가됩니다.</span>
                   </div>
                   <textarea
                     value={noteContent}
                     onChange={(event) => setNoteContent(event.target.value)}
-                    className="w-full h-24 p-3 border border-gray-200 rounded-lg text-sm mb-3 focus:outline-none focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471] resize-none"
+                    className="learning-note-composer-textarea w-full h-24 p-3 border border-gray-200 rounded-lg text-sm mb-3 focus:outline-none focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471] resize-none"
                     placeholder="강의를 들으며 중요한 점을 메모해보세요."
                   />
-                  <div className="flex justify-end gap-2">
+                  <div className="learning-note-composer-actions flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => setNoteComposerOpen(false)}
-                      className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                      className="learning-note-composer-cancel px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
                     >
                       취소
                     </button>
@@ -3457,7 +3458,7 @@ export default function LearningPlayerApp() {
                       type="button"
                       onClick={() => void handleSaveNote()}
                       disabled={!noteContent.trim()}
-                      className="px-4 py-2 text-sm font-bold text-white bg-[#00C471] rounded-lg hover:bg-green-600 shadow-sm transition disabled:cursor-not-allowed disabled:bg-emerald-300"
+                      className="learning-note-composer-save px-4 py-2 text-sm font-bold text-white bg-[#00C471] rounded-lg hover:bg-green-600 shadow-sm transition disabled:cursor-not-allowed disabled:bg-emerald-300"
                     >
                       저장하기
                     </button>
@@ -3471,27 +3472,27 @@ export default function LearningPlayerApp() {
                 </p>
               </div>
 
-              <div className="space-y-4 pb-20">
+              <div className="learning-note-list space-y-4 pb-20">
                 {sortedNotes.length ? (
                   sortedNotes.map((note) => (
-                    <div key={note.noteId} className="p-4 border border-gray-200 bg-white shadow-sm rounded-xl hover:border-gray-300 transition">
+                    <div key={note.noteId} className="learning-note-card p-4 border border-gray-200 bg-white shadow-sm rounded-xl hover:border-gray-300 transition">
                       <div className="flex justify-between items-center mb-2">
                         <button
                           type="button"
                           onClick={() => handleSeek(note.seekSecond ?? note.timestampSecond)}
-                          className="text-xs text-[#00C471] font-bold bg-green-50 px-2 py-1 rounded cursor-pointer hover:bg-green-100"
+                          className="learning-note-card-time text-xs text-[#00C471] font-bold bg-green-50 px-2 py-1 rounded cursor-pointer hover:bg-green-100"
                         >
                           <i className="fas fa-play mr-1" />
                           {note.timestampLabel || formatTime(note.timestampSecond)}
                         </button>
-                        <div className="flex gap-2 text-gray-400">
+                        <div className="learning-note-card-actions flex gap-3 text-gray-400">
                           <button
                             type="button"
                             onClick={() => {
                               setOpenNoteId(note.noteId)
                               setEditingNoteContent(note.content)
                             }}
-                            className="hover:text-gray-600"
+                            className="learning-note-card-action hover:text-gray-600"
                             aria-label="노트 수정"
                           >
                             <i className="fas fa-pen text-xs" />
@@ -3499,23 +3500,35 @@ export default function LearningPlayerApp() {
                           <button
                             type="button"
                             onClick={() => void handleDeleteNote(note)}
-                            className="hover:text-red-400"
+                            className="learning-note-card-action hover:text-red-400"
                             aria-label="노트 삭제"
                           >
                             <i className="fas fa-trash text-xs" />
                           </button>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{note.content}</p>
+                      <p className="learning-note-card-content text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{note.content}</p>
                     </div>
                   ))
-                ) : (
-                  <EmptyState
-                    iconClassName="fas fa-note-sticky"
-                    title="저장된 노트가 없습니다"
-                    description="시청 중 중요한 내용을 메모하면 여기서 다시 확인할 수 있습니다."
-                  />
-                )}
+                ) : !noteComposerOpen ? (
+                  <div className="learning-note-empty-state animate-fade-in">
+                    <div className="learning-note-empty-icon">
+                      <i className="far fa-file-alt" />
+                    </div>
+                    <h3 className="learning-note-empty-title">작성된 강의 노트가 없습니다</h3>
+                    <p className="learning-note-empty-description">
+                      강의를 시청하면서 중요하거나 나중에 다시 보고 싶은 핵심 내용들을 실시간으로 기록해보세요.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setNoteComposerOpen(true)}
+                      className="learning-note-empty-button"
+                    >
+                      <i className="fas fa-plus" />
+                      현재 시간에 노트 추가
+                    </button>
+                  </div>
+                ) : null}
               </div>
 
               {/* 노트 작성 영역 */}
@@ -3549,15 +3562,15 @@ export default function LearningPlayerApp() {
             </div>
           ) : null}
         </div>
-        <div className={`absolute bottom-0 left-0 w-full p-4 border-t border-gray-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 transition-transform duration-300 ${
+        <div className={`learning-qna-bottom-question-bar absolute bottom-0 left-0 w-full p-4 border-t border-gray-200 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20 transition-transform duration-300 ${
           activeQuestionSummary ? 'translate-y-full pointer-events-none' : 'translate-y-0'
         }`}>
           <button
             type="button"
             onClick={() => setQuestionComposerOpen(true)}
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-xl font-bold text-sm transition shadow-md hover:shadow-lg transform active:scale-95 flex justify-center items-center gap-2"
+            className="learning-qna-bottom-question-button w-full bg-gray-900 hover:bg-gray-800 text-white py-3.5 rounded-xl font-bold text-sm transition shadow-md hover:shadow-lg transform active:scale-95 flex justify-center items-center gap-2"
           >
-            <i className="far fa-comment-dots" /> 커뮤니티에 질문하기
+            <i className="learning-qna-bottom-question-icon far fa-comment-dots" /> 커뮤니티에 질문하기
           </button>
         </div>
       </aside>
@@ -3566,31 +3579,31 @@ export default function LearningPlayerApp() {
 
       {/* ── Q&A 모달 ── */}
       {questionComposerOpen ? (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="w-[90%] max-w-[500px] overflow-hidden rounded-2xl bg-white text-gray-900 shadow-2xl transform transition-all">
-            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-6 py-4">
-              <h3 className="text-lg font-bold text-gray-800">새로운 질문 작성</h3>
+        <div className="learning-question-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="learning-question-modal-panel w-[90%] max-w-[500px] overflow-hidden rounded-2xl bg-white text-gray-900 shadow-2xl transform transition-all">
+            <div className="learning-question-modal-header flex items-center justify-between border-b border-gray-100 bg-gray-50 px-6 py-4">
+              <h3 className="learning-question-modal-title text-lg font-bold text-gray-800">새로운 질문 작성</h3>
               <button
                 type="button"
                 onClick={() => setQuestionComposerOpen(false)}
-                className="text-gray-400 transition hover:text-gray-600"
+                className="learning-question-modal-close text-gray-400 transition hover:text-gray-600"
                 aria-label="질문 작성 닫기"
               >
                 <i className="fas fa-times text-lg" />
               </button>
             </div>
-            <div className="p-6">
-              <div className="mb-4">
-                <label className="mb-1 block text-sm font-medium text-gray-700">제목</label>
+            <div className="learning-question-modal-body p-6">
+              <div className="learning-question-modal-field mb-4">
+                <label className="learning-question-modal-label mb-1 block text-sm font-medium text-gray-700">제목</label>
                 <input
                   type="text"
                   value={questionForm.title}
                   onChange={(event) => setQuestionForm((current) => ({ ...current, title: event.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 p-2.5 text-sm outline-none transition focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
+                  className="learning-question-modal-input w-full rounded-lg border border-gray-300 p-2.5 text-sm outline-none transition focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
                   placeholder="질문 제목을 입력하세요"
                 />
               </div>
-              {templateOptions.length > 1 ? (
+              {false && templateOptions.length > 1 ? (
                 <div className="mb-4 grid grid-cols-2 gap-2">
                   <select
                     value={questionForm.templateType}
@@ -3614,35 +3627,35 @@ export default function LearningPlayerApp() {
                   </select>
                 </div>
               ) : null}
-              <div className="mb-2">
-                <label className="mb-1 block text-sm font-medium text-gray-700">내용</label>
+              <div className="learning-question-modal-field mb-2">
+                <label className="learning-question-modal-label mb-1 block text-sm font-medium text-gray-700">내용</label>
                 <textarea
                   value={questionForm.content}
                   onChange={(event) => setQuestionForm((current) => ({ ...current, content: event.target.value }))}
-                  className="h-32 w-full resize-none rounded-lg border border-gray-300 p-2.5 text-sm outline-none transition focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
-                  placeholder="이해가 안 되는 부분을 구체적으로 적어주세요"
+                  className="learning-question-modal-textarea h-32 w-full resize-none rounded-lg border border-gray-300 p-2.5 text-sm outline-none transition focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
+                  placeholder="어떤 부분이 이해가 안 되시나요? 구체적으로 적어주시면 더 좋은 답변을 받을 수 있습니다."
                 />
               </div>
-              <label className="mb-4 flex cursor-pointer items-center gap-2 rounded bg-gray-50 p-2 text-sm text-gray-500">
+              <label className="learning-question-modal-attach mb-6 flex cursor-pointer items-center gap-2 rounded bg-gray-50 p-2 text-sm text-gray-500">
                 <input
                   type="checkbox"
                   checked={questionForm.attachTimestamp}
                   onChange={(event) => setQuestionForm((current) => ({ ...current, attachTimestamp: event.target.checked }))}
-                  className="rounded border-gray-300 accent-[#00C471]"
+                  className="learning-question-modal-checkbox rounded border-gray-300 accent-[#00C471]"
                 />
                 현재 재생 시간({formatTime(currentTime)}) 첨부하기
               </label>
-              {selectedTemplate?.description ? (
-                <p className="mb-3 text-xs leading-5 text-gray-500">{selectedTemplate.description}</p>
+              {false && selectedTemplate?.description ? (
+                <p className="mb-3 text-xs leading-5 text-gray-500">{selectedTemplate?.description}</p>
               ) : null}
               {questionMessage ? (
-                <p className="mb-3 text-xs font-medium text-gray-500">{questionMessage}</p>
+                <p className="learning-question-modal-message mb-3 text-xs font-medium text-gray-500">{questionMessage}</p>
               ) : null}
-              <div className="flex justify-end gap-3">
+              <div className="learning-question-modal-actions flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setQuestionComposerOpen(false)}
-                  className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                  className="learning-question-modal-cancel rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
                 >
                   취소
                 </button>
@@ -3650,7 +3663,7 @@ export default function LearningPlayerApp() {
                   type="button"
                   onClick={() => void handleSubmitQuestion()}
                   disabled={questionBusy || !templateOptions.length}
-                  className="rounded-lg bg-[#00C471] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                  className="learning-question-modal-submit rounded-lg bg-[#00C471] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
                 >
                   {questionBusy ? '등록 중...' : '등록하기'}
                 </button>
@@ -4229,78 +4242,60 @@ export default function LearningPlayerApp() {
       {/* ── 노트 모달 ── */}
       {activeNote ? (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4 backdrop-blur-[2px]"
+          className="learning-note-edit-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-sm animate-fade-in"
           onClick={() => { setOpenNoteId(null); setEditingNoteContent('') }}
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="learning-note-edit-modal-panel bg-white rounded-2xl w-[90%] max-w-[450px] shadow-2xl overflow-hidden transform transition-all"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-5 py-4">
-              <h3 className="text-sm font-bold text-gray-800">
-                <i className="fas fa-pen mr-1 text-[#00C471]" /> 노트 보기 및 수정
-              </h3>
+            <div className="learning-note-edit-modal-header px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="learning-note-edit-modal-title text-base font-bold text-gray-800">강의 노트 수정</h3>
               <button
                 type="button"
                 onClick={() => { setOpenNoteId(null); setEditingNoteContent('') }}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900"
+                className="learning-note-edit-modal-close text-gray-400 hover:text-gray-600 transition"
               >
-                <i className="fas fa-times" />
+                <i className="fas fa-times text-lg" />
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => handleSeek(activeNote.seekSecond ?? activeNote.timestampSecond)}
-                  className="flex items-center gap-1.5 rounded border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-bold text-gray-600 shadow-sm transition hover:bg-gray-100"
-                >
-                  <i className="fas fa-play-circle text-[#00C471]" />
-                  {activeNote.timestampLabel || formatTime(activeNote.timestampSecond)} 영상 이동
-                </button>
-                <span className="text-[10px] font-medium text-gray-400">
-                  최종 수정: {formatDateLabel(activeNote.updatedAt ?? activeNote.createdAt)}
+            <div className="learning-note-edit-modal-body p-6">
+              <div className="learning-note-edit-modal-meta flex items-center gap-2 mb-3">
+                <span className="learning-note-edit-modal-time bg-green-100 text-[#00C471] text-xs font-bold px-2 py-1 rounded">
+                  {activeNote.timestampLabel || formatTime(activeNote.timestampSecond)}
                 </span>
+                <span className="learning-note-edit-modal-help text-xs text-gray-500">해당 시간에 작성한 메모 내용을 수정합니다.</span>
               </div>
 
-              <textarea
-                rows={8}
-                value={editingNoteContent}
-                onChange={(event) => setEditingNoteContent(event.target.value)}
-                className="w-full resize-none rounded-xl border border-gray-200 p-4 text-sm leading-relaxed text-gray-700 outline-none transition focus:border-[#00C471] focus:ring-2 focus:ring-green-100 shadow-inner"
-              />
+              <div className="learning-note-edit-modal-field mb-4">
+                <textarea
+                  value={editingNoteContent}
+                  onChange={(event) => setEditingNoteContent(event.target.value)}
+                  className="learning-note-edit-modal-textarea w-full h-32 border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471] resize-none"
+                  placeholder="수정할 내용을 입력하세요."
+                />
+              </div>
 
               {noteMessage ? (
-                <p className="text-[11px] font-medium text-gray-500">{noteMessage}</p>
+                <p className="learning-note-edit-modal-message text-[11px] font-medium text-gray-500">{noteMessage}</p>
               ) : null}
 
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    void handleDeleteNote(activeNote)
-                    setOpenNoteId(null)
-                    setEditingNoteContent('')
-                  }}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100"
-                >
-                  삭제
-                </button>
+              <div className="learning-note-edit-modal-actions flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => { setOpenNoteId(null); setEditingNoteContent('') }}
-                  className="rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-600 shadow-sm transition hover:bg-gray-50"
+                  className="learning-note-edit-modal-cancel px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                 >
-                  닫기
+                  취소
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleUpdateNote()}
                   disabled={!editingNoteContent.trim()}
-                  className="rounded-lg bg-gray-900 px-4 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-300"
+                  className="learning-note-edit-modal-submit px-4 py-2.5 text-sm font-bold text-white bg-[#00C471] rounded-lg hover:bg-green-600 transition shadow-md disabled:cursor-not-allowed disabled:bg-emerald-300"
                 >
-                  변경사항 저장
+                  수정완료
                 </button>
               </div>
             </div>

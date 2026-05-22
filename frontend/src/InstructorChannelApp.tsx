@@ -291,7 +291,7 @@ export default function InstructorChannelApp() {
   }
 
   function handleOpenCourse(courseId: number) {
-    window.location.href = `course-detail.html?courseId=${courseId}`
+    window.location.href = `/course-detail?courseId=${courseId}`
   }
 
   function handleToggleBookmark(courseId: number) {
@@ -444,76 +444,78 @@ export default function InstructorChannelApp() {
         onLoginClick={() => setAuthView('login')}
       />
 
-      <main className="app-main pb-20">
-        {channelNotice ? (
-          <div className="border-b border-amber-100 bg-amber-50 px-6 py-3 text-center text-sm font-semibold text-amber-700">
-            {channelNotice}
-          </div>
-        ) : null}
+      <main className="instructor-channel-page app-main pb-20">
+        <div className="instructor-channel-body-zoom">
+          {channelNotice ? (
+            <div className="border-b border-amber-100 bg-amber-50 px-6 py-3 text-center text-sm font-semibold text-amber-700">
+              {channelNotice}
+            </div>
+          ) : null}
 
-        <ChannelHero
-          channel={channel}
-          bannerImageUrl={bannerImageUrl}
-          youtubeUrl={youtubeUrl}
-          lectureCount={lectureCount}
-          reviewAverage={reviewSummary.average}
-          subscribed={subscribed}
-          subscriptionBusy={subscriptionBusy}
-          isOwnChannel={isOwnChannel}
-          editChannelHref={editChannelHref}
-          activeTab={activeTab}
-          tabs={channelTabs}
-          onTabChange={setActiveTab}
-          onToggleSubscribe={() => void handleToggleSubscribe()}
-        />
+          <ChannelHero
+            channel={channel}
+            bannerImageUrl={bannerImageUrl}
+            youtubeUrl={youtubeUrl}
+            lectureCount={lectureCount}
+            reviewAverage={reviewSummary.average}
+            subscribed={subscribed}
+            subscriptionBusy={subscriptionBusy}
+            isOwnChannel={isOwnChannel}
+            editChannelHref={editChannelHref}
+            activeTab={activeTab}
+            tabs={channelTabs}
+            onTabChange={setActiveTab}
+            onToggleSubscribe={() => void handleToggleSubscribe()}
+          />
 
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className={activeTab === 'home' ? 'block animate-fade-in' : 'hidden'}>
-            <HomeTab
-              channel={channel}
-              careers={careers}
-              notices={notices}
-              spotlightCourse={spotlightCourse}
-              onOpenCourse={handleOpenCourse}
-            />
-          </div>
+          <div className="mx-auto max-w-7xl px-6 py-8">
+            <div className={activeTab === 'home' ? 'block animate-fade-in' : 'hidden'}>
+              <HomeTab
+                channel={channel}
+                careers={careers}
+                notices={notices}
+                spotlightCourse={spotlightCourse}
+                onOpenCourse={handleOpenCourse}
+              />
+            </div>
 
-          <div className={activeTab === 'playlist' ? 'block animate-fade-in' : 'hidden'}>
-            <PlaylistTab
-              playlistFilter={playlistFilter}
-              sections={filteredPlaylistSections}
-              bookmarkedCourseIds={bookmarkedCourseIds}
-              onFilterChange={setPlaylistFilter}
-              onOpenCourse={handleOpenCourse}
-              onToggleBookmark={handleToggleBookmark}
-            />
-          </div>
+            <div className={activeTab === 'playlist' ? 'block animate-fade-in' : 'hidden'}>
+              <PlaylistTab
+                playlistFilter={playlistFilter}
+                sections={filteredPlaylistSections}
+                bookmarkedCourseIds={bookmarkedCourseIds}
+                onFilterChange={setPlaylistFilter}
+                onOpenCourse={handleOpenCourse}
+                onToggleBookmark={handleToggleBookmark}
+              />
+            </div>
 
-          <div className={activeTab === 'community' ? 'block animate-fade-in' : 'hidden'}>
-            <CommunityTab
-              posts={filteredCommunityPosts}
-              communityFilter={communityFilter}
-              communitySort={communitySort}
-              filterOptions={communityFilterOptions}
-              onFilterChange={setCommunityFilter}
-              onSortChange={setCommunitySort}
-              onWrite={handleOpenWriteModal}
-              onOpenPost={handleOpenPost}
-            />
-          </div>
+            <div className={activeTab === 'community' ? 'block animate-fade-in' : 'hidden'}>
+              <CommunityTab
+                posts={filteredCommunityPosts}
+                communityFilter={communityFilter}
+                communitySort={communitySort}
+                filterOptions={communityFilterOptions}
+                onFilterChange={setCommunityFilter}
+                onSortChange={setCommunitySort}
+                onWrite={handleOpenWriteModal}
+                onOpenPost={handleOpenPost}
+              />
+            </div>
 
-          <div className={activeTab === 'reviews' ? 'block animate-fade-in' : 'hidden'}>
-            <ReviewsTab
-              visibleReviews={visibleReviews}
-              reviewSummary={reviewSummary}
-              reviewFilter={reviewFilter}
-              reviewLectureFilter={reviewLectureFilter}
-              reviewSort={reviewSort}
-              filterOptions={reviewFilterOptions}
-              onFilterChange={setReviewFilter}
-              onLectureChange={setReviewLectureFilter}
-              onSortChange={setReviewSort}
-            />
+            <div className={activeTab === 'reviews' ? 'block animate-fade-in' : 'hidden'}>
+              <ReviewsTab
+                visibleReviews={visibleReviews}
+                reviewSummary={reviewSummary}
+                reviewFilter={reviewFilter}
+                reviewLectureFilter={reviewLectureFilter}
+                reviewSort={reviewSort}
+                filterOptions={reviewFilterOptions}
+                onFilterChange={setReviewFilter}
+                onLectureChange={setReviewLectureFilter}
+                onSortChange={setReviewSort}
+              />
+            </div>
           </div>
         </div>
       </main>
@@ -843,7 +845,7 @@ function PlaylistTab({
               <h3 className="text-xl font-extrabold text-gray-900">{section.emojiTitle}</h3>
               <p className="mt-1 text-sm text-gray-500">{section.description}</p>
             </div>
-            <a href="lecture-list.html" className="text-sm font-bold text-brand hover:underline">모두 보기</a>
+            <a href="/lecture-list" className="text-sm font-bold text-brand hover:underline">모두 보기</a>
           </div>
           <div className="playlist-scroll">
             {section.courses.map((course) => (
