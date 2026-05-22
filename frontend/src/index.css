@@ -1090,6 +1090,10 @@ aside:hover .sidebar-text {
   cursor: pointer;
 }
 
+.lecture-mega-intro p {
+  white-space: nowrap;
+}
+
 .lecture-mega-title {
   min-width: 0;
   height: 30px;
