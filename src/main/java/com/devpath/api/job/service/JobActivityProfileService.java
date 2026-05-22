@@ -6,19 +6,10 @@ import com.devpath.domain.learning.entity.proof.ProofCardStatus;
 import com.devpath.domain.learning.entity.proof.ProofCardTag;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
-import com.devpath.domain.project.entity.Project;
-import com.devpath.domain.project.entity.ProjectMember;
-import com.devpath.domain.project.entity.ProjectRoleType;
-import com.devpath.domain.project.entity.ProjectType;
-import com.devpath.domain.project.repository.ProjectMemberRepository;
-import com.devpath.domain.project.repository.ProjectRepository;
-import com.devpath.domain.squad.entity.SquadMember;
-import com.devpath.domain.squad.repository.SquadMemberRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
-import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
@@ -27,7 +18,6 @@ import java.math.RoundingMode;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -68,25 +58,9 @@ public class JobActivityProfileService {
           new SkillKeyword("MLOps", List.of("mlops")),
           new SkillKeyword("Figma", List.of("figma")));
 
-  private static final Map<ProjectRoleType, List<String>> ROLE_SKILLS =
-      Map.of(
-          ProjectRoleType.LEADER,
-          List.of("Project Management"),
-          ProjectRoleType.FRONTEND,
-          List.of("FE", "React", "TypeScript"),
-          ProjectRoleType.BACKEND,
-          List.of("BE", "Java", "Spring Boot"),
-          ProjectRoleType.DESIGNER,
-          List.of("UI/UX", "Figma"),
-          ProjectRoleType.FULLSTACK,
-          List.of("FE", "BE", "React", "Spring Boot"));
-
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceTaskRepository workspaceTaskRepository;
-  private final ProjectMemberRepository projectMemberRepository;
-  private final ProjectRepository projectRepository;
-  private final SquadMemberRepository squadMemberRepository;
   private final ProofCardRepository proofCardRepository;
   private final ProofCardTagRepository proofCardTagRepository;
   private final UserRepository userRepository;
@@ -119,41 +93,18 @@ public class JobActivityProfileService {
             .distinct()
             .toList();
 
-    List<Workspace> squadWorkspaces =
+    List<Workspace> workspaceProjects =
         workspaceIds.isEmpty()
             ? List.of()
-            : workspaceRepository.findAllByIdInAndTypeAndIsDeletedFalseOrderByCreatedAtDesc(
-                workspaceIds, WorkspaceType.SQUAD);
+            : workspaceRepository.findAllByIdInAndIsDeletedFalseOrderByCreatedAtDesc(workspaceIds);
 
-    List<Long> squadWorkspaceIds = squadWorkspaces.stream().map(Workspace::getId).toList();
+    List<Long> workspaceProjectIds = workspaceProjects.stream().map(Workspace::getId).toList();
     List<WorkspaceTask> completedTasks =
-        squadWorkspaceIds.isEmpty()
+        workspaceProjectIds.isEmpty()
             ? List.of()
             : workspaceTaskRepository
                 .findAllByWorkspaceIdInAndAssigneeIdAndStatusAndIsDeletedFalseOrderByUpdatedAtDesc(
-                    squadWorkspaceIds, userId, WorkspaceTaskStatus.DONE);
-
-    List<ProjectMember> projectMembers =
-        projectMemberRepository.findAllByLearnerIdOrderByJoinedAtDesc(userId);
-    List<Long> projectIds =
-        projectMembers.stream()
-            .map(ProjectMember::getProjectId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-    List<Project> squadProjects =
-        projectIds.isEmpty()
-            ? List.of()
-            : projectRepository.findAllByIdInAndIsDeletedFalseOrderByCreatedAtDesc(projectIds)
-                .stream()
-                .filter(project -> project.getProjectType() == ProjectType.SQUAD)
-                .toList();
-
-    List<SquadMember> squadMembers =
-        userRepository
-            .findById(userId)
-            .map(squadMemberRepository::findActiveMembershipsByUser)
-            .orElseGet(List::of);
+                    workspaceProjectIds, userId, WorkspaceTaskStatus.DONE);
 
     List<ProofCard> proofCards =
         proofCardRepository.findAllByUserIdAndStatusOrderByIssuedAtDesc(
@@ -166,17 +117,14 @@ public class JobActivityProfileService {
                 proofCardIds);
 
     return new ActivityData(
-        squadWorkspaces, completedTasks, projectMembers, squadProjects, squadMembers, proofCards,
-        proofCardTags);
+        workspaceProjects, completedTasks, proofCards, proofCardTags);
   }
 
   private Set<String> extractSkillSignals(ActivityData activityData) {
     LinkedHashSet<String> skills = new LinkedHashSet<>();
 
-    activityData.squadWorkspaces().forEach(workspace -> addWorkspaceSkills(skills, workspace));
+    activityData.workspaceProjects().forEach(workspace -> addWorkspaceSkills(skills, workspace));
     activityData.completedTasks().forEach(task -> addTaskSkills(skills, task));
-    addProjectSkills(skills, activityData.projectMembers(), activityData.squadProjects());
-    activityData.squadMembers().forEach(member -> addSquadSkills(skills, member));
     addProofCardSkills(skills, activityData.proofCards(), activityData.proofCardTags());
 
     return skills.stream()
@@ -193,40 +141,6 @@ public class JobActivityProfileService {
   private void addTaskSkills(Set<String> skills, WorkspaceTask task) {
     addKnownSkills(skills, task.getTitle());
     addKnownSkills(skills, task.getDescription());
-  }
-
-  private void addProjectSkills(
-      Set<String> skills, List<ProjectMember> projectMembers, List<Project> projects) {
-    Map<Long, ProjectMember> memberByProjectId =
-        projectMembers.stream()
-            .filter(member -> member.getProjectId() != null)
-            .collect(
-                java.util.stream.Collectors.toMap(
-                    ProjectMember::getProjectId, member -> member, (left, right) -> left));
-
-    for (Project project : projects) {
-      addKnownSkills(skills, project.getName());
-      addKnownSkills(skills, project.getDescription());
-      addKnownSkills(skills, project.getIntro());
-
-      ProjectMember member = memberByProjectId.get(project.getId());
-      if (member != null && member.getRoleType() != null) {
-        ROLE_SKILLS
-            .getOrDefault(member.getRoleType(), List.of())
-            .forEach(skill -> addSkill(skills, skill));
-      }
-    }
-  }
-
-  private void addSquadSkills(Set<String> skills, SquadMember member) {
-    if (member.getRole() != null) {
-      addKnownSkills(skills, member.getRole().name());
-    }
-
-    addKnownSkills(skills, member.getSquad().getName());
-    addKnownSkills(skills, member.getSquad().getDescription());
-    addDelimitedSkills(skills, member.getSquad().getTags());
-    addDelimitedSkills(skills, member.getSquad().getRoles());
   }
 
   private void addProofCardSkills(
@@ -247,15 +161,7 @@ public class JobActivityProfileService {
   }
 
   private int countProjects(ActivityData activityData) {
-    LinkedHashSet<String> projectKeys = new LinkedHashSet<>();
-    activityData
-        .squadWorkspaces()
-        .forEach(workspace -> projectKeys.add("workspace:" + workspace.getId()));
-    activityData.squadProjects().forEach(project -> projectKeys.add("project:" + project.getId()));
-    activityData
-        .squadMembers()
-        .forEach(member -> projectKeys.add("squad:" + member.getSquad().getId()));
-    return projectKeys.size();
+    return activityData.workspaceProjects().size();
   }
 
   private double calculateAverageProofCardScore(List<ProofCard> proofCards) {
@@ -265,6 +171,7 @@ public class JobActivityProfileService {
             .filter(Objects::nonNull)
             .map(nodeClearance -> nodeClearance.getLessonCompletionRate())
             .filter(Objects::nonNull)
+            .map(this::normalizeProofCardScore)
             .toList();
 
     if (scores.isEmpty()) {
@@ -275,16 +182,11 @@ public class JobActivityProfileService {
     return total.divide(BigDecimal.valueOf(scores.size()), 1, RoundingMode.HALF_UP).doubleValue();
   }
 
-  private void addDelimitedSkills(Set<String> skills, String value) {
-    if (!isNotBlank(value)) {
-      return;
-    }
-
-    for (String item : value.split("[,;/|\\n]+")) {
-      addSkill(skills, item);
-    }
-
-    addKnownSkills(skills, value);
+  private BigDecimal normalizeProofCardScore(BigDecimal rawScore) {
+    BigDecimal score = rawScore.compareTo(BigDecimal.ONE) <= 0
+        ? rawScore.multiply(BigDecimal.valueOf(100))
+        : rawScore;
+    return score.max(BigDecimal.ZERO).min(BigDecimal.valueOf(100));
   }
 
   private void addKnownSkills(Set<String> skills, String text) {
@@ -329,17 +231,13 @@ public class JobActivityProfileService {
   private record SkillKeyword(String skill, List<String> keywords) {}
 
   private record ActivityData(
-      List<Workspace> squadWorkspaces,
+      List<Workspace> workspaceProjects,
       List<WorkspaceTask> completedTasks,
-      List<ProjectMember> projectMembers,
-      List<Project> squadProjects,
-      List<SquadMember> squadMembers,
       List<ProofCard> proofCards,
       List<ProofCardTag> proofCardTags) {
 
     private static ActivityData empty() {
-      return new ActivityData(
-          List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+      return new ActivityData(List.of(), List.of(), List.of(), List.of());
     }
   }
 }

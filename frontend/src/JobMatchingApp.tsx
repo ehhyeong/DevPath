@@ -505,7 +505,7 @@ export default function JobMatchingApp() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('backend')
   const [regionFilter, setRegionFilter] = useState<RegionFilter>('seoul')
   const [careerFilter, setCareerFilter] = useState<CareerFilter>('junior')
-  const [highMatchOnly, setHighMatchOnly] = useState(true)
+  const [highMatchOnly, setHighMatchOnly] = useState(false)
   const [loading, setLoading] = useState(false)
   const [scanned, setScanned] = useState(false)
   const [jobs, setJobs] = useState<MatchingJob[]>([])

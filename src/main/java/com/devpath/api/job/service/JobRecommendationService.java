@@ -55,7 +55,6 @@ public class JobRecommendationService {
 
     return openJobs.stream()
         .map(job -> toRecommendation(job, condition, userSkillSignals, jobSkillTagMap))
-        .filter(recommendation -> shouldInclude(recommendation, userSkillSignals))
         .sorted(
             Comparator.comparing(JobRecommendationResponse.Recommendation::recommendationScore)
                 .reversed()
@@ -134,15 +133,6 @@ public class JobRecommendationService {
     }
 
     return matchedSkills;
-  }
-
-  private boolean shouldInclude(
-      JobRecommendationResponse.Recommendation recommendation, Set<String> userSkillSignals) {
-    if (userSkillSignals.isEmpty()) {
-      return true;
-    }
-
-    return !recommendation.matchedSkillTags().isEmpty();
   }
 
   private boolean matchesRegion(JobPosting job, String region) {
