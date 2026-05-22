@@ -784,7 +784,7 @@ export default function CourseEditorPage() {
       return
     }
 
-    const previewUrl = new URL('course-detail.html', window.location.href)
+    const previewUrl = new URL('/course-detail', window.location.origin)
     previewUrl.searchParams.set('courseId', String(courseId))
     previewUrl.searchParams.set('preview', 'student')
     previewUrl.searchParams.set('returnTo', `${window.location.pathname}${window.location.search}${window.location.hash}`)

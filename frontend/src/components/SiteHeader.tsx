@@ -5,7 +5,7 @@ import HeaderAlerts from './HeaderAlerts'
 
 const headerLinks = [
   { href: '/roadmap-hub', label: '\uB85C\uB4DC\uB9F5' },
-  { href: 'lecture-list.html', label: '\uAC15\uC758' },
+  { href: '/lecture-list', label: '\uAC15\uC758' },
   { href: 'lounge-dashboard.html', label: '\uD504\uB85C\uC81D\uD2B8' },
   { href: '/job-matching', label: '\uCC44\uC6A9\uBD84\uC11D' },
   { href: 'community-list.html', label: '\uCEE4\uBBA4\uB2C8\uD2F0' },

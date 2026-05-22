@@ -149,9 +149,9 @@
       document.title = `DevPath - ${course.title}`;
     }
 
-    const backLink = document.querySelector('header a[href^="course-detail"]');
+    const backLink = document.querySelector('header a[href^="/course-detail"], header a[href^="course-detail"]');
     if (backLink) {
-      backLink.href = `course-detail.html?courseId=${encodeURIComponent(state.courseId)}`;
+      backLink.href = `/course-detail?courseId=${encodeURIComponent(state.courseId)}`;
     }
 
     const headerTitle = document.querySelector('header span.text-sm.font-bold.text-gray-100');

@@ -505,5 +505,5 @@ export function createQuestionSearchText(question: CourseQuestionItem) {
 export function getLearningHref(courseId: number, lesson: LearningLesson | null) {
   const params = new URLSearchParams({ courseId: String(courseId) })
   if (lesson?.lessonId) params.set('lessonId', String(lesson.lessonId))
-  return `learning.html?${params.toString()}`
+  return `/learning?${params.toString()}`
 }

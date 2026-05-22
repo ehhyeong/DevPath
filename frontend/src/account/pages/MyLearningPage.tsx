@@ -397,7 +397,7 @@ export default function MyLearningPage() {
                             ? '보관함에 저장됨'
                             : formatRelativeLabel(index, (item as Enrollment).lastAccessedAt)}
                         </span>
-                        <a href={`learning.html?courseId=${item.courseId}`} className="bg-brand rounded-lg px-4 py-2 text-xs font-bold text-white transition hover:bg-green-600">
+                        <a href={`/learning?courseId=${item.courseId}`} className="bg-brand rounded-lg px-4 py-2 text-xs font-bold text-white transition hover:bg-green-600">
                           {isWishlist ? '보러가기' : '이어하기'}
                         </a>
                       </div>

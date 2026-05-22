@@ -346,8 +346,8 @@ export function mergeInstructorChannel(channel: InstructorChannel | null | undef
 }
 
 export function buildInstructorChannelHref(instructorId: number | null | undefined) {
-  if (!instructorId) return 'instructor-channel.html'
-  return `instructor-channel.html?instructorId=${instructorId}`
+  if (!instructorId) return '/instructor-channel'
+  return `/instructor-channel?instructorId=${instructorId}`
 }
 
 export function formatCompactCount(value: number) {

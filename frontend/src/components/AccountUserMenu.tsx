@@ -179,9 +179,10 @@ export default function AccountUserMenu({
 }: AccountUserMenuProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const currentFileName = window.location.pathname.split('/').pop() ?? ''
+  const currentPathname = window.location.pathname.replace(/\/+$/, '')
+  const currentFileName = currentPathname.split('/').pop() ?? ''
   const instructorChannelActive =
-    currentFileName === 'instructor-profile.html' || currentFileName === 'instructor-channel.html'
+    currentFileName === 'instructor-profile.html' || currentPathname === '/instructor-channel'
   const instructorMenuItem =
     session.role === 'ROLE_INSTRUCTOR'
       ? {

@@ -8,7 +8,7 @@
   const AUTH_TOAST_ROOT_ID = 'devpath-auth-toast-root';
   const headerLinks = [
     { href: 'roadmap-hub.html', label: '로드맵' },
-    { href: 'lecture-list.html', label: '강의' },
+    { href: '/lecture-list', label: '강의' },
     { href: 'lounge-dashboard.html', label: '프로젝트' },
     { href: 'community-list.html', label: '커뮤니티' },
     { href: 'job-matching.html', label: '채용분석' },

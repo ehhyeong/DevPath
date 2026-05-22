@@ -991,7 +991,7 @@ function buildLectureListUrl(tags: string[]): string {
   const query = tags.length > 0
     ? `?tags=${encodeURIComponent(tags.join(','))}`
     : ''
-  return `lecture-list.html${query}`
+  return `/lecture-list${query}`
 }
 
 interface NodeDrawerProps {
@@ -1139,7 +1139,7 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
                     try {
                       const courseId = await roadmapApi.getRecommendedFreeCourse(customRoadmapId, node.customNodeId)
                       if (courseId) {
-                        window.location.href = `course-detail.html?courseId=${courseId}`
+                        window.location.href = `/course-detail?courseId=${courseId}`
                       } else {
                         window.location.href = buildLectureListUrl(node.requiredTags ?? [])
                       }
@@ -2014,7 +2014,7 @@ export default function RoadmapDetailPage() {
           <nav className="flex justify-center overflow-x-auto">
             <div className="header-nav-links text-sm font-bold text-gray-500">
               <a href="/roadmap-hub" className="text-[#00c471] border-b-2 border-[#00c471] pb-1 transition">로드맵</a>
-              <a href="lecture-list.html" className="hover:text-[#00c471] transition">강의</a>
+              <a href="/lecture-list" className="hover:text-[#00c471] transition">강의</a>
               <a href="project-list.html" className="hover:text-[#00c471] transition">프로젝트</a>
               <a href="community-list.html" className="hover:text-[#00c471] transition">커뮤니티</a>
               <a href="/job-matching" className="hover:text-[#00c471] transition">채용분석</a>

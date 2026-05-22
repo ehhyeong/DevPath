@@ -759,7 +759,7 @@ function DetailModal({
               <p className="text-xs text-gray-500 truncate mt-0.5">{project.mentor.desc}</p>
             </div>
             <a
-              href={`instructor-channel.html${project.mentor.id ? `?instructorId=${encodeURIComponent(project.mentor.id)}` : ''}`}
+              href={`/instructor-channel${project.mentor.id ? `?instructorId=${encodeURIComponent(project.mentor.id)}` : ''}`}
               className="shrink-0 bg-white border border-gray-200 text-gray-700 hover:text-brand hover:border-brand text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm flex items-center gap-1.5"
             >
               채널 방문 <i className="fas fa-chevron-right text-[10px]"></i>

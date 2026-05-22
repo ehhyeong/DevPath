@@ -371,7 +371,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
 
     const returnTo = buildReturnToHref()
     const timestampSeconds = parseLectureTimestampSeconds(question.lectureTimestamp)
-    const url = new URL('learning.html', window.location.href)
+    const url = new URL('/learning', window.location.href)
     url.searchParams.set('courseId', String(question.courseId))
     url.searchParams.set('preview', 'student')
     url.searchParams.set('autoplay', '1')
