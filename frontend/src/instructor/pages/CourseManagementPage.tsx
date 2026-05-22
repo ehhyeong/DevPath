@@ -274,7 +274,7 @@ function PublishedCourseCard(_: {
                 type="button"
                 title="통계"
                 onClick={() => {
-                  window.location.href = `student-analytics.html?courseId=${course.courseId}`
+                  window.location.href = `/student-analytics?courseId=${course.courseId}`
                 }}
                 className="flex h-8 w-8 items-center justify-center rounded-[8px] text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
               >
@@ -447,7 +447,7 @@ function DraftCourseCard(_: { course: CourseCardModel }) {
             <button
               type="button"
               onClick={() => {
-                window.location.href = `course-editor.html?courseId=${course.courseId}`
+                window.location.href = `/course-editor?courseId=${course.courseId}`
               }}
               className="inline-flex h-[34px] items-center rounded-[10px] border border-emerald-500 px-[14px] text-[12px] font-semibold text-emerald-600 transition hover:bg-emerald-50"
             >
@@ -726,7 +726,7 @@ export default function CourseManagementPage() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = 'course-editor.html'
+              window.location.href = '/course-editor'
             }}
             className="inline-flex h-[34px] items-center gap-2 rounded-[10px] bg-emerald-500 px-[14px] text-[12px] font-semibold text-white transition hover:bg-emerald-600"
           >

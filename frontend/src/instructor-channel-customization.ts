@@ -233,16 +233,16 @@ export function applyInstructorChannelCustomization(
 
 export function buildMyInstructorProfileHref(session: AuthSession | null | undefined) {
   if (!session?.userId) {
-    return 'instructor-profile.html'
+    return '/instructor-profile'
   }
 
-  return `instructor-profile.html?instructorId=${session.userId}`
+  return `/instructor-profile?instructorId=${session.userId}`
 }
 
 export function buildMyInstructorEditProfileHref(session: AuthSession | null | undefined) {
   if (!session?.userId) {
-    return 'instructor-edit-profile.html'
+    return '/instructor-edit-profile'
   }
 
-  return `instructor-edit-profile.html?instructorId=${session.userId}`
+  return `/instructor-edit-profile?instructorId=${session.userId}`
 }

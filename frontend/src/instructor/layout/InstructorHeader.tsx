@@ -6,7 +6,7 @@ import type { AuthSession } from '../../types/auth'
 const headerLinks = [
   { href: '/roadmap-hub', label: '로드맵' },
   { href: '/lecture-list', label: '강의' },
-  { href: 'lounge-dashboard.html', label: '프로젝트' },
+  { href: '/lounge-dashboard', label: '프로젝트' },
   { href: 'community-list.html', label: '커뮤니티' },
   { href: '/job-matching', label: '채용분석' },
 ]
@@ -80,7 +80,7 @@ export default function InstructorHeader({
                 </a>
               ))}
               <a
-                href="instructor-dashboard.html"
+                href="/instructor-dashboard"
                 className="absolute top-1/2 left-full inline-block -translate-y-1/2 whitespace-nowrap border-b-2 border-brand pb-1 text-brand"
                 style={instructorStyle}
               >

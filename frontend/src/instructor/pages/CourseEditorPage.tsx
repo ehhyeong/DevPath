@@ -770,7 +770,7 @@ export default function CourseEditorPage() {
     try {
       await persistCourse('IN_REVIEW')
       window.alert('심사 요청이 완료되었습니다.')
-      window.location.href = 'course-management.html'
+      window.location.href = '/course-management'
     } catch (nextError) {
       setActionError(nextError instanceof Error ? nextError.message : '심사 요청에 실패했습니다.')
     } finally {
@@ -899,7 +899,7 @@ export default function CourseEditorPage() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => window.location.assign('course-management.html')}
+            onClick={() => window.location.assign('/course-management')}
             className="text-gray-400 transition hover:text-gray-800"
           >
             <i className="fas fa-arrow-left text-xl" />

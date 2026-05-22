@@ -281,7 +281,7 @@ export default function InstructorCourseDetailPage() {
             <button
               type="button"
               onClick={() => {
-                window.location.href = `course-editor.html?courseId=${courseId}`
+                window.location.href = `/course-editor?courseId=${courseId}`
               }}
               className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-green-600"
             >
@@ -334,7 +334,7 @@ export default function InstructorCourseDetailPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    window.location.href = 'instructor-qna.html'
+                    window.location.href = '/instructor-qna'
                   }}
                   className="mt-2 text-xs text-gray-500 underline"
                 >
@@ -401,7 +401,7 @@ export default function InstructorCourseDetailPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              window.location.href = 'instructor-qna.html'
+                              window.location.href = '/instructor-qna'
                             }}
                             className="text-gray-400 transition hover:text-brand"
                             aria-label={`${student.studentName} 수강생 문의 보기`}

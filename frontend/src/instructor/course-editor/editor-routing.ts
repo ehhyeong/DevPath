@@ -19,14 +19,14 @@ function parsePositiveNumber(value: string | null) {
 
 export function buildCourseEditorHref(courseId?: number | null) {
   if (!courseId || !Number.isFinite(courseId)) {
-    return 'course-editor.html'
+    return '/course-editor'
   }
 
-  return `course-editor.html?courseId=${courseId}`
+  return `/course-editor?courseId=${courseId}`
 }
 
 export function buildLessonEditorHref(kind: EvaluationEditorKind, options: LessonEditorUrlOptions) {
-  const pathname = kind === 'quiz' ? 'quiz-creator.html' : 'content-assignment-editor.html'
+  const pathname = kind === 'quiz' ? '/quiz-creator' : '/content-assignment-editor'
   const searchParams = new URLSearchParams()
 
   if (options.lessonId && Number.isFinite(options.lessonId)) {

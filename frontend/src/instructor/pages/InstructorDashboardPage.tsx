@@ -540,7 +540,7 @@ function IssueReviewList({ issueReviews }: { issueReviews: InstructorReviewListI
       {issueReviews.slice(0, 3).map((review) => (
         <a
           key={review.reviewId}
-          href="instructor-reviews.html"
+          href="/instructor-reviews"
           className={`${SOFT_LIST_ITEM} block`}
         >
           <div className="mb-1.5 flex items-start justify-between gap-3">
@@ -571,7 +571,7 @@ function QnaListPanel({
           <i className="fas fa-bolt text-yellow-500" />
           답변이 필요한 Q&amp;A
         </h3>
-        <a href="instructor-qna.html" className="text-xs font-medium text-gray-500 transition hover:text-brand">
+        <a href="/instructor-qna" className="text-xs font-medium text-gray-500 transition hover:text-brand">
           게시판 가기
           <i className="fas fa-chevron-right ml-1 text-[10px]" />
         </a>
@@ -710,7 +710,7 @@ function LatestReviewsCard({
           {latestReviews.slice(0, 4).map((review) => (
             <a
               key={review.reviewId}
-              href="instructor-reviews.html"
+              href="/instructor-reviews"
               className={`${SOFT_LIST_ITEM} block`}
             >
               <ReviewStars rating={review.rating} />
@@ -731,7 +731,7 @@ function LatestReviewsCard({
       )}
 
       <a
-        href="instructor-reviews.html"
+        href="/instructor-reviews"
         className="mt-4 block shrink-0 rounded-lg border border-gray-200 bg-white py-2 text-center text-[13px] font-medium text-gray-700 transition hover:bg-gray-50"
       >
         리뷰 전체 보기
@@ -1072,7 +1072,7 @@ function MentoringDashboardContent({ mentoringBoard }: { mentoringBoard: Instruc
             </div>
             <p className="mb-3 text-sm font-semibold text-gray-400">새 멘토링 프로젝트 시작</p>
             <a
-              href="instructor-mentoring.html"
+              href="/instructor-mentoring"
               className="rounded-lg border border-gray-300 bg-white px-6 py-2 text-xs font-semibold text-gray-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-200 hover:bg-gray-50 hover:shadow-[0_6px_14px_rgba(15,23,42,0.06)]"
             >
               멘토링 보드 열기

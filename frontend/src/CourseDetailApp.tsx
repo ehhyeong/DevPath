@@ -56,7 +56,7 @@ function readStudentPreviewFromLocation() {
 }
 
 function readStudentPreviewReturnHref(courseId: number | null) {
-  const fallbackHref = courseId ? `course-editor.html?courseId=${courseId}` : 'course-editor.html'
+  const fallbackHref = courseId ? `/course-editor?courseId=${courseId}` : '/course-editor'
   const value = new URLSearchParams(window.location.search).get('returnTo')
 
   if (!value) {
