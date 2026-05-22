@@ -34,6 +34,7 @@ public class AssignmentSubmissionService {
   private final UserRepository userRepository;
   private final AssignmentRepository assignmentRepository;
   private final SubmissionRepository submissionRepository;
+  private final SubmissionGradingService submissionGradingService;
 
   // 학습자가 실제 과제를 제출하고 제출 이력을 생성한다.
   public SubmissionResponse createSubmission(
@@ -94,7 +95,9 @@ public class AssignmentSubmissionService {
       }
     }
 
-    return SubmissionResponse.from(submissionRepository.save(submission));
+    Submission savedSubmission = submissionRepository.save(submission);
+    submissionGradingService.autoGradeOnSubmit(savedSubmission);
+    return SubmissionResponse.from(savedSubmission);
   }
 
   // 특정 학습자의 제출 이력을 최신순으로 조회한다.

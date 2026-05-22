@@ -11298,7 +11298,7 @@ WITH lessons_seed(course_title, section_order, lesson_order, lesson_title, lesso
         ('React 19 프론트엔드 실전 가이드', 1, 3, '섹션 마무리 퀴즈: 상태 설계 판단 기준', '지역 상태와 공유 상태를 구분하는 기준을 점검합니다.', 'READING', NULL, 300, FALSE),
         ('React 19 프론트엔드 실전 가이드', 2, 1, 'Tailwind 유틸리티 설계', '반복 스타일을 줄이고 화면 단위를 안정적으로 구성합니다.', 'VIDEO', '/samples/ocr-code-demo.mp4', 840, FALSE),
         ('React 19 프론트엔드 실전 가이드', 2, 2, 'Playwright로 사용자 흐름 테스트', '로그인부터 주요 액션까지 E2E 테스트를 작성합니다.', 'VIDEO', '/samples/sample-intro.mp4', 1020, FALSE),
-        ('React 19 프론트엔드 실전 가이드', 2, 3, '실습 과제: 대시보드 화면 완성', '필터, 카드, 차트를 포함한 대시보드 화면을 제출합니다.', 'CODING', NULL, 900, FALSE),
+        ('React 19 프론트엔드 실전 가이드', 2, 3, '실습 과제: 대시보드 화면 완성', '학습 현황 대시보드의 목록, 필터, 통계 카드, 상세 확인 흐름을 구현하고 E2E 테스트 결과를 제출합니다.', 'CODING', NULL, 900, FALSE),
         ('Next.js 14 제품 개발 실전', 1, 1, '라우팅과 레이아웃 구조 설계', 'App Router에서 공통 레이아웃과 상세 페이지를 분리합니다.', 'VIDEO', '/samples/ocr-code-demo.mp4', 900, TRUE),
         ('Next.js 14 제품 개발 실전', 1, 2, '서버 컴포넌트와 캐싱 전략', '서버 렌더링 데이터와 캐시 무효화 기준을 정합니다.', 'VIDEO', '/samples/sample-intro.mp4', 1080, FALSE),
         ('Next.js 14 제품 개발 실전', 1, 3, '섹션 마무리 퀴즈: App Router 데이터 흐름', '서버 컴포넌트와 클라이언트 컴포넌트의 역할을 점검합니다.', 'READING', NULL, 300, FALSE),
@@ -11372,7 +11372,23 @@ WITH activity_nodes(course_title, section_order, activity_kind, node_title, node
         ('Docker & Kubernetes 운영 실전', 1, 'QUIZ', '[CATALOG] Docker & Kubernetes 운영 실전 - 1 QUIZ', '이미지, 컨테이너, Compose 실행 흐름을 확인하는 퀴즈입니다.', 1011),
         ('Docker & Kubernetes 운영 실전', 2, 'ASSIGNMENT', '[CATALOG] Docker & Kubernetes 운영 실전 - 2 ASSIGNMENT', 'Kubernetes 배포 매니페스트를 작성하는 과제입니다.', 1012),
         ('React 19 프론트엔드 실전 가이드', 1, 'QUIZ', '[CATALOG] React 19 프론트엔드 실전 가이드 - 1 QUIZ', 'React 상태 설계와 컴포넌트 경계를 확인하는 퀴즈입니다.', 1021),
-        ('React 19 프론트엔드 실전 가이드', 2, 'ASSIGNMENT', '[CATALOG] React 19 프론트엔드 실전 가이드 - 2 ASSIGNMENT', '대시보드 화면과 테스트 흐름을 완성하는 과제입니다.', 1022),
+        ('React 19 프론트엔드 실전 가이드', 2, 'ASSIGNMENT', '[CATALOG] React 19 프론트엔드 실전 가이드 - 2 ASSIGNMENT', $$아래 요구사항을 만족하는 학습 현황 대시보드를 React 19와 TypeScript로 구현하세요.
+
+상황. DevPath 학습자가 수강 중인 강의와 로드맵 진행 상태를 한 화면에서 확인하고, 상태별로 빠르게 필터링할 수 있는 내부 대시보드를 만든다고 가정합니다.
+
+필수 구현.
+1. 강의와 로드맵 목록을 배열 데이터 또는 API 응답 형태로 구성하고, 검색어와 상태 필터(전체, 진행 중, 완료, 미시작)에 따라 목록을 갱신하세요.
+2. 필터 결과를 기준으로 총 학습 항목 수, 진행 중 항목 수, 평균 진행률, 이번 주 학습 시간을 계산해 통계 카드에 표시하세요.
+3. 최근 학습 항목을 선택하면 제목, 진행률, 다음 학습 액션이 포함된 상세 영역 또는 모달을 표시하세요.
+4. 로딩, 빈 결과, 오류 상태를 각각 다른 UI로 분리하고 Tailwind 유틸리티가 과도하게 반복되지 않도록 컴포넌트를 나누세요.
+5. 모바일 390px, 데스크톱 1280px 기준에서 카드와 목록이 겹치거나 줄이 깨지지 않도록 반응형 레이아웃을 적용하세요.
+
+테스트.
+Playwright로 검색어 입력, 상태 필터 변경, 통계 카드 재계산, 최근 학습 항목 상세 열기 흐름을 검증하세요.
+
+제출물.
+GitHub URL 또는 zip 파일, 실행 방법, 주요 컴포넌트 구조, 테스트 실행 결과, 구현 화면 캡처를 README에 포함해 제출하세요.$$,
+            1022),
         ('Next.js 14 제품 개발 실전', 1, 'QUIZ', '[CATALOG] Next.js 14 제품 개발 실전 - 1 QUIZ', 'App Router와 서버 컴포넌트 역할을 확인하는 퀴즈입니다.', 1031),
         ('Next.js 14 제품 개발 실전', 2, 'ASSIGNMENT', '[CATALOG] Next.js 14 제품 개발 실전 - 2 ASSIGNMENT', '예약 상세 페이지 출시 체크리스트를 완성하는 과제입니다.', 1032),
         ('Flutter로 MVP 앱 출시하기', 1, 'QUIZ', '[CATALOG] Flutter로 MVP 앱 출시하기 - 1 QUIZ', '위젯 구조와 상태 흐름을 확인하는 퀴즈입니다.', 1041),
@@ -11675,6 +11691,71 @@ FROM roadmap_nodes rn
 WHERE rn.title LIKE '[CATALOG]%'
   AND rn.node_type = 'ASSIGNMENT'
   AND NOT EXISTS (SELECT 1 FROM assignments a WHERE a.node_id = rn.node_id);
+
+-- React 19 섹션 2 과제는 학습 플레이어에서 SQL-backed assignments.description으로 노출된다.
+UPDATE lessons
+SET description = '학습 현황 대시보드의 목록, 필터, 통계 카드, 상세 확인 흐름을 구현하고 E2E 테스트 결과를 제출합니다.'
+WHERE title = '실습 과제: 대시보드 화면 완성'
+  AND section_id IN (
+      SELECT cs.section_id
+      FROM course_sections cs
+      JOIN courses c ON c.course_id = cs.course_id
+      WHERE c.title = 'React 19 프론트엔드 실전 가이드'
+        AND cs.sort_order = 2
+  );
+
+UPDATE roadmap_nodes
+SET content = $$아래 요구사항을 만족하는 학습 현황 대시보드를 React 19와 TypeScript로 구현하세요.
+
+상황. DevPath 학습자가 수강 중인 강의와 로드맵 진행 상태를 한 화면에서 확인하고, 상태별로 빠르게 필터링할 수 있는 내부 대시보드를 만든다고 가정합니다.
+
+필수 구현.
+1. 강의와 로드맵 목록을 배열 데이터 또는 API 응답 형태로 구성하고, 검색어와 상태 필터(전체, 진행 중, 완료, 미시작)에 따라 목록을 갱신하세요.
+2. 필터 결과를 기준으로 총 학습 항목 수, 진행 중 항목 수, 평균 진행률, 이번 주 학습 시간을 계산해 통계 카드에 표시하세요.
+3. 최근 학습 항목을 선택하면 제목, 진행률, 다음 학습 액션이 포함된 상세 영역 또는 모달을 표시하세요.
+4. 로딩, 빈 결과, 오류 상태를 각각 다른 UI로 분리하고 Tailwind 유틸리티가 과도하게 반복되지 않도록 컴포넌트를 나누세요.
+5. 모바일 390px, 데스크톱 1280px 기준에서 카드와 목록이 겹치거나 줄이 깨지지 않도록 반응형 레이아웃을 적용하세요.
+
+테스트.
+Playwright로 검색어 입력, 상태 필터 변경, 통계 카드 재계산, 최근 학습 항목 상세 열기 흐름을 검증하세요.
+
+제출물.
+GitHub URL 또는 zip 파일, 실행 방법, 주요 컴포넌트 구조, 테스트 실행 결과, 구현 화면 캡처를 README에 포함해 제출하세요.$$
+WHERE title = '[CATALOG] React 19 프론트엔드 실전 가이드 - 2 ASSIGNMENT'
+  AND node_type = 'ASSIGNMENT'
+  AND sub_topics = 'React 19 프론트엔드 실전 가이드'
+  AND branch_group = 2;
+
+UPDATE assignments
+SET title = '학습 현황 대시보드 구현 및 E2E 테스트 과제',
+    description = $$아래 요구사항을 만족하는 학습 현황 대시보드를 React 19와 TypeScript로 구현하세요.
+
+상황. DevPath 학습자가 수강 중인 강의와 로드맵 진행 상태를 한 화면에서 확인하고, 상태별로 빠르게 필터링할 수 있는 내부 대시보드를 만든다고 가정합니다.
+
+필수 구현.
+1. 강의와 로드맵 목록을 배열 데이터 또는 API 응답 형태로 구성하고, 검색어와 상태 필터(전체, 진행 중, 완료, 미시작)에 따라 목록을 갱신하세요.
+2. 필터 결과를 기준으로 총 학습 항목 수, 진행 중 항목 수, 평균 진행률, 이번 주 학습 시간을 계산해 통계 카드에 표시하세요.
+3. 최근 학습 항목을 선택하면 제목, 진행률, 다음 학습 액션이 포함된 상세 영역 또는 모달을 표시하세요.
+4. 로딩, 빈 결과, 오류 상태를 각각 다른 UI로 분리하고 Tailwind 유틸리티가 과도하게 반복되지 않도록 컴포넌트를 나누세요.
+5. 모바일 390px, 데스크톱 1280px 기준에서 카드와 목록이 겹치거나 줄이 깨지지 않도록 반응형 레이아웃을 적용하세요.
+
+테스트.
+Playwright로 검색어 입력, 상태 필터 변경, 통계 카드 재계산, 최근 학습 항목 상세 열기 흐름을 검증하세요.
+
+제출물.
+GitHub URL 또는 zip 파일, 실행 방법, 주요 컴포넌트 구조, 테스트 실행 결과, 구현 화면 캡처를 README에 포함해 제출하세요.$$,
+    test_required = TRUE,
+    submission_rule_description = 'README에 실행 방법, 구현 범위, Playwright 테스트 결과, 화면 캡처를 포함하고 GitHub URL 또는 zip 파일을 제출하세요.',
+    updated_at = TIMESTAMP '2026-04-01 10:45:00'
+WHERE node_id IN (
+      SELECT rn.node_id
+      FROM roadmap_nodes rn
+      WHERE rn.title = '[CATALOG] React 19 프론트엔드 실전 가이드 - 2 ASSIGNMENT'
+        AND rn.node_type = 'ASSIGNMENT'
+        AND rn.sub_topics = 'React 19 프론트엔드 실전 가이드'
+        AND rn.branch_group = 2
+  )
+  AND is_deleted = FALSE;
 
 INSERT INTO assignment_rubrics (
     assignment_id, criteria_name, criteria_description, max_points,

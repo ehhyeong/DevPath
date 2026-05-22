@@ -130,6 +130,11 @@ function isPlaybackBlockedError(error: unknown) {
   return error instanceof DOMException && error.name === 'NotAllowedError'
 }
 
+function isNativeKeyboardControlTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return target.isContentEditable || target.closest('input, textarea, select, button, a[href], [contenteditable="true"]') !== null
+}
+
 function resolveVideoUrl(src: string | null) {
   if (!src) return null
   try {
@@ -321,22 +326,26 @@ function readEnabledSearchParam(name: string) {
   return value === '1' || value === 'true'
 }
 
-function readSafeReturnHref(fallbackHref: string) {
+function readOptionalSafeReturnHref() {
   const value = new URLSearchParams(window.location.search).get('returnTo')
   if (!value) {
-    return fallbackHref
+    return null
   }
 
   try {
     const nextUrl = new URL(value, window.location.origin)
     if (nextUrl.origin !== window.location.origin) {
-      return fallbackHref
+      return null
     }
 
     return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
   } catch {
-    return fallbackHref
+    return null
   }
+}
+
+function readSafeReturnHref(fallbackHref: string) {
+  return readOptionalSafeReturnHref() ?? fallbackHref
 }
 
 function createQuestionFormState(): QuestionFormState {
@@ -401,7 +410,7 @@ function resolveLessonAssignment(item: LearningLesson | null | undefined): Learn
   }
 }
 
-function isQuizLesson(item: LearningLesson | null | undefined): item is LearningLesson {
+function isQuizLesson(item: LearningLesson | null | undefined): boolean {
   if (!item) return false
   return item.lessonType?.toUpperCase() !== 'VIDEO' && /퀴즈|quiz/i.test(item.title)
 }
@@ -422,11 +431,8 @@ function buildSubmissionFiles(files: File[]) {
   })
 }
 
-function resolveAssignmentResultScore(
-  submission: AssignmentSubmissionResponse,
-  precheck: AssignmentPrecheckResponse,
-) {
-  return submission.totalScore ?? precheck.qualityScore ?? null
+function resolveAssignmentResultScore(submission: AssignmentSubmissionResponse) {
+  return submission.totalScore ?? null
 }
 
 function clampPercent(value: number) {
@@ -453,15 +459,11 @@ function normalizeScorePercent(score: number | null | undefined, maxScore: numbe
 function resolveAssignmentResultScorePercent(
   assignment: LearningLessonAssignment | null | undefined,
   submission: AssignmentSubmissionResponse,
-  precheck: AssignmentPrecheckResponse,
 ) {
   if (submission.totalScore !== null && submission.totalScore !== undefined) {
     return normalizeScorePercent(submission.totalScore, resolveAssignmentMaxScore(assignment))
   }
-  if (submission.qualityScore !== null && submission.qualityScore !== undefined) {
-    return normalizeScorePercent(submission.qualityScore, 100)
-  }
-  return normalizeScorePercent(precheck.qualityScore, 100)
+  return null
 }
 
 function resolveAssignmentHistoryScorePercent(
@@ -472,15 +474,14 @@ function resolveAssignmentHistoryScorePercent(
   if (history.totalScore !== null && history.totalScore !== undefined) {
     return normalizeScorePercent(history.totalScore, resolveAssignmentMaxScore(assignment))
   }
-  return normalizeScorePercent(history.qualityScore, 100)
+  return null
 }
 
 function resolveAssignmentResultPassed(
   assignment: LearningLessonAssignment,
   submission: AssignmentSubmissionResponse,
-  precheck: AssignmentPrecheckResponse,
 ) {
-  const score = resolveAssignmentResultScore(submission, precheck)
+  const score = resolveAssignmentResultScore(submission)
   if (score === null || assignment.passScore === null) return null
   return score >= assignment.passScore
 }
@@ -488,9 +489,8 @@ function resolveAssignmentResultPassed(
 function resolveAssignmentResultBadge(
   assignment: LearningLessonAssignment,
   submission: AssignmentSubmissionResponse,
-  precheck: AssignmentPrecheckResponse,
 ) {
-  const passed = resolveAssignmentResultPassed(assignment, submission, precheck)
+  const passed = resolveAssignmentResultPassed(assignment, submission)
   if (passed === true) {
     return {
       iconClassName: 'fas fa-check-circle',
@@ -535,8 +535,8 @@ function buildAssignmentResultReportRows(
 
   if (submission.qualityScore !== null || precheck.qualityScore !== null) {
     rows.push({
-      label: 'Quality Review',
-      value: `${submission.qualityScore ?? precheck.qualityScore ?? '-'} pts`,
+      label: 'Precheck Result',
+      value: precheck.passed ? 'Pass' : 'Review',
       tone: 'neutral',
       iconClassName: 'fas fa-wand-magic-sparkles',
     })
@@ -545,8 +545,8 @@ function buildAssignmentResultReportRows(
   if (assignment.rubrics.length) {
     rows.push({
       label: 'Rubric Score',
-      value: `${resolveAssignmentResultScore(submission, precheck) ?? '-'} / ${assignment.totalScore ?? 100}`,
-      tone: 'success',
+      value: `${resolveAssignmentResultScore(submission) ?? '-'} / ${assignment.totalScore ?? 100}`,
+      tone: submission.totalScore === null || submission.totalScore === undefined ? 'neutral' : 'success',
       iconClassName: 'fas fa-list-check',
     })
   }
@@ -944,6 +944,7 @@ export default function LearningPlayerApp() {
   const [isMuted, setIsMuted] = useState(false)
   const [volume, setVolume] = useState(1)
   const [isPipActive, setIsPipActive] = useState(false)
+  const [isFrameFullscreen, setIsFrameFullscreen] = useState(false)
   const [ocrBusy, setOcrBusy] = useState(false)
   const [isSelectMode, setIsSelectMode] = useState(false)
   const [selectDrag, setSelectDrag] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null)
@@ -990,6 +991,7 @@ export default function LearningPlayerApp() {
   const completedPersistedLessonIdRef = useRef<number | null>(null)
   const courseCompletionShownRef = useRef<number | null>(null)
   const lessonProgressByIdRef = useRef<Record<number, LearningLessonProgress>>({})
+  const quizScoreByLessonIdRef = useRef<Record<number, number>>({})
 
   const lessons = useMemo(() => (course ? getFlattenedLessons(course) : []), [course])
   const courseProgressPercent = useMemo(() => {
@@ -1078,20 +1080,18 @@ export default function LearningPlayerApp() {
   const assignmentModalLesson = assignmentModalLessonId ? lessons.find((item) => item.lessonId === assignmentModalLessonId) ?? null : null
   const assignmentModal = resolveLessonAssignment(assignmentModalLesson)
   const assignmentGradingScore = assignmentGradingResult
-    ? resolveAssignmentResultScore(assignmentGradingResult.submission, assignmentGradingResult.precheck)
+    ? resolveAssignmentResultScore(assignmentGradingResult.submission)
     : null
   const assignmentGradingPassed = assignmentGradingResult
     ? resolveAssignmentResultPassed(
       assignmentGradingResult.assignment,
       assignmentGradingResult.submission,
-      assignmentGradingResult.precheck,
     )
     : null
   const assignmentGradingBadge = assignmentGradingResult
     ? resolveAssignmentResultBadge(
       assignmentGradingResult.assignment,
       assignmentGradingResult.submission,
-      assignmentGradingResult.precheck,
     )
     : null
   const assignmentGradingReportRows = assignmentGradingResult
@@ -1182,6 +1182,9 @@ export default function LearningPlayerApp() {
   const courseDetailHref = initialCourseId
     ? `/course-detail?courseId=${course?.courseId ?? initialCourseId}`
     : '/lecture-list'
+  const sourceReturnHref = useMemo(() => readOptionalSafeReturnHref(), [])
+  const learningBackHref = sourceReturnHref ?? courseDetailHref
+  const completionRoadmapReturnHref = sourceReturnHref ?? '/roadmap-hub'
   const studentPreviewReturnHref = useMemo(
     () => readSafeReturnHref(courseDetailHref),
     [courseDetailHref],
@@ -1238,7 +1241,14 @@ export default function LearningPlayerApp() {
     progressByLessonId: Record<number, LearningLessonProgress>,
     latestAssignmentResult?: AssignmentGradingResultState | null,
   ) => {
-    const progressScores = lessons.map((item) => clampPercent(progressByLessonId[item.lessonId]?.progressPercent ?? 0))
+    const quizScores = lessons
+      .filter(isQuizLesson)
+      .map((item) => {
+        const recordedScore = quizScoreByLessonIdRef.current[item.lessonId]
+        if (recordedScore !== undefined) return clampPercent(recordedScore)
+        return isLessonProgressCompleted(progressByLessonId[item.lessonId]) ? 100 : null
+      })
+      .filter((score): score is number => score !== null)
     const assignmentScores = new Map<number, number>()
 
     lessons.forEach((item) => {
@@ -1258,21 +1268,22 @@ export default function LearningPlayerApp() {
       const latestScore = resolveAssignmentResultScorePercent(
         latestAssignmentResult.assignment,
         latestAssignmentResult.submission,
-        latestAssignmentResult.precheck,
       )
       if (latestScore !== null) {
         assignmentScores.set(latestAssignmentResult.assignment.assignmentId, latestScore)
       }
     }
 
-    const progressAverage = progressScores.length
-      ? progressScores.reduce((sum, item) => sum + item, 0) / progressScores.length
-      : 0
     const assignmentScoreValues = [...assignmentScores.values()]
-    if (!assignmentScoreValues.length) return clampPercent(progressAverage)
+    const evaluationAverages = [
+      quizScores.length ? quizScores.reduce((sum, item) => sum + item, 0) / quizScores.length : null,
+      assignmentScoreValues.length
+        ? assignmentScoreValues.reduce((sum, item) => sum + item, 0) / assignmentScoreValues.length
+        : null,
+    ].filter((score): score is number => score !== null)
 
-    const assignmentAverage = assignmentScoreValues.reduce((sum, item) => sum + item, 0) / assignmentScoreValues.length
-    return clampPercent((progressAverage + assignmentAverage) / 2)
+    if (!evaluationAverages.length) return 0
+    return clampPercent(evaluationAverages.reduce((sum, item) => sum + item, 0) / evaluationAverages.length)
   }, [assignmentHistoryByAssignmentId, lessons])
 
   const openCourseCompletionOverlay = useCallback((
@@ -1915,14 +1926,45 @@ export default function LearningPlayerApp() {
   // OCR 워커 미리 초기화 (첫 클릭 지연 최소화)
   useEffect(() => { warmupOcrWorker() }, [])
 
+  const handleKeyboardTogglePlay = useEffectEvent(() => {
+    void handleTogglePlaySafe()
+  })
+
+  useEffect(() => {
+    const syncFullscreenState = () => {
+      setIsFrameFullscreen(document.fullscreenElement === frameRef.current)
+    }
+
+    syncFullscreenState()
+    document.addEventListener('fullscreenchange', syncFullscreenState)
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
+  }, [])
+
   // ESC 키로 구간 선택 모드 취소
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setIsSelectMode(false); setSelectDrag(null) }
+      if (e.key === 'Escape') {
+        setIsSelectMode(false)
+        setSelectDrag(null)
+        return
+      }
+
+      if (e.code !== 'Space' && e.key !== ' ') return
+      if (!resolvedVideoUrl || selectedLessonIsQuiz || quizModalLessonId || assignmentModalLessonId || completionVisible) return
+      if (isNativeKeyboardControlTarget(e.target)) return
+
+      e.preventDefault()
+      handleKeyboardTogglePlay()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [
+    assignmentModalLessonId,
+    completionVisible,
+    quizModalLessonId,
+    resolvedVideoUrl,
+    selectedLessonIsQuiz,
+  ])
 
   async function handleTogglePlaySafe() {
     const video = videoRef.current
@@ -2196,6 +2238,10 @@ export default function LearningPlayerApp() {
       ? lessons.slice(currentQuizLessonIndex + 1).find((item) => item.sectionId !== quizModalLesson.sectionId) ?? null
       : null
 
+    quizScoreByLessonIdRef.current = {
+      ...quizScoreByLessonIdRef.current,
+      [quizModalLesson.lessonId]: 100,
+    }
     markLessonCompletedForNavigation(quizModalLesson)
     if (nextSectionFirstLesson) {
       setSelectedLessonId(nextSectionFirstLesson.lessonId)
@@ -2347,6 +2393,22 @@ export default function LearningPlayerApp() {
       } else {
         setNotice('PIP 모드 전환에 실패했습니다.')
       }
+    }
+  }
+
+  async function handleToggleFullscreen() {
+    const frame = frameRef.current
+    if (!frame) return
+
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen()
+        return
+      }
+
+      await frame.requestFullscreen()
+    } catch {
+      setNotice('전체 화면 전환에 실패했습니다.')
     }
   }
 
@@ -2541,7 +2603,7 @@ export default function LearningPlayerApp() {
   if (!course || !lesson) return <LoadingOverlay />
 
   // ─── Derived render values ────────────────────────────────────────
-  const hasVideoSource = Boolean(resolvedVideoUrl) && !Boolean(selectedLessonIsQuiz)
+  const hasVideoSource = Boolean(resolvedVideoUrl) && !selectedLessonIsQuiz
   const showVideoErrorOverlay = hasVideoSource && videoFailed
   const activeQuestionSummary = openQuestionId
     ? qnaQuestions.find((item) => item.id === openQuestionId) ?? null
@@ -2560,7 +2622,7 @@ export default function LearningPlayerApp() {
         <div className="learning-player-top-header-left flex items-center gap-4 min-w-0">
           <button
             type="button"
-            onClick={() => window.location.assign(isStudentPreview ? studentPreviewReturnHref : courseDetailHref)}
+            onClick={() => window.location.assign(isStudentPreview ? studentPreviewReturnHref : learningBackHref)}
             className="learning-player-back-link text-gray-400 hover:text-white transition text-sm shrink-0"
           >
             <i className="learning-player-back-icon fas fa-chevron-left mr-2" />
@@ -2782,7 +2844,6 @@ export default function LearningPlayerApp() {
                     {selectedAssignmentHistory ? (
                       <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-xs font-medium text-emerald-100">
                         최근 제출 점수 {selectedAssignmentHistory.totalScore ?? '-'} / {selectedLessonAssignment.totalScore ?? 100}
-                        {selectedAssignmentHistory.qualityScore !== null ? ` · 품질 ${selectedAssignmentHistory.qualityScore}` : ''}
                       </div>
                     ) : (
                       <div className="mt-4 rounded-xl border border-violet-400/20 bg-violet-400/10 px-3 py-2 text-xs font-medium text-violet-100">
@@ -2825,7 +2886,7 @@ export default function LearningPlayerApp() {
               <button type="button" onClick={() => void handleTogglePlaySafe()} className="text-white hover:text-[#00C471] transition">
                 <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`} />
               </button>
-              <div className="flex-1 h-1.5 bg-gray-600 rounded-full overflow-hidden cursor-pointer relative mb-1">
+              <div className="flex-1 h-1.5 bg-gray-600 rounded-full overflow-hidden cursor-pointer relative mb-[9px]">
                 <div className="h-full bg-[#00C471]" style={{ width: `${playbackProgressPercent}%` }} />
                 <input
                   type="range"
@@ -2935,11 +2996,15 @@ export default function LearningPlayerApp() {
               </div>
               <button
                 type="button"
-                onClick={() => void frameRef.current?.requestFullscreen().catch(() => setNotice('전체 화면 전환에 실패했습니다.'))}
+                onClick={(event) => {
+                  event.currentTarget.blur()
+                  void handleToggleFullscreen()
+                }}
                 className="text-white hover:text-[#00C471] transition"
-                aria-label="전체화면"
+                aria-label={isFrameFullscreen ? '전체화면 종료' : '전체화면'}
+                aria-pressed={isFrameFullscreen}
               >
-                <i className="fas fa-expand" />
+                <i className={`fas ${isFrameFullscreen ? 'fa-compress' : 'fa-expand'}`} />
               </button>
           </div>
           ) : null}
@@ -3194,7 +3259,7 @@ export default function LearningPlayerApp() {
                           className="qna-item p-4 bg-white border border-gray-200 rounded-xl hover:border-[#00C471] transition cursor-pointer shadow-sm group w-full text-left"
                         >
                           <div className="flex gap-2 items-start mb-2">
-                            <span className={`${answered ? 'bg-[#00C471] text-white' : 'bg-gray-200 text-gray-600'} text-[10px] font-bold px-1.5 py-0.5 rounded`}>
+                            <span className={`${answered ? 'bg-[#00C471] text-white' : 'bg-gray-200 text-gray-600'} shrink-0 whitespace-nowrap text-[10px] font-bold px-1.5 py-0.5 rounded`}>
                               {answered ? '해결됨' : '답변대기'}
                             </span>
                             <h4 className="text-sm font-bold text-gray-800 leading-tight group-hover:text-[#00C471] transition" title={question.title}>
@@ -3603,6 +3668,7 @@ export default function LearningPlayerApp() {
                   placeholder="질문 제목을 입력하세요"
                 />
               </div>
+              {/* eslint-disable-next-line no-constant-condition, no-constant-binary-expression */}
               {false && templateOptions.length > 1 ? (
                 <div className="mb-4 grid grid-cols-2 gap-2">
                   <select
@@ -3645,6 +3711,7 @@ export default function LearningPlayerApp() {
                 />
                 현재 재생 시간({formatTime(currentTime)}) 첨부하기
               </label>
+              {/* eslint-disable-next-line no-constant-condition, no-constant-binary-expression */}
               {false && selectedTemplate?.description ? (
                 <p className="mb-3 text-xs leading-5 text-gray-500">{selectedTemplate?.description}</p>
               ) : null}
@@ -3808,7 +3875,7 @@ export default function LearningPlayerApp() {
                   </span>
                 </div>
                 <h4 className="mb-2 text-lg font-bold text-gray-900">{assignmentModal.title}</h4>
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm font-medium leading-relaxed text-gray-700">
+                <div className="whitespace-pre-line rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm font-medium leading-relaxed text-gray-700">
                   {assignmentModal.description || '과제 내용이 등록되지 않았습니다.'}
                 </div>
               </div>
@@ -4085,7 +4152,7 @@ export default function LearningPlayerApp() {
             <div className="completion-fade-enter-delay mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <button
                 type="button"
-                onClick={() => { window.location.href = '/roadmap-hub' }}
+                onClick={() => { window.location.href = completionRoadmapReturnHref }}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-800 px-8 py-3.5 font-bold text-white transition hover:bg-gray-700 sm:w-auto"
               >
                 <i className="fas fa-map-marked-alt" /> 로드맵으로 돌아가기

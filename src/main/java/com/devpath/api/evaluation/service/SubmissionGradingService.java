@@ -6,8 +6,10 @@ import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.provider.GeminiProvider;
+import com.devpath.domain.learning.entity.Assignment;
 import com.devpath.domain.learning.entity.Rubric;
 import com.devpath.domain.learning.entity.Submission;
+import com.devpath.domain.learning.entity.SubmissionFile;
 import com.devpath.domain.learning.repository.RubricRepository;
 import com.devpath.domain.learning.repository.SubmissionRepository;
 import com.devpath.domain.user.entity.User;
@@ -50,8 +52,7 @@ public class SubmissionGradingService {
       return;
     }
 
-    String submissionContent = buildSubmissionContent(submission);
-    String prompt = buildGradingPrompt(submissionContent, rubrics);
+    String prompt = buildGradingPrompt(submission, rubrics);
     String raw = geminiProvider.generate(prompt);
 
     List<SubmissionGradeResponse.RubricGradeItem> rubricGradeItems;
@@ -144,10 +145,37 @@ public class SubmissionGradingService {
       if (!sb.isEmpty()) sb.append("\n");
       sb.append("제출 URL: ").append(submission.getSubmissionUrl());
     }
+    if (submission.getFiles() != null && !submission.getFiles().isEmpty()) {
+      if (!sb.isEmpty()) sb.append("\n");
+      sb.append("첨부 파일:\n");
+      for (SubmissionFile file : submission.getFiles()) {
+        if (Boolean.TRUE.equals(file.getIsDeleted())) {
+          continue;
+        }
+        String fileType =
+            file.getFileType() == null || file.getFileType().isBlank()
+                ? "형식 미상"
+                : file.getFileType();
+        sb.append("- ")
+            .append(file.getFileName())
+            .append(" (")
+            .append(fileType)
+            .append(", ")
+            .append(formatFileSize(file.getFileSize()));
+        if (file.getFileUrl() != null
+            && !file.getFileUrl().isBlank()
+            && !file.getFileUrl().startsWith("local-upload://")) {
+          sb.append(", url=").append(file.getFileUrl());
+        }
+        sb.append(")\n");
+      }
+    }
     return sb.isEmpty() ? "(제출 내용 없음)" : sb.toString();
   }
 
-  private String buildGradingPrompt(String submissionContent, List<Rubric> rubrics) {
+  private String buildGradingPrompt(Submission submission, List<Rubric> rubrics) {
+    Assignment assignment = submission.getAssignment();
+    String submissionContent = buildSubmissionContent(submission);
     StringBuilder rubricSection = new StringBuilder();
     for (Rubric rubric : rubrics) {
       rubricSection
@@ -164,6 +192,24 @@ public class SubmissionGradingService {
     }
 
     return "당신은 IT 교육 과제 채점 전문가입니다. 아래 제출물을 루브릭 기준에 따라 채점하세요.\n\n"
+        + "[과제 정보]\n"
+        + "과제명: "
+        + assignment.getTitle()
+        + "\n"
+        + "과제 설명: "
+        + assignment.getDescription()
+        + "\n"
+        + "제출 규칙: "
+        + (assignment.getSubmissionRuleDescription() == null
+                || assignment.getSubmissionRuleDescription().isBlank()
+            ? "(없음)"
+            : assignment.getSubmissionRuleDescription())
+        + "\n"
+        + "허용 형식: "
+        + (assignment.getAllowedFileFormats() == null || assignment.getAllowedFileFormats().isBlank()
+            ? "(제한 없음)"
+            : assignment.getAllowedFileFormats())
+        + "\n\n"
         + "[제출물 내용]\n"
         + submissionContent
         + "\n\n"
@@ -178,7 +224,19 @@ public class SubmissionGradingService {
         + "[제약사항]\n"
         + "- earnedPoints는 0 이상 해당 루브릭의 최대점수 이하여야 합니다.\n"
         + "- 모든 루브릭에 대해 점수를 반드시 포함하세요.\n"
-        + "- 평가키워드가 제출물에 포함되어 있으면 가산 요소로 반영하세요.";
+        + "- 평가키워드가 제출물에 포함되어 있으면 가산 요소로 반영하세요.\n"
+        + "- 첨부 파일 메타데이터만 있고 구현 내용 확인이 불가능하면 루브릭별로 보수적으로 감점하세요.";
+  }
+
+  private String formatFileSize(Long fileSize) {
+    if (fileSize == null || fileSize <= 0) {
+      return "크기 미상";
+    }
+    if (fileSize < 1024) {
+      return fileSize + "B";
+    }
+    long kilobytes = Math.max(1, (fileSize + 1023) / 1024);
+    return kilobytes + "KB";
   }
 
   private List<SubmissionGradeResponse.RubricGradeItem> parseGradingResponse(
