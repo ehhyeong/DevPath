@@ -122,12 +122,19 @@ public class RecommendationChangeService {
   }
 
   @Transactional(readOnly = true)
-  public List<RecommendationChangeResponse.Detail> getRecommendationChanges(Long userId) {
+  public List<RecommendationChangeResponse.Detail> getRecommendationChanges(
+      Long userId, Long roadmapId) {
     validateUser(userId);
 
-    return recommendationChangeRepository
-        .findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
-            userId, RecommendationChangeStatus.SUGGESTED)
+    List<RecommendationChange> changes =
+        roadmapId == null
+            ? recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
+                userId, RecommendationChangeStatus.SUGGESTED)
+            : recommendationChangeRepository
+                .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
+                    userId, roadmapId, RecommendationChangeStatus.SUGGESTED);
+
+    return changes
         .stream()
         .map(this::toDetail)
         .toList();
@@ -198,16 +205,24 @@ public class RecommendationChangeService {
   }
 
   @Transactional(readOnly = true)
-  public List<RecommendationChangeResponse.HistoryItem> getHistories(Long userId) {
+  public List<RecommendationChangeResponse.HistoryItem> getHistories(Long userId, Long roadmapId) {
     validateUser(userId);
 
-    return recommendationChangeRepository
-        .findAllByUserIdAndChangeStatusInOrderByUpdatedAtDesc(
-            userId,
-            Set.of(
-                RecommendationChangeStatus.APPLIED,
-                RecommendationChangeStatus.IGNORED,
-                RecommendationChangeStatus.RECALCULATED))
+    Set<RecommendationChangeStatus> processedStatuses =
+        Set.of(
+            RecommendationChangeStatus.APPLIED,
+            RecommendationChangeStatus.IGNORED,
+            RecommendationChangeStatus.RECALCULATED);
+
+    List<RecommendationChange> histories =
+        roadmapId == null
+            ? recommendationChangeRepository.findAllByUserIdAndChangeStatusInOrderByUpdatedAtDesc(
+                userId, processedStatuses)
+            : recommendationChangeRepository
+                .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusInOrderByUpdatedAtDesc(
+                    userId, roadmapId, processedStatuses);
+
+    return histories
         .stream()
         .map(
             recommendationChange ->

@@ -1322,18 +1322,18 @@ function ChangesPanel({
                       )}
                     </h4>
                     <p className="text-xs text-gray-600 mb-3 line-clamp-2">{change.reason}</p>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       <button
                         disabled={processing}
                         onClick={() => onApply(change.changeId)}
-                        className="inline-flex h-[18px] items-center justify-center rounded bg-[#00c471] px-1.5 text-[10px] font-bold leading-none text-white transition hover:bg-green-600 disabled:opacity-50"
+                        className="inline-flex h-8 min-w-[52px] items-center justify-center rounded-md bg-[#00c471] px-3 text-sm font-bold leading-none text-white transition hover:bg-green-600 disabled:opacity-50"
                       >
                         적용
                       </button>
                       <button
                         disabled={processing}
                         onClick={() => onIgnore(change.changeId)}
-                        className="inline-flex h-[18px] items-center justify-center rounded border border-gray-300 bg-white px-1.5 text-[10px] font-bold leading-none text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
+                        className="inline-flex h-8 min-w-[52px] items-center justify-center rounded-md border border-gray-300 bg-white px-3 text-sm font-bold leading-none text-gray-600 transition hover:bg-gray-100 disabled:opacity-50"
                       >
                         무시
                       </button>
@@ -1742,14 +1742,23 @@ export default function RoadmapDetailPage() {
     abortRef.current = new AbortController()
     const signal = abortRef.current.signal
 
-    Promise.all([
-      roadmapApi.getMyRoadmapDetail(customRoadmapId, signal),
-      roadmapApi.getPendingChanges(signal),
-      roadmapApi.getChangeHistories(signal),
-      roadmapApi.getProofCards(signal),
-      roadmapApi.getMyRoadmaps(signal),
-    ])
-      .then(([roadmapData, changesData, historiesData, proofCardsData, roadmapsData]) => {
+    roadmapApi.getMyRoadmapDetail(customRoadmapId, signal)
+      .then(async (roadmapData) => {
+        const scopedRoadmapId = roadmapData.originalRoadmapId
+        const [changesData, historiesData, proofCardsData, roadmapsData] = await Promise.all([
+          scopedRoadmapId == null
+            ? Promise.resolve([] as RecommendationChange[])
+            : roadmapApi.getPendingChanges(scopedRoadmapId, signal),
+          scopedRoadmapId == null
+            ? Promise.resolve([] as RecommendationChangeHistory[])
+            : roadmapApi.getChangeHistories(scopedRoadmapId, signal),
+          roadmapApi.getProofCards(signal),
+          roadmapApi.getMyRoadmaps(signal),
+        ])
+
+        return { roadmapData, changesData, historiesData, proofCardsData, roadmapsData }
+      })
+      .then(({ roadmapData, changesData, historiesData, proofCardsData, roadmapsData }) => {
         setRoadmap(roadmapData)
         setChanges(changesData)
         setHistories(historiesData)
@@ -2096,10 +2105,10 @@ export default function RoadmapDetailPage() {
         originalRoadmapId={roadmap.originalRoadmapId}
         onClose={() => setDrawerNode(null)}
         onCleared={async () => {
-          const [updated, changesData] = await Promise.all([
-            roadmapApi.getMyRoadmapDetail(customRoadmapId),
-            roadmapApi.getPendingChanges(),
-          ])
+          const updated = await roadmapApi.getMyRoadmapDetail(customRoadmapId)
+          const changesData = updated.originalRoadmapId == null
+            ? []
+            : await roadmapApi.getPendingChanges(updated.originalRoadmapId)
           setRoadmap(updated)
           setChanges(changesData)
           if (changesData.length > 0) {

@@ -17,6 +17,10 @@ public interface RecommendationChangeRepository extends JpaRepository<Recommenda
   List<RecommendationChange> findAllByUserIdAndChangeStatusInOrderByUpdatedAtDesc(
       Long userId, Collection<RecommendationChangeStatus> changeStatuses);
 
+  List<RecommendationChange>
+      findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusInOrderByUpdatedAtDesc(
+          Long userId, Long roadmapId, Collection<RecommendationChangeStatus> changeStatuses);
+
   Optional<RecommendationChange> findByIdAndUserId(Long changeId, Long userId);
 
   Optional<RecommendationChange>

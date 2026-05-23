@@ -327,11 +327,19 @@ export const roadmapApi = {
   copyRoadmap(originalRoadmapId: number) {
     return request<{ customRoadmapId: number }>(`/api/my-roadmaps/${originalRoadmapId}`, { method: 'POST' }, { auth: true })
   },
-  getPendingChanges(signal?: AbortSignal) {
-    return request<RecommendationChange[]>('/api/me/recommendation-changes', { method: 'GET', signal }, { auth: true })
+  getPendingChanges(roadmapId?: number | null, signal?: AbortSignal) {
+    return request<RecommendationChange[]>(
+      `/api/me/recommendation-changes${buildQueryString({ roadmapId })}`,
+      { method: 'GET', signal },
+      { auth: true },
+    )
   },
-  getChangeHistories(signal?: AbortSignal) {
-    return request<RecommendationChangeHistory[]>('/api/me/recommendation-changes/histories', { method: 'GET', signal }, { auth: true })
+  getChangeHistories(roadmapId?: number | null, signal?: AbortSignal) {
+    return request<RecommendationChangeHistory[]>(
+      `/api/me/recommendation-changes/histories${buildQueryString({ roadmapId })}`,
+      { method: 'GET', signal },
+      { auth: true },
+    )
   },
   applyChange(changeId: number) {
     return request<RecommendationChange>(`/api/me/recommendation-changes/${changeId}/apply`, { method: 'POST' }, { auth: true })
