@@ -58,6 +58,8 @@ type ProjectRecommendationResponse = {
   description?: string | null
   projectType?: string | null
   recruitingStatus?: string | null
+  sourceType?: string | null
+  targetUrl?: string | null
   recommendationScore?: number | null
   matchedSkillTags?: string[] | null
   reason?: string | null
@@ -72,8 +74,12 @@ type ShowcaseSummaryResponse = {
   viewCount?: number | null
 }
 
-type JobRecommendationResponse = {
-  jobId: number
+type JobActivityProfileResponse = {
+  projectCount?: number | null
+  completedTaskCount?: number | null
+  proofCardCount?: number | null
+  averageProofCardScore?: number | null
+  skillSignals?: string[] | null
 }
 
 type LoungeShellSquad = {
@@ -117,6 +123,24 @@ async function apiGet<T>(path: string, signal: AbortSignal, auth = false): Promi
 
 function goTo(path: string) {
   window.location.href = path
+}
+
+function getRecommendationTarget(project: ProjectRecommendationResponse) {
+  const explicitTarget = project.targetUrl?.trim()
+
+  if (explicitTarget) {
+    return explicitTarget
+  }
+
+  if (project.sourceType === 'LOUNGE_SQUAD') {
+    return `/community-lounge?squadId=${project.projectId}`
+  }
+
+  return '/community-lounge'
+}
+
+function isLoungeSquadRecommendation(project: ProjectRecommendationResponse) {
+  return project.sourceType === 'LOUNGE_SQUAD' || project.targetUrl?.includes('squadId=') === true
 }
 
 function getWorkspaceType(workspace: WorkspaceResponse) {
@@ -268,7 +292,7 @@ export default function LoungeDashboardApp() {
   const [hubProjects, setHubProjects] = useState<WorkspaceHubProjectResponse[]>([])
   const [projectRecommendations, setProjectRecommendations] = useState<ProjectRecommendationResponse[]>([])
   const [showcases, setShowcases] = useState<ShowcaseSummaryResponse[]>([])
-  const [jobRecommendations, setJobRecommendations] = useState<JobRecommendationResponse[]>([])
+  const [jobActivityProfile, setJobActivityProfile] = useState<JobActivityProfileResponse | null>(null)
   const [shell, setShell] = useState<LoungeShellResponse | null>(null)
 
   useEffect(() => {
@@ -303,7 +327,9 @@ export default function LoungeDashboardApp() {
           ? apiGet<ProjectRecommendationResponse[]>('/api/projects/recommendations/me', controller.signal, true)
           : Promise.resolve([]),
         apiGet<ShowcaseSummaryResponse[]>('/api/showcases?sort=POPULAR', controller.signal),
-        apiGet<JobRecommendationResponse[]>('/api/jobs/recommendations/me', controller.signal, true),
+        hasSession
+          ? apiGet<JobActivityProfileResponse>('/api/jobs/activity-profile/me', controller.signal, true)
+          : Promise.resolve(null),
       ])
 
       if (cancelled) {
@@ -317,7 +343,7 @@ export default function LoungeDashboardApp() {
         hubProjectResult,
         projectRecommendationResult,
         showcaseResult,
-        jobResult,
+        jobActivityProfileResult,
       ] = results
 
       if (isFulfilled(shellResult)) {
@@ -344,8 +370,8 @@ export default function LoungeDashboardApp() {
         setShowcases(showcaseResult.value)
       }
 
-      if (isFulfilled(jobResult) && Array.isArray(jobResult.value)) {
-        setJobRecommendations(jobResult.value)
+      if (isFulfilled(jobActivityProfileResult)) {
+        setJobActivityProfile(jobActivityProfileResult.value)
       }
     }
 
@@ -384,7 +410,7 @@ export default function LoungeDashboardApp() {
       setWorkspaces([])
       setHubProjects([])
       setProjectRecommendations([])
-      setJobRecommendations([])
+      setJobActivityProfile(null)
     }
   }
 
@@ -436,10 +462,18 @@ export default function LoungeDashboardApp() {
     colorClass: workspace.type === 'MENTORING' || index === 1 ? 'bg-purple-500' : 'bg-blue-500',
   }))
   const projectAsideSquads = isAuthenticated ? shell?.mySquads ?? fallbackAsideSquads : []
-  const recommendedProject = isAuthenticated ? projectRecommendations[0] ?? null : null
+  const recommendedProject = isAuthenticated
+    ? projectRecommendations.find(isLoungeSquadRecommendation) ?? projectRecommendations[0] ?? null
+    : null
   const hotShowcase = showcases[0] ?? null
   const collaborativeWorkspaceCount = collaborativeWorkspaces.length
-  const jobRecommendationCount = isAuthenticated ? jobRecommendations.length : 0
+  const careerProfileReady = Boolean(
+    isAuthenticated
+      && jobActivityProfile
+      && ((jobActivityProfile.projectCount ?? 0) > 0
+        || (jobActivityProfile.proofCardCount ?? 0) > 0
+        || (jobActivityProfile.skillSignals?.length ?? 0) > 0),
+  )
   const liveFeedItems = [
     {
       id: 'join',
@@ -684,7 +718,7 @@ export default function LoungeDashboardApp() {
                         </button>
                       </div>
                     ) : recommendedProject ? (
-                    <div className="ai-border cursor-pointer group p-5 flex flex-col md:flex-row gap-5 items-start md:items-center justify-between" onClick={() => goTo('/community-lounge')}>
+                    <div className="ai-border cursor-pointer group p-5 flex flex-col md:flex-row gap-5 items-start md:items-center justify-between" onClick={() => goTo(getRecommendationTarget(recommendedProject))}>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="bg-brand text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-sm">AI 맞춤 {recommendedProject.recommendationScore ?? 0}%</span>
@@ -760,12 +794,23 @@ export default function LoungeDashboardApp() {
                     <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 opacity-20 rounded-full blur-2xl group-hover:opacity-30 transition"></div>
 
                     <div>
-                      <h3 className="font-bold text-sm mb-2 flex items-center gap-2"><i className="fas fa-briefcase text-blue-400"></i> 커리어 추천 현황</h3>
+                      <h3 className="font-bold text-sm mb-2 flex items-center gap-2"><i className="fas fa-briefcase text-blue-400"></i> 커리어 분석 준비</h3>
                       <p className="text-xs text-gray-400 mb-1 leading-relaxed">
                         {isAuthenticated ? (
-                          <>{userName}님의 스택과 일치하는 채용공고가 <span className="text-white font-bold">{jobRecommendationCount}건</span> 업데이트 되었습니다.</>
+                          careerProfileReady ? (
+                            <>Proof Card와 프로젝트 활동을 기준으로 커리어 분석이 준비되었습니다.</>
+                          ) : (
+                            <>Proof Card와 프로젝트 활동이 쌓이면 커리어 분석을 준비할 수 있습니다.</>
+                          )
                         ) : (
-                          <>로그인하면 학습 기술 스택과 일치하는 채용공고를 확인할 수 있습니다.</>
+                          <>로그인하면 Proof Card와 프로젝트 활동 기반 커리어 분석을 준비할 수 있습니다.</>
+                        )}
+                      </p>
+                      <p className="text-[11px] text-gray-500 leading-relaxed">
+                        {isAuthenticated ? (
+                          <>잡코리아 최신 공고 분석은 AI 맞춤 공고 스캔에서 실행됩니다.</>
+                        ) : (
+                          <>로그인 후 AI 맞춤 공고 스캔에서 확인할 수 있습니다.</>
                         )}
                       </p>
                     </div>

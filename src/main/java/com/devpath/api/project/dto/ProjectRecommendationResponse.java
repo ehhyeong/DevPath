@@ -1,6 +1,7 @@
 package com.devpath.api.project.dto;
 
 import com.devpath.domain.project.entity.Project;
+import com.devpath.domain.squad.entity.Squad;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,6 +15,8 @@ public class ProjectRecommendationResponse {
   private String description;
   private String projectType;
   private String recruitingStatus;
+  private String sourceType;
+  private String targetUrl;
   private int recommendationScore;
   private List<String> matchedSkillTags;
   private String reason;
@@ -26,9 +29,26 @@ public class ProjectRecommendationResponse {
         .description(project.getDescription())
         .projectType(project.getProjectType().name())
         .recruitingStatus(project.getRecruitingStatus().name())
+        .sourceType("PROJECT")
         .recommendationScore(recommendationScore)
         .matchedSkillTags(matchedSkillTags)
         .reason(buildReason(matchedSkillTags))
+        .build();
+  }
+
+  public static ProjectRecommendationResponse fromSquad(
+      Squad squad, int recommendationScore, List<String> matchedSkillTags, String reason) {
+    return ProjectRecommendationResponse.builder()
+        .projectId(squad.getId())
+        .name(squad.getName())
+        .description(squad.getDescription())
+        .projectType("SQUAD")
+        .recruitingStatus("OPEN")
+        .sourceType("LOUNGE_SQUAD")
+        .targetUrl("/community-lounge?squadId=" + squad.getId())
+        .recommendationScore(recommendationScore)
+        .matchedSkillTags(matchedSkillTags)
+        .reason(reason)
         .build();
   }
 
