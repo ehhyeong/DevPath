@@ -7,6 +7,10 @@
   --app-page-max-width: 1600px;
   --app-page-gutter: clamp(16px, 3vw, 32px);
   --app-content-gap: clamp(24px, 3vw, 32px);
+  --devpath-scrollbar-size: 6px;
+  --devpath-scrollbar-thumb: #CBD5E1;
+  --devpath-scrollbar-thumb-hover: #94A3B8;
+  --devpath-scrollbar-track: transparent;
 }
 
 *,
@@ -30,6 +34,59 @@ body {
   overflow-x: hidden;
   overflow-y: scroll;
   background-color: #F8F9FA;
+}
+
+html,
+body,
+.app-main,
+.custom-scrollbar,
+.overflow-auto,
+.overflow-x-auto,
+.overflow-y-auto {
+  scrollbar-color: var(--devpath-scrollbar-thumb) var(--devpath-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.app-main::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar {
+  width: var(--devpath-scrollbar-size);
+  height: var(--devpath-scrollbar-size);
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+.app-main::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track,
+.overflow-auto::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track,
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: var(--devpath-scrollbar-track);
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+.app-main::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.overflow-auto::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: var(--devpath-scrollbar-thumb);
+  border-radius: 4px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+.app-main::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.overflow-auto::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover,
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: var(--devpath-scrollbar-thumb-hover);
 }
 
 body.devpath-modal-open {
@@ -1631,12 +1688,13 @@ aside:hover .sidebar-text {
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: var(--devpath-scrollbar-size);
+  height: var(--devpath-scrollbar-size);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #4b5563;
-  border-radius: 3px;
+  background: var(--devpath-scrollbar-thumb);
+  border-radius: 4px;
 }
 
 .sticky-roadmap {
@@ -3185,9 +3243,9 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 .rank-1 { background: linear-gradient(135deg, #FFD700, #FDB931); color: white; border: none; }
 .rank-2 { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); color: white; border: none; }
 
-.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar { width: var(--devpath-scrollbar-size); height: var(--devpath-scrollbar-size); }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--devpath-scrollbar-thumb); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: var(--devpath-scrollbar-track); }
 
 .modal { transition: opacity 0.3s, visibility 0.3s; opacity: 0; visibility: hidden; z-index: 50; }
 .modal.active { opacity: 1; visibility: visible; }

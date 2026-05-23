@@ -18,14 +18,14 @@ export const siteHeaderTuning = {
   containerGapPx: 32,
   sideWidthPx: 240,
   brandSlotOffsetXPx: -54,
-  navBaseXPx: -20,
+  navBaseXPx: -30,
   navGapPx: 40,
   instructorGapPx: 40,
   instructorLinkGapPx: 24,
   headerGroup: { x: 0, y: 0 },
-  brandGroup: { x: 15, y: 0 },
-  navGroup: { x: 0, y: 0 },
-  userGroup: { x: 0, y: 0 },
+  brandGroup: { x: 50, y: 0 },
+  navGroup: { x: -50, y: 0 },
+  userGroup: { x: -50, y: 0 },
 } as const
 
 function getMoveStyle(offset: { x: number; y: number }): CSSProperties {
