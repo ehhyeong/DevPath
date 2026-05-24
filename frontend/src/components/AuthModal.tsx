@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { authApi } from '../lib/api'
-import { persistAuthSession } from '../lib/auth-session'
+import { consumePostLoginReturnPath, persistAuthSession } from '../lib/auth-session'
 
 export type AuthView = 'login' | 'signup'
 
@@ -72,12 +72,22 @@ function AuthModal({ view, onClose, onViewChange, onAuthenticated }: AuthModalPr
       })
 
       persistAuthSession(response, rememberMe)
+      const returnPath = consumePostLoginReturnPath()
       setLoginStatus({
         tone: 'success',
         message: '로그인되었습니다.',
       })
 
       window.setTimeout(() => {
+        if (returnPath) {
+          const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`
+
+          if (returnPath !== currentPath) {
+            window.location.assign(returnPath)
+            return
+          }
+        }
+
         onAuthenticated()
       }, 150)
     } catch (error) {

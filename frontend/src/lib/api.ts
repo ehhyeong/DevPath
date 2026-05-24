@@ -75,7 +75,7 @@ import type {
   UserProfileUpdateRequest,
   WishlistCourse,
 } from '../types/learner'
-import { expireStoredAuthSession, readStoredAuthSession } from './auth-session'
+import { expireStoredAuthSession, refreshStoredAuthSession } from './auth-session'
 import type {
   OfficialRoadmapDetail,
   RoadmapDetail,
@@ -270,14 +270,14 @@ async function request<T>(
   }
 
   if (options.auth) {
-    const session = readStoredAuthSession()
+    const session = await refreshStoredAuthSession()
 
     if (session?.accessToken) {
       headers.set('Authorization', `${session.tokenType} ${session.accessToken}`)
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  let response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers,
   })
@@ -291,8 +291,26 @@ async function request<T>(
   }
 
   if (options.auth && response.status === 401) {
-    expireStoredAuthSession({ reload: true })
-    throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요.')
+    const refreshedSession = await refreshStoredAuthSession({ force: true }).catch(() => null)
+
+    if (refreshedSession?.accessToken) {
+      headers.set('Authorization', `${refreshedSession.tokenType} ${refreshedSession.accessToken}`)
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        ...init,
+        headers,
+      })
+
+      try {
+        payload = (await response.json()) as ApiResponse<T>
+      } catch {
+        payload = null
+      }
+    }
+
+    if (response.status === 401) {
+      expireStoredAuthSession({ reload: true, force: true })
+      throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요.')
+    }
   }
 
   if (!response.ok || !payload?.success) {

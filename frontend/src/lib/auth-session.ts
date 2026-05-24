@@ -8,15 +8,39 @@ import {
 } from './auth-toast'
 
 const AUTH_STORAGE_KEY = 'devpath.auth.session'
-const EXPIRY_SKEW_MS = 1000
+const AUTH_RETURN_PATH_KEY = 'devpath.auth.return-path'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
+const IDLE_TIMEOUT_MS = 60 * 60 * 1000
+const ACTIVITY_WRITE_INTERVAL_MS = 30 * 1000
+const ACCESS_TOKEN_REFRESH_SKEW_MS = 60 * 1000
+const REFRESH_STORAGE_RECOVERY_TIMEOUT_MS = 1500
+const REFRESH_STORAGE_RECOVERY_POLL_MS = 50
+const IDLE_ACTIVITY_EVENTS = [
+  'click',
+  'keydown',
+  'pointerdown',
+  'scroll',
+  'touchstart',
+] as const
 
 let expiryTimeoutId: number | null = null
+let idleActivityListenersAttached = false
+let authStorageSyncListenerAttached = false
+let lastActivityWriteAt = 0
+let refreshSessionPromise: Promise<AuthSession | null> | null = null
 
 export const AUTH_SESSION_SYNC_EVENT = 'devpath:auth-session-sync'
 
 type AuthToastOptions = {
   persistToast?: boolean
   toastMessage?: string | null
+}
+
+type ApiEnvelope<T> = {
+  success: boolean
+  code?: string
+  message?: string
+  data: T
 }
 
 function decodeBase64Url(value: string) {
@@ -28,7 +52,6 @@ function decodeBase64Url(value: string) {
 }
 
 export function parseTokenClaims(accessToken: string): AuthTokenClaims {
-  // 액세스 토큰에서 사용자 식별자와 권한 정보를 꺼낸다.
   try {
     const [, payload] = accessToken.split('.')
 
@@ -64,6 +87,7 @@ function buildSession(
     ...response,
     ...claims,
     storage,
+    lastActivityAt: storage === 'session' ? Date.now() : undefined,
   }
 }
 
@@ -73,6 +97,20 @@ function writeToStorage(storage: Storage, session: AuthSession) {
 
 function notifyAuthSessionChanged() {
   window.dispatchEvent(new Event(AUTH_SESSION_SYNC_EVENT))
+}
+
+function ensureAuthStorageSyncListener() {
+  if (authStorageSyncListenerAttached || typeof window === 'undefined') {
+    return
+  }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === AUTH_STORAGE_KEY) {
+      notifyAuthSessionChanged()
+    }
+  })
+
+  authStorageSyncListenerAttached = true
 }
 
 function emitAuthToast(message: string | null | undefined, options?: AuthToastOptions) {
@@ -114,24 +152,270 @@ function getStoredSessionRaw() {
   return readFromStorage(localStorage) ?? readFromStorage(sessionStorage)
 }
 
-function isSessionExpired(session: AuthSession, nowMs = Date.now()) {
+function getSessionStorage(session: AuthSession) {
+  return session.storage === 'local' ? localStorage : sessionStorage
+}
+
+function getCurrentReturnPath() {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('auth')
+
+  return `${url.pathname}${url.search}${url.hash}`
+}
+
+function normalizeReturnPath(value: string | null) {
+  if (!value) {
+    return null
+  }
+
+  try {
+    const url = new URL(value, window.location.origin)
+
+    if (url.origin !== window.location.origin) {
+      return null
+    }
+
+    url.searchParams.delete('auth')
+
+    const path = `${url.pathname}${url.search}${url.hash}`
+
+    if (path === '/login' || path === '/signup' || path.startsWith('/oauth2/redirect')) {
+      return null
+    }
+
+    return path
+  } catch {
+    return null
+  }
+}
+
+function storePostLoginReturnPath(path = getCurrentReturnPath()) {
+  const normalizedPath = normalizeReturnPath(path)
+
+  if (!normalizedPath) {
+    return
+  }
+
+  sessionStorage.setItem(AUTH_RETURN_PATH_KEY, normalizedPath)
+}
+
+export function consumePostLoginReturnPath() {
+  const path = normalizeReturnPath(sessionStorage.getItem(AUTH_RETURN_PATH_KEY))
+  sessionStorage.removeItem(AUTH_RETURN_PATH_KEY)
+
+  return path
+}
+
+function isIdleSessionExpired(session: AuthSession, nowMs = Date.now()) {
+  if (session.storage === 'local') {
+    return false
+  }
+
+  const lastActivityAt = session.lastActivityAt ?? nowMs
+
+  return lastActivityAt + IDLE_TIMEOUT_MS <= nowMs
+}
+
+function updateSessionActivity(session: AuthSession, timestamp = Date.now()) {
+  if (session.storage === 'local') {
+    return session
+  }
+
+  const nextSession: AuthSession = {
+    ...session,
+    lastActivityAt: timestamp,
+  }
+
+  writeToStorage(getSessionStorage(nextSession), nextSession)
+
+  return nextSession
+}
+
+function isAccessTokenExpiring(session: AuthSession, nowMs = Date.now()) {
   if (!session.exp) {
     return false
   }
 
-  return session.exp * 1000 <= nowMs + EXPIRY_SKEW_MS
+  return session.exp * 1000 <= nowMs + ACCESS_TOKEN_REFRESH_SKEW_MS
 }
 
-function scheduleSessionExpiry(session: AuthSession) {
-  // 토큰 만료 시점에 맞춰 세션 정리 동작을 예약한다.
-  clearExpiryTimer()
+function replaceStoredAuthTokens(
+  previousSession: AuthSession,
+  response: AuthTokenResponse,
+) {
+  const claims = parseTokenClaims(response.accessToken)
+  const nextSession: AuthSession = {
+    ...previousSession,
+    ...response,
+    ...claims,
+    storage: previousSession.storage,
+    lastActivityAt: previousSession.lastActivityAt,
+  }
 
-  if (!session.exp) {
+  writeToStorage(getSessionStorage(nextSession), nextSession)
+  scheduleSessionExpiry(nextSession)
+  notifyAuthSessionChanged()
+
+  return nextSession
+}
+
+function isRotatedStoredSession(
+  session: AuthSession | null,
+  previousRefreshToken: string,
+) {
+  return Boolean(session?.refreshToken && session.refreshToken !== previousRefreshToken)
+}
+
+function waitForRotatedStoredSession(previousRefreshToken: string) {
+  const existingSession = getStoredSessionRaw()
+
+  if (isRotatedStoredSession(existingSession, previousRefreshToken)) {
+    return Promise.resolve(existingSession)
+  }
+
+  return new Promise<AuthSession | null>((resolve) => {
+    const startedAt = Date.now()
+    let timerId: number | null = null
+    let completed = false
+
+    const finish = (session: AuthSession | null) => {
+      if (completed) {
+        return
+      }
+
+      completed = true
+      window.removeEventListener('storage', handleStorage)
+
+      if (timerId !== null) {
+        window.clearTimeout(timerId)
+      }
+
+      resolve(session)
+    }
+
+    const checkStoredSession = () => {
+      const session = getStoredSessionRaw()
+
+      if (isRotatedStoredSession(session, previousRefreshToken)) {
+        finish(session)
+        return
+      }
+
+      if (Date.now() - startedAt >= REFRESH_STORAGE_RECOVERY_TIMEOUT_MS) {
+        finish(null)
+        return
+      }
+
+      timerId = window.setTimeout(checkStoredSession, REFRESH_STORAGE_RECOVERY_POLL_MS)
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === AUTH_STORAGE_KEY) {
+        checkStoredSession()
+      }
+    }
+
+    window.addEventListener('storage', handleStorage)
+    timerId = window.setTimeout(checkStoredSession, REFRESH_STORAGE_RECOVERY_POLL_MS)
+  })
+}
+
+async function executeRefreshStoredAuthSession(
+  session: AuthSession,
+) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/reissue`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refreshToken: session.refreshToken }),
+  })
+
+  const payload = await response.json().catch(() => null) as ApiEnvelope<AuthTokenResponse> | null
+
+  if (!response.ok || !payload?.success) {
+    const recoveredSession = await waitForRotatedStoredSession(session.refreshToken)
+
+    if (recoveredSession) {
+      scheduleSessionExpiry(recoveredSession)
+      notifyAuthSessionChanged()
+      return recoveredSession
+    }
+
+    expireStoredAuthSession({ reload: false, force: true })
+    throw new Error(payload?.message ?? '토큰 재발급에 실패했습니다.')
+  }
+
+  return replaceStoredAuthTokens(session, payload.data)
+}
+
+export async function refreshStoredAuthSession(options?: { force?: boolean }) {
+  const session = readStoredAuthSession()
+
+  if (!session?.refreshToken) {
+    return session
+  }
+
+  if (!options?.force && !isAccessTokenExpiring(session)) {
+    return session
+  }
+
+  if (!refreshSessionPromise) {
+    refreshSessionPromise = executeRefreshStoredAuthSession(session).finally(() => {
+      refreshSessionPromise = null
+    })
+  }
+
+  return refreshSessionPromise
+}
+
+function touchSessionActivity(force = false) {
+  const session = getStoredSessionRaw()
+
+  if (!session || session.storage === 'local') {
     return
   }
 
-  const expiresAtMs = session.exp * 1000
-  const delayMs = expiresAtMs - Date.now() - EXPIRY_SKEW_MS
+  const now = Date.now()
+
+  if (!force && now - lastActivityWriteAt < ACTIVITY_WRITE_INTERVAL_MS) {
+    return
+  }
+
+  lastActivityWriteAt = now
+  scheduleSessionExpiry(updateSessionActivity(session, now))
+}
+
+function ensureIdleActivityListeners() {
+  if (idleActivityListenersAttached) {
+    return
+  }
+
+  IDLE_ACTIVITY_EVENTS.forEach((eventName) => {
+    window.addEventListener(eventName, () => touchSessionActivity(), { passive: true })
+  })
+
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      touchSessionActivity()
+    }
+  })
+
+  idleActivityListenersAttached = true
+}
+
+function scheduleSessionExpiry(session: AuthSession) {
+  clearExpiryTimer()
+
+  if (session.storage === 'local') {
+    return
+  }
+
+  ensureIdleActivityListeners()
+
+  const lastActivityAt = session.lastActivityAt ?? Date.now()
+  const delayMs = lastActivityAt + IDLE_TIMEOUT_MS - Date.now()
 
   if (delayMs <= 0) {
     expireStoredAuthSession({ reload: false })
@@ -155,6 +439,11 @@ export function persistAuthSession(
 
   otherStorage.removeItem(AUTH_STORAGE_KEY)
   writeToStorage(targetStorage, session)
+
+  if (!remember) {
+    ensureIdleActivityListeners()
+  }
+
   scheduleSessionExpiry(session)
   notifyAuthSessionChanged()
   emitAuthToast(options?.toastMessage ?? LOGIN_SUCCESS_AUTH_TOAST_MESSAGE, options)
@@ -163,7 +452,8 @@ export function persistAuthSession(
 }
 
 export function readStoredAuthSession(): AuthSession | null {
-  // 저장된 세션을 읽을 때마다 만료 여부를 다시 점검한다.
+  ensureAuthStorageSyncListener()
+
   const session = getStoredSessionRaw()
 
   if (!session) {
@@ -171,13 +461,18 @@ export function readStoredAuthSession(): AuthSession | null {
     return null
   }
 
-  if (isSessionExpired(session)) {
+  if (isIdleSessionExpired(session)) {
     expireStoredAuthSession({ reload: false })
     return null
   }
 
-  scheduleSessionExpiry(session)
-  return session
+  const nextSession = session.storage === 'session' && !session.lastActivityAt
+    ? updateSessionActivity(session)
+    : session
+
+  scheduleSessionExpiry(nextSession)
+
+  return nextSession
 }
 
 export function clearStoredAuthSession(options?: AuthToastOptions) {
@@ -188,7 +483,7 @@ export function clearStoredAuthSession(options?: AuthToastOptions) {
   emitAuthToast(options?.toastMessage ?? LOGOUT_AUTH_TOAST_MESSAGE, options)
 }
 
-export function expireStoredAuthSession(options?: { reload?: boolean }) {
+export function expireStoredAuthSession(options?: { reload?: boolean; force?: boolean }) {
   const { reload = true } = options ?? {}
   const session = getStoredSessionRaw()
 
@@ -198,6 +493,11 @@ export function expireStoredAuthSession(options?: { reload?: boolean }) {
     return
   }
 
+  if (session.storage === 'local' && !options?.force) {
+    return
+  }
+
+  storePostLoginReturnPath()
   localStorage.removeItem(AUTH_STORAGE_KEY)
   sessionStorage.removeItem(AUTH_STORAGE_KEY)
   notifyAuthSessionChanged()
@@ -209,7 +509,7 @@ export function expireStoredAuthSession(options?: { reload?: boolean }) {
   }
 
   if (reload) {
-    window.location.reload()
+    window.location.assign('/home?auth=login')
   }
 }
 
@@ -225,8 +525,7 @@ export function updateStoredAuthSession(patch: Partial<Pick<AuthSession, 'name'>
     ...patch,
   }
 
-  const targetStorage = session.storage === 'local' ? localStorage : sessionStorage
-  writeToStorage(targetStorage, nextSession)
+  writeToStorage(getSessionStorage(nextSession), nextSession)
   scheduleSessionExpiry(nextSession)
   notifyAuthSessionChanged()
 
@@ -247,7 +546,12 @@ export function getRoleLabel(role: string | null) {
 }
 
 export function getPostLoginRedirect(role: string | null) {
-  // 관리자만 전용 라우트로 보내고 나머지는 홈으로 유지한다.
+  const returnPath = consumePostLoginReturnPath()
+
+  if (returnPath) {
+    return returnPath
+  }
+
   switch (role) {
     case 'ROLE_ADMIN':
       return '/admin-dashboard'
