@@ -1,4 +1,4 @@
-import { readStoredAuthSession } from './lib/auth-session'
+import { expireStoredAuthSession, readStoredAuthSession, refreshStoredAuthSession } from './lib/auth-session'
 
 export type ApiEnvelope<T> = {
   success: boolean
@@ -22,15 +22,32 @@ export async function projectApiRequest<T>(
     headers.set('Content-Type', 'application/json')
   }
 
-  const session = readStoredAuthSession()
+  const session = authMode === 'none'
+    ? readStoredAuthSession()
+    : await refreshStoredAuthSession()
+
   if (session?.accessToken) {
     headers.set('Authorization', `${session.tokenType} ${session.accessToken}`)
   } else if (authMode === 'required') {
     throw new Error('로그인이 필요합니다.')
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
-  const payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
+  let response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
+  let payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
+
+  if (authMode !== 'none' && response.status === 401 && session?.refreshToken) {
+    const refreshedSession = await refreshStoredAuthSession({ force: true }).catch(() => null)
+
+    if (refreshedSession?.accessToken) {
+      headers.set('Authorization', `${refreshedSession.tokenType} ${refreshedSession.accessToken}`)
+      response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
+      payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
+    }
+  }
+
+  if (authMode !== 'none' && response.status === 401 && readStoredAuthSession()) {
+    expireStoredAuthSession({ reload: false, force: true })
+  }
 
   if (!response.ok || !payload?.success) {
     throw new Error(payload?.message ?? `Request failed with status ${response.status}`)

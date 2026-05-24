@@ -24,4 +24,5 @@ export interface AuthTokenClaims {
 
 export interface AuthSession extends AuthTokenResponse, AuthTokenClaims {
   storage: 'local' | 'session'
+  lastActivityAt?: number
 }

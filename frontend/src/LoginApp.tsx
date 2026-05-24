@@ -7,9 +7,7 @@ function LoginApp() {
     const existingSession = readStoredAuthSession()
 
     if (existingSession) {
-      window.location.replace(
-        existingSession.role === 'ROLE_ADMIN' ? getPostLoginRedirect(existingSession.role) : '/home',
-      )
+      window.location.replace(getPostLoginRedirect(existingSession.role))
       return
     }
 

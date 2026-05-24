@@ -3,6 +3,7 @@ package com.devpath.api.workspace;
 import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 
 import com.devpath.api.workspace.dto.CreateWorkspaceFolderRequest;
+import com.devpath.api.workspace.dto.CreateWorkspaceLinkRequest;
 import com.devpath.api.workspace.dto.RenameWorkspaceFileRequest;
 import com.devpath.api.workspace.dto.WorkspaceArchivePreviewResponse;
 import com.devpath.api.workspace.dto.WorkspaceDocumentPreviewResponse;
@@ -85,6 +86,21 @@ public class WorkspaceFileController {
     return ApiResponse.ok(
         workspaceFileService.createFolder(
             workspaceId, requireUserId(userId), request.getName(), request.getParentId()));
+  }
+
+  @PostMapping("/workspaces/{workspaceId}/files/links")
+  @Operation(summary = "Create workspace external link", description = "Stores an external link in workspace resources.")
+  public ApiResponse<WorkspaceFileResponse> createLink(
+      @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
+      @Valid @RequestBody CreateWorkspaceLinkRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceFileService.createLink(
+            workspaceId,
+            requireUserId(userId),
+            request.getTitle(),
+            request.getUrl(),
+            request.getParentId()));
   }
 
   @GetMapping("/workspaces/{workspaceId}/files")

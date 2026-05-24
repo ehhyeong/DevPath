@@ -163,6 +163,25 @@ END $$;
 ^^^ END OF SCRIPT ^^^
 DO $$
 BEGIN
+    CREATE TABLE IF NOT EXISTS public.team_workspace_header_notification (
+        team_workspace_header_notification_id bigserial PRIMARY KEY,
+        workspace_id bigint NOT NULL,
+        page_key varchar(40) NOT NULL,
+        message varchar(500) NOT NULL,
+        time_label varchar(40) NOT NULL,
+        target_path varchar(120),
+        display_order integer NOT NULL DEFAULT 0,
+        is_deleted boolean NOT NULL DEFAULT false,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_team_workspace_header_notification_workspace_page
+        ON public.team_workspace_header_notification (workspace_id, page_key, display_order);
+END $$;
+^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
     IF to_regclass('public.voice_channels') IS NULL OR to_regclass('public.users') IS NULL THEN
         RETURN;
     END IF;

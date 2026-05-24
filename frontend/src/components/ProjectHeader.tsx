@@ -14,8 +14,8 @@ type ProjectHeaderProps = {
 }
 
 const LOGIN_TEXT = '\uB85C\uADF8\uC778'
-const PROJECT_HEADER_NAV_OFFSET_X = -8
-const PROJECT_HEADER_USER_OFFSET_X = -13.5
+const PROJECT_HEADER_NAV_OFFSET_X = 0
+const PROJECT_HEADER_USER_OFFSET_X = 0
 
 function getMoveStyle(offset: { x: number; y: number }): CSSProperties {
   return {

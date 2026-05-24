@@ -12,7 +12,7 @@ import type {
 import type { CourseCatalogMenu } from '../types/course-catalog'
 import type { AdminRoadmapHubCatalog, RoadmapHubCatalog } from '../types/roadmap-hub'
 import type { ApiResponse } from '../types/home'
-import { expireStoredAuthSession, readStoredAuthSession } from './auth-session'
+import { expireStoredAuthSession, refreshStoredAuthSession } from './auth-session'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 
@@ -28,13 +28,13 @@ async function request<T>(
     headers.set('Content-Type', 'application/json')
   }
 
-  const session = readStoredAuthSession()
+  const session = await refreshStoredAuthSession()
 
   if (session?.accessToken) {
     headers.set('Authorization', `${session.tokenType} ${session.accessToken}`)
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  let response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers,
   })
@@ -48,8 +48,26 @@ async function request<T>(
   }
 
   if (response.status === 401) {
-    expireStoredAuthSession({ reload: true })
-    throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요.')
+    const refreshedSession = await refreshStoredAuthSession({ force: true }).catch(() => null)
+
+    if (refreshedSession?.accessToken) {
+      headers.set('Authorization', `${refreshedSession.tokenType} ${refreshedSession.accessToken}`)
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        ...init,
+        headers,
+      })
+
+      try {
+        payload = (await response.json()) as ApiResponse<T>
+      } catch {
+        payload = null
+      }
+    }
+
+    if (response.status === 401) {
+      expireStoredAuthSession({ reload: true, force: true })
+      throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요.')
+    }
   }
 
   if (!response.ok || !payload?.success) {

@@ -6,9 +6,14 @@ import com.devpath.api.workspace.dto.UpdateWorkspaceDocRequest;
 import com.devpath.api.workspace.dto.WorkspaceDocResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.repository.UserRepository;
+import com.devpath.domain.workspace.entity.ActivityLog;
+import com.devpath.domain.workspace.entity.ActivityLogType;
 import com.devpath.domain.workspace.entity.MeetingNote;
 import com.devpath.domain.workspace.entity.WorkspaceDoc;
 import com.devpath.domain.workspace.entity.WorkspaceDocType;
+import com.devpath.domain.workspace.repository.ActivityLogRepository;
 import com.devpath.domain.workspace.repository.MeetingNoteRepository;
 import com.devpath.domain.workspace.repository.WorkspaceDocRepository;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
@@ -28,6 +33,9 @@ public class WorkspaceDocService {
   private final MeetingNoteRepository meetingNoteRepository;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final ActivityLogRepository activityLogRepository;
+  private final UserRepository userRepository;
+  private final TeamWorkspaceHeaderNotificationService headerNotificationService;
 
   @Transactional
   public WorkspaceDocResponse upsertDoc(
@@ -38,19 +46,23 @@ public class WorkspaceDocService {
     Optional<WorkspaceDoc> existing =
         workspaceDocRepository.findByWorkspaceIdAndDocType(workspaceId, docType);
 
+    WorkspaceDoc savedDoc;
     if (existing.isPresent()) {
-      existing.get().update(request.getContent(), userId);
-      return WorkspaceDocResponse.from(existing.get());
+      savedDoc = existing.get();
+      savedDoc.update(request.getContent(), userId);
+    } else {
+      WorkspaceDoc doc =
+          WorkspaceDoc.builder()
+              .workspaceId(workspaceId)
+              .docType(docType)
+              .content(request.getContent())
+              .updatedById(userId)
+              .build();
+      savedDoc = workspaceDocRepository.save(doc);
     }
 
-    WorkspaceDoc doc =
-        WorkspaceDoc.builder()
-            .workspaceId(workspaceId)
-            .docType(docType)
-            .content(request.getContent())
-            .updatedById(userId)
-            .build();
-    return WorkspaceDocResponse.from(workspaceDocRepository.save(doc));
+    recordDocUpdated(workspaceId, userId, docType);
+    return WorkspaceDocResponse.from(savedDoc);
   }
 
   public WorkspaceDocResponse getDoc(Long workspaceId, Long userId, WorkspaceDocType docType) {
@@ -60,7 +72,7 @@ public class WorkspaceDocService {
     return workspaceDocRepository
         .findByWorkspaceIdAndDocType(workspaceId, docType)
         .map(WorkspaceDocResponse::from)
-        .orElseThrow(() -> new CustomException(ErrorCode.DOC_NOT_FOUND));
+        .orElse(null);
   }
 
   @Transactional
@@ -90,6 +102,23 @@ public class WorkspaceDocService {
         .toList();
   }
 
+  @Transactional
+  public MeetingNoteResponse updateMeetingNote(
+      Long noteId, Long userId, CreateMeetingNoteRequest request) {
+    MeetingNote note = getMeetingNoteEntity(noteId);
+    validateMember(note.getWorkspaceId(), userId);
+
+    note.update(request.getTitle(), request.getContent());
+    return MeetingNoteResponse.from(note);
+  }
+
+  @Transactional
+  public void deleteMeetingNote(Long noteId, Long userId) {
+    MeetingNote note = getMeetingNoteEntity(noteId);
+    validateMember(note.getWorkspaceId(), userId);
+    note.delete();
+  }
+
   // --- 내부 헬퍼 ---
 
   private void validateWorkspaceExists(Long workspaceId) {
@@ -102,5 +131,43 @@ public class WorkspaceDocService {
     if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
       throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
     }
+  }
+
+  private MeetingNote getMeetingNoteEntity(Long noteId) {
+    return meetingNoteRepository
+        .findByIdAndIsDeletedFalse(noteId)
+        .orElseThrow(() -> new CustomException(ErrorCode.DOC_NOT_FOUND));
+  }
+
+  private void recordDocUpdated(Long workspaceId, Long userId, WorkspaceDocType docType) {
+    String actorName = resolveUserName(userId);
+    String docLabel = docLabel(docType);
+    String message = "%s님이 [%s]를 업데이트했습니다.".formatted(actorName, docLabel);
+
+    activityLogRepository.save(
+        ActivityLog.builder()
+            .workspaceId(workspaceId)
+            .actorId(userId)
+            .activityType(ActivityLogType.DOC_UPDATED)
+            .description(message)
+            .build());
+    headerNotificationService.addNotification(
+        workspaceId, "architecture", message, "/team-ws-architecture");
+  }
+
+  private String resolveUserName(Long userId) {
+    return userRepository
+        .findById(userId)
+        .map(User::getName)
+        .filter(name -> !name.isBlank())
+        .orElse("팀원");
+  }
+
+  private String docLabel(WorkspaceDocType docType) {
+    return switch (docType) {
+      case API_SPEC -> "API 명세서";
+      case ERD -> "ERD";
+      case INFRA -> "인프라 구조도";
+    };
   }
 }

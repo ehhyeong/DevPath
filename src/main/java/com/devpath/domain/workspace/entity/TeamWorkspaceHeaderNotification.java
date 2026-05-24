@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,33 +17,37 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "meeting_note")
-@EntityListeners(AuditingEntityListener.class)
+@Table(name = "team_workspace_header_notification")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder
-public class MeetingNote {
+@EntityListeners(AuditingEntityListener.class)
+public class TeamWorkspaceHeaderNotification {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "team_workspace_header_notification_id")
   private Long id;
 
   @Column(name = "workspace_id", nullable = false)
   private Long workspaceId;
 
-  @Column(nullable = false)
-  private String title;
+  @Column(name = "page_key", nullable = false, length = 40)
+  private String pageKey;
 
-  @Column(columnDefinition = "TEXT")
-  private String content;
+  @Column(nullable = false, length = 500)
+  private String message;
 
-  @Column(name = "created_by_id", nullable = false)
-  private Long createdById;
+  @Column(name = "time_label", nullable = false, length = 40)
+  private String timeLabel;
 
-  @Builder.Default
+  @Column(name = "target_path", length = 120)
+  private String targetPath;
+
+  @Column(name = "display_order", nullable = false)
+  private int displayOrder;
+
   @Column(name = "is_deleted", nullable = false)
-  private boolean isDeleted = false;
+  private boolean isDeleted;
 
   @CreatedDate
   @Column(name = "created_at", updatable = false)
@@ -54,12 +57,24 @@ public class MeetingNote {
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
 
-  public void delete() {
-    this.isDeleted = true;
+  @Builder
+  public TeamWorkspaceHeaderNotification(
+      Long workspaceId,
+      String pageKey,
+      String message,
+      String timeLabel,
+      String targetPath,
+      int displayOrder) {
+    this.workspaceId = workspaceId;
+    this.pageKey = pageKey;
+    this.message = message;
+    this.timeLabel = timeLabel;
+    this.targetPath = targetPath;
+    this.displayOrder = displayOrder;
+    this.isDeleted = false;
   }
 
-  public void update(String title, String content) {
-    this.title = title;
-    this.content = content;
+  public void delete() {
+    this.isDeleted = true;
   }
 }

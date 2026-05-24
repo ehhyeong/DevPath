@@ -20,7 +20,10 @@ import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,11 +70,17 @@ public class WorkspaceQuestionService {
 
     validateWorkspaceMember(workspace, user.getId());
 
-    return questionRepository
-        .findAllByQuestionScopeAndWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(
-            QuestionScope.WORKSPACE, workspace.getId())
-        .stream()
-        .map(QuestionSummaryResponse::from)
+    List<Question> questions =
+        questionRepository
+            .findAllByQuestionScopeAndWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(
+                QuestionScope.WORKSPACE, workspace.getId());
+    Map<Long, Integer> answerCounts = buildAnswerCountMap(questions);
+
+    return questions.stream()
+        .map(
+            question ->
+                QuestionSummaryResponse.from(
+                    question, answerCounts.getOrDefault(question.getId(), 0)))
         .toList();
   }
 
@@ -147,6 +156,20 @@ public class WorkspaceQuestionService {
         .stream()
         .map(AnswerResponse::from)
         .toList();
+  }
+
+  private Map<Long, Integer> buildAnswerCountMap(List<Question> questions) {
+    if (questions.isEmpty()) {
+      return Collections.emptyMap();
+    }
+
+    List<Long> questionIds = questions.stream().map(Question::getId).toList();
+
+    return answerRepository.findAllByQuestionIdInAndIsDeletedFalse(questionIds).stream()
+        .collect(
+            Collectors.groupingBy(
+                answer -> answer.getQuestion().getId(),
+                Collectors.collectingAndThen(Collectors.counting(), Long::intValue)));
   }
 
   private void validateWorkspaceMember(Workspace workspace, Long userId) {

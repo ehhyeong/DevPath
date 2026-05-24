@@ -18,12 +18,16 @@ import com.devpath.domain.project.entity.ProjectType;
 import com.devpath.domain.project.entity.ProjectVisibility;
 import com.devpath.domain.project.repository.ProjectMemberRepository;
 import com.devpath.domain.project.repository.ProjectRepository;
+import com.devpath.domain.squad.entity.Squad;
+import com.devpath.domain.squad.repository.SquadRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -38,6 +42,7 @@ public class ProjectService {
 
   private final ProjectRepository projectRepository;
   private final ProjectMemberRepository projectMemberRepository;
+  private final SquadRepository squadRepository;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final UserTechStackRepository userTechStackRepository;
@@ -104,19 +109,41 @@ public class ProjectService {
 
   public List<ProjectRecommendationResponse> getMyRecommendations(Long userId) {
     List<String> skillTags = userTechStackRepository.findTagNamesByUserId(userId);
+    List<ProjectRecommendationResponse> recommendations = new ArrayList<>();
 
-    if (skillTags.isEmpty()) {
-      return List.of();
+    if (!skillTags.isEmpty()) {
+      recommendations.addAll(
+          projectRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc().stream()
+              .filter(project -> project.getVisibility() == ProjectVisibility.PUBLIC)
+              .filter(project -> project.getRecruitingStatus() == ProjectRecruitingStatus.OPEN)
+              .map(project -> toRecommendation(project, skillTags))
+              .filter(recommendation -> !recommendation.getMatchedSkillTags().isEmpty())
+              .toList());
     }
 
-    return projectRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc().stream()
-        .filter(project -> project.getVisibility() == ProjectVisibility.PUBLIC)
-        .filter(project -> project.getRecruitingStatus() == ProjectRecruitingStatus.OPEN)
-        .map(project -> toRecommendation(project, skillTags))
-        .filter(recommendation -> !recommendation.getMatchedSkillTags().isEmpty())
+    List<Squad> activeSquads =
+        squadRepository.findAllByIsDeletedFalseAndIsArchivedFalseOrderByCreatedAtDesc();
+
+    if (!skillTags.isEmpty()) {
+      recommendations.addAll(
+          activeSquads.stream()
+              .map(squad -> toSquadRecommendation(squad, skillTags))
+              .filter(recommendation -> !recommendation.getMatchedSkillTags().isEmpty())
+              .toList());
+    }
+
+    if (recommendations.isEmpty()) {
+      recommendations.addAll(
+          activeSquads.stream()
+              .map(this::toFallbackSquadRecommendation)
+              .toList());
+    }
+
+    return recommendations.stream()
         .sorted(
-            Comparator.comparing(ProjectRecommendationResponse::getRecommendationScore)
-                .reversed()
+            Comparator.comparingInt(this::getRecommendationPriority)
+                .thenComparing(
+                    ProjectRecommendationResponse::getRecommendationScore, Comparator.reverseOrder())
                 .thenComparing(ProjectRecommendationResponse::getProjectId))
         .toList();
   }
@@ -220,6 +247,10 @@ public class ProjectService {
         project, Math.min(100, matchedSkillTags.size() * 20), matchedSkillTags);
   }
 
+  private int getRecommendationPriority(ProjectRecommendationResponse recommendation) {
+    return "LOUNGE_SQUAD".equals(recommendation.getSourceType()) ? 0 : 1;
+  }
+
   private boolean projectContainsSkill(Project project, String skill) {
     if (skill == null || skill.isBlank()) {
       return false;
@@ -234,5 +265,53 @@ public class ProjectService {
 
   private boolean containsIgnoreCase(String source, String normalizedNeedle) {
     return source != null && source.toLowerCase(Locale.ROOT).contains(normalizedNeedle);
+  }
+
+  private ProjectRecommendationResponse toSquadRecommendation(Squad squad, List<String> skillTags) {
+    List<String> matchedSkillTags =
+        skillTags.stream().filter(skill -> squadContainsSkill(squad, skill)).distinct().toList();
+
+    int score = Math.min(100, 55 + matchedSkillTags.size() * 15);
+    return ProjectRecommendationResponse.fromSquad(
+        squad, score, matchedSkillTags, buildSquadReason(matchedSkillTags));
+  }
+
+  private ProjectRecommendationResponse toFallbackSquadRecommendation(Squad squad) {
+    List<String> tags = splitCsv(squad.getTags()).stream().limit(3).toList();
+    return ProjectRecommendationResponse.fromSquad(
+        squad, 45, tags, "최근 공개 모집 중인 라운지 프로젝트입니다.");
+  }
+
+  private boolean squadContainsSkill(Squad squad, String skill) {
+    if (skill == null || skill.isBlank()) {
+      return false;
+    }
+
+    String normalizedSkill = skill.trim().toLowerCase(Locale.ROOT);
+
+    return containsIgnoreCase(squad.getName(), normalizedSkill)
+        || containsIgnoreCase(squad.getDescription(), normalizedSkill)
+        || containsIgnoreCase(squad.getTags(), normalizedSkill)
+        || containsIgnoreCase(squad.getRoles(), normalizedSkill);
+  }
+
+  private List<String> splitCsv(String value) {
+    if (value == null || value.isBlank()) {
+      return List.of();
+    }
+
+    return Arrays.stream(value.split(","))
+        .map(String::trim)
+        .filter(token -> !token.isBlank())
+        .distinct()
+        .toList();
+  }
+
+  private String buildSquadReason(List<String> matchedSkillTags) {
+    if (matchedSkillTags.isEmpty()) {
+      return "최근 공개 모집 중인 라운지 프로젝트입니다.";
+    }
+
+    return String.join(", ", matchedSkillTags) + " 기술 스택과 맞는 라운지 모집글입니다.";
   }
 }

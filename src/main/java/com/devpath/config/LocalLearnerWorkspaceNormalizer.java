@@ -524,7 +524,7 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
         )
         VALUES
             (
-              'proj-squad-1', 'menu-1', 'squad', 'progress', 'workspace-hub.html',
+              'proj-squad-1', 'menu-1', 'squad', 'progress', '/workspace-hub',
               '배달비 절약 플랫폼', '위치 기반 실시간 공동 구매 매칭 서비스 MVP 개발', 40,
               NULL, NULL, NULL, NULL,
               'avatars', to_char(CURRENT_DATE - 4, 'YYYY-MM-DD'), 'workspace-member-1,workspace-member-2', 2,
@@ -532,17 +532,17 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
               1, FALSE
             ),
             (
-              'proj-mentor-1', 'menu-2', 'mentoring', 'progress', 'workspace-hub.html',
+              'proj-mentor-1', 'menu-2', 'mentoring', 'progress', '/workspace-hub',
               '대용량 트래픽 커머스 서버', 'Spring Boot와 Redis를 활용한 선착순 쿠폰 시스템 구현 실습', 20,
-              '공통 과제형', 'fas fa-users mr-1', 'Backend', NULL,
+              '공통 과제형', 'fas fa-puzzle-piece mr-1', 'Backend', NULL,
               'mentor', NULL, NULL, NULL,
               'Jonas', '멘토링 워크스페이스', '진행중', 'fas fa-comment-dots mr-1',
               2, FALSE
             ),
             (
-              'proj-mentor-2', 'menu-3', 'mentoring', 'progress', 'workspace-hub.html',
+              'proj-mentor-2', 'menu-3', 'mentoring', 'progress', '/workspace-hub',
               'Next.js 블로그 플랫폼 구축', '팀원들과 역할을 나누어 기획부터 배포까지 완성하는 팀 프로젝트형 멘토링', 50,
-              '팀 프로젝트형', 'fas fa-puzzle-piece mr-1', 'Frontend', NULL,
+              '팀 프로젝트형', 'fas fa-users mr-1', 'Frontend', NULL,
               'mentor', NULL, NULL, NULL,
               'Mobile', '멘토링 워크스페이스', '진행중', 'fas fa-comment-dots mr-1',
               3, FALSE

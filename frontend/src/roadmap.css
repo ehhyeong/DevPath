@@ -111,7 +111,7 @@
 }
 
 .roadmap-header-metrics {
-  margin-right: 152px;
+  margin-right: 168px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -148,7 +148,7 @@
 .roadmap-header-back-link {
   position: absolute;
   top: 50%;
-  left: calc((var(--left-rail) * -1) + 8px);
+  left: calc((var(--left-rail) * -1) + 28px);
   display: inline-flex;
   align-items: center;
   gap: 4px;

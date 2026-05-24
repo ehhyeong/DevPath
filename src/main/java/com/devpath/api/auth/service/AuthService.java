@@ -74,7 +74,6 @@ public class AuthService {
     JwtTokenProvider.TokenClaims claims = jwtTokenProvider.parseRefreshToken(refreshToken);
 
     if (tokenRedisService.isRefreshJtiBlacklisted(claims.jti())) {
-      tokenRedisService.deleteRefreshToken(claims.userId());
       throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
     }
 
@@ -84,7 +83,6 @@ public class AuthService {
             .orElseThrow(() -> new CustomException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
 
     if (!activeRefreshJti.equals(claims.jti())) {
-      tokenRedisService.deleteRefreshToken(claims.userId());
       throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
     }
 

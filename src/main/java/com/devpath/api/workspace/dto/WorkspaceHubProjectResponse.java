@@ -8,6 +8,7 @@ import com.devpath.domain.workspace.entity.WorkspaceType;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -68,6 +69,7 @@ public class WorkspaceHubProjectResponse {
     String type = typeOf(workspace.getType());
     String status = statusOf(workspace.getStatus());
     String mentoringModeLabel = mentoringModeLabel(workspace);
+    boolean mentoring = workspace.getType() == WorkspaceType.MENTORING;
 
     return WorkspaceHubProjectResponse.builder()
         .projectId(workspace.getId())
@@ -81,16 +83,16 @@ public class WorkspaceHubProjectResponse {
         .progressPercent("completed".equals(status) ? 100 : defaultProgress(workspace.getType()))
         .mentoringModeLabel(mentoringModeLabel)
         .mentoringModeIcon(mentoringModeIcon(mentoringModeLabel))
-        .categoryLabel(workspace.getType() == WorkspaceType.MENTORING ? "Mentoring" : null)
+        .categoryLabel(mentoring ? "Mentoring" : null)
         .roleLabel(null)
-        .footerKind(workspace.getType() == WorkspaceType.MENTORING ? "mentor" : "avatars")
+        .footerKind(mentoring ? "mentor" : "avatars")
         .footerDateLabel(dateText(workspace.getCreatedAt()))
         .memberAvatarSeeds(memberSeeds(members, currentUserId))
         .extraMemberCount(extraMemberCount(members))
-        .footerAvatarSeed(workspace.getType() == WorkspaceType.MENTORING ? "workspace-" + workspace.getId() : null)
-        .footerText(workspace.getType() == WorkspaceType.MENTORING ? "멘토링 워크스페이스" : null)
-        .footerMetaText(workspace.getType() == WorkspaceType.MENTORING ? "진행중" : null)
-        .footerMetaIcon(workspace.getType() == WorkspaceType.MENTORING ? "fas fa-comment-dots mr-1" : null)
+        .footerAvatarSeed(mentoring ? "workspace-" + workspace.getId() : null)
+        .footerText(mentoring ? "멘토링 워크스페이스" : null)
+        .footerMetaText(mentoring ? "진행중" : null)
+        .footerMetaIcon(mentoring ? "fas fa-comment-dots mr-1" : null)
         .build();
   }
 
@@ -117,7 +119,11 @@ public class WorkspaceHubProjectResponse {
       return "/squad-dashboard?workspaceId=" + workspace.getId();
     }
 
-    return "workspace-hub.html?workspaceId=" + workspace.getId();
+    if (isTeamMentoringWorkspace(workspace)) {
+      return "/team-ws-dashboard?workspaceId=" + workspace.getId();
+    }
+
+    return "/workspace-hub?workspaceId=" + workspace.getId();
   }
 
   private static String statusOf(WorkspaceStatus status) {
@@ -129,15 +135,33 @@ public class WorkspaceHubProjectResponse {
       return null;
     }
 
-    String text = (workspace.getName() + " " + (workspace.getDescription() == null ? "" : workspace.getDescription()));
-    return text.contains("팀 프로젝트형") || text.contains("팀 프로젝트") ? "팀 프로젝트형" : "공통 과제형";
+    return isTeamMentoringWorkspace(workspace) ? "팀프로젝트형" : "공통과제형";
   }
 
   private static String mentoringModeIcon(String mentoringModeLabel) {
     if (mentoringModeLabel == null) {
       return null;
     }
-    return "팀 프로젝트형".equals(mentoringModeLabel) ? "fas fa-puzzle-piece mr-1" : "fas fa-users mr-1";
+    return "팀프로젝트형".equals(mentoringModeLabel)
+        ? "fas fa-users mr-1"
+        : "fas fa-puzzle-piece mr-1";
+  }
+
+  private static boolean isTeamMentoringWorkspace(Workspace workspace) {
+    if (workspace.getType() != WorkspaceType.MENTORING) {
+      return false;
+    }
+
+    String text =
+        (workspace.getName() + " " + (workspace.getDescription() == null ? "" : workspace.getDescription()))
+            .toLowerCase(Locale.ROOT)
+            .replace(" ", "");
+
+    return text.contains("팀프로젝트")
+        || text.contains("팀프로젝트형")
+        || text.contains("teamproject")
+        || text.contains("teamworkspace")
+        || text.contains("팀워크스페이스");
   }
 
   private static int defaultProgress(WorkspaceType type) {

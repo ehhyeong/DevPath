@@ -21,6 +21,9 @@ public class WorkspaceDashboardResponse {
   @Schema(description = "워크스페이스 이름", example = "DevPath 팀 워크스페이스")
   private String name;
 
+  @Schema(description = "워크스페이스 설명")
+  private String description;
+
   @Schema(description = "워크스페이스 타입", example = "SQUAD")
   private WorkspaceType type;
 
@@ -62,6 +65,7 @@ public class WorkspaceDashboardResponse {
     return builder()
         .workspaceId(workspace.getId())
         .name(workspace.getName())
+        .description(workspace.getDescription())
         .type(workspace.getType())
         .status(workspace.getStatus())
         .ownerId(workspace.getOwnerId())

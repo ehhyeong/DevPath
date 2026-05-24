@@ -207,6 +207,40 @@ public class WorkspaceFileService {
     return toResponse(workspaceFileRepository.save(folder));
   }
 
+  @Transactional
+  public WorkspaceFileResponse createLink(
+      Long workspaceId, Long userId, String title, String url, Long parentId) {
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
+    validateParentFolder(workspaceId, parentId);
+
+    if (!StringUtils.hasText(title) || !StringUtils.hasText(url)) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    String normalizedUrl = url.trim();
+    if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    WorkspaceFile link =
+        WorkspaceFile.builder()
+            .workspaceId(workspaceId)
+            .parentId(parentId)
+            .itemType(WorkspaceFileType.LINK)
+            .originalFileName(title.trim())
+            .storedFileName("")
+            .filePath("")
+            .fileSize(0)
+            .contentType("text/uri-list")
+            .storageProvider("LINK")
+            .objectKey(normalizedUrl)
+            .uploadedById(userId)
+            .build();
+
+    return toResponse(workspaceFileRepository.save(link));
+  }
+
   public List<WorkspaceFileResponse> getFiles(Long workspaceId, Long userId) {
     return getFiles(workspaceId, userId, null);
   }
@@ -236,7 +270,7 @@ public class WorkspaceFileService {
         workspaceFileRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(
                 workspaceId)
             .stream()
-            .filter(file -> !file.isFolder())
+            .filter(file -> file.getItemType() == WorkspaceFileType.FILE)
             .mapToLong(WorkspaceFile::getFileSize)
             .sum();
 

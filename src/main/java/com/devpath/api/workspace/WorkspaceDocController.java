@@ -112,6 +112,26 @@ public class WorkspaceDocController {
         workspaceDocService.getDoc(workspaceId, requireUserId(userId), WorkspaceDocType.API_SPEC));
   }
 
+  @PutMapping("/workspaces/{workspaceId}/docs/infra")
+  @Operation(summary = "Infra document upsert", description = "Stores workspace infrastructure architecture notes or links.")
+  public ApiResponse<WorkspaceDocResponse> upsertInfra(
+      @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
+      @RequestBody UpdateWorkspaceDocRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.upsertDoc(
+            workspaceId, requireUserId(userId), WorkspaceDocType.INFRA, request));
+  }
+
+  @GetMapping("/workspaces/{workspaceId}/docs/infra")
+  @Operation(summary = "Infra document lookup", description = "Loads workspace infrastructure architecture notes or links.")
+  public ApiResponse<WorkspaceDocResponse> getInfra(
+      @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.getDoc(workspaceId, requireUserId(userId), WorkspaceDocType.INFRA));
+  }
+
   @PostMapping("/workspaces/{workspaceId}/meeting-notes")
   @Operation(summary = "회의록 생성", description = "워크스페이스에 회의록을 생성합니다.")
   @ApiResponses({
@@ -146,5 +166,24 @@ public class WorkspaceDocController {
       @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(workspaceDocService.getMeetingNotes(workspaceId, requireUserId(userId)));
+  }
+
+  @PutMapping("/meeting-notes/{noteId}")
+  @Operation(summary = "Update meeting note", description = "Updates a workspace meeting note.")
+  public ApiResponse<MeetingNoteResponse> updateMeetingNote(
+      @Parameter(description = "Meeting note ID", example = "1") @PathVariable Long noteId,
+      @Valid @RequestBody CreateMeetingNoteRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.updateMeetingNote(noteId, requireUserId(userId), request));
+  }
+
+  @org.springframework.web.bind.annotation.DeleteMapping("/meeting-notes/{noteId}")
+  @Operation(summary = "Delete meeting note", description = "Soft deletes a workspace meeting note.")
+  public ApiResponse<Void> deleteMeetingNote(
+      @Parameter(description = "Meeting note ID", example = "1") @PathVariable Long noteId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    workspaceDocService.deleteMeetingNote(noteId, requireUserId(userId));
+    return ApiResponse.ok(null);
   }
 }

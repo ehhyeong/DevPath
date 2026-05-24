@@ -248,6 +248,20 @@ function emptyCreateForm(): CreateForm {
   }
 }
 
+function readInitialDetailSquadId() {
+  const params = new URLSearchParams(window.location.search)
+  const rawId = params.get('squadId')
+  const id = rawId ? Number(rawId) : Number.NaN
+
+  return Number.isInteger(id) && id > 0 ? id : null
+}
+
+function clearInitialDetailSquadId() {
+  const url = new URL(window.location.href)
+  url.searchParams.delete('squadId')
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+}
+
 export default function CommunityLoungeApp() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
@@ -264,6 +278,7 @@ export default function CommunityLoungeApp() {
   const [hideClosed, setHideClosed] = useState(false)
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all')
   const [currentPage, setCurrentPage] = useState(1)
+  const [initialDetailSquadId, setInitialDetailSquadId] = useState(() => readInitialDetailSquadId())
   const [detailSquad, setDetailSquad] = useState<SquadPost | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState<CreateForm>(() => emptyCreateForm())
@@ -549,6 +564,22 @@ export default function CommunityLoungeApp() {
       // 목록 데이터가 이미 있으므로 상세 보기는 그대로 유지한다.
     }
   }
+
+  useEffect(() => {
+    if (!initialDetailSquadId || isLoading) {
+      return
+    }
+
+    const targetSquad = squads.find((squad) => squad.id === initialDetailSquadId)
+
+    if (!targetSquad) {
+      return
+    }
+
+    setInitialDetailSquadId(null)
+    clearInitialDetailSquadId()
+    void openDetailModal(targetSquad)
+  }, [initialDetailSquadId, isLoading, squads])
 
   async function closeSquadOnly() {
     if (!detailSquad || !window.confirm('모집을 단순 마감 처리하시겠습니까?')) {
