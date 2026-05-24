@@ -36,6 +36,9 @@ const QuizCreatorApp = lazy(() => import('./QuizCreatorApp'))
 const RoadmapApp = lazy(() => import('./RoadmapApp'))
 const SignupApp = lazy(() => import('./SignupApp'))
 const SurveyApp = lazy(() => import('./SurveyApp'))
+const TeamWorkspaceDashboardApp = lazy(() => import('./TeamWorkspaceDashboardApp'))
+const TeamWorkspaceMilestoneApp = lazy(() => import('./TeamWorkspaceMilestoneApp'))
+const TeamWorkspaceSuiteApp = lazy(() => import('./TeamWorkspaceSuiteApp'))
 const WorkspaceHubApp = lazy(() => import('./WorkspaceHubApp'))
 
 const accountPageRoutes = new Set([
@@ -137,6 +140,26 @@ if (pathname === '/admin-dashboard') {
                                                         ? <MyRoadmapListPage />
                                                         : pathname === '/my-roadmap'
                                                           ? suspense(<MyRoadmapBuilderApp />)
+                                                            : pathname === '/team-ws-dashboard'
+                                                              ? suspense(<TeamWorkspaceDashboardApp />)
+                                                              : pathname === '/team-ws-milestone'
+                                                                ? suspense(<TeamWorkspaceMilestoneApp />)
+                                                                : pathname === '/team-ws-kanban'
+                                                                  ? suspense(<TeamWorkspaceSuiteApp page="kanban" />)
+                                                                  : pathname === '/team-ws-files'
+                                                                    ? suspense(<TeamWorkspaceSuiteApp page="files" />)
+                                                                    : pathname === '/team-ws-qna'
+                                                                      ? suspense(<TeamWorkspaceSuiteApp page="qna" />)
+                                                                      : pathname === '/team-ws-schedule'
+                                                                        ? suspense(<TeamWorkspaceSuiteApp page="schedule" />)
+                                                                        : pathname === '/team-ws-architecture'
+                                                                          ? suspense(<TeamWorkspaceSuiteApp page="architecture" />)
+                                                                          : pathname === '/team-ws-meeting'
+                                                                            ? suspense(<TeamWorkspaceSuiteApp page="meeting" />)
+                                                                            : pathname === '/team-ws-live-meeting'
+                                                                              ? suspense(<TeamWorkspaceSuiteApp page="live-meeting" />)
+                                                                              : pathname === '/team-voice-channel'
+                                                                                ? suspense(<TeamWorkspaceSuiteApp page="voice-channel" />)
                                                           : pathname === '/squad-dashboard'
                                                             ? <SquadDashboardApp />
                                                             : pathname === '/squad-workspace'
