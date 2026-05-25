@@ -102,8 +102,21 @@ public class WorkspaceService {
     long activeMilestoneCount =
         milestoneRepository.countByWorkspaceIdAndStatusInAndIsDeletedFalse(
             workspaceId, List.of(MilestoneStatus.OPEN, MilestoneStatus.IN_PROGRESS));
+    User owner =
+        workspace.getOwnerId() == null
+            ? null
+            : userRepository.findById(workspace.getOwnerId()).orElse(null);
+    UserProfile ownerProfile =
+        owner == null ? null : userProfileRepository.findByUserId(owner.getId()).orElse(null);
+
     return WorkspaceDashboardResponse.fromMemberResponses(
-        workspace, memberResponses, unresolvedTaskCount, activeMilestoneCount);
+        workspace,
+        memberResponses,
+        unresolvedTaskCount,
+        activeMilestoneCount,
+        owner == null ? null : owner.getName(),
+        ownerProfile == null ? null : ownerProfile.getDisplayProfileImage(),
+        ownerProfile == null ? null : ownerProfile.getBio());
   }
 
   public WorkspaceSettingsResponse getWorkspaceSettings(Long workspaceId, Long userId) {
