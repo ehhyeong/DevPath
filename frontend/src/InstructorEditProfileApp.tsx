@@ -262,7 +262,7 @@ export default function InstructorEditProfileApp() {
       clearStoredAuthSession({ persistToast: true })
       setSession(null)
       setProfileImage(null)
-      window.location.href = '/home'
+      window.location.href = '/home?auth=login'
     }
   }
 
