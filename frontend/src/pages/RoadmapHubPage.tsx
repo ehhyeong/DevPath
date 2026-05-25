@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import AuthModal, { type AuthView } from '../components/AuthModal'
 import SiteHeader from '../components/SiteHeader'
 import { authApi, roadmapApi, userApi } from '../lib/api'
+import { showAuthToast } from '../lib/auth-toast'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
@@ -537,7 +538,19 @@ function RoadmapHubPage() {
             <button
               type="button"
               onClick={() => {
-    window.location.href = '/roadmap'
+                if (!session) {
+                  showAuthToast('로그인 후 이용할 수 있습니다.')
+                  return
+                }
+                roadmapApi.getMyRoadmaps().then((list) => {
+                  if (list.roadmaps.length === 0) {
+                    showAuthToast('아직 학습 로드맵이 없습니다. 아래에서 로드맵을 선택해 시작해보세요.')
+                  } else {
+                    window.location.href = '/roadmap'
+                  }
+                }).catch(() => {
+                  showAuthToast('로드맵 정보를 불러오는 데 실패했습니다. 다시 시도해주세요.')
+                })
               }}
               className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full bg-gray-800 px-8 py-4 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gray-900 hover:shadow-xl"
             >
