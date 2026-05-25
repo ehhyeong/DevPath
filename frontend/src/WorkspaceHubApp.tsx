@@ -32,6 +32,7 @@ type WorkspaceHubProject = {
   memberAvatarSeeds: string[]
   extraMemberCount?: number | null
   footerAvatarSeed?: string | null
+  footerAvatarUrl?: string | null
   footerText?: string | null
   footerMetaText?: string | null
   footerMetaIcon?: string | null
@@ -417,7 +418,13 @@ function WorkspaceProjectCard({
           </div>
           <div className="flex items-center justify-between text-xs text-gray-400 border-t border-gray-100 pt-3">
             <div className="flex items-center gap-2">
-              {project.footerAvatarSeed ? <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${project.footerAvatarSeed}`} className="w-5 h-5 rounded-full border border-gray-200" /> : null}
+              {project.footerAvatarUrl || project.footerAvatarSeed ? (
+                <img
+                  src={project.footerAvatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${project.footerAvatarSeed}`}
+                  className="w-5 h-5 rounded-full border border-gray-200 object-cover"
+                  alt=""
+                />
+              ) : null}
               <span className="font-bold text-gray-600">{project.footerText}</span>
             </div>
             <span className="text-brand font-bold">
@@ -455,6 +462,13 @@ function WorkspaceProjectCard({
       <p className="text-xs text-gray-500 mb-4 line-clamp-2" id={`desc-${project.domId}`}>
         {project.description}
       </p>
+
+      {project.type === 'squad' && project.roleLabel ? (
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 mb-4 flex justify-between items-center shadow-sm">
+          <span className="text-[10px] text-blue-500 font-extrabold tracking-wider">MY ROLE</span>
+          <span className="text-xs font-extrabold text-blue-700">{project.roleLabel}</span>
+        </div>
+      ) : null}
 
       <div className="mt-auto">
         <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3">

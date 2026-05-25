@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState, type CSSProperties, type DragEvent, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
+import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
+import { createSquadNotification, squadActorName } from './squad-notifications'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
@@ -662,17 +664,6 @@ export default function SquadFilesApp() {
     ) : null
   }
 
-  function renderMemberAvatar(member: WorkspaceMember, className = 'w-8 h-8') {
-    return (
-      <UserAvatar
-        key={member.memberId}
-        name={member.learnerName ?? '팀원'}
-        imageUrl={member.profileImage}
-        className={`${className} rounded-full border-2 border-white bg-gray-100 shadow-sm hover:z-10 transition-transform hover:scale-110`}
-        iconClassName="text-xs"
-      />
-    )
-  }
 
   function openFolder(item: WorkspaceFileItem) {
     setCurrentFolderId(item.fileId)
@@ -721,6 +712,11 @@ export default function SquadFilesApp() {
       setFolderName('')
       setFolderModalOpen(false)
       setRefreshKey((value) => value + 1)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-files',
+        message: `${squadActorName(session?.name)}님이 폴더 "${folderName.trim()}"를 생성했습니다.`,
+        targetPath: '/squad-files',
+      })
       showAuthToast({ message: '폴더가 생성되었습니다.', durationMs: 1600 })
     } catch (createError) {
       showAuthToast({
@@ -768,6 +764,11 @@ export default function SquadFilesApp() {
       setSelectedFile(null)
       setUploadModalOpen(false)
       setRefreshKey((value) => value + 1)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-files',
+        message: `${squadActorName(session?.name)}님이 파일 "${selectedFile.name}"을 업로드했습니다.`,
+        targetPath: '/squad-files',
+      })
       showAuthToast({ message: '파일 업로드가 완료되었습니다.', durationMs: 1600 })
     } catch (uploadError) {
       showAuthToast({
@@ -837,6 +838,11 @@ export default function SquadFilesApp() {
     try {
       await projectApiRequest<void>(`/api/workspace-files/${item.fileId}`, { method: 'DELETE' }, 'required')
       setRefreshKey((value) => value + 1)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-files',
+        message: `${squadActorName(session?.name)}님이 자료 "${targetName}"을 삭제했습니다.`,
+        targetPath: '/squad-files',
+      })
       showAuthToast({ message: '항목이 삭제되었습니다.', durationMs: 1600 })
     } catch (deleteError) {
       showAuthToast({
@@ -872,6 +878,11 @@ export default function SquadFilesApp() {
       )
       setPreviewItem((currentItem) => (currentItem?.fileId === item.fileId ? updatedItem : currentItem))
       setRefreshKey((value) => value + 1)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-files',
+        message: `${squadActorName(session?.name)}님이 자료 "${currentName}"의 이름을 "${displayName(updatedItem)}"로 변경했습니다.`,
+        targetPath: '/squad-files',
+      })
       showAuthToast({ message: '이름이 변경되었습니다.', durationMs: 1600 })
     } catch (renameError) {
       showAuthToast({
@@ -1058,28 +1069,14 @@ export default function SquadFilesApp() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center px-8 shrink-0 relative z-30 shadow-sm">
-          <div className="flex-1 font-bold text-gray-800 flex items-center gap-3 min-w-0">
-            <span className="bg-green-50 text-brand px-2.5 py-1 rounded-md text-xs border border-green-100 flex items-center gap-1.5 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span> 진행 중
-            </span>
-            <span className="tracking-tight truncate">{projectName}</span>
-          </div>
-
-          <div className="flex items-center gap-5 relative">
-            <div className="hidden md:flex items-center mr-4 pr-5 border-r border-gray-200">
-              <div className="flex -space-x-2.5 hover:-space-x-1 transition-all duration-300">
-                {members.slice(0, 4).map((member) => renderMemberAvatar(member))}
-              </div>
-            </div>
-            <span className="hidden lg:inline text-[11px] font-bold text-gray-400 max-w-[140px] truncate">
-              {session?.name ?? '학습자'}
-            </span>
-            <button type="button" onClick={handleLogout} className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition">
-              로그아웃
-            </button>
-          </div>
-        </header>
+        <SquadWorkspaceHeader
+          workspaceId={workspaceId}
+          projectName={projectName}
+          members={members}
+          statusLabel="진행 중"
+          currentUserName={session?.name}
+          onLogout={handleLogout}
+        />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
           <div className="squad-files-toolbar px-8 py-6 shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 z-10 shadow-sm">

@@ -19,6 +19,7 @@ type HeaderNotification = {
   text?: string | null
   dateText?: string | null
   read?: boolean | null
+  targetPath?: string | null
 }
 
 type HeaderShellResponse = {
@@ -49,8 +50,29 @@ function avatarUrl(seed: string | number | null | undefined) {
 function iconForNotification(type: string | null | undefined) {
   const normalized = String(type || '').toUpperCase()
 
+  if (normalized.includes('MEETING') || normalized.includes('SCHEDULE')) {
+    return 'fas fa-calendar-check'
+  }
+  if (normalized.includes('DEADLINE')) {
+    return 'fas fa-flag-checkered'
+  }
+  if (normalized.includes('APPLICATION_APPROVED')) {
+    return 'fas fa-user-check'
+  }
+  if (normalized.includes('APPLICATION_REJECTED')) {
+    return 'fas fa-user-times'
+  }
+  if (normalized.includes('APPLICATION') || normalized.includes('INVITED')) {
+    return 'fas fa-user-plus'
+  }
   if (normalized.includes('REVIEW') || normalized.includes('COMMENT')) {
     return 'fas fa-comments'
+  }
+  if (normalized.includes('FILE')) {
+    return 'fas fa-folder-open'
+  }
+  if (normalized.includes('DESIGN') || normalized.includes('ERD') || normalized.includes('ARCHITECTURE')) {
+    return 'fas fa-diagram-project'
   }
   if (normalized.includes('PROJECT') || normalized.includes('SQUAD')) {
     return 'fas fa-rocket'
@@ -73,14 +95,22 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
   useEffect(() => {
     const controller = new AbortController()
 
-    projectApiRequest<HeaderShellResponse>('/api/lounge/shell', { signal: controller.signal }, 'optional')
-      .then((shell) => {
+    Promise.allSettled([
+      projectApiRequest<HeaderShellResponse>('/api/lounge/shell', { signal: controller.signal }, 'optional'),
+      projectApiRequest<HeaderNotification[]>('/api/project-header-notifications', { signal: controller.signal }, 'required'),
+    ])
+      .then(([shellResult, notificationsResult]) => {
         if (controller.signal.aborted) {
           return
         }
 
-        setMessages(shell.messages ?? [])
-        setNotifications(shell.notifications ?? [])
+        const shell = shellResult.status === 'fulfilled' ? shellResult.value : null
+        setMessages(shell?.messages ?? [])
+        setNotifications(
+          notificationsResult.status === 'fulfilled'
+            ? notificationsResult.value
+            : shell?.notifications ?? [],
+        )
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -136,12 +166,39 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
       return
     }
 
-    await Promise.allSettled(
-      unread.map((notification) =>
-        projectApiRequest(`/api/notifications/${notification.id}/read`, { method: 'PATCH' }, 'required'),
-      ),
-    )
-    setNotifications((current) => current.map((notification) => ({ ...notification, read: true })))
+    try {
+      const nextNotifications = await projectApiRequest<HeaderNotification[]>(
+        '/api/project-header-notifications/read-all',
+        { method: 'PATCH' },
+        'required',
+      )
+      setNotifications(nextNotifications)
+    } catch {
+      await Promise.allSettled(
+        unread
+          .filter((notification) => notification.id > 0)
+          .map((notification) =>
+            projectApiRequest(`/api/notifications/${notification.id}/read`, { method: 'PATCH' }, 'required'),
+          ),
+      )
+      setNotifications((current) => current.map((notification) => ({ ...notification, read: true })))
+    }
+  }
+
+  function openNotification(notification: HeaderNotification) {
+    if (notification.read === false && notification.id > 0) {
+      void projectApiRequest(`/api/notifications/${notification.id}/read`, { method: 'PATCH' }, 'required')
+        .then(() => {
+          setNotifications((current) =>
+            current.map((item) => (item.id === notification.id ? { ...item, read: true } : item)),
+          )
+        })
+        .catch(() => undefined)
+    }
+
+    if (notification.targetPath) {
+      window.location.assign(notification.targetPath)
+    }
   }
 
   return (
@@ -243,6 +300,8 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
                 visibleNotifications.map((notification) => (
                   <div
                     key={`notification-${notification.id}`}
+                    onClick={() => openNotification(notification)}
+                    title={notification.text || ''}
                     className="p-3 hover:bg-gray-50 border-b border-gray-50 cursor-pointer flex gap-3 items-start"
                   >
                     <div className="w-8 h-8 rounded-full bg-green-50 text-brand flex items-center justify-center text-xs shrink-0 border border-green-100">

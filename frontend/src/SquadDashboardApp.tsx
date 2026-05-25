@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import AuthModal, { type AuthView } from './components/AuthModal'
+import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
 import { projectApiRequest } from './project-api'
+import { createSquadNotification, squadActorName } from './squad-notifications'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
@@ -690,6 +692,11 @@ export default function SquadDashboardApp() {
       setMessages((current) => [...current, created])
       setMessageInput('')
       setPlusMenuOpen(false)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-dashboard',
+        message: `${squadActorName(session?.name)}님이 스쿼드 채팅에 메시지를 보냈습니다.`,
+        targetPath: '/squad-dashboard',
+      })
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : '메시지를 보내지 못했습니다.'
       showAuthToast({ message, variant: 'error', durationMs: 2200 })
@@ -750,6 +757,11 @@ export default function SquadDashboardApp() {
 
       setDirectMessages((current) => [...current, created])
       setDirectInput('')
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-dashboard',
+        message: `${squadActorName(session?.name)}님이 ${selectedDmMember.learnerName ?? '팀원'}님에게 1:1 메시지를 보냈습니다.`,
+        targetPath: '/squad-dashboard',
+      })
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : '1:1 메시지를 보내지 못했습니다.'
       showAuthToast({ message, variant: 'error', durationMs: 2200 })
@@ -793,6 +805,11 @@ export default function SquadDashboardApp() {
       setNoticeContent('')
       setNoticeType('important')
       setNoticeModalOpen(false)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-dashboard',
+        message: `${squadActorName(session?.name)}님이 공지 "${created.title}"을 등록했습니다.`,
+        targetPath: '/squad-dashboard',
+      })
       showAuthToast({ message: '공지사항이 등록되었습니다.', durationMs: 1800 })
     } catch (noticeError) {
       const message = noticeError instanceof Error ? noticeError.message : '공지사항을 등록하지 못했습니다.'
@@ -1213,49 +1230,15 @@ export default function SquadDashboardApp() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center px-8 shrink-0 relative z-30 shadow-sm">
-          <div className="flex-1 font-bold text-gray-800 flex items-center gap-3">
-            {hasAnyDashboardData ? (
-              <span className="bg-green-50 text-brand px-2.5 py-1 rounded-md text-xs border border-green-100 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span> {statusLabel(dashboard?.status)}
-              </span>
-            ) : (
-              <span className="bg-gray-50 text-gray-500 px-2.5 py-1 rounded-md text-xs border border-gray-200 flex items-center gap-1.5">
-                <i className="fas fa-pause-circle"></i> 시작 전
-              </span>
-            )}
-            <span className={hasAnyDashboardData ? 'tracking-tight' : 'tracking-tight text-gray-400'}>
-              {dashboard?.name ?? '새로운 프로젝트 이름을 설정해주세요'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-5 relative">
-            <div className="hidden md:flex items-center mr-4 pr-5 border-r border-gray-200">
-              <div className="flex -space-x-2.5 hover:-space-x-1 transition-all duration-300">
-                {activeMembers.slice(0, 4).map((member) =>
-                  renderMemberAvatar(
-                    member,
-                    'w-8 h-8 border-2 border-white bg-gray-100 shadow-sm hover:z-10 transition-transform hover:scale-110',
-                    'text-xs',
-                  ),
-                )}
-                {activeMembers.length === 0 ? (
-                  <button className="w-8 h-8 rounded-full border-2 border-white bg-gray-50 text-gray-400 hover:text-brand hover:border-brand shadow-sm hover:z-10 transition-all flex items-center justify-center text-xs" title="팀원 초대">
-                    <i className="fas fa-plus"></i>
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            <button type="button" className="relative cursor-pointer text-gray-400 hover:text-brand transition" title="알림">
-              <i className="far fa-bell text-xl"></i>
-              {notices.length > 0 ? <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span> : null}
-            </button>
-            <button type="button" onClick={handleLogout} className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition">
-              로그아웃
-            </button>
-          </div>
-        </header>
+        <SquadWorkspaceHeader
+          workspaceId={workspaceId}
+          projectName={dashboard?.name ?? '새 스쿼드 프로젝트'}
+          members={activeMembers}
+          statusLabel={hasAnyDashboardData ? statusLabel(dashboard?.status) : '시작 전'}
+          statusActive={hasAnyDashboardData}
+          currentUserName={currentUserName}
+          onLogout={handleLogout}
+        />
 
         <main className="squad-dashboard-main flex-1 overflow-y-auto custom-scrollbar p-8 relative">
           <div className="max-w-6xl mx-auto space-y-6">

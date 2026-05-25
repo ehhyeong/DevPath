@@ -41,7 +41,6 @@ export default function TeamWorkspaceHeader({
 
   useEffect(() => {
     if (!workspaceId) {
-      setNotifications([])
       return
     }
 
@@ -67,8 +66,13 @@ export default function TeamWorkspaceHeader({
     return () => controller.abort()
   }, [pageKey, workspaceId])
 
-  const visibleNotifications = cleared ? [] : notifications
+  const visibleNotifications = workspaceId && !cleared ? notifications : []
   const hasNotifications = visibleNotifications.length > 0
+  const visibleMembers = members.slice(0, 4)
+
+  function memberName(member: TeamWorkspaceHeaderMember, index: number) {
+    return member.learnerName?.trim() || `팀원 ${index + 1}`
+  }
 
   function openNotification(notification: TeamWorkspaceHeaderNotification) {
     if (notification.targetPath) {
@@ -88,17 +92,30 @@ export default function TeamWorkspaceHeader({
 
       <div className="relative flex shrink-0 items-center gap-4">
         <div className="mr-2 hidden items-center -space-x-2 md:flex">
-          {members.slice(0, 4).map((member, index) => (
-            <UserAvatar
-              key={member.memberId}
-              name={member.learnerName || `팀원 ${index + 1}`}
-              imageUrl={member.profileImage}
-              className="h-8 w-8 border-2 border-white bg-gray-100"
-              iconClassName="text-xs"
-            />
-          ))}
-          <div className="z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-[10px] font-bold text-gray-500" title="멘토">
-            <i className="fas fa-user-tie"></i>
+          {visibleMembers.map((member, index) => {
+            const label = memberName(member, index)
+
+            return (
+              <div key={member.memberId} className="group relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center hover:z-20" aria-label={label}>
+                <UserAvatar
+                  name={label}
+                  imageUrl={member.profileImage}
+                  className="h-8 w-8 border-2 border-white bg-gray-100"
+                  iconClassName="text-xs"
+                />
+                <span className="pointer-events-none absolute left-1/2 top-10 z-50 max-w-[120px] -translate-x-1/2 -translate-y-1 truncate rounded-md bg-gray-900 px-2 py-1 text-[10px] font-bold text-white opacity-0 shadow-lg transition group-hover:translate-y-0 group-hover:opacity-100">
+                  {label}
+                </span>
+              </div>
+            )
+          })}
+          <div className="group relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center hover:z-20" aria-label="멘토">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-[10px] font-bold text-gray-500">
+              <i className="fas fa-user-tie"></i>
+            </div>
+            <span className="pointer-events-none absolute left-1/2 top-10 z-50 -translate-x-1/2 -translate-y-1 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] font-bold text-white opacity-0 shadow-lg transition group-hover:translate-y-0 group-hover:opacity-100">
+              멘토
+            </span>
           </div>
         </div>
 

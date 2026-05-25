@@ -9,10 +9,12 @@ import {
   useState,
 } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
+import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
+import { createSquadNotification, squadActorName } from './squad-notifications'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
@@ -1857,6 +1859,11 @@ export default function SquadMeetingApp() {
 
     if (notify) {
       broadcastScreenShareState('screen-share-stop')
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel?.name ?? '음성 회의'}" 화면 공유를 종료했습니다.`,
+        targetPath: '/squad-meeting',
+      })
     }
 
     if (renegotiate) {
@@ -1898,6 +1905,11 @@ export default function SquadMeetingApp() {
 
       await addScreenShareTrackToPeers(stream)
       broadcastScreenShareState('screen-share-start')
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}"에서 화면 공유를 시작했습니다.`,
+        targetPath: '/squad-meeting',
+      })
       showAuthToast({ message: '화면 공유를 시작했습니다.', durationMs: 1800 })
     } catch (shareError) {
       if (shareError instanceof DOMException && shareError.name === 'NotAllowedError') {
@@ -2482,6 +2494,13 @@ export default function SquadMeetingApp() {
     }
   }
 
+  function voiceEventLabel(type: VoiceEventType) {
+    if (type === 'MUTE') return '마이크를 음소거했습니다.'
+    if (type === 'UNMUTE') return '마이크 음소거를 해제했습니다.'
+    if (type === 'SPEAKING') return '발언을 시작했습니다.'
+    return '발언을 종료했습니다.'
+  }
+
   async function createVoiceEvent(type: VoiceEventType, memo: string) {
     if (!activeChannel) {
       return
@@ -2676,6 +2695,11 @@ export default function SquadMeetingApp() {
       setVoiceChatInput('')
       setVoiceChatMessages((current) => [...current, message])
       void refreshVoiceMeetingPanel(activeChannel.channelId).catch(() => undefined)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 회의 채팅에 메시지를 보냈습니다.`,
+        targetPath: '/squad-meeting',
+      })
     } catch (chatError) {
       showAuthToast({
         message: chatError instanceof Error ? chatError.message : '회의 채팅을 보내지 못했습니다.',
@@ -2703,6 +2727,11 @@ export default function SquadMeetingApp() {
         'required',
       )
       setVoiceChatMessages([])
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 회의 채팅 기록을 비웠습니다.`,
+        targetPath: '/squad-meeting',
+      })
       showAuthToast({
         message: '내 화면의 이전 회의 채팅을 지웠습니다. 다른 팀원에게는 그대로 보입니다.',
         durationMs: 2200,
@@ -2763,10 +2792,22 @@ export default function SquadMeetingApp() {
     if (!nextRecording) {
       stopMinutesSpeechRecognition()
     }
+    void createSquadNotification(workspaceId, {
+      pageKey: 'squad-meeting',
+      message: `${squadActorName(session?.name)}님이 "${activeChannel?.name ?? '음성 회의'}" 회의록 녹음을 ${nextRecording ? '시작' : '종료'}했습니다.`,
+      targetPath: '/squad-meeting',
+    })
   }
 
   async function saveMinutesDraft(showSavedToast = true) {
     if (await updateVoiceMinutes({ transcript: minutesDraft }, true)) {
+      if (showSavedToast) {
+        void createSquadNotification(workspaceId, {
+          pageKey: 'squad-meeting',
+          message: `${squadActorName(session?.name)}님이 "${activeChannel?.name ?? '음성 회의'}" 회의록을 저장했습니다.`,
+          targetPath: '/squad-meeting',
+        })
+      }
       if (showSavedToast) {
         showAuthToast({ message: '회의록이 저장되었습니다.', durationMs: 1600 })
       }
@@ -2821,6 +2862,11 @@ export default function SquadMeetingApp() {
       setMinutesActionItems(actionItems)
       setSelectedMinutesActionItems(actionItems.map((_, index) => index))
       setMinutesSummaryReportOpen(true)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 회의록 요약을 생성했습니다.`,
+        targetPath: '/squad-meeting',
+      })
     } catch (summaryError) {
       showAuthToast({
         message: summaryError instanceof Error ? summaryError.message : '회의 요약을 만들지 못했습니다.',
@@ -2862,6 +2908,11 @@ export default function SquadMeetingApp() {
         durationMs: 2200,
       })
       setMinutesSummaryReportOpen(false)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 회의록에서 칸반 작업 ${result.tasks.length}개를 만들었습니다.`,
+        targetPath: '/squad-workspace',
+      })
     } catch (taskError) {
       showAuthToast({
         message: taskError instanceof Error ? taskError.message : '칸반 보드에 할 일을 등록하지 못했습니다.',
@@ -2963,6 +3014,11 @@ export default function SquadMeetingApp() {
 
       await refreshVoiceRoomState(activeChannel.channelId)
       connectVoiceSignaling(activeChannel.channelId)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 음성 회의에 참여했습니다.`,
+        targetPath: '/squad-meeting',
+      })
       showAuthToast({ message: toastMessage, durationMs: 1800 })
     } catch (joinError) {
       disconnectVoiceSession()
@@ -3004,6 +3060,11 @@ export default function SquadMeetingApp() {
       )
       await refreshVoiceRoomState(activeChannel.channelId)
       setWaitingMicMuted(nextWaitingMicMuted)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 음성 회의에서 나갔습니다.`,
+        targetPath: '/squad-meeting',
+      })
       showAuthToast({ message: '음성 회의에서 나왔습니다.', durationMs: 1600 })
     } catch (leaveError) {
       showAuthToast({
@@ -3027,6 +3088,11 @@ export default function SquadMeetingApp() {
         setLocalVoiceMuted(type === 'MUTE')
       }
       await refreshParticipants(activeChannel.channelId)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-meeting',
+        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}"에서 ${voiceEventLabel(type)}`,
+        targetPath: '/squad-meeting',
+      })
     } catch (eventError) {
       showAuthToast({
         message: eventError instanceof Error ? eventError.message : '음성 상태를 변경하지 못했습니다.',
@@ -3944,28 +4010,14 @@ export default function SquadMeetingApp() {
 
       {isJoined ? renderVoiceRoom() : (
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center px-8 shrink-0 relative z-30 shadow-sm">
-          <div className="flex-1 font-bold text-gray-800 flex items-center gap-3 min-w-0">
-            <span className="bg-green-50 text-brand px-2.5 py-1 rounded-md text-xs border border-green-100 flex items-center gap-1.5 shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span> 진행 중
-            </span>
-            <span className="tracking-tight truncate">{projectName}</span>
-          </div>
-
-          <div className="flex items-center gap-5 relative">
-            <div className="hidden md:flex items-center mr-4 pr-5 border-r border-gray-200">
-              <div className="flex -space-x-2.5 hover:-space-x-1 transition-all duration-300">
-                {members.slice(0, 4).map((member) => renderMemberAvatar(member))}
-              </div>
-            </div>
-            <span className="hidden lg:inline text-[11px] font-bold text-gray-400 max-w-[140px] truncate">
-              {session?.name ?? '학습자'}
-            </span>
-            <button type="button" onClick={handleLogout} className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition">
-              로그아웃
-            </button>
-          </div>
-        </header>
+        <SquadWorkspaceHeader
+          workspaceId={workspaceId}
+          projectName={projectName}
+          members={members}
+          statusLabel="진행 중"
+          currentUserName={session?.name}
+          onLogout={handleLogout}
+        />
 
         <main className="flex-1 overflow-y-auto custom-scrollbar bg-[#F3F4F6]">
           <div className="px-8 py-4 bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">

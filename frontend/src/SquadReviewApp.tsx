@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
+import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { projectApiRequest } from './project-api'
+import { createSquadNotification, squadActorName } from './squad-notifications'
 
 type WorkspaceMember = {
   memberId: number
@@ -396,6 +398,11 @@ export default function SquadReviewApp() {
       setActiveTab('open')
       setSelectedReviewId(created.summary.reviewId)
       setDetail(created)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-review',
+        message: `${squadActorName(session?.name)}님이 코드 리뷰 "${created.summary.title}"을 요청했습니다.`,
+        targetPath: '/squad-review',
+      })
       await reloadBoard(created.summary.reviewId)
     } finally {
       setSaving(false)
@@ -416,6 +423,11 @@ export default function SquadReviewApp() {
         'required',
       )
       setDetail(updated)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-review',
+        message: `${squadActorName(session?.name)}님이 코드 리뷰 "${updated.summary.title}"의 AI 리뷰를 실행했습니다.`,
+        targetPath: '/squad-review',
+      })
       setToast('AI 시니어 멘토 리뷰가 완료되었습니다.')
       await reloadBoard(updated.summary.reviewId)
     } finally {
@@ -443,6 +455,11 @@ export default function SquadReviewApp() {
       )
       setDetail(updated)
       setActiveTab('closed')
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-review',
+        message: `${squadActorName(session?.name)}님이 코드 리뷰 "${updated.summary.title}"을 ${action === 'merge' ? '머지' : '종료'}했습니다.`,
+        targetPath: '/squad-review',
+      })
       setToast(action === 'merge' ? 'Pull Request가 머지 처리되었습니다.' : '리뷰 요청을 닫았습니다.')
       await reloadBoard(updated.summary.reviewId)
     } finally {
@@ -501,6 +518,11 @@ export default function SquadReviewApp() {
 
       setDetail(updated)
       setCommentDraft('')
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-review',
+        message: `${squadActorName(session?.name)}님이 코드 리뷰 "${updated.summary.title}"에 피드백을 남겼습니다.`,
+        targetPath: '/squad-review',
+      })
       setToast('팀원 피드백이 등록되었습니다.')
     } finally {
       setCommentSaving(false)
@@ -519,17 +541,6 @@ export default function SquadReviewApp() {
   const currentUserName = currentMember?.learnerName ?? session?.name ?? '사용자'
   const currentProfileImage = currentMember?.profileImage ?? null
 
-  function renderMemberAvatar(member: WorkspaceMember, className = 'w-8 h-8') {
-    return (
-      <UserAvatar
-        key={member.memberId}
-        name={member.learnerName ?? '팀원'}
-        imageUrl={member.profileImage}
-        className={`${className} rounded-full border-2 border-white bg-gray-100 shadow-sm hover:z-10 transition-transform hover:scale-110`}
-        iconClassName="text-xs"
-      />
-    )
-  }
 
   function renderReviewCard(review: CodeReviewSummary) {
     const active = selectedReviewId === review.reviewId
@@ -793,30 +804,15 @@ export default function SquadReviewApp() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center px-8 shrink-0 relative z-30 shadow-sm">
-          <div className="flex-1 font-bold text-gray-800 flex items-center gap-3">
-            <span className={`${hasAnyReviews ? 'bg-green-50 text-brand border-green-100' : 'bg-gray-50 text-gray-500 border-gray-200'} px-2.5 py-1 rounded-md text-xs border flex items-center gap-1.5`}>
-              <span className={`${hasAnyReviews ? 'bg-brand animate-pulse' : 'bg-gray-400'} w-1.5 h-1.5 rounded-full`}></span>
-              {hasAnyReviews ? '진행 중' : 'GitHub 연동 대기 중'}
-            </span>
-            <span className="tracking-tight">{projectName}</span>
-          </div>
-
-          <div className="flex items-center gap-5 relative">
-            <div className="hidden md:flex items-center mr-4 pr-5 border-r border-gray-200">
-              <div className="flex -space-x-2.5 hover:-space-x-1 transition-all duration-300">
-                {members.slice(0, 4).map((member) => renderMemberAvatar(member))}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={session ? handleLogout : () => setAuthView('login')}
-              className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition"
-            >
-              {session ? '로그아웃' : '로그인'}
-            </button>
-          </div>
-        </header>
+        <SquadWorkspaceHeader
+          workspaceId={workspaceId}
+          projectName={projectName}
+          members={members}
+          statusLabel={hasAnyReviews ? '진행 중' : 'GitHub 연동 대기 중'}
+          statusActive={hasAnyReviews}
+          currentUserName={session?.name}
+          onLogout={handleLogout}
+        />
 
         <main className="flex-1 flex overflow-hidden">
           <div className="w-1/3 max-w-sm bg-white border-r border-gray-200 flex flex-col shrink-0">
