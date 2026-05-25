@@ -20,6 +20,8 @@ import { installWorkspacePresenceHeartbeat } from './lib/workspace-presence'
 const ContentAssignmentEditorApp = lazy(() => import('./ContentAssignmentEditorApp'))
 const CourseEditorApp = lazy(() => import('./CourseEditorApp'))
 const CommunityLoungeApp = lazy(() => import('./CommunityLoungeApp'))
+const CommunityListPage = lazy(() => import('./pages/CommunityListPage'))
+const CommunityWritePage = lazy(() => import('./pages/CommunityWritePage'))
 const DevShowcaseApp = lazy(() => import('./DevShowcaseApp'))
 const InstructorApp = lazy(() => import('./InstructorApp'))
 const InstructorCourseDetailApp = lazy(() => import('./InstructorCourseDetailApp'))
@@ -109,8 +111,12 @@ if (pathname === '/admin-dashboard') {
                             ? suspense(<ContentAssignmentEditorApp />)
                             : pathname === '/lounge-dashboard'
                               ? suspense(<LoungeDashboardApp />)
-                              : pathname === '/community-lounge'
-                                ? suspense(<CommunityLoungeApp />)
+                              : pathname === '/community-list'
+                                ? suspense(<CommunityListPage />)
+                                : pathname === '/community-write'
+                                  ? suspense(<CommunityWritePage />)
+                                  : pathname === '/community-lounge'
+                                    ? suspense(<CommunityLoungeApp />)
                                 : pathname === '/mentoring-hub'
                                   ? suspense(<MentoringHubApp />)
                                   : pathname === '/workspace-hub'

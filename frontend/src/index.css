@@ -6672,3 +6672,41 @@ body.squad-dashboard-body .app-viewport {
   font-size: 14px !important;
   line-height: 20px !important;
 }
+
+/* =========================================================
+   커뮤니티 페이지 (community-list / community-write)
+   ========================================================= */
+
+.community-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ecfdf5;
+  color: #00c471;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.community-editor-area {
+  min-height: 500px;
+  line-height: 1.6;
+  font-family: inherit;
+}
+
+.community-editor-toolbar button {
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.community-editor-toolbar button:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
