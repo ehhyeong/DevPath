@@ -1,5 +1,6 @@
 package com.devpath.api.workspace.service;
 
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.workspace.dto.CreateTaskRequest;
 import com.devpath.api.workspace.dto.KanbanBoardResponse;
 import com.devpath.api.workspace.dto.UpdateTaskAssigneeRequest;
@@ -15,6 +16,7 @@ import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class WorkspaceTaskService {
   private final WorkspaceTaskRepository workspaceTaskRepository;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final NotificationEventService notificationEventService;
 
   @Transactional
   public WorkspaceTaskResponse createTask(
@@ -173,7 +176,12 @@ public class WorkspaceTaskService {
     WorkspaceTask task = getTaskEntity(taskId);
     validateTaskBelongsToWorkspace(task, workspaceId);
 
-    task.changeAssignee(request.getAssigneeId());
+    Long newAssigneeId = request.getAssigneeId();
+    boolean assigneeChanged = !Objects.equals(task.getAssigneeId(), newAssigneeId);
+    task.changeAssignee(newAssigneeId);
+    if (assigneeChanged && newAssigneeId != null) {
+      notificationEventService.notifySystem(newAssigneeId, "칸반 태스크 담당자로 배정되었습니다: " + task.getTitle());
+    }
     return WorkspaceTaskResponse.from(task);
   }
 
@@ -185,7 +193,12 @@ public class WorkspaceTaskService {
     validateWorkspaceExists(workspaceId);
     validateMember(workspaceId, userId);
 
-    task.changeAssignee(request.getAssigneeId());
+    Long newAssigneeId = request.getAssigneeId();
+    boolean assigneeChanged = !Objects.equals(task.getAssigneeId(), newAssigneeId);
+    task.changeAssignee(newAssigneeId);
+    if (assigneeChanged && newAssigneeId != null) {
+      notificationEventService.notifySystem(newAssigneeId, "칸반 태스크 담당자로 배정되었습니다: " + task.getTitle());
+    }
     return WorkspaceTaskResponse.from(task);
   }
 

@@ -1065,3 +1065,26 @@ BEGIN
      );
 END $$;
 ^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
+    IF to_regclass('public.learner_notification') IS NULL THEN
+        RETURN;
+    END IF;
+
+    -- TASK-31: 새 알림 타입 추가로 인해 체크 제약조건 갱신
+    ALTER TABLE public.learner_notification
+        DROP CONSTRAINT IF EXISTS learner_notification_type_check;
+
+    ALTER TABLE public.learner_notification
+        ADD CONSTRAINT learner_notification_type_check
+        CHECK (type IN (
+            'STUDY_GROUP', 'PLANNER', 'STREAK', 'PROJECT', 'SYSTEM',
+            'MENTORING_ANSWER_CREATED', 'WORKSPACE_ANSWER_CREATED', 'PR_REVIEW_CREATED',
+            'APPLICATION_APPROVED', 'APPLICATION_REJECTED',
+            'SQUAD_INVITED', 'SQUAD_KICKED',
+            'ASSIGNMENT_GRADED', 'MISSION_PASSED', 'MISSION_REJECTED',
+            'RECOMMENDATION_ARRIVED', 'LOUNGE_APPLICATION_RECEIVED',
+            'COMMUNITY_COMMENTED', 'REFUND_PROCESSED'
+        ));
+END $$;
+^^^ END OF SCRIPT ^^^

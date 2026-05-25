@@ -1,5 +1,6 @@
 package com.devpath.api.review.service;
 
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.review.dto.PullRequestReviewRequest;
 import com.devpath.api.review.dto.PullRequestReviewResponse;
@@ -36,6 +37,7 @@ public class PullRequestReviewService {
   private final PullRequestSubmissionRepository pullRequestSubmissionRepository;
   private final PullRequestReviewRepository pullRequestReviewRepository;
   private final NotificationEventService notificationEventService;
+  private final InstructorNotificationService instructorNotificationService;
   private final UserRepository userRepository;
 
   @Transactional
@@ -69,6 +71,10 @@ public class PullRequestReviewService {
 
     PullRequestSubmission savedPullRequest =
         pullRequestSubmissionRepository.save(pullRequestSubmission);
+
+    Long mentorId = mission.getMentoring().getMentor().getId();
+    instructorNotificationService.notifySystem(
+        mentorId, submitter.getName() + "님이 PR을 제출했습니다: " + request.title());
 
     return PullRequestReviewResponse.PullRequestDetail.from(savedPullRequest, List.of());
   }

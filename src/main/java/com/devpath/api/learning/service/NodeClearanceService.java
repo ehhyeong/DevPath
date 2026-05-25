@@ -3,6 +3,7 @@ package com.devpath.api.learning.service;
 import com.devpath.api.learning.component.NodeClearanceEvaluator;
 import com.devpath.api.learning.dto.NodeClearanceRequest;
 import com.devpath.api.learning.dto.NodeClearanceResponse;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.proof.service.ProofCardService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -42,6 +43,7 @@ public class NodeClearanceService {
 
   // Proof Card 서비스
   private final ProofCardService proofCardService;
+  private final NotificationEventService notificationEventService;
   private final LearningAutomationRuleRepository learningAutomationRuleRepository;
 
   // 유저 저장소
@@ -207,6 +209,7 @@ public class NodeClearanceService {
 
     if (evaluationResult.isProofEligible() && isRuleEnabled("PROOF_CARD_AUTO_ISSUE", true)) {
       proofCardService.issueIfEligible(userId, nodeId);
+      notificationEventService.notifySystem(userId, "노드 클리어를 완료하여 Proof Card가 발급되었습니다.");
     }
 
     return toDetail(savedNodeClearance);

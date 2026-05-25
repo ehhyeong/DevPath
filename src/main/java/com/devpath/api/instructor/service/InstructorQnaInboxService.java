@@ -1,5 +1,6 @@
 package com.devpath.api.instructor.service;
 
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.instructor.dto.qna.QnaAnswerRequest;
 import com.devpath.api.instructor.dto.qna.QnaAnswerResponse;
 import com.devpath.api.instructor.dto.qna.QnaDraftRequest;
@@ -47,6 +48,7 @@ public class InstructorQnaInboxService {
   private final UserRepository userRepository;
   private final UserProfileRepository userProfileRepository;
   private final CourseRepository courseRepository;
+  private final NotificationEventService notificationEventService;
   private final LessonRepository lessonRepository;
   private final QnaAnswerDraftRepository draftRepository;
   private final QnaTemplateRepository templateRepository;
@@ -145,6 +147,8 @@ public class InstructorQnaInboxService {
         .ifPresent(QnaAnswerDraft::deleteDraft);
 
     question.markAsAnswered();
+
+    notificationEventService.notifySystem(question.getUser().getId(), "QnA 질문에 답변이 등록되었습니다: " + question.getTitle());
 
     return QnaAnswerResponse.from(
         saved,

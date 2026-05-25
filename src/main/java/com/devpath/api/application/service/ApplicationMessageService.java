@@ -2,6 +2,7 @@ package com.devpath.api.application.service;
 
 import com.devpath.api.application.dto.ApplicationMessageRequest;
 import com.devpath.api.application.dto.ApplicationMessageResponse;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.application.entity.ApplicationMessage;
@@ -23,6 +24,7 @@ public class ApplicationMessageService {
   private final ApplicationMessageRepository applicationMessageRepository;
   private final LoungeApplicationRepository loungeApplicationRepository;
   private final UserRepository userRepository;
+  private final NotificationEventService notificationEventService;
 
   @Transactional
   public ApplicationMessageResponse.Detail create(
@@ -40,8 +42,14 @@ public class ApplicationMessageService {
             .content(request.content())
             .build();
 
-    return ApplicationMessageResponse.Detail.from(
-        applicationMessageRepository.save(message), sender.getId());
+    ApplicationMessage saved = applicationMessageRepository.save(message);
+
+    Long receiverId = sender.getId().equals(application.getSender().getId())
+        ? application.getReceiver().getId()
+        : application.getSender().getId();
+    notificationEventService.notifySystem(receiverId, sender.getName() + "님이 메시지를 보냈습니다.");
+
+    return ApplicationMessageResponse.Detail.from(saved, sender.getId());
   }
 
   public List<ApplicationMessageResponse.Detail> getMessages(Long applicationId, Long viewerId) {

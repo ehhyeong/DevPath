@@ -1,5 +1,6 @@
 package com.devpath.api.learner.service;
 
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.learner.dto.CourseEnrollmentDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -26,6 +27,7 @@ public class CourseEnrollmentService {
   private final CourseEnrollmentRepository courseEnrollmentRepository;
   private final CourseRepository courseRepository;
   private final UserRepository userRepository;
+  private final InstructorNotificationService instructorNotificationService;
 
   @Transactional
   public CourseEnrollment enroll(Long userId, Long courseId) {
@@ -43,7 +45,10 @@ public class CourseEnrollmentService {
             .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
     CourseEnrollment enrollment = CourseEnrollment.builder().user(user).course(course).build();
 
-    return courseEnrollmentRepository.save(enrollment);
+    CourseEnrollment saved = courseEnrollmentRepository.save(enrollment);
+    instructorNotificationService.notifySystem(
+        course.getInstructorId(), user.getName() + "님이 강좌에 수강 신청했습니다: " + course.getTitle());
+    return saved;
   }
 
   @Transactional

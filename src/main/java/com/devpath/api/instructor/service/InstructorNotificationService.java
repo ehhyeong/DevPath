@@ -4,6 +4,7 @@ import com.devpath.api.instructor.dto.notification.NotificationResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.notification.entity.InstructorNotification;
+import com.devpath.domain.notification.entity.InstructorNotificationType;
 import com.devpath.domain.notification.repository.InstructorNotificationRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,30 @@ public class InstructorNotificationService {
             .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
     notification.markAsRead();
+  }
+
+  @Transactional
+  public void notifySubscribe(Long instructorId, String subscriberName) {
+    notify(instructorId, InstructorNotificationType.SUBSCRIBE, subscriberName + "님이 채널을 구독했습니다.");
+  }
+
+  @Transactional
+  public void notifyReview(Long instructorId, String courseName) {
+    notify(instructorId, InstructorNotificationType.REVIEW, "새 수강평이 등록되었습니다: " + courseName);
+  }
+
+  @Transactional
+  public void notifySystem(Long instructorId, String message) {
+    notify(instructorId, InstructorNotificationType.SYSTEM, message);
+  }
+
+  private void notify(Long instructorId, InstructorNotificationType type, String message) {
+    instructorNotificationRepository.save(
+        InstructorNotification.builder()
+            .instructorId(instructorId)
+            .type(type)
+            .message(message)
+            .build());
   }
 
   // 강사 전용 알림 엔티티를 응답 DTO로 변환한다.

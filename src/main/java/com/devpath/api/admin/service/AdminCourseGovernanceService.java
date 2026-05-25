@@ -3,6 +3,7 @@ package com.devpath.api.admin.service;
 import com.devpath.api.admin.dto.governance.CourseApproveRequest;
 import com.devpath.api.admin.dto.governance.CourseRejectRequest;
 import com.devpath.api.admin.dto.governance.PendingCourseResponse;
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminCourseGovernanceService {
 
   private final CourseRepository courseRepository;
+  private final InstructorNotificationService instructorNotificationService;
 
   public List<PendingCourseResponse> getPendingCourses() {
     return courseRepository.findByStatus(CourseStatus.IN_REVIEW).stream()
@@ -37,6 +39,8 @@ public class AdminCourseGovernanceService {
       throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
     }
     course.approve();
+    instructorNotificationService.notifySystem(
+        course.getInstructorId(), "강좌가 승인되었습니다: " + course.getTitle());
   }
 
   @Transactional
@@ -49,5 +53,7 @@ public class AdminCourseGovernanceService {
       throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
     }
     course.reject();
+    instructorNotificationService.notifySystem(
+        course.getInstructorId(), "강좌가 반려되었습니다: " + course.getTitle());
   }
 }

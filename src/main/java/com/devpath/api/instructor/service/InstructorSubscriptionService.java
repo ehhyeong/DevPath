@@ -5,7 +5,9 @@ import com.devpath.api.instructor.entity.InstructorSubscription;
 import com.devpath.api.instructor.repository.InstructorSubscriptionRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserProfileRepository;
+import com.devpath.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,8 @@ public class InstructorSubscriptionService {
 
   private final InstructorSubscriptionRepository subscriptionRepository;
   private final UserProfileRepository userProfileRepository;
+  private final UserRepository userRepository;
+  private final InstructorNotificationService instructorNotificationService;
 
   public SubscriptionResponse subscribe(Long channelId, Long learnerId) {
     validateChannel(channelId);
@@ -43,6 +47,10 @@ public class InstructorSubscriptionService {
                             .channelId(channelId)
                             .learnerId(learnerId)
                             .build()));
+
+    User learner = userRepository.findById(learnerId)
+        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    instructorNotificationService.notifySubscribe(channelId, learner.getName());
 
     return SubscriptionResponse.from(subscription);
   }
