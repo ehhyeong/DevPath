@@ -1,7 +1,10 @@
 package com.devpath.api.workspace.dto;
 
-import com.devpath.domain.workspace.entity.WorkspaceHubProject;
+import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.entity.UserProfile;
+import com.devpath.domain.workspace.entity.CalendarEvent;
 import com.devpath.domain.workspace.entity.Workspace;
+import com.devpath.domain.workspace.entity.WorkspaceHubProject;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.entity.WorkspaceStatus;
 import com.devpath.domain.workspace.entity.WorkspaceType;
@@ -34,9 +37,12 @@ public class WorkspaceHubProjectResponse {
   private List<String> memberAvatarSeeds;
   private Integer extraMemberCount;
   private String footerAvatarSeed;
+  private String footerAvatarUrl;
   private String footerText;
   private String footerMetaText;
   private String footerMetaIcon;
+  private String nextScheduleTitle;
+  private LocalDateTime nextScheduleStartAt;
 
   public static WorkspaceHubProjectResponse from(WorkspaceHubProject project) {
     return WorkspaceHubProjectResponse.builder()
@@ -58,6 +64,7 @@ public class WorkspaceHubProjectResponse {
         .memberAvatarSeeds(parseSeeds(project.getMemberAvatarSeeds()))
         .extraMemberCount(project.getExtraMemberCount())
         .footerAvatarSeed(project.getFooterAvatarSeed())
+        .footerAvatarUrl(null)
         .footerText(project.getFooterText())
         .footerMetaText(project.getFooterMetaText())
         .footerMetaIcon(project.getFooterMetaIcon())
@@ -65,11 +72,19 @@ public class WorkspaceHubProjectResponse {
   }
 
   public static WorkspaceHubProjectResponse fromWorkspace(
-      Workspace workspace, List<WorkspaceMember> members, Long currentUserId) {
+      Workspace workspace,
+      List<WorkspaceMember> members,
+      Long currentUserId,
+      User mentor,
+      UserProfile mentorProfile,
+      CalendarEvent nextSchedule,
+      String roleLabel) {
     String type = typeOf(workspace.getType());
     String status = statusOf(workspace.getStatus());
     String mentoringModeLabel = mentoringModeLabel(workspace);
     boolean mentoring = workspace.getType() == WorkspaceType.MENTORING;
+    String mentorName = mentor == null ? "멘토 정보 없음" : "멘토 " + mentor.getName();
+    String mentorAvatarUrl = mentorProfile == null ? null : mentorProfile.getDisplayProfileImage();
 
     return WorkspaceHubProjectResponse.builder()
         .projectId(workspace.getId())
@@ -83,16 +98,19 @@ public class WorkspaceHubProjectResponse {
         .progressPercent("completed".equals(status) ? 100 : defaultProgress(workspace.getType()))
         .mentoringModeLabel(mentoringModeLabel)
         .mentoringModeIcon(mentoringModeIcon(mentoringModeLabel))
-        .categoryLabel(mentoring ? "Mentoring" : null)
-        .roleLabel(null)
+        .categoryLabel(mentoring && roleLabel != null ? roleCategoryLabel(roleLabel) : mentoring ? "Mentoring" : null)
+        .roleLabel(roleLabel)
         .footerKind(mentoring ? "mentor" : "avatars")
         .footerDateLabel(dateText(workspace.getCreatedAt()))
         .memberAvatarSeeds(memberSeeds(members, currentUserId))
         .extraMemberCount(extraMemberCount(members))
-        .footerAvatarSeed(mentoring ? "workspace-" + workspace.getId() : null)
-        .footerText(mentoring ? "멘토링 워크스페이스" : null)
-        .footerMetaText(mentoring ? "진행중" : null)
+        .footerAvatarSeed(mentoring ? "mentor-" + workspace.getOwnerId() : null)
+        .footerAvatarUrl(mentoring ? mentorAvatarUrl : null)
+        .footerText(mentoring ? mentorName : null)
+        .footerMetaText(mentoring ? "진행 중" : null)
         .footerMetaIcon(mentoring ? "fas fa-comment-dots mr-1" : null)
+        .nextScheduleTitle(nextSchedule == null ? null : nextSchedule.getTitle())
+        .nextScheduleStartAt(nextSchedule == null ? null : nextSchedule.getStartAt())
         .build();
   }
 
@@ -123,6 +141,10 @@ public class WorkspaceHubProjectResponse {
       return "/team-ws-dashboard?workspaceId=" + workspace.getId();
     }
 
+    if (workspace.getType() == WorkspaceType.MENTORING) {
+      return "/mentoring-dashboard?workspaceId=" + workspace.getId();
+    }
+
     return "/workspace-hub?workspaceId=" + workspace.getId();
   }
 
@@ -135,14 +157,15 @@ public class WorkspaceHubProjectResponse {
       return null;
     }
 
-    return isTeamMentoringWorkspace(workspace) ? "팀프로젝트형" : "공통과제형";
+    return isTeamMentoringWorkspace(workspace) ? "팀 프로젝트형" : "공통 과제형";
   }
 
   private static String mentoringModeIcon(String mentoringModeLabel) {
     if (mentoringModeLabel == null) {
       return null;
     }
-    return "팀프로젝트형".equals(mentoringModeLabel)
+
+    return "팀 프로젝트형".equals(mentoringModeLabel)
         ? "fas fa-users mr-1"
         : "fas fa-puzzle-piece mr-1";
   }
@@ -201,5 +224,28 @@ public class WorkspaceHubProjectResponse {
   private static Integer extraMemberCount(List<WorkspaceMember> members) {
     int extraCount = members.size() - 2;
     return extraCount > 0 ? extraCount : null;
+  }
+
+  private static String roleCategoryLabel(String roleLabel) {
+    String normalized = roleLabel.toLowerCase(Locale.ROOT);
+    if (normalized.contains("backend")) {
+      return "Backend";
+    }
+    if (normalized.contains("frontend")) {
+      return "Frontend";
+    }
+    if (normalized.contains("app")) {
+      return "App";
+    }
+    if (normalized.contains("design")) {
+      return "Design";
+    }
+    if (normalized.contains("pm")) {
+      return "PM";
+    }
+    if (normalized.contains("fullstack")) {
+      return "Fullstack";
+    }
+    return "Role";
   }
 }

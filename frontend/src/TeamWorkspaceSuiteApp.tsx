@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type WheelEvent as ReactWheelEvent } from 'react'
 import LoginRequiredView from './components/LoginRequiredView'
 import TeamWorkspaceHeader from './components/TeamWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
@@ -24,6 +24,11 @@ type WorkspaceMember = {
   learnerId: number
   learnerName?: string | null
   profileImage?: string | null
+  role?: string | null
+  roleType?: string | null
+  roleLabel?: string | null
+  position?: string | null
+  positionLabel?: string | null
   online?: boolean
   lastActiveAt?: string | null
 }
@@ -400,6 +405,106 @@ function taskTicketCode(task: WorkspaceTask, role: string) {
   return `#${prefix}-${String(task.taskId).padStart(2, '0').slice(-2)}`
 }
 
+function normalizeMemberPosition(value?: string | null) {
+  const raw = value?.trim()
+  if (!raw) return null
+
+  const compact = raw.replace(/[\s_-]/g, '').toLowerCase()
+  if (/^(fe|front|frontend|프론트|프론트엔드)$/.test(compact)) return 'FE'
+  if (/^(be|back|backend|server|서버|백엔드)$/.test(compact)) return 'BE'
+  if (/^(design|designer|de|uiux|ui|ux|디자인|디자이너)$/.test(compact)) return 'DE'
+  if (/^(pm|planner|planning|기획|기획자)$/.test(compact)) return 'PM'
+  if (/^(fullstack|full|fs|풀스택)$/.test(compact)) return 'FS'
+  if (/^(leader|lead|팀장)$/.test(compact)) return 'LEAD'
+  if (/^(common|co|공통)$/.test(compact)) return 'CO'
+
+  return raw.length <= 6 ? raw.toUpperCase() : raw
+}
+
+function memberAssignedPosition(member: WorkspaceMember, tasks: WorkspaceTask[]) {
+  const explicit = normalizeMemberPosition(
+    member.positionLabel ?? member.roleLabel ?? member.position ?? member.roleType ?? member.role,
+  )
+  if (explicit) return explicit
+
+  const counts = new Map<string, number>()
+  tasks
+    .filter((task) => task.assigneeId === member.learnerId)
+    .forEach((task) => {
+      const nextPosition = normalizeMemberPosition(roleForTask(task))
+      if (nextPosition) counts.set(nextPosition, (counts.get(nextPosition) ?? 0) + 1)
+    })
+
+  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null
+}
+
+function fallbackMemberPosition(index: number) {
+  return index % 2 === 0 ? 'FE' : 'BE'
+}
+
+function memberPositionBadgeClass(position: string) {
+  if (position === 'BE') return 'border border-purple-500/30 bg-purple-500/20 text-purple-400'
+  if (position === 'DE') return 'border border-pink-500/30 bg-pink-500/20 text-pink-400'
+  if (position === 'PM') return 'border border-amber-500/30 bg-amber-500/20 text-amber-300'
+  if (position === 'FS') return 'border border-emerald-500/30 bg-emerald-500/20 text-emerald-300'
+  if (position === 'LEAD') return 'border border-red-500/30 bg-red-500/20 text-red-300'
+  if (position === 'CO') return 'border border-gray-600 bg-gray-700 text-gray-300'
+
+  return 'border border-blue-500/30 bg-blue-500/20 text-blue-400'
+}
+
+function memberPositionLightBadgeClass(position: string) {
+  if (position === 'BE') return 'border border-purple-100 bg-purple-50 text-purple-600'
+  if (position === 'DE') return 'border border-pink-100 bg-pink-50 text-pink-600'
+  if (position === 'PM') return 'border border-amber-100 bg-amber-50 text-amber-600'
+  if (position === 'FS') return 'border border-emerald-100 bg-emerald-50 text-emerald-600'
+  if (position === 'LEAD') return 'border border-red-100 bg-red-50 text-red-600'
+  if (position === 'CO') return 'border border-gray-200 bg-gray-100 text-gray-600'
+
+  return 'border border-blue-100 bg-blue-50 text-blue-600'
+}
+
+function formatConnectionTime(totalSeconds: number) {
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
+  const seconds = String(totalSeconds % 60).padStart(2, '0')
+
+  return `${minutes}:${seconds}`
+}
+
+function formatVoiceChatTime(value: Date) {
+  const hours = value.getHours()
+  const minutes = String(value.getMinutes()).padStart(2, '0')
+  const period = hours >= 12 ? '오후' : '오전'
+  const displayHour = hours % 12 || 12
+
+  return `${period} ${displayHour}:${minutes}`
+}
+
+function stopMediaStream(stream: MediaStream | null) {
+  stream?.getTracks().forEach((track) => track.stop())
+}
+
+function liveMediaTracks(stream: MediaStream | null, kind: 'audio' | 'video') {
+  return stream?.getTracks().filter((track) => track.kind === kind && track.readyState === 'live') ?? []
+}
+
+function setMediaTrackEnabled(stream: MediaStream | null, kind: 'audio' | 'video', enabled: boolean) {
+  liveMediaTracks(stream, kind).forEach((track) => {
+    track.enabled = enabled
+  })
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+async function measureBrowserPing() {
+  const start = performance.now()
+  await fetch(`${window.location.origin}/?voicePing=${Date.now()}`, { method: 'HEAD', cache: 'no-store' })
+
+  return Math.max(1, Math.round(performance.now() - start))
+}
+
 function priorityBadgeLabel(priority?: TaskPriority | null) {
   if (priority === 'HIGH') return '긴급'
   if (priority === 'LOW') return '낮음'
@@ -534,20 +639,99 @@ function parseQuestionContent(content?: string | null) {
 
 function eventSourceType(event?: CalendarEvent | null) {
   const text = `${event?.title ?? ''} ${event?.description ?? ''}`.toLowerCase()
+  const type = event?.description?.match(/^\[team-schedule-type:(scrum|deadline|vacation)\]/)?.[1]
+
+  if (type === 'deadline') {
+    return { kind: 'deadline', label: '내부 마감일', dot: 'bg-orange-500', badge: 'bg-orange-500', shell: 'bg-orange-50/50 border-orange-100' }
+  }
   if (/(mentor|멘토|공식|밋업|라이브)/i.test(text)) {
-    return { label: '멘토 공식 일정', dot: 'bg-purple-500', badge: 'bg-purple-500', shell: 'bg-purple-50/50 border-purple-100' }
+    return { kind: 'official', label: '멘토 공식 일정', dot: 'bg-purple-500', badge: 'bg-purple-500', shell: 'bg-purple-50/50 border-purple-100' }
   }
   if (/(deadline|마감|제출|due)/i.test(text)) {
-    return { label: '내부 마감일', dot: 'bg-orange-500', badge: 'bg-orange-500', shell: 'bg-orange-50/50 border-orange-100' }
+    return { kind: 'deadline', label: '내부 마감일', dot: 'bg-orange-500', badge: 'bg-orange-500', shell: 'bg-orange-50/50 border-orange-100' }
   }
 
-  return { label: '팀 스크럼', dot: 'bg-blue-500', badge: 'bg-blue-500', shell: 'bg-blue-50/50 border-blue-100' }
+  return { kind: 'team', label: '팀 스크럼', dot: 'bg-blue-500', badge: 'bg-blue-500', shell: 'bg-blue-50/50 border-blue-100' }
+}
+
+function stripTeamScheduleType(value?: string | null) {
+  return (value ?? '').replace(/^\[team-schedule-type:(scrum|deadline|vacation)\]\n?/, '').trim()
+}
+
+function buildTeamScheduleDescription(type: string, description: string) {
+  return `[team-schedule-type:${type}]\n${description.trim()}`.trim()
+}
+
+function isUpcomingScheduleEvent(event: CalendarEvent) {
+  const date = parseDate(event.startAt)
+  if (!date) return false
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  date.setHours(0, 0, 0, 0)
+
+  return date.getTime() >= today.getTime()
+}
+
+function scheduleEventTooltip(event: CalendarEvent) {
+  const description = stripTeamScheduleType(event.description)
+  const parts = [
+    event.title,
+    `${formatDate(event.startAt)} ${formatTime(event.startAt)}`,
+    description,
+  ].filter(Boolean)
+
+  return parts.join('\n')
+}
+
+function scheduleEventTime(event: CalendarEvent) {
+  return parseDate(event.startAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
+}
+
+function sortScheduleSidebarEvents(events: CalendarEvent[], pinnedEventIds: number[]) {
+  const pinnedIds = new Set(pinnedEventIds)
+
+  return [...events].sort((left, right) => {
+    const leftPinned = pinnedIds.has(left.eventId)
+    const rightPinned = pinnedIds.has(right.eventId)
+
+    if (leftPinned !== rightPinned) return leftPinned ? -1 : 1
+
+    const leftUpcoming = isUpcomingScheduleEvent(left)
+    const rightUpcoming = isUpcomingScheduleEvent(right)
+
+    if (leftUpcoming !== rightUpcoming) return leftUpcoming ? -1 : 1
+
+    const leftTime = scheduleEventTime(left)
+    const rightTime = scheduleEventTime(right)
+
+    return leftUpcoming ? leftTime - rightTime : rightTime - leftTime
+  })
 }
 
 function isOfficialLiveEvent(event?: CalendarEvent | null) {
   const text = `${event?.title ?? ''} ${event?.description ?? ''}`.toLowerCase()
 
   return /(mentor|멘토|공식|밋업|라이브|live|meetup)/i.test(text)
+}
+
+function meetingNoteKind(note: MeetingNote) {
+  const text = `${note.title ?? ''} ${note.content ?? ''}`.toLowerCase()
+
+  return /(mentor|멘토|공식|피드백|밋업)/i.test(text) ? 'mentor' : 'team'
+}
+
+function formatMeetingNoteDate(value?: string | null) {
+  const date = parseDate(value)
+  if (!date) return '날짜 미정'
+
+  return `${date.getFullYear()}.${`${date.getMonth() + 1}`.padStart(2, '0')}.${`${date.getDate()}`.padStart(2, '0')}`
+}
+
+function meetingNoteSummary(note: MeetingNote) {
+  const text = (note.content || '회의록 내용이 없습니다.').trim()
+
+  return text.length > 80 ? `${text.slice(0, 80)}...` : text
 }
 
 function appendQueryParam(href: string, key: string, value?: string | number | null) {
@@ -694,15 +878,18 @@ function todayDateInput() {
 function Sidebar({
   activePage,
   dashboard,
+  tasks,
   workspaceId,
 }: {
   activePage: TeamWorkspacePage
   dashboard: WorkspaceDashboard | null
+  tasks: WorkspaceTask[]
   workspaceId: number | null
 }) {
   const projectName = dashboard?.name?.trim() || 'Next.js 블로그 플랫폼 구축'
   const session = readStoredAuthSession()
   const currentMember = dashboard?.members.find((member) => member.learnerId === session?.userId) ?? dashboard?.members[0]
+  const currentMemberPosition = currentMember ? memberAssignedPosition(currentMember, tasks) ?? fallbackMemberPosition(0) : fallbackMemberPosition(0)
 
   return (
     <aside className="team-ws-sidebar group z-50 flex w-20 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl transition-all duration-300 ease-in-out hover:w-64">
@@ -760,7 +947,9 @@ function Sidebar({
         <div className="sidebar-text min-w-0">
           <p className="flex items-center gap-1 text-sm font-bold text-gray-900">
             <span className="truncate">{currentMember?.learnerName || '나'}</span>
-            <span className="rounded border border-blue-100 bg-blue-50 px-1 py-0.5 text-[9px] text-blue-600">Frontend</span>
+            <span className={`shrink-0 rounded px-1 py-0.5 text-[9px] ${memberPositionLightBadgeClass(currentMemberPosition)}`}>
+              {currentMemberPosition}
+            </span>
           </p>
           <p className="mt-0.5 text-[10px] text-gray-500">내 역할 확인하기</p>
         </div>
@@ -796,7 +985,7 @@ function PageFrame({
 
   return (
     <div className="team-ws-dashboard-page team-ws-suite-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800">
-      <Sidebar activePage={activePage} dashboard={data.dashboard} workspaceId={workspaceId} />
+      <Sidebar activePage={activePage} dashboard={data.dashboard} tasks={data.tasks} workspaceId={workspaceId} />
       <div className="team-ws-main flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#F8F9FA]">
         <TeamWorkspaceHeader
           workspaceId={workspaceId}
@@ -1334,6 +1523,9 @@ function FilesPage({
   const [selectedFile, setSelectedFile] = useState<WorkspaceFile | null>(null)
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [linkForm, setLinkForm] = useState({ title: '', url: '' })
+  const [uploadTitle, setUploadTitle] = useState('')
+  const [uploadDescription, setUploadDescription] = useState('')
+  const [notifyMembers, setNotifyMembers] = useState(true)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -1358,16 +1550,38 @@ function FilesPage({
     return nextFiles.sort((left, right) => (parseDate(right.createdAt)?.getTime() ?? 0) - (parseDate(left.createdAt)?.getTime() ?? 0))
   }, [data.files, filter, search, sort])
 
+  function openUploadModal() {
+    setUploadMode('file')
+    setUploadFile(null)
+    setLinkForm({ title: '', url: '' })
+    setUploadTitle('')
+    setUploadDescription('')
+    setNotifyMembers(true)
+    setUploadError(null)
+    setUploadOpen(true)
+  }
+
+  function closeUploadModal() {
+    setUploadOpen(false)
+    setUploadError(null)
+  }
+
   async function executeUpload(event: FormEvent) {
     event.preventDefault()
+    const trimmedTitle = uploadTitle.trim()
 
     if (uploadMode === 'file' && !uploadFile) {
       setUploadError('업로드할 파일을 선택해주세요.')
       return
     }
 
-    if (uploadMode === 'link' && (!linkForm.title.trim() || !linkForm.url.trim())) {
-      setUploadError('링크 제목과 URL을 입력해주세요.')
+    if (uploadMode === 'link' && !trimmedTitle) {
+      setUploadError('자료 제목을 입력해주세요.')
+      return
+    }
+
+    if (uploadMode === 'link' && !linkForm.url.trim()) {
+      setUploadError('URL 링크를 입력해주세요.')
       return
     }
 
@@ -1378,7 +1592,7 @@ function FilesPage({
       if (uploadMode === 'link') {
         await projectApiRequest<WorkspaceFile>(
           `/api/workspaces/${workspaceId}/files/links`,
-          { method: 'POST', body: JSON.stringify({ title: linkForm.title.trim(), url: linkForm.url.trim() }) },
+          { method: 'POST', body: JSON.stringify({ title: trimmedTitle, url: linkForm.url.trim() }) },
           'required',
         )
       } else {
@@ -1390,6 +1604,9 @@ function FilesPage({
       setUploadOpen(false)
       setUploadFile(null)
       setLinkForm({ title: '', url: '' })
+      setUploadTitle('')
+      setUploadDescription('')
+      setNotifyMembers(true)
       await reload()
     } catch (nextError) {
       setUploadError(nextError instanceof Error ? nextError.message : '자료 업로드에 실패했습니다.')
@@ -1423,7 +1640,7 @@ function FilesPage({
         activePage="files"
         title="팀 통합 자료실"
         subtitle="프로젝트에 필요한 기획안, 에셋 파일, 참고 링크 등을 팀원 및 멘토와 자유롭게 공유하세요."
-        action={<button type="button" onClick={() => setUploadOpen(true)} className="h-10 rounded-xl bg-team px-4 text-[13px] font-black text-white shadow-sm hover:bg-indigo-700"><i className="fas fa-cloud-upload-alt mr-2"></i>새 자료 업로드</button>}
+        action={<button type="button" onClick={openUploadModal} className="team-ws-files-upload-button flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black"><i className="fas fa-cloud-upload-alt"></i>새 자료 업로드</button>}
         data={data}
         workspaceId={workspaceId}
       >
@@ -1435,7 +1652,7 @@ function FilesPage({
             </h1>
             <p className="mt-2 text-sm text-gray-500">프로젝트에 필요한 기획안, 에셋 파일, 참고 링크 등을 팀원 및 멘토와 자유롭게 공유하세요.</p>
           </div>
-          <button type="button" onClick={() => setUploadOpen(true)} className="flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black">
+          <button type="button" onClick={openUploadModal} className="team-ws-files-upload-button flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black">
             <i className="fas fa-cloud-upload-alt"></i>
             새 자료 업로드
           </button>
@@ -1494,7 +1711,7 @@ function FilesPage({
             </div>
             <h3 className="mb-1 text-base font-extrabold text-gray-900">통합 자료실이 비어 있습니다.</h3>
             <p className="mb-6 text-xs font-medium text-gray-500">프로젝트 요구사항, 디자인 가이드라인, 참고 문서 등 팀원들과 공유할 첫 번째 자료를 올려보세요.</p>
-            <button type="button" onClick={() => setUploadOpen(true)} className="flex items-center gap-1.5 rounded-xl bg-team px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-indigo-700">
+            <button type="button" onClick={openUploadModal} className="team-ws-files-first-upload-button flex items-center gap-1.5 rounded-xl bg-team px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-indigo-700">
               <i className="fas fa-cloud-upload-alt text-sm"></i>
               첫 번째 자료 업로드하기
             </button>
@@ -1543,32 +1760,73 @@ function FilesPage({
       </PageFrame>
 
       {uploadOpen ? (
-        <Modal title="새 자료 업로드" iconClassName="fa-cloud-upload-alt" onClose={() => setUploadOpen(false)}>
-          <form onSubmit={executeUpload} className="p-6">
-            <div className="mb-5 grid grid-cols-2 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 p-1">
-              <button type="button" onClick={() => setUploadMode('file')} className={`h-10 rounded-xl text-[13px] font-black ${uploadMode === 'file' ? 'bg-white text-team shadow-sm' : 'text-gray-400'}`}>파일 업로드</button>
-              <button type="button" onClick={() => setUploadMode('link')} className={`h-10 rounded-xl text-[13px] font-black ${uploadMode === 'link' ? 'bg-white text-team shadow-sm' : 'text-gray-400'}`}>외부 링크 공유</button>
+        <div id="uploadModal" className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+          <form onSubmit={executeUpload} className="modal-content team-ws-files-upload-modal relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="team-ws-files-upload-modal-header flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
+                <i className="fas fa-cloud-upload-alt text-team"></i>
+                자료 업로드
+              </h3>
+              <button type="button" onClick={closeUploadModal} className="team-ws-files-upload-close flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
+                <i className="fas fa-times"></i>
+              </button>
             </div>
-            {uploadMode === 'file' ? (
-              <label className="flex h-40 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 text-center hover:border-team">
-                <i className="fas fa-cloud-upload-alt mb-3 text-3xl text-gray-300"></i>
-                <span className="text-[13px] font-black text-gray-700">{uploadFile?.name || '업로드할 파일을 선택하세요'}</span>
-                <span className="mt-1 text-[11px] font-semibold text-gray-400">파일은 현재 워크스페이스 자료실에 저장됩니다.</span>
-                <input type="file" className="hidden" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} />
-              </label>
-            ) : (
-              <div className="space-y-3">
-                <input value={linkForm.title} onChange={(event) => setLinkForm((current) => ({ ...current, title: event.target.value }))} placeholder="링크 제목" className="h-12 w-full rounded-xl border border-gray-200 px-4 text-[14px] font-semibold outline-none focus:border-team" />
-                <input value={linkForm.url} onChange={(event) => setLinkForm((current) => ({ ...current, url: event.target.value }))} placeholder="https://..." className="h-12 w-full rounded-xl border border-gray-200 px-4 text-[14px] font-semibold outline-none focus:border-team" />
+
+            <div className="team-ws-files-upload-modal-body space-y-5 p-6">
+              <div className="flex border-b border-gray-200">
+                <button type="button" onClick={() => setUploadMode('file')} className={`team-ws-files-upload-tab flex-1 border-b-2 pb-2 text-sm font-bold ${uploadMode === 'file' ? 'border-team text-team' : 'border-transparent text-gray-400 transition hover:text-gray-600'}`}>파일 업로드</button>
+                <button type="button" onClick={() => setUploadMode('link')} className={`team-ws-files-upload-tab flex-1 border-b-2 pb-2 text-sm font-bold ${uploadMode === 'link' ? 'border-team text-team' : 'border-transparent text-gray-400 transition hover:text-gray-600'}`}>외부 링크 공유</button>
               </div>
-            )}
-            {uploadError ? <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-500">{uploadError}</p> : null}
-            <div className="mt-6 flex justify-end gap-2">
-              <button type="button" onClick={() => setUploadOpen(false)} className="h-10 rounded-xl border border-gray-200 bg-white px-5 text-[13px] font-black text-gray-600">취소</button>
-              <button type="submit" disabled={uploading} className="h-10 rounded-xl bg-gray-900 px-6 text-[13px] font-black text-white disabled:opacity-60">업로드하기</button>
+
+              {uploadMode === 'file' ? (
+                <div id="area-file" className="space-y-5">
+                  <label id="dropZone" className="upload-zone team-ws-files-upload-zone relative flex cursor-pointer flex-col items-center justify-center rounded-2xl bg-gray-50 p-8 text-center">
+                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-team shadow-sm">
+                      <i className="fas fa-file-upload text-xl"></i>
+                    </div>
+                    <p className="mb-1 text-sm font-bold text-gray-700">클릭하거나 파일을 끌어다 놓으세요</p>
+                    <p className="text-[10px] text-gray-400">PDF, ZIP, 이미지 파일 (최대 50MB)</p>
+                    <input type="file" id="fileInput" className="hidden" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} />
+                  </label>
+                </div>
+              ) : (
+                <div id="area-link" className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-xs font-bold text-gray-600">URL 링크 <span className="text-red-500">*</span></label>
+                    <input type="url" value={linkForm.url} onChange={(event) => setLinkForm((current) => ({ ...current, url: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold shadow-sm outline-none transition focus:border-team" placeholder="https://" />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="mb-2 block text-xs font-bold text-gray-600">자료 제목 <span className="text-red-500">*</span></label>
+                <input type="text" id="uploadTitle" value={uploadTitle} onChange={(event) => setUploadTitle(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold shadow-sm outline-none transition focus:border-team" placeholder="어떤 자료인지 짧고 명확하게 적어주세요" />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-bold text-gray-600">설명 (선택)</label>
+                <textarea id="uploadDesc" value={uploadDescription} onChange={(event) => setUploadDescription(event.target.value)} className="h-20 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-team" placeholder="자료에 대한 부가 설명을 적어주세요"></textarea>
+              </div>
+
+              <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
+                <input type="checkbox" id="notifyMembers" checked={notifyMembers} onChange={(event) => setNotifyMembers(event.target.checked)} className="h-4 w-4 cursor-pointer rounded border-blue-300 text-team accent-team focus:ring-team" />
+                <label htmlFor="notifyMembers" className="cursor-pointer select-none text-xs font-bold text-team">
+                  업로드 완료 후 팀원들에게 알림 보내기
+                </label>
+              </div>
+
+              {uploadError ? <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-500">{uploadError}</p> : null}
+            </div>
+
+            <div className="team-ws-files-upload-modal-footer flex justify-end gap-2 border-t border-gray-100 bg-gray-50 p-5">
+              <button type="button" onClick={closeUploadModal} className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">취소</button>
+              <button type="submit" disabled={uploading} className="flex items-center gap-2 rounded-xl bg-gray-900 px-8 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-black disabled:opacity-60">
+                <i className="fas fa-check"></i>
+                공유하기
+              </button>
             </div>
           </form>
-        </Modal>
+        </div>
       ) : null}
 
       {selectedFile ? (
@@ -2178,8 +2436,20 @@ function SchedulePage({
   const [form, setForm] = useState<EventForm>({ title: '', description: '', type: 'scrum', date: todayDateInput(), time: '10:00', duration: '60' })
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const events = useMemo(() => [...data.events].sort((left, right) => (parseDate(left.startAt)?.getTime() ?? 0) - (parseDate(right.startAt)?.getTime() ?? 0)), [data.events])
-  const upcoming = events.filter((event) => (parseDate(event.endAt ?? event.startAt)?.getTime() ?? 0) >= Date.now()).slice(0, 6)
+  const [optimisticEvents, setOptimisticEvents] = useState<CalendarEvent[]>([])
+  const [recentEventIds, setRecentEventIds] = useState<number[]>([])
+  const [deleteTarget, setDeleteTarget] = useState<CalendarEvent | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [scheduleNotice, setScheduleNotice] = useState<{ title: string; messageLines: string[] } | null>(null)
+  const events = useMemo(() => {
+    const existingIds = new Set(data.events.map((event) => event.eventId))
+
+    return [
+      ...data.events,
+      ...optimisticEvents.filter((event) => !existingIds.has(event.eventId)),
+    ].sort((left, right) => (parseDate(left.startAt)?.getTime() ?? 0) - (parseDate(right.startAt)?.getTime() ?? 0))
+  }, [data.events, optimisticEvents])
+  const upcoming = useMemo(() => sortScheduleSidebarEvents(events, recentEventIds), [events, recentEventIds])
   const [monthBase, setMonthBase] = useState(() => new Date())
   const monthLabel = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long' }).format(monthBase)
   const todayKey = todayDateInput()
@@ -2214,21 +2484,24 @@ function SchedulePage({
 
     try {
       const startAt = toLocalDateTime(form.date, form.time)
-      await projectApiRequest<CalendarEvent>(
+      const createdEvent = await projectApiRequest<CalendarEvent>(
         `/api/workspaces/${workspaceId}/calendar-events`,
         {
           method: 'POST',
           body: JSON.stringify({
             title: form.title.trim(),
-            description: form.description.trim(),
+            description: buildTeamScheduleDescription(form.type, form.description),
             startAt,
             endAt: addMinutes(startAt, Number(form.duration) || 60),
           }),
         },
         'required',
       )
+      setOptimisticEvents((current) => [createdEvent, ...current.filter((event) => event.eventId !== createdEvent.eventId)])
+      setRecentEventIds((current) => [createdEvent.eventId, ...current.filter((eventId) => eventId !== createdEvent.eventId)].slice(0, 6))
       setModalOpen(false)
       setForm({ title: '', description: '', type: 'scrum', date: todayDateInput(), time: '10:00', duration: '60' })
+      setScheduleNotice({ title: '일정 등록 완료!', messageLines: ['우리 팀 캘린더에 성공적으로', '추가되었습니다.'] })
       await reload()
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : '일정 등록에 실패했습니다.')
@@ -2238,11 +2511,24 @@ function SchedulePage({
   }
 
   async function deleteEvent() {
-    if (!selectedEvent) return
+    if (!deleteTarget) return
 
-    await projectApiRequest<void>(`/api/calendar-events/${selectedEvent.eventId}`, { method: 'DELETE' }, 'required')
-    setSelectedEvent(null)
-    await reload()
+    setSubmitting(true)
+    setDeleteError(null)
+
+    try {
+      await projectApiRequest<void>(`/api/calendar-events/${deleteTarget.eventId}`, { method: 'DELETE' }, 'required')
+      setOptimisticEvents((current) => current.filter((event) => event.eventId !== deleteTarget.eventId))
+      setRecentEventIds((current) => current.filter((eventId) => eventId !== deleteTarget.eventId))
+      setSelectedEvent(null)
+      setDeleteTarget(null)
+      setScheduleNotice({ title: '일정 삭제 완료!', messageLines: ['선택한 일정이 캘린더에서', '삭제되었습니다.'] })
+      await reload()
+    } catch (nextError) {
+      setDeleteError(nextError instanceof Error ? nextError.message : '일정 삭제에 실패했습니다.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function openAddEvent(date?: string) {
@@ -2257,28 +2543,30 @@ function SchedulePage({
         activePage="schedule"
         title="팀 캘린더 & 스크럼"
         subtitle="멘토의 공식 일정과 우리 팀의 자체 일정(스크럼, 기획 마감 등)을 한 곳에서 관리하세요."
-        action={<button type="button" onClick={() => setModalOpen(true)} className="h-10 rounded-xl bg-team px-4 text-[13px] font-black text-white shadow-sm hover:bg-indigo-700"><i className="fas fa-plus mr-2"></i>팀 일정 추가</button>}
+        action={<button type="button" onClick={() => openAddEvent()} className="h-10 rounded-xl bg-team px-4 text-[13px] font-black text-white shadow-sm hover:bg-indigo-700"><i className="fas fa-plus mr-2"></i>팀 일정 추가</button>}
         data={data}
         workspaceId={workspaceId}
+        mainClassName="team-ws-schedule-main custom-scrollbar flex-1 overflow-hidden p-5 lg:p-6 relative"
+        contentClassName="team-ws-schedule-content mx-auto flex h-full min-h-0 max-w-6xl flex-col"
       >
-        <div className="mb-6 flex shrink-0 flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div className="team-ws-schedule-heading mb-4 flex shrink-0 flex-col justify-between gap-3 md:flex-row md:items-end">
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900">
+            <h1 className="flex items-center gap-2 text-xl font-extrabold text-gray-900">
               <i className="fas fa-calendar-alt text-team"></i>
               팀 캘린더 & 스크럼
             </h1>
-            <p className="mt-2 text-sm text-gray-500">멘토의 공식 일정과 우리 팀의 자체 일정(스크럼, 기획 마감 등)을 한 곳에서 관리하세요.</p>
+            <p className="mt-1 text-xs leading-5 text-gray-500">멘토의 공식 일정과 우리 팀의 자체 일정(스크럼, 기획 마감 등)을 한 곳에서 관리하세요.</p>
           </div>
-          <button type="button" onClick={() => setModalOpen(true)} className="flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black">
+          <button type="button" onClick={() => openAddEvent()} className="flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-[13px] font-bold text-white shadow-lg transition hover:bg-black">
             <i className="fas fa-plus"></i>
             팀 일정 추가
           </button>
         </div>
 
-        <div className="grid flex-1 min-h-0 grid-cols-1 gap-6 lg:grid-cols-3">
-          <section className="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-extrabold text-gray-900">{monthLabel}</h2>
+        <div className="team-ws-schedule-layout grid flex-1 min-h-0 grid-cols-1 gap-4 lg:grid-cols-3 xl:gap-5">
+          <section className="team-ws-schedule-calendar-panel flex min-h-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm xl:p-5 lg:col-span-2">
+            <div className="team-ws-schedule-month-header mb-3 flex shrink-0 items-center justify-between">
+              <h2 className="text-lg font-extrabold text-gray-900">{monthLabel}</h2>
               <div className="flex gap-2">
                 <button type="button" onClick={() => setMonthBase((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))} className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:bg-gray-50">
                   <i className="fas fa-chevron-left"></i>
@@ -2288,12 +2576,12 @@ function SchedulePage({
                 </button>
               </div>
             </div>
-            <div className="mb-3 flex justify-end gap-4 text-[10px] font-bold text-gray-500">
+            <div className="team-ws-schedule-legend mb-2 flex shrink-0 flex-wrap justify-end gap-x-3 gap-y-1 text-[10px] font-bold text-gray-500">
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-purple-500"></span> 멘토 공식</span>
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500"></span> 팀 스크럼/회의</span>
               <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-500"></span> 팀 내부 마감일</span>
             </div>
-            <div className="calendar-grid">
+            <div className="calendar-grid team-ws-schedule-calendar-grid">
               {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
                 <div key={day} className={`calendar-header ${day === '일' ? 'text-red-500' : day === '토' ? 'text-blue-500' : ''}`}>{day}</div>
               ))}
@@ -2303,9 +2591,10 @@ function SchedulePage({
                   <div className="mt-2 space-y-1">
                     {day.events.map((event) => {
                       const meta = eventSourceType(event)
+                      const tooltip = scheduleEventTooltip(event)
 
                       return (
-                        <div key={event.eventId} onClick={(clickEvent) => { clickEvent.stopPropagation(); setSelectedEvent(event) }} className={`truncate rounded px-1 py-0.5 text-[10px] leading-tight text-white shadow-sm ${meta.badge}`}>
+                        <div key={event.eventId} title={tooltip} onClick={(clickEvent) => { clickEvent.stopPropagation(); setSelectedEvent(event) }} className={`truncate rounded px-1 py-0.5 text-[10px] leading-tight text-white shadow-sm ${meta.badge}`}>
                           {formatTime(event.startAt)} {event.title}
                         </div>
                       )
@@ -2316,13 +2605,13 @@ function SchedulePage({
             </div>
           </section>
 
-          <aside className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3 text-sm font-extrabold text-gray-900">
+          <aside className="team-ws-schedule-upcoming-panel flex h-full min-h-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm xl:p-5">
+            <h3 className="mb-3 flex shrink-0 items-center gap-2 border-b border-gray-100 pb-2 text-sm font-extrabold text-gray-900">
               <i className="fas fa-list-ul text-team"></i>
               다가오는 일정
             </h3>
             {upcoming.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center py-12 text-center">
+              <div className="flex h-full flex-col items-center justify-center py-8 text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-gray-100 bg-gray-50 text-2xl text-gray-300">
                   <i className="far fa-calendar-times"></i>
                 </div>
@@ -2330,16 +2619,17 @@ function SchedulePage({
                 <p className="text-[10px] leading-relaxed text-gray-400">우측 상단의 '팀 일정 추가' 버튼을 눌러<br />새로운 일정을 만들어보세요.</p>
               </div>
             ) : (
-              <div className="custom-scrollbar flex-1 space-y-3 overflow-y-auto">
+              <div className="team-ws-schedule-upcoming-list custom-scrollbar min-h-0 flex-1 space-y-1.5 overflow-y-auto">
                 {upcoming.map((event) => {
                   const meta = eventSourceType(event)
+                  const tooltip = scheduleEventTooltip(event)
 
                   return (
-                  <div key={event.eventId} onClick={() => setSelectedEvent(event)} className={`relative cursor-pointer rounded-xl border p-4 transition hover:-translate-y-0.5 ${meta.shell}`}>
-                    <div className="mb-2 flex items-start justify-between">
+                  <div key={event.eventId} title={tooltip} onClick={() => setSelectedEvent(event)} className={`team-ws-schedule-upcoming-card relative cursor-pointer rounded-xl border px-3 py-2.5 transition hover:-translate-y-0.5 ${meta.shell}`}>
+                    <div className="mb-1 flex items-start justify-between">
                       <span className={`rounded px-2 py-0.5 text-[10px] font-bold text-white shadow-sm ${meta.badge}`}>{meta.label}</span>
                     </div>
-                    <h3 className="mb-1 line-clamp-1 text-sm font-bold text-gray-900">{event.title}</h3>
+                    <h3 className="mb-0 line-clamp-1 text-[13px] font-bold text-gray-900" title={tooltip}>{event.title}</h3>
                     <p className="text-[10px] font-bold text-gray-500"><i className="far fa-clock mr-0.5"></i> {formatDate(event.startAt)} {formatTime(event.startAt)}</p>
                   </div>
                   )
@@ -2398,19 +2688,85 @@ function SchedulePage({
           </form>
         </Modal>
       ) : null}
-      {selectedEvent ? (
-        <Modal title="일정 상세" panelClassName="w-full max-w-sm" headerClassName="items-start" onClose={() => setSelectedEvent(null)}>
-          <div className="p-6">
-            <p className="mb-1 text-[10px] font-bold text-gray-400">상세 안내</p>
-            <div className="min-h-[80px] rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm font-medium leading-relaxed text-gray-700">
-              {selectedEvent.description || '내용이 표시됩니다.'}
+      {selectedEvent ? (() => {
+        const meta = eventSourceType(selectedEvent)
+        const description = stripTeamScheduleType(selectedEvent.description)
+        const tooltip = scheduleEventTooltip(selectedEvent)
+        const isOfficial = meta.kind === 'official'
+
+        return (
+          <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+            <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setSelectedEvent(null)}></button>
+            <div className="modal-content team-ws-modal-panel team-ws-event-detail-modal relative z-10 w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl">
+              <div className="team-ws-event-detail-header flex justify-between border-b border-gray-100 bg-gray-50">
+                <div className="min-w-0">
+                  <span className={`team-ws-event-detail-badge text-white ${meta.badge}`}>{isOfficial ? '멘토 공식 일정' : '우리 팀 자체 일정'}</span>
+                  <h3 className="team-ws-event-detail-title truncate text-gray-900" title={tooltip}>{selectedEvent.title}</h3>
+                  <p className="team-ws-event-detail-time font-bold text-gray-500" title={tooltip}>
+                    <i className="far fa-clock"></i> {formatDate(selectedEvent.startAt)} {formatTime(selectedEvent.startAt)}
+                  </p>
+                </div>
+                <button type="button" onClick={() => setSelectedEvent(null)} className="team-ws-event-detail-close flex shrink-0 items-center justify-center border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+
+              <div className="team-ws-event-detail-body">
+                <p className="team-ws-event-detail-label font-bold text-gray-400">상세 안내</p>
+                <div className="team-ws-event-detail-desc border border-gray-100 bg-gray-50 font-medium leading-relaxed text-gray-700">
+                  {description || '상세 설명이 없습니다.'}
+                </div>
+              </div>
+
+              <div className="team-ws-event-detail-footer flex items-center justify-between border-t border-gray-100 bg-white">
+                {isOfficial ? <div></div> : (
+                  <button type="button" onClick={() => { setDeleteError(null); setDeleteTarget(selectedEvent) }} className="team-ws-event-detail-delete border border-red-100 bg-red-50 font-bold text-red-500 transition hover:bg-red-100">
+                    <i className="fas fa-trash-alt"></i> 일정 삭제
+                  </button>
+                )}
+                <button type="button" onClick={() => setSelectedEvent(null)} className="team-ws-event-detail-confirm bg-gray-900 font-bold text-white shadow-md transition hover:bg-black">확인</button>
+              </div>
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-gray-100 bg-white p-5">
-            <button type="button" onClick={() => void deleteEvent()} className="rounded-xl border border-red-100 bg-red-50 px-5 py-2.5 text-sm font-bold text-red-500">삭제</button>
-            <button type="button" onClick={() => setSelectedEvent(null)} className="rounded-xl bg-gray-900 px-6 py-2.5 text-sm font-bold text-white">닫기</button>
+        )
+      })() : null}
+
+      {deleteTarget ? (
+        <div id="deleteEventModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center p-4">
+          <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setDeleteTarget(null); setDeleteError(null) }}></button>
+          <div className="modal-content team-ws-schedule-delete-modal relative z-10 w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-500 shadow-sm">
+              <i className="fas fa-trash-alt text-2xl"></i>
+            </div>
+            <h3 className="mb-2 text-xl font-extrabold text-gray-900">일정 삭제</h3>
+            <p className="mb-6 text-sm font-medium leading-relaxed text-gray-500">
+              우리 팀 캘린더에서 이 일정을<br />삭제하시겠습니까?
+            </p>
+            {deleteError ? <p className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-bold text-red-500">{deleteError}</p> : null}
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => { setDeleteTarget(null); setDeleteError(null) }} disabled={submitting} className="rounded-xl border border-gray-200 bg-white py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-60">취소</button>
+              <button type="button" onClick={() => void deleteEvent()} disabled={submitting} className="rounded-xl bg-red-500 py-3 text-sm font-bold text-white shadow-md transition hover:bg-red-600 disabled:opacity-60">
+                삭제하기
+              </button>
+            </div>
           </div>
-        </Modal>
+        </div>
+      ) : null}
+
+      {scheduleNotice ? (
+        <div id="successModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center p-4">
+          <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setScheduleNotice(null)}></button>
+          <div className="modal-content team-ws-schedule-success-modal relative z-10 w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl">
+            <div className="team-ws-schedule-success-icon mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-indigo-100 bg-team-light shadow-sm">
+              <i className="fas fa-check text-3xl text-team"></i>
+            </div>
+            <h3 className="mb-2 text-xl font-extrabold text-gray-900">{scheduleNotice.title}</h3>
+            <p className="mb-6 text-sm font-medium leading-relaxed text-gray-500">
+              {scheduleNotice.messageLines[0]}<br />{scheduleNotice.messageLines[1]}
+            </p>
+            <button type="button" onClick={() => setScheduleNotice(null)} className="w-full rounded-xl bg-gray-900 py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-black">확인</button>
+          </div>
+        </div>
       ) : null}
     </>
   )
@@ -2942,6 +3298,8 @@ function MeetingPage({
   }
 
   async function deleteNote(noteId: number) {
+    if (!window.confirm('정말 이 회의록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return
+
     await projectApiRequest<void>(`/api/meeting-notes/${noteId}`, { method: 'DELETE' }, 'required')
     setSelectedNote(null)
     await reload()
@@ -2949,10 +3307,7 @@ function MeetingPage({
 
   const filteredNotes = useMemo(() => {
     if (noteFilter === 'all') return data.notes
-    return data.notes.filter((note) => {
-      const haystack = `${note.title} ${note.content ?? ''}`.toLowerCase()
-      return noteFilter === 'mentor' ? haystack.includes('mentor') || haystack.includes('멘토') : !haystack.includes('mentor')
-    })
+    return data.notes.filter((note) => meetingNoteKind(note) === noteFilter)
   }, [data.notes, noteFilter])
 
   return (
@@ -2961,7 +3316,7 @@ function MeetingPage({
         activePage="meeting"
         title="라이브 밋업 & 회의장"
         subtitle="멘토님이 주관하는 공식 밋업에 참여하거나, 팀원들끼리 모여 자유롭게 화면을 공유하며 회의하세요."
-        action={<button type="button" onClick={() => openNoteModal()} className="h-10 rounded-xl bg-team px-4 text-[13px] font-black text-white shadow-sm hover:bg-indigo-700"><i className="fas fa-pen-nib mr-2"></i>팀 회의록 작성</button>}
+        action={<button type="button" onClick={() => openNoteModal()} className="team-ws-meeting-write-button flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black"><i className="fas fa-pen-nib"></i>팀 회의록 작성</button>}
         data={data}
         workspaceId={workspaceId}
         contentClassName="mx-auto max-w-6xl space-y-8"
@@ -2974,7 +3329,7 @@ function MeetingPage({
             </h1>
             <p className="mt-2 text-sm text-gray-500">멘토 공식 밋업에 참여하거나 팀원끼리 자유롭게 회의하세요.</p>
           </div>
-          <button type="button" onClick={() => openNoteModal()} className="flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black">
+          <button type="button" onClick={() => openNoteModal()} className="team-ws-meeting-write-button flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black">
             <i className="fas fa-pen-nib"></i>
             팀 회의록 작성
           </button>
@@ -3092,63 +3447,162 @@ function MeetingPage({
               <i className="fas fa-archive text-gray-400"></i>
               회의록 아카이브
             </h2>
-            <div className="flex gap-2 rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+            <div className="team-ws-meeting-filter-group flex gap-2 rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
               {[
                 ['all', '전체'],
                 ['mentor', '멘토 공식'],
                 ['team', '팀 회의록'],
               ].map(([key, label]) => (
-                <button key={key} type="button" onClick={() => setNoteFilter(key as 'all' | 'mentor' | 'team')} className={`rounded-lg px-4 py-1.5 text-[11px] font-bold transition ${noteFilter === key ? 'bg-gray-900 text-white' : 'text-gray-500'}`}>{label}</button>
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setNoteFilter(key as 'all' | 'mentor' | 'team')}
+                  className={`team-ws-meeting-filter-button rounded-lg px-4 py-1.5 text-[11px] font-bold transition ${
+                    noteFilter === key
+                      ? key === 'mentor'
+                        ? 'border border-purple-200 bg-purple-100 text-purple-700 shadow-sm'
+                        : key === 'team'
+                          ? 'border border-indigo-200 bg-indigo-100 text-team shadow-sm'
+                          : 'bg-gray-900 text-white shadow-sm'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
             </div>
           </div>
           {data.notes.length === 0 ? (
-            <EmptyPanel icon="fa-pen-nib" title="아직 등록된 팀 회의록이 없습니다." description="킥오프 미팅, 스크럼 등 팀원들과 나눈 중요한 회의 내용을 기록하고 아카이빙 해보세요." actionLabel="첫 번째 회의록 작성하기" actionTone="team" onAction={() => openNoteModal()} />
+            <div className="team-ws-meeting-note-empty col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-20 text-center shadow-sm">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-gray-100 bg-gray-50 text-gray-400 shadow-sm">
+                <i className="fas fa-pen-nib text-2xl"></i>
+              </div>
+              <h3 className="mb-1 text-base font-extrabold text-gray-900">아직 등록된 팀 회의록이 없습니다.</h3>
+              <p className="mb-6 text-xs font-medium text-gray-500">킥오프 미팅, 스크럼 등 팀원들과 나눈 중요한 회의 내용을 기록하고 아카이빙 해보세요.</p>
+              <button type="button" onClick={() => openNoteModal()} className="team-ws-meeting-first-button flex items-center gap-1.5 rounded-xl bg-team px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-indigo-700">
+                <i className="fas fa-plus"></i>
+                첫 번째 회의록 작성하기
+              </button>
+            </div>
+          ) : filteredNotes.length === 0 ? (
+            <div className="team-ws-meeting-note-empty col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-16 text-center shadow-sm">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-gray-100 bg-gray-50 text-gray-300 shadow-sm">
+                <i className="fas fa-archive text-2xl"></i>
+              </div>
+              <h3 className="mb-1 text-sm font-bold text-gray-700">해당 분류의 회의록이 없습니다.</h3>
+              <p className="text-xs text-gray-400">새로운 회의록을 작성하거나 다른 필터를 확인해보세요.</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredNotes.map((note) => (
-                <button key={note.noteId} type="button" onClick={() => setSelectedNote(note)} className="rounded-2xl border border-gray-100 bg-gray-50 p-5 text-left transition hover:border-team hover:bg-white">
-                  <p className="mb-2 text-[11px] font-black text-team">{formatDate(note.createdAt)}</p>
-                  <h3 className="text-[15px] font-black text-gray-900">{note.title}</h3>
-                  <p className="mt-3 line-clamp-3 min-h-[58px] whitespace-pre-line text-[12px] font-medium leading-5 text-gray-500">{note.content || '회의록 내용이 없습니다.'}</p>
-                </button>
-              ))}
+              {filteredNotes.map((note) => {
+                const noteKind = meetingNoteKind(note)
+
+                return (
+                  <button key={note.noteId} type="button" onClick={() => setSelectedNote(note)} className="team-ws-meeting-note-card hover-card flex h-full cursor-pointer flex-col rounded-2xl bg-white p-5 text-left">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      {noteKind === 'mentor' ? (
+                        <span className="team-ws-meeting-note-badge flex items-center gap-1 rounded border border-purple-200 bg-mentor-light px-1.5 py-0.5 text-[9px] font-extrabold text-mentor"><i className="fas fa-check-circle"></i> 멘토 공식</span>
+                      ) : (
+                        <span className="team-ws-meeting-note-badge flex items-center gap-1 rounded border border-indigo-200 bg-team-light px-1.5 py-0.5 text-[9px] font-extrabold text-team"><i className="fas fa-users"></i> 팀 회의록</span>
+                      )}
+                      <span className="team-ws-meeting-note-date shrink-0 text-[10px] font-bold text-gray-400">{formatMeetingNoteDate(note.createdAt)}</span>
+                    </div>
+                    <h4 className="team-ws-meeting-note-title mb-2 line-clamp-2 text-sm font-extrabold leading-tight text-gray-900">{note.title}</h4>
+                    <p className="team-ws-meeting-note-summary line-clamp-2 flex-1 whitespace-pre-line text-xs leading-relaxed text-gray-500">{meetingNoteSummary(note)}</p>
+                  </button>
+                )
+              })}
             </div>
           )}
         </section>
       </PageFrame>
 
       {modalOpen ? (
-        <Modal title="팀 회의록 작성" iconClassName="fa-pen-nib" description="회의에서 결정된 사항들을 기록해두면 팀 프로젝트 산출물이 됩니다." panelClassName="w-full max-w-2xl" onClose={() => setModalOpen(false)}>
-          <form onSubmit={saveNote} className="space-y-5 p-6">
-            <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="회의록 제목을 입력하세요." className="h-12 w-full rounded-xl border border-gray-200 px-4 text-[14px] font-semibold outline-none focus:border-team" />
-            <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="## 참석자&#10;- &#10;&#10;## 논의 내용&#10;-" className="h-64 w-full resize-none rounded-xl border border-gray-200 p-4 text-[13px] font-medium outline-none focus:border-team"></textarea>
-            {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-500">{error}</p> : null}
-            <div className="flex justify-end gap-2 border-t border-gray-100 pt-5">
-              <button type="button" onClick={() => setModalOpen(false)} className="h-10 rounded-xl border border-gray-200 bg-white px-5 text-[13px] font-black text-gray-600">취소</button>
-              <button type="submit" disabled={submitting} className="h-10 rounded-xl bg-gray-900 px-6 text-[13px] font-black text-white disabled:opacity-60">저장하기</button>
+        <div id="teamNoteModal" className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+          <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setModalOpen(false)}></button>
+          <form onSubmit={saveNote} className="modal-content team-ws-meeting-note-modal relative z-10 flex w-full max-w-2xl flex-col rounded-3xl bg-white shadow-2xl">
+            <div className="team-ws-meeting-note-modal-header flex shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
+              <div>
+                <h3 className="team-ws-meeting-note-modal-title flex items-center gap-2 text-lg font-extrabold text-gray-900">
+                  <i className={`fas ${form.noteId ? 'fa-edit' : 'fa-pen-nib'} text-team`}></i>
+                  {form.noteId ? '팀 회의록 수정' : '팀 회의록 작성'}
+                </h3>
+                <p className="team-ws-meeting-note-modal-desc mt-1 text-xs text-gray-500">회의에서 결정된 사항들을 기록해두면 훌륭한 프로젝트 산출물이 됩니다.</p>
+              </div>
+              <button type="button" onClick={() => setModalOpen(false)} className="team-ws-meeting-note-modal-close flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div className="team-ws-meeting-note-modal-body space-y-4 p-6">
+              <div>
+                <label className="team-ws-meeting-note-modal-label mb-2 block text-xs font-bold text-gray-800">회의 주제 및 제목</label>
+                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="예: 프론트엔드/백엔드 API 연동 모의 회의" className="team-ws-meeting-note-modal-input w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium outline-none transition focus:border-team focus:ring-1 focus:ring-team" />
+              </div>
+              <div>
+                <label className="team-ws-meeting-note-modal-label mb-2 block text-xs font-bold text-gray-800">회의록 내용 (마크다운 지원)</label>
+                <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="결정된 사항, 문제점, 향후 계획 등을 자유롭게 작성해주세요." className="team-ws-meeting-note-modal-textarea custom-scrollbar h-48 w-full resize-none rounded-xl border border-gray-200 p-4 text-sm font-medium outline-none transition focus:border-team focus:ring-1 focus:ring-team"></textarea>
+              </div>
+              {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-500">{error}</p> : null}
+            </div>
+
+            <div className="team-ws-meeting-note-modal-footer flex shrink-0 gap-3 border-t border-gray-100 bg-white p-4">
+              <button type="button" onClick={() => setModalOpen(false)} className="team-ws-meeting-note-cancel flex-1 rounded-xl bg-gray-100 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-200">취소</button>
+              <button type="submit" disabled={submitting} className="team-ws-meeting-note-save flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-900 py-3 text-sm font-bold text-white shadow-md transition hover:bg-black disabled:opacity-60">
+                <i className="fas fa-check"></i>
+                {form.noteId ? '수정 완료' : '작성 완료'}
+              </button>
             </div>
           </form>
-        </Modal>
+        </div>
       ) : null}
-      {selectedNote ? (
-        <Modal title="회의록 상세" panelClassName="flex max-h-[85vh] w-full max-w-2xl flex-col" headerClassName="items-start" onClose={() => setSelectedNote(null)}>
-          <div className="space-y-5 p-6">
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-5">
-              <p className="text-[11px] font-black text-team">{formatDate(selectedNote.createdAt)}</p>
-              <h3 className="mt-2 text-[18px] font-black text-gray-900">{selectedNote.title}</h3>
-              <p className="mt-4 whitespace-pre-line text-[13px] font-medium leading-6 text-gray-600">{selectedNote.content || '회의록 내용이 없습니다.'}</p>
-            </div>
-            <div className="flex justify-between border-t border-gray-100 pt-5">
-              <button type="button" onClick={() => void deleteNote(selectedNote.noteId)} className="h-10 rounded-xl border border-red-100 bg-red-50 px-5 text-[13px] font-black text-red-500">삭제</button>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setSelectedNote(null)} className="h-10 rounded-xl border border-gray-200 bg-white px-5 text-[13px] font-black text-gray-600">닫기</button>
-                <button type="button" onClick={() => openNoteModal(selectedNote)} className="h-10 rounded-xl bg-gray-900 px-6 text-[13px] font-black text-white">수정</button>
+      {selectedNote ? (() => {
+        const noteKind = meetingNoteKind(selectedNote)
+
+        return (
+          <div id="noteDetailModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+            <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setSelectedNote(null)}></button>
+            <div className="modal-content team-ws-meeting-note-detail-modal relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+              <div className="team-ws-meeting-note-detail-header flex shrink-0 items-start justify-between border-b border-gray-100 bg-gray-50 p-6">
+                <div className="min-w-0 pr-8">
+                  {noteKind === 'mentor' ? (
+                    <span className="team-ws-meeting-detail-badge mb-2 inline-flex items-center gap-1 rounded border border-purple-200 bg-mentor-light px-2 py-0.5 text-[10px] font-extrabold text-mentor"><i className="fas fa-check-circle"></i> 멘토 공식</span>
+                  ) : (
+                    <span className="team-ws-meeting-detail-badge mb-2 inline-flex items-center gap-1 rounded border border-indigo-200 bg-team-light px-2 py-0.5 text-[10px] font-extrabold text-team"><i className="fas fa-users"></i> 팀 회의록</span>
+                  )}
+                  <h3 className="team-ws-meeting-note-detail-title text-xl font-extrabold leading-tight text-gray-900">{selectedNote.title}</h3>
+                  <p className="team-ws-meeting-note-detail-date mt-2 text-xs font-bold text-gray-400">{formatMeetingNoteDate(selectedNote.createdAt)}</p>
+                </div>
+                <button type="button" onClick={() => setSelectedNote(null)} className="team-ws-meeting-note-detail-close flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+
+              <div className="team-ws-meeting-note-detail-body custom-scrollbar flex-1 overflow-y-auto p-6">
+                <div className="team-ws-meeting-note-detail-content whitespace-pre-line text-sm font-medium leading-relaxed text-gray-700">
+                  {selectedNote.content || '회의록 내용이 없습니다.'}
+                </div>
+              </div>
+
+              <div className="team-ws-meeting-note-detail-footer flex shrink-0 items-center justify-between border-t border-gray-100 bg-gray-50 p-4">
+                {noteKind === 'team' ? (
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => void deleteNote(selectedNote.noteId)} className="team-ws-meeting-note-detail-action flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-500 transition hover:bg-red-50">
+                      <i className="fas fa-trash-alt"></i>
+                      삭제
+                    </button>
+                    <button type="button" onClick={() => openNoteModal(selectedNote)} className="team-ws-meeting-note-detail-action flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50">
+                      <i className="fas fa-edit"></i>
+                      수정
+                    </button>
+                  </div>
+                ) : <div></div>}
+                <button type="button" onClick={() => setSelectedNote(null)} className="team-ws-meeting-note-detail-close-action rounded-xl bg-gray-900 px-6 py-2 text-sm font-bold text-white shadow-md transition hover:bg-black">닫기</button>
               </div>
             </div>
           </div>
-        </Modal>
-      ) : null}
+        )
+      })() : null}
     </>
   )
 }
@@ -3162,11 +3616,28 @@ function RealtimePage({
   data: SuiteData
   workspaceId: number
 }) {
+  const localCameraVideoRef = useRef<HTMLVideoElement | null>(null)
+  const screenShareVideoRef = useRef<HTMLVideoElement | null>(null)
+  const screenShareStageRef = useRef<HTMLDivElement | null>(null)
+  const localMediaStreamRef = useRef<MediaStream | null>(null)
+  const screenShareStreamRef = useRef<MediaStream | null>(null)
   const [muted, setMuted] = useState(false)
-  const [cameraOff, setCameraOff] = useState(false)
+  const [cameraOff, setCameraOff] = useState(true)
+  const [deafened, setDeafened] = useState(false)
+  const [screenSharing, setScreenSharing] = useState(false)
+  const [screenShareFullscreen, setScreenShareFullscreen] = useState(false)
+  const [screenShareZoom, setScreenShareZoom] = useState(1)
+  const [screenShareTransformOrigin, setScreenShareTransformOrigin] = useState('50% 50%')
+  const [cameraStreamActive, setCameraStreamActive] = useState(false)
+  const [chatOpen, setChatOpen] = useState(true)
+  const [connectionSeconds, setConnectionSeconds] = useState(0)
+  const [networkPing, setNetworkPing] = useState<number | null>(null)
+  const [pingState, setPingState] = useState<'measuring' | 'connected' | 'unstable'>('measuring')
+  const [speaking, setSpeaking] = useState(false)
+  const [mediaError, setMediaError] = useState<string | null>(null)
   const [message, setMessage] = useState('')
-  const [messages, setMessages] = useState<Array<{ id: number; text: string }>>([])
-  const members = data.dashboard?.members ?? []
+  const [messages, setMessages] = useState<Array<{ id: number; text: string; createdAt: Date }>>([])
+  const members = useMemo(() => data.dashboard?.members ?? [], [data.dashboard?.members])
   const isLive = page === 'live-meeting'
   const liveMeetingEvent = data.events.filter((event) => isOfficialLiveEvent(event)).sort((left, right) => (parseDate(left.startAt)?.getTime() ?? 0) - (parseDate(right.startAt)?.getTime() ?? 0))[0] ?? null
   const voiceChannel = data.voiceChannels[0] ?? null
@@ -3174,13 +3645,612 @@ function RealtimePage({
   const hasLiveMeeting = Boolean(liveMeetingEvent)
   const hasVoiceSession = voiceParticipantCount > 0
   const title = isLive ? liveMeetingEvent?.title || '라이브 밋업' : voiceChannel?.name || '음성 채널 채팅'
+  const session = readStoredAuthSession()
+  const currentMember = members.find((member) => member.learnerId === session?.userId) ?? members[0] ?? null
+  const orderedMembers = useMemo(() => {
+    if (!currentMember) return members
+
+    return [currentMember, ...members.filter((member) => member.memberId !== currentMember.memberId)]
+  }, [currentMember, members])
+  const visibleVoiceCount = Math.max(1, Math.min(orderedMembers.length || 1, voiceParticipantCount || (hasVoiceSession ? orderedMembers.length : 1)))
+  const voiceMembers = orderedMembers.slice(0, visibleVoiceCount)
+  const currentMemberPosition = currentMember ? memberAssignedPosition(currentMember, data.tasks) ?? fallbackMemberPosition(0) : 'FE'
+  const pingToneClass = pingState === 'connected'
+    ? networkPing !== null && networkPing > 300
+      ? 'text-red-400'
+      : networkPing !== null && networkPing > 150
+        ? 'text-yellow-400'
+        : 'text-green-500'
+    : pingState === 'measuring'
+      ? 'text-yellow-400'
+      : 'text-red-400'
+  const pingLabel = pingState === 'connected' && networkPing !== null ? `${networkPing}ms` : '측정 중'
+  const pingStatusLabel = pingState === 'unstable' ? '연결 불안정' : pingState === 'measuring' ? '측정 중' : '음성 연결됨'
+
+  useEffect(() => {
+    if (isLive) return undefined
+
+    const timer = window.setInterval(() => {
+      setConnectionSeconds((current) => current + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [isLive])
+
+  useEffect(() => {
+    if (isLive) return undefined
+
+    let alive = true
+
+    const updatePing = async () => {
+      try {
+        const nextPing = await measureBrowserPing()
+        if (!alive) return
+        setNetworkPing(nextPing)
+        setPingState('connected')
+      } catch {
+        if (!alive) return
+        setNetworkPing(null)
+        setPingState('unstable')
+      }
+    }
+
+    void updatePing()
+    const timer = window.setInterval(() => {
+      void updatePing()
+    }, 5000)
+
+    return () => {
+      alive = false
+      window.clearInterval(timer)
+    }
+  }, [isLive])
+
+  useEffect(() => {
+    if (isLive) return undefined
+
+    return () => {
+      stopMediaStream(localMediaStreamRef.current)
+      localMediaStreamRef.current = null
+      stopMediaStream(screenShareStreamRef.current)
+      screenShareStreamRef.current = null
+    }
+  }, [isLive])
+
+  useEffect(() => {
+    if (isLive) return undefined
+
+    let cancelled = false
+
+    const enableDefaultMicrophone = async () => {
+      await Promise.resolve()
+      if (cancelled) return
+
+      if (liveMediaTracks(localMediaStreamRef.current, 'audio').length > 0) {
+        setMediaTrackEnabled(localMediaStreamRef.current, 'audio', true)
+        setMuted(false)
+        setDeafened(false)
+        return
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setMuted(true)
+        setMediaError('이 브라우저는 마이크 장치를 지원하지 않습니다.')
+        return
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        if (cancelled) {
+          stopMediaStream(stream)
+          return
+        }
+
+        const targetStream = localMediaStreamRef.current ?? new MediaStream()
+        localMediaStreamRef.current = targetStream
+        targetStream.getAudioTracks().forEach((track) => {
+          targetStream.removeTrack(track)
+          track.stop()
+        })
+        stream.getTracks().forEach((track) => {
+          if (track.kind === 'audio') {
+            track.enabled = true
+            targetStream.addTrack(track)
+            track.addEventListener('ended', () => {
+              setMuted(true)
+              setSpeaking(false)
+            })
+            return
+          }
+
+          track.stop()
+        })
+
+        setMuted(false)
+        setDeafened(false)
+        setMediaError(null)
+      } catch {
+        if (cancelled) return
+        setMuted(true)
+        setSpeaking(false)
+        setMediaError('마이크 권한을 허용해야 음성 채널에서 말할 수 있습니다.')
+      }
+    }
+
+    void enableDefaultMicrophone()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isLive])
+
+  useEffect(() => {
+    if (isLive) return undefined
+
+    const video = localCameraVideoRef.current
+    if (!video) return undefined
+
+    const stream = !cameraOff && cameraStreamActive ? localMediaStreamRef.current : null
+    video.srcObject = stream
+    if (stream) void video.play().catch(() => undefined)
+
+    return () => {
+      video.srcObject = null
+    }
+  }, [cameraOff, cameraStreamActive, isLive])
+
+  useEffect(() => {
+    if (isLive) return undefined
+
+    const video = screenShareVideoRef.current
+    if (!video) return undefined
+
+    const stream = screenSharing ? screenShareStreamRef.current : null
+    video.srcObject = stream
+    if (stream) void video.play().catch(() => undefined)
+
+    return () => {
+      video.srcObject = null
+    }
+  }, [isLive, screenSharing])
+
+  useEffect(() => {
+    if (isLive) return undefined
+
+    const syncFullscreenState = () => {
+      setScreenShareFullscreen(document.fullscreenElement === screenShareStageRef.current)
+    }
+
+    document.addEventListener('fullscreenchange', syncFullscreenState)
+
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
+  }, [isLive])
+
+  useEffect(() => {
+    if (isLive) return undefined
+
+    const toggleSpeaking = (event: KeyboardEvent) => {
+      const hasEnabledAudio = liveMediaTracks(localMediaStreamRef.current, 'audio').some((track) => track.enabled)
+      if (event.key.toLowerCase() === 'p' && hasEnabledAudio && !muted && !deafened) {
+        setSpeaking((current) => !current)
+      }
+    }
+
+    window.addEventListener('keydown', toggleSpeaking)
+
+    return () => window.removeEventListener('keydown', toggleSpeaking)
+  }, [deafened, isLive, muted])
 
   function sendMessage(event: FormEvent) {
     event.preventDefault()
     if (!message.trim()) return
 
-    setMessages((current) => [...current, { id: Date.now(), text: message.trim() }])
+    setMessages((current) => [...current, { id: Date.now(), text: message.trim(), createdAt: new Date() }])
     setMessage('')
+  }
+
+  function installLocalTracks(stream: MediaStream, kind: 'audio' | 'video') {
+    const targetStream = localMediaStreamRef.current ?? new MediaStream()
+    localMediaStreamRef.current = targetStream
+
+    targetStream
+      .getTracks()
+      .filter((track) => track.kind === kind)
+      .forEach((track) => {
+        targetStream.removeTrack(track)
+        track.stop()
+      })
+
+    stream.getTracks().forEach((track) => {
+      if (track.kind === kind) {
+        targetStream.addTrack(track)
+        return
+      }
+
+      track.stop()
+    })
+  }
+
+  async function ensureAudioTrack() {
+    if (liveMediaTracks(localMediaStreamRef.current, 'audio').length > 0) return true
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMediaError('이 브라우저는 마이크 장치를 지원하지 않습니다.')
+      return false
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      installLocalTracks(stream, 'audio')
+      liveMediaTracks(localMediaStreamRef.current, 'audio').forEach((track) => {
+        track.addEventListener('ended', () => {
+          setMuted(true)
+          setSpeaking(false)
+        })
+      })
+      setMediaError(null)
+      return true
+    } catch {
+      setMuted(true)
+      setSpeaking(false)
+      setMediaError('마이크 권한을 허용해야 음성 채널에서 말할 수 있습니다.')
+      return false
+    }
+  }
+
+  async function toggleMic() {
+    if (muted || deafened) {
+      const hasAudioTrack = await ensureAudioTrack()
+      if (!hasAudioTrack) return
+
+      setMediaTrackEnabled(localMediaStreamRef.current, 'audio', true)
+      setDeafened(false)
+      setMuted(false)
+      return
+    }
+
+    setMediaTrackEnabled(localMediaStreamRef.current, 'audio', false)
+    setMuted(true)
+    setSpeaking(false)
+  }
+
+  async function toggleCamera() {
+    if (!cameraOff && cameraStreamActive) {
+      liveMediaTracks(localMediaStreamRef.current, 'video').forEach((track) => {
+        localMediaStreamRef.current?.removeTrack(track)
+        track.stop()
+      })
+      setCameraOff(true)
+      setCameraStreamActive(false)
+      return
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraOff(true)
+      setCameraStreamActive(false)
+      setMediaError('이 브라우저는 카메라 장치를 지원하지 않습니다.')
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      installLocalTracks(stream, 'video')
+      liveMediaTracks(localMediaStreamRef.current, 'video').forEach((track) => {
+        track.addEventListener('ended', () => {
+          setCameraOff(true)
+          setCameraStreamActive(false)
+        })
+      })
+      setCameraOff(false)
+      setCameraStreamActive(true)
+      setMediaError(null)
+    } catch {
+      setCameraOff(true)
+      setCameraStreamActive(false)
+      setMediaError('카메라 권한을 허용해야 내 캠 화면을 표시할 수 있습니다.')
+    }
+  }
+
+  function toggleDeafen() {
+    if (!deafened) {
+      setMediaTrackEnabled(localMediaStreamRef.current, 'audio', false)
+      setDeafened(true)
+      setMuted(true)
+      setSpeaking(false)
+      return
+    }
+
+    setDeafened(false)
+  }
+
+  function handleScreenShareWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    event.preventDefault()
+
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const originX = clampNumber(((event.clientX - bounds.left) / bounds.width) * 100, 0, 100)
+    const originY = clampNumber(((event.clientY - bounds.top) / bounds.height) * 100, 0, 100)
+    const zoomDelta = event.deltaY < 0 ? 0.18 : -0.18
+
+    setScreenShareTransformOrigin(`${originX.toFixed(1)}% ${originY.toFixed(1)}%`)
+    setScreenShareZoom((current) => Number(clampNumber(current + zoomDelta, 1, 4).toFixed(2)))
+  }
+
+  function resetScreenShareZoom() {
+    setScreenShareZoom(1)
+    setScreenShareTransformOrigin('50% 50%')
+  }
+
+  async function toggleScreenShareFullscreen() {
+    const stage = screenShareStageRef.current
+    if (!stage) return
+
+    try {
+      if (document.fullscreenElement === stage) {
+        await document.exitFullscreen()
+        return
+      }
+
+      if (document.fullscreenElement) {
+        await document.exitFullscreen()
+      }
+
+      await stage.requestFullscreen()
+      setMediaError(null)
+    } catch {
+      setMediaError('브라우저가 화면 공유 전체화면 전환을 차단했습니다.')
+    }
+  }
+
+  async function toggleScreenShare() {
+    if (screenSharing) {
+      stopMediaStream(screenShareStreamRef.current)
+      screenShareStreamRef.current = null
+      resetScreenShareZoom()
+      if (document.fullscreenElement === screenShareStageRef.current) {
+        void document.exitFullscreen().catch(() => undefined)
+      }
+      setScreenSharing(false)
+      return
+    }
+
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      setMediaError('이 브라우저는 화면 공유를 지원하지 않습니다.')
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+      screenShareStreamRef.current = stream
+      stream.getVideoTracks().forEach((track) => {
+        track.addEventListener('ended', () => {
+          stopMediaStream(screenShareStreamRef.current)
+          screenShareStreamRef.current = null
+          resetScreenShareZoom()
+          if (document.fullscreenElement === screenShareStageRef.current) {
+            void document.exitFullscreen().catch(() => undefined)
+          }
+          setScreenSharing(false)
+        })
+      })
+      resetScreenShareZoom()
+      setScreenSharing(true)
+      setMediaError(null)
+    } catch {
+      resetScreenShareZoom()
+      setScreenSharing(false)
+      setMediaError('화면 공유 권한을 허용해야 내 화면을 공유할 수 있습니다.')
+    }
+  }
+
+  function leaveVoiceChannel() {
+    if (window.confirm('음성 채널 연결을 끊으시겠습니까?')) {
+      window.location.assign(navHref('/team-ws-meeting', workspaceId))
+    }
+  }
+
+  if (!isLive) {
+    const renderedVoiceMembers = voiceMembers.length > 0 ? voiceMembers : [null]
+
+    return (
+      <div className="team-ws-dashboard-page team-ws-realtime-page flex h-screen flex-col overflow-hidden bg-[#0B0F19] text-white">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-800 bg-[#111827] px-6">
+          <div className="flex min-w-0 items-center gap-4">
+            <button type="button" onClick={leaveVoiceChannel} className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-gray-400 transition hover:bg-gray-700 hover:text-white" title="회의장으로 돌아가기">
+              <i className="fas fa-arrow-left"></i>
+            </button>
+            <div className="min-w-0">
+              <div className="mb-0.5 flex items-center gap-2">
+                <span className={`flex items-center gap-1 text-[10px] font-extrabold ${pingToneClass}`}>
+                  <i className="fas fa-signal"></i>
+                  Ping: {pingLabel} ({pingStatusLabel})
+                </span>
+                <span className="rounded border border-indigo-500/30 bg-indigo-500/20 px-1.5 py-0.5 text-[9px] font-extrabold text-indigo-400">상시 회의장</span>
+              </div>
+              <h1 className="flex items-center gap-2 truncate text-sm font-bold text-white">
+                <i className="fas fa-volume-up text-team"></i>
+                {voiceChannel?.name || '우리 팀 보이스 챗'}
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 font-mono text-xs text-green-400">
+              <i className="far fa-clock"></i>
+              <span>{formatConnectionTime(connectionSeconds)}</span>
+            </div>
+            <button type="button" onClick={() => setChatOpen((current) => !current)} className={`relative flex h-10 w-10 items-center justify-center rounded-full transition ${chatOpen ? 'bg-team text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`} title={chatOpen ? '채팅 닫기' : '채팅 열기'}>
+              <i className="fas fa-comment-alt"></i>
+            </button>
+          </div>
+        </header>
+
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
+          <main className="custom-scrollbar relative flex flex-1 flex-col items-center justify-center overflow-y-auto p-8">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+              <div className="h-96 w-96 rounded-full bg-team blur-[100px]"></div>
+            </div>
+
+            {mediaError ? (
+              <div className="absolute left-1/2 top-5 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border border-red-500/30 bg-red-500/15 px-4 py-2 text-xs font-bold text-red-200 shadow-lg backdrop-blur">
+                <i className="fas fa-triangle-exclamation"></i>
+                {mediaError}
+              </div>
+            ) : null}
+
+            {screenSharing ? (
+              <div ref={screenShareStageRef} onWheel={handleScreenShareWheel} className="team-ws-screen-share-stage relative z-10 mb-8 aspect-video w-full max-w-5xl overflow-hidden rounded-2xl border border-gray-700 bg-black shadow-2xl">
+                <video
+                  ref={screenShareVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="h-full w-full object-contain opacity-95 transition-transform duration-150 ease-out"
+                  style={{ transform: `scale(${screenShareZoom})`, transformOrigin: screenShareTransformOrigin }}
+                />
+                <div className="absolute left-4 top-4 flex items-center gap-2 rounded-lg border border-white/10 bg-black/70 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md">
+                  <i className="fas fa-desktop text-team"></i>
+                  내 화면 공유 중
+                </div>
+                <div className="absolute right-4 top-4 flex items-center gap-2">
+                  <span className="rounded-lg border border-white/10 bg-black/70 px-2.5 py-1.5 text-[11px] font-bold text-white backdrop-blur-md">{Math.round(screenShareZoom * 100)}%</span>
+                  {screenShareZoom > 1 ? (
+                    <button type="button" onClick={() => { setScreenShareZoom(1); setScreenShareTransformOrigin('50% 50%') }} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/70 text-white transition hover:bg-white/20" title="확대 초기화">
+                      <i className="fas fa-rotate-left text-xs"></i>
+                    </button>
+                  ) : null}
+                  <button type="button" onClick={() => { void toggleScreenShareFullscreen() }} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-black/70 text-white transition hover:bg-white/20" title={screenShareFullscreen ? '전체화면 종료' : '전체화면으로 보기'}>
+                    <i className={`fas ${screenShareFullscreen ? 'fa-compress' : 'fa-expand'} text-xs`}></i>
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            <div className={`z-10 flex flex-wrap justify-center transition-all duration-500 ${screenSharing ? '-mt-8 scale-75 gap-6' : 'gap-12'}`}>
+              {renderedVoiceMembers.map((member, index) => {
+                const isCurrentMember = !member || member.learnerId === currentMember?.learnerId
+                const displayName = member?.learnerName?.trim() || (isCurrentMember ? '나' : `팀원 ${index + 1}`)
+                const position = member ? memberAssignedPosition(member, data.tasks) ?? fallbackMemberPosition(index) : currentMemberPosition
+                const remoteMuted = !isCurrentMember && index >= 2
+                const memberMuted = isCurrentMember ? muted : remoteMuted
+                const memberSpeaking = isCurrentMember ? speaking && !muted && !deafened : index === 1 && hasVoiceSession && !remoteMuted
+                const showLocalCameraPreview = isCurrentMember && !cameraOff && cameraStreamActive
+                const badgeClassName = memberMuted
+                  ? 'bg-red-500 text-white'
+                  : memberSpeaking
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-700 text-gray-400'
+
+                return (
+                  <div key={member?.memberId ?? 'current-user'} className={`avatar-float flex flex-col items-center gap-3 ${memberSpeaking ? 'is-speaking' : ''} ${memberMuted ? 'opacity-50' : ''}`} style={{ animationDelay: `${index}s` }}>
+                    <div className="relative">
+                      {showLocalCameraPreview ? (
+                        <video ref={localCameraVideoRef} autoPlay muted playsInline className="team-ws-voice-avatar h-24 w-24 rounded-full border-4 border-gray-700 bg-gray-950 object-cover shadow-lg transition-all duration-300" />
+                      ) : (
+                        <UserAvatar name={displayName} imageUrl={member?.profileImage} className="team-ws-voice-avatar h-24 w-24 border-4 border-gray-700 bg-gray-800 shadow-lg transition-all duration-300" iconClassName="text-3xl" />
+                      )}
+                      <div className={`absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#0B0F19] ${badgeClassName}`}>
+                        <i className={`fas ${memberMuted ? 'fa-microphone-slash text-xs' : 'fa-microphone'}`}></i>
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <p className={`flex items-center justify-center gap-1 text-sm font-bold ${memberMuted ? 'text-gray-400' : 'text-white'}`}>
+                        {displayName}
+                        <span className={`rounded px-1 py-0.5 text-[9px] ${memberPositionBadgeClass(position)}`}>{position}</span>
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {voiceMembers.length <= 1 ? (
+                <div className="flex animate-pulse flex-col items-center gap-3">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-gray-800 text-gray-600">
+                    <i className="fas fa-user-plus text-xl"></i>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-medium text-gray-500">팀원 대기 중...</p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </main>
+
+          <aside className={`team-ws-voice-chat-sidebar flex h-full shrink-0 flex-col overflow-hidden bg-[#111827] transition-all duration-300 ${chatOpen ? 'w-80 border-l border-gray-800 opacity-100' : 'w-0 border-none opacity-0'}`}>
+            <div className="shrink-0 border-b border-gray-800 bg-gray-900/50 p-4">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-white"><i className="fas fa-hashtag text-gray-500"></i> 음성 채널 채팅</h3>
+              <p className="mt-1 text-[10px] text-gray-400">링크나 코드를 공유할 때 사용하세요.</p>
+            </div>
+
+            <div className={`custom-scrollbar flex-1 overflow-y-auto p-4 ${messages.length === 0 ? 'flex flex-col items-center justify-center' : 'space-y-4'}`}>
+              {messages.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-gray-800 bg-gray-800/50 text-gray-400">
+                    <i className="fas fa-comment-alt-slash text-base"></i>
+                  </div>
+                  <p className="text-xs font-semibold text-gray-300">음성 채널 채팅에 오신 것을 환영합니다.</p>
+                  <p className="mx-auto mt-1 max-w-[190px] text-[11px] leading-normal text-gray-500">아직 주고받은 메시지가 없습니다. 팀원들과 대화를 시작해보세요.</p>
+                </div>
+              ) : (
+                messages.map((item) => (
+                  <div key={item.id} className="flex w-full flex-row-reverse items-start gap-3">
+                    <UserAvatar name={currentMember?.learnerName || '나'} imageUrl={currentMember?.profileImage} className="h-8 w-8 border border-gray-700 bg-gray-800" iconClassName="text-xs" />
+                    <div className="flex min-w-0 flex-col items-end">
+                      <div className="mb-0.5 flex flex-row-reverse items-center gap-2">
+                        <span className="text-xs font-bold text-white">{currentMember?.learnerName || '나'}</span>
+                        <span className={`rounded px-1 py-0.5 text-[9px] ${memberPositionBadgeClass(currentMemberPosition)}`}>{currentMemberPosition}</span>
+                        <span className="text-[9px] text-gray-500">{formatVoiceChatTime(item.createdAt)}</span>
+                      </div>
+                      <p className="whitespace-pre-line break-all rounded-b-xl rounded-tl-xl border border-indigo-500 bg-team p-2.5 text-right text-xs leading-relaxed text-white shadow-md">
+                        {item.text}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <form onSubmit={sendMessage} className="shrink-0 border-t border-gray-800 bg-gray-900 p-4">
+              <div className="flex gap-2 rounded-xl border border-gray-700 bg-gray-800 p-2 transition focus-within:border-team">
+                <input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="메시지 보내기..." className="min-w-0 flex-1 bg-transparent px-2 text-sm text-white outline-none placeholder:text-gray-500" />
+                <button type="submit" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-team text-white transition hover:bg-indigo-500">
+                  <i className="fas fa-paper-plane text-xs"></i>
+                </button>
+              </div>
+            </form>
+          </aside>
+        </div>
+
+        <footer className="relative z-30 flex h-20 shrink-0 items-center justify-center border-t border-gray-800 bg-[#111827] px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-3 md:gap-5">
+            <button type="button" onClick={() => { void toggleMic() }} className={`team-ws-voice-control-button group relative flex h-12 w-12 items-center justify-center rounded-full text-lg shadow-md transition ${muted ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>
+              <i className={`fas ${muted ? 'fa-microphone-slash' : 'fa-microphone'}`}></i>
+              <span className="pointer-events-none absolute -top-8 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition group-hover:opacity-100">{muted ? '마이크 켜기' : '마이크 끄기'}</span>
+            </button>
+
+            <button type="button" onClick={() => { void toggleCamera() }} className={`team-ws-voice-control-button group relative flex h-12 w-12 items-center justify-center rounded-full text-lg shadow-md transition ${cameraOff ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>
+              <i className={`fas ${cameraOff ? 'fa-video-slash' : 'fa-video'}`}></i>
+              <span className="pointer-events-none absolute -top-8 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition group-hover:opacity-100">{cameraOff ? '캠 켜기' : '캠 끄기'}</span>
+            </button>
+
+            <button type="button" onClick={toggleDeafen} className={`team-ws-voice-control-button group relative flex h-12 w-12 items-center justify-center rounded-full text-lg shadow-md transition ${deafened ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-700 text-white hover:bg-gray-600'}`}>
+              <i className={`fas ${deafened ? 'fa-deaf' : 'fa-headphones'}`}></i>
+              <span className="pointer-events-none absolute -top-8 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition group-hover:opacity-100">{deafened ? '헤드셋 켜기' : '헤드셋 소리 끄기'}</span>
+            </button>
+
+            <button type="button" onClick={() => { void toggleScreenShare() }} className={`team-ws-voice-control-button group relative flex h-12 w-12 items-center justify-center rounded-full text-lg transition ${screenSharing ? 'bg-team text-white shadow-[0_0_15px_rgba(79,70,229,0.5)] hover:bg-indigo-500' : 'bg-gray-700 text-white shadow-md hover:bg-gray-600'}`}>
+              <i className="fas fa-desktop"></i>
+              <span className="pointer-events-none absolute -top-8 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition group-hover:opacity-100">{screenSharing ? '공유 중지하기' : '화면 공유하기'}</span>
+            </button>
+
+            <div className="mx-2 h-8 w-px bg-gray-700"></div>
+
+            <button type="button" onClick={leaveVoiceChannel} className="flex h-12 w-14 items-center justify-center rounded-2xl bg-red-600 text-xl text-white shadow-lg shadow-red-900/50 transition hover:bg-red-700" title="채널 나가기">
+              <i className="fas fa-phone-slash"></i>
+            </button>
+          </div>
+        </footer>
+      </div>
+    )
   }
 
   return (

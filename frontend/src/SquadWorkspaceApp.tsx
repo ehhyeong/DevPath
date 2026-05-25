@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
+import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { projectApiRequest } from './project-api'
+import { createSquadNotification, squadActorName } from './squad-notifications'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
@@ -392,6 +394,11 @@ export default function SquadWorkspaceApp() {
         )
 
         updateTaskInState(withStatus)
+        void createSquadNotification(workspaceId, {
+          pageKey: 'squad-workspace',
+          message: `${squadActorName(session?.name)}님이 작업 "${withStatus.title}"을 수정했습니다.`,
+          targetPath: '/squad-workspace',
+        })
       } else {
         const created = await projectApiRequest<WorkspaceTask>(
           `/api/workspaces/${workspaceId}/tasks`,
@@ -420,6 +427,11 @@ export default function SquadWorkspaceApp() {
               )
 
         setTasks((current) => [normalized, ...current])
+        void createSquadNotification(workspaceId, {
+          pageKey: 'squad-workspace',
+          message: `${squadActorName(session?.name)}님이 새 작업 "${normalized.title}"을 등록했습니다.`,
+          targetPath: '/squad-workspace',
+        })
       }
 
       closeModal()
@@ -452,6 +464,11 @@ export default function SquadWorkspaceApp() {
       )
 
       updateTaskInState(updated)
+      void createSquadNotification(workspaceId, {
+        pageKey: 'squad-workspace',
+        message: `${squadActorName(session?.name)}님이 작업 "${updated.title}" 상태를 ${updated.status}로 변경했습니다.`,
+        targetPath: '/squad-workspace',
+      })
     } catch {
       updateTaskInState(current)
     }
@@ -472,17 +489,6 @@ export default function SquadWorkspaceApp() {
     return true
   })
 
-  function renderMemberAvatar(member: WorkspaceMember, className = 'w-8 h-8') {
-    return (
-      <UserAvatar
-        key={member.memberId}
-        name={member.learnerName ?? '팀원'}
-        imageUrl={member.profileImage}
-        className={`${className} rounded-full border-2 border-white bg-gray-100 shadow-sm hover:z-10 transition-transform hover:scale-110`}
-        iconClassName="text-xs"
-      />
-    )
-  }
 
   function renderTaskCard(task: WorkspaceTask) {
     const assignee = task.assigneeId ? memberById.get(task.assigneeId) : null
@@ -618,25 +624,14 @@ export default function SquadWorkspaceApp() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center px-8 shrink-0 relative z-30 shadow-sm">
-          <div className="flex-1 font-bold text-gray-800 flex items-center gap-3">
-            <span className="bg-green-50 text-brand px-2.5 py-1 rounded-md text-xs border border-green-100 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span> 진행 중
-            </span>
-            <span className="tracking-tight">{projectName}</span>
-          </div>
-
-          <div className="flex items-center gap-5 relative">
-            <div className="hidden md:flex items-center mr-4 pr-5 border-r border-gray-200">
-              <div className="flex -space-x-2.5 hover:-space-x-1 transition-all duration-300">
-                {members.slice(0, 4).map((member) => renderMemberAvatar(member))}
-              </div>
-            </div>
-            <button type="button" onClick={handleLogout} className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition">
-              로그아웃
-            </button>
-          </div>
-        </header>
+        <SquadWorkspaceHeader
+          workspaceId={workspaceId}
+          projectName={projectName}
+          members={members}
+          statusLabel="진행 중"
+          currentUserName={session?.name}
+          onLogout={handleLogout}
+        />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
           <div className="px-8 py-6 shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 z-10">

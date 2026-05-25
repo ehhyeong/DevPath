@@ -28,12 +28,39 @@ public class DashboardGrowthRecommendationResponse {
   public static class RecommendationItem {
 
     @Schema(description = "추천 강의명", example = "Advanced SQL & Tuning")
-    private String courseTitle;
+    private Long nodeId;
+
+    private Long roadmapId;
+
+    private String nodeTitle;
+
+    private String roadmapTitle;
+
+    private String reason;
 
     @Schema(description = "매칭률 상승 수치 (%)", example = "20")
     private int matchRateIncrease;
 
     @Schema(description = "Font Awesome 아이콘 클래스", example = "fa-database")
     private String iconClass;
+  }
+
+  @Getter
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor(access = AccessLevel.PRIVATE)
+  public static class AddNodeResponse {
+
+    private Long customRoadmapId;
+
+    private Long customNodeId;
+
+    private Long nodeId;
+
+    private String nodeTitle;
+
+    private boolean roadmapCreated;
+
+    private boolean alreadyExists;
   }
 }

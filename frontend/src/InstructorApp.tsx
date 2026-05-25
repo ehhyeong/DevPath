@@ -176,7 +176,7 @@ export default function InstructorApp() {
     } finally {
       clearStoredAuthSession({ persistToast: true })
       setSession(null)
-      window.location.href = '/home'
+      window.location.href = '/home?auth=login'
     }
   }
 

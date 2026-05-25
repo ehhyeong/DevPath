@@ -9,6 +9,7 @@ export interface DashboardSummary {
 export interface HeatmapEntry {
   date: string
   activityLevel: number | null
+  studyHours?: number | null
 }
 
 export interface DashboardStudyGroupItem {
@@ -98,6 +99,18 @@ export interface CommunityPost {
   viewCount: number
   likeCount: number
   createdAt: string | null
+}
+
+export interface CommunityComment {
+  id: number
+  authorId: number
+  authorName: string
+  parentCommentId: number | null
+  reply: boolean
+  content: string
+  createdAt: string | null
+  updatedAt: string | null
+  children: CommunityComment[]
 }
 
 export interface PostPage {
@@ -285,7 +298,11 @@ export interface CertificateDownloadHistoryDetail {
 }
 
 export interface GrowthRecommendationItem {
-  courseTitle: string
+  nodeId: number
+  roadmapId: number
+  nodeTitle: string
+  roadmapTitle: string
+  reason: string
   matchRateIncrease: number
   iconClass: string
 }
@@ -293,4 +310,40 @@ export interface GrowthRecommendationItem {
 export interface GrowthRecommendation {
   analysisText: string
   recommendations: GrowthRecommendationItem[]
+}
+
+export interface GrowthRecommendationAddResult {
+  customRoadmapId: number
+  customNodeId: number
+  nodeId: number
+  nodeTitle: string
+  roadmapCreated: boolean
+  alreadyExists: boolean
+}
+
+export interface WorkspaceHubProject {
+  projectId: number
+  domId: string
+  menuId: string
+  type: 'solo' | 'squad' | 'mentoring'
+  status: 'progress' | 'completed'
+  dashboardUrl: string
+  title: string
+  description: string
+  progressPercent: number
+  mentoringModeLabel?: string | null
+  mentoringModeIcon?: string | null
+  categoryLabel?: string | null
+  roleLabel?: string | null
+  footerKind: 'avatars' | 'mentor' | 'text'
+  footerDateLabel?: string | null
+  memberAvatarSeeds: string[]
+  extraMemberCount?: number | null
+  footerAvatarSeed?: string | null
+  footerAvatarUrl?: string | null
+  footerText?: string | null
+  footerMetaText?: string | null
+  footerMetaIcon?: string | null
+  nextScheduleTitle?: string | null
+  nextScheduleStartAt?: string | null
 }

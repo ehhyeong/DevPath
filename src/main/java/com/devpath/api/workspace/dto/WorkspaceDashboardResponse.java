@@ -33,6 +33,15 @@ public class WorkspaceDashboardResponse {
   @Schema(description = "오너 ID", example = "1")
   private Long ownerId;
 
+  @Schema(description = "오너 표시 이름")
+  private String ownerName;
+
+  @Schema(description = "오너 프로필 이미지 URL")
+  private String ownerProfileImage;
+
+  @Schema(description = "오너 소개")
+  private String ownerBio;
+
   @Schema(description = "멤버 목록")
   private List<WorkspaceMemberResponse> members;
 
@@ -62,6 +71,18 @@ public class WorkspaceDashboardResponse {
       List<WorkspaceMemberResponse> members,
       long unresolvedTaskCount,
       long activeMilestoneCount) {
+    return fromMemberResponses(
+        workspace, members, unresolvedTaskCount, activeMilestoneCount, null, null, null);
+  }
+
+  public static WorkspaceDashboardResponse fromMemberResponses(
+      Workspace workspace,
+      List<WorkspaceMemberResponse> members,
+      long unresolvedTaskCount,
+      long activeMilestoneCount,
+      String ownerName,
+      String ownerProfileImage,
+      String ownerBio) {
     return builder()
         .workspaceId(workspace.getId())
         .name(workspace.getName())
@@ -69,6 +90,9 @@ public class WorkspaceDashboardResponse {
         .type(workspace.getType())
         .status(workspace.getStatus())
         .ownerId(workspace.getOwnerId())
+        .ownerName(ownerName)
+        .ownerProfileImage(ownerProfileImage)
+        .ownerBio(ownerBio)
         .members(members)
         .unresolvedTaskCount(unresolvedTaskCount)
         .activeMilestoneCount(activeMilestoneCount)
