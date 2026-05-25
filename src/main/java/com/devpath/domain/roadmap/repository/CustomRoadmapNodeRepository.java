@@ -34,6 +34,15 @@ public interface CustomRoadmapNodeRepository extends JpaRepository<CustomRoadmap
   List<CustomRoadmapNode> findAllByOriginalNodeIdAndUserId(
       @Param("nodeId") Long nodeId, @Param("userId") Long userId);
 
+  @Query(
+      """
+      select distinct c.originalNode.nodeId
+      from CustomRoadmapNode c
+      where c.customRoadmap.user.id = :userId
+        and c.originalNode is not null
+      """)
+  List<Long> findOriginalNodeIdsByUserId(@Param("userId") Long userId);
+
   @Query("SELECT COUNT(n) FROM CustomRoadmapNode n WHERE n.customRoadmap = :roadmap")
   long countByCustomRoadmap(@Param("roadmap") CustomRoadmap roadmap);
 

@@ -15,4 +15,7 @@ public class HeatmapResponse {
 
   @Schema(description = "해당 일자의 활동량 점수 (0~4 단계)", example = "3")
   private Integer activityLevel;
+
+  @Schema(description = "해당 일자의 학습 시간", example = "2")
+  private Integer studyHours;
 }

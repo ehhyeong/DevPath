@@ -4,18 +4,37 @@ import type { AccountPageKey } from '../lib/account-navigation'
 import { useInternalPageScroll } from '../lib/useInternalPageScroll'
 import type { AuthSession } from '../types/auth'
 
-const myMenuItems: Array<{
+type MyMenuItem = {
   key: AccountPageKey
   href: string
   label: string
   icon: string
+}
+
+const accountMenuSections: Array<{
+  title: string
+  items: MyMenuItem[]
 }> = [
-  { key: 'dashboard', href: '/dashboard', label: '대시보드', icon: 'fas fa-columns' },
-  { key: 'profile', href: '/profile', label: '프로필 관리', icon: 'fas fa-user-circle' },
-  { key: 'my-learning', href: '/my-learning', label: '내 학습 (강의)', icon: 'fas fa-book-reader' },
-  { key: 'learning-log-gallery', href: '/learning-log-gallery', label: '학습일지', icon: 'fas fa-clipboard-list' },
-  { key: 'purchase', href: '/purchase', label: '구매 / 보관함', icon: 'fas fa-folder-open' },
-  { key: 'my-posts', href: '/my-posts', label: '작성한 게시글', icon: 'fas fa-pen-nib' },
+  {
+    title: 'My Menu',
+    items: [
+      { key: 'dashboard', href: '/dashboard', label: '대시보드', icon: 'fas fa-th-large' },
+      { key: 'profile', href: '/profile', label: '프로필 관리', icon: 'fas fa-user-circle' },
+      { key: 'my-learning', href: '/my-learning', label: '내 학습 현황', icon: 'fas fa-play-circle' },
+      { key: 'learning-log-gallery', href: '/learning-log-gallery', label: '학습일지', icon: 'fas fa-clipboard-list' },
+    ],
+  },
+  {
+    title: 'Activity',
+    items: [
+      { key: 'my-posts', href: '/my-posts', label: '내 게시글', icon: 'fas fa-edit' },
+      { key: 'purchase', href: '/purchase', label: '구매 및 보관함', icon: 'fas fa-archive' },
+    ],
+  },
+  {
+    title: 'System',
+    items: [{ key: 'settings', href: '/settings', label: '계정 설정', icon: 'fas fa-cog' }],
+  },
 ]
 
 export function LearnerPageShell({ children }: { children: ReactNode }) {
@@ -35,7 +54,7 @@ export function LearnerContentRow({ children }: { children: ReactNode }) {
 export function MyMenuSidebar({
   currentPageKey,
   wrapperClassName = 'w-60 shrink-0 hidden lg:block -ml-0',
-  asideClassName = 'sticky top-24 space-y-1',
+  asideClassName = 'sticky top-24 pt-1.5',
   spacerClassName,
   wrapperStyle,
 }: {
@@ -45,27 +64,27 @@ export function MyMenuSidebar({
   spacerClassName?: string
   wrapperStyle?: CSSProperties
 }) {
+  const mergedWrapperClassName = ['account-menu-sidebar', wrapperClassName].filter(Boolean).join(' ')
+
   return (
-    <div className={wrapperClassName} style={wrapperStyle}>
+    <div className={mergedWrapperClassName} style={wrapperStyle}>
       {spacerClassName ? <div className={spacerClassName} /> : null}
       <aside className={asideClassName}>
-        <div className="mb-6 px-4">
-          <h2 className="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">My Menu</h2>
-        </div>
+        {accountMenuSections.map((section, sectionIndex) => (
+          <div key={section.title}>
+            {sectionIndex > 0 ? <div className="mx-3 my-5 border-t border-gray-200" /> : null}
+            <div className="mb-5 px-3">
+              <h2 className="text-[11px] font-bold tracking-widest text-gray-400 uppercase">{section.title}</h2>
+            </div>
 
-        {myMenuItems.map((item) => (
-          <a key={item.key} href={item.href} className={`nav-item ${currentPageKey === item.key ? 'active' : ''}`}>
-            <i className={`${item.icon} w-6 text-center text-lg`} />
-            <span className="sidebar-text !opacity-100 !w-auto !ml-3">{item.label}</span>
-          </a>
+            {section.items.map((item) => (
+              <a key={item.key} href={item.href} className={`nav-item ${currentPageKey === item.key ? 'active' : ''}`}>
+                <i className={item.icon} />
+                <span className="sidebar-text">{item.label}</span>
+              </a>
+            ))}
+          </div>
         ))}
-
-        <div className="my-4 border-t border-gray-100" />
-
-        <a href="/settings" className={`nav-item ${currentPageKey === 'settings' ? 'active' : ''}`}>
-          <i className="fas fa-cog w-6 text-center text-lg" />
-          <span className="sidebar-text !opacity-100 !w-auto !ml-3">계정 설정</span>
-        </a>
       </aside>
     </div>
   )

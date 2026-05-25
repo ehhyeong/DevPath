@@ -17,65 +17,85 @@ type ProfileFormState = {
   tagIds: number[]
 }
 
-const fallbackProfile: UserProfile = {
-  userId: 0,
-  name: '김학생',
-  email: 'student@devpath.kr',
-  role: 'ROLE_LEARNER',
-  bio: '백엔드 개발자를 꿈꾸는 학생입니다.',
-  phone: '',
-  profileImage: null,
-  channelName: 'CozyCoder',
-  githubUrl: 'https://github.com/kim-student',
+const emptyForm: ProfileFormState = {
+  name: '',
+  channelName: '',
+  bio: '',
+  githubUrl: '',
   blogUrl: '',
-  tags: [
-    { tagId: 1, name: 'Java', category: 'LANGUAGE' },
-    { tagId: 2, name: 'Spring Boot', category: 'FRAMEWORK' },
-  ],
+  profileImage: '',
+  tagIds: [],
 }
 
 function toForm(profile: UserProfile): ProfileFormState {
   return {
-    name: profile.name,
+    name: profile.name ?? '',
     channelName: profile.channelName ?? '',
     bio: profile.bio ?? '',
     githubUrl: profile.githubUrl ?? '',
     blogUrl: profile.blogUrl ?? '',
     profileImage: profile.profileImage ?? '',
-    tagIds: profile.tags.map((tag) => tag.tagId),
+    tagIds: (profile.tags ?? []).map((tag) => tag.tagId),
   }
 }
 
+function resolveErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback
+}
+
 export default function ProfilePage({ session }: { session: AuthSession }) {
-  const [profile, setProfile] = useState<UserProfile>(fallbackProfile)
-  const [officialTags, setOfficialTags] = useState<TechTag[]>(fallbackProfile.tags)
-  const [form, setForm] = useState<ProfileFormState>(() => toForm(fallbackProfile))
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [officialTags, setOfficialTags] = useState<TechTag[]>([])
+  const [form, setForm] = useState<ProfileFormState>(emptyForm)
   const [tagQuery, setTagQuery] = useState('')
-  const [message, setMessage] = useState('')
+  const [toastMessage, setToastMessage] = useState('')
   const [error, setError] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [profileResponse, tagResponse] = await Promise.all([
-          userApi.getMyProfile(),
-          userApi.getOfficialTags(),
-        ])
+    const controller = new AbortController()
 
-        setProfile(profileResponse)
-        setForm(toForm(profileResponse))
-        if (tagResponse.length) {
-          setOfficialTags(tagResponse)
-        }
-      } catch {
-        // 프로필 화면이 비어 보이지 않게 API 실패 시 기본 데이터를 사용합니다.
+    async function load() {
+      const [profileResult, tagResult] = await Promise.allSettled([
+        userApi.getMyProfile(controller.signal),
+        userApi.getOfficialTags(controller.signal),
+      ])
+
+      if (controller.signal.aborted) {
+        return
       }
+
+      if (profileResult.status === 'fulfilled') {
+        setProfile(profileResult.value)
+        setForm(toForm(profileResult.value))
+      } else {
+        setProfile(null)
+        setForm(emptyForm)
+        setError(resolveErrorMessage(profileResult.reason, '프로필 정보를 불러오지 못했습니다.'))
+      }
+
+      setOfficialTags(tagResult.status === 'fulfilled' ? tagResult.value : [])
     }
 
     void load()
+
+    return () => controller.abort()
   }, [])
 
-  const selectedTags = officialTags.filter((tag) => form.tagIds.includes(tag.tagId))
+  useEffect(() => {
+    if (!toastMessage) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => setToastMessage(''), 3000)
+    return () => window.clearTimeout(timeoutId)
+  }, [toastMessage])
+
+  const tagById = new Map<number, TechTag>()
+  ;[...(profile?.tags ?? []), ...officialTags].forEach((tag) => tagById.set(tag.tagId, tag))
+  const selectedTags = form.tagIds
+    .map((tagId) => tagById.get(tagId))
+    .filter((tag): tag is TechTag => Boolean(tag))
 
   function handleAddTag() {
     const keyword = tagQuery.trim().toLowerCase()
@@ -108,21 +128,48 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
     }
   }
 
+  function handleProfileImageEdit() {
+    const nextUrl = window.prompt('프로필 이미지 URL을 입력해 주세요.', form.profileImage)
+
+    if (nextUrl === null) {
+      return
+    }
+
+    const trimmedUrl = nextUrl.trim()
+
+    if (trimmedUrl.length > 500) {
+      setError('프로필 이미지 URL은 500자 이하로 입력해 주세요.')
+      return
+    }
+
+    setError('')
+    setForm((current) => ({ ...current, profileImage: trimmedUrl }))
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setMessage('')
+    setToastMessage('')
     setError('')
 
+    const trimmedName = form.name.trim()
+
+    if (!trimmedName) {
+      setError('이름을 입력해 주세요.')
+      return
+    }
+
     const payload: UserProfileUpdateRequest = {
-      name: form.name.trim(),
+      name: trimmedName,
       bio: form.bio.trim(),
-      phone: profile.phone ?? '',
+      phone: profile?.phone ?? '',
       profileImage: form.profileImage.trim(),
       channelName: form.channelName.trim(),
       githubUrl: form.githubUrl.trim(),
       blogUrl: form.blogUrl.trim(),
       tagIds: form.tagIds,
     }
+
+    setIsSaving(true)
 
     try {
       const updatedProfile = await userApi.updateMyProfile(payload)
@@ -133,11 +180,16 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
         name: updatedProfile.name,
         profileImage: updatedProfile.profileImage,
       })
-      setMessage('프로필이 저장되었습니다.')
+      setToastMessage('변경 사항이 성공적으로 저장되었습니다.')
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : '프로필 저장 중 문제가 발생했습니다.')
+      setError(resolveErrorMessage(submitError, '프로필 저장 중 문제가 발생했습니다.'))
+    } finally {
+      setIsSaving(false)
     }
   }
+
+  const displayName = form.name || profile?.name || session.name || 'User'
+  const imageUrl = form.profileImage || profile?.profileImage || null
 
   return (
     <LearnerPageShell>
@@ -145,78 +197,99 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
         <MyMenuSidebar currentPageKey="profile" wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0" />
 
         <section className="min-w-0 flex-1">
-          <h2 className="mb-6 text-2xl font-bold text-gray-900">프로필 관리</h2>
+          <h2 className="mb-6 pt-[5px] text-2xl font-bold leading-none text-gray-900">프로필 관리</h2>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+          <div className="rounded-2xl border border-gray-200/80 bg-white p-8 shadow-sm">
             <form className="flex flex-col gap-8 md:flex-row" onSubmit={handleSubmit}>
-              <div className="flex w-full shrink-0 flex-col items-center gap-4 md:w-60">
+              <div className="flex w-full shrink-0 flex-col items-center gap-4 md:w-52">
                 <div className="relative">
-                  <div className="h-32 w-32 overflow-hidden rounded-full border-2 border-gray-100">
+                  <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-2 border-gray-100 bg-gray-50 shadow-sm">
                     <UserAvatar
-                      name={form.name || session.name}
-                      imageUrl={form.profileImage || profile.profileImage}
-                      className="h-full w-full border-0"
+                      name={displayName}
+                      imageUrl={imageUrl}
+                      className="h-full w-full border-0 shadow-none"
                       iconClassName="text-4xl"
-                      alt={`${session.name} profile`}
+                      alt={`${displayName} profile`}
                     />
                   </div>
                   <button
                     type="button"
-                    className="absolute right-0 bottom-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition hover:border-brand hover:text-brand"
-                    onClick={() => {
-                      const nextUrl = window.prompt('프로필 이미지 URL을 입력해 주세요.', form.profileImage)
-                      if (nextUrl !== null) {
-                        setForm((current) => ({ ...current, profileImage: nextUrl.trim() }))
-                      }
-                    }}
+                    className="absolute right-0 bottom-0 flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-md transition-all hover:border-brand hover:text-brand active:scale-95"
+                    onClick={handleProfileImageEdit}
+                    aria-label="프로필 이미지 URL 입력"
                   >
                     <i className="fas fa-camera" />
                   </button>
                 </div>
-                <p className="text-center text-xs text-gray-400">JPG, PNG, GIF (최대 2MB)</p>
+                <p className="text-center text-[11px] tracking-tight text-gray-400">이미지 URL은 최대 500자까지 저장됩니다.</p>
               </div>
 
               <div className="flex-1 space-y-6">
-                <div className="grid grid-cols-1 gap-6">
-                  <div className="max-w-[210px]">
-                    <label className="mb-2 block text-sm font-bold text-gray-700">이름</label>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="profile-name">
+                      이름
+                    </label>
                     <input
+                      id="profile-name"
                       type="text"
                       className="input-field"
                       value={form.name}
                       onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+                      placeholder="이름을 입력해주세요"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="profile-channel">
+                      닉네임
+                    </label>
+                    <input
+                      id="profile-channel"
+                      type="text"
+                      className="input-field"
+                      value={form.channelName}
+                      onChange={(event) => setForm((current) => ({ ...current, channelName: event.target.value }))}
+                      placeholder="닉네임을 입력해주세요"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-700">자기 소개</label>
-                  <textarea
-                    className="input-field min-h-36 resize-y"
-                    rows={5}
+                  <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="profile-bio">
+                    한 줄 소개
+                  </label>
+                  <input
+                    id="profile-bio"
+                    type="text"
+                    className="input-field"
                     value={form.bio}
                     onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))}
-                    placeholder="나를 간단히 소개해 주세요"
+                    placeholder="자신을 한 줄로 표현해주세요"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-700">관심 기술 태그</label>
-                  <div className="mb-2 flex flex-wrap gap-2">
+                  <label className="mb-2 block text-sm font-bold text-gray-700" htmlFor="profile-tag-input">
+                    관심 기술 태그
+                  </label>
+                  <div className="mb-2.5 flex flex-wrap gap-2">
                     {selectedTags.map((tag) => (
                       <span
                         key={tag.tagId}
-                        className="bg-green-50 text-brand flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold"
+                        className="flex items-center gap-1.5 rounded-lg border border-green-100 bg-green-50 px-3 py-1.5 text-xs font-bold text-brand"
                       >
                         {tag.name}
                         <button
                           type="button"
+                          className="opacity-60 transition hover:opacity-100"
                           onClick={() =>
                             setForm((current) => ({
                               ...current,
                               tagIds: current.tagIds.filter((tagId) => tagId !== tag.tagId),
                             }))
                           }
+                          aria-label={`${tag.name} 태그 제거`}
                         >
                           <i className="fas fa-times cursor-pointer" />
                         </button>
@@ -224,47 +297,65 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
                     ))}
                   </div>
                   <input
+                    id="profile-tag-input"
                     type="text"
                     className="input-field"
                     value={tagQuery}
                     onChange={(event) => setTagQuery(event.target.value)}
                     onKeyDown={handleTagInputKeyDown}
-                    placeholder="기술 스택을 입력하고 엔터를 눌러요 (ex: React, Docker)"
+                    placeholder="기술 스택을 입력하고 엔터를 누르세요. 예시 React, Docker"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-gray-700">
+                    <label className="mb-2 flex items-center gap-1.5 text-sm font-bold text-gray-700" htmlFor="profile-github">
                       <i className="fab fa-github text-gray-800" /> GitHub
                     </label>
                     <input
+                      id="profile-github"
                       type="text"
                       className="input-field"
                       value={form.githubUrl}
                       onChange={(event) => setForm((current) => ({ ...current, githubUrl: event.target.value }))}
+                      placeholder="https://github.com/username"
                     />
                   </div>
+
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-gray-700">
-                      <i className="fas fa-globe text-gray-400" /> 블로그 포트폴리오
+                    <label className="mb-2 flex items-center gap-1.5 text-sm font-bold text-gray-700" htmlFor="profile-blog">
+                      <i className="fas fa-globe text-gray-400" /> 블로그 / 포트폴리오
                     </label>
                     <input
+                      id="profile-blog"
                       type="text"
                       className="input-field"
                       value={form.blogUrl}
                       onChange={(event) => setForm((current) => ({ ...current, blogUrl: event.target.value }))}
-                      placeholder="URL을 입력해 주세요"
+                      placeholder="URL을 입력해주세요"
                     />
                   </div>
                 </div>
 
-                {message ? <p className="text-sm font-bold text-brand">{message}</p> : null}
                 {error ? <p className="text-sm font-bold text-red-500">{error}</p> : null}
 
                 <div className="flex justify-end pt-4">
-                  <button className="bg-brand rounded-xl px-8 py-3 font-bold text-white transition hover:bg-green-600" type="submit">
-                    저장하기
+                  <button
+                    className="flex min-w-[140px] items-center justify-center gap-2 rounded-xl bg-brand px-10 py-3.5 font-bold text-white transition-all hover:bg-green-600 hover:shadow-lg hover:shadow-green-100 disabled:cursor-not-allowed disabled:opacity-75"
+                    type="submit"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin" />
+                        저장 중...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-check" />
+                        저장하기
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -272,6 +363,13 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
           </div>
         </section>
       </LearnerContentRow>
+
+      {toastMessage ? (
+        <div className="fixed right-6 bottom-6 z-[1000] flex items-center gap-3 rounded-xl bg-gray-800 px-6 py-4 text-sm font-bold text-white shadow-xl">
+          <i className="fas fa-check-circle text-brand" />
+          <span>{toastMessage}</span>
+        </div>
+      ) : null}
     </LearnerPageShell>
   )
 }

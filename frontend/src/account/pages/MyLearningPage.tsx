@@ -1,230 +1,280 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import { enrollmentApi, wishlistApi } from '../../lib/api'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { Enrollment, WishlistCourse } from '../../types/learner'
 
-const fallbackEnrollments: Enrollment[] = [
-  {
-    enrollmentId: 1,
-    courseId: 1,
-    courseTitle: 'Java 프로그래밍 (Backend Basic)',
-    instructorName: 'DevPath',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80',
-    price: 99000,
-    originalPrice: 99000,
-    currency: 'KRW',
-    hasCertificate: true,
-    status: 'ACTIVE',
-    progressPercentage: 60,
-    enrolledAt: '2026-01-25T00:00:00',
-    completedAt: null,
-    lastAccessedAt: '2026-02-09T10:00:00',
-    tags: ['Java', 'Spring', 'Backend', 'OOP'],
-  },
-  {
-    enrollmentId: 2,
-    courseId: 2,
-    courseTitle: '비전공자도 이해할 수 있는 Docker 입문/실전',
-    instructorName: 'DevPath',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1607799275518-d580e811cc0e?w=500&q=80',
-    price: 55000,
-    originalPrice: 55000,
-    currency: 'KRW',
-    hasCertificate: false,
-    status: 'ACTIVE',
-    progressPercentage: 12,
-    enrolledAt: '2026-01-12T00:00:00',
-    completedAt: null,
-    lastAccessedAt: '2026-02-08T10:00:00',
-    tags: ['Docker', 'DevOps', 'Container', 'Linux'],
-  },
-  {
-    enrollmentId: 3,
-    courseId: 3,
-    courseTitle: 'React + TypeScript 실전 프로젝트',
-    instructorName: 'DevPath',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=500&q=80',
-    price: 65000,
-    originalPrice: 65000,
-    currency: 'KRW',
-    hasCertificate: false,
-    status: 'ACTIVE',
-    progressPercentage: 35,
-    enrolledAt: '2026-01-08T00:00:00',
-    completedAt: null,
-    lastAccessedAt: '2026-02-06T10:00:00',
-    tags: ['React', 'TypeScript', 'Frontend', 'SPA'],
-  },
-]
+type LearningTab = 'active' | 'completed' | 'wishlist'
 
-const fallbackWishlist: WishlistCourse[] = [
-  {
-    wishlistId: 1,
-    courseId: 4,
-    courseTitle: 'Spring Security 실전 인증/인가',
-    instructorName: 'DevPath',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=500&q=80',
-    price: 45000,
-    addedAt: '2026-02-01T00:00:00',
-  },
-]
+const tabLabels: Record<LearningTab, string> = {
+  active: '학습 중',
+  completed: '완강',
+  wishlist: '찜한 강의',
+}
 
-function getCategoryLabel(courseTitle: string) {
-  if (courseTitle.toLowerCase().includes('docker') || courseTitle.toLowerCase().includes('k8s')) {
+function isCompletedEnrollment(enrollment: Enrollment) {
+  return (
+    enrollment.status === 'COMPLETED' ||
+    Boolean(enrollment.completedAt) ||
+    (enrollment.progressPercentage ?? 0) >= 100
+  )
+}
+
+function getProgressPercent(progress: number | null | undefined) {
+  const normalized = Number(progress ?? 0)
+
+  if (!Number.isFinite(normalized)) {
+    return 0
+  }
+
+  return Math.min(100, Math.max(0, Math.round(normalized)))
+}
+
+function getCategoryLabel(course: Pick<Enrollment, 'courseTitle' | 'tags'> | Pick<WishlistCourse, 'courseTitle'>) {
+  const tags = 'tags' in course ? course.tags ?? [] : []
+  const preferredTag = tags.find((tag) => ['Backend', 'Frontend', 'DevOps', 'Database', 'Architecture'].includes(tag))
+
+  if (preferredTag) {
+    return preferredTag
+  }
+
+  const title = course.courseTitle.toLowerCase()
+
+  if (title.includes('docker') || title.includes('kubernetes') || title.includes('k8s')) {
     return 'DevOps'
   }
 
-  if (courseTitle.toLowerCase().includes('react')) {
+  if (title.includes('react') || title.includes('frontend') || title.includes('typescript')) {
     return 'Frontend'
+  }
+
+  if (title.includes('sql') || title.includes('database') || title.includes('db')) {
+    return 'Database'
   }
 
   return 'Backend'
 }
 
-function formatRelativeLabel(index: number, lastAccessedAt: string | null | undefined) {
-  if (!lastAccessedAt) {
-    return '마지막 학습: 최근'
+function formatDate(value: string | null | undefined) {
+  if (!value) {
+    return '날짜 없음'
   }
 
-  if (index === 0) {
-    return '마지막 학습: 2시간 전'
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return '날짜 없음'
   }
 
-  if (index === 1) {
-    return '마지막 학습: 어제'
+  return new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return null
   }
 
-  return '마지막 학습: 3일 전'
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return new Intl.DateTimeFormat('ko-KR', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date)
 }
 
-type SortBy = 'recent' | 'enrolled' | 'progress_high' | 'progress_low'
-type CategoryFilter = 'all' | 'Backend' | 'Frontend' | 'DevOps'
-type ProgressRange = 'all' | '0-25' | '26-75' | '76-99'
-type PeriodFilter = 'all' | '1month' | '3months' | '6months'
+function formatLastLearningLabel(course: Enrollment) {
+  const lastAccessedAt = formatDateTime(course.lastAccessedAt)
 
-function getUniqueInstructors(enrollments: Enrollment[]): string[] {
-  return [...new Set(enrollments.map((e) => e.instructorName).filter(Boolean))]
+  if (lastAccessedAt) {
+    return `마지막 학습: ${lastAccessedAt}`
+  }
+
+  const enrolledAt = formatDateTime(course.enrolledAt)
+
+  if (enrolledAt) {
+    return `수강 시작: ${enrolledAt}`
+  }
+
+  return '마지막 학습: 기록 없음'
 }
 
-function getUniqueTags(enrollments: Enrollment[]): string[] {
-  return [...new Set(enrollments.flatMap((e) => e.tags ?? []))].sort()
+function formatPrice(price: number | null | undefined, currency: string | null | undefined) {
+  if (price == null) {
+    return '가격 정보 없음'
+  }
+
+  try {
+    return new Intl.NumberFormat('ko-KR', {
+      style: 'currency',
+      currency: currency ?? 'KRW',
+      maximumFractionDigits: 0,
+    }).format(price)
+  } catch {
+    return `${price.toLocaleString('ko-KR')}원`
+  }
 }
 
-function isWithinPeriod(dateStr: string, period: PeriodFilter): boolean {
-  if (period === 'all') return true
-  const date = new Date(dateStr)
-  const threshold = new Date()
-  threshold.setMonth(threshold.getMonth() - (period === '1month' ? 1 : period === '3months' ? 3 : 6))
-  return date >= threshold
+function openCourseDetail(courseId: number) {
+  window.location.href = `/course-detail?courseId=${courseId}`
+}
+
+function handleCardKeyDown(event: KeyboardEvent<HTMLElement>, courseId: number) {
+  if (event.key !== 'Enter' && event.key !== ' ') {
+    return
+  }
+
+  event.preventDefault()
+  openCourseDetail(courseId)
+}
+
+function stopCardClick(event: MouseEvent<HTMLAnchorElement>) {
+  event.stopPropagation()
+}
+
+function CourseImage({
+  title,
+  thumbnailUrl,
+  progressPercent,
+  completed = false,
+  wishlist = false,
+}: {
+  title: string
+  thumbnailUrl: string | null
+  progressPercent?: number
+  completed?: boolean
+  wishlist?: boolean
+}) {
+  return (
+    <div className="relative aspect-video bg-gray-100">
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          className={`h-full w-full object-cover ${completed ? 'opacity-90 grayscale' : ''}`}
+          alt={title}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-300">
+          <i className="fas fa-play-circle text-3xl" />
+        </div>
+      )}
+
+      {completed ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition group-hover:opacity-100">
+          <span className="rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white">다시 보기</span>
+        </div>
+      ) : null}
+
+      {wishlist ? (
+        <div className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-red-500 shadow-sm">
+          <i className="fas fa-heart" />
+        </div>
+      ) : null}
+
+      <div className={`absolute bottom-0 left-0 h-1.5 w-full ${completed ? 'bg-brand' : 'bg-gray-200'}`}>
+        {!completed && !wishlist ? (
+          <div className="h-full bg-brand" style={{ width: `${progressPercent ?? 0}%` }} />
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function EmptyState({ tab }: { tab: LearningTab }) {
+  const emptyTitle = tab === 'wishlist' ? '찜한 강의가 없습니다' : '해당하는 강의가 없습니다'
+
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-20 text-center">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+        <i className="fas fa-box-open text-3xl text-gray-300" />
+      </div>
+      <h3 className="mb-2 text-lg font-bold text-gray-900">{emptyTitle}</h3>
+      <p className="mb-6 text-sm text-gray-500">새로운 로드맵과 강의를 둘러보고 학습을 시작해보세요.</p>
+      <a href="/lecture-list" className="rounded-xl bg-gray-900 px-6 py-3 font-bold text-white shadow-sm transition hover:bg-black">
+        전체 강의 보러가기
+      </a>
+    </div>
+  )
+}
+
+function LoadingState() {
+  return (
+    <div className="flex flex-col items-center justify-center px-4 py-20 text-center">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+        <i className="fas fa-spinner fa-spin text-3xl text-gray-300" />
+      </div>
+      <h3 className="mb-2 text-lg font-bold text-gray-900">강의 정보를 불러오는 중입니다</h3>
+      <p className="text-sm text-gray-500">현재 계정의 학습 데이터를 확인하고 있습니다.</p>
+    </div>
+  )
 }
 
 export default function MyLearningPage() {
-  const [tab, setTab] = useState<'active' | 'completed' | 'wishlist'>('active')
-  const [enrollments, setEnrollments] = useState<Enrollment[]>(fallbackEnrollments)
-  const [wishlist, setWishlist] = useState<WishlistCourse[]>(fallbackWishlist)
-  const [sortBy, setSortBy] = useState<SortBy>('recent')
-  const [category, setCategory] = useState<CategoryFilter>('all')
-  const [progressRange, setProgressRange] = useState<ProgressRange>('all')
-  const [hasCertificateOnly, setHasCertificateOnly] = useState(false)
-  const [instructor, setInstructor] = useState<string>('all')
-  const [enrolledPeriod, setEnrolledPeriod] = useState<PeriodFilter>('all')
-  const [selectedTag, setSelectedTag] = useState<string>('all')
+  const [tab, setTab] = useState<LearningTab>('active')
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
+  const [wishlist, setWishlist] = useState<WishlistCourse[]>([])
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
+    const controller = new AbortController()
+
     async function load() {
-      try {
-        const [enrollmentResponse, wishlistResponse] = await Promise.all([
-          enrollmentApi.getMyEnrollments(),
-          wishlistApi.getCourses(),
-        ])
+      const [enrollmentResult, wishlistResult] = await Promise.allSettled([
+        enrollmentApi.getMyEnrollments(controller.signal),
+        wishlistApi.getCourses(controller.signal),
+      ])
 
-        if (enrollmentResponse.length) {
-          setEnrollments(enrollmentResponse)
-        }
-
-        if (wishlistResponse.length) {
-          setWishlist(wishlistResponse)
-        }
-      } catch {
-        // 원본 내 학습 화면을 그대로 유지하기 위해 실패 시 기본 템플릿 데이터를 사용합니다.
+      if (controller.signal.aborted) {
+        return
       }
+
+      if (enrollmentResult.status === 'fulfilled') {
+        setEnrollments(enrollmentResult.value)
+      }
+
+      if (wishlistResult.status === 'fulfilled') {
+        setWishlist(wishlistResult.value)
+      }
+
+      if (enrollmentResult.status === 'rejected' || wishlistResult.status === 'rejected') {
+        setError('일부 학습 데이터를 불러오지 못했습니다.')
+      }
+
+      setIsLoaded(true)
     }
 
     void load()
+
+    return () => controller.abort()
   }, [])
 
-  const instructorNames = useMemo(() => getUniqueInstructors(enrollments), [enrollments])
-  const allTags = useMemo(() => getUniqueTags(enrollments), [enrollments])
+  const activeEnrollments = useMemo(
+    () => enrollments.filter((enrollment) => !isCompletedEnrollment(enrollment)),
+    [enrollments],
+  )
+  const completedEnrollments = useMemo(
+    () => enrollments.filter((enrollment) => isCompletedEnrollment(enrollment)),
+    [enrollments],
+  )
 
-  const isFilterActive =
-    category !== 'all' ||
-    progressRange !== 'all' ||
-    hasCertificateOnly ||
-    instructor !== 'all' ||
-    enrolledPeriod !== 'all' ||
-    selectedTag !== 'all' ||
-    sortBy !== 'recent'
+  const tabCounts: Record<LearningTab, number> = {
+    active: activeEnrollments.length,
+    completed: completedEnrollments.length,
+    wishlist: wishlist.length,
+  }
 
-  const resetFilters = useCallback(() => {
-    setSortBy('recent')
-    setCategory('all')
-    setProgressRange('all')
-    setHasCertificateOnly(false)
-    setInstructor('all')
-    setEnrolledPeriod('all')
-    setSelectedTag('all')
-  }, [])
-
-  const filteredCourses = useMemo(() => {
-    if (tab === 'wishlist') return wishlist
-
-    let result =
-      tab === 'completed'
-        ? enrollments.filter((e) => e.status === 'COMPLETED')
-        : enrollments.filter((e) => e.status !== 'COMPLETED')
-
-    if (category !== 'all') {
-      result = result.filter((e) => getCategoryLabel(e.courseTitle) === category)
-    }
-
-    if (progressRange !== 'all') {
-      result = result.filter((e) => {
-        const p = e.progressPercentage ?? 0
-        if (progressRange === '0-25') return p <= 25
-        if (progressRange === '26-75') return p >= 26 && p <= 75
-        return p >= 76
-      })
-    }
-
-    if (hasCertificateOnly) {
-      result = result.filter((e) => e.hasCertificate)
-    }
-
-    if (selectedTag !== 'all') {
-      result = result.filter((e) => e.tags?.includes(selectedTag))
-    }
-
-    if (instructor !== 'all') {
-      result = result.filter((e) => e.instructorName === instructor)
-    }
-
-    if (enrolledPeriod !== 'all') {
-      result = result.filter((e) => e.enrolledAt != null && isWithinPeriod(e.enrolledAt, enrolledPeriod))
-    }
-
-    return [...result].sort((a, b) => {
-      if (sortBy === 'enrolled') {
-        return new Date(b.enrolledAt ?? 0).getTime() - new Date(a.enrolledAt ?? 0).getTime()
-      }
-      if (sortBy === 'progress_high') {
-        return (b.progressPercentage ?? 0) - (a.progressPercentage ?? 0)
-      }
-      if (sortBy === 'progress_low') {
-        return (a.progressPercentage ?? 0) - (b.progressPercentage ?? 0)
-      }
-      return new Date(b.lastAccessedAt ?? 0).getTime() - new Date(a.lastAccessedAt ?? 0).getTime()
-    })
-  }, [enrollments, tab, wishlist, category, progressRange, hasCertificateOnly, instructor, enrolledPeriod, selectedTag, sortBy])
+  const visibleEnrollments = tab === 'completed' ? completedEnrollments : activeEnrollments
+  const hasVisibleData = tab === 'wishlist' ? wishlist.length > 0 : visibleEnrollments.length > 0
 
   return (
     <LearnerPageShell>
@@ -236,181 +286,111 @@ export default function MyLearningPage() {
         />
 
         <section className="min-w-0 flex-1">
-          <h2 className="mb-6 text-2xl font-bold text-gray-900">내 학습</h2>
+          <h2 className="mb-6 pt-[5px] text-2xl font-bold leading-none text-gray-900">내 학습</h2>
 
-          <div className="mb-6 flex border-b border-gray-200">
-            <button type="button" className={`tab-btn ${tab === 'active' ? 'active' : ''}`} onClick={() => setTab('active')}>
-              학습 중 ({enrollments.filter((item) => item.status !== 'COMPLETED').length})
-            </button>
-            <button type="button" className={`tab-btn ${tab === 'completed' ? 'active' : ''}`} onClick={() => setTab('completed')}>
-              완강 ({enrollments.filter((item) => item.status === 'COMPLETED').length})
-            </button>
-            <button type="button" className={`tab-btn ${tab === 'wishlist' ? 'active' : ''}`} onClick={() => setTab('wishlist')}>
-              찜한 강의
-            </button>
+          <div className="mt-1 mb-6 flex border-b border-gray-200">
+            {(Object.keys(tabLabels) as LearningTab[]).map((tabKey) => (
+              <button
+                key={tabKey}
+                type="button"
+                className={`tab-btn ${tab === tabKey ? 'active' : ''}`}
+                onClick={() => setTab(tabKey)}
+              >
+                {tabLabels[tabKey]} ({tabCounts[tabKey]})
+              </button>
+            ))}
           </div>
 
-          {tab !== 'wishlist' && (
-            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
-              {/* 정렬 */}
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortBy)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none"
-              >
-                <option value="recent">최근 학습순</option>
-                <option value="enrolled">수강 등록순</option>
-                <option value="progress_high">진도율 높은순</option>
-                <option value="progress_low">진도율 낮은순</option>
-              </select>
+          {error ? <p className="mb-4 text-sm font-bold text-red-500">{error}</p> : null}
 
-              {/* 카테고리 */}
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as CategoryFilter)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none"
-              >
-                <option value="all">전체 카테고리</option>
-                <option value="Backend">Backend</option>
-                <option value="Frontend">Frontend</option>
-                <option value="DevOps">DevOps</option>
-              </select>
-
-              {/* 진도율 구간 */}
-              <select
-                value={progressRange}
-                onChange={(e) => setProgressRange(e.target.value as ProgressRange)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none"
-              >
-                <option value="all">전체 진도율</option>
-                <option value="0-25">0 ~ 25%</option>
-                <option value="26-75">26 ~ 75%</option>
-                <option value="76-99">76 ~ 99%</option>
-              </select>
-
-              {/* 태그 */}
-              {allTags.length > 0 && (
-                <select
-                  value={selectedTag}
-                  onChange={(e) => setSelectedTag(e.target.value)}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none"
-                >
-                  <option value="all">전체 태그</option>
-                  {allTags.map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {/* 수료증 토글 */}
-              <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={hasCertificateOnly}
-                  onChange={(e) => setHasCertificateOnly(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded accent-brand"
-                />
-                수료증 있는 강의만
-              </label>
-
-              {/* 강사명 (2명 이상일 때만) */}
-              {instructorNames.length > 1 && (
-                <select
-                  value={instructor}
-                  onChange={(e) => setInstructor(e.target.value)}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none"
-                >
-                  <option value="all">전체 강사</option>
-                  {instructorNames.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              {/* 등록 기간 */}
-              <select
-                value={enrolledPeriod}
-                onChange={(e) => setEnrolledPeriod(e.target.value as PeriodFilter)}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 focus:outline-none"
-              >
-                <option value="all">전체 기간</option>
-                <option value="1month">최근 1개월</option>
-                <option value="3months">최근 3개월</option>
-                <option value="6months">최근 6개월</option>
-              </select>
-
-              {/* 초기화 버튼 */}
-              {isFilterActive && (
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  className="ml-auto text-xs text-gray-400 underline hover:text-gray-600"
-                >
-                  필터 초기화
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCourses.length ? (
-              filteredCourses.map((item, index) => {
-                const isWishlist = tab === 'wishlist'
-                const courseTitle = 'courseTitle' in item ? item.courseTitle : ''
-                const thumbnailUrl = item.thumbnailUrl ?? fallbackEnrollments[index % fallbackEnrollments.length]?.thumbnailUrl ?? ''
-
-                return (
-                  <div
-                    key={`${item.courseId}-${index}`}
-                    className="group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:shadow-lg"
-                  >
-                    <div className="relative aspect-video bg-gray-100">
-                      <img src={thumbnailUrl} className="h-full w-full object-cover" alt="thumb" />
-                      {!isWishlist ? (
-                        <div className="absolute bottom-0 left-0 h-1 w-full bg-gray-200">
-                          <div className="bg-brand h-full" style={{ width: `${(item as Enrollment).progressPercentage ?? 0}%` }} />
+          {!isLoaded ? (
+            <LoadingState />
+          ) : hasVisibleData ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {tab === 'wishlist'
+                ? wishlist.map((course) => (
+                    <article
+                      key={course.wishlistId}
+                      className="group min-w-0 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:shadow-lg"
+                      onClick={() => openCourseDetail(course.courseId)}
+                      onKeyDown={(event) => handleCardKeyDown(event, course.courseId)}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <CourseImage title={course.courseTitle} thumbnailUrl={course.thumbnailUrl} wishlist />
+                      <div className="p-5">
+                        <div className="mb-2 flex items-start justify-between gap-3">
+                          <span className="max-w-[70%] truncate rounded bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-500">
+                            {getCategoryLabel(course)}
+                          </span>
+                          <span className="shrink-0 text-xs font-bold text-gray-400">학습 전</span>
                         </div>
-                      ) : null}
-                    </div>
-
-                    <div className="p-5">
-                      <div className="mb-2 flex items-start justify-between">
-                        <span className="rounded bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-500">
-                          {getCategoryLabel(courseTitle)}
-                        </span>
-                        {!isWishlist ? (
-                          <span className="text-brand text-xs font-bold">{(item as Enrollment).progressPercentage ?? 0}%</span>
-                        ) : (
-                          <span className="text-xs font-bold text-gray-400">스크랩</span>
-                        )}
+                        <h3 className="mb-4 line-clamp-2 h-12 font-bold text-gray-900">{course.courseTitle}</h3>
+                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-50 pt-4">
+                          <span className="min-w-0 truncate text-xs text-gray-400">{formatPrice(course.price, 'KRW')}</span>
+                          <a
+                            href={`/course-detail?courseId=${course.courseId}`}
+                            className="shrink-0 rounded-lg border border-brand bg-white px-4 py-2 text-xs font-bold text-brand shadow-sm transition hover:bg-green-50"
+                            onClick={stopCardClick}
+                          >
+                            수강신청
+                          </a>
+                        </div>
                       </div>
+                    </article>
+                  ))
+                : visibleEnrollments.map((course) => {
+                    const completed = tab === 'completed'
+                    const progressPercent = completed ? 100 : getProgressPercent(course.progressPercentage)
+                    const actionHref = completed && course.hasCertificate ? '/learning-log-gallery' : `/learning?courseId=${course.courseId}`
+                    const actionLabel = completed ? (course.hasCertificate ? '수료증 보기' : '다시 보기') : '이어하기'
+                    const actionClassName = completed
+                      ? 'rounded-lg bg-gray-800 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-black'
+                      : 'rounded-lg bg-brand px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-green-600'
 
-                      <h3 className="mb-4 line-clamp-2 h-12 font-bold text-gray-900">{courseTitle}</h3>
-
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="text-xs text-gray-400">
-                          {isWishlist
-                            ? '보관함에 저장됨'
-                            : formatRelativeLabel(index, (item as Enrollment).lastAccessedAt)}
-                        </span>
-                        <a href={`/learning?courseId=${item.courseId}`} className="bg-brand rounded-lg px-4 py-2 text-xs font-bold text-white transition hover:bg-green-600">
-                          {isWishlist ? '보러가기' : '이어하기'}
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="rounded-xl border border-gray-200 bg-white px-6 py-10 text-sm text-gray-500">
-                표시할 강의가 없습니다.
-              </div>
-            )}
-          </div>
+                    return (
+                      <article
+                        key={course.enrollmentId}
+                        className="group min-w-0 cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white transition hover:shadow-lg"
+                        onClick={() => openCourseDetail(course.courseId)}
+                        onKeyDown={(event) => handleCardKeyDown(event, course.courseId)}
+                        role="button"
+                        tabIndex={0}
+                      >
+                        <CourseImage
+                          title={course.courseTitle}
+                          thumbnailUrl={course.thumbnailUrl}
+                          progressPercent={progressPercent}
+                          completed={completed}
+                        />
+                        <div className="p-5">
+                          <div className="mb-2 flex items-start justify-between gap-3">
+                            <span className="max-w-[70%] truncate rounded bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-500">
+                              {getCategoryLabel(course)}
+                            </span>
+                            <span className="shrink-0 text-xs font-bold text-brand">
+                              {completed ? '100% 완강' : `${progressPercent}%`}
+                            </span>
+                          </div>
+                          <h3 className="mb-4 line-clamp-2 h-12 font-bold text-gray-900">{course.courseTitle}</h3>
+                          <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-50 pt-4">
+                            <span className="min-w-0 truncate text-xs text-gray-400" title={completed ? undefined : formatLastLearningLabel(course)}>
+                              {completed
+                                ? `완료일: ${formatDate(course.completedAt ?? course.lastAccessedAt)}`
+                                : formatLastLearningLabel(course)}
+                            </span>
+                            <a href={actionHref} className={`${actionClassName} shrink-0`} onClick={stopCardClick}>
+                              {actionLabel}
+                            </a>
+                          </div>
+                        </div>
+                      </article>
+                    )
+                  })}
+            </div>
+          ) : (
+            <EmptyState tab={tab} />
+          )}
         </section>
       </LearnerContentRow>
     </LearnerPageShell>
