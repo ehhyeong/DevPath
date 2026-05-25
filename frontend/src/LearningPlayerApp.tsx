@@ -2613,7 +2613,7 @@ export default function LearningPlayerApp() {
                   ref={videoRef}
                   src={resolvedVideoUrl ?? undefined}
                   poster={lesson.thumbnailUrl ?? course.thumbnailUrl ?? undefined}
-                  className="learning-player-video-element w-full h-full object-cover"
+                  className="learning-player-video-element w-full h-full object-contain"
                   playsInline
                   preload="auto"
                   onLoadedData={() => setVideoFailed(false)}
