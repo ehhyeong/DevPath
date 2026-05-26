@@ -869,41 +869,7 @@ function MyRoadmapBuilderPage() {
   // ────────────────────────────────────────────
 
   if (!session?.userId) {
-    return (
-      <>
-        <SiteHeader
-          session={session}
-          profileImage={profileImage}
-          onLogout={handleLogout}
-          onLoginClick={() => setAuthView('login')}
-          activeNavHref="/roadmap-hub"
-          brandSuffix="마스터 빌더"
-        />
-        <div className="flex h-screen items-center justify-center bg-[#F8FAFC] px-4 pt-16">
-          <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-lg">
-            <i className="fas fa-lock mb-4 block text-4xl text-gray-300" />
-            <h2 className="mb-2 text-xl font-bold text-gray-800">로그인이 필요합니다</h2>
-            <p className="mb-6 text-sm text-gray-500">나만의 로드맵 빌더를 사용하려면 먼저 로그인해주세요.</p>
-            <button
-              type="button"
-              onClick={() => setAuthView('login')}
-              className="inline-block rounded-lg bg-[#00C471] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-green-600"
-            >
-              로그인하러 가기
-            </button>
-          </div>
-        </div>
-
-        {authView ? (
-          <AuthModal
-            view={authView}
-            onClose={() => setAuthView(null)}
-            onViewChange={setAuthView}
-            onAuthenticated={handleAuthenticated}
-          />
-        ) : null}
-      </>
-    )
+    return <LoginRequiredView message="나만의 로드맵 빌더는 로그인 후 이용할 수 있습니다." />
   }
 
   // ── DnD 파생값 ──

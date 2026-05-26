@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
+import SquadWorkspaceAside from './components/SquadWorkspaceAside'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
@@ -43,6 +44,11 @@ type ExternalIntegration = {
   active?: boolean
   isActive?: boolean
   connectedAt?: string | null
+  repositoryUrl?: string | null
+  repositoryOwner?: string | null
+  repositoryName?: string | null
+  lastSyncedAt?: string | null
+  lastSyncMessage?: string | null
 }
 
 type SettingsForm = {
@@ -100,10 +106,6 @@ function getWorkspaceIdFromUrl() {
   const raw = params.get('workspaceId') ?? params.get('squadId')
   const parsed = raw ? Number(raw) : Number.NaN
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-}
-
-function navHref(path: string, workspaceId: number | null) {
-  return workspaceId ? `${path}?workspaceId=${workspaceId}` : path
 }
 
 function createForm(settings: WorkspaceSettings | null): SettingsForm {
@@ -166,6 +168,8 @@ export default function SquadSettingsApp() {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [busyIntegration, setBusyIntegration] = useState<IntegrationProvider | null>(null)
+  const [syncingGithub, setSyncingGithub] = useState(false)
+  const [githubRepositoryUrl, setGithubRepositoryUrl] = useState('')
   const [dangerSaving, setDangerSaving] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -226,6 +230,7 @@ export default function SquadSettingsApp() {
         setSettings(nextSettings)
         setForm(createForm(nextSettings))
         setIntegrations(nextIntegrations)
+        setGithubRepositoryUrl(nextIntegrations.find((integration) => integration.provider === 'GITHUB')?.repositoryUrl ?? '')
       } catch (loadError) {
         if (ignore) {
           return
@@ -344,13 +349,20 @@ export default function SquadSettingsApp() {
     }
   }
 
-  async function toggleIntegration(provider: IntegrationProvider) {
+  async function toggleIntegration(provider: IntegrationProvider, forcedActive?: boolean) {
     if (!workspaceId || !settings?.canManage) {
       return
     }
 
     const current = integrations.find((integration) => integration.provider === provider)
-    const nextActive = !isIntegrationActive(current)
+    const nextActive = forcedActive ?? !isIntegrationActive(current)
+    const repositoryUrl = githubRepositoryUrl.trim()
+
+    if (provider === 'GITHUB' && nextActive && !repositoryUrl) {
+      showAuthToast({ message: 'GitHub 저장소 URL을 입력해 주세요.', variant: 'error' })
+      return
+    }
+
     setBusyIntegration(provider)
 
     try {
@@ -358,7 +370,11 @@ export default function SquadSettingsApp() {
         `/api/workspaces/${workspaceId}/integrations/${provider}`,
         {
           method: 'PATCH',
-          body: JSON.stringify({ isActive: nextActive }),
+          body: JSON.stringify(
+            provider === 'GITHUB'
+              ? { isActive: nextActive, repositoryUrl }
+              : { isActive: nextActive },
+          ),
         },
         'required',
       )
@@ -370,13 +386,48 @@ export default function SquadSettingsApp() {
 
         return items.map((item) => (item.provider === provider ? updated : item))
       })
+      if (provider === 'GITHUB') {
+        setGithubRepositoryUrl(updated.repositoryUrl ?? repositoryUrl)
+      }
       notifySettingsChange(`${provider} 연동을 ${nextActive ? '켰습니다.' : '껐습니다.'}`)
-      showAuthToast(nextActive ? '외부 연동이 켜졌습니다.' : '외부 연동이 꺼졌습니다.')
+      showAuthToast(
+        provider === 'GITHUB' && nextActive
+          ? 'GitHub 저장소와 Pull Request를 동기화했습니다.'
+          : nextActive ? '외부 연동이 켜졌습니다.' : '외부 연동이 꺼졌습니다.',
+      )
     } catch (toggleError) {
       const message = toggleError instanceof Error ? toggleError.message : '외부 연동 상태를 바꾸지 못했습니다.'
       showAuthToast({ message, variant: 'error' })
     } finally {
       setBusyIntegration(null)
+    }
+  }
+
+  async function syncGithubPullRequests() {
+    if (!workspaceId || !settings?.canManage) {
+      return
+    }
+
+    setSyncingGithub(true)
+
+    try {
+      const updated = await projectApiRequest<ExternalIntegration>(
+        `/api/workspaces/${workspaceId}/integrations/GITHUB/sync`,
+        { method: 'POST' },
+        'required',
+      )
+
+      setIntegrations((items) =>
+        items.map((item) => (item.provider === 'GITHUB' ? updated : item)),
+      )
+      setGithubRepositoryUrl(updated.repositoryUrl ?? githubRepositoryUrl)
+      notifySettingsChange('GitHub Pull Request를 코드 피드백 보드로 동기화했습니다.')
+      showAuthToast(updated.lastSyncMessage ?? 'GitHub Pull Request를 동기화했습니다.')
+    } catch (syncError) {
+      const message = syncError instanceof Error ? syncError.message : 'GitHub Pull Request를 동기화하지 못했습니다.'
+      showAuthToast({ message, variant: 'error' })
+    } finally {
+      setSyncingGithub(false)
     }
   }
 
@@ -439,53 +490,7 @@ export default function SquadSettingsApp() {
 
   return (
     <div className="squad-dashboard-page squad-settings-page flex h-screen overflow-hidden text-gray-800">
-      <aside className="w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <a href="/workspace-hub" className="h-20 flex items-center px-5 hover:bg-gray-50 transition border-b border-gray-100 shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md">
-            <i className="fas fa-arrow-left" />
-          </div>
-          <div className="sidebar-text flex flex-col justify-center">
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">목록으로 돌아가기</p>
-            <p className="font-extrabold text-gray-900 truncate w-36 leading-tight">{projectName}</p>
-          </div>
-        </a>
-
-        <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
-          <a href={navHref('/squad-dashboard', workspaceId)} className="nav-item">
-            <i className="fas fa-chart-pie w-6 text-center text-lg" />
-            <span className="sidebar-text">대시보드</span>
-          </a>
-          <a href={navHref('/squad-workspace', workspaceId)} className="nav-item">
-            <i className="fas fa-columns w-6 text-center text-lg" />
-            <span className="sidebar-text">작업 현황</span>
-          </a>
-          <a href={navHref('/squad-review', workspaceId)} className="nav-item">
-            <i className="fas fa-code-branch w-6 text-center text-lg" />
-            <span className="sidebar-text flex-1">코드 피드백</span>
-          </a>
-          <a href={navHref('/squad-erd', workspaceId)} className="nav-item">
-            <i className="fas fa-project-diagram w-6 text-center text-lg" />
-            <span className="sidebar-text">ERD 설계</span>
-          </a>
-          <a href={navHref('/squad-schedule', workspaceId)} className="nav-item">
-            <i className="fas fa-calendar-alt w-6 text-center text-lg" />
-            <span className="sidebar-text">일정 관리</span>
-          </a>
-          <a href={navHref('/squad-files', workspaceId)} className="nav-item">
-            <i className="fas fa-folder-open w-6 text-center text-lg" />
-            <span className="sidebar-text">팀 자료실</span>
-          </a>
-          <a href={navHref('/squad-meeting', workspaceId)} className="nav-item">
-            <i className="fas fa-headset w-6 text-center text-lg" />
-            <span className="sidebar-text">음성 회의</span>
-          </a>
-          <div className="h-px bg-gray-100 my-4 mx-2" />
-          <a href={navHref('/squad-settings', workspaceId)} className="nav-item active">
-            <i className="fas fa-cog w-6 text-center text-lg" />
-            <span className="sidebar-text">스쿼드 설정</span>
-          </a>
-        </nav>
-      </aside>
+      <SquadWorkspaceAside activePage="settings" workspaceId={workspaceId} projectName={projectName} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <header className="h-16 bg-white border-b border-gray-100 flex items-center px-8 shrink-0 relative z-30 shadow-sm">
@@ -582,7 +587,11 @@ export default function SquadSettingsApp() {
                       integrations={integrations}
                       canManage={canManage}
                       busyIntegration={busyIntegration}
+                      syncingGithub={syncingGithub}
+                      githubRepositoryUrl={githubRepositoryUrl}
+                      onGithubRepositoryUrlChange={setGithubRepositoryUrl}
                       onToggle={toggleIntegration}
+                      onSyncGithub={syncGithubPullRequests}
                     />
                   ) : null}
                   {activeTab === 'danger' ? (
@@ -791,12 +800,20 @@ function IntegrationsPanel({
   integrations,
   canManage,
   busyIntegration,
+  syncingGithub,
+  githubRepositoryUrl,
+  onGithubRepositoryUrlChange,
   onToggle,
+  onSyncGithub,
 }: {
   integrations: ExternalIntegration[]
   canManage: boolean
   busyIntegration: IntegrationProvider | null
-  onToggle: (provider: IntegrationProvider) => void
+  syncingGithub: boolean
+  githubRepositoryUrl: string
+  onGithubRepositoryUrlChange: (value: string) => void
+  onToggle: (provider: IntegrationProvider, forcedActive?: boolean) => void
+  onSyncGithub: () => void
 }) {
   return (
     <section className="space-y-8 fade-in">
@@ -811,6 +828,9 @@ function IntegrationsPanel({
           const integration = integrations.find((item) => item.provider === provider)
           const active = isIntegrationActive(integration)
           const busy = busyIntegration === provider
+          const github = provider === 'GITHUB'
+          const githubRepositoryChanged =
+            github && githubRepositoryUrl.trim() !== (integration?.repositoryUrl ?? '')
 
           return (
             <div key={provider} className="squad-settings-card bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-gray-300 transition">
@@ -829,17 +849,68 @@ function IntegrationsPanel({
               </div>
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-500 mb-4">
-                {active ? `마지막 연결: ${formatDate(integration?.connectedAt)}` : '연동을 켜면 이 스쿼드에서 사용할 준비 상태로 바뀝니다.'}
+                {github && active
+                  ? `저장소: ${integration?.repositoryOwner ?? '-'} / ${integration?.repositoryName ?? '-'}`
+                  : active ? `마지막 연결: ${formatDate(integration?.connectedAt)}` : '연동을 켜면 이 스쿼드에서 사용할 준비 상태로 바뀝니다.'}
               </div>
 
-              <button
-                type="button"
-                disabled={!canManage || busy}
-                onClick={() => onToggle(provider)}
-                className={`squad-settings-integration-action w-full py-2 text-xs font-bold rounded-lg transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : meta.button}`}
-              >
-                {busy ? '변경 중' : active ? '연동 끄기' : '연동 켜기'}
-              </button>
+              {github ? (
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-gray-400">Repository URL</span>
+                    <input
+                      value={githubRepositoryUrl}
+                      onChange={(event) => onGithubRepositoryUrlChange(event.target.value)}
+                      disabled={!canManage || busy || syncingGithub}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-800 outline-none transition focus:border-gray-900 disabled:bg-gray-50 disabled:text-gray-400"
+                      placeholder="https://github.com/owner/repository"
+                    />
+                  </label>
+
+                  {active ? (
+                    <p className="text-[11px] font-semibold leading-relaxed text-gray-500">
+                      {integration?.lastSyncMessage ?? `마지막 동기화: ${formatDate(integration?.lastSyncedAt)}`}
+                    </p>
+                  ) : null}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      disabled={!canManage || busy || syncingGithub}
+                      onClick={() => onToggle(provider, active ? true : undefined)}
+                      className={`squad-settings-integration-action py-2 text-xs font-bold rounded-lg transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : meta.button}`}
+                    >
+                      {busy ? '연결 중' : active ? (githubRepositoryChanged ? '저장/동기화' : '다시 연결') : '연동하기'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!canManage || !active || busy || syncingGithub}
+                      onClick={() => onToggle(provider, false)}
+                      className="squad-settings-integration-action rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      연동 끄기
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={!canManage || !active || busy || syncingGithub}
+                    onClick={onSyncGithub}
+                    className="squad-settings-integration-action w-full rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {syncingGithub ? '동기화 중' : 'GitHub PR만 다시 동기화'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!canManage || busy}
+                  onClick={() => onToggle(provider)}
+                  className={`squad-settings-integration-action w-full py-2 text-xs font-bold rounded-lg transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : meta.button}`}
+                >
+                  {busy ? '변경 중' : active ? '연동 끄기' : '연동 켜기'}
+                </button>
+              )}
             </div>
           )
         })}

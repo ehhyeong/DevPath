@@ -19045,8 +19045,8 @@ SELECT
     9001,
     9001,
     'GITHUB',
-    TRUE,
-    NOW(),
+    FALSE,
+    NULL,
     NOW(),
     NOW()
 WHERE NOT EXISTS (

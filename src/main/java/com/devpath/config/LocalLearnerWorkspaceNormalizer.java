@@ -21,6 +21,7 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
   @Transactional
   public void run(String... args) {
     ensureAllowedWorkspaces();
+    ensureMentoringWorkspaceOwners();
     pruneLearnerWorkspaceMemberships();
     ensureAllowedWorkspaceMemberships();
     ensureWorkspaceTaskStatusConstraint();
@@ -51,30 +52,57 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
           );
 
         INSERT INTO workspace (owner_id, name, description, type, status, is_deleted, created_at, updated_at)
-        SELECT learner.user_id, '대용량 트래픽 커머스 서버',
+        SELECT mentor.user_id, '대용량 트래픽 커머스 서버',
                '공통 과제형 멘토링으로 Spring Boot와 Redis를 활용한 선착순 쿠폰 시스템을 구현하는 워크스페이스',
                'MENTORING', 'ACTIVE', FALSE,
                CURRENT_DATE - 2 + TIME '09:00', CURRENT_DATE - 2 + TIME '09:00'
-        FROM users learner
-        WHERE learner.email = 'learner@devpath.com'
+        FROM users mentor
+        WHERE mentor.email = 'mentor.backend@devpath.com'
           AND NOT EXISTS (
               SELECT 1 FROM workspace
-              WHERE owner_id = learner.user_id
-                AND name = '대용량 트래픽 커머스 서버'
+              WHERE name = '대용량 트래픽 커머스 서버'
+                AND type = 'MENTORING'
+                AND COALESCE(is_deleted, FALSE) = FALSE
           );
 
         INSERT INTO workspace (owner_id, name, description, type, status, is_deleted, created_at, updated_at)
-        SELECT learner.user_id, 'Next.js 블로그 플랫폼 구축',
+        SELECT mentor.user_id, 'Next.js 블로그 플랫폼 구축',
                '팀 프로젝트형 멘토링으로 역할을 나누어 Next.js 블로그 플랫폼을 완성하는 워크스페이스',
                'MENTORING', 'ACTIVE', FALSE,
                CURRENT_DATE - 1 + TIME '09:00', CURRENT_DATE - 1 + TIME '09:00'
-        FROM users learner
-        WHERE learner.email = 'learner@devpath.com'
+        FROM users mentor
+        WHERE mentor.email = 'mentor.frontend@devpath.com'
           AND NOT EXISTS (
               SELECT 1 FROM workspace
-              WHERE owner_id = learner.user_id
-                AND name = 'Next.js 블로그 플랫폼 구축'
+              WHERE name = 'Next.js 블로그 플랫폼 구축'
+                AND type = 'MENTORING'
+                AND COALESCE(is_deleted, FALSE) = FALSE
           );
+        """);
+  }
+
+  private void ensureMentoringWorkspaceOwners() {
+    jdbcTemplate.execute(
+        """
+        UPDATE workspace workspace
+           SET owner_id = mentor.user_id,
+               updated_at = now()
+          FROM users mentor
+         WHERE mentor.email = 'mentor.backend@devpath.com'
+           AND workspace.name = '대용량 트래픽 커머스 서버'
+           AND workspace.type = 'MENTORING'
+           AND COALESCE(workspace.is_deleted, FALSE) = FALSE
+           AND workspace.owner_id IS DISTINCT FROM mentor.user_id;
+
+        UPDATE workspace workspace
+           SET owner_id = mentor.user_id,
+               updated_at = now()
+          FROM users mentor
+         WHERE mentor.email = 'mentor.frontend@devpath.com'
+           AND workspace.name = 'Next.js 블로그 플랫폼 구축'
+           AND workspace.type = 'MENTORING'
+           AND COALESCE(workspace.is_deleted, FALSE) = FALSE
+           AND workspace.owner_id IS DISTINCT FROM mentor.user_id;
         """);
   }
 
@@ -114,8 +142,9 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
         SELECT workspace.id, learner.user_id, CURRENT_DATE - 2 + TIME '09:00'
         FROM users learner
         JOIN workspace workspace
-          ON workspace.owner_id = learner.user_id
-         AND workspace.name = '대용량 트래픽 커머스 서버'
+          ON workspace.name = '대용량 트래픽 커머스 서버'
+         AND workspace.type = 'MENTORING'
+         AND COALESCE(workspace.is_deleted, FALSE) = FALSE
         WHERE learner.email = 'learner@devpath.com'
           AND NOT EXISTS (
               SELECT 1 FROM workspace_member member
@@ -127,13 +156,44 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
         SELECT workspace.id, learner.user_id, CURRENT_DATE - 1 + TIME '09:00'
         FROM users learner
         JOIN workspace workspace
-          ON workspace.owner_id = learner.user_id
-         AND workspace.name = 'Next.js 블로그 플랫폼 구축'
+          ON workspace.name = 'Next.js 블로그 플랫폼 구축'
+         AND workspace.type = 'MENTORING'
+         AND COALESCE(workspace.is_deleted, FALSE) = FALSE
         WHERE learner.email = 'learner@devpath.com'
           AND NOT EXISTS (
               SELECT 1 FROM workspace_member member
               WHERE member.workspace_id = workspace.id
                 AND member.learner_id = learner.user_id
+          );
+
+        INSERT INTO workspace_member (workspace_id, learner_id, joined_at)
+        SELECT workspace.id, mentor.user_id, CURRENT_DATE - 2 + TIME '09:00'
+        FROM users mentor
+        JOIN workspace workspace
+          ON workspace.owner_id = mentor.user_id
+         AND workspace.name = '대용량 트래픽 커머스 서버'
+         AND workspace.type = 'MENTORING'
+         AND COALESCE(workspace.is_deleted, FALSE) = FALSE
+        WHERE mentor.email = 'mentor.backend@devpath.com'
+          AND NOT EXISTS (
+              SELECT 1 FROM workspace_member member
+              WHERE member.workspace_id = workspace.id
+                AND member.learner_id = mentor.user_id
+          );
+
+        INSERT INTO workspace_member (workspace_id, learner_id, joined_at)
+        SELECT workspace.id, mentor.user_id, CURRENT_DATE - 1 + TIME '09:00'
+        FROM users mentor
+        JOIN workspace workspace
+          ON workspace.owner_id = mentor.user_id
+         AND workspace.name = 'Next.js 블로그 플랫폼 구축'
+         AND workspace.type = 'MENTORING'
+         AND COALESCE(workspace.is_deleted, FALSE) = FALSE
+        WHERE mentor.email = 'mentor.frontend@devpath.com'
+          AND NOT EXISTS (
+              SELECT 1 FROM workspace_member member
+              WHERE member.workspace_id = workspace.id
+                AND member.learner_id = mentor.user_id
           );
         """);
   }
@@ -597,7 +657,7 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
             duration_weeks, curriculum, deadline_at, current_participants,
             max_participants, view_count, status, is_deleted, created_at, updated_at
         )
-        SELECT instructor.user_id,
+        SELECT mentor.user_id,
                '대용량 트래픽 커머스 서버',
                '실제 운영 환경과 유사한 트래픽 시나리오를 경험합니다. 선착순 쿠폰 발급, 재고 동시성 이슈 등을 해결해보는 백엔드 심화 과정입니다. 각자 동일한 과제를 수행하며 개별 피드백을 받습니다.',
                'Spring Boot,Redis,Kafka',
@@ -613,8 +673,8 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
                FALSE,
                CURRENT_DATE - 2 + TIME '10:00',
                CURRENT_DATE - 2 + TIME '10:00'
-        FROM users instructor
-        WHERE instructor.email = 'instructor@devpath.com'
+        FROM users mentor
+        WHERE mentor.email = 'mentor.backend@devpath.com'
           AND NOT EXISTS (
               SELECT 1 FROM mentoring_posts post
               WHERE post.title = '대용량 트래픽 커머스 서버'
@@ -626,7 +686,7 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
             duration_weeks, curriculum, deadline_at, current_participants,
             max_participants, view_count, status, is_deleted, created_at, updated_at
         )
-        SELECT instructor.user_id,
+        SELECT mentor.user_id,
                'Next.js 블로그 플랫폼 구축',
                '하나의 블로그 플랫폼을 팀원들과 역할을 나누어 기획부터 배포까지 완성합니다. SEO 최적화, 마크다운 파싱, 다크모드 등 모던 프론트엔드의 실무 스킬을 멘토와 함께 적용해봅니다.',
                'React,Next.js 14,Tailwind',
@@ -642,13 +702,31 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
                FALSE,
                CURRENT_DATE - 1 + TIME '10:00',
                CURRENT_DATE - 1 + TIME '10:00'
-        FROM users instructor
-        WHERE instructor.email = 'instructor@devpath.com'
+        FROM users mentor
+        WHERE mentor.email = 'mentor.frontend@devpath.com'
           AND NOT EXISTS (
               SELECT 1 FROM mentoring_posts post
               WHERE post.title = 'Next.js 블로그 플랫폼 구축'
                 AND post.is_deleted = FALSE
           );
+
+        UPDATE mentoring_posts post
+           SET mentor_id = mentor.user_id,
+               updated_at = now()
+          FROM users mentor
+         WHERE mentor.email = 'mentor.backend@devpath.com'
+           AND post.title = '대용량 트래픽 커머스 서버'
+           AND post.is_deleted = FALSE
+           AND post.mentor_id IS DISTINCT FROM mentor.user_id;
+
+        UPDATE mentoring_posts post
+           SET mentor_id = mentor.user_id,
+               updated_at = now()
+          FROM users mentor
+         WHERE mentor.email = 'mentor.frontend@devpath.com'
+           AND post.title = 'Next.js 블로그 플랫폼 구축'
+           AND post.is_deleted = FALSE
+           AND post.mentor_id IS DISTINCT FROM mentor.user_id;
 
         INSERT INTO mentoring_applications (
             mentoring_post_id, applicant_id, message, status, reject_reason,
@@ -737,6 +815,15 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
               WHERE mentoring.mentoring_post_id = post.mentoring_post_id
                 AND mentoring.mentee_id = learner.user_id
           );
+
+        UPDATE mentorings mentoring
+           SET mentor_id = post.mentor_id,
+               updated_at = now()
+          FROM mentoring_posts post
+         WHERE mentoring.mentoring_post_id = post.mentoring_post_id
+           AND post.title IN ('대용량 트래픽 커머스 서버', 'Next.js 블로그 플랫폼 구축')
+           AND mentoring.is_deleted = FALSE
+           AND mentoring.mentor_id IS DISTINCT FROM post.mentor_id;
         """);
   }
 }

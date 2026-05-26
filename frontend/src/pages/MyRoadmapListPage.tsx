@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import AuthModal, { type AuthView } from '../components/AuthModal'
+import LoginRequiredView from '../components/LoginRequiredView'
 import SiteHeader from '../components/SiteHeader'
 import { authApi, roadmapApi, userApi } from '../lib/api'
 import {
@@ -1075,21 +1076,6 @@ function DeleteModal({
   )
 }
 
-function LoginState({ onLogin }: { onLogin: () => void }) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)]">
-      <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-        <i className="fas fa-user-lock text-xl text-gray-400" />
-      </div>
-      <h3 className="text-base font-bold text-gray-900 mb-1.5">로그인이 필요합니다</h3>
-      <p className="text-sm font-medium text-gray-500 mb-6">내 로드맵은 로그인 후 확인할 수 있습니다.</p>
-      <button type="button" onClick={onLogin} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5">
-        로그인
-      </button>
-    </div>
-  )
-}
-
 function MyRoadmapListPage() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -1316,6 +1302,10 @@ function MyRoadmapListPage() {
     }
   }
 
+  if (!session) {
+    return <LoginRequiredView message="내 로드맵은 로그인 후 확인할 수 있습니다." />
+  }
+
   return (
     <div className="my-roadmap-list-page min-h-screen bg-[#F9FAFB] text-gray-900">
       <RoadmapListStyle />
@@ -1369,8 +1359,6 @@ function MyRoadmapListPage() {
               ))}
             </nav>
           </div>
-
-          {!session && <LoginState onLogin={() => setAuthView('login')} />}
 
           {session && loading && (
             <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] text-sm font-bold text-gray-400">

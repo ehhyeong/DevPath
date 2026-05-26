@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import LoginRequiredGate from './components/LoginRequiredView'
 import SiteHeader from './components/SiteHeader'
 import UserAvatar from './components/UserAvatar'
 import {
@@ -259,10 +260,9 @@ export default function InstructorEditProfileApp() {
     } catch {
       // noop
     } finally {
-      clearStoredAuthSession({ persistToast: true })
+      clearStoredAuthSession({ toastMessage: null })
       setSession(null)
       setProfileImage(null)
-      window.location.href = '/home?auth=login'
     }
   }
 
@@ -465,7 +465,11 @@ export default function InstructorEditProfileApp() {
     [form],
   )
 
-  if (!session || session.role !== 'ROLE_INSTRUCTOR') {
+  if (!session) {
+    return <LoginRequiredGate message="강사용 채널 편집 화면은 로그인한 강사 계정으로만 접근할 수 있습니다." />
+  }
+
+  if (session.role !== 'ROLE_INSTRUCTOR') {
     return (
       <div className="min-h-screen bg-[#f9fafb] text-gray-800">
         <SiteHeader session={session} profileImage={profileImage} onLogout={handleLogout} onLoginClick={() => { window.location.href = '/home?auth=login' }} />

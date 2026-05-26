@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import {
+  consumePostLoginReturnPath,
   getPostLoginRedirect,
   getRoleLabel,
   persistAuthSession,
 } from './lib/auth-session'
+import { queueAuthToast } from './lib/auth-toast'
 import type { AuthTokenResponse } from './types/auth'
 
 function readOAuthParams() {
@@ -14,7 +16,54 @@ function readOAuthParams() {
     accessToken: searchParams.get('accessToken') ?? hashParams.get('accessToken'),
     refreshToken: searchParams.get('refreshToken') ?? hashParams.get('refreshToken'),
     tokenType: searchParams.get('tokenType') ?? hashParams.get('tokenType') ?? 'Bearer',
+    error: searchParams.get('error') ?? hashParams.get('error'),
+    errorDescription: searchParams.get('errorDescription') ?? hashParams.get('errorDescription'),
+    provider: searchParams.get('provider') ?? hashParams.get('provider'),
   }
+}
+
+function getProviderLabel(provider: string | null) {
+  switch (provider) {
+    case 'google':
+      return 'Google'
+    case 'github':
+      return 'GitHub'
+    default:
+      return '소셜'
+  }
+}
+
+function buildOAuthErrorMessage(
+  provider: string | null,
+  error: string,
+  errorDescription: string | null,
+) {
+  const providerLabel = getProviderLabel(provider)
+
+  if (error === 'access_denied') {
+    return `${providerLabel} 로그인 승인이 취소되었습니다.`
+  }
+
+  if (error === 'github_email_required') {
+    return 'GitHub 계정 이메일을 확인할 수 없습니다. GitHub 이메일 권한을 확인해 주세요.'
+  }
+
+  if (error === 'invalid_client' || error === 'invalid_request') {
+    return `${providerLabel} 로그인 설정이 맞지 않습니다. Client ID, Secret, Callback URL을 확인해 주세요.`
+  }
+
+  if (errorDescription) {
+    return `${providerLabel} 로그인에 실패했습니다. ${errorDescription}`
+  }
+
+  return `${providerLabel} 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.`
+}
+
+function appendLoginModalParam(path: string) {
+  const url = new URL(path, window.location.origin)
+  url.searchParams.set('auth', 'login')
+
+  return `${url.pathname}${url.search}${url.hash}`
 }
 
 function OAuthRedirectApp() {
@@ -23,12 +72,46 @@ function OAuthRedirectApp() {
   )
 
   useEffect(() => {
-    const { accessToken, refreshToken, tokenType } = readOAuthParams()
+    const {
+      accessToken,
+      refreshToken,
+      tokenType,
+      error,
+      errorDescription,
+      provider,
+    } = readOAuthParams()
+
+    if (error) {
+      const failureMessage = buildOAuthErrorMessage(provider, error, errorDescription)
+      const returnPath = consumePostLoginReturnPath() ?? '/home'
+
+      queueAuthToast({
+        message: failureMessage,
+        variant: 'error',
+        durationMs: 3200,
+      })
+      setMessage(`${failureMessage} 로그인 화면으로 돌아갑니다...`)
+
+      window.setTimeout(() => {
+        window.location.replace(appendLoginModalParam(returnPath))
+      }, 300)
+      return
+    }
 
     if (!accessToken || !refreshToken) {
-      setMessage(
-        '\uC18C\uC15C \uB85C\uADF8\uC778 \uD1A0\uD070\uC744 \uBC1B\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.',
-      )
+      const failureMessage = '소셜 로그인 토큰을 받지 못했습니다. 다시 시도해 주세요.'
+      const returnPath = consumePostLoginReturnPath() ?? '/home'
+
+      queueAuthToast({
+        message: failureMessage,
+        variant: 'error',
+        durationMs: 3200,
+      })
+      setMessage(`${failureMessage} 로그인 화면으로 돌아갑니다...`)
+
+      window.setTimeout(() => {
+        window.location.replace(appendLoginModalParam(returnPath))
+      }, 300)
       return
     }
 

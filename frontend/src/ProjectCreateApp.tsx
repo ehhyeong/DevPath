@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
+import { showAuthToast } from './lib/auth-toast'
 import LoginRequiredView from './components/LoginRequiredView'
 import { projectApiRequest } from './project-api'
 
@@ -76,7 +77,11 @@ export function ProjectCreatePanel({ onClose, onCreated }: ProjectCreatePanelPro
     const session = readStoredAuthSession()
 
     if (!session?.accessToken) {
-      window.location.assign('/home?auth=login')
+      setErrorMessage('로그인 후 프로젝트를 생성할 수 있습니다.')
+      showAuthToast({
+        message: '로그인이 필요한 작업입니다. 계속하려면 로그인해 주세요.',
+        durationMs: 2400,
+      })
       return
     }
 

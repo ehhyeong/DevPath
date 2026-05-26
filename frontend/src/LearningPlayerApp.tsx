@@ -2,6 +2,7 @@ import { startTransition, useCallback, useDeferredValue, useEffect, useEffectEve
 import { captureAndOcr, warmupOcrWorker, type ScreenRegion } from './lib/videoOcr'
 import { courseApi, learnerAssignmentApi, learningPlayerApi, lessonNoteApi, lessonSessionApi, nodeClearanceApi, qnaApi } from './lib/api'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredGate from './components/LoginRequiredView'
 import {
   createDefaultProgress,
   formatDateLabel,
@@ -871,25 +872,7 @@ function LoadingOverlay() {
 }
 
 function LoginRequiredView() {
-  return (
-    <div className="min-h-screen bg-[#0a100f] px-4 py-16 text-white">
-      <div className="mx-auto max-w-xl rounded-[32px] border border-white/10 bg-white/5 px-8 py-10 text-center backdrop-blur">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300">
-          <i className="fas fa-user-lock text-2xl" />
-        </div>
-        <h1 className="mt-6 text-3xl font-semibold">로그인이 필요합니다</h1>
-        <p className="mt-3 text-sm leading-7 text-white/70">학습 플레이어는 로그인한 사용자만 이용할 수 있습니다.</p>
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <a href="/home?auth=login" className="rounded-full bg-[#00c471] px-6 py-3 text-sm font-bold text-white">
-            로그인 하기
-          </a>
-          <a href="/lecture-list" className="rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-white/80">
-            강의 목록으로
-          </a>
-        </div>
-      </div>
-    </div>
-  )
+  return <LoginRequiredGate message="학습 플레이어는 로그인한 사용자만 이용할 수 있습니다." />
 }
 
 function ErrorView(props: { title: string; message: string; actionHref: string; actionLabel: string }) {

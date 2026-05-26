@@ -13,6 +13,9 @@ public interface MilestoneRepository extends JpaRepository<Milestone, Long> {
 
   List<Milestone> findAllByWorkspaceIdAndIsDeletedFalseOrderByDueDateAsc(Long workspaceId);
 
+  List<Milestone> findAllByWorkspaceIdInAndIsDeletedFalseOrderByDueDateAsc(
+      Collection<Long> workspaceIds);
+
   long countByWorkspaceIdAndStatusInAndIsDeletedFalse(
       Long workspaceId, Collection<MilestoneStatus> statuses);
 

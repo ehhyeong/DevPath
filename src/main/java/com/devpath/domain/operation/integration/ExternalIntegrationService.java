@@ -2,6 +2,8 @@ package com.devpath.domain.operation.integration;
 
 import com.devpath.api.workspace.integration.dto.IntegrationResponse;
 import com.devpath.api.workspace.integration.dto.IntegrationStatusUpdateRequest;
+import com.devpath.api.workspace.integration.GithubPullRequestSyncService;
+import com.devpath.api.workspace.integration.GithubRepositoryReference;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.workspace.entity.Workspace;
@@ -22,6 +24,7 @@ public class ExternalIntegrationService {
   private final ExternalIntegrationRepository integrationRepository;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final GithubPullRequestSyncService githubPullRequestSyncService;
 
   @Transactional
   public List<IntegrationResponse> getIntegrationsByWorkspace(Long workspaceId, Long userId) {
@@ -54,12 +57,53 @@ public class ExternalIntegrationService {
                             .build()));
 
     if (request.getIsActive()) {
+      if (provider == IntegrationProvider.GITHUB) {
+        configureGithubRepository(integration, request);
+      }
       integration.activate();
+      if (provider == IntegrationProvider.GITHUB) {
+        githubPullRequestSyncService.syncWorkspacePullRequests(workspaceId, userId, integration);
+      }
     } else {
       integration.deactivate();
     }
 
     return IntegrationResponse.from(integration);
+  }
+
+  @Transactional
+  public IntegrationResponse syncGithubPullRequests(Long workspaceId, Long userId) {
+    Workspace workspace = getWorkspaceAndValidateMember(workspaceId, userId);
+    validateOwner(workspace, userId);
+
+    ExternalIntegration integration =
+        integrationRepository
+            .findByWorkspaceIdAndProvider(workspaceId, IntegrationProvider.GITHUB)
+            .orElseThrow(() -> new CustomException(ErrorCode.INTEGRATION_NOT_FOUND));
+
+    if (!integration.isActive()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "GitHub 연동을 먼저 켜주세요.");
+    }
+
+    githubPullRequestSyncService.syncWorkspacePullRequests(workspaceId, userId, integration);
+    return IntegrationResponse.from(integration);
+  }
+
+  private void configureGithubRepository(
+      ExternalIntegration integration, IntegrationStatusUpdateRequest request) {
+    String repositoryUrl = request.getRepositoryUrl();
+    if (!org.springframework.util.StringUtils.hasText(repositoryUrl)) {
+      repositoryUrl = integration.getRepositoryUrl();
+    }
+
+    if (!org.springframework.util.StringUtils.hasText(repositoryUrl)) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "GitHub 저장소 URL을 입력해 주세요.");
+    }
+
+    GithubRepositoryReference repository =
+        githubPullRequestSyncService.parseRepositoryUrl(repositoryUrl);
+    integration.configureRepository(
+        repository.normalizedUrl(), repository.owner(), repository.name());
   }
 
   private void ensureDefaultIntegrations(Long workspaceId) {

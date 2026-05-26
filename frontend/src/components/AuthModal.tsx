@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { authApi } from '../lib/api'
-import { consumePostLoginReturnPath, persistAuthSession } from '../lib/auth-session'
+import {
+  consumePostLoginReturnPath,
+  persistAuthSession,
+  storePostLoginReturnPath,
+} from '../lib/auth-session'
 
 export type AuthView = 'login' | 'signup'
 
@@ -178,6 +182,7 @@ function AuthModal({ view, onClose, onViewChange, onAuthenticated }: AuthModalPr
   }
 
   function startOAuth(provider: 'google' | 'github') {
+    storePostLoginReturnPath()
     window.location.href = `/oauth2/authorization/${provider}`
   }
 

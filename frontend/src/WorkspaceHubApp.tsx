@@ -359,6 +359,9 @@ function WorkspaceProjectCard({
   openMembersModal: (event: MouseEvent<HTMLElement>) => void
 }) {
   const currentUserMemberSeed = currentUserId == null ? null : `workspace-member-${currentUserId}`
+  const progressPercent = clampProgressPercent(project.progressPercent)
+  const hasVisibleRole = project.type === 'mentoring' ? Boolean(project.roleLabel) : project.type === 'squad' && Boolean(project.roleLabel)
+  const footerClassName = hasVisibleRole ? '' : 'mt-auto'
 
   function toggleDropdown(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation()
@@ -375,46 +378,48 @@ function WorkspaceProjectCard({
   if (project.type === 'mentoring') {
     return (
       <div id={project.domId} className="project-card bg-white rounded-xl p-5 cursor-pointer relative group flex flex-col" data-type={project.type} data-status={project.status} onClick={goToProject}>
-        <div className="flex justify-between items-start mb-3 relative">
-          <div className="flex items-center gap-1 flex-wrap w-5/6">
-            <span className="bg-purple-100 text-mentor text-[10px] font-bold px-2 py-1 rounded">MENTORING</span>
-            <span className={getStatusBadgeClass(project.status)}>{getStatusLabel(project.status)}</span>
-            {project.mentoringModeLabel ? (
-              <span className="bg-purple-50 text-mentor text-[10px] font-bold px-2 py-1 rounded border border-purple-100">
-                {project.mentoringModeIcon ? <i className={project.mentoringModeIcon}></i> : null}
-                {project.mentoringModeIcon ? ' ' : null}
-                {project.mentoringModeLabel}
-              </span>
-            ) : null}
-            {project.categoryLabel ? <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded border border-gray-200">{project.categoryLabel}</span> : null}
+        <div>
+          <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
+            <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap w-5/6">
+              <span className="bg-purple-100 text-mentor text-[10px] font-bold px-2 py-1 rounded">MENTORING</span>
+              <span className={getStatusBadgeClass(project.status)}>{getStatusLabel(project.status)}</span>
+              {project.mentoringModeLabel ? (
+                <span className="bg-purple-50 text-mentor text-[10px] font-bold px-2 py-1 rounded border border-purple-100">
+                  {project.mentoringModeIcon ? <i className={project.mentoringModeIcon}></i> : null}
+                  {project.mentoringModeIcon ? ' ' : null}
+                  {project.mentoringModeLabel}
+                </span>
+              ) : null}
+              {project.categoryLabel ? <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded border border-gray-200">{project.categoryLabel}</span> : null}
+            </div>
+            <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition shrink-0" onClick={toggleDropdown}>
+              <i className="fas fa-ellipsis-h"></i>
+            </button>
+            <ProjectMenu
+              project={project}
+              visible={activeMenuId === project.menuId}
+              openSettingsModal={openSettingsModal}
+              openMembersModal={openMembersModal}
+            />
           </div>
-          <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition shrink-0" onClick={toggleDropdown}>
-            <i className="fas fa-ellipsis-h"></i>
-          </button>
-          <ProjectMenu
-            project={project}
-            visible={activeMenuId === project.menuId}
-            openSettingsModal={openSettingsModal}
-            openMembersModal={openMembersModal}
-          />
+          <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-mentor transition" id={`title-${project.domId}`}>
+            {project.title}
+          </h3>
+          <p className={project.roleLabel ? 'text-xs text-gray-500 mb-3 line-clamp-2' : 'text-xs text-gray-500 mb-4 line-clamp-2'} id={`desc-${project.domId}`}>
+            {project.description}
+          </p>
         </div>
-        <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-mentor transition" id={`title-${project.domId}`}>
-          {project.title}
-        </h3>
-        <p className={project.roleLabel ? 'text-xs text-gray-500 mb-3 line-clamp-2' : 'text-xs text-gray-500 mb-4 line-clamp-2'} id={`desc-${project.domId}`}>
-          {project.description}
-        </p>
 
         {project.roleLabel ? (
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 mb-4 flex justify-between items-center shadow-sm">
+          <div className="mt-auto bg-blue-50 border border-blue-100 rounded-lg p-2.5 mb-4 flex justify-between items-center shadow-sm">
             <span className="text-[10px] text-blue-500 font-extrabold tracking-wider">MY ROLE</span>
             <span className="text-xs font-extrabold text-blue-700">{project.roleLabel}</span>
           </div>
         ) : null}
 
-        <div className="mt-auto">
+        <div className={footerClassName}>
           <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3">
-            <div className={getProgressBarClass(project)} style={{ width: `${project.progressPercent}%` }}></div>
+            <div className={getProgressBarClass(project)} style={{ width: `${progressPercent}%` }}></div>
           </div>
           <div className="flex items-center justify-between text-xs text-gray-400 border-t border-gray-100 pt-3">
             <div className="flex items-center gap-2">
@@ -440,39 +445,41 @@ function WorkspaceProjectCard({
 
   return (
     <div id={project.domId} className="project-card bg-white rounded-xl p-5 cursor-pointer relative group flex flex-col" data-type={project.type} data-status={project.status} onClick={goToProject}>
-      <div className="flex justify-between items-start mb-3 relative">
-        <div className="flex items-center gap-1">
-          <span className={getTypeBadgeClass(project.type)}>{getTypeLabel(project.type)}</span>
-          <span className={getStatusBadgeClass(project.status)}>{getStatusLabel(project.status)}</span>
-        </div>
+      <div>
+        <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
+          <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap">
+            <span className={getTypeBadgeClass(project.type)}>{getTypeLabel(project.type)}</span>
+            <span className={getStatusBadgeClass(project.status)}>{getStatusLabel(project.status)}</span>
+          </div>
 
-        <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition" onClick={toggleDropdown}>
-          <i className="fas fa-ellipsis-h"></i>
-        </button>
-        <ProjectMenu
-          project={project}
-          visible={activeMenuId === project.menuId}
-          openSettingsModal={openSettingsModal}
-          openMembersModal={openMembersModal}
-        />
+          <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition" onClick={toggleDropdown}>
+            <i className="fas fa-ellipsis-h"></i>
+          </button>
+          <ProjectMenu
+            project={project}
+            visible={activeMenuId === project.menuId}
+            openSettingsModal={openSettingsModal}
+            openMembersModal={openMembersModal}
+          />
+        </div>
+        <h3 className={project.type === 'squad' ? 'font-bold text-gray-900 text-lg mb-1 group-hover:text-blue-600 transition' : 'font-bold text-gray-900 text-lg mb-1 group-hover:text-brand transition'} id={`title-${project.domId}`}>
+          {project.title}
+        </h3>
+        <p className={project.type === 'squad' && project.roleLabel ? 'text-xs text-gray-500 mb-3 line-clamp-2' : 'text-xs text-gray-500 mb-4 line-clamp-2'} id={`desc-${project.domId}`}>
+          {project.description}
+        </p>
       </div>
-      <h3 className={project.type === 'squad' ? 'font-bold text-gray-900 text-lg mb-1 group-hover:text-blue-600 transition' : 'font-bold text-gray-900 text-lg mb-1 group-hover:text-brand transition'} id={`title-${project.domId}`}>
-        {project.title}
-      </h3>
-      <p className="text-xs text-gray-500 mb-4 line-clamp-2" id={`desc-${project.domId}`}>
-        {project.description}
-      </p>
 
       {project.type === 'squad' && project.roleLabel ? (
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 mb-4 flex justify-between items-center shadow-sm">
+        <div className="mt-auto bg-blue-50 border border-blue-100 rounded-lg p-2.5 mb-4 flex justify-between items-center shadow-sm">
           <span className="text-[10px] text-blue-500 font-extrabold tracking-wider">MY ROLE</span>
           <span className="text-xs font-extrabold text-blue-700">{project.roleLabel}</span>
         </div>
       ) : null}
 
-      <div className="mt-auto">
+      <div className={footerClassName}>
         <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3">
-          <div className={getProgressBarClass(project)} style={{ width: `${project.progressPercent}%` }}></div>
+          <div className={getProgressBarClass(project)} style={{ width: `${progressPercent}%` }}></div>
         </div>
         <div className="flex items-center justify-between text-xs text-gray-400 border-t border-gray-100 pt-3">
           <span>
@@ -739,6 +746,14 @@ function getStatusBadgeClass(status: WorkspaceHubProject['status']) {
 
 function getStatusLabel(status: WorkspaceHubProject['status']) {
   return status === 'completed' ? '완료됨' : '진행 중'
+}
+
+function clampProgressPercent(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+
+  return Math.max(0, Math.min(100, Math.round(value)))
 }
 
 function getProgressBarClass(project: WorkspaceHubProject) {

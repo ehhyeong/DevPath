@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -53,5 +54,16 @@ public class ExternalIntegrationController {
         integrationService.updateIntegrationStatus(
             workspaceId, requireUserId(userId), provider, request);
     return ResponseEntity.ok(ApiResponse.success("연동 상태가 변경되었습니다.", response));
+  }
+
+  @Operation(summary = "GitHub PR 동기화", description = "연동된 GitHub 저장소의 Pull Request를 코드 피드백 보드로 동기화합니다.")
+  @PostMapping("/workspaces/{workspaceId}/integrations/GITHUB/sync")
+  public ResponseEntity<ApiResponse<IntegrationResponse>> syncGithubPullRequests(
+      @Parameter(description = "워크스페이스 ID") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+
+    IntegrationResponse response =
+        integrationService.syncGithubPullRequests(workspaceId, requireUserId(userId));
+    return ResponseEntity.ok(ApiResponse.success("GitHub Pull Request를 동기화했습니다.", response));
   }
 }

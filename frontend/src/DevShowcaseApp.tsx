@@ -369,7 +369,7 @@ export default function DevShowcaseApp() {
       return
     }
     if (!readStoredAuthSession()?.accessToken) {
-      window.location.assign('/home?auth=login')
+      openAuthModal('댓글 작성은 로그인 후 이용할 수 있습니다.')
       return
     }
 

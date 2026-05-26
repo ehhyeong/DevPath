@@ -17,7 +17,7 @@ export default function AuthToastViewport() {
     const queuedMessage = consumeQueuedAuthToast()
 
     if (queuedMessage) {
-      setToast({ message: queuedMessage })
+      setToast(queuedMessage)
     }
 
     const handleAuthToast = (event: Event) => {

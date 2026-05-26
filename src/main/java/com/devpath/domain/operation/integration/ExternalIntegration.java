@@ -45,6 +45,21 @@ public class ExternalIntegration {
   @Column(name = "connected_at")
   private LocalDateTime connectedAt;
 
+  @Column(name = "repository_url", length = 1000)
+  private String repositoryUrl;
+
+  @Column(name = "repository_owner", length = 120)
+  private String repositoryOwner;
+
+  @Column(name = "repository_name", length = 160)
+  private String repositoryName;
+
+  @Column(name = "last_synced_at")
+  private LocalDateTime lastSyncedAt;
+
+  @Column(name = "last_sync_message", length = 500)
+  private String lastSyncMessage;
+
   @CreatedDate
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
@@ -67,5 +82,16 @@ public class ExternalIntegration {
 
   public void deactivate() {
     this.isActive = false;
+  }
+
+  public void configureRepository(String repositoryUrl, String repositoryOwner, String repositoryName) {
+    this.repositoryUrl = repositoryUrl;
+    this.repositoryOwner = repositoryOwner;
+    this.repositoryName = repositoryName;
+  }
+
+  public void markSynced(String message) {
+    this.lastSyncedAt = LocalDateTime.now();
+    this.lastSyncMessage = message;
   }
 }

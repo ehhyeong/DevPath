@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import AuthModal, { type AuthView } from './components/AuthModal'
+import SquadWorkspaceAside from './components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
@@ -1163,71 +1164,14 @@ export default function SquadDashboardApp() {
 
   return (
     <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800">
-      <aside className={`${sidebarPinned ? 'pinned ' : ''}w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
-        <div
-          onClick={() => {
-            window.location.href = '/workspace-hub'
-          }}
-          className="h-20 flex items-center px-5 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 shrink-0"
-        >
-          <div className={`${hasAnyDashboardData ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-500 shadow-sm transition group-hover:bg-blue-600 group-hover:text-white'} w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0`}>
-            <i className="fas fa-arrow-left"></i>
-          </div>
-          <div className="sidebar-text flex items-center justify-between flex-1 min-w-0">
-            <div className="flex flex-col justify-center min-w-0">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">목록으로 돌아가기</p>
-              <p className="font-extrabold text-gray-900 truncate w-28 leading-tight">{sideProjectName}</p>
-            </div>
-            <button
-              type="button"
-              onClick={toggleSidebarPin}
-              className="squad-dashboard-pin-button w-7 h-7 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-brand transition-colors focus:outline-none ml-2"
-              title={sidebarPinned ? '사이드바 고정 해제' : '사이드바 고정'}
-            >
-              <i className={`fas fa-thumbtack transform ${sidebarPinned ? 'text-brand' : '-rotate-45 text-gray-400'} text-sm transition-transform`}></i>
-            </button>
-          </div>
-        </div>
-
-        <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
-          <a href={navHref('/squad-dashboard', workspaceId)} className="nav-item active">
-            <i className="fas fa-chart-pie w-6 text-center text-lg"></i>
-            <span className="sidebar-text">대시보드</span>
-          </a>
-          <a href={navHref('/squad-workspace', workspaceId)} className="nav-item">
-            <i className="fas fa-columns w-6 text-center text-lg"></i>
-            <span className="sidebar-text">작업 현황판</span>
-          </a>
-          <a href={navHref('/squad-review', workspaceId)} className="nav-item">
-            <i className="fas fa-code-branch w-6 text-center text-lg"></i>
-            <span className="sidebar-text squad-dashboard-review-link flex-1">
-              <span className="truncate">코드 피드백</span>
-              {hasAnyDashboardData ? <span className="squad-dashboard-review-badge bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">1</span> : null}
-            </span>
-          </a>
-          <a href={navHref('/squad-erd', workspaceId)} className="nav-item">
-            <i className="fas fa-project-diagram w-6 text-center text-lg"></i>
-            <span className="sidebar-text">ERD 설계</span>
-          </a>
-          <a href={navHref('/squad-schedule', workspaceId)} className="nav-item">
-            <i className="fas fa-calendar-alt w-6 text-center text-lg"></i>
-            <span className="sidebar-text">일정 관리</span>
-          </a>
-          <a href={navHref('/squad-files', workspaceId)} className="nav-item">
-            <i className="fas fa-folder-open w-6 text-center text-lg"></i>
-            <span className="sidebar-text">팀 자료실</span>
-          </a>
-          <a href={navHref('/squad-meeting', workspaceId)} className="nav-item">
-            <i className="fas fa-headset w-6 text-center text-lg"></i>
-            <span className="sidebar-text">음성 회의</span>
-          </a>
-          <div className="h-px bg-gray-100 my-4 mx-2"></div>
-          <a href={navHref('/squad-settings', workspaceId)} className="nav-item">
-            <i className="fas fa-cog w-6 text-center text-lg"></i>
-            <span className="sidebar-text">스쿼드 설정</span>
-          </a>
-        </nav>
-      </aside>
+      <SquadWorkspaceAside
+        activePage="dashboard"
+        workspaceId={workspaceId}
+        projectName={sideProjectName}
+        pinned={sidebarPinned}
+        onTogglePinned={toggleSidebarPin}
+        reviewBadgeCount={hasAnyDashboardData ? 1 : 0}
+      />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <SquadWorkspaceHeader

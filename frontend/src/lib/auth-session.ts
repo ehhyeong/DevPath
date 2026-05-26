@@ -15,7 +15,6 @@ const ACTIVITY_WRITE_INTERVAL_MS = 30 * 1000
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 60 * 1000
 const REFRESH_STORAGE_RECOVERY_TIMEOUT_MS = 1500
 const REFRESH_STORAGE_RECOVERY_POLL_MS = 50
-const LOGOUT_REDIRECT_PATH = '/home?auth=login'
 const IDLE_ACTIVITY_EVENTS = [
   'click',
   'keydown',
@@ -29,7 +28,6 @@ let idleActivityListenersAttached = false
 let authStorageSyncListenerAttached = false
 let lastActivityWriteAt = 0
 let refreshSessionPromise: Promise<AuthSession | null> | null = null
-let logoutRedirectPending = false
 
 export const AUTH_SESSION_SYNC_EVENT = 'devpath:auth-session-sync'
 
@@ -38,9 +36,7 @@ type AuthToastOptions = {
   toastMessage?: string | null
 }
 
-type ClearAuthSessionOptions = AuthToastOptions & {
-  redirectToLogin?: boolean
-}
+type ClearAuthSessionOptions = AuthToastOptions
 
 type ApiEnvelope<T> = {
   success: boolean
@@ -132,10 +128,6 @@ function emitAuthToast(message: string | null | undefined, options?: AuthToastOp
   showAuthToast(message)
 }
 
-export function isLogoutRedirectPending() {
-  return logoutRedirectPending
-}
-
 function readFromStorage(storage: Storage): AuthSession | null {
   const raw = storage.getItem(AUTH_STORAGE_KEY)
 
@@ -199,7 +191,7 @@ function normalizeReturnPath(value: string | null) {
   }
 }
 
-function storePostLoginReturnPath(path = getCurrentReturnPath()) {
+export function storePostLoginReturnPath(path = getCurrentReturnPath()) {
   const normalizedPath = normalizeReturnPath(path)
 
   if (!normalizedPath) {
@@ -486,28 +478,18 @@ export function readStoredAuthSession(): AuthSession | null {
 }
 
 export function clearStoredAuthSession(options?: ClearAuthSessionOptions) {
-  const redirectToLogin = options?.redirectToLogin ?? true
-
-  if (redirectToLogin) {
-    logoutRedirectPending = true
-  }
-
   clearExpiryTimer()
+  storePostLoginReturnPath()
   localStorage.removeItem(AUTH_STORAGE_KEY)
   sessionStorage.removeItem(AUTH_STORAGE_KEY)
   notifyAuthSessionChanged()
   emitAuthToast(options?.toastMessage ?? LOGOUT_AUTH_TOAST_MESSAGE, {
     ...options,
-    persistToast: options?.persistToast ?? redirectToLogin,
+    persistToast: options?.persistToast ?? false,
   })
-
-  if (redirectToLogin) {
-    window.location.replace(LOGOUT_REDIRECT_PATH)
-  }
 }
 
 export function expireStoredAuthSession(options?: { reload?: boolean; force?: boolean }) {
-  const { reload = true } = options ?? {}
   const session = getStoredSessionRaw()
 
   clearExpiryTimer()
@@ -525,15 +507,7 @@ export function expireStoredAuthSession(options?: { reload?: boolean; force?: bo
   sessionStorage.removeItem(AUTH_STORAGE_KEY)
   notifyAuthSessionChanged()
 
-  queueAuthToast(EXPIRED_AUTH_TOAST_MESSAGE)
-
-  if (!reload) {
-    showAuthToast(EXPIRED_AUTH_TOAST_MESSAGE)
-  }
-
-  if (reload) {
-    window.location.assign('/home?auth=login')
-  }
+  showAuthToast(EXPIRED_AUTH_TOAST_MESSAGE)
 }
 
 export function updateStoredAuthSession(patch: Partial<Pick<AuthSession, 'name'>>) {

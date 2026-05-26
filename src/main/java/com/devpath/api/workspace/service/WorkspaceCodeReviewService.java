@@ -6,6 +6,7 @@ import com.devpath.api.ai.service.AiCodeReviewService;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewRequest;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewResponse;
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
+import com.devpath.api.workspace.integration.GithubPullRequestSyncService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import java.sql.PreparedStatement;
@@ -28,12 +29,14 @@ public class WorkspaceCodeReviewService {
   private final JdbcTemplate jdbcTemplate;
   private final WorkspaceService workspaceService;
   private final AiCodeReviewService aiCodeReviewService;
+  private final GithubPullRequestSyncService githubPullRequestSyncService;
 
   @Transactional
   public WorkspaceCodeReviewResponse.Board getBoard(Long workspaceId, Long userId) {
     ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
+    githubPullRequestSyncService.syncWorkspacePullRequestsIfStale(workspaceId, userId);
     List<WorkspaceCodeReviewResponse.Summary> reviews = findSummaries(workspaceId);
 
     return new WorkspaceCodeReviewResponse.Board(
@@ -220,8 +223,10 @@ public class WorkspaceCodeReviewService {
     return jdbcTemplate.query(
         """
         SELECT r.id, r.workspace_id, r.title, r.status, r.author_id,
-               COALESCE(u.name, '팀원') AS author_name,
+               r.external_provider, r.external_id,
+               COALESCE(r.external_author_name, u.name, '팀원') AS author_name,
                CASE
+                 WHEN r.external_author_avatar_url IS NOT NULL THEN r.external_author_avatar_url
                  WHEN up.profile_image LIKE '/images/profiles/%' THEN NULL
                  ELSE up.profile_image
                END AS author_profile_image,
@@ -240,7 +245,10 @@ public class WorkspaceCodeReviewService {
             new WorkspaceCodeReviewResponse.Summary(
                 rs.getLong("id"),
                 rs.getLong("workspace_id"),
-                toIssueKey(rs.getLong("id")),
+                toIssueKey(
+                    rs.getLong("id"),
+                    rs.getString("external_provider"),
+                    rs.getString("external_id")),
                 rs.getString("title"),
                 rs.getString("status"),
                 rs.getLong("author_id"),
@@ -298,8 +306,10 @@ public class WorkspaceCodeReviewService {
             """
             SELECT r.id, r.workspace_id, r.title, r.description, r.pr_url, r.file_path,
                    r.diff_text, r.status, r.author_id,
-                   COALESCE(u.name, '팀원') AS author_name,
+                   r.external_provider, r.external_id,
+                   COALESCE(r.external_author_name, u.name, '팀원') AS author_name,
                    CASE
+                     WHEN r.external_author_avatar_url IS NOT NULL THEN r.external_author_avatar_url
                      WHEN up.profile_image LIKE '/images/profiles/%' THEN NULL
                      ELSE up.profile_image
                    END AS author_profile_image,
@@ -319,7 +329,10 @@ public class WorkspaceCodeReviewService {
                   new WorkspaceCodeReviewResponse.Summary(
                       rs.getLong("id"),
                       rs.getLong("workspace_id"),
-                      toIssueKey(rs.getLong("id")),
+                      toIssueKey(
+                          rs.getLong("id"),
+                          rs.getString("external_provider"),
+                          rs.getString("external_id")),
                       rs.getString("title"),
                       rs.getString("status"),
                       rs.getLong("author_id"),
@@ -379,6 +392,18 @@ public class WorkspaceCodeReviewService {
     jdbcTemplate.execute(
         "CREATE INDEX IF NOT EXISTS ix_workspace_code_reviews_ai ON workspace_code_reviews(ai_code_review_id)");
     jdbcTemplate.execute(
+        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_provider varchar(50)");
+    jdbcTemplate.execute(
+        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_id varchar(220)");
+    jdbcTemplate.execute(
+        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_author_name varchar(120)");
+    jdbcTemplate.execute(
+        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_author_avatar_url varchar(1000)");
+    jdbcTemplate.execute(
+        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_updated_at timestamp");
+    jdbcTemplate.execute(
+        "CREATE INDEX IF NOT EXISTS ix_workspace_code_reviews_external ON workspace_code_reviews(workspace_id, external_provider, external_id)");
+    jdbcTemplate.execute(
         """
         CREATE TABLE IF NOT EXISTS workspace_code_review_comments (
             id bigserial PRIMARY KEY,
@@ -433,7 +458,14 @@ public class WorkspaceCodeReviewService {
     return value.trim();
   }
 
-  private String toIssueKey(Long id) {
+  private String toIssueKey(Long id, String externalProvider, String externalId) {
+    if ("GITHUB".equals(externalProvider) && StringUtils.hasText(externalId)) {
+      int markerIndex = externalId.lastIndexOf('#');
+      if (markerIndex >= 0 && markerIndex < externalId.length() - 1) {
+        return "#PR-" + externalId.substring(markerIndex + 1);
+      }
+    }
+
     return "#DP-" + String.format("%02d", id);
   }
 

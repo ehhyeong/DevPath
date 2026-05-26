@@ -37,8 +37,8 @@ export function showAuthToast(toast: AuthToastInput) {
   dispatchAuthToast(toast)
 }
 
-export function queueAuthToast(message: string) {
-  window.sessionStorage.setItem(AUTH_TOAST_STORAGE_KEY, message)
+export function queueAuthToast(toast: AuthToastInput) {
+  window.sessionStorage.setItem(AUTH_TOAST_STORAGE_KEY, JSON.stringify(normalizeAuthToast(toast)))
 }
 
 export function clearQueuedAuthToast() {
@@ -46,12 +46,23 @@ export function clearQueuedAuthToast() {
 }
 
 export function consumeQueuedAuthToast() {
-  const message = window.sessionStorage.getItem(AUTH_TOAST_STORAGE_KEY)
+  const rawValue = window.sessionStorage.getItem(AUTH_TOAST_STORAGE_KEY)
 
-  if (!message) {
+  if (!rawValue) {
     return null
   }
 
   clearQueuedAuthToast()
-  return message
+
+  try {
+    const parsedValue = JSON.parse(rawValue) as AuthToastDetail
+
+    if (parsedValue?.message) {
+      return parsedValue
+    }
+  } catch {
+    return { message: rawValue }
+  }
+
+  return null
 }

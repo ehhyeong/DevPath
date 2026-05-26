@@ -27,6 +27,21 @@ public class IntegrationResponse {
   @Schema(description = "연동된 일시 (활성화 시점)")
   private LocalDateTime connectedAt;
 
+  @Schema(description = "GitHub 저장소 URL", example = "https://github.com/devpath/app")
+  private String repositoryUrl;
+
+  @Schema(description = "GitHub 저장소 소유자", example = "devpath")
+  private String repositoryOwner;
+
+  @Schema(description = "GitHub 저장소 이름", example = "app")
+  private String repositoryName;
+
+  @Schema(description = "마지막 GitHub PR 동기화 일시")
+  private LocalDateTime lastSyncedAt;
+
+  @Schema(description = "마지막 GitHub PR 동기화 메시지")
+  private String lastSyncMessage;
+
   public static IntegrationResponse from(ExternalIntegration integration) {
     return IntegrationResponse.builder()
         .id(integration.getId())
@@ -34,6 +49,11 @@ public class IntegrationResponse {
         .provider(integration.getProvider())
         .isActive(integration.isActive())
         .connectedAt(integration.getConnectedAt())
+        .repositoryUrl(integration.getRepositoryUrl())
+        .repositoryOwner(integration.getRepositoryOwner())
+        .repositoryName(integration.getRepositoryName())
+        .lastSyncedAt(integration.getLastSyncedAt())
+        .lastSyncMessage(integration.getLastSyncMessage())
         .build();
   }
 }

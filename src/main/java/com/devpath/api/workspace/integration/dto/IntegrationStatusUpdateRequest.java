@@ -2,6 +2,7 @@ package com.devpath.api.workspace.integration.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,7 +16,16 @@ public class IntegrationStatusUpdateRequest {
   @Schema(description = "변경할 활성화 상태 (true: 연동, false: 해제)", example = "true")
   private Boolean isActive;
 
+  @Size(max = 1000, message = "저장소 URL은 1000자 이하여야 합니다.")
+  @Schema(description = "GitHub 저장소 URL", example = "https://github.com/devpath/app")
+  private String repositoryUrl;
+
   public IntegrationStatusUpdateRequest(Boolean isActive) {
     this.isActive = isActive;
+  }
+
+  public IntegrationStatusUpdateRequest(Boolean isActive, String repositoryUrl) {
+    this.isActive = isActive;
+    this.repositoryUrl = repositoryUrl;
   }
 }

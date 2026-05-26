@@ -764,16 +764,42 @@ CREATE TABLE IF NOT EXISTS public.workspace_code_reviews (
     additions integer NOT NULL DEFAULT 0,
     deletions integer NOT NULL DEFAULT 0,
     ai_code_review_id bigint,
+    external_provider varchar(50),
+    external_id varchar(220),
+    external_author_name varchar(120),
+    external_author_avatar_url varchar(1000),
+    external_updated_at timestamp,
     is_deleted boolean NOT NULL DEFAULT false,
     created_at timestamp NOT NULL DEFAULT now(),
     updated_at timestamp NOT NULL DEFAULT now()
 );
+^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
+    IF to_regclass('public.workspace_code_reviews') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.workspace_code_reviews
+        ADD COLUMN IF NOT EXISTS external_provider varchar(50);
+    ALTER TABLE public.workspace_code_reviews
+        ADD COLUMN IF NOT EXISTS external_id varchar(220);
+    ALTER TABLE public.workspace_code_reviews
+        ADD COLUMN IF NOT EXISTS external_author_name varchar(120);
+    ALTER TABLE public.workspace_code_reviews
+        ADD COLUMN IF NOT EXISTS external_author_avatar_url varchar(1000);
+    ALTER TABLE public.workspace_code_reviews
+        ADD COLUMN IF NOT EXISTS external_updated_at timestamp;
+END $$;
 ^^^ END OF SCRIPT ^^^
 CREATE INDEX IF NOT EXISTS ix_workspace_code_reviews_workspace
     ON public.workspace_code_reviews(workspace_id, status, created_at DESC);
 ^^^ END OF SCRIPT ^^^
 CREATE INDEX IF NOT EXISTS ix_workspace_code_reviews_ai
     ON public.workspace_code_reviews(ai_code_review_id);
+^^^ END OF SCRIPT ^^^
+CREATE INDEX IF NOT EXISTS ix_workspace_code_reviews_external
+    ON public.workspace_code_reviews(workspace_id, external_provider, external_id);
 ^^^ END OF SCRIPT ^^^
 CREATE TABLE IF NOT EXISTS public.workspace_code_review_comments (
     id bigserial PRIMARY KEY,
