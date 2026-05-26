@@ -19,4 +19,7 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
   List<CalendarEvent>
       findAllByWorkspaceIdInAndStartAtGreaterThanEqualAndIsDeletedFalseOrderByStartAtAsc(
           Collection<Long> workspaceIds, LocalDateTime from);
+
+  List<CalendarEvent> findAllByWorkspaceIdInAndStartAtBetweenAndIsDeletedFalseOrderByStartAtAsc(
+      Collection<Long> workspaceIds, LocalDateTime from, LocalDateTime to);
 }

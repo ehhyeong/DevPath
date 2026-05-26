@@ -1,82 +1,85 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { communityApi } from '../../lib/api'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { AuthSession } from '../../types/auth'
-import type { CommunityPost } from '../../types/learner'
+import type { CommunityComment, CommunityPost } from '../../types/learner'
 
 type FilterCategory = 'all' | 'qna' | 'tech' | 'career' | 'free' | 'project'
 type SortType = 'latest' | 'popular' | 'views'
 
 type PostViewItem = CommunityPost & {
   filterCategory: FilterCategory
-  commentCount: number
+  commentCount: number | null
   tags: string[]
-  detailTitle: string
-  detailBody: string[]
 }
 
-const fallbackPosts: PostViewItem[] = [
-  {
-    id: 1,
-    authorName: '김학생',
-    category: 'QNA',
-    filterCategory: 'qna',
-    title: 'Spring Boot JPA N+1 문제 해결 조언 부탁드립니다.',
-    content:
-      '엔티티 연관관계 설정 중에 자꾸 쿼리가 여러 번 나가는 문제가 발생합니다. Fetch Join을 썼는데도 해결이 안 되네요. 혹시 BatchSize 설정은 어떻게...',
-    viewCount: 128,
-    likeCount: 5,
-    commentCount: 3,
-    createdAt: '2026-02-05T10:00:00',
-    tags: ['#Java', '#Spring Boot', '#JPA'],
-    detailTitle: '1. 문제 상황',
-    detailBody: [
-      'Spring Boot + JPA 환경에서 연관관계 조회 시 N+1 문제가 반복적으로 발생하고 있습니다.',
-      'Fetch Join을 적용했지만 일부 화면에서는 여전히 추가 쿼리가 나가고 있어 원인을 찾고 있습니다.',
-      'BatchSize나 EntityGraph를 어떤 기준으로 적용하면 좋은지 경험 있으신 분들 의견 부탁드립니다.',
-    ],
-  },
-  {
-    id: 2,
-    authorName: '김학생',
-    category: 'PROJECT',
-    filterCategory: 'project',
-    title: '2026 졸업작품 팀원 모집합니다 (백엔드 1명)',
-    content:
-      "주제는 개발자들을 위한 올인원 플랫폼 'DevPath' 입니다. 현재 프론트 2명, 백엔드 1명 있습니다. 열정적으로 하실 분 구합니다!",
-    viewCount: 450,
-    likeCount: 24,
-    commentCount: 12,
-    createdAt: '2026-01-20T10:00:00',
-    tags: ['#팀원모집', '#사이드프로젝트'],
-    detailTitle: '프로젝트 소개',
-    detailBody: [
-      '졸업작품 주제는 개발자 학습과 커리어 관리를 한 곳에서 제공하는 DevPath 플랫폼입니다.',
-      '현재 프론트엔드 2명, 백엔드 1명으로 구성되어 있고 백엔드 한 분을 더 찾고 있습니다.',
-      'Spring Boot, 인증/인가, 데이터 모델링 경험이 있으면 좋습니다.',
-    ],
-  },
-  {
-    id: 3,
-    authorName: '김학생',
-    category: 'TECH_SHARE',
-    filterCategory: 'tech',
-    title: '2026년 백엔드 개발자 로드맵 정리 (주관적)',
-    content:
-      '개인적으로 공부하면서 느꼈던 필수 스킬들을 정리해봤습니다. Java, Spring, JPA, Docker 순서대로 학습하는 것을 추천드리며...',
-    viewCount: 890,
-    likeCount: 56,
-    commentCount: 8,
-    createdAt: '2025-12-15T10:00:00',
-    tags: ['#Roadmap', '#Backend', '#Career'],
-    detailTitle: '정리 내용',
-    detailBody: [
-      '기초 CS, Java, Spring Boot, JPA, 테스트, Docker 순서로 학습 흐름을 잡는 것을 추천합니다.',
-      '각 단계마다 작은 프로젝트를 하나씩 넣어두면 이해도가 훨씬 높아집니다.',
-      '로드맵은 절대적인 기준이 아니라 현재 목표와 경험에 맞게 조정하는 것이 중요합니다.',
-    ],
-  },
-]
+const filterCategories: FilterCategory[] = ['all', 'qna', 'tech', 'career', 'free', 'project']
+
+const filterBarStyle: CSSProperties = {
+  backgroundColor: '#FFFFFF',
+  border: '1px solid #E5E7EB',
+  borderRadius: '12px',
+  marginBottom: '24px',
+  paddingLeft: '8px',
+  paddingRight: '8px',
+  boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+}
+
+function filterTabStyle(isActive: boolean): CSSProperties {
+  return {
+    boxSizing: 'border-box',
+    height: '43px',
+    margin: 0,
+    padding: '10px 16px',
+    border: 0,
+    borderBottom: `2px solid ${isActive ? '#1F2937' : 'transparent'}`,
+    backgroundColor: 'transparent',
+    color: isActive ? '#1F2937' : '#6B7280',
+    cursor: 'pointer',
+    fontFamily: 'Pretendard, sans-serif',
+    fontSize: '14px',
+    fontWeight: isActive ? 700 : 500,
+    lineHeight: '21px',
+    letterSpacing: '0',
+    outline: 'none',
+    transition: 'all 0.2s',
+    whiteSpace: 'nowrap',
+  }
+}
+
+const searchInputStyle: CSSProperties = {
+  boxSizing: 'border-box',
+  width: '100%',
+  height: '34px',
+  padding: '6px 12px 6px 32px',
+  border: '1px solid #E5E7EB',
+  borderRadius: '8px',
+  backgroundColor: '#F9FAFB',
+  color: '#111827',
+  fontFamily: 'Pretendard, sans-serif',
+  fontSize: '14px',
+  lineHeight: '20px',
+  letterSpacing: '0',
+  outline: 'none',
+  transition: 'all 0.2s',
+}
+
+const sortSelectStyle: CSSProperties = {
+  boxSizing: 'border-box',
+  height: '30px',
+  margin: 0,
+  padding: '6px 8px',
+  border: '1px solid #E5E7EB',
+  borderRadius: '8px',
+  backgroundColor: '#FFFFFF',
+  color: '#4B5563',
+  cursor: 'pointer',
+  fontFamily: 'Pretendard, sans-serif',
+  fontSize: '12px',
+  lineHeight: '16px',
+  letterSpacing: '0',
+  outline: 'none',
+}
 
 function mapCategory(category: string): FilterCategory {
   switch (category) {
@@ -91,7 +94,7 @@ function mapCategory(category: string): FilterCategory {
     case 'QNA':
       return 'qna'
     default:
-      return 'tech'
+      return 'free'
   }
 }
 
@@ -139,53 +142,108 @@ function formatShortDate(value: string | null | undefined) {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
 }
 
+function extractHashTags(post: CommunityPost) {
+  const text = `${post.title}\n${post.content}`
+  const matches = text.match(/#[\p{L}\p{N}_-]+/gu) ?? []
+
+  return [...new Set(matches)].slice(0, 4)
+}
+
+function toPostViewItem(post: CommunityPost): PostViewItem {
+  return {
+    ...post,
+    filterCategory: mapCategory(post.category),
+    commentCount: null,
+    tags: extractHashTags(post),
+  }
+}
+
+function countComments(comments: CommunityComment[]): number {
+  return comments.reduce((total, comment) => total + 1 + countComments(comment.children ?? []), 0)
+}
+
+function buildPostParagraphs(content: string) {
+  const paragraphs = content
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  return paragraphs.length ? paragraphs : ['본문 내용이 없습니다.']
+}
+
 export default function MyPostsPage({ session }: { session: AuthSession }) {
-  const [posts, setPosts] = useState<PostViewItem[]>(fallbackPosts)
+  const [posts, setPosts] = useState<PostViewItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [category, setCategory] = useState<FilterCategory>('all')
   const [keyword, setKeyword] = useState('')
   const [sort, setSort] = useState<SortType>('latest')
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
+
     async function load() {
       if (!session.userId) {
+        setPosts([])
+        setIsLoading(false)
         return
       }
+
+      setIsLoading(true)
+      setLoadError('')
 
       try {
         const response = await communityApi.searchPosts({
           authorId: session.userId,
           page: 0,
           size: 100,
-        })
+        }, controller.signal)
+        const nextPosts = response.content.map(toPostViewItem)
 
-        if (response.content.length) {
-          setPosts(
-            response.content.map((post, index) => ({
-              ...post,
-              filterCategory: mapCategory(post.category),
-              commentCount: Math.max(1, Math.min(12, Math.round(post.likeCount / 2) || index + 1)),
-              tags:
-                mapCategory(post.category) === 'tech'
-                  ? ['#Roadmap', '#Backend', '#Career']
-                  : mapCategory(post.category) === 'project'
-                    ? ['#팀원모집', '#사이드프로젝트']
-                    : ['#Java', '#Spring Boot', '#JPA'],
-              detailTitle: mapCategory(post.category) === 'project' ? '프로젝트 소개' : '1. 문제 상황',
-              detailBody: post.content
-                .split('\n')
-                .map((line) => line.trim())
-                .filter(Boolean)
-                .slice(0, 3),
-            })),
+        if (controller.signal.aborted) {
+          return
+        }
+
+        setPosts(nextPosts)
+
+        if (nextPosts.length) {
+          const commentCounts = await Promise.all(
+            nextPosts.map(async (post) => {
+              try {
+                const comments = await communityApi.getComments(post.id, controller.signal)
+                return [post.id, countComments(comments)] as const
+              } catch {
+                return [post.id, null] as const
+              }
+            }),
           )
+
+          if (!controller.signal.aborted) {
+            const countByPostId = new Map(commentCounts)
+            setPosts((current) =>
+              current.map((post) => ({
+                ...post,
+                commentCount: countByPostId.get(post.id) ?? post.commentCount,
+              })),
+            )
+          }
         }
       } catch {
-        // 원본 게시글 화면을 유지하기 위해 API 실패 시 기본 템플릿 데이터를 사용합니다.
+        if (!controller.signal.aborted) {
+          setPosts([])
+          setLoadError('게시글을 불러오지 못했습니다.')
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
       }
     }
 
     void load()
+
+    return () => controller.abort()
   }, [session.userId])
 
   const filteredPosts = useMemo(() => {
@@ -214,6 +272,7 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
   }, [category, keyword, posts, sort])
 
   const selectedPost = posts.find((post) => post.id === selectedPostId) ?? null
+  const selectedPostParagraphs = selectedPost ? buildPostParagraphs(selectedPost.content) : []
 
   return (
     <LearnerPageShell>
@@ -235,8 +294,8 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
 
               <article className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
                 <div className="prose max-w-none text-gray-800">
-                  <h3>{selectedPost.detailTitle}</h3>
-                  {selectedPost.detailBody.map((paragraph, index) => (
+                  <h3>{selectedPost.title}</h3>
+                  {selectedPostParagraphs.map((paragraph, index) => (
                     <p key={`${selectedPost.id}-${index}`}>{paragraph}</p>
                   ))}
                 </div>
@@ -251,13 +310,13 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
                 </div>
               </div>
 
-              <div className="mb-6 flex flex-col items-center justify-between rounded-xl border border-gray-200 bg-white px-2 shadow-sm md:flex-row">
+              <div className="flex flex-col items-center justify-between md:flex-row" style={filterBarStyle}>
                 <div className="hide-scroll flex w-full overflow-x-auto md:w-auto">
-                  {(['all', 'qna', 'tech', 'career', 'free', 'project'] as const).map((item) => (
+                  {filterCategories.map((item) => (
                     <button
                       key={item}
                       type="button"
-                      className={`filter-tab ${category === item ? 'active' : ''}`}
+                      style={filterTabStyle(category === item)}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => setCategory(item)}
                     >
@@ -273,14 +332,18 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
                       value={keyword}
                       onChange={(event) => setKeyword(event.target.value)}
                       placeholder="내 글 검색"
-                      className="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pr-3 pl-8 text-sm outline-none transition focus:border-brand"
+                      disabled={isLoading || !posts.length}
+                      className="disabled:opacity-50"
+                      style={searchInputStyle}
                     />
                     <i className="fas fa-search absolute top-1/2 left-2.5 -translate-y-1/2 text-xs text-gray-400" />
                   </div>
                   <select
                     value={sort}
                     onChange={(event) => setSort(event.target.value as SortType)}
-                    className="cursor-pointer rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-600 outline-none hover:border-gray-300"
+                    disabled={isLoading || !posts.length}
+                    className="disabled:opacity-50"
+                    style={sortSelectStyle}
                   >
                     <option value="latest">최신순</option>
                     <option value="popular">인기순</option>
@@ -290,7 +353,28 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
               </div>
 
               <div id="postListContainer" className="space-y-4">
-                {filteredPosts.length ? (
+                {isLoading ? (
+                  <div className="py-10 text-center text-gray-500">
+                    <i className="fas fa-spinner mb-3 text-4xl text-gray-300" />
+                    <p>게시글을 불러오는 중입니다.</p>
+                  </div>
+                ) : loadError ? (
+                  <div className="py-10 text-center text-gray-500">
+                    <i className="fas fa-inbox mb-3 text-4xl text-gray-300" />
+                    <p>{loadError}</p>
+                  </div>
+                ) : posts.length === 0 ? (
+                  <div id="noResult" className="flex flex-col items-center justify-center py-24 text-center">
+                    <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
+                      <i className="fas fa-pen-nib text-3xl text-gray-300" />
+                    </div>
+                    <h3 className="mb-2 text-lg font-bold text-gray-900">아직 작성한 게시글이 없습니다</h3>
+                    <p className="mb-6 text-sm text-gray-500">커뮤니티에 첫 글을 남기고 다른 개발자들과 소통해보세요.</p>
+                    <a href="/community-lounge" className="rounded-xl bg-gray-900 px-6 py-3 font-bold text-white shadow-sm transition hover:bg-black">
+                      새 게시글 작성하기
+                    </a>
+                  </div>
+                ) : filteredPosts.length ? (
                   filteredPosts.map((post) => (
                     <article
                       key={post.id}
@@ -310,18 +394,20 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
                             <h3 className="truncate text-lg font-bold text-gray-900 transition group-hover:text-brand">{post.title}</h3>
                           </div>
                           <p className="mb-3 line-clamp-2 text-sm text-gray-600">{post.content}</p>
-                          <div className="mb-3 flex flex-wrap gap-2">
-                            {post.tags.map((tag) => (
-                              <span key={`${post.id}-${tag}`} className="tech-tag">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                          {post.tags.length ? (
+                            <div className="mb-3 flex flex-wrap gap-2">
+                              {post.tags.map((tag) => (
+                                <span key={`${post.id}-${tag}`} className="tech-tag">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                           <div className="flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
                             <span className="text-gray-400">{formatShortDate(post.createdAt)}</span>
                             <div className="flex items-center gap-3">
                               <span>
-                                <i className="far fa-comment-alt mr-1" /> {post.commentCount}
+                                <i className="far fa-comment-alt mr-1" /> {post.commentCount ?? '-'}
                               </span>
                               <span>
                                 <i className="far fa-eye mr-1" /> {post.viewCount}

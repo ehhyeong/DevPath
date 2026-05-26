@@ -1,4 +1,10 @@
+import { isLogoutRedirectPending } from '../lib/auth-session'
+
 export default function LoginRequiredView({ message }: { message?: string }) {
+  if (isLogoutRedirectPending()) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-[#f6f8fb] px-4 py-10">
       <div className="mx-auto max-w-3xl">

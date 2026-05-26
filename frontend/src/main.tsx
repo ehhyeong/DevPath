@@ -30,6 +30,7 @@ const LearnerApp = lazy(() => import('./LearnerApp'))
 const LearningPlayerApp = lazy(() => import('./LearningPlayerApp'))
 const LoginApp = lazy(() => import('./LoginApp'))
 const LoungeDashboardApp = lazy(() => import('./LoungeDashboardApp'))
+const MentoringCommonWorkspaceApp = lazy(() => import('./MentoringCommonWorkspaceApp'))
 const MentoringHubApp = lazy(() => import('./MentoringHubApp'))
 const MyRoadmapBuilderApp = lazy(() => import('./MyRoadmapBuilderApp'))
 const OAuthRedirectApp = lazy(() => import('./OAuthRedirectApp'))
@@ -124,6 +125,24 @@ if (pathname === '/admin-dashboard') {
                                   ? suspense(<MentoringHubApp />)
                                   : pathname === '/workspace-hub'
                                     ? suspense(<WorkspaceHubApp />)
+                                    : pathname === '/mentoring-dashboard'
+                                      ? suspense(<MentoringCommonWorkspaceApp page="dashboard" />)
+                                      : pathname === '/mentoring-workspace'
+                                        ? suspense(<MentoringCommonWorkspaceApp page="workspace" />)
+                                        : pathname === '/mentoring-curriculum'
+                                          ? suspense(<MentoringCommonWorkspaceApp page="curriculum" />)
+                                          : pathname === '/mentoring-qna'
+                                            ? suspense(<MentoringCommonWorkspaceApp page="qna" />)
+                                            : pathname === '/mentoring-schedule'
+                                              ? suspense(<MentoringCommonWorkspaceApp page="schedule" />)
+                                              : pathname === '/mentoring-files'
+                                                ? suspense(<MentoringCommonWorkspaceApp page="files" />)
+                                                : pathname === '/mentoring-meeting'
+                                                  ? suspense(<MentoringCommonWorkspaceApp page="meeting" />)
+                                                  : pathname === '/mentoring-live-meeting'
+                                                    ? suspense(<MentoringCommonWorkspaceApp page="live-meeting" />)
+                                                    : pathname === '/mentoring-erd'
+                                                      ? suspense(<MentoringCommonWorkspaceApp page="erd" />)
                                     : pathname === '/dev-showcase'
                                       ? suspense(<DevShowcaseApp />)
                                       : pathname === '/project-create'

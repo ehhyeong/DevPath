@@ -16,6 +16,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -60,5 +62,15 @@ public class LearnerDashboardController {
   public ApiResponse<DashboardGrowthRecommendationResponse> getGrowthRecommendation(
       @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId) {
     return ApiResponse.ok(dashboardService.getGrowthRecommendation(requireUserId(learnerId)));
+  }
+
+  @PostMapping("/growth-recommendation/nodes/{nodeId}/add-to-roadmap")
+  @Operation(summary = "AI ?깆옣 異붿쿇 ?몃뱶 異붽?", description = "AI媛 異붿쿇??濡쒕뱶留??몃뱶瑜??ъ슜??而ㅼ뒪? 濡쒕뱶留듭뿉 異붽??⑸땲??")
+  public ApiResponse<DashboardGrowthRecommendationResponse.AddNodeResponse>
+      addGrowthRecommendationNode(
+          @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId,
+          @PathVariable Long nodeId) {
+    return ApiResponse.ok(
+        dashboardService.addGrowthRecommendationNode(requireUserId(learnerId), nodeId));
   }
 }

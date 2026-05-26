@@ -55,11 +55,13 @@ import type {
   CertificateDetail,
   CertificateDownloadHistoryDetail,
   CertificatePdfDetail,
+  CommunityComment,
   DashboardMentoring,
   DashboardStudyGroup,
   DashboardSummary,
   Enrollment,
   GrowthRecommendation,
+  GrowthRecommendationAddResult,
   HeatmapEntry,
   LearningHistoryDetail,
   LearningHistorySummary,
@@ -73,6 +75,7 @@ import type {
   UserPasswordChangeRequest,
   UserProfile,
   UserProfileUpdateRequest,
+  WorkspaceHubProject,
   WishlistCourse,
 } from '../types/learner'
 import { expireStoredAuthSession, refreshStoredAuthSession } from './auth-session'
@@ -460,6 +463,23 @@ export const dashboardApi = {
       { auth: true },
     )
   },
+  addGrowthRecommendationNode(nodeId: number) {
+    return request<GrowthRecommendationAddResult>(
+      `/api/me/dashboard/growth-recommendation/nodes/${nodeId}/add-to-roadmap`,
+      { method: 'POST' },
+      { auth: true },
+    )
+  },
+}
+
+export const workspaceHubApi = {
+  getProjects(signal?: AbortSignal) {
+    return request<WorkspaceHubProject[]>(
+      '/api/workspaces/hub/projects',
+      { method: 'GET', signal },
+      { auth: true },
+    )
+  },
 }
 
 export const enrollmentApi = {
@@ -751,6 +771,13 @@ export const communityApi = {
   ) {
     return request<PostPage>(
       `/api/posts${buildQueryString(params)}`,
+      { method: 'GET', signal },
+      { auth: false },
+    )
+  },
+  getComments(postId: number, signal?: AbortSignal) {
+    return request<CommunityComment[]>(
+      `/api/posts/${postId}/comments`,
       { method: 'GET', signal },
       { auth: false },
     )

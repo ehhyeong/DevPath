@@ -3906,7 +3906,7 @@ function installGlobalActions() {
         }
       } finally {
         clearStoredAuthSession()
-        window.location.replace('/home')
+        window.location.replace('/home?auth=login')
       }
     })
   }

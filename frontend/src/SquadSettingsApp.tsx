@@ -4,6 +4,7 @@ import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
+import { createSquadNotification, squadActorName } from './squad-notifications'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
@@ -113,7 +114,7 @@ function createForm(settings: WorkspaceSettings | null): SettingsForm {
 }
 
 function memberName(member: WorkspaceMember) {
-  return member.learnerName?.trim() || `팀원 #${member.learnerId}`
+  return member.learnerName?.trim() || '팀원'
 }
 
 function formatDate(value?: string | null) {
@@ -295,6 +296,14 @@ export default function SquadSettingsApp() {
     setAuthView(null)
   }
 
+  function notifySettingsChange(message: string) {
+    void createSquadNotification(workspaceId, {
+      pageKey: 'squad-settings',
+      message: `${squadActorName(session?.name)}님이 ${message}`,
+      targetPath: '/squad-settings',
+    })
+  }
+
   async function saveGeneral(event: FormEvent) {
     event.preventDefault()
 
@@ -325,6 +334,7 @@ export default function SquadSettingsApp() {
 
       setSettings(updated)
       setForm(createForm(updated))
+      notifySettingsChange(`스쿼드 설정을 "${updated.name}"로 수정했습니다.`)
       showAuthToast('스쿼드 설정이 저장되었습니다.')
     } catch (saveError) {
       const message = saveError instanceof Error ? saveError.message : '스쿼드 설정을 저장하지 못했습니다.'
@@ -360,6 +370,7 @@ export default function SquadSettingsApp() {
 
         return items.map((item) => (item.provider === provider ? updated : item))
       })
+      notifySettingsChange(`${provider} 연동을 ${nextActive ? '켰습니다.' : '껐습니다.'}`)
       showAuthToast(nextActive ? '외부 연동이 켜졌습니다.' : '외부 연동이 꺼졌습니다.')
     } catch (toggleError) {
       const message = toggleError instanceof Error ? toggleError.message : '외부 연동 상태를 바꾸지 못했습니다.'
@@ -390,6 +401,7 @@ export default function SquadSettingsApp() {
       )
       setSettings(updated)
       setForm(createForm(updated))
+      notifySettingsChange(`스쿼드를 ${archive ? '보관 처리했습니다.' : '다시 활성화했습니다.'}`)
       showAuthToast(archive ? '스쿼드가 보관되었습니다.' : '스쿼드가 다시 활성화되었습니다.')
     } catch (archiveError) {
       const message = archiveError instanceof Error ? archiveError.message : '상태를 변경하지 못했습니다.'
@@ -413,6 +425,7 @@ export default function SquadSettingsApp() {
         'required',
       )
       showAuthToast('스쿼드가 삭제되었습니다.')
+      notifySettingsChange(`스쿼드 "${settings.name}"를 삭제했습니다.`)
       window.location.replace('/workspace-hub')
     } catch (deleteError) {
       const message = deleteError instanceof Error ? deleteError.message : '스쿼드를 삭제하지 못했습니다.'
@@ -745,7 +758,6 @@ function MembersPanel({
                       {member.learnerId === currentUserId ? <span className="bg-green-50 text-brand px-1.5 py-0.5 rounded text-[9px] uppercase">나</span> : null}
                       {owner ? <span className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-[9px] uppercase">방장</span> : null}
                     </p>
-                    <p className="text-xs text-gray-500">멤버 ID {member.memberId}</p>
                   </div>
                 </div>
 

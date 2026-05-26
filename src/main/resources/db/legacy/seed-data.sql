@@ -13370,6 +13370,759 @@ WHERE NOT EXISTS (
       AND lp.lesson_id = l.lesson_id
 );
 
+-- =========================================================
+-- Mentoring common-assignment workspace reference data
+-- =========================================================
+
+INSERT INTO mentoring_posts (
+    mentor_id,
+    title,
+    content,
+    required_stacks,
+    category,
+    mentoring_type,
+    duration_weeks,
+    curriculum,
+    deadline_at,
+    current_participants,
+    max_participants,
+    view_count,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentor.user_id,
+    '대용량 트래픽 처리를 위한 커머스 서버 구축',
+    'Spring Boot, Redis, Kafka를 사용해 선착순 쿠폰 발급과 주문 흐름을 설계하고 성능 테스트까지 진행하는 공통 과제형 멘토링입니다.',
+    'Spring Boot,Redis,Kafka,PostgreSQL,JMeter',
+    'Backend',
+    'study',
+    4,
+    E'1주차: 요구사항 분석, ERD 초안 작성, API 설계\n2주차: 회원, 상품, 주문 도메인 구현\n3주차: Redis 분산락과 Kafka 이벤트 파이프라인 적용\n4주차: JMeter 부하 테스트, 병목 분석, 최종 회고',
+    CURRENT_DATE + 14,
+    2,
+    10,
+    0,
+    'OPEN',
+    FALSE,
+    TIMESTAMP '2026-05-01 10:00:00',
+    TIMESTAMP '2026-05-24 18:00:00'
+FROM users mentor
+WHERE mentor.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_posts post
+      WHERE post.title = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+        AND post.mentor_id = mentor.user_id
+        AND post.is_deleted = FALSE
+  );
+
+INSERT INTO mentoring_applications (
+    mentoring_post_id,
+    applicant_id,
+    message,
+    status,
+    reject_reason,
+    processed_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    learner.user_id,
+    '공통 과제형 멘토링 워크스페이스에서 실제 과제와 ERD 피드백을 받고 싶습니다.',
+    'APPROVED',
+    NULL,
+    TIMESTAMP '2026-05-01 10:30:00',
+    FALSE,
+    TIMESTAMP '2026-05-01 10:20:00',
+    TIMESTAMP '2026-05-01 10:30:00'
+FROM mentoring_posts post
+JOIN users learner ON learner.email IN ('learner@devpath.com', 'frontend@devpath.com')
+WHERE post.title = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND post.mentor_id = (SELECT user_id FROM users WHERE email = 'instructor@devpath.com')
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentoring_applications application
+      WHERE application.mentoring_post_id = post.mentoring_post_id
+        AND application.applicant_id = learner.user_id
+  );
+
+INSERT INTO mentorings (
+    mentoring_post_id,
+    mentor_id,
+    mentee_id,
+    status,
+    started_at,
+    ended_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    post.mentoring_post_id,
+    mentor.user_id,
+    learner.user_id,
+    'ONGOING',
+    TIMESTAMP '2026-05-01 11:00:00',
+    NULL,
+    FALSE,
+    TIMESTAMP '2026-05-01 11:00:00',
+    TIMESTAMP '2026-05-24 18:00:00'
+FROM mentoring_posts post
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+JOIN users learner ON learner.email IN ('learner@devpath.com', 'frontend@devpath.com')
+WHERE post.title = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM mentorings mentoring
+      WHERE mentoring.mentoring_post_id = post.mentoring_post_id
+        AND mentoring.mentee_id = learner.user_id
+        AND mentoring.is_deleted = FALSE
+  );
+
+INSERT INTO workspace (
+    owner_id,
+    name,
+    description,
+    type,
+    status,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    mentor.user_id,
+    '대용량 트래픽 처리를 위한 커머스 서버 구축',
+    '공통 과제형 멘토링으로 쿠폰 발급, 주문 처리, Redis 분산락, Kafka 이벤트 흐름, ERD 설계를 함께 진행합니다.',
+    'MENTORING',
+    'ACTIVE',
+    FALSE,
+    TIMESTAMP '2026-05-01 11:10:00',
+    TIMESTAMP '2026-05-24 18:00:00'
+FROM users mentor
+WHERE mentor.email = 'instructor@devpath.com'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace workspace_seed
+      WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+        AND workspace_seed.type = 'MENTORING'
+        AND workspace_seed.is_deleted = FALSE
+  );
+
+INSERT INTO workspace_member (
+    workspace_id,
+    learner_id,
+    joined_at,
+    last_active_at
+)
+SELECT
+    workspace_seed.id,
+    learner.user_id,
+    TIMESTAMP '2026-05-01 11:15:00',
+    CASE
+        WHEN learner.email = 'frontend@devpath.com' THEN TIMESTAMP '2026-05-24 21:30:00'
+        ELSE TIMESTAMP '2026-05-24 20:45:00'
+    END
+FROM workspace workspace_seed
+JOIN users learner ON learner.email IN ('learner@devpath.com', 'frontend@devpath.com')
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_member member_seed
+      WHERE member_seed.workspace_id = workspace_seed.id
+        AND member_seed.learner_id = learner.user_id
+  );
+
+INSERT INTO workspace_notice (
+    workspace_id,
+    title,
+    content,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    workspace_seed.id,
+    notice_seed.title,
+    notice_seed.content,
+    FALSE,
+    notice_seed.created_at,
+    notice_seed.created_at
+FROM workspace workspace_seed
+CROSS JOIN (
+    VALUES
+        ('3주차 과제 안내', 'Redis 분산락 적용 후 Kafka 이벤트 발행 흐름까지 커밋하고, JMeter 결과 스크린샷을 자료실에 올려주세요.', TIMESTAMP '2026-05-21 09:00:00'),
+        ('라이브 코드 리뷰 공지', '목요일 20시에 쿠폰 발급 API와 ERD 관계선을 중심으로 코드 리뷰를 진행합니다.', TIMESTAMP '2026-05-22 14:00:00'),
+        ('ERD 피드백 기준', '식별자, 외래키, 인덱스 후보, 이벤트 로그 테이블을 구분해서 설계 근거를 남겨주세요.', TIMESTAMP '2026-05-23 10:30:00')
+) AS notice_seed(title, content, created_at)
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_notice notice
+      WHERE notice.workspace_id = workspace_seed.id
+        AND notice.title = notice_seed.title
+        AND notice.is_deleted = FALSE
+  );
+
+INSERT INTO workspace_task (
+    workspace_id,
+    title,
+    description,
+    status,
+    priority,
+    assignee_id,
+    due_date,
+    created_by_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    workspace_seed.id,
+    task_seed.title,
+    task_seed.description,
+    task_seed.status,
+    task_seed.priority,
+    learner.user_id,
+    task_seed.due_date,
+    mentor.user_id,
+    FALSE,
+    task_seed.created_at,
+    task_seed.updated_at
+FROM workspace workspace_seed
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+JOIN (
+    VALUES
+        ('JMeter 부하 테스트 환경 세팅', '쿠폰 발급 API를 대상으로 100, 300, 500 동시 사용자 시나리오를 준비합니다.', 'TODO', 'MEDIUM', 'frontend@devpath.com', CURRENT_DATE + 2, TIMESTAMP '2026-05-20 09:00:00', TIMESTAMP '2026-05-22 09:00:00'),
+        ('Kafka 파티션 분배 전략 정리', '주문 이벤트 토픽의 파티션 키와 컨슈머 그룹 전략을 회의록에 정리합니다.', 'TODO', 'LOW', 'learner@devpath.com', CURRENT_DATE + 3, TIMESTAMP '2026-05-20 10:00:00', TIMESTAMP '2026-05-22 10:00:00'),
+        ('Redis 중복 발급 검증 로직 구현', 'user_id와 coupon_id 조합으로 중복 발급을 막고 테스트 케이스를 작성합니다.', 'IN_PROGRESS', 'HIGH', 'frontend@devpath.com', CURRENT_DATE + 1, TIMESTAMP '2026-05-18 10:00:00', TIMESTAMP '2026-05-24 18:30:00'),
+        ('Docker Compose 로컬 실행 스크립트 정리', 'PostgreSQL, Redis, Kafka를 한 번에 올릴 수 있도록 README 명령을 정리합니다.', 'DONE', 'MEDIUM', 'learner@devpath.com', CURRENT_DATE - 1, TIMESTAMP '2026-05-16 11:00:00', TIMESTAMP '2026-05-21 19:00:00'),
+        ('API 응답 DTO와 예외 코드 정리', '쿠폰 발급 실패, 재고 부족, 중복 요청 예외 코드를 통일합니다.', 'DONE', 'LOW', 'frontend@devpath.com', CURRENT_DATE - 2, TIMESTAMP '2026-05-15 13:00:00', TIMESTAMP '2026-05-20 20:00:00')
+) AS task_seed(title, description, status, priority, assignee_email, due_date, created_at, updated_at)
+ON TRUE
+JOIN users learner ON learner.email = task_seed.assignee_email
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_task task
+      WHERE task.workspace_id = workspace_seed.id
+        AND task.title = task_seed.title
+        AND task.is_deleted = FALSE
+  );
+
+INSERT INTO calendar_event (
+    workspace_id,
+    title,
+    description,
+    start_at,
+    end_at,
+    created_by_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    workspace_seed.id,
+    event_seed.title,
+    event_seed.description,
+    event_seed.start_at,
+    event_seed.end_at,
+    mentor.user_id,
+    FALSE,
+    event_seed.created_at,
+    event_seed.created_at
+FROM workspace workspace_seed
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+CROSS JOIN (
+    VALUES
+        ('라이브 코드 리뷰 세션', '쿠폰 발급 API, Redis 락 범위, ERD 관계선을 함께 리뷰합니다.', CURRENT_DATE + TIME '20:00:00', CURRENT_DATE + TIME '21:30:00', TIMESTAMP '2026-05-20 08:30:00'),
+        ('3주차 과제 마감', 'Redis/Kafka 적용 브랜치와 부하 테스트 결과를 제출합니다.', CURRENT_DATE + 3 + TIME '23:59:00', CURRENT_DATE + 4 + TIME '00:10:00', TIMESTAMP '2026-05-20 08:40:00'),
+        ('Redis/Kafka 피드백 미팅', '병목 지점과 이벤트 재처리 전략을 멘토와 점검합니다.', CURRENT_DATE + 5 + TIME '19:30:00', CURRENT_DATE + 5 + TIME '20:30:00', TIMESTAMP '2026-05-21 09:30:00')
+) AS event_seed(title, description, start_at, end_at, created_at)
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM calendar_event event
+      WHERE event.workspace_id = workspace_seed.id
+        AND event.title = event_seed.title
+        AND event.is_deleted = FALSE
+  );
+
+INSERT INTO workspace_file (
+    workspace_id,
+    parent_id,
+    original_file_name,
+    stored_file_name,
+    file_path,
+    file_size,
+    content_type,
+    item_type,
+    storage_provider,
+    object_key,
+    uploaded_by_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    workspace_seed.id,
+    NULL,
+    file_seed.original_file_name,
+    file_seed.stored_file_name,
+    file_seed.file_path,
+    file_seed.file_size,
+    file_seed.content_type,
+    file_seed.item_type,
+    'LOCAL',
+    file_seed.object_key,
+    uploader.user_id,
+    FALSE,
+    file_seed.created_at,
+    file_seed.created_at
+FROM workspace workspace_seed
+JOIN (
+    VALUES
+        ('3주차_Redis_Kafka_과제_가이드.pdf', 'redis-kafka-week3-guide.pdf', '/files/mentoring/common-assignment/redis-kafka-week3-guide.pdf', 1843200, 'application/pdf', 'FILE', 'mentoring/common-assignment/redis-kafka-week3-guide.pdf', 'instructor@devpath.com', TIMESTAMP '2026-05-21 09:10:00'),
+        ('ERD_초안_피드백.png', 'commerce-erd-feedback.png', '/files/mentoring/common-assignment/commerce-erd-feedback.png', 921600, 'image/png', 'FILE', 'mentoring/common-assignment/commerce-erd-feedback.png', 'instructor@devpath.com', TIMESTAMP '2026-05-22 13:40:00'),
+        ('성능테스트_체크리스트.md', 'performance-test-checklist.md', '/files/mentoring/common-assignment/performance-test-checklist.md', 32768, 'text/markdown', 'FILE', 'mentoring/common-assignment/performance-test-checklist.md', 'frontend@devpath.com', TIMESTAMP '2026-05-23 18:20:00'),
+        ('Redis 분산락 참고 링크', 'redis-lock-reference.url', 'https://redis.io/docs/latest/develop/use/patterns/distributed-locks/', 0, 'text/uri-list', 'LINK', 'https://redis.io/docs/latest/develop/use/patterns/distributed-locks/', 'instructor@devpath.com', TIMESTAMP '2026-05-24 10:00:00')
+) AS file_seed(original_file_name, stored_file_name, file_path, file_size, content_type, item_type, object_key, uploader_email, created_at)
+ON TRUE
+JOIN users uploader ON uploader.email = file_seed.uploader_email
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_file file
+      WHERE file.workspace_id = workspace_seed.id
+        AND file.original_file_name = file_seed.original_file_name
+        AND file.is_deleted = FALSE
+  );
+
+INSERT INTO qna_questions (
+    user_id,
+    template_type,
+    difficulty,
+    title,
+    content,
+    adopted_answer_id,
+    course_id,
+    lesson_id,
+    lecture_timestamp,
+    question_scope,
+    mentoring_id,
+    workspace_id,
+    qna_status,
+    view_count,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    author.user_id,
+    question_seed.template_type,
+    question_seed.difficulty,
+    question_seed.title,
+    question_seed.content,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    'WORKSPACE',
+    NULL,
+    workspace_seed.id,
+    question_seed.qna_status,
+    question_seed.view_count,
+    FALSE,
+    question_seed.created_at,
+    question_seed.updated_at
+FROM workspace workspace_seed
+JOIN (
+    VALUES
+        ('frontend@devpath.com', 'IMPLEMENTATION', 'HARD', 'Redis 쿠폰 중복 발급 테스트 방식 질문', '동시 요청이 들어올 때 같은 user_id가 같은 coupon_id를 두 번 받지 않는지 어떤 단위 테스트와 통합 테스트로 나누면 좋을까요?', 'ANSWERED', 18, TIMESTAMP '2026-05-22 19:30:00', TIMESTAMP '2026-05-23 09:30:00'),
+        ('learner@devpath.com', 'STUDY', 'MEDIUM', 'Kafka 파티션 개수 산정 기준 문의', '주문 이벤트 토픽을 만들 때 초기 파티션 개수를 트래픽 기준으로 어떻게 잡아야 하는지 궁금합니다.', 'UNANSWERED', 9, TIMESTAMP '2026-05-23 20:10:00', TIMESTAMP '2026-05-23 20:10:00'),
+        ('frontend@devpath.com', 'PROJECT', 'MEDIUM', 'JMeter 결과에서 병목 지점 해석 질문', '평균 응답 시간은 안정적인데 p95가 튀는 경우 Redis 락 대기와 DB 커넥션 풀 중 어디를 먼저 의심해야 하나요?', 'UNANSWERED', 7, TIMESTAMP '2026-05-24 16:20:00', TIMESTAMP '2026-05-24 16:20:00')
+) AS question_seed(author_email, template_type, difficulty, title, content, qna_status, view_count, created_at, updated_at)
+ON TRUE
+JOIN users author ON author.email = question_seed.author_email
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM qna_questions question
+      WHERE question.workspace_id = workspace_seed.id
+        AND question.title = question_seed.title
+        AND question.is_deleted = FALSE
+  );
+
+INSERT INTO qna_answers (
+    question_id,
+    user_id,
+    content,
+    is_adopted,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    question.question_id,
+    mentor.user_id,
+    '단위 테스트는 Redis 키 생성과 만료 정책을 분리해서 검증하고, 통합 테스트는 Testcontainers Redis 위에서 CountDownLatch로 동시 요청을 만들어 보세요. 최종 검증은 coupon_issue에 user_id, coupon_id 유니크 제약을 두고 DB 레벨까지 확인하는 흐름이 좋습니다.',
+    TRUE,
+    FALSE,
+    TIMESTAMP '2026-05-23 09:30:00',
+    TIMESTAMP '2026-05-23 09:30:00'
+FROM qna_questions question
+JOIN workspace workspace_seed ON workspace_seed.id = question.workspace_id
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND question.title = 'Redis 쿠폰 중복 발급 테스트 방식 질문'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM qna_answers answer
+      WHERE answer.question_id = question.question_id
+        AND answer.user_id = mentor.user_id
+        AND answer.is_deleted = FALSE
+  );
+
+UPDATE qna_questions question
+SET adopted_answer_id = answer.answer_id,
+    qna_status = 'ANSWERED',
+    updated_at = answer.created_at
+FROM qna_answers answer, workspace workspace_seed
+WHERE answer.question_id = question.question_id
+  AND workspace_seed.id = question.workspace_id
+  AND workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND question.title = 'Redis 쿠폰 중복 발급 테스트 방식 질문'
+  AND question.adopted_answer_id IS NULL;
+
+INSERT INTO meeting_note (
+    workspace_id,
+    title,
+    content,
+    created_by_id,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    workspace_seed.id,
+    note_seed.title,
+    note_seed.content,
+    author.user_id,
+    FALSE,
+    note_seed.created_at,
+    note_seed.created_at
+FROM workspace workspace_seed
+JOIN (
+    VALUES
+        ('2주차 라이브 멘토링 회의록', E'- 쿠폰 발급 API는 요청 검증, 재고 차감, 발급 기록 저장을 분리한다.\n- Redis 락은 쿠폰 단위로 잡고 DB 유니크 제약을 마지막 안전장치로 둔다.\n- Kafka 이벤트는 주문 생성 후 비동기 알림과 통계 집계에 사용한다.', 'instructor@devpath.com', TIMESTAMP '2026-05-16 21:10:00'),
+        ('Redis 설계 리뷰 요약', E'락 키는 coupon:{couponId}:issue 형태로 통일합니다.\nTTL은 API 타임아웃보다 조금 길게 두고, 실패 시 재시도보다 명확한 실패 응답을 먼저 반환합니다.', 'frontend@devpath.com', TIMESTAMP '2026-05-23 21:00:00')
+) AS note_seed(title, content, author_email, created_at)
+ON TRUE
+JOIN users author ON author.email = note_seed.author_email
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM meeting_note note
+      WHERE note.workspace_id = workspace_seed.id
+        AND note.title = note_seed.title
+        AND note.is_deleted = FALSE
+  );
+
+INSERT INTO workspace_erd_documents (
+    workspace_id,
+    mermaid_code,
+    schema_json,
+    version,
+    updated_by_id,
+    created_at,
+    updated_at
+)
+SELECT
+    workspace_seed.id,
+    E'erDiagram\n    USERS ||--o{ ORDERS : places\n    USERS ||--o{ COUPON_ISSUES : receives\n    PRODUCTS ||--o{ ORDER_ITEMS : included\n    ORDERS ||--|{ ORDER_ITEMS : contains\n    COUPONS ||--o{ COUPON_ISSUES : issued\n    USERS {\n        BIGINT id PK\n        VARCHAR email\n        VARCHAR name\n    }\n    PRODUCTS {\n        BIGINT id PK\n        VARCHAR name\n        INT stock\n    }\n    ORDERS {\n        BIGINT id PK\n        BIGINT user_id FK\n        VARCHAR status\n    }\n    ORDER_ITEMS {\n        BIGINT id PK\n        BIGINT order_id FK\n        BIGINT product_id FK\n        INT quantity\n    }\n    COUPONS {\n        BIGINT id PK\n        VARCHAR name\n        INT total_quantity\n    }\n    COUPON_ISSUES {\n        BIGINT id PK\n        BIGINT coupon_id FK\n        BIGINT user_id FK\n        TIMESTAMP issued_at\n    }',
+    $${
+      "tables": [
+        {"name":"USERS","x":150,"y":150,"columns":[{"name":"id","type":"BIGINT","key":"PK"},{"name":"email","type":"VARCHAR"},{"name":"name","type":"VARCHAR"}]},
+        {"name":"ORDERS","x":550,"y":150,"columns":[{"name":"id","type":"BIGINT","key":"PK"},{"name":"user_id","type":"BIGINT","key":"FK"},{"name":"status","type":"VARCHAR"},{"name":"created_at","type":"TIMESTAMP"}]},
+        {"name":"PRODUCTS","x":150,"y":390,"columns":[{"name":"id","type":"BIGINT","key":"PK"},{"name":"name","type":"VARCHAR"},{"name":"stock","type":"INT"}]},
+        {"name":"ORDER_ITEMS","x":550,"y":390,"columns":[{"name":"id","type":"BIGINT","key":"PK"},{"name":"order_id","type":"BIGINT","key":"FK"},{"name":"product_id","type":"BIGINT","key":"FK"},{"name":"quantity","type":"INT"}]},
+        {"name":"COUPONS","x":910,"y":170,"columns":[{"name":"id","type":"BIGINT","key":"PK"},{"name":"name","type":"VARCHAR"},{"name":"total_quantity","type":"INT"},{"name":"issued_count","type":"INT"}]},
+        {"name":"COUPON_ISSUES","x":910,"y":430,"columns":[{"name":"id","type":"BIGINT","key":"PK"},{"name":"coupon_id","type":"BIGINT","key":"FK"},{"name":"user_id","type":"BIGINT","key":"FK"},{"name":"issued_at","type":"TIMESTAMP"}]}
+      ],
+      "relationships": [
+        {"from":"USERS","to":"ORDERS","type":"1:N","label":"places"},
+        {"from":"ORDERS","to":"ORDER_ITEMS","type":"1:N","label":"contains"},
+        {"from":"PRODUCTS","to":"ORDER_ITEMS","type":"1:N","label":"included"},
+        {"from":"COUPONS","to":"COUPON_ISSUES","type":"1:N","label":"issued"},
+        {"from":"USERS","to":"COUPON_ISSUES","type":"1:N","label":"receives"}
+      ]
+    }$$,
+    3,
+    mentor.user_id,
+    TIMESTAMP '2026-05-18 12:00:00',
+    TIMESTAMP '2026-05-24 17:30:00'
+FROM workspace workspace_seed
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+ON CONFLICT (workspace_id) DO UPDATE
+SET mermaid_code = EXCLUDED.mermaid_code,
+    schema_json = EXCLUDED.schema_json,
+    version = EXCLUDED.version,
+    updated_by_id = EXCLUDED.updated_by_id,
+    updated_at = EXCLUDED.updated_at;
+
+INSERT INTO workspace_erd_versions (
+    workspace_id,
+    version,
+    mermaid_code,
+    schema_json,
+    summary,
+    updated_by_id,
+    discussion_message_id,
+    created_at
+)
+SELECT
+    workspace_seed.id,
+    version_seed.version,
+    document_seed.mermaid_code,
+    document_seed.schema_json,
+    version_seed.summary,
+    mentor.user_id,
+    NULL,
+    version_seed.created_at
+FROM workspace workspace_seed
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+JOIN workspace_erd_documents document_seed ON document_seed.workspace_id = workspace_seed.id
+JOIN (
+    VALUES
+        (1, '초기 회원, 주문, 상품 테이블 초안 작성', TIMESTAMP '2026-05-18 12:00:00'),
+        (2, '쿠폰 발급 테이블과 사용자 관계 추가', TIMESTAMP '2026-05-21 15:30:00'),
+        (3, '주문 아이템 관계선과 Redis 중복 발급 검증 컬럼 정리', TIMESTAMP '2026-05-24 17:30:00')
+) AS version_seed(version, summary, created_at)
+ON TRUE
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_erd_versions version
+      WHERE version.workspace_id = workspace_seed.id
+        AND version.version = version_seed.version
+  );
+
+INSERT INTO workspace_erd_comments (
+    workspace_id,
+    target_type,
+    target_id,
+    target_label,
+    author_id,
+    body,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    workspace_seed.id,
+    comment_seed.target_type,
+    comment_seed.target_id,
+    comment_seed.target_label,
+    author.user_id,
+    comment_seed.body,
+    FALSE,
+    comment_seed.created_at,
+    comment_seed.created_at
+FROM workspace workspace_seed
+JOIN (
+    VALUES
+        ('TABLE', 'COUPON_ISSUES', 'COUPON_ISSUES', 'coupon_id와 user_id 조합에 유니크 제약을 추가하면 중복 발급 방어가 명확해집니다.', 'instructor@devpath.com', TIMESTAMP '2026-05-22 11:00:00'),
+        ('COLUMN', 'ORDERS.status', 'ORDERS.status', '상태 값은 enum 후보를 문서에 남기고 결제 실패 흐름까지 포함해 주세요.', 'frontend@devpath.com', TIMESTAMP '2026-05-24 18:00:00')
+) AS comment_seed(target_type, target_id, target_label, body, author_email, created_at)
+ON TRUE
+JOIN users author ON author.email = comment_seed.author_email
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM workspace_erd_comments comment
+      WHERE comment.workspace_id = workspace_seed.id
+        AND comment.target_id = comment_seed.target_id
+        AND comment.body = comment_seed.body
+        AND comment.is_deleted = FALSE
+  );
+
+INSERT INTO voice_channels (
+    workspace_id,
+    creator_id,
+    name,
+    description,
+    current_session_started_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    workspace_seed.id,
+    mentor.user_id,
+    '목요 라이브 멘토링 룸',
+    '3주차 Kafka 파티션 분배 전략과 Redis 쿠폰 발급 로직을 리뷰하는 라이브 룸입니다.',
+    CURRENT_DATE + TIME '20:00:00',
+    FALSE,
+    TIMESTAMP '2026-05-20 12:00:00',
+    TIMESTAMP '2026-05-24 19:50:00'
+FROM workspace workspace_seed
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND workspace_seed.type = 'MENTORING'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM voice_channels channel
+      WHERE channel.workspace_id = workspace_seed.id
+        AND channel.name = '목요 라이브 멘토링 룸'
+        AND channel.is_deleted = FALSE
+  );
+
+INSERT INTO voice_participants (
+    voice_channel_id,
+    user_id,
+    active,
+    muted,
+    hand_raised,
+    speaking,
+    joined_at,
+    left_at,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    channel.voice_channel_id,
+    participant_user.user_id,
+    TRUE,
+    participant_seed.muted,
+    participant_seed.hand_raised,
+    participant_seed.speaking,
+    CURRENT_DATE + participant_seed.joined_time,
+    NULL,
+    FALSE,
+    CURRENT_DATE + participant_seed.joined_time,
+    CURRENT_DATE + participant_seed.joined_time
+FROM voice_channels channel
+JOIN workspace workspace_seed ON workspace_seed.id = channel.workspace_id
+JOIN (
+    VALUES
+        ('instructor@devpath.com', FALSE, FALSE, TRUE, TIME '19:58:00'),
+        ('frontend@devpath.com', TRUE, FALSE, FALSE, TIME '20:01:00'),
+        ('learner@devpath.com', FALSE, TRUE, FALSE, TIME '20:02:00')
+) AS participant_seed(email, muted, hand_raised, speaking, joined_time)
+ON TRUE
+JOIN users participant_user ON participant_user.email = participant_seed.email
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND channel.name = '목요 라이브 멘토링 룸'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM voice_participants participant
+      WHERE participant.voice_channel_id = channel.voice_channel_id
+        AND participant.user_id = participant_user.user_id
+        AND participant.is_deleted = FALSE
+  );
+
+INSERT INTO voice_chat_messages (
+    voice_channel_id,
+    sender_id,
+    content,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    channel.voice_channel_id,
+    sender.user_id,
+    chat_seed.content,
+    FALSE,
+    CURRENT_DATE + chat_seed.sent_time,
+    CURRENT_DATE + chat_seed.sent_time
+FROM voice_channels channel
+JOIN workspace workspace_seed ON workspace_seed.id = channel.workspace_id
+JOIN (
+    VALUES
+        ('instructor@devpath.com', '오늘은 coupon_issue 유니크 제약과 Kafka 파티션 키를 먼저 봅니다.', TIME '20:05:00'),
+        ('frontend@devpath.com', 'JMeter 결과에서 p95가 튄 부분을 같이 확인 부탁드립니다.', TIME '20:07:00'),
+        ('learner@devpath.com', 'Redis 락 TTL을 API 타임아웃보다 길게 두는 이유가 궁금합니다.', TIME '20:09:00')
+) AS chat_seed(sender_email, content, sent_time)
+ON TRUE
+JOIN users sender ON sender.email = chat_seed.sender_email
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND channel.name = '목요 라이브 멘토링 룸'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM voice_chat_messages message
+      WHERE message.voice_channel_id = channel.voice_channel_id
+        AND message.sender_id = sender.user_id
+        AND message.content = chat_seed.content
+        AND message.is_deleted = FALSE
+  );
+
+INSERT INTO voice_meeting_minutes (
+    voice_channel_id,
+    updated_by_user_id,
+    recording,
+    transcript,
+    summary,
+    is_deleted,
+    created_at,
+    updated_at
+)
+SELECT
+    channel.voice_channel_id,
+    mentor.user_id,
+    TRUE,
+    E'멘토: 오늘은 쿠폰 발급의 중복 방어와 Kafka 이벤트 흐름을 봅니다.\n멘티: p95 응답 시간이 튀는 구간은 Redis 락 대기와 DB 커넥션을 함께 확인하겠습니다.',
+    '쿠폰 발급 API는 DB 유니크 제약과 Redis 락을 함께 사용하고, 주문 이벤트는 user_id보다 order_id 기반 파티션 키를 우선 검토하기로 했습니다.',
+    FALSE,
+    CURRENT_DATE + TIME '20:12:00',
+    CURRENT_DATE + TIME '20:12:00'
+FROM voice_channels channel
+JOIN workspace workspace_seed ON workspace_seed.id = channel.workspace_id
+JOIN users mentor ON mentor.email = 'instructor@devpath.com'
+WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  AND channel.name = '목요 라이브 멘토링 룸'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM voice_meeting_minutes minutes
+      WHERE minutes.voice_channel_id = channel.voice_channel_id
+        AND minutes.is_deleted = FALSE
+  );
+
+SELECT setval(pg_get_serial_sequence('mentoring_posts', 'mentoring_post_id'), COALESCE((SELECT MAX(mentoring_post_id) FROM mentoring_posts), 1));
+SELECT setval(pg_get_serial_sequence('mentoring_applications', 'mentoring_application_id'), COALESCE((SELECT MAX(mentoring_application_id) FROM mentoring_applications), 1));
+SELECT setval(pg_get_serial_sequence('mentorings', 'mentoring_id'), COALESCE((SELECT MAX(mentoring_id) FROM mentorings), 1));
+SELECT setval(pg_get_serial_sequence('workspace', 'id'), COALESCE((SELECT MAX(id) FROM workspace), 1));
+SELECT setval(pg_get_serial_sequence('workspace_member', 'id'), COALESCE((SELECT MAX(id) FROM workspace_member), 1));
+SELECT setval(pg_get_serial_sequence('workspace_notice', 'id'), COALESCE((SELECT MAX(id) FROM workspace_notice), 1));
+SELECT setval(pg_get_serial_sequence('workspace_task', 'id'), COALESCE((SELECT MAX(id) FROM workspace_task), 1));
+SELECT setval(pg_get_serial_sequence('calendar_event', 'id'), COALESCE((SELECT MAX(id) FROM calendar_event), 1));
+SELECT setval(pg_get_serial_sequence('workspace_file', 'id'), COALESCE((SELECT MAX(id) FROM workspace_file), 1));
+SELECT setval(pg_get_serial_sequence('qna_questions', 'question_id'), COALESCE((SELECT MAX(question_id) FROM qna_questions), 1));
+SELECT setval(pg_get_serial_sequence('qna_answers', 'answer_id'), COALESCE((SELECT MAX(answer_id) FROM qna_answers), 1));
+SELECT setval(pg_get_serial_sequence('meeting_note', 'id'), COALESCE((SELECT MAX(id) FROM meeting_note), 1));
+SELECT setval(pg_get_serial_sequence('workspace_erd_versions', 'version_id'), COALESCE((SELECT MAX(version_id) FROM workspace_erd_versions), 1));
+SELECT setval(pg_get_serial_sequence('workspace_erd_comments', 'comment_id'), COALESCE((SELECT MAX(comment_id) FROM workspace_erd_comments), 1));
+SELECT setval(pg_get_serial_sequence('voice_channels', 'voice_channel_id'), COALESCE((SELECT MAX(voice_channel_id) FROM voice_channels), 1));
+SELECT setval(pg_get_serial_sequence('voice_participants', 'voice_participant_id'), COALESCE((SELECT MAX(voice_participant_id) FROM voice_participants), 1));
+SELECT setval(pg_get_serial_sequence('voice_chat_messages', 'voice_chat_message_id'), COALESCE((SELECT MAX(voice_chat_message_id) FROM voice_chat_messages), 1));
+SELECT setval(pg_get_serial_sequence('voice_meeting_minutes', 'voice_meeting_minutes_id'), COALESCE((SELECT MAX(voice_meeting_minutes_id) FROM voice_meeting_minutes), 1));
+
 INSERT INTO quiz_attempts (
     quiz_id, learner_id, score, max_score, started_at, completed_at,
     time_spent_seconds, is_passed, attempt_number, is_deleted, created_at, updated_at
@@ -18400,3 +19153,176 @@ SELECT setval(pg_get_serial_sequence('workspace_notice_read', 'id'), COALESCE((S
 SELECT setval(pg_get_serial_sequence('external_integration', 'id'), COALESCE((SELECT MAX(id) FROM external_integration), 1));
 SELECT setval(pg_get_serial_sequence('recommendation_settings', 'id'), COALESCE((SELECT MAX(id) FROM recommendation_settings), 1));
 SELECT setval(pg_get_serial_sequence('experiment_results', 'id'), COALESCE((SELECT MAX(id) FROM experiment_results), 1));
+
+-- =========================================================
+-- Dashboard recent learning seed for frontend@devpath.com
+-- =========================================================
+
+INSERT INTO course_sections (course_id, title, description, sort_order, is_published)
+WITH react_dashboard_sections(section_title, section_description, sort_order) AS (
+    VALUES
+        ('Dashboard Foundations', 'Layout, card hierarchy, and data loading patterns for dashboard screens.', 1),
+        ('Interactive Widgets', 'Charts, filters, and optimistic UI feedback for production dashboards.', 2)
+)
+SELECT
+    c.course_id,
+    seed.section_title,
+    seed.section_description,
+    seed.sort_order,
+    TRUE
+FROM react_dashboard_sections seed
+JOIN courses c ON c.title = 'React Dashboard Sprint'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM course_sections cs
+    WHERE cs.course_id = c.course_id
+      AND cs.sort_order = seed.sort_order
+);
+
+INSERT INTO lessons (
+    section_id,
+    title,
+    description,
+    lesson_type,
+    video_url,
+    video_asset_key,
+    video_provider,
+    thumbnail_url,
+    duration_seconds,
+    is_preview,
+    is_published,
+    sort_order
+)
+WITH react_dashboard_lessons(
+    section_order,
+    lesson_title,
+    lesson_description,
+    video_url,
+    video_asset_key,
+    duration_seconds,
+    sort_order,
+    is_preview
+) AS (
+    VALUES
+        (1, 'Dashboard layout and data cards', 'Build a dashboard shell with responsive metric cards and loading states.', '/samples/sample-intro.mp4', 'assets/courses/react-dashboard/layout-data-cards.mp4', 960, 1, TRUE),
+        (1, 'Enrollment API data binding', 'Connect enrollment data to recent-learning and progress widgets without hard-coded fallbacks.', '/samples/devpath_ocr.mp4', 'assets/courses/react-dashboard/enrollment-api-binding.mp4', 1020, 2, FALSE),
+        (2, 'Chart filters and empty states', 'Design chart filters, empty states, and error states that keep dashboard data honest.', '/samples/devpath_ocr_ver2.mp4', 'assets/courses/react-dashboard/chart-filters-empty-states.mp4', 1140, 1, FALSE)
+)
+SELECT
+    cs.section_id,
+    seed.lesson_title,
+    seed.lesson_description,
+    'VIDEO',
+    seed.video_url,
+    seed.video_asset_key,
+    'local',
+    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=60',
+    seed.duration_seconds,
+    seed.is_preview,
+    TRUE,
+    seed.sort_order
+FROM react_dashboard_lessons seed
+JOIN courses c ON c.title = 'React Dashboard Sprint'
+JOIN course_sections cs ON cs.course_id = c.course_id
+                       AND cs.sort_order = seed.section_order
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM lessons l
+    WHERE l.section_id = cs.section_id
+      AND l.sort_order = seed.sort_order
+);
+
+INSERT INTO course_enrollments (
+    user_id,
+    course_id,
+    status,
+    enrolled_at,
+    completed_at,
+    progress_percentage,
+    last_accessed_at
+)
+WITH frontend_dashboard_enrollment_seed(
+    learner_email,
+    course_title,
+    status,
+    enrolled_at,
+    completed_at,
+    progress_percentage,
+    last_accessed_at
+) AS (
+    VALUES
+        ('frontend@devpath.com', 'Spring Boot Intro', 'ACTIVE', TIMESTAMP '2026-05-18 09:00:00', CAST(NULL AS TIMESTAMP), 42, TIMESTAMP '2026-05-24 20:15:00'),
+        ('frontend@devpath.com', 'React Dashboard Sprint', 'ACTIVE', TIMESTAMP '2026-05-20 09:00:00', CAST(NULL AS TIMESTAMP), 64, TIMESTAMP '2026-05-24 21:30:00')
+)
+SELECT
+    u.user_id,
+    c.course_id,
+    seed.status,
+    seed.enrolled_at,
+    seed.completed_at,
+    seed.progress_percentage,
+    seed.last_accessed_at
+FROM frontend_dashboard_enrollment_seed seed
+JOIN users u ON u.email = seed.learner_email
+JOIN courses c ON c.title = seed.course_title
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM course_enrollments ce
+    WHERE ce.user_id = u.user_id
+      AND ce.course_id = c.course_id
+);
+
+INSERT INTO lesson_progress (
+    user_id,
+    lesson_id,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at,
+    created_at,
+    updated_at
+)
+WITH frontend_dashboard_progress_seed(
+    learner_email,
+    course_title,
+    section_order,
+    lesson_order,
+    progress_percent,
+    progress_seconds,
+    default_playback_rate,
+    is_pip_enabled,
+    is_completed,
+    last_watched_at
+) AS (
+    VALUES
+        ('frontend@devpath.com', 'Spring Boot Intro', 1, 1, 100, 780, 1.25, TRUE, TRUE, TIMESTAMP '2026-05-22 20:15:00'),
+        ('frontend@devpath.com', 'Spring Boot Intro', 1, 2, 42, 386, 1.25, FALSE, FALSE, TIMESTAMP '2026-05-24 20:15:00'),
+        ('frontend@devpath.com', 'React Dashboard Sprint', 1, 1, 100, 960, 1.25, TRUE, TRUE, TIMESTAMP '2026-05-23 21:00:00'),
+        ('frontend@devpath.com', 'React Dashboard Sprint', 1, 2, 64, 653, 1.25, FALSE, FALSE, TIMESTAMP '2026-05-24 21:30:00')
+)
+SELECT
+    u.user_id,
+    l.lesson_id,
+    seed.progress_percent,
+    seed.progress_seconds,
+    seed.default_playback_rate,
+    seed.is_pip_enabled,
+    seed.is_completed,
+    seed.last_watched_at,
+    seed.last_watched_at,
+    seed.last_watched_at
+FROM frontend_dashboard_progress_seed seed
+JOIN users u ON u.email = seed.learner_email
+JOIN courses c ON c.title = seed.course_title
+JOIN course_sections cs ON cs.course_id = c.course_id
+                       AND cs.sort_order = seed.section_order
+JOIN lessons l ON l.section_id = cs.section_id
+              AND l.sort_order = seed.lesson_order
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM lesson_progress lp
+    WHERE lp.user_id = u.user_id
+      AND lp.lesson_id = l.lesson_id
+);

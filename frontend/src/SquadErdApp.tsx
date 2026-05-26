@@ -4,6 +4,7 @@ import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
+import { createSquadNotification, squadActorName } from './squad-notifications'
 
 type WorkspaceMember = {
   memberId: number
@@ -959,6 +960,14 @@ export default function SquadErdApp() {
     setAuthView('login')
   }
 
+  function notifyErdChange(message: string) {
+    void createSquadNotification(workspaceId, {
+      pageKey: 'squad-erd',
+      message: `${squadActorName(session?.name)}님이 ${message}`,
+      targetPath: '/squad-erd',
+    })
+  }
+
   function storeCurrentDraft(code: string) {
     if (!workspaceId) {
       return
@@ -1041,6 +1050,7 @@ export default function SquadErdApp() {
       setMembers(saved.members ?? members)
       await Promise.all([refreshVersions(true), refreshMessages(true)])
       setSavedOpen(true)
+      notifyErdChange(`ERD 문서를 저장했습니다. 테이블 ${schema.tables.length}개, 관계 ${schema.relationships.length}개.`)
       window.setTimeout(() => setSavedOpen(false), 1800)
     } catch (saveError) {
       const message = saveError instanceof Error ? saveError.message : 'ERD를 저장하지 못했습니다.'
@@ -1078,6 +1088,7 @@ export default function SquadErdApp() {
     }
 
     syncSchema(EMPTY_SCHEMA)
+    notifyErdChange('ERD 초안을 초기화했습니다.')
   }
 
   function addTable() {
@@ -1092,6 +1103,7 @@ export default function SquadErdApp() {
         },
       ],
     })
+    notifyErdChange('ERD에 새 테이블을 추가했습니다.')
   }
 
   function updateTableName(index: number, value: string) {
@@ -1122,9 +1134,11 @@ export default function SquadErdApp() {
         (relationship) => relationship.from !== table.name && relationship.to !== table.name,
       ),
     })
+    notifyErdChange(`ERD 테이블 "${table.name}"을 삭제했습니다.`)
   }
 
   function addColumn(tableIndex: number) {
+    const tableName = schema.tables[tableIndex]?.name ?? '테이블'
     syncSchema({
       ...schema,
       tables: schema.tables.map((table, index) =>
@@ -1136,6 +1150,7 @@ export default function SquadErdApp() {
           : table,
       ),
     })
+    notifyErdChange(`ERD 테이블 "${tableName}"에 컬럼을 추가했습니다.`)
   }
 
   function updateColumn(tableIndex: number, columnIndex: number, patch: Partial<ErdColumn>) {
@@ -1209,6 +1224,9 @@ export default function SquadErdApp() {
             )
           : schema.relationships,
     })
+    if (table && column) {
+      notifyErdChange(`ERD 테이블 "${table.name}"에서 컬럼 "${column.name}"을 삭제했습니다.`)
+    }
   }
 
   function openRelationModal() {
@@ -1299,13 +1317,18 @@ export default function SquadErdApp() {
       ],
     })
     setRelationModalOpen(false)
+    notifyErdChange(`ERD 관계 "${relationForm.from} -> ${relationForm.to}"를 추가했습니다.`)
   }
 
   function deleteRelationship(relationshipId: string) {
+    const relationship = schema.relationships.find((item) => item.id === relationshipId)
     syncSchema({
       ...schema,
       relationships: schema.relationships.filter((relationship) => relationship.id !== relationshipId),
     })
+    if (relationship) {
+      notifyErdChange(`ERD 관계 "${relationship.from} -> ${relationship.to}"를 삭제했습니다.`)
+    }
   }
 
   function importSql() {
@@ -1318,6 +1341,7 @@ export default function SquadErdApp() {
     syncSchema(nextSchema)
     setSqlImportOpen(false)
     setSqlImportText('')
+    notifyErdChange(`SQL 가져오기로 ERD 테이블 ${nextSchema.tables.length}개를 생성했습니다.`)
     showAuthToast({ message: 'SQL에서 ERD를 가져왔습니다.', durationMs: 1600 })
   }
 
@@ -1424,6 +1448,7 @@ export default function SquadErdApp() {
       )
       setComments((current) => [...current, created])
       setCommentInput('')
+      notifyErdChange(`ERD ${target.targetLabel}에 댓글을 남겼습니다.`)
     } catch (createError) {
       const message = createError instanceof Error ? createError.message : 'ERD 코멘트를 저장하지 못했습니다.'
       showAuthToast({ message, variant: 'error', durationMs: 2200 })
@@ -1435,6 +1460,8 @@ export default function SquadErdApp() {
       return
     }
 
+    const comment = comments.find((item) => item.commentId === commentId)
+
     try {
       await projectApiRequest<void>(
         `/api/workspaces/${workspaceId}/erd/comments/${commentId}`,
@@ -1442,6 +1469,7 @@ export default function SquadErdApp() {
         'required',
       )
       setComments((current) => current.filter((comment) => comment.commentId !== commentId))
+      notifyErdChange(`ERD ${comment?.targetLabel ?? '댓글'} 댓글을 삭제했습니다.`)
     } catch (deleteError) {
       const message = deleteError instanceof Error ? deleteError.message : 'ERD 코멘트를 삭제하지 못했습니다.'
       showAuthToast({ message, variant: 'error', durationMs: 2200 })
@@ -1465,6 +1493,7 @@ export default function SquadErdApp() {
       )
       setMessages((current) => [...current, created])
       setMessageInput('')
+      notifyErdChange('ERD 채팅에 메시지를 보냈습니다.')
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : '메시지를 보내지 못했습니다.'
       showAuthToast({ message, variant: 'error', durationMs: 2200 })
