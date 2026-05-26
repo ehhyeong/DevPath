@@ -890,9 +890,10 @@ function Sidebar({
   const session = readStoredAuthSession()
   const currentMember = dashboard?.members.find((member) => member.learnerId === session?.userId) ?? dashboard?.members[0]
   const currentMemberPosition = currentMember ? memberAssignedPosition(currentMember, tasks) ?? fallbackMemberPosition(0) : fallbackMemberPosition(0)
+  const [sidebarPinned, setSidebarPinned] = useState(false)
 
   return (
-    <aside className="team-ws-sidebar group z-50 flex w-20 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl transition-all duration-300 ease-in-out hover:w-64">
+    <aside className={`${sidebarPinned ? 'pinned ' : ''}team-ws-sidebar group z-50 flex w-20 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl transition-all duration-300 ease-in-out hover:w-64`}>
       <div className="flex h-20 shrink-0 cursor-pointer items-center border-b border-gray-100 px-5 transition hover:bg-gray-50">
         <a
           href="/workspace-hub"
@@ -905,6 +906,14 @@ function Sidebar({
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Team Workspace</p>
           <p className="w-36 truncate font-bold text-gray-900">{projectName}</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setSidebarPinned((current) => !current)}
+          className="team-ws-pin-button ml-2 flex h-7 w-7 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-team"
+          title={sidebarPinned ? '사이드바 고정 해제' : '사이드바 고정'}
+        >
+          <i className={sidebarPinned ? 'fas fa-thumbtack' : 'fas fa-thumbtack rotate-45'}></i>
+        </button>
       </div>
 
       <nav className="custom-scrollbar mt-4 flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3">

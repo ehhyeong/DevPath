@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
+import SquadWorkspaceAside from './components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
@@ -3920,93 +3921,19 @@ export default function SquadMeetingApp() {
 
   return (
     <div className="squad-dashboard-page squad-meeting-page flex h-screen overflow-hidden text-gray-800">
-      <aside className="w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-        <a
-          href="/workspace-hub"
-          onClick={(event) => handleJoinedNavigation(event, '/workspace-hub')}
-          className="h-20 flex items-center px-5 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 shrink-0"
-        >
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md">
-            <i className="fas fa-arrow-left"></i>
-          </div>
-          <div className="sidebar-text flex flex-col justify-center">
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">목록으로 돌아가기</p>
-            <p className="font-extrabold text-gray-900 truncate w-36 leading-tight">{projectName}</p>
-          </div>
-        </a>
+      <SquadWorkspaceAside
+        activePage="meeting"
+        workspaceId={workspaceId}
+        projectName={projectName}
+        onNavigate={(event, href) => {
+          if (href === navHref('/squad-meeting', workspaceId) && isJoined) {
+            event.preventDefault()
+            return
+          }
 
-        <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
-          <a
-            href={navHref('/squad-dashboard', workspaceId)}
-            onClick={(event) => handleJoinedNavigation(event, navHref('/squad-dashboard', workspaceId))}
-            className="nav-item"
-          >
-            <i className="fas fa-chart-pie w-6 text-center text-lg"></i>
-            <span className="sidebar-text">대시보드</span>
-          </a>
-          <a
-            href={navHref('/squad-workspace', workspaceId)}
-            onClick={(event) => handleJoinedNavigation(event, navHref('/squad-workspace', workspaceId))}
-            className="nav-item"
-          >
-            <i className="fas fa-columns w-6 text-center text-lg"></i>
-            <span className="sidebar-text">작업 현황판</span>
-          </a>
-          <a
-            href={navHref('/squad-review', workspaceId)}
-            onClick={(event) => handleJoinedNavigation(event, navHref('/squad-review', workspaceId))}
-            className="nav-item"
-          >
-            <i className="fas fa-code-branch w-6 text-center text-lg"></i>
-            <span className="sidebar-text flex-1">코드 피드백</span>
-          </a>
-          <a
-            href={navHref('/squad-erd', workspaceId)}
-            onClick={(event) => handleJoinedNavigation(event, navHref('/squad-erd', workspaceId))}
-            className="nav-item"
-          >
-            <i className="fas fa-project-diagram w-6 text-center text-lg"></i>
-            <span className="sidebar-text">ERD 설계</span>
-          </a>
-          <a
-            href={navHref('/squad-schedule', workspaceId)}
-            onClick={(event) => handleJoinedNavigation(event, navHref('/squad-schedule', workspaceId))}
-            className="nav-item"
-          >
-            <i className="fas fa-calendar-alt w-6 text-center text-lg"></i>
-            <span className="sidebar-text">일정 관리</span>
-          </a>
-          <a
-            href={navHref('/squad-files', workspaceId)}
-            onClick={(event) => handleJoinedNavigation(event, navHref('/squad-files', workspaceId))}
-            className="nav-item"
-          >
-            <i className="fas fa-folder-open w-6 text-center text-lg"></i>
-            <span className="sidebar-text">팀 자료실</span>
-          </a>
-          <a
-            href={navHref('/squad-meeting', workspaceId)}
-            onClick={(event) => {
-              if (isJoined) {
-                event.preventDefault()
-              }
-            }}
-            className="nav-item active"
-          >
-            <i className="fas fa-headset w-6 text-center text-lg"></i>
-            <span className="sidebar-text">음성 회의</span>
-          </a>
-          <div className="h-px bg-gray-100 my-4 mx-2"></div>
-          <a
-            href={navHref('/squad-settings', workspaceId)}
-            onClick={(event) => handleJoinedNavigation(event, navHref('/squad-settings', workspaceId))}
-            className="nav-item"
-          >
-            <i className="fas fa-cog w-6 text-center text-lg"></i>
-            <span className="sidebar-text">스쿼드 설정</span>
-          </a>
-        </nav>
-      </aside>
+          handleJoinedNavigation(event, href)
+        }}
+      />
 
       {isJoined ? renderVoiceRoom() : (
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">

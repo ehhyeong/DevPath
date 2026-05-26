@@ -78,7 +78,8 @@ public class WorkspaceHubProjectResponse {
       User mentor,
       UserProfile mentorProfile,
       CalendarEvent nextSchedule,
-      String roleLabel) {
+      String roleLabel,
+      int progressPercent) {
     String type = typeOf(workspace.getType());
     String status = statusOf(workspace.getStatus());
     String mentoringModeLabel = mentoringModeLabel(workspace);
@@ -95,7 +96,7 @@ public class WorkspaceHubProjectResponse {
         .dashboardUrl(dashboardUrl(workspace))
         .title(workspace.getName())
         .description(workspace.getDescription() == null ? "" : workspace.getDescription())
-        .progressPercent("completed".equals(status) ? 100 : defaultProgress(workspace.getType()))
+        .progressPercent(progressPercent)
         .mentoringModeLabel(mentoringModeLabel)
         .mentoringModeIcon(mentoringModeIcon(mentoringModeLabel))
         .categoryLabel(mentoring && roleLabel != null ? roleCategoryLabel(roleLabel) : mentoring ? "Mentoring" : null)
@@ -185,16 +186,6 @@ public class WorkspaceHubProjectResponse {
         || text.contains("teamproject")
         || text.contains("teamworkspace")
         || text.contains("팀워크스페이스");
-  }
-
-  private static int defaultProgress(WorkspaceType type) {
-    if (type == WorkspaceType.SOLO) {
-      return 10;
-    }
-    if (type == WorkspaceType.MENTORING) {
-      return 20;
-    }
-    return 15;
   }
 
   private static String dateText(LocalDateTime createdAt) {
