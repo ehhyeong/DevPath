@@ -4159,6 +4159,13 @@ body.squad-dashboard-body .app-viewport {
   margin-left: 0.75rem !important;
 }
 
+.squad-dashboard-page aside.pinned .sidebar-section-title {
+  opacity: 1 !important;
+  height: auto !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
 .squad-dashboard-page aside:hover .squad-dashboard-review-link,
 .squad-dashboard-page aside.pinned .squad-dashboard-review-link {
   display: flex;
@@ -6793,6 +6800,8 @@ body.squad-dashboard-body .app-viewport {
 .community-editor-toolbar button:hover {
   background-color: #f3f4f6;
   color: #111827;
+}
+
 html.team-ws-dashboard-document {
   height: 100%;
   overflow: hidden;
@@ -9244,4 +9253,786 @@ body.team-ws-dashboard-body #root {
   font-size: 0.875rem !important;
   font-weight: 700 !important;
   line-height: 1.25rem !important;
+}
+
+/* Mentoring common assignment source lock */
+.mentoring-common-page {
+  background-color: #F3F4F6 !important;
+  color: #1F2937 !important;
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 16px !important;
+  line-height: 24px !important;
+}
+
+.mentoring-common-page button,
+.mentoring-common-page input,
+.mentoring-common-page select,
+.mentoring-common-page textarea {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.mentoring-common-page .text-2xl {
+  font-size: 24px !important;
+  line-height: 32px !important;
+}
+
+.mentoring-common-page .text-xl {
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
+.mentoring-common-page .text-lg {
+  font-size: 18px !important;
+  line-height: 28px !important;
+}
+
+.mentoring-common-page .text-sm,
+.mentoring-common-page button,
+.mentoring-common-page input,
+.mentoring-common-page textarea {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.mentoring-common-page .text-xs {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.mentoring-common-page .text-\[11px\] {
+  font-size: 11px !important;
+  line-height: 16px !important;
+}
+
+.mentoring-common-page .text-\[10px\] {
+  font-size: 10px !important;
+  line-height: 14px !important;
+}
+
+.mentoring-common-page .text-\[9px\] {
+  font-size: 9px !important;
+  line-height: 12px !important;
+}
+
+.mentoring-common-page .text-brand {
+  color: #00C471 !important;
+}
+
+.mentoring-common-page .bg-brand {
+  background-color: #00C471 !important;
+}
+
+.mentoring-common-page .text-mentor {
+  color: #7C3AED !important;
+}
+
+.mentoring-common-page .bg-mentor {
+  background-color: #7C3AED !important;
+}
+
+.mentoring-common-page .mentoring-common-sidebar.pinned {
+  width: 256px !important;
+}
+
+.mentoring-common-page .mentoring-common-sidebar.pinned .mentoring-sidebar-text {
+  width: auto !important;
+  margin-left: 0.75rem !important;
+  opacity: 1 !important;
+}
+
+.mentoring-common-page .mentoring-common-sidebar.pinned .mentoring-sidebar-section {
+  height: auto !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+  opacity: 1 !important;
+}
+
+.mentoring-common-page .mentoring-common-sidebar.pinned .mentoring-sidebar-pin {
+  width: 28px !important;
+  margin-left: 0.5rem !important;
+  opacity: 1 !important;
+}
+
+.mentoring-common-scroll {
+  background-color: #F8F9FA !important;
+  padding: 32px !important;
+}
+
+.mentoring-common-container {
+  max-width: 1152px !important;
+  row-gap: 24px !important;
+}
+
+.mentoring-common-dashboard-page .mentoring-common-page-heading {
+  display: none !important;
+}
+
+.mentoring-dashboard-hero {
+  gap: 32px !important;
+  padding: 32px !important;
+  border: 1px solid #F3F4F6 !important;
+  border-radius: 24px !important;
+  background-color: #fff !important;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+}
+
+.mentoring-dashboard-hero .h-20.w-20 {
+  width: 80px !important;
+  height: 80px !important;
+  border-width: 4px !important;
+}
+
+.mentoring-dashboard-hero h2 {
+  color: #111827 !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  line-height: 32px !important;
+}
+
+.mentoring-dashboard-hero p {
+  color: #6B7280 !important;
+}
+
+.mentoring-dashboard-dm-button {
+  width: auto !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 16px !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 8px !important;
+  background-color: #fff !important;
+  color: #4B5563 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 16px !important;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+}
+
+.mentoring-dashboard-progress-card {
+  width: 288px !important;
+  padding: 20px !important;
+  border: 1px solid #F3F4F6 !important;
+  border-radius: 16px !important;
+  background-color: #F9FAFB !important;
+}
+
+.mentoring-dashboard-grid {
+  gap: 24px !important;
+  align-items: stretch !important;
+}
+
+.mentoring-dashboard-main-col > *,
+.mentoring-dashboard-side-col > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.mentoring-dashboard-card,
+.mentoring-dashboard-mission-card {
+  padding: 24px !important;
+  border: 1px solid #F3F4F6 !important;
+  border-radius: 16px !important;
+  background-color: #fff !important;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+}
+
+.mentoring-dashboard-card > div:first-child {
+  margin-bottom: 20px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid #F9FAFB !important;
+}
+
+.mentoring-dashboard-card > div:first-child h3 {
+  color: #111827 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 20px !important;
+}
+
+.mentoring-dashboard-notice-card > div:first-child h3,
+.mentoring-dashboard-files-card > div:first-child h3 {
+  font-size: 16px !important;
+  line-height: 24px !important;
+}
+
+.mentoring-dashboard-card-link,
+.mentoring-dashboard-files-card a.text-xs {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  color: #9CA3AF !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 16px !important;
+}
+
+.mentoring-dashboard-card-link i {
+  margin-left: 2px !important;
+  font-size: 10px !important;
+}
+
+.mentoring-dashboard-mission-card {
+  border-left: 4px solid #7C3AED !important;
+}
+
+.mentoring-dashboard-mission-card .rounded-xl.bg-gray-50 {
+  padding: 20px !important;
+  border-radius: 12px !important;
+  background-color: #F9FAFB !important;
+}
+
+.mentoring-dashboard-mission-card h3 {
+  color: #111827 !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  line-height: 28px !important;
+}
+
+.mentoring-dashboard-mission-footer {
+  margin-top: 20px !important;
+  padding-top: 20px !important;
+}
+
+.mentoring-dashboard-submit-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-width: 132px !important;
+  height: 40px !important;
+  padding: 0 24px !important;
+  border-radius: 12px !important;
+  background-color: #00C471 !important;
+  color: #fff !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 20px !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
+
+.mentoring-dashboard-inline-empty {
+  display: flex !important;
+  min-height: 136px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 16px !important;
+  text-align: center !important;
+  opacity: 0.8 !important;
+}
+
+.mentoring-dashboard-inline-empty-icon {
+  display: flex !important;
+  width: 48px !important;
+  height: 48px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 12px !important;
+  border: 1px solid #F3F4F6 !important;
+  border-radius: 9999px !important;
+  background-color: #F9FAFB !important;
+  color: #D1D5DB !important;
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
+.mentoring-dashboard-inline-empty-title {
+  margin: 0 !important;
+  color: #6B7280 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 20px !important;
+}
+
+.mentoring-dashboard-inline-empty-copy {
+  max-width: 280px !important;
+  margin: 4px 0 0 !important;
+  color: #9CA3AF !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.mentoring-dashboard-files-empty .mentoring-dashboard-inline-empty-copy {
+  width: max-content !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+}
+
+.mentoring-dashboard-inline-empty-action {
+  margin-top: 16px !important;
+}
+
+.mentoring-dashboard-outline-button,
+.mentoring-dashboard-wide-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 38px !important;
+  padding: 0 16px !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 12px !important;
+  background-color: #fff !important;
+  color: #4B5563 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 16px !important;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+}
+
+.mentoring-dashboard-wide-button {
+  width: 100% !important;
+  margin-top: 16px !important;
+  background-color: #F9FAFB !important;
+}
+
+.mentoring-dashboard-wide-button.white {
+  background-color: #fff !important;
+}
+
+.mentoring-dashboard-feedback-item,
+.mentoring-dashboard-task-item,
+.mentoring-dashboard-qna-item {
+  display: block !important;
+  padding: 16px !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 12px !important;
+  background-color: #F9FAFB !important;
+}
+
+.mentoring-dashboard-feedback-item {
+  border-color: #00C471 !important;
+  background-color: #EBFDF5 !important;
+}
+
+.mentoring-dashboard-feedback-badge {
+  display: inline-flex !important;
+  padding: 2px 8px !important;
+  border: 1px solid #D1FAE5 !important;
+  border-radius: 4px !important;
+  background-color: #fff !important;
+  color: #00C471 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 14px !important;
+}
+
+.mentoring-dashboard-count-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 22px !important;
+  padding: 0 8px !important;
+  border-radius: 9999px !important;
+  background-color: #F3F4F6 !important;
+  color: #6B7280 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 14px !important;
+}
+
+.mentoring-dashboard-count-badge.active {
+  background-color: #DCFCE7 !important;
+  color: #00C471 !important;
+}
+
+.mentoring-dashboard-task-source,
+.mentoring-dashboard-priority-badge,
+.mentoring-dashboard-qna-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  line-height: 12px !important;
+}
+
+.mentoring-dashboard-task-source {
+  border: 1px solid #EDE9FE !important;
+  background-color: #F5F3FF !important;
+  color: #7C3AED !important;
+}
+
+.mentoring-dashboard-priority-badge {
+  border: 1px solid #E5E7EB !important;
+  background-color: #F3F4F6 !important;
+  color: #6B7280 !important;
+}
+
+.mentoring-dashboard-priority-badge.high {
+  border-color: #FECACA !important;
+  background-color: #FEE2E2 !important;
+  color: #DC2626 !important;
+}
+
+.mentoring-dashboard-qna-badge {
+  flex-shrink: 0 !important;
+  background-color: #E5E7EB !important;
+  color: #6B7280 !important;
+}
+
+.mentoring-dashboard-qna-badge.answered {
+  background-color: #3B82F6 !important;
+  color: #fff !important;
+}
+
+.mentoring-source-workspace {
+  gap: 0 !important;
+}
+
+.mentoring-source-workspace input::placeholder,
+.mentoring-common-qna-page input::placeholder,
+.mentoring-common-files-page input::placeholder {
+  color: #9CA3AF !important;
+  opacity: 1 !important;
+}
+
+.mentoring-source-kanban-col {
+  min-width: 320px !important;
+  border: 1px solid rgba(229, 231, 235, 0.8) !important;
+  border-radius: 16px !important;
+  background-color: rgba(243, 244, 246, 0.7) !important;
+}
+
+.mentoring-source-kanban-col article {
+  border-radius: 12px !important;
+  padding: 16px !important;
+}
+
+.mentoring-common-curriculum-page .mentoring-common-container,
+.mentoring-common-qna-page .mentoring-common-container,
+.mentoring-common-schedule-page .mentoring-common-container,
+.mentoring-common-files-page .mentoring-common-container,
+.mentoring-common-meeting-page .mentoring-common-container {
+  max-width: 1152px !important;
+}
+
+.mentoring-common-workspace-page .mentoring-common-container {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+}
+
+.mentoring-common-erd-page .mentoring-common-scroll {
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.mentoring-common-erd-page .mentoring-common-container {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  row-gap: 0 !important;
+}
+
+.mentoring-common-erd-page .erd-column-list {
+  gap: 4px !important;
+}
+
+.mentoring-common-erd-page .erd-column-list > * + * {
+  margin-top: 4px !important;
+}
+
+.mentoring-common-erd-page .erd-column-editor {
+  display: grid !important;
+  grid-template-columns: 14px minmax(0, 1fr) 22px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  border-radius: 10px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.mentoring-common-erd-page .erd-column-main {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.mentoring-common-erd-page .erd-column-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 86px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.mentoring-common-erd-page .erd-column-name-input {
+  flex: 1 1 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: 26px !important;
+  padding: 4px 6px !important;
+  border-radius: 4px !important;
+  box-sizing: border-box !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.mentoring-common-erd-page .erd-column-type-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  flex: 0 0 86px !important;
+  width: 86px !important;
+  min-width: 0 !important;
+  max-width: 86px !important;
+  height: 26px !important;
+  padding: 4px 18px 4px 6px !important;
+  border-radius: 4px !important;
+  box-sizing: border-box !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+  background-position: right 5px center !important;
+  background-repeat: no-repeat !important;
+  background-size: 12px 12px !important;
+  font-size: 10px !important;
+  line-height: 14px !important;
+}
+
+.mentoring-common-erd-page .erd-column-flags {
+  gap: 4px !important;
+  padding-left: 0 !important;
+}
+
+.mentoring-common-erd-page .erd-column-flag-label {
+  height: 22px !important;
+  min-width: 28px !important;
+  gap: 4px !important;
+  padding: 0 6px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  box-sizing: border-box !important;
+  font-size: 9px !important;
+  line-height: 18px !important;
+  font-weight: 800 !important;
+}
+
+.mentoring-common-erd-page .erd-column-flag-label input {
+  width: 12px !important;
+  height: 12px !important;
+  margin: 0 !important;
+}
+
+.mentoring-common-erd-page .erd-column-delete-button {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  padding: 0 !important;
+  margin-top: 2px !important;
+  border-radius: 6px !important;
+  line-height: 1 !important;
+}
+
+.mentoring-common-erd-page .connection-line {
+  fill: none !important;
+  stroke: #9ca3af !important;
+  stroke-width: 2.5 !important;
+  cursor: pointer !important;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.08)) !important;
+  transition:
+    filter 0.2s ease,
+    stroke 0.2s ease,
+    stroke-width 0.2s ease !important;
+}
+
+.mentoring-common-erd-page .connection-line:hover {
+  stroke: #00c471 !important;
+  stroke-width: 3 !important;
+}
+
+.mentoring-common-erd-page .connection-line.selected,
+.mentoring-common-erd-page .connection-line.selected:hover {
+  stroke: #00c471 !important;
+  stroke-width: 3.5 !important;
+  filter: drop-shadow(0 0 5px rgba(0, 196, 113, 0.28)) !important;
+}
+
+.mentoring-common-erd-page .erd-anchor-dot {
+  position: absolute !important;
+  width: 10px !important;
+  height: 10px !important;
+  border: 2px solid #9ca3af !important;
+  border-radius: 9999px !important;
+  background: #ffffff !important;
+  transform: translate(-50%, -50%) !important;
+  pointer-events: none !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14) !important;
+}
+
+.mentoring-common-erd-page .erd-anchor-dot.selected {
+  border-color: #00c471 !important;
+  box-shadow: 0 0 0 4px rgba(0, 196, 113, 0.14) !important;
+}
+
+.mentoring-common-erd-page .erd-cardinality-badge {
+  position: absolute !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
+  transform: translate(-50%, -50%) !important;
+  pointer-events: none !important;
+  font-family: Pretendard, Inter, system-ui, sans-serif !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.14) !important;
+}
+
+.mentoring-common-erd-page .erd-cardinality-badge.one {
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: #374151 !important;
+}
+
+.mentoring-common-erd-page .erd-cardinality-badge.many {
+  border: 1px solid #111827 !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+}
+
+.mentoring-common-erd-page .erd-cardinality-badge.selected {
+  border-color: #00c471 !important;
+  box-shadow: 0 0 0 4px rgba(0, 196, 113, 0.16), 0 4px 10px rgba(15, 23, 42, 0.14) !important;
+}
+
+.mentoring-common-erd-page .erd-cardinality-badge.many.selected {
+  background: #00c471 !important;
+}
+
+.mentoring-common-erd-page .erd-relation-label {
+  min-width: 42px !important;
+  height: 22px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+.mentoring-common-erd-page .erd-relation-label.selected {
+  border-color: #00c471 !important;
+  background: #ecfdf5 !important;
+  color: #059669 !important;
+  box-shadow: 0 0 0 4px rgba(0, 196, 113, 0.13), 0 4px 10px rgba(15, 23, 42, 0.1) !important;
+}
+
+.mentoring-common-erd-page .erd-visual-table {
+  z-index: 10 !important;
+  user-select: none !important;
+}
+
+.mentoring-common-erd-page .erd-visual-table.selected,
+.mentoring-common-erd-page .erd-visual-table.connect-source {
+  z-index: 50 !important;
+}
+
+.mentoring-common-erd-page .erd-visual-table.connect-source {
+  border-color: #3b82f6 !important;
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.16),
+    0 20px 25px -5px rgba(15, 23, 42, 0.12) !important;
+}
+
+.mentoring-common-curriculum-page .timeline-pulse {
+  animation: mentoringTimelinePulse 1.8s infinite;
+}
+
+@keyframes mentoringTimelinePulse {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.35); }
+  70% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+.mentoring-common-qna-page .qna-card {
+  border-radius: 16px !important;
+}
+
+.mentoring-source-calendar-day:nth-child(7n) {
+  border-right: 0 !important;
+}
+
+.mentoring-source-calendar-day:nth-last-child(-n + 7) {
+  border-bottom: 0 !important;
+}
+
+.mentoring-common-files-page .file-card {
+  min-height: 260px !important;
+  border-radius: 16px !important;
+}
+
+.mentoring-common-files-page .file-card h3 {
+  line-height: 20px !important;
+}
+
+@media (min-width: 1024px) {
+  .mentoring-dashboard-main-col,
+  .mentoring-dashboard-side-col {
+    display: contents !important;
+  }
+
+  .mentoring-dashboard-notice-card,
+  .mentoring-dashboard-mission-card,
+  .mentoring-dashboard-files-card {
+    grid-column: span 2 / span 2 !important;
+  }
+
+  .mentoring-dashboard-summary-card,
+  .mentoring-dashboard-live-card,
+  .mentoring-dashboard-note-card {
+    grid-column: span 1 / span 1 !important;
+  }
+
+  .mentoring-dashboard-notice-card {
+    order: 0 !important;
+  }
+
+  .mentoring-dashboard-summary-card {
+    order: 1 !important;
+  }
+
+  .mentoring-dashboard-mission-card {
+    order: 2 !important;
+  }
+
+  .mentoring-dashboard-live-card {
+    order: 3 !important;
+  }
+
+  .mentoring-dashboard-files-card {
+    order: 4 !important;
+  }
+
+  .mentoring-dashboard-note-card {
+    order: 5 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .mentoring-common-scroll {
+    padding: 20px !important;
+  }
+
+  .mentoring-dashboard-hero {
+    padding: 24px !important;
+  }
+
+  .mentoring-dashboard-progress-card {
+    width: 100% !important;
+  }
+
+  .mentoring-dashboard-mission-footer {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .mentoring-dashboard-submit-button {
+    width: 100% !important;
+  }
 }

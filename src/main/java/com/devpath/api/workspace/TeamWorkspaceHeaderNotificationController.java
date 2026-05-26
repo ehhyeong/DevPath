@@ -2,6 +2,7 @@ package com.devpath.api.workspace;
 
 import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 
+import com.devpath.api.workspace.dto.MentoringHeaderNotificationResponse;
 import com.devpath.api.workspace.dto.TeamWorkspaceHeaderNotificationResponse;
 import com.devpath.api.workspace.service.TeamWorkspaceHeaderNotificationService;
 import com.devpath.common.response.ApiResponse;
@@ -34,5 +35,16 @@ public class TeamWorkspaceHeaderNotificationController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(
         notificationService.getNotifications(workspaceId, page, requireUserId(userId)));
+  }
+
+  @GetMapping("/workspaces/{workspaceId}/mentoring-header-notifications")
+  @Operation(summary = "List mentoring workspace header notifications")
+  public ApiResponse<List<MentoringHeaderNotificationResponse>> getMentoringNotifications(
+      @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
+      @Parameter(description = "Mentoring workspace page key", example = "dashboard") @RequestParam
+          String page,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        notificationService.getMentoringNotifications(workspaceId, page, requireUserId(userId)));
   }
 }
