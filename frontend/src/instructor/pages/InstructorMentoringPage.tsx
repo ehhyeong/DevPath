@@ -51,6 +51,7 @@ type OngoingProject = {
   primaryAction: string
   secondaryAction: string
   menuActions: string[]
+  workspaceId?: number | null
 }
 
 type ProjectRoleInput = { name: string; count: number }
@@ -447,6 +448,7 @@ export default function InstructorMentoringPage() {
         selectedSetupProject.mode === 'team'
           ? ['워크스페이스 설정', '멤버 관리', '완료 처리']
           : ['과제 설정', '공지 전송', '멘토링 종료'],
+      workspaceId: null,
     }
     const nextOngoingProjects = [
       nextOngoingProject,
@@ -461,9 +463,14 @@ export default function InstructorMentoringPage() {
     window.alert(`설정이 저장되었습니다.\n성공적으로 ${title} 프로젝트가 시작되며, 워크스페이스로 이동합니다.`)
   }
 
-  function runOngoingAction(projectTitle: string, actionLabel: string) {
+  function runOngoingAction(project: OngoingProject, actionLabel: string) {
     setOpenMenuId(null)
-    window.alert(`${projectTitle}: ${actionLabel}`)
+    if (actionLabel === '워크스페이스 이동' && project.workspaceId) {
+      const dashPath = project.mode === 'team' ? '/instructor-team-ws-dashboard' : '/instructor-ws-dashboard'
+      window.location.href = `${dashPath}?workspaceId=${project.workspaceId}`
+      return
+    }
+    window.alert(`${project.title}: ${actionLabel}`)
   }
 
   if (loading) {
@@ -640,7 +647,7 @@ export default function InstructorMentoringPage() {
                     {openMenuId === `ongoing-${project.id}` ? (
                       <div className="absolute top-[calc(100%+8px)] right-0 z-20 min-w-[170px] rounded-lg border border-gray-200 bg-white shadow-lg">
                         {project.menuActions.map((action, index) => (
-                          <button key={action} type="button" onClick={(event) => { event.stopPropagation(); runOngoingAction(project.title, action) }} className={`block w-full px-4 py-2 text-left text-sm transition ${index === project.menuActions.length - 1 ? 'border-t border-gray-100 text-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50 hover:text-brand'}`}>
+                          <button key={action} type="button" onClick={(event) => { event.stopPropagation(); runOngoingAction(project, action) }} className={`block w-full px-4 py-2 text-left text-sm transition ${index === project.menuActions.length - 1 ? 'border-t border-gray-100 text-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50 hover:text-brand'}`}>
                             <i className={`mr-2 ${index === 0 ? 'fas fa-cog' : index === 1 ? 'fas fa-users' : 'fas fa-check-circle'}`} />{action}
                           </button>
                         ))}
@@ -654,8 +661,8 @@ export default function InstructorMentoringPage() {
                   <div className="mb-2 h-1.5 w-full rounded-full bg-gray-100"><div className="h-1.5 rounded-full bg-brand" style={{ width: `${project.progress}%` }} /></div>
                   <div className="mb-5 flex justify-between text-[10px] font-bold text-gray-400"><span>진척도</span><span className="text-brand">{project.progress}%</span></div>
                   <div className="flex gap-2 border-t border-gray-100 pt-4">
-                    <button type="button" onClick={() => runOngoingAction(project.title, project.primaryAction)} className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100">{project.primaryAction}</button>
-                    <button type="button" onClick={() => runOngoingAction(project.title, project.secondaryAction)} className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100">{project.secondaryAction}</button>
+                    <button type="button" onClick={() => runOngoingAction(project, project.primaryAction)} className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100">{project.primaryAction}</button>
+                    <button type="button" onClick={() => runOngoingAction(project, project.secondaryAction)} className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100">{project.secondaryAction}</button>
                   </div>
                 </div>
               </article>

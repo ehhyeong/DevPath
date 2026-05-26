@@ -161,7 +161,8 @@ public class InstructorMentoringBoardService {
                 60,
                 "워크스페이스 이동",
                 "일정 관리",
-                List.of("워크스페이스 설정", "멤버 관리", "종료 처리")),
+                List.of("워크스페이스 설정", "멤버 관리", "종료 처리"),
+                1L),
             new InstructorMentoringBoardPayload.OngoingProjectItem(
                 "ongoing-kotlin-study",
                 "Kotlin/Spring 스터디",
@@ -172,7 +173,8 @@ public class InstructorMentoringBoardService {
                 35,
                 "워크스페이스 이동",
                 "일정 관리",
-                List.of("과제 설정", "공지 전송", "멘토링 종료"))));
+                List.of("과제 설정", "공지 전송", "멘토링 종료"),
+                1L)));
   }
 
   private InstructorMentoringBoardPayload.RoleItem createRole(String name, int current, int total) {

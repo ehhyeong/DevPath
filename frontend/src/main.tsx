@@ -26,6 +26,7 @@ const DevShowcaseApp = lazy(() => import('./DevShowcaseApp'))
 const InstructorApp = lazy(() => import('./InstructorApp'))
 const InstructorCourseDetailApp = lazy(() => import('./InstructorCourseDetailApp'))
 const InstructorEditProfileApp = lazy(() => import('./InstructorEditProfileApp'))
+const InstructorTeamWsDashboardApp = lazy(() => import('./InstructorTeamWsDashboardApp'))
 const InstructorWsDashboardApp = lazy(() => import('./InstructorWsDashboardApp'))
 const LearnerApp = lazy(() => import('./LearnerApp'))
 const LearningPlayerApp = lazy(() => import('./LearningPlayerApp'))
@@ -108,6 +109,8 @@ if (pathname === '/admin-dashboard') {
                     ? suspense(<InstructorEditProfileApp />)
                     : pathname === '/instructor-ws-dashboard'
                       ? suspense(<InstructorWsDashboardApp />)
+                    : pathname === '/instructor-team-ws-dashboard'
+                      ? suspense(<InstructorTeamWsDashboardApp />)
                     : instructorPageRoutes.has(pathname)
                       ? suspense(<InstructorApp />)
                       : pathname === '/course-editor'

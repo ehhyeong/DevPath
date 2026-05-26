@@ -22,4 +22,6 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
       Collection<Long> ids, Collection<WorkspaceType> types);
 
   long countByIdInAndIsDeletedFalse(Collection<Long> ids);
+
+  boolean existsByIdAndOwnerIdAndIsDeletedFalse(Long id, Long ownerId);
 }

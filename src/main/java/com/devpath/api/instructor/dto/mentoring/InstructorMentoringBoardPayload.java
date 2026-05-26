@@ -52,5 +52,6 @@ public record InstructorMentoringBoardPayload(
       Integer progress,
       String primaryAction,
       String secondaryAction,
-      List<String> menuActions) {}
+      List<String> menuActions,
+      Long workspaceId) {}
 }
