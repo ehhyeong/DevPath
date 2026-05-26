@@ -281,6 +281,15 @@ function optionOf<T extends { value: string }>(items: T[], value: T['value']): T
   return items.find((item) => item.value === value) ?? items[0]
 }
 
+const JOBKOREA_CAREER_MAP: Record<string, string> = {
+  '1': '신입', '2': '경력', '3': '신입/경력', '4': '경력무관',
+}
+
+function resolveCareerCode(careerCode?: string | null): string {
+  if (!careerCode) return '상세 조건 확인'
+  return JOBKOREA_CAREER_MAP[careerCode.trim()] ?? '상세 조건 확인'
+}
+
 const JOBKOREA_AREA_MAP: Record<string, string> = {
   I000: '서울', I010: '강남구', I020: '강동구', I030: '강북구', I040: '강서구',
   I050: '관악구', I060: '광진구', I070: '구로구', I080: '금천구', I090: '노원구',
@@ -471,7 +480,8 @@ function mapJobkoreaPosting(
   const title = posting.title?.trim() || '잡코리아 채용공고'
   const companyName = posting.companyName?.trim() || '기업명 비공개'
   const regionKorean = resolveAreaCode(posting.areaCode) ?? region.label
-  const text = [title, companyName, regionKorean, posting.careerCode, ...skills].filter(Boolean).join(' ')
+  const careerKorean = resolveCareerCode(posting.careerCode)
+  const text = [title, companyName, regionKorean, careerKorean, ...skills].filter(Boolean).join(' ')
 
   return {
     id: `jobkorea-${posting.externalId ?? index}`,
@@ -479,7 +489,7 @@ function mapJobkoreaPosting(
     title,
     companyName,
     regionLabel: regionKorean,
-    careerLabel: posting.careerCode ?? '상세 조건 확인',
+    careerLabel: careerKorean,
     skills: skills.length > 0 ? skills : role.skills.slice(0, 3),
     url: posting.jobkoreaUrl,
     deadline: posting.deadline,
