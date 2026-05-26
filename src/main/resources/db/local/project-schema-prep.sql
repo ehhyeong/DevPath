@@ -1113,3 +1113,239 @@ BEGIN
         ));
 END $$;
 ^^^ END OF SCRIPT ^^^
+DO $$
+-- learner@devpath.com: 노드 클리어 + Proof Card 샘플 데이터
+-- (인터넷 & 웹 기초, OS & 터미널 노드 — 채용 추천 테스트용)
+-- project-schema-prep.sql은 매 서버 기동 시 실행되므로 WHERE NOT EXISTS 가드 필수
+DECLARE
+    v_user_id       bigint;
+    v_roadmap_id    bigint;
+    v_node_web_id   bigint;
+    v_node_os_id    bigint;
+    v_node_java_id  bigint;
+BEGIN
+    IF to_regclass('public.proof_cards') IS NULL
+        OR to_regclass('public.node_clearances') IS NULL THEN
+        RETURN;
+    END IF;
+
+    SELECT user_id INTO v_user_id FROM public.users WHERE email = 'learner@devpath.com' LIMIT 1;
+    SELECT roadmap_id INTO v_roadmap_id FROM public.roadmaps WHERE title = 'Backend Master Roadmap' LIMIT 1;
+
+    IF v_user_id IS NULL OR v_roadmap_id IS NULL THEN
+        RETURN;
+    END IF;
+
+    SELECT node_id INTO v_node_web_id  FROM public.roadmap_nodes WHERE roadmap_id = v_roadmap_id AND title = '인터넷 & 웹 기초' LIMIT 1;
+    SELECT node_id INTO v_node_os_id   FROM public.roadmap_nodes WHERE roadmap_id = v_roadmap_id AND title = 'OS & 터미널'      LIMIT 1;
+    SELECT node_id INTO v_node_java_id FROM public.roadmap_nodes WHERE roadmap_id = v_roadmap_id AND title = 'Java 기초'        LIMIT 1;
+
+    -- ── 1. node_clearances (CLEARED) ──────────────────────────────────────
+    -- 인터넷 & 웹 기초
+    IF v_node_web_id IS NOT NULL THEN
+        INSERT INTO public.node_clearances
+            (user_id, node_id, clearance_status, lesson_completion_rate,
+             required_tags_satisfied, missing_tag_count,
+             lesson_completed, quiz_passed, assignment_passed, proof_eligible,
+             cleared_at, last_calculated_at, created_at, updated_at)
+        SELECT v_user_id, v_node_web_id,
+               'CLEARED', 1.00, TRUE, 0, TRUE, TRUE, TRUE, TRUE,
+               TIMESTAMP '2026-04-01 10:00:00',
+               TIMESTAMP '2026-04-01 10:00:00',
+               TIMESTAMP '2026-04-01 10:00:00',
+               TIMESTAMP '2026-04-01 10:00:00'
+        WHERE NOT EXISTS (
+            SELECT 1 FROM public.node_clearances
+            WHERE user_id = v_user_id AND node_id = v_node_web_id
+        );
+    END IF;
+
+    -- OS & 터미널
+    IF v_node_os_id IS NOT NULL THEN
+        INSERT INTO public.node_clearances
+            (user_id, node_id, clearance_status, lesson_completion_rate,
+             required_tags_satisfied, missing_tag_count,
+             lesson_completed, quiz_passed, assignment_passed, proof_eligible,
+             cleared_at, last_calculated_at, created_at, updated_at)
+        SELECT v_user_id, v_node_os_id,
+               'CLEARED', 1.00, TRUE, 0, TRUE, TRUE, TRUE, TRUE,
+               TIMESTAMP '2026-04-01 11:00:00',
+               TIMESTAMP '2026-04-01 11:00:00',
+               TIMESTAMP '2026-04-01 11:00:00',
+               TIMESTAMP '2026-04-01 11:00:00'
+        WHERE NOT EXISTS (
+            SELECT 1 FROM public.node_clearances
+            WHERE user_id = v_user_id AND node_id = v_node_os_id
+        );
+    END IF;
+
+    -- Java 기초 (기존 NOT_CLEARED → CLEARED 업데이트)
+    IF v_node_java_id IS NOT NULL THEN
+        UPDATE public.node_clearances
+        SET clearance_status = 'CLEARED',
+            lesson_completion_rate = 1.00,
+            required_tags_satisfied = TRUE,
+            missing_tag_count = 0,
+            lesson_completed = TRUE,
+            quiz_passed = TRUE,
+            assignment_passed = TRUE,
+            proof_eligible = TRUE,
+            cleared_at = TIMESTAMP '2026-04-02 09:00:00',
+            last_calculated_at = TIMESTAMP '2026-04-02 09:00:00',
+            updated_at = TIMESTAMP '2026-04-02 09:00:00'
+        WHERE user_id = v_user_id AND node_id = v_node_java_id
+          AND clearance_status = 'NOT_CLEARED';
+    END IF;
+
+    -- ── 2. proof_cards ────────────────────────────────────────────────────
+    -- 인터넷 & 웹 기초
+    IF v_node_web_id IS NOT NULL THEN
+        INSERT INTO public.proof_cards
+            (user_id, node_id, node_clearance_id, title, description,
+             proof_card_status, issued_at, created_at, updated_at)
+        SELECT v_user_id, v_node_web_id, nc.node_clearance_id,
+               '인터넷 & 웹 기초 Proof Card',
+               '인터넷 & 웹 기초 학습 완료와 검증 조건 충족을 증명합니다.',
+               'ISSUED',
+               TIMESTAMP '2026-04-01 10:01:00',
+               TIMESTAMP '2026-04-01 10:01:00',
+               TIMESTAMP '2026-04-01 10:01:00'
+        FROM public.node_clearances nc
+        WHERE nc.user_id = v_user_id AND nc.node_id = v_node_web_id
+          AND NOT EXISTS (
+              SELECT 1 FROM public.proof_cards
+              WHERE user_id = v_user_id AND node_id = v_node_web_id
+          );
+    END IF;
+
+    -- OS & 터미널
+    IF v_node_os_id IS NOT NULL THEN
+        INSERT INTO public.proof_cards
+            (user_id, node_id, node_clearance_id, title, description,
+             proof_card_status, issued_at, created_at, updated_at)
+        SELECT v_user_id, v_node_os_id, nc.node_clearance_id,
+               'OS & 터미널 Proof Card',
+               'OS & 터미널 학습 완료와 검증 조건 충족을 증명합니다.',
+               'ISSUED',
+               TIMESTAMP '2026-04-01 11:01:00',
+               TIMESTAMP '2026-04-01 11:01:00',
+               TIMESTAMP '2026-04-01 11:01:00'
+        FROM public.node_clearances nc
+        WHERE nc.user_id = v_user_id AND nc.node_id = v_node_os_id
+          AND NOT EXISTS (
+              SELECT 1 FROM public.proof_cards
+              WHERE user_id = v_user_id AND node_id = v_node_os_id
+          );
+    END IF;
+
+    -- Java 기초
+    IF v_node_java_id IS NOT NULL THEN
+        INSERT INTO public.proof_cards
+            (user_id, node_id, node_clearance_id, title, description,
+             proof_card_status, issued_at, created_at, updated_at)
+        SELECT v_user_id, v_node_java_id, nc.node_clearance_id,
+               'Java 기초 Proof Card',
+               'Java 기초 학습 완료와 검증 조건 충족을 증명합니다.',
+               'ISSUED',
+               TIMESTAMP '2026-04-02 09:01:00',
+               TIMESTAMP '2026-04-02 09:01:00',
+               TIMESTAMP '2026-04-02 09:01:00'
+        FROM public.node_clearances nc
+        WHERE nc.user_id = v_user_id AND nc.node_id = v_node_java_id
+          AND NOT EXISTS (
+              SELECT 1 FROM public.proof_cards
+              WHERE user_id = v_user_id AND node_id = v_node_java_id
+          );
+    END IF;
+
+    -- ── 3. proof_card_tags ───────────────────────────────────────────────
+    -- 인터넷 & 웹 기초 태그 (HTTP, DNS, 도메인, 웹 호스팅, 브라우저)
+    INSERT INTO public.proof_card_tags (proof_card_id, tag_id, skill_evidence_type)
+    SELECT pc.proof_card_id, t.tag_id, 'VERIFIED'
+    FROM public.proof_cards pc
+    JOIN public.tags t ON t.name IN ('HTTP', 'DNS', '도메인', '웹 호스팅', '브라우저')
+    WHERE pc.user_id = v_user_id AND pc.node_id = v_node_web_id
+      AND NOT EXISTS (
+          SELECT 1 FROM public.proof_card_tags pct
+          WHERE pct.proof_card_id = pc.proof_card_id AND pct.tag_id = t.tag_id
+      );
+
+    -- OS & 터미널 태그 (Linux, 프로세스 관리, 스레드, 메모리 관리, I/O 관리)
+    INSERT INTO public.proof_card_tags (proof_card_id, tag_id, skill_evidence_type)
+    SELECT pc.proof_card_id, t.tag_id, 'VERIFIED'
+    FROM public.proof_cards pc
+    JOIN public.tags t ON t.name IN ('Linux', '프로세스 관리', '스레드', '메모리 관리', 'I/O 관리')
+    WHERE pc.user_id = v_user_id AND pc.node_id = v_node_os_id
+      AND NOT EXISTS (
+          SELECT 1 FROM public.proof_card_tags pct
+          WHERE pct.proof_card_id = pc.proof_card_id AND pct.tag_id = t.tag_id
+      );
+
+    -- Java 기초 태그 (Java, OOP, 상속, 인터페이스, 제네릭)
+    INSERT INTO public.proof_card_tags (proof_card_id, tag_id, skill_evidence_type)
+    SELECT pc.proof_card_id, t.tag_id, 'VERIFIED'
+    FROM public.proof_cards pc
+    JOIN public.tags t ON t.name IN ('Java', 'OOP', '상속', '인터페이스', '제네릭')
+    WHERE pc.user_id = v_user_id AND pc.node_id = v_node_java_id
+      AND NOT EXISTS (
+          SELECT 1 FROM public.proof_card_tags pct
+          WHERE pct.proof_card_id = pc.proof_card_id AND pct.tag_id = t.tag_id
+      );
+
+END $$;
+^^^ END OF SCRIPT ^^^
+
+-- course_node_mappings: 샘플 강좌 → 로드맵 노드 매핑
+DO $$
+DECLARE
+    v_course_sb_id bigint;
+    v_course_jpa_id bigint;
+    v_node_sb_id bigint;
+    v_node_jpa_id bigint;
+BEGIN
+    IF to_regclass('public.course_node_mappings') IS NULL THEN RETURN; END IF;
+
+    SELECT course_id INTO v_course_sb_id FROM public.courses WHERE title = 'Spring Boot Intro' LIMIT 1;
+    SELECT course_id INTO v_course_jpa_id FROM public.courses WHERE title = 'JPA Practical Design' LIMIT 1;
+    SELECT node_id INTO v_node_sb_id FROM public.roadmap_nodes WHERE title = 'Spring Boot & MVC' LIMIT 1;
+    SELECT node_id INTO v_node_jpa_id FROM public.roadmap_nodes WHERE title = 'Spring Data JPA' LIMIT 1;
+
+    IF v_course_sb_id IS NOT NULL AND v_node_sb_id IS NOT NULL THEN
+        INSERT INTO public.course_node_mappings (course_id, node_id, created_at)
+        SELECT v_course_sb_id, v_node_sb_id, NOW()
+        WHERE NOT EXISTS (
+            SELECT 1 FROM public.course_node_mappings
+            WHERE course_id = v_course_sb_id AND node_id = v_node_sb_id
+        );
+    END IF;
+
+    IF v_course_jpa_id IS NOT NULL AND v_node_jpa_id IS NOT NULL THEN
+        INSERT INTO public.course_node_mappings (course_id, node_id, created_at)
+        SELECT v_course_jpa_id, v_node_jpa_id, NOW()
+        WHERE NOT EXISTS (
+            SELECT 1 FROM public.course_node_mappings
+            WHERE course_id = v_course_jpa_id AND node_id = v_node_jpa_id
+        );
+    END IF;
+END $$;
+^^^ END OF SCRIPT ^^^
+
+-- learner_notification: is_deleted 컬럼 추가 (엔티티에 존재하나 기존 테이블에 누락)
+DO $$
+BEGIN
+    IF to_regclass('public.learner_notification') IS NOT NULL THEN
+        ALTER TABLE public.learner_notification ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT false;
+    END IF;
+END $$;
+^^^ END OF SCRIPT ^^^
+
+-- proof_cards: course_id 컬럼 추가, node_id/node_clearance_id nullable 변경 (강좌 기반 ProofCard 발급 지원)
+DO $$
+BEGIN
+    IF to_regclass('public.proof_cards') IS NOT NULL THEN
+        ALTER TABLE public.proof_cards ADD COLUMN IF NOT EXISTS course_id BIGINT;
+        ALTER TABLE public.proof_cards ALTER COLUMN node_id DROP NOT NULL;
+        ALTER TABLE public.proof_cards ALTER COLUMN node_clearance_id DROP NOT NULL;
+    END IF;
+END $$;
+^^^ END OF SCRIPT ^^^

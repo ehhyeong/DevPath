@@ -92,7 +92,7 @@ function hashText(value: string) {
 }
 
 function getStablePalette(item: ProofCardViewItem): ProofCardPalette {
-  const hashInput = `${item.proofCardId}:${item.title}:${item.nodeTitle}`
+  const hashInput = `${item.proofCardId}:${item.title}:${item.nodeTitle ?? item.courseTitle ?? ''}`
   return proofCardPalettes[hashText(hashInput) % proofCardPalettes.length]
 }
 
@@ -354,7 +354,7 @@ export default function LearningLogGalleryPage() {
                     <div className="card-back flex flex-col border border-gray-700 bg-gray-900 p-7 text-white">
                       <div className="mb-4 border-b border-gray-700 pb-3">
                         <h3 className="proof-card-back-title text-lg font-bold text-white">{detail?.title ?? item.title}</h3>
-                        <p className="proof-card-back-description mt-1 text-xs text-gray-400">{detail?.description ?? item.nodeTitle}</p>
+                        <p className="proof-card-back-description mt-1 text-xs text-gray-400">{detail?.description ?? item.nodeTitle ?? item.courseTitle ?? ''}</p>
                       </div>
                       <div className="custom-scrollbar flex-1 overflow-y-auto pr-2">
                         <p className="mb-2 text-[10px] font-bold tracking-wider text-brand uppercase">포함된 핵심 개념</p>

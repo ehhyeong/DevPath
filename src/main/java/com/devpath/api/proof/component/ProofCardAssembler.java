@@ -1,5 +1,6 @@
 package com.devpath.api.proof.component;
 
+import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.entity.proof.SkillEvidenceType;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
@@ -86,6 +87,45 @@ public class ProofCardAssembler {
     }
 
     return AssembledProofCard.builder().title(title).description(description).tags(tags).build();
+  }
+
+  // 강좌 기반 Proof Card 발급용 데이터를 조립한다.
+  public AssembledProofCard assembleFromCourse(Course course, Long userId) {
+    String courseTitle = course.getTitle() != null ? course.getTitle() : "강좌";
+    String title = buildTitle(courseTitle);
+    String description = buildDescriptionFromCourse(courseTitle);
+
+    List<AssembledTag> tags = new ArrayList<>();
+    List<String> userTagNames =
+        userTechStackRepository.findTagNamesByUserId(userId);
+
+    int heldTagLimit = 5;
+    for (String userTagName : userTagNames) {
+      if (tags.size() >= heldTagLimit) {
+        break;
+      }
+      tagRepository
+          .findByName(userTagName)
+          .ifPresent(
+              tag ->
+                  tags.add(
+                      AssembledTag.builder()
+                          .tag(tag)
+                          .evidenceType(SkillEvidenceType.HELD)
+                          .build()));
+    }
+
+    return AssembledProofCard.builder().title(title).description(description).tags(tags).build();
+  }
+
+  // 강좌 기반 카드 설명을 만든다.
+  private String buildDescriptionFromCourse(String courseTitle) {
+    String limitedTitle =
+        limitText(buildConciseTitle(courseTitle), DESCRIPTION_NODE_MAX_LENGTH, "강좌 수강");
+    return limitText(
+        limitedTitle + " 강좌 수강 완료를 증명합니다.",
+        DESCRIPTION_MAX_LENGTH,
+        "강좌 수강 완료를 증명합니다.");
   }
 
   // 카드 제목을 만든다.

@@ -238,7 +238,14 @@ public class WorkspaceService {
   }
 
   private void validateMember(Long workspaceId, Long userId) {
-    if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
+    if (workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
+      return;
+    }
+    // 워크스페이스 오너(강사)도 접근 허용
+    boolean isOwner = workspaceRepository.findByIdAndIsDeletedFalse(workspaceId)
+        .map(ws -> ws.getOwnerId().equals(userId))
+        .orElse(false);
+    if (!isOwner) {
       throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
     }
   }

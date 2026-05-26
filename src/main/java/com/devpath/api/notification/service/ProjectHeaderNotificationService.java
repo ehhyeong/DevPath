@@ -63,7 +63,7 @@ public class ProjectHeaderNotificationService {
   @Transactional
   public List<ProjectHeaderNotificationResponse> markAllRead(Long userId) {
     learnerNotificationRepository
-        .findAllByLearnerIdOrderByCreatedAtDesc(userId)
+        .findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
         .stream()
         .filter(notification -> !Boolean.TRUE.equals(notification.getIsRead()))
         .forEach(notification -> notification.markAsRead());
@@ -72,7 +72,7 @@ public class ProjectHeaderNotificationService {
   }
 
   private List<ProjectHeaderNotificationResponse> learnerNotifications(Long userId) {
-    return learnerNotificationRepository.findAllByLearnerIdOrderByCreatedAtDesc(userId).stream()
+    return learnerNotificationRepository.findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(userId).stream()
         .limit(MAX_HEADER_NOTIFICATIONS)
         .map(ProjectHeaderNotificationResponse::from)
         .toList();

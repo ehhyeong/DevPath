@@ -18,4 +18,13 @@ public class NodeClearanceRequest {
     @Schema(description = "Target node IDs", example = "[10,11,12]")
     private List<Long> nodeIds;
   }
+
+  @Getter
+  @NoArgsConstructor
+  @Schema(description = "Node clearance recalculate-by-course request")
+  public static class RecalculateByCourse {
+
+    @Schema(description = "Course ID", example = "5")
+    private Long courseId;
+  }
 }

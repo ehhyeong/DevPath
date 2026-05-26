@@ -47,8 +47,12 @@ public class ActivityLogService {
   }
 
   private void validateMember(Long workspaceId, Long userId) {
-    if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
-      throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
+    if (workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
+      return;
     }
+    if (workspaceRepository.existsByIdAndOwnerIdAndIsDeletedFalse(workspaceId, userId)) {
+      return;
+    }
+    throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
   }
 }

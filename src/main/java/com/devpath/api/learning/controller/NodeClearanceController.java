@@ -36,6 +36,15 @@ public class NodeClearanceController {
     return ResponseEntity.ok(ApiResponse.ok(nodeClearanceService.recalculate(userId, request)));
   }
 
+  @Operation(summary = "강의 기반 노드 클리어 재계산", description = "강의 완료 시 해당 강의에 매핑된 노드들의 클리어 상태를 재계산합니다.")
+  @PostMapping("/recalculate-by-course")
+  public ResponseEntity<ApiResponse<List<NodeClearanceResponse.Detail>>> recalculateByCourse(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody NodeClearanceRequest.RecalculateByCourse request) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(nodeClearanceService.recalculateByCourse(userId, request)));
+  }
+
   @Operation(summary = "노드 클리어 단건 조회", description = "특정 노드의 현재 클리어 결과를 조회합니다.")
   @GetMapping("/{nodeId}")
   public ResponseEntity<ApiResponse<NodeClearanceResponse.Detail>> getNodeClearance(

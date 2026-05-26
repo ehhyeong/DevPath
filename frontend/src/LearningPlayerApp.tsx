@@ -1,6 +1,6 @@
 import { startTransition, useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { captureAndOcr, warmupOcrWorker, type ScreenRegion } from './lib/videoOcr'
-import { courseApi, learnerAssignmentApi, learningPlayerApi, lessonNoteApi, lessonSessionApi, qnaApi } from './lib/api'
+import { courseApi, learnerAssignmentApi, learningPlayerApi, lessonNoteApi, lessonSessionApi, nodeClearanceApi, qnaApi } from './lib/api'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
 import {
   createDefaultProgress,
@@ -1303,6 +1303,13 @@ export default function LearningPlayerApp() {
     setCompletionCardFlipped(false)
     setCompletionVisible(true)
     setCompletionBurstKey((current) => current + 1)
+
+    // 강의 완료 시 매핑된 노드 클리어 재계산 → 프루프카드 자동 발급 (진입 경로 무관)
+    if (course.courseId) {
+      void nodeClearanceApi
+        .recalculateByCourse(course.courseId)
+        .catch(() => undefined)
+    }
   }, [calculateCourseCompletionScore, course, isCourseCompletedByProgress, lessons])
 
   const persistCompletedLesson = useCallback((

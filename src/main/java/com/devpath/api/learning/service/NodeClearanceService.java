@@ -13,6 +13,7 @@ import com.devpath.domain.learning.entity.clearance.NodeClearanceReason;
 import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceReasonRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
+import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
@@ -55,6 +56,9 @@ public class NodeClearanceService {
   // 로드맵 노드 저장소
   private final RoadmapNodeRepository roadmapNodeRepository;
 
+  // 강의-노드 매핑 저장소
+  private final CourseNodeMappingRepository courseNodeMappingRepository;
+
   // 로드맵의 노드 클리어를 재계산한다.
   @Transactional
   public List<NodeClearanceResponse.Detail> recalculate(
@@ -84,6 +88,28 @@ public class NodeClearanceService {
         .filter(node -> targetNodeIds.contains(node.getNodeId()))
         .map(node -> synchronizeNodeClearance(userId, node.getNodeId()))
         .toList();
+  }
+
+  // 강의 완료 시 해당 강의에 매핑된 모든 노드의 클리어를 재계산하고, 강좌 기반 ProofCard도 발급한다.
+  @Transactional
+  public List<NodeClearanceResponse.Detail> recalculateByCourse(
+      Long userId, NodeClearanceRequest.RecalculateByCourse request) {
+    validateUser(userId);
+
+    // 노드 매핑이 있으면 기존 로직 수행
+    List<Long> nodeIds = courseNodeMappingRepository.findNodeIdsByCourseId(request.getCourseId());
+    List<NodeClearanceResponse.Detail> results = new java.util.ArrayList<>();
+    if (!nodeIds.isEmpty()) {
+      results.addAll(
+          nodeIds.stream()
+              .map(nodeId -> synchronizeNodeClearance(userId, nodeId))
+              .toList());
+    }
+
+    // 노드 매핑 유무와 관계없이 강좌 기반 ProofCard 발급 시도
+    proofCardService.issueIfEligibleByCourse(userId, request.getCourseId());
+
+    return results;
   }
 
   // 특정 노드 클리어 상세를 조회한다.

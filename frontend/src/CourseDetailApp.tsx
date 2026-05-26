@@ -142,6 +142,8 @@ export default function CourseDetailApp() {
   useInternalPageScroll()
 
   const courseId = useMemo(() => readNumberSearchParam('courseId'), [])
+  const originalRoadmapId = useMemo(() => readNumberSearchParam('originalRoadmapId'), [])
+  const originalNodeId = useMemo(() => readNumberSearchParam('originalNodeId'), [])
   const isStudentPreview = useMemo(() => readStudentPreviewFromLocation(), [])
   const studentPreviewReturnHref = useMemo(() => readStudentPreviewReturnHref(courseId), [courseId])
   const returnToHref = useMemo(() => readSafeReturnToFromLocation(), [])
@@ -175,8 +177,8 @@ export default function CourseDetailApp() {
   const instructor = displayCourse.instructor
   const previewLesson = useMemo(() => getPreviewLesson(displayCourse), [displayCourse])
   const learningHref = useMemo(
-    () => getLearningHref(displayCourse.courseId, previewLesson, returnToHref),
-    [displayCourse.courseId, previewLesson, returnToHref],
+    () => getLearningHref(displayCourse.courseId, previewLesson, returnToHref, originalRoadmapId, originalNodeId),
+    [displayCourse.courseId, previewLesson, returnToHref, originalRoadmapId, originalNodeId],
   )
   const instructorChannelHref = useMemo(
     () => buildInstructorChannelHref(instructor?.instructorId ?? null),

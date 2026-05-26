@@ -5,15 +5,21 @@ import com.devpath.api.proof.dto.ProofCardRequest;
 import com.devpath.api.proof.dto.ProofCardResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.course.entity.Course;
+import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.entity.proof.ProofCard;
 import com.devpath.domain.learning.entity.proof.ProofCardStatus;
 import com.devpath.domain.learning.entity.proof.ProofCardTag;
+import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
+import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.repository.UserRepository;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +44,12 @@ public class ProofCardService {
 
   // Proof Card 조립기다.
   private final ProofCardAssembler proofCardAssembler;
+
+  // 강좌 관련 저장소다.
+  private final CourseRepository courseRepository;
+  private final LessonRepository lessonRepository;
+  private final LessonProgressRepository lessonProgressRepository;
+  private final UserRepository userRepository;
 
   // Proof Card를 발급한다.
   @Transactional
@@ -65,6 +77,66 @@ public class ProofCardService {
         .findByNodeClearanceId(nodeClearance.getId())
         .map(this::toDetail)
         .orElseGet(() -> createProofCard(nodeClearance));
+  }
+
+  // 강좌 수강 완료 시 Proof Card를 발급한다.
+  @Transactional
+  public void issueIfEligibleByCourse(Long userId, Long courseId) {
+    if (proofCardRepository.existsByUserIdAndCourseCourseId(userId, courseId)) {
+      return;
+    }
+
+    Course course =
+        courseRepository
+            .findById(courseId)
+            .orElse(null);
+    if (course == null) {
+      return;
+    }
+
+    long totalLessons =
+        lessonRepository.countPublishedLessonsByCourseIds(List.of(courseId));
+    if (totalLessons == 0) {
+      return;
+    }
+
+    long completedLessons =
+        lessonProgressRepository.countCompletedLessonsByUserIdAndCourseIds(
+            userId, List.of(courseId));
+    if (completedLessons < totalLessons) {
+      return;
+    }
+
+    User user =
+        userRepository
+            .findById(userId)
+            .orElse(null);
+    if (user == null) {
+      return;
+    }
+
+    ProofCardAssembler.AssembledProofCard assembled =
+        proofCardAssembler.assembleFromCourse(course, userId);
+
+    ProofCard savedProofCard =
+        proofCardRepository.save(
+            ProofCard.builder()
+                .user(user)
+                .course(course)
+                .title(assembled.getTitle())
+                .description(assembled.getDescription())
+                .build());
+
+    proofCardTagRepository.saveAll(
+        assembled.getTags().stream()
+            .map(
+                tag ->
+                    ProofCardTag.builder()
+                        .proofCard(savedProofCard)
+                        .tag(tag.getTag())
+                        .evidenceType(tag.getEvidenceType())
+                        .build())
+            .toList());
   }
 
   // Proof Card 목록을 조회한다.
@@ -108,7 +180,9 @@ public class ProofCardService {
                 ProofCardResponse.GalleryItem.builder()
                     .proofCardId(proofCard.getId())
                     .title(proofCard.getTitle())
-                    .nodeTitle(proofCard.getNode().getTitle())
+                    .nodeTitle(proofCard.getNode() != null ? proofCard.getNode().getTitle() : null)
+                    .courseId(proofCard.getCourse() != null ? proofCard.getCourse().getCourseId() : null)
+                    .courseTitle(proofCard.getCourse() != null ? proofCard.getCourse().getTitle() : null)
                     .issuedAt(proofCard.getIssuedAt())
                     .tags(tagItemMap.getOrDefault(proofCard.getId(), List.of()))
                     .build())
@@ -153,8 +227,10 @@ public class ProofCardService {
   private ProofCardResponse.Summary toSummary(ProofCard proofCard) {
     return ProofCardResponse.Summary.builder()
         .proofCardId(proofCard.getId())
-        .nodeId(proofCard.getNode().getNodeId())
-        .nodeTitle(proofCard.getNode().getTitle())
+        .nodeId(proofCard.getNode() != null ? proofCard.getNode().getNodeId() : null)
+        .nodeTitle(proofCard.getNode() != null ? proofCard.getNode().getTitle() : null)
+        .courseId(proofCard.getCourse() != null ? proofCard.getCourse().getCourseId() : null)
+        .courseTitle(proofCard.getCourse() != null ? proofCard.getCourse().getTitle() : null)
         .title(proofCard.getTitle())
         .status(proofCard.getStatus().name())
         .issuedAt(proofCard.getIssuedAt())
@@ -165,8 +241,10 @@ public class ProofCardService {
   private ProofCardResponse.Detail toDetail(ProofCard proofCard) {
     return ProofCardResponse.Detail.builder()
         .proofCardId(proofCard.getId())
-        .nodeId(proofCard.getNode().getNodeId())
-        .nodeTitle(proofCard.getNode().getTitle())
+        .nodeId(proofCard.getNode() != null ? proofCard.getNode().getNodeId() : null)
+        .nodeTitle(proofCard.getNode() != null ? proofCard.getNode().getTitle() : null)
+        .courseId(proofCard.getCourse() != null ? proofCard.getCourse().getCourseId() : null)
+        .courseTitle(proofCard.getCourse() != null ? proofCard.getCourse().getTitle() : null)
         .title(proofCard.getTitle())
         .description(proofCard.getDescription())
         .status(proofCard.getStatus().name())

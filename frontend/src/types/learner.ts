@@ -224,8 +224,10 @@ export interface WeaknessAnalysis {
 
 export interface ProofCardSummary {
   proofCardId: number
-  nodeId: number
-  nodeTitle: string
+  nodeId: number | null
+  nodeTitle: string | null
+  courseId: number | null
+  courseTitle: string | null
   title: string
   status: string
   issuedAt: string | null
@@ -239,7 +241,9 @@ export interface ProofCardDetail extends ProofCardSummary {
 export interface ProofCardGalleryItem {
   proofCardId: number
   title: string
-  nodeTitle: string
+  nodeTitle: string | null
+  courseId: number | null
+  courseTitle: string | null
   issuedAt: string | null
   tags: ProofCardTag[]
 }

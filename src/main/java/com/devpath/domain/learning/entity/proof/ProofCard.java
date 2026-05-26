@@ -1,5 +1,6 @@
 package com.devpath.domain.learning.entity.proof;
 
+import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.user.entity.User;
@@ -26,16 +27,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 // Proof Card 정보를 저장한다.
 @Entity
-@Table(
-    name = "proof_cards",
-    uniqueConstraints = {
-      @UniqueConstraint(
-          name = "uk_proof_cards_user_node",
-          columnNames = {"user_id", "node_id"}),
-      @UniqueConstraint(
-          name = "uk_proof_cards_node_clearance",
-          columnNames = {"node_clearance_id"})
-    })
+@Table(name = "proof_cards")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProofCard {
@@ -51,15 +43,20 @@ public class ProofCard {
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  // 연결된 로드맵 노드다.
+  // 연결된 로드맵 노드다. (강좌 기반 발급 시 null)
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "node_id", nullable = false)
+  @JoinColumn(name = "node_id")
   private RoadmapNode node;
 
-  // Proof Card 발급 근거가 된 노드 클리어 결과다.
+  // Proof Card 발급 근거가 된 노드 클리어 결과다. (강좌 기반 발급 시 null)
   @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "node_clearance_id", nullable = false, unique = true)
+  @JoinColumn(name = "node_clearance_id", unique = true)
   private NodeClearance nodeClearance;
+
+  // 연결된 강좌다. (강좌 기반 발급 시 사용)
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "course_id")
+  private Course course;
 
   // 카드 제목이다.
   @Column(name = "title", nullable = false, length = 200)
@@ -94,6 +91,7 @@ public class ProofCard {
       User user,
       RoadmapNode node,
       NodeClearance nodeClearance,
+      Course course,
       String title,
       String description,
       ProofCardStatus status,
@@ -101,6 +99,7 @@ public class ProofCard {
     this.user = user;
     this.node = node;
     this.nodeClearance = nodeClearance;
+    this.course = course;
     this.title = title;
     this.description = description;
     this.status = status == null ? ProofCardStatus.ISSUED : status;

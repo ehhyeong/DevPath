@@ -671,6 +671,23 @@ export const learningHistoryApi = {
   },
 }
 
+export const nodeClearanceApi = {
+  recalculate(roadmapId: number, nodeIds?: number[]) {
+    return request<void>(
+      '/api/me/node-clearances/recalculate',
+      { method: 'POST', body: JSON.stringify({ roadmapId, nodeIds }) },
+      { auth: true },
+    )
+  },
+  recalculateByCourse(courseId: number) {
+    return request<void>(
+      '/api/me/node-clearances/recalculate-by-course',
+      { method: 'POST', body: JSON.stringify({ courseId }) },
+      { auth: true },
+    )
+  },
+}
+
 export const proofCardApi = {
   getCards(signal?: AbortSignal) {
     return request<ProofCardSummary[]>('/api/me/proof-cards', { method: 'GET', signal }, { auth: true })

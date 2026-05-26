@@ -39,13 +39,21 @@ public class ProofCardResponse {
     @Schema(description = "Proof Card ID", example = "1")
     private Long proofCardId;
 
-    // 로드맵 노드 ID
+    // 로드맵 노드 ID (강좌 기반 발급 시 null)
     @Schema(description = "로드맵 노드 ID", example = "10")
     private Long nodeId;
 
-    // 로드맵 노드 제목
+    // 로드맵 노드 제목 (강좌 기반 발급 시 null)
     @Schema(description = "로드맵 노드 제목", example = "Spring Security JWT 인증")
     private String nodeTitle;
+
+    // 강좌 ID (강좌 기반 발급 시 사용)
+    @Schema(description = "강좌 ID", example = "5")
+    private Long courseId;
+
+    // 강좌 제목 (강좌 기반 발급 시 사용)
+    @Schema(description = "강좌 제목", example = "Spring Boot Intro")
+    private String courseTitle;
 
     // 카드 제목
     @Schema(description = "카드 제목", example = "Spring Security JWT 인증 Proof Card")
@@ -70,13 +78,21 @@ public class ProofCardResponse {
     @Schema(description = "Proof Card ID", example = "1")
     private Long proofCardId;
 
-    // 로드맵 노드 ID
+    // 로드맵 노드 ID (강좌 기반 발급 시 null)
     @Schema(description = "로드맵 노드 ID", example = "10")
     private Long nodeId;
 
-    // 로드맵 노드 제목
+    // 로드맵 노드 제목 (강좌 기반 발급 시 null)
     @Schema(description = "로드맵 노드 제목", example = "Spring Security JWT 인증")
     private String nodeTitle;
+
+    // 강좌 ID (강좌 기반 발급 시 사용)
+    @Schema(description = "강좌 ID", example = "5")
+    private Long courseId;
+
+    // 강좌 제목 (강좌 기반 발급 시 사용)
+    @Schema(description = "강좌 제목", example = "Spring Boot Intro")
+    private String courseTitle;
 
     // 카드 제목
     @Schema(description = "카드 제목", example = "Spring Security JWT 인증 Proof Card")
@@ -115,9 +131,17 @@ public class ProofCardResponse {
     @Schema(description = "카드 제목", example = "Spring Security JWT 인증 Proof Card")
     private String title;
 
-    // 로드맵 노드 제목
+    // 로드맵 노드 제목 (강좌 기반 발급 시 null)
     @Schema(description = "로드맵 노드 제목", example = "Spring Security JWT 인증")
     private String nodeTitle;
+
+    // 강좌 ID (강좌 기반 발급 시 사용)
+    @Schema(description = "강좌 ID", example = "5")
+    private Long courseId;
+
+    // 강좌 제목 (강좌 기반 발급 시 사용)
+    @Schema(description = "강좌 제목", example = "Spring Boot Intro")
+    private String courseTitle;
 
     // 발급 시각
     @Schema(description = "발급 시각", example = "2026-03-27T14:30:00")

@@ -26,6 +26,16 @@ public interface CourseNodeMappingRepository extends JpaRepository<CourseNodeMap
       """)
   List<Long> findCourseIdsByNodeId(@Param("nodeId") Long nodeId);
 
+  // 특정 강의에 연결된 노드 ID 목록을 조회한다.
+  @Query(
+      """
+      select cnm.node.nodeId
+      from CourseNodeMapping cnm
+      where cnm.course.courseId = :courseId
+      order by cnm.node.nodeId asc
+      """)
+  List<Long> findNodeIdsByCourseId(@Param("courseId") Long courseId);
+
   // 특정 강의의 노드 매핑을 삭제한다.
   void deleteAllByCourseCourseId(Long courseId);
 }

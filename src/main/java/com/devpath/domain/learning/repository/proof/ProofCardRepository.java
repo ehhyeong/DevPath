@@ -26,4 +26,10 @@ public interface ProofCardRepository extends JpaRepository<ProofCard, Long> {
 
   // 특정 학습자의 특정 노드 Proof Card 존재 여부를 확인한다.
   boolean existsByUserIdAndNodeNodeId(Long userId, Long nodeId);
+
+  // 특정 학습자의 특정 강좌 Proof Card 존재 여부를 확인한다.
+  boolean existsByUserIdAndCourseCourseId(Long userId, Long courseId);
+
+  // 특정 학습자의 특정 강좌 Proof Card를 조회한다.
+  Optional<ProofCard> findByUserIdAndCourseCourseId(Long userId, Long courseId);
 }

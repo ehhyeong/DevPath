@@ -1023,8 +1023,11 @@ function appendReturnTo(href: string, returnTo: string) {
   return `${path}?${params.toString()}`
 }
 
-function buildCourseDetailUrl(courseId: number, returnTo: string) {
-  return appendReturnTo(`/course-detail?courseId=${courseId}`, returnTo)
+function buildCourseDetailUrl(courseId: number, returnTo: string, originalRoadmapId?: number | null, originalNodeId?: number | null) {
+  let url = `/course-detail?courseId=${courseId}`
+  if (originalRoadmapId != null) url += `&originalRoadmapId=${originalRoadmapId}`
+  if (originalNodeId != null) url += `&originalNodeId=${originalNodeId}`
+  return appendReturnTo(url, returnTo)
 }
 
 function buildLectureListUrl(tags: string[], returnTo?: string): string {
@@ -1181,7 +1184,7 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
                     try {
                       const courseId = await roadmapApi.getRecommendedFreeCourse(customRoadmapId, node.customNodeId)
                       if (courseId) {
-                        window.location.href = buildCourseDetailUrl(courseId, roadmapReturnHref)
+                        window.location.href = buildCourseDetailUrl(courseId, roadmapReturnHref, originalRoadmapId, node.originalNodeId)
                       } else {
                         window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
                       }

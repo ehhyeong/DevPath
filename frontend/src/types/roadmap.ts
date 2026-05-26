@@ -107,8 +107,10 @@ export interface ProofCardTagItem {
 
 export interface ProofCardSummary {
   proofCardId: number
-  nodeId: number
-  nodeTitle: string
+  nodeId: number | null
+  nodeTitle: string | null
+  courseId: number | null
+  courseTitle: string | null
   title: string
   status: string
   issuedAt: string
