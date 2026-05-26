@@ -281,6 +281,36 @@ function optionOf<T extends { value: string }>(items: T[], value: T['value']): T
   return items.find((item) => item.value === value) ?? items[0]
 }
 
+const JOBKOREA_AREA_MAP: Record<string, string> = {
+  I000: '서울', I010: '강남구', I020: '강동구', I030: '강북구', I040: '강서구',
+  I050: '관악구', I060: '광진구', I070: '구로구', I080: '금천구', I090: '노원구',
+  I100: '도봉구', I110: '동대문구', I120: '동작구', I130: '마포구', I140: '서대문구',
+  I150: '서초구', I160: '성동구', I170: '성북구', I180: '송파구', I190: '양천구',
+  I200: '영등포구', I210: '용산구', I220: '은평구', I230: '종로구', I240: '중구', I250: '중랑구',
+  B000: '경기', B010: '가평', B020: '고양 덕양', B030: '고양 일산동', B031: '고양 일산서',
+  B040: '과천', B050: '광명', B060: '광주', B070: '구리', B080: '군포', B090: '김포',
+  B100: '남양주', B125: '부천', B150: '성남 분당', B160: '성남 수정', B170: '성남 중원',
+  B180: '수원 권선', B190: '수원 장안', B200: '수원 팔달', B201: '수원 영통',
+  B210: '시흥', B220: '안산 단원', B221: '안산 상록', B230: '안성', B240: '안양 동안',
+  B250: '안양 만안', B260: '양주', B270: '양평', B280: '여주', B290: '연천',
+  B300: '오산', B310: '용인 기흥', B311: '용인 수지', B312: '용인 처인',
+  B320: '의왕', B330: '의정부', B340: '이천', B350: '파주', B360: '평택',
+  B370: '포천', B380: '하남', B390: '화성',
+  K000: '인천', K020: '계양구', K030: '미추홀구', K040: '남동구', K050: '동구',
+  K060: '부평구', K070: '서구', K080: '연수구', K100: '중구',
+  G000: '대전', G010: '대덕구', G020: '동구', G030: '서구', G040: '유성구', G050: '중구',
+  H000: '부산', F000: '대구', E000: '광주', J000: '울산',
+  A000: '강원', C000: '경남', D000: '경북', L000: '전남', M000: '전북',
+  O000: '충남', P000: '충북', N000: '제주', '1000': '세종', Q000: '전국',
+}
+
+function resolveAreaCode(areaCode?: string | null): string | null {
+  if (!areaCode || areaCode === '0') return null
+  const codes = areaCode.split(',').map((c) => c.trim()).filter(Boolean)
+  const labels = codes.map((c) => JOBKOREA_AREA_MAP[c] ?? c).filter(Boolean)
+  return labels.length > 0 ? labels.join(' · ') : null
+}
+
 function splitSkills(value?: string | null) {
   return (value ?? '')
     .split(/[,/|·\s]+/)
@@ -440,14 +470,15 @@ function mapJobkoreaPosting(
   const skills = (posting.keywords ?? []).filter(Boolean).map(String)
   const title = posting.title?.trim() || '잡코리아 채용공고'
   const companyName = posting.companyName?.trim() || '기업명 비공개'
-  const text = [title, companyName, posting.areaCode, posting.careerCode, ...skills].filter(Boolean).join(' ')
+  const regionKorean = resolveAreaCode(posting.areaCode) ?? region.label
+  const text = [title, companyName, regionKorean, posting.careerCode, ...skills].filter(Boolean).join(' ')
 
   return {
     id: `jobkorea-${posting.externalId ?? index}`,
     source: 'jobkorea',
     title,
     companyName,
-    regionLabel: posting.areaCode ?? region.label,
+    regionLabel: regionKorean,
     careerLabel: posting.careerCode ?? '상세 조건 확인',
     skills: skills.length > 0 ? skills : role.skills.slice(0, 3),
     url: posting.jobkoreaUrl,
