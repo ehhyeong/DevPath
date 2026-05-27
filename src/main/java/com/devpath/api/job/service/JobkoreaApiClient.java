@@ -70,16 +70,13 @@ public class JobkoreaApiClient {
     if (!isNotBlank(endpoint)) {
       throw new CustomException(
           ErrorCode.JOB_COLLECT_FAILED,
-          starter
-              ? "잡코리아 신입공채 XML URL이 설정되지 않았습니다."
-              : "잡코리아 채용정보 XML URL이 설정되지 않았습니다.");
+          starter ? "잡코리아 신입공채 XML URL이 설정되지 않았습니다." : "잡코리아 채용정보 XML URL이 설정되지 않았습니다.");
     }
 
     return endpoint;
   }
 
-  private String buildUrl(
-      String endpoint, JobkoreaJobRequest.Search request, int size, int page) {
+  private String buildUrl(String endpoint, JobkoreaJobRequest.Search request, int size, int page) {
     StringBuilder url = new StringBuilder(endpoint);
     appendParam(url, "Size", String.valueOf(size));
     appendParam(url, "Page", String.valueOf(page));
@@ -125,8 +122,7 @@ public class JobkoreaApiClient {
           httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofByteArray());
 
       if (response.statusCode() < 200 || response.statusCode() >= 300) {
-        throw new CustomException(
-            ErrorCode.JOB_COLLECT_FAILED, "잡코리아 API 응답 상태가 올바르지 않습니다.");
+        throw new CustomException(ErrorCode.JOB_COLLECT_FAILED, "잡코리아 API 응답 상태가 올바르지 않습니다.");
       }
 
       return parseXml(response.body());

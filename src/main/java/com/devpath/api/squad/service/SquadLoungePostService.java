@@ -43,7 +43,11 @@ public class SquadLoungePostService {
   public SquadLoungePostResponse createPost(Long userId, SquadLoungePostRequest request) {
     User leader = getUser(userId);
 
-    Squad squad = Squad.builder().name(request.getTitle().trim()).description(request.getDescription()).build();
+    Squad squad =
+        Squad.builder()
+            .name(request.getTitle().trim())
+            .description(request.getDescription())
+            .build();
     applyLoungeFields(squad, request);
     squadRepository.save(squad);
 

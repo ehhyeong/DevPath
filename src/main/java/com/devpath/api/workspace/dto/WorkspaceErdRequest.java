@@ -10,7 +10,9 @@ public class WorkspaceErdRequest {
 
   @Schema(name = "WorkspaceErdSaveRequest", description = "Workspace ERD document save request")
   public record Save(
-      @Schema(description = "Mermaid ERD code", example = "erDiagram\n    USERS {\n        bigint id PK\n    }")
+      @Schema(
+              description = "Mermaid ERD code",
+              example = "erDiagram\n    USERS {\n        bigint id PK\n    }")
           @NotBlank(message = "ERD code is required")
           @Size(max = 50000, message = "ERD code must be 50000 characters or fewer")
           String mermaidCode,

@@ -64,7 +64,8 @@ public class LocalMentoringHubSeedInitializer implements CommandLineRunner {
     if (!passwordEncoder.matches(SEED_PASSWORD, user.getPassword())) {
       user.changePassword(passwordEncoder.encode(SEED_PASSWORD));
     }
-    if (!Boolean.TRUE.equals(user.getIsActive()) || user.getAccountStatus() != AccountStatus.ACTIVE) {
+    if (!Boolean.TRUE.equals(user.getIsActive())
+        || user.getAccountStatus() != AccountStatus.ACTIVE) {
       user.restore();
     }
     return user;
@@ -111,7 +112,8 @@ public class LocalMentoringHubSeedInitializer implements CommandLineRunner {
                         .maxParticipants(seed.maxParticipants())
                         .build());
 
-    post.update(seed.title(), seed.content(), String.join(", ", seed.stacks()), seed.maxParticipants());
+    post.update(
+        seed.title(), seed.content(), String.join(", ", seed.stacks()), seed.maxParticipants());
     post.updateHubFields(
         seed.category(),
         seed.mentoringType(),
@@ -261,11 +263,7 @@ public class LocalMentoringHubSeedInitializer implements CommandLineRunner {
             "PM",
             "study",
             List.of("Product", "UX Research", "Metrics"),
-            List.of(
-                "문제 정의와 가설 정리",
-                "사용자 인터뷰 질문지 리뷰",
-                "핵심 지표와 실험 설계",
-                "포트폴리오 문서 피드백"),
+            List.of("문제 정의와 가설 정리", "사용자 인터뷰 질문지 리뷰", "핵심 지표와 실험 설계", "포트폴리오 문서 피드백"),
             LocalDate.now().plusDays(12),
             3,
             6,
@@ -278,11 +276,7 @@ public class LocalMentoringHubSeedInitializer implements CommandLineRunner {
             "Design",
             "team",
             List.of("Design System", "Accessibility", "Storybook"),
-            List.of(
-                "컴포넌트 인벤토리 작성",
-                "키보드 탐색과 명도 대비 점검",
-                "Storybook 문서화",
-                "접근성 리포트 작성"),
+            List.of("컴포넌트 인벤토리 작성", "키보드 탐색과 명도 대비 점검", "Storybook 문서화", "접근성 리포트 작성"),
             LocalDate.now().minusDays(1),
             4,
             5,

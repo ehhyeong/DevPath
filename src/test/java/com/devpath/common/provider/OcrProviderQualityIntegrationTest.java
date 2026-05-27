@@ -126,9 +126,7 @@ class OcrProviderQualityIntegrationTest {
   }
 
   private String normalizeForKeywordMatch(String value) {
-    return value == null
-        ? ""
-        : value.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", " ");
+    return value == null ? "" : value.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", " ");
   }
 
   private String extractedText(OcrProvider.OcrResult result) {

@@ -34,9 +34,8 @@ public class JpaOfficialRoadmapReader implements OfficialRoadmapReader {
             .map(this::toNodeItem)
             .toList();
 
-    Set<Long> nodeIdSet = nodes.stream()
-        .map(OfficialRoadmapSnapshot.NodeItem::nodeId)
-        .collect(Collectors.toSet());
+    Set<Long> nodeIdSet =
+        nodes.stream().map(OfficialRoadmapSnapshot.NodeItem::nodeId).collect(Collectors.toSet());
 
     // preNode가 현재 로드맵 소속이 아닌 edge는 제외 (데이터 불일치 방어)
     List<OfficialRoadmapSnapshot.PrerequisiteEdge> edges =

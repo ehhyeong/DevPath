@@ -113,7 +113,9 @@ public class WorkspaceDocController {
   }
 
   @PutMapping("/workspaces/{workspaceId}/docs/infra")
-  @Operation(summary = "Infra document upsert", description = "Stores workspace infrastructure architecture notes or links.")
+  @Operation(
+      summary = "Infra document upsert",
+      description = "Stores workspace infrastructure architecture notes or links.")
   public ApiResponse<WorkspaceDocResponse> upsertInfra(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @RequestBody UpdateWorkspaceDocRequest request,
@@ -124,7 +126,9 @@ public class WorkspaceDocController {
   }
 
   @GetMapping("/workspaces/{workspaceId}/docs/infra")
-  @Operation(summary = "Infra document lookup", description = "Loads workspace infrastructure architecture notes or links.")
+  @Operation(
+      summary = "Infra document lookup",
+      description = "Loads workspace infrastructure architecture notes or links.")
   public ApiResponse<WorkspaceDocResponse> getInfra(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
@@ -179,7 +183,9 @@ public class WorkspaceDocController {
   }
 
   @org.springframework.web.bind.annotation.DeleteMapping("/meeting-notes/{noteId}")
-  @Operation(summary = "Delete meeting note", description = "Soft deletes a workspace meeting note.")
+  @Operation(
+      summary = "Delete meeting note",
+      description = "Soft deletes a workspace meeting note.")
   public ApiResponse<Void> deleteMeetingNote(
       @Parameter(description = "Meeting note ID", example = "1") @PathVariable Long noteId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {

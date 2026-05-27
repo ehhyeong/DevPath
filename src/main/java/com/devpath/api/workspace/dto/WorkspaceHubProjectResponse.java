@@ -98,7 +98,10 @@ public class WorkspaceHubProjectResponse {
         .progressPercent("completed".equals(status) ? 100 : defaultProgress(workspace.getType()))
         .mentoringModeLabel(mentoringModeLabel)
         .mentoringModeIcon(mentoringModeIcon(mentoringModeLabel))
-        .categoryLabel(mentoring && roleLabel != null ? roleCategoryLabel(roleLabel) : mentoring ? "Mentoring" : null)
+        .categoryLabel(
+            mentoring && roleLabel != null
+                ? roleCategoryLabel(roleLabel)
+                : mentoring ? "Mentoring" : null)
         .roleLabel(roleLabel)
         .footerKind(mentoring ? "mentor" : "avatars")
         .footerDateLabel(dateText(workspace.getCreatedAt()))
@@ -119,7 +122,10 @@ public class WorkspaceHubProjectResponse {
       return List.of();
     }
 
-    return Arrays.stream(seeds.split(",")).map(String::trim).filter(seed -> !seed.isBlank()).toList();
+    return Arrays.stream(seeds.split(","))
+        .map(String::trim)
+        .filter(seed -> !seed.isBlank())
+        .toList();
   }
 
   private static String typeOf(WorkspaceType type) {
@@ -165,9 +171,7 @@ public class WorkspaceHubProjectResponse {
       return null;
     }
 
-    return "팀 프로젝트형".equals(mentoringModeLabel)
-        ? "fas fa-users mr-1"
-        : "fas fa-puzzle-piece mr-1";
+    return "팀 프로젝트형".equals(mentoringModeLabel) ? "fas fa-users mr-1" : "fas fa-puzzle-piece mr-1";
   }
 
   private static boolean isTeamMentoringWorkspace(Workspace workspace) {
@@ -176,7 +180,9 @@ public class WorkspaceHubProjectResponse {
     }
 
     String text =
-        (workspace.getName() + " " + (workspace.getDescription() == null ? "" : workspace.getDescription()))
+        (workspace.getName()
+                + " "
+                + (workspace.getDescription() == null ? "" : workspace.getDescription()))
             .toLowerCase(Locale.ROOT)
             .replace(" ", "");
 

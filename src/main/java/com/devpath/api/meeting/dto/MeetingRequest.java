@@ -16,7 +16,6 @@ public class MeetingRequest {
       // 회의가 속한 멘토링 ID다.
       @Schema(description = "멘토링 ID", example = "1") @NotNull(message = "멘토링 ID는 필수입니다.")
           Long mentoringId,
-
       @Schema(hidden = true) Long hostId,
 
       // 회의방 제목이다.
@@ -35,23 +34,16 @@ public class MeetingRequest {
           LocalDateTime scheduledAt) {}
 
   @Schema(name = "MeetingEndRequest", description = "회의 종료 요청")
-  public record End(
-
-      @Schema(hidden = true) Long hostId) {}
+  public record End(@Schema(hidden = true) Long hostId) {}
 
   @Schema(name = "MeetingJoinRequest", description = "회의 참가 요청")
-  public record Join(
-
-      @Schema(hidden = true) Long userId) {}
+  public record Join(@Schema(hidden = true) Long userId) {}
 
   @Schema(name = "MeetingLeaveRequest", description = "회의 퇴장 요청")
-  public record Leave(
-
-      @Schema(hidden = true) Long userId) {}
+  public record Leave(@Schema(hidden = true) Long userId) {}
 
   @Schema(name = "MeetingRecordingUrlRequest", description = "회의 녹화 URL 저장 요청")
   public record RecordingUrl(
-
       @Schema(hidden = true) Long hostId,
 
       // 녹화 파일 또는 외부 녹화 링크다.

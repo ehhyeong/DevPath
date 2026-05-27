@@ -2,8 +2,6 @@ package com.devpath.api.notification.service;
 
 import com.devpath.api.notification.dto.ProjectHeaderNotificationResponse;
 import com.devpath.domain.notification.repository.LearnerNotificationRepository;
-import com.devpath.domain.workspace.entity.CalendarEvent;
-import com.devpath.domain.workspace.entity.TeamWorkspaceHeaderNotification;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.repository.CalendarEventRepository;
@@ -72,7 +70,9 @@ public class ProjectHeaderNotificationService {
   }
 
   private List<ProjectHeaderNotificationResponse> learnerNotifications(Long userId) {
-    return learnerNotificationRepository.findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(userId).stream()
+    return learnerNotificationRepository
+        .findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
+        .stream()
         .limit(MAX_HEADER_NOTIFICATIONS)
         .map(ProjectHeaderNotificationResponse::from)
         .toList();
@@ -112,7 +112,10 @@ public class ProjectHeaderNotificationService {
         .stream()
         .filter(event -> workspaceById.containsKey(event.getWorkspaceId()))
         .limit(MAX_TODAY_SCHEDULE_NOTIFICATIONS)
-        .map(event -> ProjectHeaderNotificationResponse.fromTodaySchedule(event, workspaceById.get(event.getWorkspaceId())))
+        .map(
+            event ->
+                ProjectHeaderNotificationResponse.fromTodaySchedule(
+                    event, workspaceById.get(event.getWorkspaceId())))
         .toList();
   }
 
@@ -128,7 +131,8 @@ public class ProjectHeaderNotificationService {
       return Map.of();
     }
 
-    return workspaceRepository.findAllByIdInAndIsDeletedFalseOrderByCreatedAtDesc(workspaceIds)
+    return workspaceRepository
+        .findAllByIdInAndIsDeletedFalseOrderByCreatedAtDesc(workspaceIds)
         .stream()
         .collect(Collectors.toMap(Workspace::getId, Function.identity()));
   }

@@ -69,7 +69,9 @@ public class BuilderController {
     return ResponseEntity.ok(ApiResponse.ok(myRoadmapService.findById(requireUserId(userId), id)));
   }
 
-  @Operation(summary = "나만의 로드맵 수정", description = "빌더에서 구성한 로드맵을 수정합니다. 기존 모듈과 연결된 CustomRoadmap 노드를 교체합니다.")
+  @Operation(
+      summary = "나만의 로드맵 수정",
+      description = "빌더에서 구성한 로드맵을 수정합니다. 기존 모듈과 연결된 CustomRoadmap 노드를 교체합니다.")
   @PutMapping("/roadmaps/{id}")
   public ResponseEntity<ApiResponse<MyRoadmapResponse>> updateRoadmap(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,

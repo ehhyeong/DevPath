@@ -590,5 +590,4 @@ public class InstructorCourseService {
     lessonPrerequisiteRepository.deleteAllByLessonLessonIdInOrPrerequisiteLessonLessonIdIn(
         lessonIds, lessonIds);
   }
-
 }

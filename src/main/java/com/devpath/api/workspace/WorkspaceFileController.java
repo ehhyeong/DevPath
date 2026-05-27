@@ -52,7 +52,9 @@ public class WorkspaceFileController {
   @PostMapping(
       value = "/workspaces/{workspaceId}/files",
       consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @Operation(summary = "Upload workspace file", description = "Uploads a file into workspace storage.")
+  @Operation(
+      summary = "Upload workspace file",
+      description = "Uploads a file into workspace storage.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
@@ -78,7 +80,9 @@ public class WorkspaceFileController {
   }
 
   @PostMapping("/workspaces/{workspaceId}/files/folders")
-  @Operation(summary = "Create workspace folder", description = "Creates a folder in workspace storage.")
+  @Operation(
+      summary = "Create workspace folder",
+      description = "Creates a folder in workspace storage.")
   public ApiResponse<WorkspaceFileResponse> createFolder(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Valid @RequestBody CreateWorkspaceFolderRequest request,
@@ -89,7 +93,9 @@ public class WorkspaceFileController {
   }
 
   @PostMapping("/workspaces/{workspaceId}/files/links")
-  @Operation(summary = "Create workspace external link", description = "Stores an external link in workspace resources.")
+  @Operation(
+      summary = "Create workspace external link",
+      description = "Stores an external link in workspace resources.")
   public ApiResponse<WorkspaceFileResponse> createLink(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Valid @RequestBody CreateWorkspaceLinkRequest request,
@@ -104,7 +110,9 @@ public class WorkspaceFileController {
   }
 
   @GetMapping("/workspaces/{workspaceId}/files")
-  @Operation(summary = "List workspace files", description = "Lists files and folders in workspace storage.")
+  @Operation(
+      summary = "List workspace files",
+      description = "Lists files and folders in workspace storage.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",
@@ -120,7 +128,8 @@ public class WorkspaceFileController {
           @RequestParam(value = "parentId", required = false)
           Long parentId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(workspaceFileService.getFiles(workspaceId, requireUserId(userId), parentId));
+    return ApiResponse.ok(
+        workspaceFileService.getFiles(workspaceId, requireUserId(userId), parentId));
   }
 
   @GetMapping("/workspaces/{workspaceId}/files/storage")
@@ -173,8 +182,7 @@ public class WorkspaceFileController {
   public ApiResponse<WorkspaceArchivePreviewResponse> getArchivePreview(
       @Parameter(description = "File ID", example = "1") @PathVariable Long fileId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(
-        workspaceFileService.getArchivePreview(fileId, requireUserId(userId)));
+    return ApiResponse.ok(workspaceFileService.getArchivePreview(fileId, requireUserId(userId)));
   }
 
   @GetMapping("/workspace-files/{fileId}/document-preview")
@@ -184,8 +192,7 @@ public class WorkspaceFileController {
   public ApiResponse<WorkspaceDocumentPreviewResponse> getDocumentPreview(
       @Parameter(description = "File ID", example = "1") @PathVariable Long fileId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(
-        workspaceFileService.getDocumentPreview(fileId, requireUserId(userId)));
+    return ApiResponse.ok(workspaceFileService.getDocumentPreview(fileId, requireUserId(userId)));
   }
 
   @PatchMapping("/workspace-files/{fileId}")
@@ -199,7 +206,9 @@ public class WorkspaceFileController {
   }
 
   @DeleteMapping("/workspace-files/{fileId}")
-  @Operation(summary = "Delete workspace file", description = "Soft deletes a workspace file or folder.")
+  @Operation(
+      summary = "Delete workspace file",
+      description = "Soft deletes a workspace file or folder.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",

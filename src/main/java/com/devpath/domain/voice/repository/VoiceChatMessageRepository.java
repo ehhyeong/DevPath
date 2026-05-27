@@ -13,8 +13,9 @@ public interface VoiceChatMessageRepository extends JpaRepository<VoiceChatMessa
       Long channelId);
 
   @EntityGraph(attributePaths = {"channel", "channel.creator", "sender"})
-  List<VoiceChatMessage> findTop500ByChannel_IdAndIsDeletedFalseAndCreatedAtAfterOrderByCreatedAtDesc(
-      Long channelId, LocalDateTime createdAt);
+  List<VoiceChatMessage>
+      findTop500ByChannel_IdAndIsDeletedFalseAndCreatedAtAfterOrderByCreatedAtDesc(
+          Long channelId, LocalDateTime createdAt);
 
   long deleteByChannel_IdAndCreatedAtBefore(Long channelId, LocalDateTime createdAt);
 

@@ -350,8 +350,7 @@ public class WorkspaceErdService {
         discussionMessageId);
   }
 
-  private void insertVersionSnapshot(
-      DocumentRow row, String summary, Long discussionMessageId) {
+  private void insertVersionSnapshot(DocumentRow row, String summary, Long discussionMessageId) {
     jdbcTemplate.update(
         """
         INSERT INTO workspace_erd_versions (

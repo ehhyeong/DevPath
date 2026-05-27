@@ -130,8 +130,7 @@ public class WorkspaceTaskService {
   }
 
   @Transactional
-  public WorkspaceTaskResponse updateTaskById(
-      Long taskId, Long userId, UpdateTaskRequest request) {
+  public WorkspaceTaskResponse updateTaskById(Long taskId, Long userId, UpdateTaskRequest request) {
     WorkspaceTask task = getTaskEntity(taskId);
     Long workspaceId = task.getWorkspaceId();
     validateWorkspaceExists(workspaceId);
@@ -180,7 +179,8 @@ public class WorkspaceTaskService {
     boolean assigneeChanged = !Objects.equals(task.getAssigneeId(), newAssigneeId);
     task.changeAssignee(newAssigneeId);
     if (assigneeChanged && newAssigneeId != null) {
-      notificationEventService.notifySystem(newAssigneeId, "칸반 태스크 담당자로 배정되었습니다: " + task.getTitle());
+      notificationEventService.notifySystem(
+          newAssigneeId, "칸반 태스크 담당자로 배정되었습니다: " + task.getTitle());
     }
     return WorkspaceTaskResponse.from(task);
   }
@@ -197,7 +197,8 @@ public class WorkspaceTaskService {
     boolean assigneeChanged = !Objects.equals(task.getAssigneeId(), newAssigneeId);
     task.changeAssignee(newAssigneeId);
     if (assigneeChanged && newAssigneeId != null) {
-      notificationEventService.notifySystem(newAssigneeId, "칸반 태스크 담당자로 배정되었습니다: " + task.getTitle());
+      notificationEventService.notifySystem(
+          newAssigneeId, "칸반 태스크 담당자로 배정되었습니다: " + task.getTitle());
     }
     return WorkspaceTaskResponse.from(task);
   }

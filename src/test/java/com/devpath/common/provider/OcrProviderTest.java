@@ -82,8 +82,7 @@ class OcrProviderTest {
 
   @Test
   void extractTextWithPreprocessing_returnsBestResultFromPreprocessedAttempts() throws IOException {
-    OcrProvider.OcrResult lowConfidenceResult =
-        ocrResult("Spr", 0.31D, List.of("Spr"));
+    OcrProvider.OcrResult lowConfidenceResult = ocrResult("Spr", 0.31D, List.of("Spr"));
     OcrProvider.OcrResult highConfidenceResult =
         ocrResult("Spring Security OAuth", 92.0D, List.of("Spring Security", "OAuth"));
 

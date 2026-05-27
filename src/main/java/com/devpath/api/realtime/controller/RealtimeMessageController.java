@@ -87,7 +87,8 @@ public class RealtimeMessageController {
               MessageSortOrder sort) {
     return ResponseEntity.ok(
         ApiResponse.ok(
-            realtimeMessageService.getWorkspaceDirectMessages(workspaceId, userId, viewerId, sort)));
+            realtimeMessageService.getWorkspaceDirectMessages(
+                workspaceId, userId, viewerId, sort)));
   }
 
   @PostMapping("/api/direct-messages")

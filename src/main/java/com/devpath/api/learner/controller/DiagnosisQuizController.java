@@ -64,7 +64,8 @@ public class DiagnosisQuizController {
   @GetMapping("/{roadmapId}/diagnosis/latest")
   @Operation(summary = "최근 진단 결과 조회", description = "특정 로드맵의 가장 최근 진단 결과를 조회합니다")
   public ResponseEntity<ApiResponse<DiagnosisQuizDto.QuizResultResponse>> getLatestDiagnosisResult(
-      @PathVariable Long roadmapId, @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+      @PathVariable Long roadmapId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
 
     DiagnosisQuizDto.QuizResultResponse response =
         diagnosisQuizService.getLatestDiagnosisResult(userId, roadmapId);

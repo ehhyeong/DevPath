@@ -7,7 +7,9 @@ public class JobActivityProfileResponse {
 
   private JobActivityProfileResponse() {}
 
-  @Schema(name = "JobActivityProfileResponse", description = "DevPath internal activity skill profile")
+  @Schema(
+      name = "JobActivityProfileResponse",
+      description = "DevPath internal activity skill profile")
   public record Summary(
       @Schema(description = "Number of internal squad/project activities", example = "3")
           int projectCount,

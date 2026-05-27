@@ -8,7 +8,6 @@ import com.devpath.api.squad.dto.SquadSettingsResponse;
 import com.devpath.api.squad.dto.UpdateSquadSettingsRequest;
 import com.devpath.api.squad.service.SquadService;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.common.swagger.SwaggerErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

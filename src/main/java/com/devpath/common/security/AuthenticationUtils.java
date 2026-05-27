@@ -24,7 +24,9 @@ public final class AuthenticationUtils {
       JwtTokenProvider.TokenClaims claims, HttpServletRequest request) {
     UsernamePasswordAuthenticationToken authentication =
         new UsernamePasswordAuthenticationToken(
-            claims.userId(), null, Collections.singleton(new SimpleGrantedAuthority(claims.role())));
+            claims.userId(),
+            null,
+            Collections.singleton(new SimpleGrantedAuthority(claims.role())));
     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
     return authentication;
   }

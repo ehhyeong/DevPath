@@ -140,7 +140,9 @@ public class VoiceResponse {
     }
   }
 
-  @Schema(name = "VoiceChatClearStateResponse", description = "Voice meeting personal chat clear state response")
+  @Schema(
+      name = "VoiceChatClearStateResponse",
+      description = "Voice meeting personal chat clear state response")
   public record ChatClearStateDetail(
       @Schema(description = "Voice channel ID", example = "1") Long channelId,
       @Schema(description = "User ID", example = "2") Long userId,
@@ -148,9 +150,7 @@ public class VoiceResponse {
           LocalDateTime clearedAt) {
     public static ChatClearStateDetail from(VoiceChatClearState state) {
       return new ChatClearStateDetail(
-          state.getChannel().getId(),
-          state.getUser().getId(),
-          state.getClearedAt());
+          state.getChannel().getId(), state.getUser().getId(), state.getClearedAt());
     }
   }
 
@@ -180,15 +180,18 @@ public class VoiceResponse {
     }
   }
 
-  @Schema(name = "VoiceMeetingMinutesAnalysisResponse", description = "AI minutes summary and extracted action items")
+  @Schema(
+      name = "VoiceMeetingMinutesAnalysisResponse",
+      description = "AI minutes summary and extracted action items")
   public record MinutesAnalysisDetail(
       @Schema(description = "Saved meeting minutes") MinutesDetail minutes,
       @Schema(description = "Action items extracted by AI") List<MinutesActionItem> actionItems) {}
 
-  @Schema(name = "VoiceMeetingMinutesActionItemResponse", description = "Action item extracted from AI minutes")
+  @Schema(
+      name = "VoiceMeetingMinutesActionItemResponse",
+      description = "Action item extracted from AI minutes")
   public record MinutesActionItem(
-      @Schema(description = "Task title", example = "결제 UI 최종 시안 에셋 정리 및 공유")
-          String title,
+      @Schema(description = "Task title", example = "결제 UI 최종 시안 에셋 정리 및 공유") String title,
       @Schema(description = "Task description") String description,
       @Schema(description = "Task priority", example = "MEDIUM") WorkspaceTaskPriority priority,
       @Schema(description = "Assignee name mentioned in the meeting", example = "박디자인")
@@ -196,7 +199,9 @@ public class VoiceResponse {
       @Schema(description = "Due date mentioned in the meeting", example = "2026-06-01")
           LocalDate dueDate) {}
 
-  @Schema(name = "VoiceMeetingMinutesKanbanTasksResponse", description = "Kanban tasks created from AI minutes")
+  @Schema(
+      name = "VoiceMeetingMinutesKanbanTasksResponse",
+      description = "Kanban tasks created from AI minutes")
   public record MinutesKanbanTasksDetail(
       @Schema(description = "Created Kanban tasks") List<WorkspaceTaskResponse> tasks) {}
 

@@ -45,7 +45,8 @@ public class SquadLoungePostResponse {
             .orElseGet(() -> members.isEmpty() ? null : members.get(0));
 
     int currentMembers = members.size();
-    int maxMembers = squad.getMaxMembers() == null ? Math.max(currentMembers, 1) : squad.getMaxMembers();
+    int maxMembers =
+        squad.getMaxMembers() == null ? Math.max(currentMembers, 1) : squad.getMaxMembers();
 
     return SquadLoungePostResponse.builder()
         .id(squad.getId())

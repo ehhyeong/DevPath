@@ -80,9 +80,8 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
       return;
     }
 
-    Long targetUserId = root.path("targetUserId").canConvertToLong()
-        ? root.path("targetUserId").asLong()
-        : null;
+    Long targetUserId =
+        root.path("targetUserId").canConvertToLong() ? root.path("targetUserId").asLong() : null;
 
     if (targetUserId == null) {
       sendError(session, "Missing voice signaling target.");
@@ -118,7 +117,8 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
         getLongAttribute(session, VoiceSignalingHandshakeInterceptor.CHANNEL_ID_ATTRIBUTE);
     Long userId = getLongAttribute(session, VoiceSignalingHandshakeInterceptor.USER_ID_ATTRIBUTE);
     String userName =
-        (String) session.getAttributes().get(VoiceSignalingHandshakeInterceptor.USER_NAME_ATTRIBUTE);
+        (String)
+            session.getAttributes().get(VoiceSignalingHandshakeInterceptor.USER_NAME_ATTRIBUTE);
 
     if (channelId == null || userId == null || userName == null) {
       return null;
@@ -218,7 +218,8 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
     broadcast(client.channelId(), client.session().getId(), message);
   }
 
-  private void sendToUser(Long channelId, Long targetUserId, ObjectNode message) throws IOException {
+  private void sendToUser(Long channelId, Long targetUserId, ObjectNode message)
+      throws IOException {
     Map<String, ClientSession> clients = channelSessions.get(channelId);
 
     if (clients == null) {

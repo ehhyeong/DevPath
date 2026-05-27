@@ -65,12 +65,7 @@ public class LoungeShellResponse {
     }
   }
 
-  public record NotificationItem(
-      Long id,
-      String type,
-      String text,
-      String dateText,
-      Boolean read) {
+  public record NotificationItem(Long id, String type, String text, String dateText, Boolean read) {
 
     public static NotificationItem from(LearnerNotification notification) {
       LearnerNotificationType type = notification.getType();

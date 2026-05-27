@@ -74,9 +74,7 @@ public class SubmissionGradingService {
     submission.grade(null, totalScore, null, null);
 
     notificationEventService.notifyAssignmentGraded(
-        submission.getLearner().getId(),
-        submission.getAssignment().getTitle(),
-        totalScore);
+        submission.getLearner().getId(), submission.getAssignment().getTitle(), totalScore);
   }
 
   public SubmissionGradeResponse gradeSubmission(
@@ -122,9 +120,7 @@ public class SubmissionGradingService {
     submission.grade(instructor, totalScore, null, null);
 
     notificationEventService.notifyAssignmentGraded(
-        submission.getLearner().getId(),
-        submission.getAssignment().getTitle(),
-        totalScore);
+        submission.getLearner().getId(), submission.getAssignment().getTitle(), totalScore);
 
     return SubmissionGradeResponse.builder()
         .submissionId(submission.getId())
@@ -206,7 +202,8 @@ public class SubmissionGradingService {
             : assignment.getSubmissionRuleDescription())
         + "\n"
         + "허용 형식: "
-        + (assignment.getAllowedFileFormats() == null || assignment.getAllowedFileFormats().isBlank()
+        + (assignment.getAllowedFileFormats() == null
+                || assignment.getAllowedFileFormats().isBlank()
             ? "(제한 없음)"
             : assignment.getAllowedFileFormats())
         + "\n\n"
@@ -297,7 +294,7 @@ public class SubmissionGradingService {
                     .criteriaName(rubric.getCriteriaName())
                     .maxPoints(rubric.getMaxPoints())
                     .earnedPoints(rubric.getMaxPoints() / 2)
-                .build())
+                    .build())
         .toList();
   }
 

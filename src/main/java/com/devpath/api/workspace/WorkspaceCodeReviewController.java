@@ -34,8 +34,7 @@ public class WorkspaceCodeReviewController {
   public ApiResponse<WorkspaceCodeReviewResponse.Board> getBoard(
       @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(
-        workspaceCodeReviewService.getBoard(workspaceId, requireUserId(userId)));
+    return ApiResponse.ok(workspaceCodeReviewService.getBoard(workspaceId, requireUserId(userId)));
   }
 
   @GetMapping("/{reviewId}")

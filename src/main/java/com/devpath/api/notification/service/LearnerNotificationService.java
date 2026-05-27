@@ -22,7 +22,9 @@ public class LearnerNotificationService {
   public List<NotificationResponse> getMyNotifications(Long learnerId) {
     validateUserExists(learnerId);
 
-    return learnerNotificationRepository.findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(learnerId).stream()
+    return learnerNotificationRepository
+        .findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(learnerId)
+        .stream()
         .map(NotificationResponse::from)
         .toList();
   }

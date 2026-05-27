@@ -1,5 +1,6 @@
 package com.devpath.api.squad.service;
 
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.squad.dto.CreateSquadInviteLinkResponse;
 import com.devpath.api.squad.dto.SendSquadInviteEmailRequest;
 import com.devpath.api.squad.dto.SquadInviteResponse;
@@ -10,7 +11,6 @@ import com.devpath.domain.squad.entity.SquadInvitation;
 import com.devpath.domain.squad.entity.SquadInvitationStatus;
 import com.devpath.domain.squad.entity.SquadMember;
 import com.devpath.domain.squad.entity.SquadRole;
-import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.domain.squad.repository.SquadInvitationRepository;
 import com.devpath.domain.squad.repository.SquadMemberRepository;
 import com.devpath.domain.squad.repository.SquadRepository;
@@ -88,8 +88,11 @@ public class SquadInviteService {
     squadInvitationRepository.save(invitation);
 
     // 초대 이메일이 DevPath 가입자인 경우에만 인앱 알림 발송
-    userRepository.findByEmail(normalizedEmail).ifPresent(invitee ->
-        notificationEventService.notifySquadInvited(invitee.getId(), squad.getName()));
+    userRepository
+        .findByEmail(normalizedEmail)
+        .ifPresent(
+            invitee ->
+                notificationEventService.notifySquadInvited(invitee.getId(), squad.getName()));
 
     return SquadInviteResponse.from(invitation, buildInviteUrl(token));
   }

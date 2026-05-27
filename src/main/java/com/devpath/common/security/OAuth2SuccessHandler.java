@@ -58,7 +58,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     }
 
     String targetUrl =
-        UriComponentsBuilder.fromUriString(oauth2RedirectUrl).fragment(tokenFragment).build().toUriString();
+        UriComponentsBuilder.fromUriString(oauth2RedirectUrl)
+            .fragment(tokenFragment)
+            .build()
+            .toUriString();
 
     log.info("OAuth2 login success. userId={}, redirect={}", userId, oauth2RedirectUrl);
     getRedirectStrategy().sendRedirect(request, response, targetUrl);

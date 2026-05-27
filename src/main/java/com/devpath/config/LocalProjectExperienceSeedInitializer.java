@@ -140,7 +140,8 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
     if (!passwordEncoder.matches(SEED_PASSWORD, user.getPassword())) {
       user.changePassword(passwordEncoder.encode(SEED_PASSWORD));
     }
-    if (!Boolean.TRUE.equals(user.getIsActive()) || user.getAccountStatus() != AccountStatus.ACTIVE) {
+    if (!Boolean.TRUE.equals(user.getIsActive())
+        || user.getAccountStatus() != AccountStatus.ACTIVE) {
       user.restore();
     }
     return user;
@@ -175,7 +176,9 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
     ensureProjectMember(project.getId(), owner.getId(), ProjectRoleType.LEADER);
     members.stream()
         .filter(member -> !member.getId().equals(owner.getId()))
-        .forEach(member -> ensureProjectMember(project.getId(), member.getId(), ProjectRoleType.FULLSTACK));
+        .forEach(
+            member ->
+                ensureProjectMember(project.getId(), member.getId(), ProjectRoleType.FULLSTACK));
 
     Workspace workspace =
         workspaceRepository
@@ -197,7 +200,11 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
       return;
     }
     projectMemberRepository.save(
-        ProjectMember.builder().projectId(projectId).learnerId(learnerId).roleType(roleType).build());
+        ProjectMember.builder()
+            .projectId(projectId)
+            .learnerId(learnerId)
+            .roleType(roleType)
+            .build());
   }
 
   private void ensureWorkspaceMember(Long workspaceId, Long learnerId) {
@@ -260,11 +267,16 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
 
   private void ensureShowcaseSocial(Showcase showcase, User owner, List<User> users) {
     users.stream()
-        .filter(user -> !showcaseLikeRepository.existsByShowcaseIdAndUserId(showcase.getId(), user.getId()))
+        .filter(
+            user ->
+                !showcaseLikeRepository.existsByShowcaseIdAndUserId(showcase.getId(), user.getId()))
         .forEach(
             user ->
                 showcaseLikeRepository.save(
-                    ShowcaseLike.builder().showcaseId(showcase.getId()).userId(user.getId()).build()));
+                    ShowcaseLike.builder()
+                        .showcaseId(showcase.getId())
+                        .userId(user.getId())
+                        .build()));
 
     if (!showcaseCommentRepository
         .findAllByShowcaseIdAndIsDeletedFalseOrderByCreatedAtAsc(showcase.getId())

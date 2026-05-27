@@ -13,7 +13,6 @@ public class MentoringPostRequest {
 
   @Schema(name = "MentoringPostCreateRequest", description = "멘토링 공고 등록 요청")
   public record Create(
-
       @Schema(hidden = true) Long mentorId,
 
       // 공고 목록과 상세 화면에 표시되는 제목이다.

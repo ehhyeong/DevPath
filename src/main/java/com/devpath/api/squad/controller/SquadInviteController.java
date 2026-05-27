@@ -31,9 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/squads/{squadId}/invites")
 @RequiredArgsConstructor
 @Validated
-@Tag(
-    name = "Squad Invite API",
-    description = "스쿼드 초대 링크 생성, 이메일 초대, 초대 목록 조회 API입니다.")
+@Tag(name = "Squad Invite API", description = "스쿼드 초대 링크 생성, 이메일 초대, 초대 목록 조회 API입니다.")
 public class SquadInviteController {
 
   private final SquadInviteService squadInviteService;
@@ -42,7 +40,8 @@ public class SquadInviteController {
   @Operation(summary = "스쿼드 초대 링크 생성", description = "LEADER가 만료 시간이 있는 스쿼드 초대 링크를 생성합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "200", description = "초대 링크 생성 성공"),
+        responseCode = "200",
+        description = "초대 링크 생성 성공"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "403",
         description = "LEADER 권한 없음",
@@ -67,7 +66,8 @@ public class SquadInviteController {
       description = "LEADER가 이메일 주소를 기준으로 초대 토큰과 초대 URL을 생성합니다. 실제 메일 발송은 후속 연동 대상입니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "200", description = "이메일 초대 생성 성공"),
+        responseCode = "200",
+        description = "이메일 초대 생성 성공"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "403",
         description = "LEADER 권한 없음",
@@ -90,10 +90,12 @@ public class SquadInviteController {
   @GetMapping
   @Operation(
       summary = "스쿼드 초대 목록 조회",
-      description = "스쿼드 기준 초대 목록을 조회합니다. status를 넘기면 PENDING, ACCEPTED, REJECTED, EXPIRED 상태별로 필터링합니다.")
+      description =
+          "스쿼드 기준 초대 목록을 조회합니다. status를 넘기면 PENDING, ACCEPTED, REJECTED, EXPIRED 상태별로 필터링합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "200", description = "초대 목록 조회 성공"),
+        responseCode = "200",
+        description = "초대 목록 조회 성공"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "403",
         description = "LEADER 권한 없음",
@@ -105,8 +107,7 @@ public class SquadInviteController {
           @Positive(message = "스쿼드 ID는 양수여야 합니다.")
           Long squadId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @Parameter(description = "초대 상태 필터", example = "PENDING")
-          @RequestParam(required = false)
+      @Parameter(description = "초대 상태 필터", example = "PENDING") @RequestParam(required = false)
           SquadInvitationStatus status) {
     return ApiResponse.ok(squadInviteService.getInvites(squadId, userId, status));
   }

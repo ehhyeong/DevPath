@@ -16,8 +16,8 @@ public interface TeamWorkspaceHeaderNotificationRepository
       findByWorkspaceIdAndPageKeyStartingWithAndIsDeletedFalseOrderByDisplayOrderAscCreatedAtDesc(
           Long workspaceId, String pageKeyPrefix);
 
-  List<TeamWorkspaceHeaderNotification>
-      findByWorkspaceIdInAndIsDeletedFalseOrderByCreatedAtDesc(Collection<Long> workspaceIds);
+  List<TeamWorkspaceHeaderNotification> findByWorkspaceIdInAndIsDeletedFalseOrderByCreatedAtDesc(
+      Collection<Long> workspaceIds);
 
   List<TeamWorkspaceHeaderNotification> findByWorkspaceIdAndPageKeyAndIsDeletedFalse(
       Long workspaceId, String pageKey);

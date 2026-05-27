@@ -13,7 +13,6 @@ public class MentoringMaterialRequest {
 
   @Schema(name = "MentoringMaterialCreateRequest", description = "멘토링 미션 자료 등록 요청")
   public record Create(
-
       @Schema(hidden = true) Long mentorId,
 
       // URL 자료인지 TEXT 가이드라인인지 구분한다.
@@ -45,7 +44,6 @@ public class MentoringMaterialRequest {
 
   @Schema(name = "MentoringMaterialUpdateRequest", description = "멘토링 미션 자료 수정 요청")
   public record Update(
-
       @Schema(hidden = true) Long mentorId,
 
       // 수정 후 자료 타입이다.

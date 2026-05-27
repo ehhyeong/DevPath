@@ -13,6 +13,9 @@ import lombok.NoArgsConstructor;
 public class ChangeSquadMemberRoleRequest {
 
   @NotNull(message = "변경할 역할은 필수입니다.")
-  @Schema(description = "변경할 스쿼드 역할", example = "MEMBER", allowableValues = {"LEADER", "MEMBER"})
+  @Schema(
+      description = "변경할 스쿼드 역할",
+      example = "MEMBER",
+      allowableValues = {"LEADER", "MEMBER"})
   private SquadRole role;
 }

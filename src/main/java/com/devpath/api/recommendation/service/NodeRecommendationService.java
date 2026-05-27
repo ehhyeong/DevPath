@@ -273,7 +273,9 @@ public class NodeRecommendationService {
         .acceptedCount((int) acceptedCount)
         .rejectedCount((int) rejectedCount)
         .recommendations(
-            recommendations.stream().map(NodeRecommendationDto.RecommendationResponse::from).toList())
+            recommendations.stream()
+                .map(NodeRecommendationDto.RecommendationResponse::from)
+                .toList())
         .build();
   }
 

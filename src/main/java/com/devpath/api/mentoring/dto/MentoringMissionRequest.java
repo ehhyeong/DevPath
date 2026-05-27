@@ -13,7 +13,6 @@ public class MentoringMissionRequest {
 
   @Schema(name = "MentoringMissionCreateRequest", description = "멘토링 미션 생성 요청")
   public record Create(
-
       @Schema(hidden = true) Long mentorId,
 
       // 멘토링 안에서 몇 주차 미션인지 나타낸다.
@@ -38,7 +37,6 @@ public class MentoringMissionRequest {
 
   @Schema(name = "MentoringMissionUpdateRequest", description = "멘토링 미션 수정 요청")
   public record Update(
-
       @Schema(hidden = true) Long mentorId,
 
       // 수정 후에도 같은 멘토링 내 주차 중복은 허용하지 않는다.

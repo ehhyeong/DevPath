@@ -72,18 +72,14 @@ class WorkspaceDocServiceTest {
     UpdateWorkspaceDocRequest request = new UpdateWorkspaceDocRequest();
     ReflectionTestUtils.setField(request, "content", "# API");
     givenWorkspaceMember(workspaceId, userId);
-    when(workspaceDocRepository.findByWorkspaceIdAndDocType(
-            workspaceId, WorkspaceDocType.API_SPEC))
+    when(workspaceDocRepository.findByWorkspaceIdAndDocType(workspaceId, WorkspaceDocType.API_SPEC))
         .thenReturn(Optional.empty());
-    when(workspaceDocRepository.save(any(WorkspaceDoc.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(workspaceDocRepository.save(any(WorkspaceDoc.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     when(userRepository.findById(userId))
         .thenReturn(
             Optional.of(
-                User.builder()
-                    .email("lee@example.com")
-                    .password("encoded")
-                    .name("이하늘")
-                    .build()));
+                User.builder().email("lee@example.com").password("encoded").name("이하늘").build()));
 
     workspaceDocService.upsertDoc(workspaceId, userId, WorkspaceDocType.API_SPEC, request);
 
@@ -92,14 +88,10 @@ class WorkspaceDocServiceTest {
     assertThat(logCaptor.getValue().getWorkspaceId()).isEqualTo(workspaceId);
     assertThat(logCaptor.getValue().getActorId()).isEqualTo(userId);
     assertThat(logCaptor.getValue().getActivityType()).isEqualTo(ActivityLogType.DOC_UPDATED);
-    assertThat(logCaptor.getValue().getDescription())
-        .isEqualTo("이하늘님이 [API 명세서]를 업데이트했습니다.");
+    assertThat(logCaptor.getValue().getDescription()).isEqualTo("이하늘님이 [API 명세서]를 업데이트했습니다.");
     verify(headerNotificationService)
         .addNotification(
-            workspaceId,
-            "architecture",
-            "이하늘님이 [API 명세서]를 업데이트했습니다.",
-            "/team-ws-architecture");
+            workspaceId, "architecture", "이하늘님이 [API 명세서]를 업데이트했습니다.", "/team-ws-architecture");
   }
 
   private void givenWorkspaceMember(long workspaceId, long userId) {

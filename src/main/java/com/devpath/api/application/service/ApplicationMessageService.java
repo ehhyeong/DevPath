@@ -44,9 +44,10 @@ public class ApplicationMessageService {
 
     ApplicationMessage saved = applicationMessageRepository.save(message);
 
-    Long receiverId = sender.getId().equals(application.getSender().getId())
-        ? application.getReceiver().getId()
-        : application.getSender().getId();
+    Long receiverId =
+        sender.getId().equals(application.getSender().getId())
+            ? application.getReceiver().getId()
+            : application.getSender().getId();
     notificationEventService.notifySystem(receiverId, sender.getName() + "님이 메시지를 보냈습니다.");
 
     return ApplicationMessageResponse.Detail.from(saved, sender.getId());

@@ -32,9 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/squads")
 @RequiredArgsConstructor
 @Validated
-@Tag(
-    name = "Squad Member API",
-    description = "스쿼드 멤버 조회, 직접 추가, 역할 변경, 강퇴 API입니다.")
+@Tag(name = "Squad Member API", description = "스쿼드 멤버 조회, 직접 추가, 역할 변경, 강퇴 API입니다.")
 public class SquadMemberController {
 
   private final SquadMemberService squadMemberService;
@@ -43,7 +41,8 @@ public class SquadMemberController {
   @Operation(summary = "내 참여 스쿼드 목록 조회", description = "요청 사용자가 활성 멤버로 참여 중인 스쿼드 목록을 조회합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "200", description = "내 참여 스쿼드 목록 조회 성공"),
+        responseCode = "200",
+        description = "내 참여 스쿼드 목록 조회 성공"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "404",
         description = "사용자를 찾을 수 없음",
@@ -58,7 +57,8 @@ public class SquadMemberController {
   @Operation(summary = "스쿼드 멤버 직접 추가", description = "LEADER가 특정 사용자를 스쿼드 멤버로 직접 추가합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "200", description = "스쿼드 멤버 추가 성공"),
+        responseCode = "200",
+        description = "스쿼드 멤버 추가 성공"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "403",
         description = "LEADER 권한 없음",
@@ -86,7 +86,8 @@ public class SquadMemberController {
   @Operation(summary = "스쿼드 멤버 역할 변경", description = "LEADER가 스쿼드 멤버의 역할을 LEADER 또는 MEMBER로 변경합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "200", description = "스쿼드 멤버 역할 변경 성공"),
+        responseCode = "200",
+        description = "스쿼드 멤버 역할 변경 성공"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "400",
         description = "마지막 LEADER 강등 불가",
@@ -121,7 +122,8 @@ public class SquadMemberController {
       description = "LEADER가 특정 멤버를 스쿼드에서 제거합니다. 실제 삭제 대신 soft delete 처리합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-        responseCode = "200", description = "스쿼드 멤버 강퇴 성공"),
+        responseCode = "200",
+        description = "스쿼드 멤버 강퇴 성공"),
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "400",
         description = "자기 자신 강퇴 또는 마지막 LEADER 제거 불가",

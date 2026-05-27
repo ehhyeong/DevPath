@@ -10,7 +10,6 @@ public class AiDesignReviewRequest {
 
   @Schema(name = "AiDesignReviewCreateRequest", description = "AI 설계 리뷰 요청")
   public record Create(
-
       @Schema(hidden = true) Long requesterId,
 
       // 설계 리뷰 제목이다.
@@ -39,7 +38,6 @@ public class AiDesignReviewRequest {
 
   @Schema(name = "AiDesignSuggestionCreateRequest", description = "AI 설계 개선 제안 저장 요청")
   public record SuggestionCreate(
-
       @Schema(hidden = true) Long createdByUserId,
 
       // 개선 제안 카테고리다.

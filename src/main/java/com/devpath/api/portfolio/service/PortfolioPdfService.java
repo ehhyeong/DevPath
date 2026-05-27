@@ -75,7 +75,8 @@ public class PortfolioPdfService {
     Portfolio portfolio = portfolioService.getPortfolioEntity(portfolioId);
     validateOwner(portfolio, userId);
 
-    return downloadHistoryRepository.findAllByPortfolioIdOrderByDownloadedAtDesc(portfolioId)
+    return downloadHistoryRepository
+        .findAllByPortfolioIdOrderByDownloadedAtDesc(portfolioId)
         .stream()
         .map(PortfolioPdfDownloadHistoryResponse::from)
         .toList();
@@ -91,7 +92,8 @@ public class PortfolioPdfService {
     Resource resource = toResource(pdfVersion, userId);
     saveDownloadHistory(portfolioId, userId, pdfVersion, ipAddress);
 
-    return new PdfDownloadFile(resource, buildDownloadFileName(portfolioId, pdfVersion.getVersion()));
+    return new PdfDownloadFile(
+        resource, buildDownloadFileName(portfolioId, pdfVersion.getVersion()));
   }
 
   @Transactional
@@ -107,7 +109,8 @@ public class PortfolioPdfService {
     Resource resource = toResource(pdfVersion, userId);
     saveDownloadHistory(portfolioId, userId, pdfVersion, ipAddress);
 
-    return new PdfDownloadFile(resource, buildDownloadFileName(portfolioId, pdfVersion.getVersion()));
+    return new PdfDownloadFile(
+        resource, buildDownloadFileName(portfolioId, pdfVersion.getVersion()));
   }
 
   @Transactional

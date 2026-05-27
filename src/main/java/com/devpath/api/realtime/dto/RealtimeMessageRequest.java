@@ -15,7 +15,6 @@ public class RealtimeMessageRequest {
       // A 담당 라운지/워크스페이스 Entity와 직접 연결하지 않고 ID만 받는다.
       @Schema(description = "라운지 ID", example = "1") @NotNull(message = "라운지 ID는 필수입니다.")
           Long loungeId,
-
       @Schema(hidden = true) Long senderId,
 
       // 라운지 채팅 메시지 본문이다.
@@ -26,7 +25,6 @@ public class RealtimeMessageRequest {
 
   @Schema(name = "DirectMessageCreateRequest", description = "1:1 메시지 전송 요청")
   public record DirectCreate(
-
       @Schema(hidden = true) Long senderId,
 
       // 1:1 메시지를 받을 사용자 ID다.

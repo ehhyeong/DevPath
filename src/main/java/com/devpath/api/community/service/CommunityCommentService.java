@@ -40,8 +40,7 @@ public class CommunityCommentService {
 
     // 게시글 작성자와 댓글 작성자가 다를 때만 알림 발송
     if (!post.getUser().getId().equals(userId)) {
-      notificationEventService.notifyCommunityCommented(
-          post.getUser().getId(), post.getTitle());
+      notificationEventService.notifyCommunityCommented(post.getUser().getId(), post.getTitle());
     }
 
     return CommentResponse.from(savedComment, List.of());

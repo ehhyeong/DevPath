@@ -32,7 +32,8 @@ public class SquadHeaderNotificationController {
   public ApiResponse<List<TeamWorkspaceHeaderNotificationResponse>> getNotifications(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(notificationService.getSquadNotifications(workspaceId, requireUserId(userId)));
+    return ApiResponse.ok(
+        notificationService.getSquadNotifications(workspaceId, requireUserId(userId)));
   }
 
   @PostMapping("/workspaces/{workspaceId}/squad-header-notifications")

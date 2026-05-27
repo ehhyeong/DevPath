@@ -10,7 +10,6 @@ public class MentoringApplicationRequest {
 
   @Schema(name = "MentoringApplicationCreateRequest", description = "멘토링 신청 요청")
   public record Create(
-
       @Schema(hidden = true) Long applicantId,
 
       // 멘토에게 전달할 신청 메시지다.
@@ -20,13 +19,10 @@ public class MentoringApplicationRequest {
           String message) {}
 
   @Schema(name = "MentoringApplicationApproveRequest", description = "멘토링 신청 승인 요청")
-  public record Approve(
-
-      @Schema(hidden = true) Long mentorId) {}
+  public record Approve(@Schema(hidden = true) Long mentorId) {}
 
   @Schema(name = "MentoringApplicationRejectRequest", description = "멘토링 신청 거절 요청")
   public record Reject(
-
       @Schema(hidden = true) Long mentorId,
 
       // 신청자에게 전달할 거절 사유다.

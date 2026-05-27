@@ -10,7 +10,6 @@ public class PullRequestReviewRequest {
 
   @Schema(name = "PullRequestReviewCreateRequest", description = "PR 코드 리뷰 작성 요청")
   public record Create(
-
       @Schema(hidden = true) Long reviewerId,
 
       // 코드 리뷰 코멘트 본문이다.
@@ -22,13 +21,10 @@ public class PullRequestReviewRequest {
           String comment) {}
 
   @Schema(name = "PullRequestReviewDecisionRequest", description = "PR 리뷰 승인/반려 요청")
-  public record ReviewDecision(
-
-      @Schema(hidden = true) Long reviewerId) {}
+  public record ReviewDecision(@Schema(hidden = true) Long reviewerId) {}
 
   @Schema(name = "MissionSubmissionDecisionRequest", description = "미션 제출 Pass/Reject 요청")
   public record MissionDecision(
-
       @Schema(hidden = true) Long mentorId,
 
       // 최종 판정 피드백이다.

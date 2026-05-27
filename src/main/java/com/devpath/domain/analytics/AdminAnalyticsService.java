@@ -51,8 +51,7 @@ public class AdminAnalyticsService {
             sumLongMetric(metrics, "weeklyActiveUsers", countCreatedAfter(results, 7)))
         .averageRoadmapProgress(averageDoubleMetric(metrics, "averageRoadmapProgress"))
         .monthlyCompletedAssignments(
-            sumLongMetric(
-                metrics, "monthlyCompletedAssignments", countCreatedAfter(results, 30)))
+            sumLongMetric(metrics, "monthlyCompletedAssignments", countCreatedAfter(results, 30)))
         .build();
   }
 

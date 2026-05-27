@@ -115,7 +115,8 @@ public class CustomRoadmapController {
       @RequestBody MyRoadmapDto.RenameRequest request) {
     return ResponseEntity.ok(
         ApiResponse.ok(
-            customRoadmapQueryService.renameMyRoadmap(userId, customRoadmapId, request.getTitle())));
+            customRoadmapQueryService.renameMyRoadmap(
+                userId, customRoadmapId, request.getTitle())));
   }
 
   @Operation(summary = "내 커스텀 로드맵 삭제", description = "JWT 로그인 사용자의 커스텀 로드맵을 삭제합니다.")

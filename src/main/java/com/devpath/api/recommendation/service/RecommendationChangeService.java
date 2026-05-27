@@ -134,10 +134,7 @@ public class RecommendationChangeService {
                 .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
                     userId, roadmapId, RecommendationChangeStatus.SUGGESTED);
 
-    return changes
-        .stream()
-        .map(this::toDetail)
-        .toList();
+    return changes.stream().map(this::toDetail).toList();
   }
 
   @Transactional
@@ -222,8 +219,7 @@ public class RecommendationChangeService {
                 .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusInOrderByUpdatedAtDesc(
                     userId, roadmapId, processedStatuses);
 
-    return histories
-        .stream()
+    return histories.stream()
         .map(
             recommendationChange ->
                 RecommendationChangeResponse.HistoryItem.builder()
@@ -256,7 +252,8 @@ public class RecommendationChangeService {
     }
 
     List<RecommendationChangeResponse.Detail> regenerated =
-        createSuggestionsInternal(userId, RecommendationChangeRequest.SuggestionHolder.from(request));
+        createSuggestionsInternal(
+            userId, RecommendationChangeRequest.SuggestionHolder.from(request));
 
     return RecommendationChangeResponse.RecalculateResult.builder()
         .recalculatedCount(currentPendingChanges.size())

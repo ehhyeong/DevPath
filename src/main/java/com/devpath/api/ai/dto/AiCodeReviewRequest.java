@@ -10,7 +10,6 @@ public class AiCodeReviewRequest {
 
   @Schema(name = "AiCodeReviewCreateRequest", description = "AI 코드 리뷰 요청")
   public record Create(
-
       @Schema(hidden = true) Long requesterId,
 
       // PR 제출과 연결할 경우 사용한다. diffText만 리뷰할 때는 null 가능하다.
@@ -32,7 +31,5 @@ public class AiCodeReviewRequest {
           String diffText) {}
 
   @Schema(name = "AiReviewCommentDecisionRequest", description = "AI 리뷰 코멘트 승인/반려 요청")
-  public record CommentDecision(
-
-      @Schema(hidden = true) Long requesterId) {}
+  public record CommentDecision(@Schema(hidden = true) Long requesterId) {}
 }

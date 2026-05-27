@@ -145,7 +145,8 @@ public class ProjectHeaderNotificationResponse {
           APPLICATION_REJECTED,
           LOUNGE_APPLICATION_RECEIVED,
           SQUAD_INVITED,
-          SQUAD_KICKED -> "/lounge-dashboard";
+          SQUAD_KICKED ->
+          "/lounge-dashboard";
       case COMMUNITY_COMMENTED -> "/community-list";
       case WORKSPACE_ANSWER_CREATED -> "/team-ws-review";
       case MENTORING_ANSWER_CREATED, MISSION_PASSED, MISSION_REJECTED -> "/mentoring-hub";

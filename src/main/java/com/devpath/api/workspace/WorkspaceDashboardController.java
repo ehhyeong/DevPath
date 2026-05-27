@@ -60,9 +60,7 @@ public class WorkspaceDashboardController {
   }
 
   @PostMapping("/workspaces/{workspaceId}/presence")
-  @Operation(
-      summary = "워크스페이스 접속 상태 갱신",
-      description = "프로젝트 화면에 접속 중인 멤버의 마지막 활동 시각을 갱신합니다.")
+  @Operation(summary = "워크스페이스 접속 상태 갱신", description = "프로젝트 화면에 접속 중인 멤버의 마지막 활동 시각을 갱신합니다.")
   public ApiResponse<Void> touchWorkspacePresence(
       @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {

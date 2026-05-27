@@ -28,9 +28,8 @@ public class GeminiJobAnalysisService {
   private final GeminiProvider geminiProvider;
 
   /**
-   * 사용자 활동 프로필과 잡코리아 채용공고를 기반으로 Gemini AI 분석을 수행한다.
-   * 실패 시 RuntimeException을 던져 호출부(컨트롤러)에서 HTTP 오류로 처리한다.
-   * 프론트엔드는 HTTP 오류를 감지해 기존 rule-based 로직으로 fallback한다.
+   * 사용자 활동 프로필과 잡코리아 채용공고를 기반으로 Gemini AI 분석을 수행한다. 실패 시 RuntimeException을 던져 호출부(컨트롤러)에서 HTTP 오류로
+   * 처리한다. 프론트엔드는 HTTP 오류를 감지해 기존 rule-based 로직으로 fallback한다.
    */
   public GeminiJobAnalysisResponse.Analysis analyze(
       Long userId, String keyword, String areaCode, String jobCode) {
@@ -49,8 +48,7 @@ public class GeminiJobAnalysisService {
       throw new RuntimeException("Gemini 응답이 없습니다.");
     }
 
-    List<GeminiJobAnalysisResponse.RecommendedPosting> recommendations =
-        parseAndMap(raw, postings);
+    List<GeminiJobAnalysisResponse.RecommendedPosting> recommendations = parseAndMap(raw, postings);
 
     return new GeminiJobAnalysisResponse.Analysis(recommendations, true, null);
   }
@@ -198,10 +196,7 @@ public class GeminiJobAnalysisService {
     }
   }
 
-  /**
-   * 스코어링 교체 포인트. 현재는 Gemini 점수를 그대로 사용한다.
-   * 추후 정밀 알고리즘(스킬 매칭 가중치 등)으로 교체 시 이 메서드만 수정한다.
-   */
+  /** 스코어링 교체 포인트. 현재는 Gemini 점수를 그대로 사용한다. 추후 정밀 알고리즘(스킬 매칭 가중치 등)으로 교체 시 이 메서드만 수정한다. */
   private int resolveScore(int geminiScore, JobkoreaJobResponse.Posting posting) {
     // TODO: 추후 정밀 알고리즘으로 교체
     return geminiScore;
@@ -223,7 +218,8 @@ public class GeminiJobAnalysisService {
     int start = cleaned.indexOf('[');
     int end = cleaned.lastIndexOf(']');
     if (start < 0 || end <= start) {
-      throw new RuntimeException("Gemini 응답에서 JSON 배열을 찾을 수 없습니다. raw=" + raw.substring(0, Math.min(200, raw.length())));
+      throw new RuntimeException(
+          "Gemini 응답에서 JSON 배열을 찾을 수 없습니다. raw=" + raw.substring(0, Math.min(200, raw.length())));
     }
 
     return cleaned.substring(start, end + 1);

@@ -40,9 +40,7 @@ public class OcrController {
                 "OCR 추출이 완료되었습니다.", ocrService.extractText(userId, lessonId, request)));
   }
 
-  @Operation(
-      summary = "Base64 이미지 즉시 OCR",
-      description = "Python OCR 서버를 사용하고 DB 저장 없이 결과만 반환합니다.")
+  @Operation(summary = "Base64 이미지 즉시 OCR", description = "Python OCR 서버를 사용하고 DB 저장 없이 결과만 반환합니다.")
   @PostMapping("/ocr/extract")
   public ResponseEntity<ApiResponse<OcrResponse.ImmediateExtract>> extractFromBase64(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
@@ -67,9 +65,7 @@ public class OcrController {
     return ResponseEntity.ok(ApiResponse.ok(ocrService.searchOcrText(userId, lessonId, keyword)));
   }
 
-  @Operation(
-      summary = "OCR 텍스트-타임스탬프 매핑 조회",
-      description = "특정 레슨의 OCR 텍스트와 타임스탬프 매핑 목록을 조회합니다.")
+  @Operation(summary = "OCR 텍스트-타임스탬프 매핑 조회", description = "특정 레슨의 OCR 텍스트와 타임스탬프 매핑 목록을 조회합니다.")
   @GetMapping("/lessons/{lessonId}/ocr/mappings")
   public ResponseEntity<ApiResponse<OcrResponse.MappingResult>> getTimestampMappings(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,

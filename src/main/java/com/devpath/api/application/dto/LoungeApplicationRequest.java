@@ -12,7 +12,6 @@ public class LoungeApplicationRequest {
 
   @Schema(name = "LoungeApplicationCreateRequest", description = "라운지 신청서/제안서 작성 요청")
   public record Create(
-
       @Schema(hidden = true) Long senderId,
 
       // 신청서 또는 제안서를 받을 사용자 ID다.
@@ -47,13 +46,10 @@ public class LoungeApplicationRequest {
           String content) {}
 
   @Schema(name = "LoungeApplicationApproveRequest", description = "라운지 신청 승인 요청")
-  public record Approve(
-
-      @Schema(hidden = true) Long receiverId) {}
+  public record Approve(@Schema(hidden = true) Long receiverId) {}
 
   @Schema(name = "LoungeApplicationRejectRequest", description = "라운지 신청 거절 요청")
   public record Reject(
-
       @Schema(hidden = true) Long receiverId,
 
       // 거절 사유를 신청자에게 전달한다.

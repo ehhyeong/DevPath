@@ -58,7 +58,9 @@ public class WorkspaceErdController {
   }
 
   @GetMapping("/recent-changes")
-  @Operation(summary = "Get recent ERD changes", description = "Returns recent ERD changes for the workspace dashboard.")
+  @Operation(
+      summary = "Get recent ERD changes",
+      description = "Returns recent ERD changes for the workspace dashboard.")
   public ApiResponse<List<WorkspaceErdResponse.Version>> getRecentChanges(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
@@ -71,7 +73,8 @@ public class WorkspaceErdController {
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @PathVariable Integer version,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(workspaceErdService.getVersion(workspaceId, version, requireUserId(userId)));
+    return ApiResponse.ok(
+        workspaceErdService.getVersion(workspaceId, version, requireUserId(userId)));
   }
 
   @GetMapping("/comments")
@@ -91,7 +94,8 @@ public class WorkspaceErdController {
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Valid @RequestBody WorkspaceErdRequest.CommentCreate request,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(workspaceErdService.createComment(workspaceId, requireUserId(userId), request));
+    return ApiResponse.ok(
+        workspaceErdService.createComment(workspaceId, requireUserId(userId), request));
   }
 
   @DeleteMapping("/comments/{commentId}")

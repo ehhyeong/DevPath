@@ -214,7 +214,10 @@ public class LocalLoungeSeedInitializer implements CommandLineRunner {
               - CS 기본기는 있으나 답변 구조화가 필요한 주니어/취준생
               """,
               "lounge.mentor@devpath.com",
-              List.of("lounge.backend@devpath.com", "lounge.frontend@devpath.com", "lounge.data@devpath.com"),
+              List.of(
+                  "lounge.backend@devpath.com",
+                  "lounge.frontend@devpath.com",
+                  "lounge.data@devpath.com"),
               207,
               false),
           new PostSeed(
@@ -284,7 +287,10 @@ public class LocalLoungeSeedInitializer implements CommandLineRunner {
               - 일시 및 장소: 5월 30일 토요일 19:00, 온라인 디스코드
               """,
               "lounge.pm@devpath.com",
-              List.of("lounge.designer@devpath.com", "lounge.ai@devpath.com", "lounge.mobile@devpath.com"),
+              List.of(
+                  "lounge.designer@devpath.com",
+                  "lounge.ai@devpath.com",
+                  "lounge.mobile@devpath.com"),
               132,
               false),
           new PostSeed(
@@ -348,7 +354,8 @@ public class LocalLoungeSeedInitializer implements CommandLineRunner {
     if (!passwordEncoder.matches(SEED_PASSWORD, user.getPassword())) {
       user.changePassword(passwordEncoder.encode(SEED_PASSWORD));
     }
-    if (!Boolean.TRUE.equals(user.getIsActive()) || user.getAccountStatus() != AccountStatus.ACTIVE) {
+    if (!Boolean.TRUE.equals(user.getIsActive())
+        || user.getAccountStatus() != AccountStatus.ACTIVE) {
       user.restore();
     }
     return user;
@@ -384,7 +391,10 @@ public class LocalLoungeSeedInitializer implements CommandLineRunner {
         .orElseGet(
             () ->
                 squadRepository.save(
-                    Squad.builder().name(seed.title()).description(seed.description().strip()).build()));
+                    Squad.builder()
+                        .name(seed.title())
+                        .description(seed.description().strip())
+                        .build()));
   }
 
   private void ensureMember(Squad squad, User user, SquadRole role) {

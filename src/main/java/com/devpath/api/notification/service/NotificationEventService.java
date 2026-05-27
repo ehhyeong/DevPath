@@ -112,9 +112,7 @@ public class NotificationEventService {
   @Transactional
   public NotificationResponse notifyCommunityCommented(Long receiverId, String postTitle) {
     return notify(
-        receiverId,
-        LearnerNotificationType.COMMUNITY_COMMENTED,
-        "내 게시글에 댓글이 달렸습니다: " + postTitle);
+        receiverId, LearnerNotificationType.COMMUNITY_COMMENTED, "내 게시글에 댓글이 달렸습니다: " + postTitle);
   }
 
   @Transactional

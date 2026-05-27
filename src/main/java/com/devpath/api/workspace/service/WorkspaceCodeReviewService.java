@@ -64,7 +64,8 @@ public class WorkspaceCodeReviewService {
     LineStats stats = countLineStats(request.diffText());
     String sourceBranch = defaultText(request.sourceBranch(), "feature/manual-review");
     String targetBranch = defaultText(request.targetBranch(), "main");
-    String filePath = defaultText(request.filePath(), "src/main/java/com/devpath/auth/AuthService.java");
+    String filePath =
+        defaultText(request.filePath(), "src/main/java/com/devpath/auth/AuthService.java");
 
     KeyHolder keyHolder = new GeneratedKeyHolder();
     jdbcTemplate.update(
@@ -115,10 +116,7 @@ public class WorkspaceCodeReviewService {
         aiCodeReviewService.createReview(
             userId,
             new AiCodeReviewRequest.Create(
-                null,
-                null,
-                "AI 시니어 멘토 리뷰 - " + row.summary().title(),
-                row.diffText()));
+                null, null, "AI 시니어 멘토 리뷰 - " + row.summary().title(), row.diffText()));
 
     jdbcTemplate.update(
         """
@@ -150,7 +148,10 @@ public class WorkspaceCodeReviewService {
 
   @Transactional
   public WorkspaceCodeReviewResponse.Detail createComment(
-      Long workspaceId, Long reviewId, Long userId, WorkspaceCodeReviewRequest.CommentCreate request) {
+      Long workspaceId,
+      Long reviewId,
+      Long userId,
+      WorkspaceCodeReviewRequest.CommentCreate request) {
     ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
@@ -438,7 +439,8 @@ public class WorkspaceCodeReviewService {
   }
 
   private String inferAuthorRole(String title, String filePath) {
-    String haystack = ((title == null ? "" : title) + " " + (filePath == null ? "" : filePath)).toLowerCase();
+    String haystack =
+        ((title == null ? "" : title) + " " + (filePath == null ? "" : filePath)).toLowerCase();
 
     if (haystack.contains("tsx")
         || haystack.contains("jsx")

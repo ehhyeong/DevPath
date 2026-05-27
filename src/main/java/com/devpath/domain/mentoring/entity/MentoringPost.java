@@ -138,7 +138,8 @@ public class MentoringPost {
       LocalDate deadlineAt,
       Integer currentParticipants) {
     this.category = normalize(category, this.category == null ? "Backend" : this.category);
-    this.mentoringType = normalize(mentoringType, this.mentoringType == null ? "study" : this.mentoringType);
+    this.mentoringType =
+        normalize(mentoringType, this.mentoringType == null ? "study" : this.mentoringType);
     this.durationWeeks = durationWeeks == null ? this.durationWeeks : Math.max(1, durationWeeks);
     this.curriculum = curriculum;
     this.deadlineAt = deadlineAt;

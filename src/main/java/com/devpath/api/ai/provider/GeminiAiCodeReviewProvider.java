@@ -74,13 +74,13 @@ public class GeminiAiCodeReviewProvider implements AiCodeReviewProvider {
 
         리뷰 대상:
         %s
-        """.formatted(diffText);
+        """
+        .formatted(diffText);
   }
 
   private ReviewResult parseGeminiResponse(String response) throws Exception {
     JsonNode root = MAPPER.readTree(extractJson(response));
-    String summary =
-        root.path("summary").asText("AI 시니어 멘토가 코드 변경 사항을 검토했습니다.");
+    String summary = root.path("summary").asText("AI 시니어 멘토가 코드 변경 사항을 검토했습니다.");
     List<ReviewFinding> findings = new ArrayList<>();
 
     JsonNode findingNodes = root.path("findings");

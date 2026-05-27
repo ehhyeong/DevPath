@@ -10,7 +10,6 @@ public class ApplicationMessageRequest {
 
   @Schema(name = "ApplicationMessageCreateRequest", description = "라운지 신청 메시지 작성 요청")
   public record Create(
-
       @Schema(hidden = true) Long senderId,
 
       // 신청서 또는 제안서 기반 대화 메시지 본문이다.

@@ -11,9 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,7 +32,8 @@ public class LearningFeedbackController {
   public ResponseEntity<ApiResponse<LearningFeedbackResponse.RefreshResult>> refreshLearningData(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody LearningFeedbackRequest.Refresh request) {
-    return ResponseEntity.ok(ApiResponse.ok(learningFeedbackService.refreshLearningData(userId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(learningFeedbackService.refreshLearningData(userId, request)));
   }
 
   @GetMapping("/api/market/learning-feedback/next-steps")
@@ -42,7 +41,8 @@ public class LearningFeedbackController {
   public ResponseEntity<ApiResponse<LearningFeedbackResponse.NextSteps>> getNextSteps(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Parameter(description = "Career profile ID", example = "1") @RequestParam Long profileId) {
-    return ResponseEntity.ok(ApiResponse.ok(learningFeedbackService.getNextSteps(userId, profileId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(learningFeedbackService.getNextSteps(userId, profileId)));
   }
 
   @PostMapping("/api/market/learning-feedback/related-roadmaps")
@@ -50,7 +50,8 @@ public class LearningFeedbackController {
   public ResponseEntity<ApiResponse<LearningFeedbackResponse.RelatedRoadmaps>> getRelatedRoadmaps(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody LearningFeedbackRequest.RelatedRoadmaps request) {
-    return ResponseEntity.ok(ApiResponse.ok(learningFeedbackService.getRelatedRoadmaps(userId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(learningFeedbackService.getRelatedRoadmaps(userId, request)));
   }
 
   @PostMapping("/api/market/learning-feedback/add-to-roadmap")

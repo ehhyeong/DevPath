@@ -113,11 +113,9 @@ public class JobActivityProfileService {
     List<ProofCardTag> proofCardTags =
         proofCardIds.isEmpty()
             ? List.of()
-            : proofCardTagRepository.findAllByProofCardIdInOrderByProofCardIdAscIdAsc(
-                proofCardIds);
+            : proofCardTagRepository.findAllByProofCardIdInOrderByProofCardIdAscIdAsc(proofCardIds);
 
-    return new ActivityData(
-        workspaceProjects, completedTasks, proofCards, proofCardTags);
+    return new ActivityData(workspaceProjects, completedTasks, proofCards, proofCardTags);
   }
 
   private Set<String> extractSkillSignals(ActivityData activityData) {
@@ -183,9 +181,10 @@ public class JobActivityProfileService {
   }
 
   private BigDecimal normalizeProofCardScore(BigDecimal rawScore) {
-    BigDecimal score = rawScore.compareTo(BigDecimal.ONE) <= 0
-        ? rawScore.multiply(BigDecimal.valueOf(100))
-        : rawScore;
+    BigDecimal score =
+        rawScore.compareTo(BigDecimal.ONE) <= 0
+            ? rawScore.multiply(BigDecimal.valueOf(100))
+            : rawScore;
     return score.max(BigDecimal.ZERO).min(BigDecimal.valueOf(100));
   }
 

@@ -96,8 +96,7 @@ public class ProofCardAssembler {
     String description = buildDescriptionFromCourse(courseTitle);
 
     List<AssembledTag> tags = new ArrayList<>();
-    List<String> userTagNames =
-        userTechStackRepository.findTagNamesByUserId(userId);
+    List<String> userTagNames = userTechStackRepository.findTagNamesByUserId(userId);
 
     int heldTagLimit = 5;
     for (String userTagName : userTagNames) {
@@ -123,9 +122,7 @@ public class ProofCardAssembler {
     String limitedTitle =
         limitText(buildConciseTitle(courseTitle), DESCRIPTION_NODE_MAX_LENGTH, "강좌 수강");
     return limitText(
-        limitedTitle + " 강좌 수강 완료를 증명합니다.",
-        DESCRIPTION_MAX_LENGTH,
-        "강좌 수강 완료를 증명합니다.");
+        limitedTitle + " 강좌 수강 완료를 증명합니다.", DESCRIPTION_MAX_LENGTH, "강좌 수강 완료를 증명합니다.");
   }
 
   // 카드 제목을 만든다.

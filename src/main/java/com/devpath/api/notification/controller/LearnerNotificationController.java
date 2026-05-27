@@ -35,8 +35,7 @@ public class LearnerNotificationController {
 
   @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   @Operation(summary = "SSE 알림 구독", description = "사용자의 실시간 알림 SSE 연결을 생성합니다.")
-  public SseEmitter subscribe(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId) {
+  public SseEmitter subscribe(@Parameter(hidden = true) @AuthenticationPrincipal Long learnerId) {
     return notificationSseService.subscribe(learnerId);
   }
 

@@ -48,8 +48,10 @@ public class InstructorSubscriptionService {
                             .learnerId(learnerId)
                             .build()));
 
-    User learner = userRepository.findById(learnerId)
-        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    User learner =
+        userRepository
+            .findById(learnerId)
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     instructorNotificationService.notifySubscribe(channelId, learner.getName());
 
     return SubscriptionResponse.from(subscription);

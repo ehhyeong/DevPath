@@ -64,9 +64,12 @@ public class MentoringHubResponse {
 
     public static OpenPost from(MentoringPost post, UserProfile mentorProfile) {
       String type = safe(post.getMentoringType(), "study");
-      Integer currentParticipants = post.getCurrentParticipants() == null ? 0 : post.getCurrentParticipants();
+      Integer currentParticipants =
+          post.getCurrentParticipants() == null ? 0 : post.getCurrentParticipants();
       Integer maxParticipants =
-          post.getMaxParticipants() == null ? Math.max(currentParticipants, 1) : post.getMaxParticipants();
+          post.getMaxParticipants() == null
+              ? Math.max(currentParticipants, 1)
+              : post.getMaxParticipants();
       LocalDate deadlineAt = post.getDeadlineAt();
 
       return new OpenPost(
@@ -148,7 +151,9 @@ public class MentoringHubResponse {
   }
 
   private static String resolveMentorDescription(MentoringPost post, UserProfile mentorProfile) {
-    if (mentorProfile != null && mentorProfile.getBio() != null && !mentorProfile.getBio().isBlank()) {
+    if (mentorProfile != null
+        && mentorProfile.getBio() != null
+        && !mentorProfile.getBio().isBlank()) {
       return mentorProfile.getBio();
     }
     return safe(post.getCategory(), "Backend") + " 멘토";

@@ -33,7 +33,8 @@ public class AiCodeReviewController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId,
       @Valid @RequestBody AiCodeReviewRequest.Create request) {
     // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
-    return ResponseEntity.ok(ApiResponse.ok(aiCodeReviewService.createReview(requesterId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(aiCodeReviewService.createReview(requesterId, request)));
   }
 
   @GetMapping("/api/ai/code-reviews/{reviewId}")
@@ -59,7 +60,8 @@ public class AiCodeReviewController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId,
       @Valid @RequestBody(required = false) AiCodeReviewRequest.CommentDecision request) {
     // 코멘트 승인 권한 검증은 Service에서 처리한다.
-    return ResponseEntity.ok(ApiResponse.ok(aiCodeReviewService.acceptComment(commentId, requesterId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(aiCodeReviewService.acceptComment(commentId, requesterId)));
   }
 
   @PatchMapping("/api/ai/review-comments/{commentId}/reject")
@@ -69,6 +71,7 @@ public class AiCodeReviewController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long requesterId,
       @Valid @RequestBody(required = false) AiCodeReviewRequest.CommentDecision request) {
     // 코멘트 반려 권한 검증은 Service에서 처리한다.
-    return ResponseEntity.ok(ApiResponse.ok(aiCodeReviewService.rejectComment(commentId, requesterId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(aiCodeReviewService.rejectComment(commentId, requesterId)));
   }
 }

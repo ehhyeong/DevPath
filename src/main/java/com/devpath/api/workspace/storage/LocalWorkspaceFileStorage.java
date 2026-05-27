@@ -40,8 +40,11 @@ public class LocalWorkspaceFileStorage implements WorkspaceFileStorage {
     String safeOriginalName = sanitizeFileName(originalName);
     String storedFileName = UUID.randomUUID() + "_" + safeOriginalName;
     Path dirPath =
-        Paths.get(uploadBaseDir).toAbsolutePath().normalize().resolve("workspace").resolve(
-            String.valueOf(workspaceId));
+        Paths.get(uploadBaseDir)
+            .toAbsolutePath()
+            .normalize()
+            .resolve("workspace")
+            .resolve(String.valueOf(workspaceId));
     Path filePath = dirPath.resolve(storedFileName).normalize();
 
     if (!filePath.startsWith(dirPath)) {

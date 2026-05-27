@@ -3,7 +3,6 @@ package com.devpath.api.community.controller;
 import com.devpath.api.community.dto.PostLikeResponse;
 import com.devpath.api.community.service.CommunityPostLikeService;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.common.swagger.SwaggerErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

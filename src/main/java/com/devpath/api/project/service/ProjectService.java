@@ -134,16 +134,15 @@ public class ProjectService {
 
     if (recommendations.isEmpty()) {
       recommendations.addAll(
-          activeSquads.stream()
-              .map(this::toFallbackSquadRecommendation)
-              .toList());
+          activeSquads.stream().map(this::toFallbackSquadRecommendation).toList());
     }
 
     return recommendations.stream()
         .sorted(
             Comparator.comparingInt(this::getRecommendationPriority)
                 .thenComparing(
-                    ProjectRecommendationResponse::getRecommendationScore, Comparator.reverseOrder())
+                    ProjectRecommendationResponse::getRecommendationScore,
+                    Comparator.reverseOrder())
                 .thenComparing(ProjectRecommendationResponse::getProjectId))
         .toList();
   }
@@ -222,7 +221,8 @@ public class ProjectService {
     }
   }
 
-  private void createWorkspaceForProject(Project project, Long creatorId, WorkspaceType workspaceType) {
+  private void createWorkspaceForProject(
+      Project project, Long creatorId, WorkspaceType workspaceType) {
     Workspace workspace =
         Workspace.builder()
             .ownerId(creatorId)
@@ -233,15 +233,15 @@ public class ProjectService {
 
     Workspace savedWorkspace = workspaceRepository.save(workspace);
     workspaceMemberRepository.save(
-        WorkspaceMember.builder()
-            .workspaceId(savedWorkspace.getId())
-            .learnerId(creatorId)
-            .build());
+        WorkspaceMember.builder().workspaceId(savedWorkspace.getId()).learnerId(creatorId).build());
   }
 
   private ProjectRecommendationResponse toRecommendation(Project project, List<String> skillTags) {
     List<String> matchedSkillTags =
-        skillTags.stream().filter(skill -> projectContainsSkill(project, skill)).distinct().toList();
+        skillTags.stream()
+            .filter(skill -> projectContainsSkill(project, skill))
+            .distinct()
+            .toList();
 
     return ProjectRecommendationResponse.from(
         project, Math.min(100, matchedSkillTags.size() * 20), matchedSkillTags);
@@ -278,8 +278,7 @@ public class ProjectService {
 
   private ProjectRecommendationResponse toFallbackSquadRecommendation(Squad squad) {
     List<String> tags = splitCsv(squad.getTags()).stream().limit(3).toList();
-    return ProjectRecommendationResponse.fromSquad(
-        squad, 45, tags, "최근 공개 모집 중인 라운지 프로젝트입니다.");
+    return ProjectRecommendationResponse.fromSquad(squad, 45, tags, "최근 공개 모집 중인 라운지 프로젝트입니다.");
   }
 
   private boolean squadContainsSkill(Squad squad, String skill) {

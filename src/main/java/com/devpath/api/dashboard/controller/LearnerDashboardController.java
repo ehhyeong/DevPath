@@ -65,7 +65,9 @@ public class LearnerDashboardController {
   }
 
   @PostMapping("/growth-recommendation/nodes/{nodeId}/add-to-roadmap")
-  @Operation(summary = "AI ?깆옣 異붿쿇 ?몃뱶 異붽?", description = "AI媛 異붿쿇??濡쒕뱶留??몃뱶瑜??ъ슜??而ㅼ뒪? 濡쒕뱶留듭뿉 異붽??⑸땲??")
+  @Operation(
+      summary = "AI ?깆옣 異붿쿇 ?몃뱶 異붽?",
+      description = "AI媛 異붿쿇??濡쒕뱶留??몃뱶瑜??ъ슜??而ㅼ뒪? 濡쒕뱶留듭뿉 異붽??⑸땲??")
   public ApiResponse<DashboardGrowthRecommendationResponse.AddNodeResponse>
       addGrowthRecommendationNode(
           @Parameter(hidden = true) @AuthenticationPrincipal Long learnerId,

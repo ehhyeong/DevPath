@@ -6,6 +6,7 @@ import com.devpath.api.dashboard.dto.DashboardMentoringResponse;
 import com.devpath.api.dashboard.dto.DashboardStudyGroupResponse;
 import com.devpath.api.dashboard.dto.DashboardSummaryResponse;
 import com.devpath.api.dashboard.dto.HeatmapResponse;
+import com.devpath.api.roadmap.service.RoadmapProgressService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.dashboard.entity.DashboardSnapshot;
@@ -37,7 +38,6 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
-import com.devpath.api.roadmap.service.RoadmapProgressService;
 import com.devpath.domain.study.entity.StudyGroup;
 import com.devpath.domain.study.entity.StudyGroupJoinStatus;
 import com.devpath.domain.study.entity.StudyGroupMember;
@@ -506,8 +506,7 @@ public class LearnerDashboardService {
   }
 
   private String resolveGrowthIconClass(RoadmapNode node, List<String> requiredTags) {
-    String text =
-        (node.getTitle() + " " + String.join(" ", requiredTags)).toLowerCase(Locale.ROOT);
+    String text = (node.getTitle() + " " + String.join(" ", requiredTags)).toLowerCase(Locale.ROOT);
     if (text.contains("sql") || text.contains("database") || text.contains("db")) {
       return "fa-database";
     }

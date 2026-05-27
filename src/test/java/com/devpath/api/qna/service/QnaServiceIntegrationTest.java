@@ -94,10 +94,12 @@ class QnaServiceIntegrationTest {
             "상세 조회를 두 번 호출합니다.");
     flushAndClear();
 
-    QuestionDetailResponse firstResponse = qnaService.getQuestionDetail(author.getId(), question.getId());
+    QuestionDetailResponse firstResponse =
+        qnaService.getQuestionDetail(author.getId(), question.getId());
     flushAndClear();
 
-    QuestionDetailResponse secondResponse = qnaService.getQuestionDetail(author.getId(), question.getId());
+    QuestionDetailResponse secondResponse =
+        qnaService.getQuestionDetail(author.getId(), question.getId());
     flushAndClear();
 
     assertThat(firstResponse.getViewCount()).isEqualTo(1);

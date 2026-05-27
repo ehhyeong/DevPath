@@ -11,7 +11,6 @@ import com.devpath.api.qna.dto.QuestionSummaryResponse;
 import com.devpath.api.qna.dto.QuestionTemplateResponse;
 import com.devpath.api.qna.service.QnaService;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.common.swagger.SwaggerErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

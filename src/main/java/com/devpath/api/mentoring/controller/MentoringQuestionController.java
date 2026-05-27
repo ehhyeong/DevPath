@@ -10,7 +10,6 @@ import com.devpath.api.qna.dto.QuestionDetailResponse;
 import com.devpath.api.qna.dto.QuestionStatusUpdateRequest;
 import com.devpath.api.qna.dto.QuestionSummaryResponse;
 import com.devpath.common.response.ApiResponse;
-import com.devpath.common.swagger.SwaggerDocConstants;
 import com.devpath.common.swagger.SwaggerTag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,7 +27,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = SwaggerTag.MENTORING_QNA, description = "멘토링 전용 Q&A API")
@@ -79,8 +77,7 @@ public class MentoringQuestionController {
           Long questionId) {
     return ResponseEntity.ok(
         ApiResponse.ok(
-            mentoringQuestionService.getQuestion(
-                requireUserId(authenticatedUserId), questionId)));
+            mentoringQuestionService.getQuestion(requireUserId(authenticatedUserId), questionId)));
   }
 
   @PostMapping("/mentoring-questions/{questionId}/answers")

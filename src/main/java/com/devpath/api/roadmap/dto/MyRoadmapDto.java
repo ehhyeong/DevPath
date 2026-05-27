@@ -115,7 +115,8 @@ public class MyRoadmapDto {
       this.lastStudiedAt = lastStudiedAt;
     }
 
-    public static Item from(CustomRoadmap entity, LocalDateTime lastStudiedAt, Long builderRoadmapId) {
+    public static Item from(
+        CustomRoadmap entity, LocalDateTime lastStudiedAt, Long builderRoadmapId) {
       return Item.builder()
           .customRoadmapId(entity.getId())
           .originalRoadmapId(

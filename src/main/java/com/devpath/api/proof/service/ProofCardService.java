@@ -86,16 +86,12 @@ public class ProofCardService {
       return;
     }
 
-    Course course =
-        courseRepository
-            .findById(courseId)
-            .orElse(null);
+    Course course = courseRepository.findById(courseId).orElse(null);
     if (course == null) {
       return;
     }
 
-    long totalLessons =
-        lessonRepository.countPublishedLessonsByCourseIds(List.of(courseId));
+    long totalLessons = lessonRepository.countPublishedLessonsByCourseIds(List.of(courseId));
     if (totalLessons == 0) {
       return;
     }
@@ -107,10 +103,7 @@ public class ProofCardService {
       return;
     }
 
-    User user =
-        userRepository
-            .findById(userId)
-            .orElse(null);
+    User user = userRepository.findById(userId).orElse(null);
     if (user == null) {
       return;
     }
@@ -181,8 +174,10 @@ public class ProofCardService {
                     .proofCardId(proofCard.getId())
                     .title(proofCard.getTitle())
                     .nodeTitle(proofCard.getNode() != null ? proofCard.getNode().getTitle() : null)
-                    .courseId(proofCard.getCourse() != null ? proofCard.getCourse().getCourseId() : null)
-                    .courseTitle(proofCard.getCourse() != null ? proofCard.getCourse().getTitle() : null)
+                    .courseId(
+                        proofCard.getCourse() != null ? proofCard.getCourse().getCourseId() : null)
+                    .courseTitle(
+                        proofCard.getCourse() != null ? proofCard.getCourse().getTitle() : null)
                     .issuedAt(proofCard.getIssuedAt())
                     .tags(tagItemMap.getOrDefault(proofCard.getId(), List.of()))
                     .build())

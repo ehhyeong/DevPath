@@ -64,14 +64,14 @@ public class MentoringPostController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long mentorId,
       @Valid @RequestBody MentoringPostRequest.Update request) {
     // 수정 검증은 DTO validation과 Service 비즈니스 검증으로 분리한다.
-    return ResponseEntity.ok(ApiResponse.ok(mentoringPostService.update(postId, mentorId, request)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(mentoringPostService.update(postId, mentorId, request)));
   }
 
   @DeleteMapping("/{postId}")
   @Operation(summary = "멘토링 공고 삭제", description = "멘토링 공고를 Soft Delete 처리합니다.")
   public ResponseEntity<ApiResponse<Void>> delete(
-      @PathVariable Long postId,
-      @Parameter(hidden = true) @AuthenticationPrincipal Long mentorId) {
+      @PathVariable Long postId, @Parameter(hidden = true) @AuthenticationPrincipal Long mentorId) {
     // 삭제 응답은 data 없이 성공 공통 포맷만 반환한다.
     mentoringPostService.delete(postId, mentorId);
     return ResponseEntity.ok(ApiResponse.ok());

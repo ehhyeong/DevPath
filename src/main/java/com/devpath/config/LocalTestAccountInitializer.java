@@ -96,7 +96,8 @@ public class LocalTestAccountInitializer implements CommandLineRunner {
       user.changePassword(passwordEncoder.encode(TEST_PASSWORD));
     }
 
-    if (!Boolean.TRUE.equals(user.getIsActive()) || user.getAccountStatus() != AccountStatus.ACTIVE) {
+    if (!Boolean.TRUE.equals(user.getIsActive())
+        || user.getAccountStatus() != AccountStatus.ACTIVE) {
       user.restore();
     }
   }

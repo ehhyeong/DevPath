@@ -43,23 +43,22 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import lombok.RequiredArgsConstructor;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 @Service
@@ -267,8 +266,8 @@ public class WorkspaceFileService {
     validateMember(workspaceId, userId);
 
     long usedBytes =
-        workspaceFileRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(
-                workspaceId)
+        workspaceFileRepository
+            .findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(workspaceId)
             .stream()
             .filter(file -> file.getItemType() == WorkspaceFileType.FILE)
             .mapToLong(WorkspaceFile::getFileSize)
@@ -506,7 +505,8 @@ public class WorkspaceFileService {
       }
 
       collector.appendLine("Slide " + slide.getKey());
-      collectOfficeXmlText(new ByteArrayInputStream(slide.getValue()), collector, DRAWING_NAMESPACE, true);
+      collectOfficeXmlText(
+          new ByteArrayInputStream(slide.getValue()), collector, DRAWING_NAMESPACE, true);
       collector.appendLineBreak();
       if (renderedSlides.isEmpty()) {
         slidePreviews.add(
@@ -975,10 +975,7 @@ public class WorkspaceFileService {
     }
 
     return new PptxBounds(
-        readLongAttribute(offset, "x", 0),
-        readLongAttribute(offset, "y", 0),
-        width,
-        height);
+        readLongAttribute(offset, "x", 0), readLongAttribute(offset, "y", 0), width, height);
   }
 
   private String collectPptxText(Element shape) {
@@ -1268,7 +1265,9 @@ public class WorkspaceFileService {
   }
 
   private Integer pptxSlideNumber(String entryName) {
-    if (entryName == null || !entryName.startsWith("ppt/slides/slide") || !entryName.endsWith(".xml")) {
+    if (entryName == null
+        || !entryName.startsWith("ppt/slides/slide")
+        || !entryName.endsWith(".xml")) {
       return null;
     }
 
@@ -1305,8 +1304,9 @@ public class WorkspaceFileService {
         .map(
             file ->
                 WorkspaceFileResponse.from(
-                    file, usersById.get(file.getUploadedById()), profilesByUserId.get(
-                        file.getUploadedById())))
+                    file,
+                    usersById.get(file.getUploadedById()),
+                    profilesByUserId.get(file.getUploadedById())))
         .toList();
   }
 

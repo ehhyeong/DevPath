@@ -11,7 +11,6 @@ public class PullRequestSubmissionRequest {
 
   @Schema(name = "PullRequestSubmitRequest", description = "PR 제출 요청")
   public record Create(
-
       @Schema(hidden = true) Long submitterId,
 
       // GitHub PR URL 형식만 허용한다.

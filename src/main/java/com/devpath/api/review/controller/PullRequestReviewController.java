@@ -36,7 +36,8 @@ public class PullRequestReviewController {
       @Valid @RequestBody PullRequestSubmissionRequest.Create request) {
     // Controller는 요청 검증, Service 호출, 공통 응답 반환만 담당한다.
     return ResponseEntity.ok(
-        ApiResponse.ok(pullRequestReviewService.submitPullRequest(missionId, submitterId, request)));
+        ApiResponse.ok(
+            pullRequestReviewService.submitPullRequest(missionId, submitterId, request)));
   }
 
   @GetMapping("/api/mentorings/{mentoringId}/pull-requests")

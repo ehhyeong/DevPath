@@ -80,7 +80,9 @@ public class KanbanTaskController {
   }
 
   @PatchMapping("/{taskId}/status")
-  @Operation(summary = "태스크 상태 변경", description = "taskId만으로 태스크 상태를 TODO, IN_PROGRESS, DONE 중 하나로 변경합니다.")
+  @Operation(
+      summary = "태스크 상태 변경",
+      description = "taskId만으로 태스크 상태를 TODO, IN_PROGRESS, DONE 중 하나로 변경합니다.")
   @ApiResponses({
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
         responseCode = "200",

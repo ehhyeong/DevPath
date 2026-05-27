@@ -50,7 +50,8 @@ public class WorkspaceSettingsController {
   public ApiResponse<WorkspaceSettingsResponse> getSettings(
       @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(workspaceService.getWorkspaceSettings(workspaceId, requireUserId(userId)));
+    return ApiResponse.ok(
+        workspaceService.getWorkspaceSettings(workspaceId, requireUserId(userId)));
   }
 
   @PatchMapping

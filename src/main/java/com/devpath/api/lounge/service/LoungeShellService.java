@@ -43,12 +43,15 @@ public class LoungeShellService {
         LoungeShellResponse.CurrentUser.from(user, profile),
         menu(),
         toMyWorkspaceProjects(userId),
-        loungeApplicationRepository.findAllByReceiver_IdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
+        loungeApplicationRepository
+            .findAllByReceiver_IdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
             .stream()
             .limit(30)
             .map(application -> LoungeShellResponse.MessageItem.from(application, userId))
             .toList(),
-        learnerNotificationRepository.findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(userId).stream()
+        learnerNotificationRepository
+            .findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
+            .stream()
             .limit(30)
             .map(LoungeShellResponse.NotificationItem::from)
             .toList());
@@ -78,10 +81,15 @@ public class LoungeShellService {
 
   private List<LoungeShellResponse.NavItem> menu() {
     return List.of(
-        new LoungeShellResponse.NavItem("dashboard", "lounge-dashboard.html", "대시보드", "fa-home", false),
-        new LoungeShellResponse.NavItem("lounge", "community-lounge.html", "라운지 (팀 찾기)", "fa-rocket", false),
-        new LoungeShellResponse.NavItem("mentoring", "mentoring-hub.html", "멘토링 찾기", "fa-chalkboard-teacher", false),
-        new LoungeShellResponse.NavItem("workspace", "workspace-hub.html", "워크스페이스", "fa-laptop-code", false),
-        new LoungeShellResponse.NavItem("showcase", "dev-showcase.html", "성과 쇼케이스", "fa-trophy", false));
+        new LoungeShellResponse.NavItem(
+            "dashboard", "lounge-dashboard.html", "대시보드", "fa-home", false),
+        new LoungeShellResponse.NavItem(
+            "lounge", "community-lounge.html", "라운지 (팀 찾기)", "fa-rocket", false),
+        new LoungeShellResponse.NavItem(
+            "mentoring", "mentoring-hub.html", "멘토링 찾기", "fa-chalkboard-teacher", false),
+        new LoungeShellResponse.NavItem(
+            "workspace", "workspace-hub.html", "워크스페이스", "fa-laptop-code", false),
+        new LoungeShellResponse.NavItem(
+            "showcase", "dev-showcase.html", "성과 쇼케이스", "fa-trophy", false));
   }
 }

@@ -4,6 +4,7 @@ import com.devpath.api.learning.service.CourseCompletionTagService;
 import com.devpath.api.roadmap.dto.MyRoadmapDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.builder.repository.MyRoadmapRepository;
 import com.devpath.domain.course.entity.CourseStatus;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
@@ -18,7 +19,6 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeResourceRepository;
-import com.devpath.domain.builder.repository.MyRoadmapRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
@@ -64,10 +64,12 @@ public class CustomRoadmapQueryService {
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     Map<Long, Long> customToBuilderIdMap = repairAndBuildCustomToBuilderIdMap(userId, user);
     return customRoadmapRepository.findAllByUserOrderByUpdatedAtDescCreatedAtDesc(user).stream()
-        .map(roadmap -> MyRoadmapDto.Item.from(
-            roadmap,
-            resolveLastStudiedAt(userId, roadmap),
-            customToBuilderIdMap.get(roadmap.getId())))
+        .map(
+            roadmap ->
+                MyRoadmapDto.Item.from(
+                    roadmap,
+                    resolveLastStudiedAt(userId, roadmap),
+                    customToBuilderIdMap.get(roadmap.getId())))
         .sorted(
             Comparator.comparing(
                     this::resolveListItemActivityAt,
@@ -189,7 +191,8 @@ public class CustomRoadmapQueryService {
     CustomRoadmap roadmap = getOwnedRoadmap(userId, customRoadmapId);
     roadmap.changeTitle(newTitle);
     LocalDateTime lastStudiedAt = resolveLastStudiedAt(userId, roadmap);
-    Long builderRoadmapId = myRoadmapRepository.buildCustomToMyRoadmapIdMap(userId).get(roadmap.getId());
+    Long builderRoadmapId =
+        myRoadmapRepository.buildCustomToMyRoadmapIdMap(userId).get(roadmap.getId());
     return MyRoadmapDto.Item.from(roadmap, lastStudiedAt, builderRoadmapId);
   }
 
@@ -202,12 +205,12 @@ public class CustomRoadmapQueryService {
   }
 
   /**
-   * customRoadmapId → myRoadmapId 매핑을 반환한다.
-   * linkCustomRoadmap() 이전에 생성된 기존 로드맵은 title+user 기준으로 매핑을 복구하고 DB에 저장한다.
+   * customRoadmapId → myRoadmapId 매핑을 반환한다. linkCustomRoadmap() 이전에 생성된 기존 로드맵은 title+user 기준으로 매핑을
+   * 복구하고 DB에 저장한다.
    */
   /**
-   * customRoadmapId → myRoadmapId 매핑을 반환한다.
-   * customRoadmapId 링크가 없는 기존 로드맵은 title+user 기준으로 임시 매핑한다 (DB 수정 없음).
+   * customRoadmapId → myRoadmapId 매핑을 반환한다. customRoadmapId 링크가 없는 기존 로드맵은 title+user 기준으로 임시 매핑한다
+   * (DB 수정 없음).
    */
   private Map<Long, Long> repairAndBuildCustomToBuilderIdMap(Long userId, User user) {
     Map<Long, Long> existing = myRoadmapRepository.buildCustomToMyRoadmapIdMap(userId);
@@ -220,10 +223,11 @@ public class CustomRoadmapQueryService {
     Map<String, Long> builderCustomByTitle =
         customRoadmapRepository.findAllByUserOrderByUpdatedAtDescCreatedAtDesc(user).stream()
             .filter(cr -> cr.isBuilderOrigin() && !existing.containsKey(cr.getId()))
-            .collect(java.util.stream.Collectors.toMap(
-                com.devpath.domain.roadmap.entity.CustomRoadmap::getTitle,
-                com.devpath.domain.roadmap.entity.CustomRoadmap::getId,
-                (a, b) -> a));
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    com.devpath.domain.roadmap.entity.CustomRoadmap::getTitle,
+                    com.devpath.domain.roadmap.entity.CustomRoadmap::getId,
+                    (a, b) -> a));
 
     Map<Long, Long> result = new java.util.HashMap<>(existing);
     for (com.devpath.domain.builder.entity.MyRoadmap mr : unlinked) {

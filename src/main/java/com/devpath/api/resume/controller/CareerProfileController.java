@@ -32,8 +32,7 @@ public class CareerProfileController {
   public ResponseEntity<ApiResponse<CareerProfileResponse.Detail>> createProfile(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody CareerProfileRequest.Create request) {
-    return ResponseEntity.ok(
-        ApiResponse.ok(careerProfileService.createProfile(userId, request)));
+    return ResponseEntity.ok(ApiResponse.ok(careerProfileService.createProfile(userId, request)));
   }
 
   @GetMapping("/api/career-profiles/me")
@@ -57,7 +56,8 @@ public class CareerProfileController {
   @Operation(summary = "Proof Card 제외", description = "채용 분석 프로필에서 선택한 Proof Card를 제외합니다.")
   public ResponseEntity<ApiResponse<Void>> excludeProofCard(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long profileId, @PathVariable Long proofCardId) {
+      @PathVariable Long profileId,
+      @PathVariable Long proofCardId) {
     careerProfileService.excludeProofCard(userId, profileId, proofCardId);
     return ResponseEntity.ok(ApiResponse.ok());
   }
@@ -66,16 +66,20 @@ public class CareerProfileController {
   @Operation(summary = "프로젝트 경험 선택", description = "채용 분석 프로필에 프로젝트 경험을 추가합니다.")
   public ResponseEntity<ApiResponse<CareerProfileResponse.ProjectDetail>> addProject(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long profileId, @Valid @RequestBody CareerProfileRequest.ProjectAdd request) {
-    return ResponseEntity.ok(ApiResponse.ok(careerProfileService.addProject(userId, profileId, request)));
+      @PathVariable Long profileId,
+      @Valid @RequestBody CareerProfileRequest.ProjectAdd request) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(careerProfileService.addProject(userId, profileId, request)));
   }
 
   @PostMapping("/api/career-profiles/{profileId}/skills")
   @Operation(summary = "self-reported skill 입력", description = "사용자가 직접 보유 기술 스택을 입력합니다.")
   public ResponseEntity<ApiResponse<CareerProfileResponse.SkillDetail>> addSkill(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @PathVariable Long profileId, @Valid @RequestBody CareerProfileRequest.SkillAdd request) {
-    return ResponseEntity.ok(ApiResponse.ok(careerProfileService.addSkill(userId, profileId, request)));
+      @PathVariable Long profileId,
+      @Valid @RequestBody CareerProfileRequest.SkillAdd request) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(careerProfileService.addSkill(userId, profileId, request)));
   }
 
   @PostMapping("/api/career-profiles/{profileId}/snapshots")

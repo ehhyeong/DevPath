@@ -13,7 +13,6 @@ import com.devpath.domain.builder.repository.MyRoadmapRepository;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
-import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
@@ -218,30 +217,36 @@ public class MyRoadmapService {
 
     // CustomRoadmap 노드 교체 (연결된 경우)
     if (myRoadmap.getCustomRoadmapId() != null) {
-      customRoadmapRepository.findById(myRoadmap.getCustomRoadmapId()).ifPresent(customRoadmap -> {
-        customRoadmap.changeTitle(request.getTitle());
-        customRoadmapNodeRepository.deleteAllByCustomRoadmap(customRoadmap);
+      customRoadmapRepository
+          .findById(myRoadmap.getCustomRoadmapId())
+          .ifPresent(
+              customRoadmap -> {
+                customRoadmap.changeTitle(request.getTitle());
+                customRoadmapNodeRepository.deleteAllByCustomRoadmap(customRoadmap);
 
-        request.getModules().forEach(item -> {
-          CustomRoadmapNode node =
-              item.getBuilderModuleId() != null
-                  ? CustomRoadmapNode.builderNodeBuilder()
-                      .customRoadmap(customRoadmap)
-                      .builderModule(moduleMap.get(item.getBuilderModuleId()))
-                      .customSortOrder(item.getSortOrder())
-                      .builderBranchGroup(item.getBranchGroup())
-                      .build()
-                  : CustomRoadmapNode.builder()
-                      .customRoadmap(customRoadmap)
-                      .originalNode(originalNodeMap.get(item.getOriginalNodeId()))
-                      .customSortOrder(item.getSortOrder())
-                      .isBranch(false)
-                      .branchFromNodeId(null)
-                      .branchType(null)
-                      .build();
-          customRoadmapNodeRepository.save(node);
-        });
-      });
+                request
+                    .getModules()
+                    .forEach(
+                        item -> {
+                          CustomRoadmapNode node =
+                              item.getBuilderModuleId() != null
+                                  ? CustomRoadmapNode.builderNodeBuilder()
+                                      .customRoadmap(customRoadmap)
+                                      .builderModule(moduleMap.get(item.getBuilderModuleId()))
+                                      .customSortOrder(item.getSortOrder())
+                                      .builderBranchGroup(item.getBranchGroup())
+                                      .build()
+                                  : CustomRoadmapNode.builder()
+                                      .customRoadmap(customRoadmap)
+                                      .originalNode(originalNodeMap.get(item.getOriginalNodeId()))
+                                      .customSortOrder(item.getSortOrder())
+                                      .isBranch(false)
+                                      .branchFromNodeId(null)
+                                      .branchType(null)
+                                      .build();
+                          customRoadmapNodeRepository.save(node);
+                        });
+              });
     }
 
     return MyRoadmapResponse.from(myRoadmap, myRoadmap.getCustomRoadmapId());

@@ -28,7 +28,9 @@ import org.hibernate.annotations.UpdateTimestamp;
             name = "uk_voice_lobby_presence_channel_user",
             columnNames = {"voice_channel_id", "user_id"}),
     indexes = {
-      @Index(name = "idx_voice_lobby_presence_channel_seen", columnList = "voice_channel_id, last_seen_at")
+      @Index(
+          name = "idx_voice_lobby_presence_channel_seen",
+          columnList = "voice_channel_id, last_seen_at")
     })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

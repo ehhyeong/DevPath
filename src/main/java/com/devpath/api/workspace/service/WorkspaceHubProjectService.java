@@ -81,7 +81,8 @@ public class WorkspaceHubProjectService {
         mentorIds.isEmpty()
             ? Map.of()
             : userProfileRepository.findAllByUserIdIn(mentorIds).stream()
-                .collect(Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile));
+                .collect(
+                    Collectors.toMap(profile -> profile.getUser().getId(), profile -> profile));
     Map<Long, CalendarEvent> nextScheduleByWorkspaceId =
         calendarEventRepository
             .findAllByWorkspaceIdInAndStartAtGreaterThanEqualAndIsDeletedFalseOrderByStartAtAsc(
@@ -125,16 +126,17 @@ public class WorkspaceHubProjectService {
   }
 
   private String inferRoleLabel(Workspace workspace, List<WorkspaceTask> tasks) {
-    String taskRoleLabel = tasks.stream()
-        .map(this::inferRoleKey)
-        .filter(Objects::nonNull)
-        .collect(Collectors.groupingBy(role -> role, Collectors.counting()))
-        .entrySet()
-        .stream()
-        .max(Map.Entry.comparingByValue())
-        .map(Map.Entry::getKey)
-        .map(this::roleLabel)
-        .orElse(null);
+    String taskRoleLabel =
+        tasks.stream()
+            .map(this::inferRoleKey)
+            .filter(Objects::nonNull)
+            .collect(Collectors.groupingBy(role -> role, Collectors.counting()))
+            .entrySet()
+            .stream()
+            .max(Map.Entry.comparingByValue())
+            .map(Map.Entry::getKey)
+            .map(this::roleLabel)
+            .orElse(null);
 
     if (taskRoleLabel != null || workspace.getType() != WorkspaceType.MENTORING) {
       return taskRoleLabel;
@@ -150,9 +152,11 @@ public class WorkspaceHubProjectService {
   }
 
   private String inferRoleKey(WorkspaceTask task) {
-    String text = ((task.getTitle() == null ? "" : task.getTitle()) + " "
-            + (task.getDescription() == null ? "" : task.getDescription()))
-        .toLowerCase();
+    String text =
+        ((task.getTitle() == null ? "" : task.getTitle())
+                + " "
+                + (task.getDescription() == null ? "" : task.getDescription()))
+            .toLowerCase();
 
     if (text.contains("[backend]")) {
       return "BACKEND";
@@ -169,7 +173,8 @@ public class WorkspaceHubProjectService {
     if (text.contains("[pm]")) {
       return "PM";
     }
-    if (text.matches(".*(backend|back-end|server|spring|jpa|api|db|database|redis|백엔드|서버|데이터베이스).*")) {
+    if (text.matches(
+        ".*(backend|back-end|server|spring|jpa|api|db|database|redis|백엔드|서버|데이터베이스).*")) {
       return "BACKEND";
     }
     if (text.matches(".*(frontend|front-end|react|next|vue|ui|ux|화면|프론트).*")) {

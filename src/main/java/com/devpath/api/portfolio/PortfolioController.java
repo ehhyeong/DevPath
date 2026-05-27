@@ -118,8 +118,7 @@ public class PortfolioController {
         content = @Content(schema = @Schema(implementation = SwaggerErrorResponse.class)))
   })
   public ApiResponse<PortfolioResponse> getPublicPortfolio(
-      @Parameter(description = "공개 포트폴리오 토큰", example = "public-token")
-          @PathVariable
+      @Parameter(description = "공개 포트폴리오 토큰", example = "public-token") @PathVariable
           String publicKey) {
     return ApiResponse.ok(portfolioService.getPublicPortfolio(publicKey));
   }

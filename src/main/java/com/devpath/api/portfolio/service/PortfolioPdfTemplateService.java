@@ -38,8 +38,7 @@ public class PortfolioPdfTemplateService {
                         <span>#%d</span>
                     </li>
                     """
-                        .formatted(
-                            escapeHtml(item.getItemType().name()), item.getReferenceId()))
+                        .formatted(escapeHtml(item.getItemType().name()), item.getReferenceId()))
             .reduce("", String::concat);
 
     String commitHtml =

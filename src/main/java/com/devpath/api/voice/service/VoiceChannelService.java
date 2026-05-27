@@ -1,14 +1,11 @@
 package com.devpath.api.voice.service;
 
-import com.devpath.api.workspace.dto.WorkspaceTaskResponse;
 import com.devpath.api.voice.dto.VoiceRequest;
 import com.devpath.api.voice.dto.VoiceResponse;
+import com.devpath.api.workspace.dto.WorkspaceTaskResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.provider.GeminiProvider;
-import com.devpath.domain.workspace.entity.WorkspaceTask;
-import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
-import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.voice.entity.VoiceChannel;
@@ -26,7 +23,10 @@ import com.devpath.domain.voice.repository.VoiceEventRepository;
 import com.devpath.domain.voice.repository.VoiceLobbyPresenceRepository;
 import com.devpath.domain.voice.repository.VoiceMeetingMinutesRepository;
 import com.devpath.domain.voice.repository.VoiceParticipantRepository;
+import com.devpath.domain.workspace.entity.WorkspaceTask;
+import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
+import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -165,10 +165,7 @@ public class VoiceChannelService {
 
     Collections.reverse(messages);
 
-    return messages
-        .stream()
-        .map(VoiceResponse.ChatMessageDetail::from)
-        .toList();
+    return messages.stream().map(VoiceResponse.ChatMessageDetail::from).toList();
   }
 
   @Transactional
@@ -598,8 +595,7 @@ public class VoiceChannelService {
                     VoiceMeetingMinutes.builder().channel(channel).updatedBy(user).build()));
   }
 
-  private String buildMinutesSummary(
-      VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
+  private String buildMinutesSummary(VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
     List<String> parts = new ArrayList<>();
     String transcript = normalizeText(minutes.getTranscript());
 

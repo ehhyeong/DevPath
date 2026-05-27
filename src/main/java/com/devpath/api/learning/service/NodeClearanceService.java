@@ -7,13 +7,13 @@ import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.proof.service.ProofCardService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.entity.clearance.NodeClearanceReason;
 import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceReasonRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
-import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
@@ -101,9 +101,7 @@ public class NodeClearanceService {
     List<NodeClearanceResponse.Detail> results = new java.util.ArrayList<>();
     if (!nodeIds.isEmpty()) {
       results.addAll(
-          nodeIds.stream()
-              .map(nodeId -> synchronizeNodeClearance(userId, nodeId))
-              .toList());
+          nodeIds.stream().map(nodeId -> synchronizeNodeClearance(userId, nodeId)).toList());
     }
 
     // 노드 매핑 유무와 관계없이 강좌 기반 ProofCard 발급 시도

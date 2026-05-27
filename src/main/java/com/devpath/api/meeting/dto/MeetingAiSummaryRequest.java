@@ -10,7 +10,6 @@ public class MeetingAiSummaryRequest {
 
   @Schema(name = "MeetingAiSummarySaveRequest", description = "AI 회의 요약 저장 요청")
   public record Save(
-
       @Schema(hidden = true) Long requesterId,
 
       // 회의 전체 내용을 요약한 본문이다.

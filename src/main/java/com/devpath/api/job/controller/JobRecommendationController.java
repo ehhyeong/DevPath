@@ -80,7 +80,9 @@ public class JobRecommendationController {
     } catch (Exception e) {
       log.warn("[GeminiRecommendations] 분석 실패 (fallback 트리거): {}", e.getMessage());
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-          .body(ApiResponse.ok(new GeminiJobAnalysisResponse.Analysis(List.of(), false, e.getMessage())));
+          .body(
+              ApiResponse.ok(
+                  new GeminiJobAnalysisResponse.Analysis(List.of(), false, e.getMessage())));
     }
   }
 
@@ -90,6 +92,7 @@ public class JobRecommendationController {
       description = "워크스페이스 완료 티켓, 스쿼드 역할, Proof Card에서 채용 매칭용 스킬 신호를 추출합니다.")
   public ResponseEntity<ApiResponse<JobActivityProfileResponse.Summary>> getMyActivityProfile(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ResponseEntity.ok(ApiResponse.ok(jobActivityProfileService.getMyActivityProfile(userId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(jobActivityProfileService.getMyActivityProfile(userId)));
   }
 }
