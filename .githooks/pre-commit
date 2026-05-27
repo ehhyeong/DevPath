@@ -1,0 +1,5 @@
+#!/bin/sh
+# commit 전에 Spotless 포맷 자동 교정 후 수정된 파일을 스테이징에 추가합니다.
+echo "Running spotlessApply..."
+./gradlew spotlessApply
+git add -u src/

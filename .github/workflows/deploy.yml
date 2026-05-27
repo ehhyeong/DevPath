@@ -11,15 +11,11 @@ jobs:
   # ─────────────────────────────────────────────
   deploy-backend:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write  # spotless 자동 커밋을 위한 쓰기 권한
 
     steps:
-      # 1. 소스코드 체크아웃 (자동 커밋을 위해 토큰 명시)
+      # 1. 소스코드 체크아웃
       - name: Checkout source code
         uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       # 2. Java 17 설치
       - name: Set up JDK 17
@@ -42,15 +38,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 5. Spotless 포맷 자동 교정 후 변경사항 있으면 커밋
+      # 5. Spotless 포맷 자동 교정 (커밋 없이 워크스페이스에서만 수정)
       - name: Auto-fix code formatting
         run: ./gradlew spotlessApply
-
-      - name: Commit formatting changes (if any)
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "style: auto-apply spotless formatting"
-          file_pattern: "src/**/*.java"
 
       # 6. Gradle 빌드 (테스트 스킵)
       - name: Build with Gradle
