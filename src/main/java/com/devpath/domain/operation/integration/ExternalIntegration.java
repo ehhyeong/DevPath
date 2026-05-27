@@ -84,7 +84,8 @@ public class ExternalIntegration {
     this.isActive = false;
   }
 
-  public void configureRepository(String repositoryUrl, String repositoryOwner, String repositoryName) {
+  public void configureRepository(
+      String repositoryUrl, String repositoryOwner, String repositoryName) {
     this.repositoryUrl = repositoryUrl;
     this.repositoryOwner = repositoryOwner;
     this.repositoryName = repositoryName;

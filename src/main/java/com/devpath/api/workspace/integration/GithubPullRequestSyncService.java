@@ -249,11 +249,7 @@ public class GithubPullRequestSyncService {
   }
 
   public record SyncResult(
-      int createdCount,
-      int updatedCount,
-      int totalCount,
-      boolean skipped,
-      String message) {
+      int createdCount, int updatedCount, int totalCount, boolean skipped, String message) {
 
     public static SyncResult notConfigured() {
       return new SyncResult(0, 0, 0, true, "GitHub 저장소가 연결되어 있지 않습니다.");

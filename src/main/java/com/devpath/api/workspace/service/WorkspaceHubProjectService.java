@@ -14,9 +14,9 @@ import com.devpath.domain.workspace.entity.Milestone;
 import com.devpath.domain.workspace.entity.MilestoneStatus;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
+import com.devpath.domain.workspace.entity.WorkspaceStatus;
 import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
-import com.devpath.domain.workspace.entity.WorkspaceStatus;
 import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.CalendarEventRepository;
 import com.devpath.domain.workspace.repository.MilestoneRepository;
@@ -87,7 +87,8 @@ public class WorkspaceHubProjectService {
             .stream()
             .collect(Collectors.groupingBy(WorkspaceTask::getWorkspaceId));
     Map<Long, List<Milestone>> milestonesByWorkspaceId =
-        milestoneRepository.findAllByWorkspaceIdInAndIsDeletedFalseOrderByDueDateAsc(workspaceIds)
+        milestoneRepository
+            .findAllByWorkspaceIdInAndIsDeletedFalseOrderByDueDateAsc(workspaceIds)
             .stream()
             .collect(Collectors.groupingBy(Milestone::getWorkspaceId));
     Map<Long, Mentoring> mentoringByWorkspaceId = findMentoringByWorkspaceId(workspaces, userId);
@@ -189,14 +190,13 @@ public class WorkspaceHubProjectService {
     }
 
     long doneCount =
-        tasks.stream()
-            .filter(task -> task.getStatus() == WorkspaceTaskStatus.DONE)
-            .count();
+        tasks.stream().filter(task -> task.getStatus() == WorkspaceTaskStatus.DONE).count();
 
     return clampPercent(Math.round(doneCount * 100.0 / tasks.size()));
   }
 
-  private int milestoneProgressPercent(List<Milestone> milestones, List<WorkspaceTask> fallbackTasks) {
+  private int milestoneProgressPercent(
+      List<Milestone> milestones, List<WorkspaceTask> fallbackTasks) {
     if (milestones.isEmpty()) {
       return taskProgressPercent(fallbackTasks);
     }
@@ -227,9 +227,7 @@ public class WorkspaceHubProjectService {
     int totalWeeks =
         post == null || post.getDurationWeeks() == null ? 4 : Math.max(1, post.getDurationWeeks());
     LocalDate startedOn =
-        mentoring.getStartedAt() == null
-            ? LocalDate.now()
-            : mentoring.getStartedAt().toLocalDate();
+        mentoring.getStartedAt() == null ? LocalDate.now() : mentoring.getStartedAt().toLocalDate();
     long elapsedWeeks = Math.max(0L, ChronoUnit.WEEKS.between(startedOn, LocalDate.now()));
 
     return clampPercent(Math.round(Math.min(totalWeeks, elapsedWeeks) * 100.0 / totalWeeks));
@@ -241,9 +239,11 @@ public class WorkspaceHubProjectService {
 
   private Map<Long, Mentoring> findMentoringByWorkspaceId(List<Workspace> workspaces, Long userId) {
     Map<Long, Mentoring> mentoringsById = new LinkedHashMap<>();
-    mentoringRepository.findAllByMentee_IdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
+    mentoringRepository
+        .findAllByMentee_IdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
         .forEach(mentoring -> mentoringsById.putIfAbsent(mentoring.getId(), mentoring));
-    mentoringRepository.findAllByMentor_IdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
+    mentoringRepository
+        .findAllByMentor_IdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
         .forEach(mentoring -> mentoringsById.putIfAbsent(mentoring.getId(), mentoring));
 
     if (mentoringsById.isEmpty()) {

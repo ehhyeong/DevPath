@@ -47,12 +47,12 @@ public class GithubPullRequestClient {
     String url = value == null ? "" : value.trim();
     Matcher httpsMatcher = HTTPS_REPOSITORY_PATTERN.matcher(url);
     Matcher sshMatcher = SSH_REPOSITORY_PATTERN.matcher(url);
-    Matcher matcher = httpsMatcher.matches() ? httpsMatcher : sshMatcher.matches() ? sshMatcher : null;
+    Matcher matcher =
+        httpsMatcher.matches() ? httpsMatcher : sshMatcher.matches() ? sshMatcher : null;
 
     if (matcher == null) {
       throw new CustomException(
-          ErrorCode.INVALID_INPUT,
-          "GitHub 저장소 URL은 https://github.com/{owner}/{repo} 형식이어야 합니다.");
+          ErrorCode.INVALID_INPUT, "GitHub 저장소 URL은 https://github.com/{owner}/{repo} 형식이어야 합니다.");
     }
 
     String owner = matcher.group(1);
@@ -66,14 +66,14 @@ public class GithubPullRequestClient {
   }
 
   public List<GithubPullRequest> fetchPullRequests(GithubRepositoryReference repository) {
-    JsonNode pulls = requestJson(
-        UriComponentsBuilder
-            .fromUriString("https://api.github.com/repos/{owner}/{repo}/pulls")
-            .queryParam("state", "all")
-            .queryParam("sort", "updated")
-            .queryParam("direction", "desc")
-            .queryParam("per_page", MAX_PULL_REQUESTS)
-            .build(repository.owner(), repository.name()));
+    JsonNode pulls =
+        requestJson(
+            UriComponentsBuilder.fromUriString("https://api.github.com/repos/{owner}/{repo}/pulls")
+                .queryParam("state", "all")
+                .queryParam("sort", "updated")
+                .queryParam("direction", "desc")
+                .queryParam("per_page", MAX_PULL_REQUESTS)
+                .build(repository.owner(), repository.name()));
 
     if (!pulls.isArray()) {
       return List.of();
@@ -109,18 +109,15 @@ public class GithubPullRequestClient {
 
   private PullRequestFiles fetchPullRequestFiles(
       GithubRepositoryReference repository, long pullRequestNumber) {
-    JsonNode files = requestJson(
-        UriComponentsBuilder
-            .fromUriString("https://api.github.com/repos/{owner}/{repo}/pulls/{number}/files")
-            .queryParam("per_page", MAX_FILES_PER_PULL_REQUEST)
-            .build(repository.owner(), repository.name(), pullRequestNumber));
+    JsonNode files =
+        requestJson(
+            UriComponentsBuilder.fromUriString(
+                    "https://api.github.com/repos/{owner}/{repo}/pulls/{number}/files")
+                .queryParam("per_page", MAX_FILES_PER_PULL_REQUEST)
+                .build(repository.owner(), repository.name(), pullRequestNumber));
 
     if (!files.isArray() || files.isEmpty()) {
-      return new PullRequestFiles(
-          ".",
-          "GitHub에서 이 Pull Request의 파일 diff를 찾지 못했습니다.",
-          0,
-          0);
+      return new PullRequestFiles(".", "GitHub에서 이 Pull Request의 파일 diff를 찾지 못했습니다.", 0, 0);
     }
 
     String firstFilePath = ".";
@@ -143,9 +140,8 @@ public class GithubPullRequestClient {
       }
     }
 
-    String diffText = diff.length() > MAX_DIFF_LENGTH
-        ? diff.substring(0, MAX_DIFF_LENGTH)
-        : diff.toString();
+    String diffText =
+        diff.length() > MAX_DIFF_LENGTH ? diff.substring(0, MAX_DIFF_LENGTH) : diff.toString();
 
     return new PullRequestFiles(firstFilePath, diffText, additions, deletions);
   }
@@ -155,12 +151,7 @@ public class GithubPullRequestClient {
       diff.append("\n");
     }
 
-    diff
-        .append("diff --git a/")
-        .append(filename)
-        .append(" b/")
-        .append(filename)
-        .append("\n");
+    diff.append("diff --git a/").append(filename).append(" b/").append(filename).append("\n");
 
     if (StringUtils.hasText(patch)) {
       diff.append(patch);
@@ -229,9 +220,5 @@ public class GithubPullRequestClient {
     }
   }
 
-  private record PullRequestFiles(
-      String filePath,
-      String diffText,
-      int additions,
-      int deletions) {}
+  private record PullRequestFiles(String filePath, String diffText, int additions, int deletions) {}
 }

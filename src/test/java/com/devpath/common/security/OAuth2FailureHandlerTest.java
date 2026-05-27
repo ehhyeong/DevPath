@@ -23,8 +23,7 @@ class OAuth2FailureHandlerTest {
 
   @Test
   void onAuthenticationFailure_redirectsToSpaCallbackWithProviderAndError() throws Exception {
-    MockHttpServletRequest request =
-        new MockHttpServletRequest("GET", "/login/oauth2/code/google");
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/login/oauth2/code/google");
     MockHttpServletResponse response = new MockHttpServletResponse();
 
     handler.onAuthenticationFailure(

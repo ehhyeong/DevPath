@@ -1,9 +1,9 @@
 package com.devpath.domain.operation.integration;
 
-import com.devpath.api.workspace.integration.dto.IntegrationResponse;
-import com.devpath.api.workspace.integration.dto.IntegrationStatusUpdateRequest;
 import com.devpath.api.workspace.integration.GithubPullRequestSyncService;
 import com.devpath.api.workspace.integration.GithubRepositoryReference;
+import com.devpath.api.workspace.integration.dto.IntegrationResponse;
+import com.devpath.api.workspace.integration.dto.IntegrationStatusUpdateRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.workspace.entity.Workspace;
