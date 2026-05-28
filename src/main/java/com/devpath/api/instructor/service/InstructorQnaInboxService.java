@@ -1,6 +1,7 @@
 package com.devpath.api.instructor.service;
 
 import com.devpath.api.notification.service.NotificationEventService;
+import com.devpath.api.qna.realtime.QnaRealtimePublisher;
 import com.devpath.api.instructor.dto.qna.QnaAnswerRequest;
 import com.devpath.api.instructor.dto.qna.QnaAnswerResponse;
 import com.devpath.api.instructor.dto.qna.QnaDraftRequest;
@@ -52,6 +53,7 @@ public class InstructorQnaInboxService {
   private final LessonRepository lessonRepository;
   private final QnaAnswerDraftRepository draftRepository;
   private final QnaTemplateRepository templateRepository;
+  private final QnaRealtimePublisher qnaRealtimePublisher;
 
   @Transactional(readOnly = true)
   public List<QnaInboxResponse> getInbox(Long instructorId, QnaStatus status) {
@@ -147,6 +149,7 @@ public class InstructorQnaInboxService {
         .ifPresent(QnaAnswerDraft::deleteDraft);
 
     question.markAsAnswered();
+    qnaRealtimePublisher.answerCreated(question, saved.getId());
 
     notificationEventService.notifySystem(question.getUser().getId(), "QnA 질문에 답변이 등록되었습니다: " + question.getTitle());
 
@@ -158,7 +161,7 @@ public class InstructorQnaInboxService {
 
   public QnaAnswerResponse updateAnswer(
       Long questionId, Long answerId, Long instructorId, QnaAnswerRequest request) {
-    getManagedQuestion(questionId, instructorId);
+    Question question = getManagedQuestion(questionId, instructorId);
 
     Answer answer =
         answerRepository
@@ -170,6 +173,7 @@ public class InstructorQnaInboxService {
     }
 
     answer.updateContent(request.getContent());
+    qnaRealtimePublisher.answerUpdated(question, answer.getId());
 
     // published answer를 직접 수정한 뒤에는 오래된 draft를 남기지 않는다.
     draftRepository

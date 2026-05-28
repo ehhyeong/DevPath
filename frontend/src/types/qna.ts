@@ -49,3 +49,7 @@ export interface CreateQnaQuestionRequest {
   lessonId?: number | null
   lectureTimestamp?: string | null
 }
+
+export interface CreateQnaAnswerRequest {
+  content: string
+}

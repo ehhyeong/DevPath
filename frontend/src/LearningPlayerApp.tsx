@@ -23,6 +23,7 @@ import type { AuthSession } from './types/auth'
 import type {
   AssignmentPrecheckResponse,
   AssignmentSubmissionResponse,
+  CreateSubmissionRequest,
   LearningCourseDetail,
   LearningLesson,
   LearningLessonAssignment,
@@ -43,6 +44,13 @@ import type {
 
 type TabKey = 'curriculum' | 'qna' | 'notes'
 type QnaStatusFilter = 'ALL' | 'MINE' | 'UNANSWERED'
+type QnaRealtimeEvent = {
+  type?: string
+  courseId?: number
+  questionId?: number
+  answerId?: number
+  occurredAt?: string
+}
 type QuestionFormState = {
   templateType: string
   difficulty: QnaDifficulty
@@ -122,6 +130,29 @@ const ASSIGNMENT_LOADING_MESSAGES = [
   '제출된 파일을 실행하고 있습니다...',
   '루브릭 기준에 맞춰 최종 점수 계산 중...',
 ]
+const SUBMISSION_FILE_TEXT_LIMIT = 200_000
+const TEXT_REVIEW_FILE_EXTENSIONS = new Set([
+  'js',
+  'jsx',
+  'ts',
+  'tsx',
+  'java',
+  'py',
+  'kt',
+  'html',
+  'css',
+  'scss',
+  'json',
+  'md',
+  'txt',
+  'xml',
+  'yml',
+  'yaml',
+  'sql',
+  'sh',
+  'bat',
+  'ps1',
+])
 
 function isAbortError(error: unknown) {
   return (error instanceof DOMException || error instanceof Error) && error.name === 'AbortError'
@@ -308,6 +339,15 @@ async function requestWithTimeout<T>(timeoutMs: number, executor: (signal: Abort
   }
 }
 
+function buildQnaRealtimeWebSocketUrl(courseId: number, accessToken: string) {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || window.location.origin
+  const url = new URL('/ws/qna', apiBaseUrl)
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+  url.searchParams.set('courseId', String(courseId))
+  url.searchParams.set('token', accessToken)
+  return url.toString()
+}
+
 function createDefaultPlayerConfig(lessonId: number): LearningPlayerConfig {
   return { lessonId, defaultPlaybackRate: 1, pipEnabled: false }
 }
@@ -362,6 +402,57 @@ function createAssignmentFormState(assignment?: LearningLessonAssignment | null)
     testPassed: !assignment?.testRequired,
     lintPassed: !assignment?.lintRequired,
   }
+}
+
+function resolveAssignmentSubmissionMethods(assignment: LearningLessonAssignment | null | undefined) {
+  return {
+    allowText: Boolean(assignment?.allowTextSubmission),
+    allowFile: Boolean(assignment?.allowFileSubmission),
+    allowUrl: Boolean(assignment?.allowUrlSubmission),
+  }
+}
+
+function isAssignmentSubmissionFormReady(
+  assignment: LearningLessonAssignment | null | undefined,
+  form: AssignmentSubmissionFormState,
+) {
+  const methods = resolveAssignmentSubmissionMethods(assignment)
+  return (
+    (methods.allowText && form.submissionText.trim().length > 0) ||
+    (methods.allowUrl && form.submissionUrl.trim().length > 0) ||
+    (methods.allowFile && form.files.length > 0)
+  )
+}
+
+async function buildAssignmentSubmissionPayload(
+  assignment: LearningLessonAssignment,
+  form: AssignmentSubmissionFormState,
+): Promise<CreateSubmissionRequest> {
+  const methods = resolveAssignmentSubmissionMethods(assignment)
+  return {
+    submissionText: methods.allowText ? form.submissionText.trim() : '',
+    submissionUrl: methods.allowUrl ? form.submissionUrl.trim() : '',
+    hasReadme: true,
+    testPassed: true,
+    lintPassed: true,
+    files: methods.allowFile ? await buildSubmissionFiles(form.files) : [],
+  }
+}
+
+function resolveAssignmentSubmissionEmptyMessage(assignment: LearningLessonAssignment | null | undefined) {
+  const methods = resolveAssignmentSubmissionMethods(assignment)
+  const labels = [
+    methods.allowText ? '텍스트 코드 직접 입력' : null,
+    methods.allowFile ? '파일 업로드' : null,
+    methods.allowUrl ? '외부 링크 제출' : null,
+  ].filter((item): item is string => Boolean(item))
+
+  if (!labels.length) return '강사가 허용한 제출 방식이 없습니다.'
+  return `${labels.join(', ')} 중 하나로 제출 내용을 입력해 주세요.`
+}
+
+function resolveAssignmentReviewFeedback(submission: AssignmentSubmissionResponse | null | undefined) {
+  return submission?.individualFeedback?.trim() || submission?.commonFeedback?.trim() || null
 }
 
 function isQuestionAnswered(question: Pick<QnaQuestionSummary, 'qnaStatus' | 'adoptedAnswerId' | 'answerCount'>) {
@@ -420,16 +511,33 @@ function isLessonProgressCompleted(item: LearningLessonProgress | null | undefin
   return Boolean(item?.isCompleted) || (item?.progressPercent ?? 0) >= 100
 }
 
-function buildSubmissionFiles(files: File[]) {
-  return files.map((file) => {
+function isReadableSubmissionFile(file: File, extension: string) {
+  return (
+    file.size <= SUBMISSION_FILE_TEXT_LIMIT &&
+    (file.type.startsWith('text/') || TEXT_REVIEW_FILE_EXTENSIONS.has(extension))
+  )
+}
+
+async function readSubmissionFileText(file: File, extension: string) {
+  if (!isReadableSubmissionFile(file, extension)) return null
+  try {
+    return await file.text()
+  } catch {
+    return null
+  }
+}
+
+async function buildSubmissionFiles(files: File[]) {
+  return Promise.all(files.map(async (file) => {
     const extension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() ?? '' : ''
     return {
       fileName: file.name,
       fileUrl: `local-upload://${encodeURIComponent(file.name)}`,
       fileSize: file.size,
       fileType: extension,
+      textContent: await readSubmissionFileText(file, extension),
     }
-  })
+  }))
 }
 
 function resolveAssignmentResultScore(submission: AssignmentSubmissionResponse) {
@@ -975,6 +1083,8 @@ export default function LearningPlayerApp() {
   const courseCompletionShownRef = useRef<number | null>(null)
   const lessonProgressByIdRef = useRef<Record<number, LearningLessonProgress>>({})
   const quizScoreByLessonIdRef = useRef<Record<number, number>>({})
+  const openQuestionIdRef = useRef<number | null>(null)
+  const qnaDetailsRef = useRef<Record<number, QnaQuestionDetail>>({})
 
   const lessons = useMemo(() => (course ? getFlattenedLessons(course) : []), [course])
   const courseProgressPercent = useMemo(() => {
@@ -1062,8 +1172,14 @@ export default function LearningPlayerApp() {
   const activeQuizQuestion = quizModalQuestions[quizQuestionIndex] ?? quizModalQuestions[0] ?? null
   const assignmentModalLesson = assignmentModalLessonId ? lessons.find((item) => item.lessonId === assignmentModalLessonId) ?? null : null
   const assignmentModal = resolveLessonAssignment(assignmentModalLesson)
+  const assignmentModalMethods = resolveAssignmentSubmissionMethods(assignmentModal)
+  const assignmentSubmitDisabled =
+    assignmentSubmitBusy || !assignmentModal || !isAssignmentSubmissionFormReady(assignmentModal, assignmentForm)
   const assignmentGradingScore = assignmentGradingResult
     ? resolveAssignmentResultScore(assignmentGradingResult.submission)
+    : null
+  const assignmentGradingFeedback = assignmentGradingResult
+    ? resolveAssignmentReviewFeedback(assignmentGradingResult.submission)
     : null
   const assignmentGradingPassed = assignmentGradingResult
     ? resolveAssignmentResultPassed(
@@ -1193,6 +1309,23 @@ export default function LearningPlayerApp() {
       return statusMatched && (!deferredQnaSearch || searchTarget.includes(deferredQnaSearch))
     })
   ), [deferredQnaSearch, qnaDetails, qnaQuestions, qnaStatusFilter, sessionUserId])
+  const refreshQnaQuestion = useCallback(async (questionId: number, options?: { showLoading?: boolean }) => {
+    if (options?.showLoading) {
+      setLoadingQuestionId(questionId)
+    }
+
+    try {
+      const detail = await qnaApi.getQuestionDetail(questionId)
+      setQnaDetails((current) => ({ ...current, [questionId]: detail }))
+      setQnaQuestions((current) => current.map((item) => (item.id === questionId ? toQuestionSummary(detail) : item)))
+    } catch {
+      setQnaError('吏덈Ц ?곸꽭 ?뺣낫瑜?遺덈윭?ㅼ? 紐삵뻽?듬땲??')
+    } finally {
+      if (options?.showLoading) {
+        setLoadingQuestionId((current) => (current === questionId ? null : current))
+      }
+    }
+  }, [])
 
   const getPlaybackLimit = useCallback((video: HTMLVideoElement | null) => {
     // Math.floor 제거 — float 그대로 사용해야 영상 끝에서 강제 정지되지 않음
@@ -1359,6 +1492,14 @@ export default function LearningPlayerApp() {
   useEffect(() => {
     lessonProgressByIdRef.current = lessonProgressById
   }, [lessonProgressById])
+
+  useEffect(() => {
+    openQuestionIdRef.current = openQuestionId
+  }, [openQuestionId])
+
+  useEffect(() => {
+    qnaDetailsRef.current = qnaDetails
+  }, [qnaDetails])
 
   useEffect(() => {
     courseCompletionShownRef.current = null
@@ -1580,6 +1721,72 @@ export default function LearningPlayerApp() {
     void loadQna()
     return () => { cancelled = true }
   }, [course?.courseId, isStudentPreview, session, sessionUserId])
+
+  useEffect(() => {
+    if (isStudentPreview || !course?.courseId || !session?.accessToken) return
+
+    let closed = false
+    let reconnectTimeoutId = 0
+    let socket: WebSocket | null = null
+    const courseId = course.courseId
+    const accessToken = session.accessToken
+
+    const connect = () => {
+      if (closed) return
+
+      try {
+        socket = new WebSocket(buildQnaRealtimeWebSocketUrl(courseId, accessToken))
+      } catch {
+        reconnectTimeoutId = window.setTimeout(connect, 3000)
+        return
+      }
+
+      socket.onmessage = (message) => {
+        let event: QnaRealtimeEvent
+
+        try {
+          event = JSON.parse(message.data) as QnaRealtimeEvent
+        } catch {
+          return
+        }
+
+        if (event.courseId !== courseId || typeof event.questionId !== 'number') {
+          return
+        }
+
+        setQnaQuestions((current) => current.map((item) => {
+          if (item.id !== event.questionId) return item
+          return {
+            ...item,
+            qnaStatus: 'ANSWERED',
+            answerCount: Math.max(item.answerCount, 1),
+          }
+        }))
+
+        if (openQuestionIdRef.current === event.questionId || qnaDetailsRef.current[event.questionId]) {
+          void refreshQnaQuestion(event.questionId)
+        }
+      }
+
+      socket.onclose = () => {
+        if (!closed) {
+          reconnectTimeoutId = window.setTimeout(connect, 3000)
+        }
+      }
+
+      socket.onerror = () => {
+        socket?.close()
+      }
+    }
+
+    connect()
+
+    return () => {
+      closed = true
+      window.clearTimeout(reconnectTimeoutId)
+      socket?.close()
+    }
+  }, [course?.courseId, isStudentPreview, refreshQnaQuestion, session?.accessToken])
 
   useEffect(() => {
     if (!lesson || selectedLessonLocked || !isAssignmentLesson(lesson)) {
@@ -2282,22 +2489,15 @@ export default function LearningPlayerApp() {
       return
     }
 
-    if (assignmentForm.files.length === 0) {
-      setAssignmentMessage('파일을 첨부해 주세요.')
+    if (!isAssignmentSubmissionFormReady(assignmentModal, assignmentForm)) {
+      setAssignmentMessage(resolveAssignmentSubmissionEmptyMessage(assignmentModal))
       return
     }
 
-    const payload = {
-      submissionText: '',
-      submissionUrl: '',
-      hasReadme: true,
-      testPassed: true,
-      lintPassed: true,
-      files: buildSubmissionFiles(assignmentForm.files),
-    }
+    const payload = await buildAssignmentSubmissionPayload(assignmentModal, assignmentForm)
 
     setAssignmentSubmitBusy(true)
-    setAssignmentMessage('파일을 제출하는 중입니다.')
+    setAssignmentMessage('과제를 제출하는 중입니다.')
 
     try {
       const precheck = await learnerAssignmentApi.precheck(assignmentModal.assignmentId, sessionUserId, payload)
@@ -3870,7 +4070,40 @@ export default function LearningPlayerApp() {
                 </div>
               </div>
 
-              <div>
+              <div className="space-y-5">
+                {assignmentModalMethods.allowText ? (
+                  <div>
+                    <label className="mb-2 block text-xs font-bold text-gray-700">텍스트 코드 직접 입력</label>
+                    <textarea
+                      value={assignmentForm.submissionText}
+                      onChange={(event) => {
+                        setAssignmentForm((current) => ({ ...current, submissionText: event.target.value }))
+                        setAssignmentMessage(null)
+                      }}
+                      className="min-h-40 w-full resize-y rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm font-medium leading-relaxed text-gray-800 outline-none transition focus:border-[#00C471] focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                      placeholder="제출할 코드나 설명을 입력하세요."
+                    />
+                  </div>
+                ) : null}
+
+                {assignmentModalMethods.allowUrl ? (
+                  <div>
+                    <label className="mb-2 block text-xs font-bold text-gray-700">외부 링크 제출</label>
+                    <input
+                      value={assignmentForm.submissionUrl}
+                      onChange={(event) => {
+                        setAssignmentForm((current) => ({ ...current, submissionUrl: event.target.value }))
+                        setAssignmentMessage(null)
+                      }}
+                      type="url"
+                      className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition focus:border-[#00C471] focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                      placeholder="https://github.com/example/repository"
+                    />
+                  </div>
+                ) : null}
+
+                {assignmentModalMethods.allowFile ? (
+                  <div>
                 <label className="mb-2 block text-xs font-bold text-gray-700">파일 첨부</label>
                 <label className="group block cursor-pointer rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-10 text-center transition hover:border-[#00C471] hover:bg-green-50">
                   <input
@@ -3910,6 +4143,8 @@ export default function LearningPlayerApp() {
                     ))}
                   </div>
                 ) : null}
+                  </div>
+                ) : null}
 
                 {assignmentMessage ? (
                   <p className="mt-3 text-xs font-medium text-rose-500">{assignmentMessage}</p>
@@ -3928,7 +4163,7 @@ export default function LearningPlayerApp() {
               <button
                 type="button"
                 onClick={() => void handleAssignmentSubmit()}
-                disabled={assignmentSubmitBusy || assignmentForm.files.length === 0}
+                disabled={assignmentSubmitDisabled}
                 className="flex items-center gap-2 rounded-xl bg-[#00C471] px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-emerald-300"
               >
                 <i className="fas fa-paper-plane" />
@@ -3950,14 +4185,14 @@ export default function LearningPlayerApp() {
 
       {assignmentGradingResult && assignmentGradingBadge ? (
         <div
-          className="fixed inset-0 z-[115] flex items-center justify-center bg-black/60 px-4"
+          className="learning-assignment-result-overlay fixed inset-0 z-[115] flex items-center justify-center bg-black/60 px-4"
           onClick={closeAssignmentGradingResult}
         >
           <div
-            className="modal-enter flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+            className="learning-assignment-result-panel modal-enter flex w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="relative flex flex-col items-center border-b border-gray-100 bg-gray-50 p-8 text-center">
+            <div className="learning-assignment-result-header relative flex flex-col items-center border-b border-gray-100 bg-gray-50 p-8 text-center">
               <button
                 type="button"
                 onClick={closeAssignmentGradingResult}
@@ -3976,8 +4211,8 @@ export default function LearningPlayerApp() {
               </p>
             </div>
 
-            <div className="bg-white p-6">
-              <div className="relative mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
+            <div className="learning-assignment-result-body custom-scrollbar bg-white p-6">
+              <div className="learning-assignment-score-card relative mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm">
                 <div className="absolute left-0 top-0 h-1 w-full bg-[#00C471]" />
                 <p className="mb-2 text-xs font-bold text-gray-500">최종 점수</p>
                 <div className="mb-3 text-5xl font-extrabold text-gray-900">
@@ -3990,12 +4225,12 @@ export default function LearningPlayerApp() {
                 </div>
               </div>
 
-              <div>
+              <div className="learning-assignment-report-section">
                 <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-800">
                   <i className="fas fa-clipboard-check text-gray-400" />
                   자동 검증 리포트
                 </h4>
-                <div className="space-y-3 rounded-xl bg-gray-900 p-4 text-xs text-gray-300 shadow-inner">
+                <div className="learning-assignment-report-card space-y-3 rounded-xl bg-gray-900 p-4 text-xs text-gray-300 shadow-inner">
                   {assignmentGradingReportRows.map((row) => (
                     <div
                       key={`${row.label}-${row.value}`}
@@ -4016,9 +4251,21 @@ export default function LearningPlayerApp() {
                   ))}
                 </div>
               </div>
+
+              {assignmentGradingFeedback ? (
+                <div className="learning-assignment-feedback-section mt-5">
+                  <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-800">
+                    <i className="fas fa-robot text-[#00C471]" />
+                    AI 코드 리뷰어 피드백
+                  </h4>
+                  <div className="learning-assignment-feedback-card custom-scrollbar whitespace-pre-line rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-xs font-medium leading-relaxed text-emerald-950">
+                    {assignmentGradingFeedback}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
-            <div className="border-t border-gray-100 bg-gray-50 p-6">
+            <div className="learning-assignment-result-footer border-t border-gray-100 bg-gray-50 p-6">
               <button
                 type="button"
                 onClick={handleAssignmentResultPrimaryAction}
