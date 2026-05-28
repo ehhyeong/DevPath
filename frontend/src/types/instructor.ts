@@ -56,6 +56,7 @@ export interface InstructorCourseListItem {
   reviewCount?: number
   averageRating: number
   thumbnailUrl: string | null
+  createdAt: string | null
   publishedAt: string | null
   tags?: string[] | null
 }
@@ -403,6 +404,12 @@ export interface InstructorAnalyticsWeakPointItem {
   summary: string
 }
 
+export interface InstructorAnalyticsAiInsightItem {
+  title: string
+  body: string
+  level: 'HIGH' | 'MEDIUM' | 'LOW' | string
+}
+
 export interface InstructorMentoringRoleItem {
   name: string
   current: number
@@ -474,4 +481,5 @@ export interface InstructorAnalyticsDashboard {
   assignmentStats: InstructorAnalyticsAssignmentStats
   funnel: InstructorAnalyticsFunnel
   weakPoints: InstructorAnalyticsWeakPointItem[]
+  aiInsights: InstructorAnalyticsAiInsightItem[]
 }

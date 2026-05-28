@@ -67,13 +67,21 @@ public class SubmissionGradeResponse {
     @Schema(description = "부여 점수", example = "8")
     private Integer earnedPoints;
 
+    @Schema(description = "AI rubric review comment", example = "요구사항 구현이 부족합니다.")
+    private String reviewComment;
+
     @Builder
     public RubricGradeItem(
-        Long rubricId, String criteriaName, Integer maxPoints, Integer earnedPoints) {
+        Long rubricId,
+        String criteriaName,
+        Integer maxPoints,
+        Integer earnedPoints,
+        String reviewComment) {
       this.rubricId = rubricId;
       this.criteriaName = criteriaName;
       this.maxPoints = maxPoints;
       this.earnedPoints = earnedPoints;
+      this.reviewComment = reviewComment;
     }
   }
 }

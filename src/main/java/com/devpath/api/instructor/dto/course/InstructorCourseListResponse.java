@@ -17,5 +17,6 @@ public record InstructorCourseListResponse(
     Long reviewCount,
     Double averageRating,
     String thumbnailUrl,
+    LocalDateTime createdAt,
     LocalDateTime publishedAt,
     List<String> tags) {}

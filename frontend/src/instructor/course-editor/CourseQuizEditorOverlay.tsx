@@ -19,6 +19,7 @@ type QuizEditorDraft = Omit<InstructorQuizEditor, 'questions'> & {
 type Props = {
   lessonId: number
   lessonTitle: string
+  courseTags?: string[]
   onClose: () => void
   standalone?: boolean
 }
@@ -99,19 +100,41 @@ function normalizeEditor(editor: InstructorQuizEditor): QuizEditorDraft {
   }
 }
 
-export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose, standalone = false }: Props) {
+function normalizeKeywordList(values: string[] = []) {
+  return values.reduce<string[]>((keywords, value) => {
+    const keyword = value.trim().replace(/^#/, '')
+    if (!keyword || keywords.some((item) => item.toLowerCase() === keyword.toLowerCase())) {
+      return keywords
+    }
+
+    return [...keywords, keyword]
+  }, [])
+}
+
+export default function CourseQuizEditorOverlay({
+  lessonId,
+  lessonTitle,
+  courseTags = [],
+  onClose,
+  standalone = false,
+}: Props) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsStatus, setSettingsStatus] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [draft, setDraft] = useState<QuizEditorDraft | null>(null)
   const [generationMode, setGenerationMode] = useState<'video' | 'text'>('video')
   const [tagInput, setTagInput] = useState('')
-  const [keywords, setKeywords] = useState<string[]>(['Java', 'Backend', 'Spring Boot'])
+  const [keywords, setKeywords] = useState<string[]>(() => normalizeKeywordList(courseTags))
   const [scriptText, setScriptText] = useState('')
   const [difficultyLevel, setDifficultyLevel] = useState(2)
   const [questionCount, setQuestionCount] = useState(3)
   const [videoFileName, setVideoFileName] = useState<string | null>(null)
+  const [videoMimeType, setVideoMimeType] = useState<string | null>(null)
+  const [videoBase64Content, setVideoBase64Content] = useState<string | null>(null)
+  const [readingVideo, setReadingVideo] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -134,6 +157,65 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
 
     return () => controller.abort()
   }, [lessonId])
+
+  useEffect(() => {
+    const nextKeywords = normalizeKeywordList(courseTags)
+    if (!nextKeywords.length) {
+      return
+    }
+
+    setKeywords((current) => (current.length ? current : nextKeywords))
+  }, [courseTags])
+
+  useEffect(() => {
+    if (!settingsStatus) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSettingsStatus(null)
+    }, 1800)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [settingsStatus])
+
+  function readFileAsBase64(file: File) {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+
+      reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : ''
+        const [, base64Content = ''] = result.split(',', 2)
+        resolve(base64Content)
+      }
+      reader.onerror = () => reject(reader.error ?? new Error('파일을 읽지 못했습니다.'))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  async function handleVideoFileChange(file: File | null) {
+    if (!file) {
+      setVideoFileName(null)
+      setVideoMimeType(null)
+      setVideoBase64Content(null)
+      setReadingVideo(false)
+      return
+    }
+
+    setVideoFileName(file.name)
+    setVideoMimeType(file.type || 'video/mp4')
+    setReadingVideo(true)
+    try {
+      setVideoBase64Content(await readFileAsBase64(file))
+    } catch (nextError) {
+      setVideoFileName(null)
+      setVideoMimeType(null)
+      setVideoBase64Content(null)
+      setError(nextError instanceof Error ? nextError.message : '영상 파일을 읽지 못했습니다.')
+    } finally {
+      setReadingVideo(false)
+    }
+  }
 
   function updateDraft(recipe: (current: QuizEditorDraft) => QuizEditorDraft) {
     setDraft((current) => (current ? recipe(current) : current))
@@ -285,6 +367,34 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
     }))
   }
 
+  function buildSavePayload(current: QuizEditorDraft) {
+    return {
+      title: current.title,
+      description: current.description,
+      quizType: current.quizType,
+      passScore: current.passScore,
+      timeLimitMinutes: current.timeLimitMinutes,
+      exposeAnswer: current.exposeAnswer,
+      exposeExplanation: current.exposeExplanation,
+      isPublished: current.isPublished,
+      questions: current.questions.map((question, questionIndex) => ({
+        questionId: question.questionId,
+        questionType: question.questionType,
+        questionText: question.questionText,
+        explanation: question.explanation,
+        points: question.points,
+        displayOrder: questionIndex + 1,
+        sourceTimestamp: question.sourceTimestamp,
+        options: question.options.map((option, optionIndex) => ({
+          optionId: option.optionId,
+          optionText: option.optionText,
+          isCorrect: option.isCorrect,
+          displayOrder: optionIndex + 1,
+        })),
+      })),
+    }
+  }
+
   async function handleGenerate() {
     setGenerating(true)
     setError(null)
@@ -293,12 +403,21 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
       const payload: GenerateInstructorQuizRequest = {
         mode: generationMode,
         videoFileName,
+        videoMimeType: generationMode === 'video' ? videoMimeType : null,
+        videoBase64Content: generationMode === 'video' ? videoBase64Content : null,
         scriptText,
         questionCount,
         difficultyLevel,
         keywords,
       }
-      console.log('[AI Quiz] 생성 요청 시작 →', { lessonId, ...payload })
+      console.log('[AI Quiz] 생성 요청 시작 →', {
+        lessonId,
+        mode: payload.mode,
+        videoFileName: payload.videoFileName,
+        questionCount: payload.questionCount,
+        difficultyLevel: payload.difficultyLevel,
+        keywords: payload.keywords,
+      })
       const generated = await instructorLessonEvaluationApi.generateQuizDraft(lessonId, payload)
       console.log('[AI Quiz] 생성 완료 ←', { questionCount: generated.questions.length, quizType: generated.quizType })
       setDraft(normalizeEditor(generated))
@@ -319,31 +438,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
     setError(null)
 
     try {
-      const saved = await instructorLessonEvaluationApi.saveQuizEditor(lessonId, {
-        title: draft.title,
-        description: draft.description,
-        quizType: draft.quizType,
-        passScore: draft.passScore,
-        timeLimitMinutes: draft.timeLimitMinutes,
-        exposeAnswer: draft.exposeAnswer,
-        exposeExplanation: draft.exposeExplanation,
-        isPublished: draft.isPublished,
-        questions: draft.questions.map((question, questionIndex) => ({
-          questionId: question.questionId,
-          questionType: question.questionType,
-          questionText: question.questionText,
-          explanation: question.explanation,
-          points: question.points,
-          displayOrder: questionIndex + 1,
-          sourceTimestamp: question.sourceTimestamp,
-          options: question.options.map((option, optionIndex) => ({
-            optionId: option.optionId,
-            optionText: option.optionText,
-            isCorrect: option.isCorrect,
-            displayOrder: optionIndex + 1,
-          })),
-        })),
-      })
+      const saved = await instructorLessonEvaluationApi.saveQuizEditor(lessonId, buildSavePayload(draft))
 
       setDraft(normalizeEditor(saved))
       onClose()
@@ -354,12 +449,32 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
     }
   }
 
+  async function handleApplySettings() {
+    if (!draft) {
+      return
+    }
+
+    setSettingsSaving(true)
+    setSettingsStatus(null)
+    setError(null)
+
+    try {
+      const saved = await instructorLessonEvaluationApi.saveQuizEditor(lessonId, buildSavePayload(draft))
+      setDraft(normalizeEditor(saved))
+      setSettingsStatus('설정 반영 완료')
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : '설정 반영에 실패했습니다.')
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
+
   if (loading || !draft) {
     return (
       <div
         className={
           standalone
-            ? 'flex min-h-screen items-center justify-center bg-[#F0F2F5] px-4'
+            ? 'course-quiz-editor-page flex min-h-screen items-center justify-center bg-[#F0F2F5] px-4'
             : 'fixed inset-0 z-[90] flex items-center justify-center bg-black/30 backdrop-blur-[2px]'
         }
       >
@@ -371,22 +486,28 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
   }
 
   return (
-    <div className={standalone ? 'min-h-screen bg-[#F0F2F5]' : 'fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]'}>
-      <div className={`flex bg-[#F0F2F5] text-gray-800 ${standalone ? 'min-h-screen' : 'h-full'}`}>
-        <div className="flex w-96 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl">
-          <div className="border-b border-gray-100 p-6">
+    <div
+      className={
+        standalone
+          ? 'course-quiz-editor-page min-h-screen bg-[#F0F2F5]'
+          : 'course-quiz-editor-modal fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]'
+      }
+    >
+      <div className={`course-quiz-editor-shell flex bg-[#F0F2F5] text-gray-800 ${standalone ? 'min-h-screen' : 'h-full'}`}>
+        <div className="course-quiz-editor-ai-panel flex w-96 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl">
+          <div className="course-quiz-editor-ai-header border-b border-gray-100 p-6">
             <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
               <i className="fas fa-robot text-purple-600" /> AI 퀴즈 생성
             </h2>
             <p className="mt-1 text-xs text-gray-500">강의 소재를 분석해 문항 초안을 만듭니다.</p>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="mb-6 flex rounded-xl bg-gray-100 p-1">
+          <div className="course-quiz-editor-ai-body flex-1 overflow-y-auto p-6">
+            <div className="course-quiz-editor-mode-tabs mb-6 flex rounded-xl bg-gray-100 p-1">
               <button
                 type="button"
                 onClick={() => setGenerationMode('video')}
-                className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+                className={`course-quiz-editor-mode-tab flex-1 rounded-lg py-2 text-xs font-bold transition ${
                   generationMode === 'video' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                 }`}
               >
@@ -395,7 +516,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
               <button
                 type="button"
                 onClick={() => setGenerationMode('text')}
-                className={`flex-1 rounded-lg py-2 text-xs font-bold transition ${
+                className={`course-quiz-editor-mode-tab flex-1 rounded-lg py-2 text-xs font-bold transition ${
                   generationMode === 'text' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                 }`}
               >
@@ -404,7 +525,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
             </div>
 
             {generationMode === 'video' ? (
-              <label className="group flex cursor-pointer flex-col items-center rounded-xl border-2 border-dashed border-gray-300 p-8 text-center transition hover:border-emerald-400 hover:bg-emerald-50">
+              <label className="course-quiz-editor-upload-box group flex cursor-pointer flex-col items-center rounded-xl border-2 border-dashed border-gray-300 p-8 text-center transition hover:border-emerald-400 hover:bg-emerald-50">
                 <i className="fas fa-cloud-upload-alt mb-2 text-3xl text-gray-400 transition group-hover:text-emerald-500" />
                 <span className="text-sm font-bold text-gray-600">
                   {videoFileName ? videoFileName : '강의 영상 업로드'}
@@ -414,7 +535,9 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
                   type="file"
                   accept="video/*"
                   className="hidden"
-                  onChange={(event) => setVideoFileName(event.target.files?.[0]?.name ?? null)}
+                  onChange={(event) => {
+                    void handleVideoFileChange(event.target.files?.[0] ?? null)
+                  }}
                 />
               </label>
             ) : (
@@ -501,28 +624,40 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
             </div>
           </div>
 
-          <div className="border-t border-gray-100 bg-gray-50 p-6">
+          <div className="course-quiz-editor-generator-footer border-t border-gray-100 bg-gray-50 p-6">
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={generating}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={generating || readingVideo}
+              className="course-quiz-editor-generate-button flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
             >
               <i className="fas fa-magic text-yellow-400" />
-              {generating ? '생성 중...' : '퀴즈 생성하기'}
+              {readingVideo ? '영상 처리 중...' : generating ? '생성 중...' : '퀴즈 생성하기'}
             </button>
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-8">
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">퀴즈 편집기</h1>
-              <p className="text-xs text-gray-500">{lessonTitle}</p>
+        <div className="course-quiz-editor-workspace flex min-w-0 flex-1 flex-col">
+          <div className="course-quiz-editor-workspace-header flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-8">
+            <div className="course-quiz-editor-title-group flex items-center gap-3">
+              {standalone ? (
+                <button
+                  type="button"
+                  onClick={() => window.history.back()}
+                  className="course-quiz-editor-back-button flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 text-gray-600 shadow-sm transition hover:bg-gray-200 hover:text-gray-900"
+                  title="뒤로 가기"
+                >
+                  <i className="fas fa-arrow-left" />
+                </button>
+              ) : null}
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">퀴즈 편집기</h1>
+                <p className="text-xs text-gray-500">{lessonTitle}</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="mr-4 flex items-center gap-2 text-xs text-gray-500">
+              <div className="course-quiz-editor-meta mr-4 flex items-center gap-2 text-xs text-gray-500">
                 <span>
                   <i className="fas fa-clock mr-1" />
                   제한 시간
@@ -530,10 +665,11 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
                     value={draft.timeLimitMinutes}
                     onChange={(event) =>
                       setDraft((current) =>
-                        current ? { ...current, timeLimitMinutes: Number(event.target.value || 0) } : current,
+                        current ? { ...current, timeLimitMinutes: Math.max(1, Number(event.target.value || 1)) } : current,
                       )
                     }
                     type="number"
+                    min={1}
                     className="ml-1 w-10 border-b border-gray-300 text-center outline-none focus:border-emerald-500"
                   />
                   분
@@ -546,10 +682,17 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
                     value={draft.passScore}
                     onChange={(event) =>
                       setDraft((current) =>
-                        current ? { ...current, passScore: Number(event.target.value || 0) } : current,
+                        current
+                          ? {
+                              ...current,
+                              passScore: Math.max(0, Math.min(current.totalScore || 100, Number(event.target.value || 0))),
+                            }
+                          : current,
                       )
                     }
                     type="number"
+                    min={0}
+                    max={draft.totalScore || 100}
                     className="ml-1 w-10 border-b border-gray-300 text-center outline-none focus:border-emerald-500"
                   />
                   점
@@ -558,32 +701,34 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
 
               <button
                 type="button"
-                onClick={onClose}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-600 transition hover:bg-gray-50"
+                onClick={handleApplySettings}
+                disabled={settingsSaving || saving}
+                className="course-quiz-editor-secondary-button rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-600 transition hover:bg-gray-50"
               >
-                닫기
+                {settingsSaving ? '반영 중...' : '설정 변경'}
               </button>
+              {settingsStatus ? <span className="course-quiz-editor-settings-status">{settingsStatus}</span> : null}
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="rounded-lg bg-[#00C471] px-5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="course-quiz-editor-primary-button rounded-lg bg-[#00C471] px-5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? '저장 중...' : '저장 완료'}
               </button>
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-8">
+          <div className="course-quiz-editor-workspace-body min-h-0 flex-1 overflow-y-auto p-8">
             {error ? (
               <div className="mx-auto mb-6 max-w-3xl rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
                 {error}
               </div>
             ) : null}
 
-            <div className="mx-auto max-w-3xl space-y-6">
+            <div className="course-quiz-editor-list mx-auto max-w-3xl space-y-6">
               {draft.questions.length === 0 ? (
-                <div className="py-20 text-center text-gray-400">
+                <div className="course-quiz-editor-empty-state py-20 text-center text-gray-400">
                   <i className="fas fa-clipboard-list mb-4 text-6xl text-gray-300" />
                   <p className="text-lg font-bold text-gray-500">아직 등록된 문항이 없습니다.</p>
                   <p className="text-sm">왼쪽에서 AI 생성하거나 아래 버튼으로 직접 추가하세요.</p>
@@ -593,7 +738,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
               {draft.questions.map((question, questionIndex) => (
                 <div
                   key={question.localId}
-                  className="group relative rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-emerald-400 hover:shadow-md"
+                  className="course-quiz-editor-question-card group relative rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-emerald-400 hover:shadow-md"
                 >
                   <div className="mb-4 flex items-start justify-between">
                     <div className="flex items-center gap-2">
@@ -605,7 +750,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
                         onChange={(event) =>
                           updateQuestionType(question.localId, event.target.value as QuizQuestionDraft['questionType'])
                         }
-                        className="rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600 outline-none"
+                        className="course-quiz-editor-type-select rounded bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600 outline-none"
                       >
                         <option value="MULTIPLE_CHOICE">객관식</option>
                         <option value="TRUE_FALSE">OX 퀴즈</option>
@@ -613,7 +758,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
                       </select>
                     </div>
 
-                    <div className="flex items-center gap-2 text-gray-400">
+                    <div className="course-quiz-editor-card-actions flex items-center gap-2 text-gray-400">
                       <button type="button" onClick={() => moveQuestion(question.localId, -1)} className="hover:text-blue-500">
                         <i className="fas fa-arrow-up" />
                       </button>
@@ -631,7 +776,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
                     onChange={(event) => updateQuestion(question.localId, 'questionText', event.target.value)}
                     type="text"
                     placeholder="질문을 입력하세요"
-                    className="mb-4 w-full border-b border-transparent bg-transparent text-lg font-bold text-gray-900 outline-none transition focus:border-emerald-500"
+                    className="course-quiz-editor-question-input mb-4 w-full border-b border-transparent bg-transparent text-lg font-bold text-gray-900 outline-none transition focus:border-emerald-500"
                   />
 
                   {question.questionType === 'TRUE_FALSE' ? (
@@ -680,7 +825,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
                             onChange={() => selectCorrectOption(question.localId, option.localId)}
                             type="radio"
                             name={question.localId}
-                            className="h-4 w-4 accent-[#00C471]"
+                            className="h-4 w-4 accent-blue-500"
                           />
                           <input
                             value={option.optionText}
@@ -717,7 +862,7 @@ export default function CourseQuizEditorOverlay({ lessonId, lessonTitle, onClose
               <button
                 type="button"
                 onClick={() => addQuestion()}
-                className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-white/70 py-4 font-bold text-gray-400 transition hover:border-emerald-400 hover:bg-white hover:text-emerald-500"
+                className="course-quiz-editor-add-question-button flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-white/70 py-4 font-bold text-gray-400 transition hover:border-emerald-400 hover:bg-white hover:text-emerald-500"
               >
                 <i className="fas fa-plus-circle text-2xl" />
                 <span>새 문항 직접 추가하기</span>

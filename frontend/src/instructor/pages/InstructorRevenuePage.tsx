@@ -224,16 +224,20 @@ export default function InstructorRevenuePage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <LoadingCard label="정산 리포트를 불러오는 중입니다." />
+      <div className="instructor-revenue-page p-6">
+        <div className="instructor-revenue-content">
+          <LoadingCard label="정산 리포트를 불러오는 중입니다." />
+        </div>
       </div>
     )
   }
 
   if (error || !summary) {
     return (
-      <div className="p-6">
-        <ErrorCard message={error ?? '정산 데이터를 불러오지 못했습니다.'} />
+      <div className="instructor-revenue-page p-6">
+        <div className="instructor-revenue-content">
+          <ErrorCard message={error ?? '정산 데이터를 불러오지 못했습니다.'} />
+        </div>
       </div>
     )
   }
@@ -259,8 +263,8 @@ export default function InstructorRevenuePage() {
   const visibleTransactions = showAllTransactions ? filteredTransactions : filteredTransactions.slice(0, 6)
 
   return (
-    <div className="p-6">
-      <div className="mx-auto max-w-[1280px]">
+    <div className="instructor-revenue-page p-6">
+      <div className="instructor-revenue-content mx-auto max-w-[1280px]">
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900">수익 리포트</h1>

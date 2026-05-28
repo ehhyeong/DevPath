@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import CourseQuizEditorOverlay from '../course-editor/CourseQuizEditorOverlay'
 import { buildCourseEditorHref, readLessonEditorContextFromUrl } from '../course-editor/editor-routing'
+import { instructorCourseApi } from '../../lib/api'
 
 function InvalidLessonView({ courseId }: { courseId: number | null }) {
   return (
@@ -25,6 +27,29 @@ function InvalidLessonView({ courseId }: { courseId: number | null }) {
 
 export default function QuizCreatorPage() {
   const { lessonId, lessonTitle, courseId } = readLessonEditorContextFromUrl()
+  const [courseTags, setCourseTags] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!courseId) {
+      setCourseTags([])
+      return
+    }
+
+    const controller = new AbortController()
+
+    instructorCourseApi
+      .getCourseDetail(courseId, controller.signal)
+      .then((course) => {
+        setCourseTags(course.tags.map((tag) => tag.tagName))
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setCourseTags([])
+        }
+      })
+
+    return () => controller.abort()
+  }, [courseId])
 
   if (!lessonId) {
     return <InvalidLessonView courseId={courseId} />
@@ -34,6 +59,7 @@ export default function QuizCreatorPage() {
     <CourseQuizEditorOverlay
       lessonId={lessonId}
       lessonTitle={lessonTitle || '새 퀴즈'}
+      courseTags={courseTags}
       onClose={() => window.location.assign(buildCourseEditorHref(courseId))}
       standalone
     />

@@ -9,11 +9,6 @@ import {
   buildReviewAuthorName,
   buildReviewAvatarSeed,
   buildReviewStats,
-  createQuestionSearchText,
-  createNewQuestionCommentId,
-  createNewQuestionId,
-  fallbackCourseQuestions,
-  fallbackCourseReviews,
   formatCourseDate,
   formatCoursePrice,
   formatRelativeTime,
@@ -22,16 +17,19 @@ import {
   getCourseDetailLessonMetaLabel,
   getLearningHref,
   getPreviewLesson,
+  isCourseDetailVideoLesson,
   mergeCourseDetailWithFallback,
+  type CourseNewsCard,
   type CourseQuestionItem,
   type CourseQuestionStatus,
 } from './course-detail-support'
 import { buildInstructorChannelHref } from './instructor-channel-support'
-import { authApi, courseApi, enrollmentApi, reviewApi, userApi } from './lib/api'
+import { authApi, courseApi, enrollmentApi, instructorCourseApi, qnaApi, reviewApi, userApi } from './lib/api'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
 import { useInternalPageScroll } from './lib/useInternalPageScroll'
 import type { CourseReview } from './types/course'
 import type { LearningCourseDetail } from './types/learning'
+import type { CreateQnaQuestionRequest, QnaQuestionDetail, QnaQuestionSummary } from './types/qna'
 
 type TabKey = 'info' | 'news' | 'reviews' | 'qna'
 type ReviewFilterKey = 'all' | 'five' | 'fourPlus'
@@ -112,6 +110,52 @@ function buildReviewFilterClass(active: boolean) {
   }`
 }
 
+function toQuestionSummary(question: QnaQuestionDetail): QnaQuestionSummary {
+  const { content: _content, updatedAt: _updatedAt, answers, ...summary } = question
+  return {
+    ...summary,
+    answerCount: answers.length,
+  }
+}
+
+function getQnaQuestionStatus(question: QnaQuestionSummary | QnaQuestionDetail): CourseQuestionStatus {
+  return question.qnaStatus === 'ANSWERED' || Boolean(question.adoptedAnswerId) || question.answerCount > 0
+    ? 'answered'
+    : 'pending'
+}
+
+function getQnaQuestionTag(question: QnaQuestionSummary) {
+  return question.lectureTimestamp || question.templateType || question.difficulty || 'Q&A'
+}
+
+function mapQnaQuestionToCourseQuestion(
+  question: QnaQuestionSummary,
+  detail: QnaQuestionDetail | undefined,
+): CourseQuestionItem {
+  const answers = detail?.answers ?? []
+  return {
+    id: question.id,
+    status: getQnaQuestionStatus(detail ?? question),
+    authorName: question.authorName,
+    tag: getQnaQuestionTag(question),
+    title: question.title,
+    body: detail?.content ?? '질문 내용을 불러오는 중입니다.',
+    views: question.viewCount,
+    createdAt: question.createdAt ?? new Date(0).toISOString(),
+    commentCount: detail ? answers.length : question.answerCount,
+    comments: answers.map((answer) => ({
+      id: answer.id,
+      authorName: answer.authorName,
+      content: answer.content,
+      createdAt: answer.createdAt ?? '',
+    })),
+  }
+}
+
+function createQnaQuestionSearchText(question: QnaQuestionSummary, detail: QnaQuestionDetail | undefined) {
+  return `${question.authorName} ${getQnaQuestionTag(question)} ${question.title} ${detail?.content ?? ''}`.toLowerCase()
+}
+
 function StarRating({ rating, className = 'text-xs' }: { rating: number; className?: string }) {
   const whole = Math.floor(rating)
   const hasHalf = rating - whole >= 0.5
@@ -138,6 +182,61 @@ function LoadingOverlay() {
   )
 }
 
+const markdownImagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g
+
+function getPlainDescription(description: string) {
+  return description.replace(markdownImagePattern, '').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+function renderCourseDescription(description: string) {
+  const nodes: Array<{ type: 'text'; value: string } | { type: 'image'; alt: string; src: string }> = []
+  let lastIndex = 0
+
+  for (const match of description.matchAll(markdownImagePattern)) {
+    const matchIndex = match.index ?? 0
+    const textBefore = description.slice(lastIndex, matchIndex).trim()
+
+    if (textBefore) {
+      nodes.push({ type: 'text', value: textBefore })
+    }
+
+    nodes.push({ type: 'image', alt: match[1] || '강의 소개 이미지', src: match[2] })
+    lastIndex = matchIndex + match[0].length
+  }
+
+  const textAfter = description.slice(lastIndex).trim()
+  if (textAfter) {
+    nodes.push({ type: 'text', value: textAfter })
+  }
+
+  if (!nodes.length) {
+    return <p className="mb-4">{description}</p>
+  }
+
+  return (
+    <>
+      {nodes.map((node, index) => {
+        if (node.type === 'image') {
+          return (
+            <img
+              key={`course-description-image-${index}`}
+              src={node.src}
+              alt={node.alt}
+              className="my-6 w-full rounded-xl border border-gray-100 object-cover"
+            />
+          )
+        }
+
+        return node.value.split(/\n{2,}/).map((paragraph, paragraphIndex) => (
+          <p key={`course-description-text-${index}-${paragraphIndex}`} className="mb-4 whitespace-pre-line">
+            {paragraph}
+          </p>
+        ))
+      })}
+    </>
+  )
+}
+
 export default function CourseDetailApp() {
   useInternalPageScroll()
 
@@ -154,10 +253,15 @@ export default function CourseDetailApp() {
   const [loadingCourse, setLoadingCourse] = useState(true)
   const [loadingReviews, setLoadingReviews] = useState(true)
   const [courseNotice, setCourseNotice] = useState<string | null>(null)
-  const [reviews, setReviews] = useState<CourseReview[]>(fallbackCourseReviews)
-  const [questions, setQuestions] = useState<CourseQuestionItem[]>(fallbackCourseQuestions)
+  const [reviews, setReviews] = useState<CourseReview[]>([])
+  const [qnaQuestions, setQnaQuestions] = useState<QnaQuestionSummary[]>([])
+  const [qnaDetails, setQnaDetails] = useState<Record<number, QnaQuestionDetail>>({})
+  const [loadingQuestions, setLoadingQuestions] = useState(false)
+  const [loadingQuestionId, setLoadingQuestionId] = useState<number | null>(null)
+  const [qnaError, setQnaError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('info')
   const [openSectionIds, setOpenSectionIds] = useState<number[]>([])
+  const [videoDurationOverrides, setVideoDurationOverrides] = useState<Record<number, number>>({})
   const [reviewFilter, setReviewFilter] = useState<ReviewFilterKey>('all')
   const [reviewSort, setReviewSort] = useState<ReviewSortKey>('latest')
   const [qnaFilter, setQnaFilter] = useState<'all' | CourseQuestionStatus>('all')
@@ -165,15 +269,44 @@ export default function CourseDetailApp() {
   const [openQuestionId, setOpenQuestionId] = useState<number | null>(null)
   const [questionDraft, setQuestionDraft] = useState({ title: '', tag: '', body: '' })
   const [questionErrors, setQuestionErrors] = useState<string | null>(null)
+  const [questionBusy, setQuestionBusy] = useState(false)
   const [commentDrafts, setCommentDrafts] = useState<Record<number, string>>({})
+  const [answerBusyId, setAnswerBusyId] = useState<number | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [askModalOpen, setAskModalOpen] = useState(false)
+  const [selectedNews, setSelectedNews] = useState<CourseNewsCard | null>(null)
   const [enrollModalOpen, setEnrollModalOpen] = useState(false)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [enrollmentBusy, setEnrollmentBusy] = useState(false)
   const deferredQnaSearch = useDeferredValue(qnaSearch.trim().toLowerCase())
 
   const displayCourse = useMemo(() => mergeCourseDetailWithFallback(course), [course])
+  const courseInfoSections = useMemo(() => {
+    if (displayCourse.infoSections?.length) {
+      return displayCourse.infoSections.filter((section) => section.items.length > 0)
+    }
+
+    return [
+      {
+        sectionKey: 'PREREQUISITES',
+        title: '수강 전 알아두면 좋아요',
+        displayOrder: 0,
+        items: displayCourse.prerequisites,
+      },
+      {
+        sectionKey: 'OBJECTIVES',
+        title: '이 강의를 듣고 나면',
+        displayOrder: 1,
+        items: displayCourse.objectives.map((item) => item.objectiveText),
+      },
+      {
+        sectionKey: 'TARGET_AUDIENCE',
+        title: '이런 분들에게 추천합니다',
+        displayOrder: 2,
+        items: displayCourse.targetAudiences.map((item) => item.audienceDescription),
+      },
+    ].filter((section) => section.items.length > 0)
+  }, [displayCourse])
   const instructor = displayCourse.instructor
   const previewLesson = useMemo(() => getPreviewLesson(displayCourse), [displayCourse])
   const learningHref = useMemo(
@@ -216,12 +349,16 @@ export default function CourseDetailApp() {
   }, [reviewFilter, reviewSort, reviews])
 
   const visibleQuestions = useMemo(() => (
-    questions.filter((item) => {
+    qnaQuestions.map((question) => mapQnaQuestionToCourseQuestion(question, qnaDetails[question.id])).filter((item) => {
+      const source = qnaQuestions.find((question) => question.id === item.id)
       const statusMatched = qnaFilter === 'all' || item.status === qnaFilter
-      const searchMatched = !deferredQnaSearch || createQuestionSearchText(item).includes(deferredQnaSearch)
+      const searchText = source
+        ? createQnaQuestionSearchText(source, qnaDetails[source.id])
+        : `${item.authorName} ${item.tag} ${item.title} ${item.body}`.toLowerCase()
+      const searchMatched = !deferredQnaSearch || searchText.includes(deferredQnaSearch)
       return statusMatched && searchMatched
     })
-  ), [deferredQnaSearch, qnaFilter, questions])
+  ), [deferredQnaSearch, qnaDetails, qnaFilter, qnaQuestions])
 
   useEffect(() => {
     document.title = 'DevPath - 강의 상세'
@@ -274,7 +411,9 @@ export default function CourseDetailApp() {
       }
 
       try {
-        const response = await courseApi.getCourseDetail(courseId, controller.signal)
+        const response = isStudentPreview && session
+          ? await instructorCourseApi.getCourseDetail(courseId, controller.signal)
+          : await courseApi.getCourseDetail(courseId, controller.signal)
         if (cancelled) return
         setCourse(response)
         setCourseNotice(null)
@@ -300,15 +439,50 @@ export default function CourseDetailApp() {
   }, [displayCourse.courseId, displayCourse.sections])
 
   useEffect(() => {
+    let cancelled = false
+    const videoElements: HTMLVideoElement[] = []
+    const videoLessons = displayCourse.sections
+      .flatMap((section) => section.lessons)
+      .filter((item) => isCourseDetailVideoLesson(item) && Boolean(item.videoUrl))
+
+    setVideoDurationOverrides({})
+
+    videoLessons.forEach((item) => {
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+      video.src = item.videoUrl!
+      video.onloadedmetadata = () => {
+        if (cancelled || !Number.isFinite(video.duration) || video.duration <= 0) return
+        setVideoDurationOverrides((current) => ({
+          ...current,
+          [item.lessonId]: Math.round(video.duration),
+        }))
+      }
+      video.onerror = () => {}
+      videoElements.push(video)
+    })
+
+    return () => {
+      cancelled = true
+      videoElements.forEach((video) => {
+        video.onloadedmetadata = null
+        video.onerror = null
+        video.removeAttribute('src')
+        video.load()
+      })
+    }
+  }, [displayCourse.courseId, displayCourse.sections])
+
+  useEffect(() => {
     if (!courseId || loadingCourse) {
       setLoadingReviews(false)
-      setReviews(fallbackCourseReviews)
+      setReviews([])
       return
     }
 
     if (!course) {
       setLoadingReviews(false)
-      setReviews(fallbackCourseReviews)
+      setReviews([])
       return
     }
     const currentCourseId = course.courseId
@@ -321,10 +495,10 @@ export default function CourseDetailApp() {
       try {
         const response = await reviewApi.getByCourse(currentCourseId, controller.signal)
         if (cancelled) return
-        setReviews(response.length ? response : fallbackCourseReviews)
+        setReviews(response)
       } catch {
         if (cancelled) return
-        setReviews(fallbackCourseReviews)
+        setReviews([])
       } finally {
         if (!cancelled) setLoadingReviews(false)
       }
@@ -337,6 +511,45 @@ export default function CourseDetailApp() {
       controller.abort()
     }
   }, [course, courseId, loadingCourse])
+
+  useEffect(() => {
+    if (!session || !course?.courseId) {
+      setQnaQuestions([])
+      setQnaDetails({})
+      setLoadingQuestions(false)
+      setQnaError(null)
+      return
+    }
+
+    let cancelled = false
+    const controller = new AbortController()
+    const currentCourseId = course.courseId
+
+    async function loadQuestions() {
+      setLoadingQuestions(true)
+      setQnaError(null)
+      try {
+        const response = await qnaApi.getQuestions(currentCourseId, controller.signal)
+        if (cancelled) return
+        setQnaQuestions(response)
+        setQnaDetails({})
+      } catch (error) {
+        if (cancelled) return
+        setQnaQuestions([])
+        setQnaDetails({})
+        setQnaError(error instanceof Error ? error.message : '질문 목록을 불러오지 못했습니다.')
+      } finally {
+        if (!cancelled) setLoadingQuestions(false)
+      }
+    }
+
+    void loadQuestions()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [course?.courseId, session])
 
   useEffect(() => {
     if (!session) {
@@ -354,7 +567,7 @@ export default function CourseDetailApp() {
   }, [toastMessage])
 
   useEffect(() => {
-    if (!askModalOpen && !enrollModalOpen) return
+    if (!askModalOpen && !enrollModalOpen && !selectedNews) return
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -363,6 +576,7 @@ export default function CourseDetailApp() {
       if (event.key !== 'Escape') return
       setAskModalOpen(false)
       setEnrollModalOpen(false)
+      setSelectedNews(null)
     }
 
     window.addEventListener('keydown', handleEscape)
@@ -370,7 +584,7 @@ export default function CourseDetailApp() {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleEscape)
     }
-  }, [askModalOpen, enrollModalOpen])
+  }, [askModalOpen, enrollModalOpen, selectedNews])
 
   async function handleLogout() {
     const currentSession = readStoredAuthSession()
@@ -439,7 +653,17 @@ export default function CourseDetailApp() {
     }
   }
 
-  function handleSubmitQuestion() {
+  async function handleSubmitQuestion() {
+    if (!session) {
+      openAuthModal('login')
+      return
+    }
+
+    if (!course?.courseId) {
+      setQuestionErrors('강의 정보를 불러온 뒤 다시 시도해주세요.')
+      return
+    }
+
     const title = questionDraft.title.trim()
     const tag = questionDraft.tag.trim()
     const body = questionDraft.body.trim()
@@ -454,53 +678,76 @@ export default function CourseDetailApp() {
       return
     }
 
-    const nextQuestion: CourseQuestionItem = {
-      id: createNewQuestionId(questions),
-      status: 'pending',
-      authorName: session?.name ?? '사용자',
-      tag: tag || '질문',
+    const payload: CreateQnaQuestionRequest = {
+      templateType: 'STUDY',
+      difficulty: 'MEDIUM',
       title,
-      body,
-      views: 20,
-      createdAt: new Date().toISOString(),
-      comments: [],
+      content: body,
+      courseId: course.courseId,
+      lessonId: null,
+      lectureTimestamp: tag || null,
     }
 
-    setQuestions((current) => [nextQuestion, ...current])
-    setQuestionDraft({ title: '', tag: '', body: '' })
-    setQuestionErrors(null)
-    setAskModalOpen(false)
-    setOpenQuestionId(nextQuestion.id)
-    startTransition(() => setActiveTab('qna'))
-    setToastMessage('질문이 등록되었습니다.')
+    setQuestionBusy(true)
+    try {
+      const created = await qnaApi.createQuestion(payload, session.userId)
+      setQnaDetails((current) => ({ ...current, [created.id]: created }))
+      setQnaQuestions((current) => [toQuestionSummary(created), ...current.filter((item) => item.id !== created.id)])
+      setQuestionDraft({ title: '', tag: '', body: '' })
+      setQuestionErrors(null)
+      setAskModalOpen(false)
+      setOpenQuestionId(created.id)
+      startTransition(() => setActiveTab('qna'))
+      setToastMessage('질문이 등록되었습니다.')
+    } catch (error) {
+      setQuestionErrors(error instanceof Error ? error.message : '질문 등록에 실패했습니다.')
+    } finally {
+      setQuestionBusy(false)
+    }
   }
 
-  function handleToggleQuestion(questionId: number) {
-    setOpenQuestionId((current) => (current === questionId ? null : questionId))
+  async function handleToggleQuestion(questionId: number) {
+    const willOpen = openQuestionId !== questionId
+    setOpenQuestionId(willOpen ? questionId : null)
+
+    if (!willOpen || qnaDetails[questionId] || loadingQuestionId === questionId) return
+
+    setLoadingQuestionId(questionId)
+    setQnaError(null)
+    try {
+      const detail = await qnaApi.getQuestionDetail(questionId)
+      setQnaDetails((current) => ({ ...current, [questionId]: detail }))
+      setQnaQuestions((current) => current.map((item) => (item.id === questionId ? toQuestionSummary(detail) : item)))
+    } catch (error) {
+      setQnaError(error instanceof Error ? error.message : '질문 상세를 불러오지 못했습니다.')
+    } finally {
+      setLoadingQuestionId((current) => (current === questionId ? null : current))
+    }
   }
 
-  function handleSubmitComment(questionId: number) {
+  async function handleSubmitComment(questionId: number) {
+    if (!session) {
+      openAuthModal('login')
+      return
+    }
+
     const content = commentDrafts[questionId]?.trim()
-    if (!content) return
+    if (!content || answerBusyId === questionId) return
 
-    setQuestions((current) => current.map((question) => {
-      if (question.id !== questionId) return question
-      const nextReply = {
-        id: createNewQuestionCommentId(question),
-        authorName: session?.name ?? '사용자',
-        content,
-        createdAt: new Date().toISOString(),
-      }
-
-      return {
-        ...question,
-        status: session?.role === 'ROLE_INSTRUCTOR' ? 'answered' : question.status,
-        comments: [...question.comments, nextReply],
-      }
-    }))
-
-    setCommentDrafts((current) => ({ ...current, [questionId]: '' }))
-    setToastMessage('댓글이 등록되었습니다.')
+    setAnswerBusyId(questionId)
+    setQnaError(null)
+    try {
+      await qnaApi.createAnswer(questionId, { content })
+      const detail = await qnaApi.getQuestionDetail(questionId)
+      setQnaDetails((current) => ({ ...current, [questionId]: detail }))
+      setQnaQuestions((current) => current.map((item) => (item.id === questionId ? toQuestionSummary(detail) : item)))
+      setCommentDrafts((current) => ({ ...current, [questionId]: '' }))
+      setToastMessage('답변이 등록되었습니다.')
+    } catch (error) {
+      setQnaError(error instanceof Error ? error.message : '답변 등록에 실패했습니다.')
+    } finally {
+      setAnswerBusyId((current) => (current === questionId ? null : current))
+    }
   }
 
   function handleExitStudentPreview() {
@@ -545,8 +792,8 @@ export default function CourseDetailApp() {
         <section className="bg-gray-900 py-12 text-white">
           <div className="container mx-auto flex flex-col items-center gap-10 px-6 lg:px-20 md:flex-row">
             <div className="flex-1 space-y-4">
-              <div className="mb-2 flex flex-wrap gap-2">
-                <span className="rounded bg-primary px-2 py-1 text-xs font-bold text-white">Best Seller</span>
+              <div className="course-detail-hero-tags mb-2 flex flex-wrap gap-2">
+                <span className="course-detail-hero-badge rounded bg-primary px-2 py-1 text-xs font-bold text-white">Best Seller</span>
                 {heroTags.map((tag) => (
                   <span key={tag} className="job-tag">
                     {tag}
@@ -555,15 +802,15 @@ export default function CourseDetailApp() {
               </div>
 
               <h1 className="text-3xl leading-tight font-bold md:text-4xl">{displayCourse.title}</h1>
-              <p className="text-sm text-gray-300 md:text-base">{displayCourse.description}</p>
+              <p className="text-sm text-gray-300 md:text-base">
+                {getPlainDescription(displayCourse.subtitle ?? displayCourse.description ?? '')}
+              </p>
 
               <div className="mt-4 flex items-center gap-4 text-sm">
-                <StarRating rating={reviewStats.average || 4.8} className="text-sm" />
+                <StarRating rating={reviewStats.average} className="text-sm" />
                 <span className="text-gray-300">
-                  {(reviewStats.average || 4.8).toFixed(1)} ({reviewStats.count || 320}개 수강평)
+                  {reviewStats.average.toFixed(1)} ({reviewStats.count}개 수강평)
                 </span>
-                <span className="text-gray-400">|</span>
-                <span className="text-gray-300">{Math.max(reviewStats.count * 4, 1204).toLocaleString('ko-KR')}명 수강 중</span>
               </div>
 
               <a href={instructorChannelHref} className="group inline-flex items-center gap-3 pt-4">
@@ -655,52 +902,50 @@ export default function CourseDetailApp() {
 
             {activeTab === 'info' ? (
               <div className="course-detail-tab-panel">
-                <div className="mb-12">
-                  <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-900">
-                    <i className="fas fa-briefcase text-primary" /> 이 강의, 어떤 직무에 도움이 되나요?
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {jobCards.map((item) => (
-                      <div key={item.key} className="job-card">
-                        <div className="mb-3 flex items-center gap-3">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold ${item.iconShellClassName}`}>
-                            <i className={item.iconClassName} />
+                {jobCards.length ? (
+                  <div className="mb-12">
+                    <h3 className="mb-6 flex items-center gap-2 text-xl font-bold text-gray-900">
+                      <i className="fas fa-briefcase text-primary" /> 이 강의, 어떤 직무에 도움이 되나요?
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      {jobCards.map((item) => (
+                        <div key={item.key} className="job-card">
+                          <div className="mb-3 flex items-center gap-3">
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold ${item.iconShellClassName}`}>
+                              <i className={item.iconClassName} />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900">{item.title}</h4>
+                              <p className="text-xs text-gray-500">{item.subtitle}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-bold text-gray-900">{item.title}</h4>
-                            <p className="text-xs text-gray-500">{item.subtitle}</p>
+                          <p className="mb-3 text-sm text-gray-600">{item.description}</p>
+                          <div className="flex gap-2">
+                            <span className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600">{item.pill}</span>
                           </div>
                         </div>
-                        <p className="mb-3 text-sm text-gray-600">{item.description}</p>
-                        <div className="flex gap-2">
-                          <span className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600">{item.pill}</span>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : null}
 
                 <div className="prose mb-12 max-w-none border-t border-gray-100 pt-10 text-gray-700 leading-relaxed">
                   <h3 className="mb-4 text-xl font-bold text-gray-900">강의 요약</h3>
-                  <p className="mb-4">{displayCourse.description}</p>
-                  {displayCourse.objectives.length ? (
-                    <>
-                      <h3 className="mt-8 mb-4 text-xl font-bold text-gray-900">이 강의를 듣고 나면</h3>
+                  {renderCourseDescription(displayCourse.description ?? '')}
+                  {courseInfoSections.map((section) => (
+                    <div key={`${section.sectionKey}-${section.title}`}>
+                      <h3 className="mt-8 mb-4 text-xl font-bold text-gray-900">{section.title}</h3>
                       <ul className="mb-4 list-disc space-y-2 pl-5">
-                        {displayCourse.objectives.map((item) => (
-                          <li key={item.objectiveId}>{item.objectiveText}</li>
+                        {section.items.map((item) => (
+                          <li key={item}>
+                            <span className={section.sectionKey === 'TARGET_AUDIENCE' ? 'font-bold text-primary' : undefined}>
+                              {item}
+                            </span>
+                          </li>
                         ))}
                       </ul>
-                    </>
-                  ) : null}
-                  <h3 className="mt-8 mb-4 text-xl font-bold text-gray-900">이런 분들에게 추천합니다</h3>
-                  <ul className="mb-4 list-disc space-y-2 pl-5">
-                    {displayCourse.targetAudiences.map((item) => (
-                      <li key={item.targetAudienceId}>
-                        <span className="font-bold text-primary">{item.audienceDescription}</span>
-                      </li>
-                    ))}
-                  </ul>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="mb-12 border-t border-gray-100 pt-10">
@@ -717,14 +962,14 @@ export default function CourseDetailApp() {
                           >
                             <span className="font-bold text-gray-800">{section.title}</span>
                             <span className="text-xs text-gray-500">
-                              {formatSectionMeta(section)} <i className={`fas ml-2 ${opened ? 'fa-chevron-up' : 'fa-chevron-down'}`} />
+                              {formatSectionMeta(section, videoDurationOverrides)} <i className={`fas ml-2 ${opened ? 'fa-chevron-up' : 'fa-chevron-down'}`} />
                             </span>
                           </button>
 
                           {opened ? (
                             <div className="bg-white">
                               {section.lessons.map((lesson) => {
-                                const metaLabel = getCourseDetailLessonMetaLabel(lesson)
+                                const metaLabel = getCourseDetailLessonMetaLabel(lesson, videoDurationOverrides[lesson.lessonId])
 
                                 return (
                                   <div key={lesson.lessonId} className="flex items-center justify-between border-b border-gray-50 px-6 py-3 transition last:border-b-0 hover:bg-gray-50">
@@ -847,12 +1092,15 @@ export default function CourseDetailApp() {
                       </div>
                     )
 
-                    return item.href ? (
-                      <a key={item.id} href={item.href} target="_blank" rel="noreferrer">
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className="block w-full text-left"
+                        onClick={() => setSelectedNews(item)}
+                      >
                         {card}
-                      </a>
-                    ) : (
-                      <div key={item.id}>{card}</div>
+                      </button>
                     )
                   })}
                 </div>
@@ -868,19 +1116,23 @@ export default function CourseDetailApp() {
                       type="button"
                       id="openAskModalBtn"
                       onClick={() => {
+                        if (!session) {
+                          openAuthModal('login')
+                          return
+                        }
                         setQuestionErrors(null)
                         setAskModalOpen(true)
                       }}
-                      className="rounded-xl bg-brand px-4 py-2 font-bold text-white transition hover:bg-green-600"
+                      className="course-detail-qna-new-button shrink-0 whitespace-nowrap rounded-xl bg-brand px-4 py-2 font-bold text-white transition hover:bg-green-600"
                     >
                       <i className="fas fa-plus mr-1" /> 새 질문
                     </button>
                   </div>
                 </div>
 
-                <div className="qna-card mb-6 p-5">
+                <div className="course-detail-qna-toolbar qna-card mb-6 p-5">
                   <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
-                    <div className="flex items-center gap-2">
+                    <div className="course-detail-qna-filter-group flex items-center gap-2">
                       <button type="button" onClick={() => setQnaFilter('all')} className={buildQuestionFilterClass(qnaFilter === 'all')}>전체</button>
                       <button type="button" onClick={() => setQnaFilter('pending')} className={buildQuestionFilterClass(qnaFilter === 'pending')}>답변 대기</button>
                       <button type="button" onClick={() => setQnaFilter('answered')} className={buildQuestionFilterClass(qnaFilter === 'answered')}>답변 완료</button>
@@ -888,12 +1140,12 @@ export default function CourseDetailApp() {
 
                     <div className="flex flex-1 items-center gap-2">
                       <div className="relative w-full">
-                        <i className="fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" />
+                        <i className="course-detail-qna-search-icon fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" />
                         <input
                           id="qnaSearch"
                           value={qnaSearch}
                           onChange={(event) => setQnaSearch(event.target.value)}
-                          className="qna-input qna-focus w-full bg-white py-2 pl-9 pr-3 text-sm font-semibold text-gray-700 placeholder:text-gray-400"
+                          className="course-detail-qna-search-input qna-input qna-focus w-full bg-white py-2 pl-9 pr-3 text-sm font-semibold text-gray-700 placeholder:text-gray-400"
                           placeholder="제목/내용/작성자 키워드 검색"
                         />
                       </div>
@@ -904,7 +1156,19 @@ export default function CourseDetailApp() {
                   </div>
                 </div>
 
+                {qnaError ? (
+                  <div className="mb-4 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600">
+                    {qnaError}
+                  </div>
+                ) : null}
+
                 <div id="qnaList" className="space-y-4">
+                  {loadingQuestions ? (
+                    <div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center text-sm font-bold text-gray-500">
+                      질문을 불러오는 중입니다.
+                    </div>
+                  ) : null}
+
                   {visibleQuestions.map((question) => {
                     const opened = openQuestionId === question.id
                     return (
@@ -964,14 +1228,15 @@ export default function CourseDetailApp() {
                                 value={commentDrafts[question.id] ?? ''}
                                 onChange={(event) => setCommentDrafts((current) => ({ ...current, [question.id]: event.target.value }))}
                                 className="qna-input qna-focus"
-                                placeholder="댓글을 입력하세요 (데모)"
+                                placeholder="댓글을 입력하세요"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSubmitComment(question.id)}
-                                className="rounded-xl bg-brand px-4 py-2 font-bold text-white transition hover:bg-green-600"
+                                disabled={answerBusyId === question.id}
+                                className="shrink-0 whitespace-nowrap rounded-xl bg-brand px-4 py-2 font-bold text-white transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
                               >
-                                등록
+                                {answerBusyId === question.id ? '등록 중' : '등록'}
                               </button>
                             </div>
                           </div>
@@ -980,9 +1245,9 @@ export default function CourseDetailApp() {
                     )
                   })}
 
-                  {visibleQuestions.length === 0 ? (
+                  {!loadingQuestions && visibleQuestions.length === 0 ? (
                     <div className="rounded-xl border border-gray-200 bg-white px-6 py-16 text-center text-sm text-gray-500">
-                      조건에 맞는 질문이 없습니다.
+                      {session ? '조건에 맞는 질문이 없습니다.' : '로그인 후 질문게시판을 확인할 수 있습니다.'}
                     </div>
                   ) : null}
                 </div>
@@ -1045,6 +1310,71 @@ export default function CourseDetailApp() {
                 className="rounded-xl bg-brand py-3 text-sm font-bold text-white shadow-md transition hover:bg-green-600 hover:shadow-lg"
               >
                 바로 학습하기
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {selectedNews ? (
+        <div
+          className="fixed inset-0 z-[2100] flex items-center justify-center px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="courseNewsModalTitle"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setSelectedNews(null)
+          }}
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            aria-label="공지 닫기"
+            onClick={() => setSelectedNews(null)}
+          />
+          <div className="modal-animate relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
+              <div className="min-w-0">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${selectedNews.badgeClassName}`}>
+                    {selectedNews.badgeLabel}
+                  </span>
+                  <span className="text-xs font-bold text-gray-400">{selectedNews.dateLabel}</span>
+                </div>
+                <h3 id="courseNewsModalTitle" className="text-lg font-extrabold leading-snug text-gray-900">
+                  {selectedNews.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition hover:bg-gray-50 hover:text-gray-900"
+                aria-label="공지 닫기"
+                onClick={() => setSelectedNews(null)}
+              >
+                <i className="fas fa-times" />
+              </button>
+            </div>
+            <div className="max-h-[52vh] overflow-y-auto px-6 py-5">
+              <p className="whitespace-pre-line text-sm font-medium leading-7 text-gray-700">{selectedNews.summary}</p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4">
+              {selectedNews.href ? (
+                <a
+                  href={selectedNews.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-xs font-black text-white transition hover:bg-black"
+                >
+                  원문 보기
+                  <i className="fas fa-arrow-up-right-from-square text-[10px]" />
+                </a>
+              ) : null}
+              <button
+                type="button"
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-100"
+                onClick={() => setSelectedNews(null)}
+              >
+                닫기
               </button>
             </div>
           </div>
@@ -1126,10 +1456,11 @@ export default function CourseDetailApp() {
               <button
                 type="button"
                 id="qnaSubmitBtn"
-                className="rounded-xl bg-brand px-5 py-2 text-xs font-black text-white shadow-md transition hover:bg-green-600"
+                disabled={questionBusy}
+                className="rounded-xl bg-brand px-5 py-2 text-xs font-black text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
                 onClick={handleSubmitQuestion}
               >
-                질문 등록
+                {questionBusy ? '등록 중' : '질문 등록'}
               </button>
             </div>
           </div>

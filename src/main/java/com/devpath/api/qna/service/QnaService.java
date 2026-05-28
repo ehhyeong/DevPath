@@ -7,6 +7,7 @@ import com.devpath.api.qna.dto.QuestionCreateRequest;
 import com.devpath.api.qna.dto.QuestionDetailResponse;
 import com.devpath.api.qna.dto.QuestionSummaryResponse;
 import com.devpath.api.qna.dto.QuestionTemplateResponse;
+import com.devpath.api.qna.realtime.QnaRealtimePublisher;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Lesson;
@@ -52,6 +53,7 @@ public class QnaService {
   private final QuestionTemplateRepository questionTemplateRepository;
   private final UserRepository userRepository;
   private final LessonRepository lessonRepository;
+  private final QnaRealtimePublisher qnaRealtimePublisher;
 
   @Transactional
   public QuestionDetailResponse createQuestion(Long userId, QuestionCreateRequest request) {
@@ -127,6 +129,7 @@ public class QnaService {
 
     Answer savedAnswer = answerRepository.save(answer);
     question.markAsAnswered();
+    qnaRealtimePublisher.answerCreated(question, savedAnswer.getId());
     return AnswerResponse.from(savedAnswer);
   }
 
@@ -155,6 +158,7 @@ public class QnaService {
     // 질문과 답변의 채택 상태를 함께 변경한다.
     answer.adopt();
     question.adoptAnswer(answer.getId());
+    qnaRealtimePublisher.answerAdopted(question, answer.getId());
 
     List<AnswerResponse> answers = getAnswerResponses(questionId);
     return QuestionDetailResponse.from(question, answers);

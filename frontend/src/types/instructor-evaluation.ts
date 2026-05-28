@@ -47,6 +47,8 @@ export interface SaveInstructorQuizEditorRequest {
 export interface GenerateInstructorQuizRequest {
   mode: 'video' | 'text'
   videoFileName: string | null
+  videoMimeType: string | null
+  videoBase64Content: string | null
   scriptText: string | null
   questionCount: number
   difficultyLevel: number
@@ -100,6 +102,7 @@ export interface SaveInstructorAssignmentEditorRequest {
   description: string
   totalScore: number
   passScore: number
+  aiReviewEnabled: boolean
   allowTextSubmission: boolean
   allowFileSubmission: boolean
   allowUrlSubmission: boolean

@@ -94,7 +94,9 @@ import type {
   SaveInstructorQuizEditorRequest,
 } from '../types/instructor-evaluation'
 import type {
+  CreateQnaAnswerRequest,
   CreateQnaQuestionRequest,
+  QnaAnswer,
   QnaQuestionDetail,
   QnaQuestionSummary,
   QnaQuestionTemplate,
@@ -104,6 +106,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 
 type RequestOptions = {
   auth?: boolean
+}
+
+export interface InstructorUploadedAsset {
+  url: string
+  assetKey: string
+  originalFileName: string
+  storedFileName: string
+  contentType: string | null
+  fileSize: number
 }
 
 function toNumber(value: unknown, fallback = 0) {
@@ -850,6 +861,16 @@ export const qnaApi = {
       { auth: true },
     )
   },
+  createAnswer(questionId: number, payload: CreateQnaAnswerRequest) {
+    return request<QnaAnswer>(
+      `/api/qna/questions/${questionId}/answers`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      { auth: true },
+    )
+  },
 }
 
 export const publicInstructorApi = {
@@ -911,6 +932,20 @@ export const instructorCourseApi = {
     return request<LearningCourseDetail>(
       `/api/instructor/courses/${courseId}`,
       { method: 'GET', signal },
+      { auth: true },
+    )
+  },
+  uploadCourseAsset(file: File, assetType: string) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('assetType', assetType)
+
+    return request<InstructorUploadedAsset>(
+      '/api/instructor/uploads/course-assets',
+      {
+        method: 'POST',
+        body: formData,
+      },
       { auth: true },
     )
   },
@@ -1001,6 +1036,19 @@ export const instructorCourseApi = {
       {
         method: 'POST',
         body: JSON.stringify({ targetAudiences }),
+      },
+      { auth: true },
+    )
+  },
+  replaceInfoSections(
+    courseId: number,
+    sections: Array<{ sectionKey: string; title: string; items: string[] }>,
+  ) {
+    return request<void>(
+      `/api/instructor/courses/${courseId}/info-sections`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ sections }),
       },
       { auth: true },
     )

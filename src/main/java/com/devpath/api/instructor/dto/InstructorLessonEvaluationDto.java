@@ -88,6 +88,8 @@ public class InstructorLessonEvaluationDto {
   public static class GenerateQuizRequest {
     private String mode;
     private String videoFileName;
+    private String videoMimeType;
+    private String videoBase64Content;
     private String scriptText;
     private Integer questionCount;
     private Integer difficultyLevel;

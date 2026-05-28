@@ -32,6 +32,10 @@ public class GeminiProvider {
   private final RestTemplate restTemplate;
 
   public String generate(String prompt) {
+    return generate(prompt, null, null);
+  }
+
+  public String generate(String prompt, String inlineMimeType, String inlineBase64Data) {
     String apiKey = normalize(geminiProperties.getKey());
 
     if (apiKey.isBlank()) {
@@ -42,8 +46,17 @@ public class GeminiProvider {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
 
-    Map<String, Object> body =
-        Map.of("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
+    List<Object> parts = new ArrayList<>();
+    parts.add(Map.of("text", prompt));
+
+    if (!normalize(inlineMimeType).isBlank() && !normalize(inlineBase64Data).isBlank()) {
+      parts.add(
+          Map.of(
+              "inline_data",
+              Map.of("mime_type", normalize(inlineMimeType), "data", normalize(inlineBase64Data))));
+    }
+
+    Map<String, Object> body = Map.of("contents", List.of(Map.of("parts", parts)));
     HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
     List<String> models = resolveModels();
 

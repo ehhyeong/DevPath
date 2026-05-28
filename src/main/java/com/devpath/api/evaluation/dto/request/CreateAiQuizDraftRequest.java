@@ -41,6 +41,15 @@ public class CreateAiQuizDraftRequest {
   @Schema(description = "영상 기반 생성일 경우 참고한 타임스탬프 구간", example = "12:10-13:20")
   private String sourceTimestamp;
 
+  @Schema(description = "Gemini inline media MIME type", example = "video/mp4")
+  private String sourceMimeType;
+
+  @Schema(description = "Gemini inline media base64 content")
+  private String sourceBase64Content;
+
+  @Schema(description = "AI 호출 없이 fallback 초안을 사용할지 여부", example = "false")
+  private Boolean fallbackOnly;
+
   @Min(1)
   @Max(10)
   @Schema(description = "생성할 문항 개수", example = "3")
@@ -62,6 +71,9 @@ public class CreateAiQuizDraftRequest {
       QuizType quizType,
       String sourceText,
       String sourceTimestamp,
+      String sourceMimeType,
+      String sourceBase64Content,
+      Boolean fallbackOnly,
       Integer questionCount,
       QuestionType preferredQuestionType,
       Integer difficultyLevel) {
@@ -71,6 +83,9 @@ public class CreateAiQuizDraftRequest {
     this.quizType = quizType;
     this.sourceText = sourceText;
     this.sourceTimestamp = sourceTimestamp;
+    this.sourceMimeType = sourceMimeType;
+    this.sourceBase64Content = sourceBase64Content;
+    this.fallbackOnly = fallbackOnly;
     this.questionCount = questionCount;
     this.preferredQuestionType = preferredQuestionType;
     this.difficultyLevel = difficultyLevel;

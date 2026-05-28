@@ -26,6 +26,30 @@ type ToastState = {
   tone: 'info' | 'success'
 } | null
 
+const recommendedQuickTemplates = [
+  {
+    id: 'classic',
+    title: '✅ 결론 → 이유 → 예시',
+    description: '개념/이론 질문에 적합한 구조',
+    content:
+      '결론부터 말하면, 이 부분은 다음처럼 이해하면 됩니다.\n\n이유는 ... 때문입니다.\n\n예를 들어 ... 상황에서는 ... 방식으로 동작합니다.',
+  },
+  {
+    id: 'steps',
+    title: '🧭 단계별 트러블슈팅',
+    description: '설치 및 환경변수 오류 해결용',
+    content:
+      '아래 순서대로 확인해보세요.\n\n1. 현재 설정 값을 먼저 확인합니다.\n2. 변경한 뒤 터미널이나 IDE를 완전히 재실행합니다.\n3. 같은 문제가 반복되면 에러 메시지의 첫 원인 줄을 기준으로 다시 확인합니다.',
+  },
+  {
+    id: 'code',
+    title: '{</>} 코드 교정 중심',
+    description: '코드 피드백 및 모범 답안 제시',
+    content:
+      '현재 코드에서 핵심 문제는 ... 입니다.\n\n```java\n// 개선 예시\n```\n\n이렇게 바꾸면 ... 때문에 더 안전하게 동작합니다.',
+  },
+]
+
 const legacyTextMap: Record<string, string> = {
   'Spring Boot Intro': '스프링 부트 입문',
   'JPA Practical Design': 'JPA 실전 설계',
@@ -176,9 +200,9 @@ function Modal({
   children: React.ReactNode
 }) {
   return (
-    <div className="fixed inset-0 z-[2400] flex items-center justify-center bg-black/60 px-4 py-6" onClick={onClose}>
+    <div className="instructor-qna-modal-backdrop fixed inset-0 z-[2400] flex items-center justify-center bg-black/60 px-4 py-6" onClick={onClose}>
       <div
-        className="w-full max-w-[560px] overflow-hidden rounded-[28px] bg-white shadow-2xl"
+        className="instructor-qna-modal w-full max-w-[560px] overflow-hidden rounded-[28px] bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-6 py-4">
@@ -661,7 +685,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-[#f3f4f6]">
+    <div className="instructor-qna-page min-h-[calc(100vh-64px)] bg-[#f3f4f6]">
       {toast ? (
         <div
           className={`pointer-events-none fixed top-24 left-1/2 z-[9999] -translate-x-1/2 rounded-full px-6 py-3 text-sm font-bold text-white shadow-2xl ${
@@ -673,8 +697,8 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
         </div>
       ) : null}
 
-      <div className="flex min-h-[calc(100vh-64px)] flex-col xl:flex-row">
-        <section className="w-full shrink-0 border-r border-gray-200 bg-white xl:w-[390px]">
+      <div className="instructor-qna-main flex min-h-[calc(100vh-64px)] flex-col xl:flex-row">
+        <section className="instructor-qna-inbox w-full shrink-0 border-r border-gray-200 bg-white xl:w-[390px]">
           <div className="border-b border-gray-100 p-6">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-xl font-black text-gray-900">수강생 Q&amp;A</h2>
@@ -740,7 +764,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
             </div>
           </div>
 
-          <div className="max-h-[calc(100vh-240px)] overflow-y-auto bg-[#f8f9fa] p-4 xl:max-h-[calc(100vh-64px-176px)]">
+          <div className="instructor-qna-list max-h-[calc(100vh-240px)] overflow-y-auto bg-[#f8f9fa] p-4 xl:max-h-[calc(100vh-64px-176px)]">
             {loading ? (
               <div className="rounded-2xl border border-gray-200 bg-white p-5 text-sm font-semibold text-gray-400">
                 질문 목록을 불러오는 중입니다.
@@ -751,9 +775,9 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                   key={question.questionId}
                   type="button"
                   onClick={() => setSelectedId(question.questionId)}
-                  className={`mb-3 w-full rounded-2xl border border-l-4 p-4 text-left transition ${
+                  className={`instructor-qna-item mb-3 w-full rounded-2xl border border-l-4 p-4 text-left transition ${
                     selectedId === question.questionId
-                      ? 'border-[#00c471] border-l-[#00c471] bg-[#f0fdf4] shadow-[0_6px_18px_rgba(0,196,113,0.08)]'
+                      ? 'is-active border-[#00c471] border-l-[#00c471] bg-[#f0fdf4] shadow-[0_6px_18px_rgba(0,196,113,0.08)]'
                       : 'border-gray-200 border-l-transparent bg-white hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_8px_18px_rgba(15,23,42,0.06)]'
                   }`}
                 >
@@ -798,10 +822,10 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
           </div>
         </section>
 
-        <section className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#f8f9fa]">
+        <section className="instructor-qna-detail flex min-w-0 flex-1 flex-col overflow-hidden bg-[#f8f9fa]">
           {current ? (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-6 py-4 shadow-sm lg:px-8">
+              <div className="instructor-qna-context-bar flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-6 py-4 shadow-sm lg:px-8">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-600">
                     {current.courseTitle ?? '공통 질문'}
@@ -834,9 +858,9 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                 </button>
               </div>
 
-              <div className="flex flex-1 flex-col overflow-hidden xl:flex-row">
-                <div className="flex-1 overflow-y-auto p-6 lg:p-8">
-                  <div className="rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm lg:p-8">
+              <div className="instructor-qna-workspace flex flex-1 flex-col overflow-hidden xl:flex-row">
+                <div className="instructor-qna-detail-scroll flex-1 overflow-y-auto p-6 lg:p-8">
+                  <div className="instructor-qna-question-card rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm lg:p-8">
                     <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-5">
                       <div className="flex items-center gap-4">
                         <img
@@ -876,7 +900,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                       답변 정보를 불러오는 중입니다.
                     </div>
                   ) : showAnswerForm ? (
-                    <div className="mt-6 overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-sm">
+                    <div className="instructor-qna-editor mt-6 overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-sm">
                       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-4 py-3">
                         <div className="flex items-center gap-1 text-sm text-gray-500">
                           {[
@@ -970,7 +994,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-6 rounded-[28px] border border-green-200 bg-white p-6 shadow-sm lg:p-8">
+                    <div className="instructor-qna-answer-card mt-6 rounded-[28px] border border-green-200 bg-white p-6 shadow-sm lg:p-8">
                       <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
                         <div className="flex items-center gap-3">
                           <UserAvatar
@@ -1006,57 +1030,51 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                   )}
                 </div>
 
-                <aside className="w-full shrink-0 border-l border-gray-200 bg-white xl:w-[320px]">
+                <aside className="instructor-qna-tools w-full shrink-0 border-l border-gray-200 bg-white xl:w-[320px]">
                   <div className="border-b border-gray-100 bg-gray-50/50 p-5">
                     <h3 className="flex items-center gap-2 text-sm font-bold text-gray-900">
                       <i className="fas fa-bolt text-yellow-500" />
                       빠른 답변 도구
                     </h3>
                     <p className="mt-1 text-[11px] font-medium text-gray-500">
-                      자주 쓰는 문구와 템플릿을 한 번에 삽입할 수 있습니다.
+                      자주 쓰는 템플릿을 원클릭으로 삽입하세요.
                     </p>
                   </div>
 
                   <div className="space-y-6 p-5">
                     <div>
                       <h4 className="mb-3 px-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-gray-400">
-                        빠른 삽입
+                        추천 템플릿
                       </h4>
                       <div className="space-y-2">
-                        {quickReplies.length > 0 ? (
-                          quickReplies.map((reply) => (
-                            <button
-                              key={reply.id}
-                              type="button"
-                              onClick={() => appendReply(reply.content)}
-                              className="flex w-full items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3.5 text-left transition hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-50 hover:shadow-[0_10px_18px_rgba(15,23,42,0.05)]"
-                            >
-                              <div className="min-w-0 flex-1">
-                                <div className="line-clamp-1 text-[13px] font-black text-gray-900">
-                                  {reply.title}
-                                </div>
-                                <div className="mt-1 line-clamp-2 text-[11px] font-medium leading-5 text-gray-500">
-                                  {reply.content}
-                                </div>
+                        {recommendedQuickTemplates.map((template) => (
+                          <button
+                            key={template.id}
+                            type="button"
+                            onClick={() => appendReply(template.content)}
+                            className="instructor-qna-template-card group flex w-full items-start justify-between gap-3 rounded-xl border border-gray-200 bg-white p-3.5 text-left transition hover:-translate-y-0.5 hover:border-gray-300 hover:bg-gray-50 hover:shadow-[0_6px_12px_-4px_rgba(0,0,0,0.05)]"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="line-clamp-1 text-[13px] font-black text-gray-900 transition group-hover:text-[#00c471]">
+                                {template.title}
                               </div>
-                              <i className="fas fa-plus-circle mt-1 text-lg text-gray-300" />
-                            </button>
-                          ))
-                        ) : (
-                          <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-4 py-6 text-center text-xs font-medium text-gray-500">
-                            저장된 빠른 답변이 없습니다.
-                          </div>
-                        )}
+                              <div className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-[1.4] text-gray-500">
+                                {template.description}
+                              </div>
+                            </div>
+                            <i className="fas fa-plus-circle mt-1 text-lg text-gray-300 transition group-hover:text-[#00c471]" />
+                          </button>
+                        ))}
                       </div>
                     </div>
 
                     <div>
                       <div className="mb-3 flex items-center justify-between px-1">
                         <h4 className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-gray-400">
-                          저장한 빠른 답변
+                          나만의 빠른 답변
                         </h4>
                         <span className="rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-[10px] font-extrabold text-gray-600">
-                          {visibleQuestions.length}
+                          {quickReplies.length}
                         </span>
                       </div>
 
@@ -1116,7 +1134,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                         className="w-full rounded-xl border border-dashed border-gray-300 py-2.5 text-xs font-bold text-gray-500 transition hover:border-[#00c471] hover:bg-green-50 hover:text-[#00c471]"
                       >
                         <i className="fas fa-plus mr-1" />
-                        빠른 답변 추가하기
+                        내 답변 추가하기
                       </button>
                     </div>
 

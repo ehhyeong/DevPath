@@ -7,6 +7,7 @@ import com.devpath.api.instructor.dto.InstructorSectionDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
+import com.devpath.domain.course.entity.CourseInfoSectionItem;
 import com.devpath.domain.course.entity.CourseMaterial;
 import com.devpath.domain.course.entity.CourseObjective;
 import com.devpath.domain.course.entity.CourseSection;
@@ -16,6 +17,7 @@ import com.devpath.domain.course.entity.CourseTargetAudience;
 import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.entity.LessonPrerequisite;
 import com.devpath.domain.course.repository.CourseAnnouncementRepository;
+import com.devpath.domain.course.repository.CourseInfoSectionItemRepository;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.CourseObjectiveRepository;
@@ -29,22 +31,37 @@ import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.TagRepository;
 import com.devpath.domain.user.repository.UserRepository;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 // 강사용 강의, 섹션, 레슨, 자료 쓰기 로직을 처리한다.
 @Service
 @RequiredArgsConstructor
 public class InstructorCourseService {
+
+  private static final String INFO_SECTION_TARGET_AUDIENCE = "TARGET_AUDIENCE";
+  private static final String INFO_SECTION_PREREQUISITES = "PREREQUISITES";
+  private static final String INFO_SECTION_OBJECTIVES = "OBJECTIVES";
+
+  @Value("${app.upload.dir:./uploads}")
+  private String uploadBaseDir;
 
   private final UserRepository userRepository;
   private final TagRepository tagRepository;
@@ -56,6 +73,7 @@ public class InstructorCourseService {
   private final CourseAnnouncementRepository courseAnnouncementRepository;
   private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final CourseMaterialRepository courseMaterialRepository;
+  private final CourseInfoSectionItemRepository courseInfoSectionItemRepository;
   private final CourseObjectiveRepository courseObjectiveRepository;
   private final CourseTargetAudienceRepository courseTargetAudienceRepository;
   private final CourseTagMapRepository courseTagMapRepository;
@@ -181,12 +199,12 @@ public class InstructorCourseService {
               lesson.getLessonId());
 
       if (!materials.isEmpty()) {
-        courseMaterialRepository.deleteAllInBatch(materials);
+        courseMaterialRepository.deleteAll(materials);
       }
     }
 
     if (!lessons.isEmpty()) {
-      lessonRepository.deleteAllInBatch(lessons);
+      lessonRepository.deleteAll(lessons);
     }
 
     courseSectionRepository.delete(section);
@@ -384,6 +402,92 @@ public class InstructorCourseService {
     courseTargetAudienceRepository.saveAll(targetAudiences);
   }
 
+  @Transactional
+  public void replaceInfoSections(
+      Long instructorId, Long courseId, InstructorCourseDto.ReplaceInfoSectionsRequest request) {
+    validateAuthenticatedUser(instructorId);
+
+    Course course = getOwnedCourse(instructorId, courseId);
+    courseInfoSectionItemRepository.deleteAllByCourseCourseId(courseId);
+
+    List<CourseInfoSectionItem> infoItems = new ArrayList<>();
+    List<String> targetAudiences = List.of();
+    List<String> prerequisites = List.of();
+    List<String> objectives = List.of();
+
+    for (int sectionIndex = 0; sectionIndex < request.getSections().size(); sectionIndex++) {
+      InstructorCourseDto.InfoSectionRequest section = request.getSections().get(sectionIndex);
+      String title = section.getTitle().trim();
+      String sectionKey = normalizeInfoSectionKey(section.getSectionKey(), sectionIndex);
+      List<String> items =
+          section.getItems().stream().map(String::trim).filter(item -> !item.isBlank()).toList();
+
+      if (INFO_SECTION_TARGET_AUDIENCE.equals(sectionKey)) {
+        targetAudiences = items;
+      } else if (INFO_SECTION_PREREQUISITES.equals(sectionKey)) {
+        prerequisites = items;
+      } else if (INFO_SECTION_OBJECTIVES.equals(sectionKey)) {
+        objectives = items;
+      }
+
+      for (int itemIndex = 0; itemIndex < items.size(); itemIndex++) {
+        infoItems.add(
+            CourseInfoSectionItem.builder()
+                .course(course)
+                .sectionKey(sectionKey)
+                .sectionTitle(title)
+                .sectionOrder(sectionIndex)
+                .itemText(items.get(itemIndex))
+                .itemOrder(itemIndex)
+                .build());
+      }
+    }
+
+    courseInfoSectionItemRepository.saveAll(infoItems);
+    course.replacePrerequisites(prerequisites);
+    replaceObjectiveEntities(course, objectives);
+    replaceTargetAudienceEntities(course, targetAudiences);
+  }
+
+  private String normalizeInfoSectionKey(String sectionKey, int sectionIndex) {
+    if (sectionKey == null || sectionKey.isBlank()) {
+      return "CUSTOM_" + sectionIndex;
+    }
+    return sectionKey.trim().toUpperCase(Locale.ROOT);
+  }
+
+  private void replaceObjectiveEntities(Course course, List<String> objectives) {
+    courseObjectiveRepository.deleteAllByCourseCourseId(course.getCourseId());
+
+    List<CourseObjective> objectiveEntities = new ArrayList<>();
+    for (int i = 0; i < objectives.size(); i++) {
+      objectiveEntities.add(
+          CourseObjective.builder()
+              .course(course)
+              .objectiveText(objectives.get(i))
+              .displayOrder(i)
+              .build());
+    }
+
+    courseObjectiveRepository.saveAll(objectiveEntities);
+  }
+
+  private void replaceTargetAudienceEntities(Course course, List<String> targetAudiences) {
+    courseTargetAudienceRepository.deleteAllByCourseCourseId(course.getCourseId());
+
+    List<CourseTargetAudience> targetAudienceEntities = new ArrayList<>();
+    for (int i = 0; i < targetAudiences.size(); i++) {
+      targetAudienceEntities.add(
+          CourseTargetAudience.builder()
+              .course(course)
+              .audienceDescription(targetAudiences.get(i))
+              .displayOrder(i)
+              .build());
+    }
+
+    courseTargetAudienceRepository.saveAll(targetAudienceEntities);
+  }
+
   // 레슨 자료를 생성한다.
   @Transactional
   public Long createMaterial(
@@ -407,6 +511,43 @@ public class InstructorCourseService {
   }
 
   // 강의 썸네일을 등록한다.
+  public InstructorCourseDto.UploadedAssetResponse uploadCourseAsset(
+      Long instructorId, MultipartFile file, String assetType) {
+    validateAuthenticatedUser(instructorId);
+
+    if (file == null || file.isEmpty()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    String safeAssetType = sanitizePathSegment(assetType);
+    String originalFileName = sanitizeFileName(file.getOriginalFilename());
+    String storedFileName = UUID.randomUUID() + "_" + originalFileName;
+    String assetKey = "courses/" + instructorId + "/" + safeAssetType + "/" + storedFileName;
+    Path uploadRoot = Paths.get(uploadBaseDir).toAbsolutePath().normalize();
+    Path targetPath = uploadRoot.resolve(assetKey).normalize();
+
+    if (!targetPath.startsWith(uploadRoot)) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    try {
+      Files.createDirectories(targetPath.getParent());
+      file.transferTo(targetPath);
+    } catch (IOException exception) {
+      throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
+    }
+
+    String normalizedAssetKey = assetKey.replace("\\", "/");
+    return InstructorCourseDto.UploadedAssetResponse.builder()
+        .url("/uploads/" + normalizedAssetKey)
+        .assetKey(normalizedAssetKey)
+        .originalFileName(originalFileName)
+        .storedFileName(storedFileName)
+        .contentType(file.getContentType())
+        .fileSize(file.getSize())
+        .build();
+  }
+
   @Transactional
   public void uploadThumbnail(
       Long instructorId, Long courseId, InstructorCourseDto.UploadThumbnailRequest request) {
@@ -439,6 +580,22 @@ public class InstructorCourseService {
   }
 
   // 현재 로그인한 강사가 소유한 강의인지 검증하며 조회한다.
+  private String sanitizePathSegment(String value) {
+    if (value == null || value.isBlank()) {
+      return "misc";
+    }
+
+    String sanitized =
+        value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_-]", "-").replaceAll("-+", "-");
+    return sanitized.isBlank() ? "misc" : sanitized;
+  }
+
+  private String sanitizeFileName(String value) {
+    String fileName = value == null ? "asset" : Paths.get(value).getFileName().toString();
+    String sanitized = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+    return sanitized.isBlank() ? "asset" : sanitized;
+  }
+
   private Course getOwnedCourse(Long instructorId, Long courseId) {
     return courseRepository
         .findByCourseIdAndInstructorId(courseId, instructorId)

@@ -1,6 +1,7 @@
 package com.devpath.api.instructor.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -8,6 +9,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 // 강사용 강의 생성, 수정, 상태 변경, 메타데이터 관리 DTO를 제공한다.
@@ -135,7 +138,7 @@ public class InstructorCourseDto {
   @Schema(description = "강의 목표 전체 교체 요청 DTO")
   public static class ReplaceObjectivesRequest {
 
-    @NotEmpty(message = "강의 목표는 최소 1개 이상 입력해야 합니다.")
+    @NotNull(message = "강의 목표 목록은 필수입니다.")
     @Schema(
         description = "강의 목표 목록",
         example = "[\"JWT 인증 구조를 이해한다.\", \"Spring Security 필터 흐름을 설명할 수 있다.\"]")
@@ -147,9 +150,34 @@ public class InstructorCourseDto {
   @Schema(description = "강의 수강 대상 전체 교체 요청 DTO")
   public static class ReplaceTargetAudiencesRequest {
 
-    @NotEmpty(message = "수강 대상은 최소 1개 이상 입력해야 합니다.")
+    @NotNull(message = "수강 대상 목록은 필수입니다.")
     @Schema(description = "강의 수강 대상 목록", example = "[\"Spring Boot 입문자\", \"백엔드 취업 준비생\"]")
     private List<String> targetAudiences;
+  }
+
+  @Getter
+  @Schema(description = "Course info sections replacement request DTO")
+  public static class ReplaceInfoSectionsRequest {
+
+    @NotNull(message = "Course info sections are required.")
+    @Schema(description = "Course info sections")
+    private List<@Valid InfoSectionRequest> sections;
+  }
+
+  @Getter
+  @Schema(description = "Course info section request DTO")
+  public static class InfoSectionRequest {
+
+    @NotBlank(message = "Section title is required.")
+    @Schema(description = "Section title", example = "이 강의를 듣고 나면")
+    private String title;
+
+    @Schema(description = "Section key", example = "OBJECTIVES")
+    private String sectionKey;
+
+    @NotNull(message = "Section items are required.")
+    @Schema(description = "Section items")
+    private List<String> items;
   }
 
   // 강의 썸네일 메타데이터 저장 요청 DTO다.
@@ -187,5 +215,30 @@ public class InstructorCourseDto {
 
     @Schema(description = "원본 파일명", example = "spring-security-intro.mp4")
     private String originalFileName;
+  }
+
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  @Schema(description = "강의 에셋 업로드 응답 DTO")
+  public static class UploadedAssetResponse {
+
+    @Schema(description = "브라우저에서 접근 가능한 에셋 URL", example = "/uploads/courses/1/thumbnail/course.png")
+    private String url;
+
+    @Schema(description = "저장소 내부 에셋 키", example = "courses/1/thumbnail/course.png")
+    private String assetKey;
+
+    @Schema(description = "원본 파일명", example = "course.png")
+    private String originalFileName;
+
+    @Schema(description = "저장된 파일명", example = "9f1a-course.png")
+    private String storedFileName;
+
+    @Schema(description = "콘텐츠 타입", example = "image/png")
+    private String contentType;
+
+    @Schema(description = "파일 크기")
+    private long fileSize;
   }
 }

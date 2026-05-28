@@ -42,6 +42,7 @@ function createRubric(): RubricDraft {
 function normalizeEditor(editor: InstructorAssignmentEditor): AssignmentEditorDraft {
   return {
     ...editor,
+    aiReviewEnabled: true,
     rubrics: editor.rubrics.map((rubric) => ({
       ...rubric,
       criteriaKeywords: rubric.criteriaKeywords ?? '',
@@ -233,6 +234,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
         description: draft.description,
         totalScore: draft.totalScore,
         passScore: draft.passScore,
+        aiReviewEnabled: true,
         allowTextSubmission: draft.allowTextSubmission,
         allowFileSubmission: draft.allowFileSubmission,
         allowUrlSubmission: draft.allowUrlSubmission,
@@ -270,7 +272,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
       <div
         className={
           standalone
-            ? 'flex min-h-screen items-center justify-center bg-[#F8F9FA] px-4'
+            ? 'content-assignment-editor-page flex min-h-screen items-center justify-center bg-[#F8F9FA] px-4'
             : 'fixed inset-0 z-[90] flex items-center justify-center bg-black/30 backdrop-blur-[2px]'
         }
       >
@@ -282,8 +284,8 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
   }
 
   return (
-    <div className={standalone ? 'relative min-h-screen bg-[#F8F9FA]' : 'fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]'}>
-      <div className="fixed right-8 top-20 z-[95] flex flex-col gap-2">
+    <div className={standalone ? 'content-assignment-editor-page relative min-h-screen bg-[#F8F9FA]' : 'fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]'}>
+      <div className="content-assignment-editor-toast-container fixed right-8 top-20 z-[95] flex flex-col gap-2">
         {toasts.map((toast) => (
           <div key={toast.id} className="rounded-xl border border-gray-700 bg-gray-900/90 px-5 py-3 text-sm font-bold text-white shadow-xl">
             {toast.message}
@@ -291,13 +293,13 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
         ))}
       </div>
 
-      <div className={`flex flex-col overflow-hidden bg-[#F8F9FA] ${standalone ? 'min-h-screen' : 'h-full'}`}>
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-8 shadow-sm">
+      <div className={`content-assignment-editor-shell flex flex-col overflow-hidden bg-[#F8F9FA] ${standalone ? 'min-h-screen' : 'h-full'}`}>
+        <div className="content-assignment-editor-topbar flex h-16 shrink-0 items-center justify-between border-b border-gray-200 bg-white px-8 shadow-sm">
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900"
+              className="content-assignment-editor-back-button flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900"
             >
               <i className="fas fa-arrow-left" />
             </button>
@@ -313,22 +315,22 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 rounded-xl bg-[#00C471] px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-green-200 transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="content-assignment-editor-save-button flex items-center gap-2 rounded-xl bg-[#00C471] px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-green-200 transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <i className="fas fa-save" />
             {saving ? '저장 중...' : '저장 완료'}
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-8">
-          <div className="mx-auto max-w-4xl space-y-6 pb-20">
+        <div className="content-assignment-editor-body min-h-0 flex-1 overflow-y-auto p-8">
+          <div className="content-assignment-editor-content mx-auto max-w-4xl space-y-6 pb-20">
             {error ? (
               <div className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
                 {error}
               </div>
             ) : null}
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+            <div className="content-assignment-editor-card rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
               <label className="mb-2 block text-sm font-extrabold text-gray-800">
                 과제 제목 <span className="text-red-500">*</span>
               </label>
@@ -343,8 +345,8 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
               <label className="mb-2 block text-sm font-extrabold text-gray-800">
                 과제 가이드 <span className="text-red-500">*</span>
               </label>
-              <div className="mb-8 overflow-hidden rounded-xl border border-gray-200 shadow-sm transition focus-within:border-[#00C471] focus-within:ring-1 focus-within:ring-[#00C471]">
-                <div className="flex gap-1 border-b border-gray-200 bg-gray-50 p-2 text-gray-600">
+              <div className="content-assignment-editor-markdown mb-8 overflow-hidden rounded-xl border border-gray-200 shadow-sm transition focus-within:border-[#00C471] focus-within:ring-1 focus-within:ring-[#00C471]">
+                <div className="content-assignment-editor-toolbar flex gap-1 border-b border-gray-200 bg-gray-50 p-2 text-gray-600">
                   <button type="button" onClick={() => insertFormat('**', '**')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-bold" />
                   </button>
@@ -389,7 +391,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
                       setDragging(false)
                       await handleFileSelection(event.dataTransfer.files)
                     }}
-                    className={`group relative block cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition ${
+                    className={`content-assignment-editor-upload group relative block cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition ${
                       dragging ? 'border-[#00C471] bg-emerald-50' : 'border-gray-300 hover:border-[#00C471] hover:bg-emerald-50'
                     }`}
                   >
@@ -429,7 +431,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
                         checked={draft.allowTextSubmission}
                         onChange={(event) => setDraft({ ...draft, allowTextSubmission: event.target.checked })}
                         type="checkbox"
-                        className="h-4 w-4 accent-[#00C471]"
+                        className="h-4 w-4 accent-blue-600"
                       />
                       텍스트 코드 직접 입력
                     </label>
@@ -438,7 +440,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
                         checked={draft.allowFileSubmission}
                         onChange={(event) => setDraft({ ...draft, allowFileSubmission: event.target.checked })}
                         type="checkbox"
-                        className="h-4 w-4 accent-[#00C471]"
+                        className="h-4 w-4 accent-blue-600"
                       />
                       파일 업로드
                     </label>
@@ -447,7 +449,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
                         checked={draft.allowUrlSubmission}
                         onChange={(event) => setDraft({ ...draft, allowUrlSubmission: event.target.checked })}
                         type="checkbox"
-                        className="h-4 w-4 accent-[#00C471]"
+                        className="h-4 w-4 accent-blue-600"
                       />
                       외부 링크 제출
                     </label>
@@ -456,8 +458,8 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
               </div>
             </div>
 
-            <div className="relative overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between rounded-t-2xl border-b border-gray-100 bg-gray-50/50 p-6">
+            <div className="content-assignment-editor-card content-assignment-editor-rubric-panel relative overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="content-assignment-editor-card-header flex items-center justify-between rounded-t-2xl border-b border-gray-100 bg-gray-50/50 p-6">
                 <div>
                   <h2 className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
                     <i className="fas fa-robot text-[#00C471]" /> AI 자동 채점 시스템
@@ -471,7 +473,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
               <div className="p-6">
                 <div className="space-y-4">
                   {draft.rubrics.map((rubric, index) => (
-                    <div key={rubric.localId} className="group flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <div key={rubric.localId} className="content-assignment-editor-rubric-item group flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                       <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 font-black text-[#00C471]">
                         {index + 1}
                       </div>
@@ -517,7 +519,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
                 <button
                   type="button"
                   onClick={addRubric}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-3 text-sm font-bold text-gray-500 transition hover:border-[#00C471] hover:bg-emerald-50 hover:text-[#00C471]"
+                  className="content-assignment-editor-add-rubric mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-3 text-sm font-bold text-gray-500 transition hover:border-[#00C471] hover:bg-emerald-50 hover:text-[#00C471]"
                 >
                   <i className="fas fa-plus" /> 평가 기준 추가하기
                 </button>
@@ -525,7 +527,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm md:grid-cols-2">
+            <div className="content-assignment-editor-card content-assignment-editor-score-card grid grid-cols-1 gap-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm md:grid-cols-2">
               <div>
                 <div className="mb-2 flex items-end justify-between">
                   <label className="block text-sm font-extrabold text-gray-800">총 배점 합계</label>

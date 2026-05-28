@@ -29,12 +29,16 @@ public class CreateSubmissionFileRequest {
   @Schema(description = "파일 타입 또는 확장자", example = "md")
   private String fileType;
 
+  @Schema(description = "AI review text preview for readable files")
+  private String textContent;
+
   @Builder
   public CreateSubmissionFileRequest(
-      String fileName, String fileUrl, Long fileSize, String fileType) {
+      String fileName, String fileUrl, Long fileSize, String fileType, String textContent) {
     this.fileName = fileName;
     this.fileUrl = fileUrl;
     this.fileSize = fileSize;
     this.fileType = fileType;
+    this.textContent = textContent;
   }
 }

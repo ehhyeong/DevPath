@@ -54,7 +54,7 @@ INSERT INTO users (email, password, name, role_name, is_active, created_at, upda
 SELECT
     'learner@devpath.com',
     '$2a$10$lEubudcVnsxZ6EAO3.joFOPndlLjv9.bi5FcO4z59a74fCMjqZA.O',
-    '김하늘',
+    '이학습',
     'ROLE_LEARNER',
     TRUE,
     NOW(),
@@ -10911,7 +10911,7 @@ INSERT INTO users (
 SELECT
     'frontend@devpath.com',
     '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
-    '김소연',
+    '김강사',
     'ROLE_INSTRUCTOR',
     TRUE,
     'ACTIVE',

@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -49,6 +50,8 @@ public class SubmissionFile {
   @Column(name = "file_type", length = 100)
   private String fileType;
 
+  @Transient private String textContent;
+
   // 실제 삭제 대신 논리 삭제를 적용하기 위한 플래그다.
   @Column(name = "is_deleted", nullable = false)
   private Boolean isDeleted = false;
@@ -70,12 +73,14 @@ public class SubmissionFile {
       String fileUrl,
       Long fileSize,
       String fileType,
+      String textContent,
       Boolean isDeleted) {
     this.submission = submission;
     this.fileName = fileName;
     this.fileUrl = fileUrl;
     this.fileSize = fileSize;
     this.fileType = fileType;
+    this.textContent = textContent;
     this.isDeleted = isDeleted == null ? false : isDeleted;
   }
 

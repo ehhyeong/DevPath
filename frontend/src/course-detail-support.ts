@@ -1,4 +1,4 @@
-import { fallbackCourseDetail, formatTime, normalizeCourseDetail } from './learning-support'
+import { fallbackCourseDetail, normalizeCourseDetail } from './learning-support'
 import type { CourseReview } from './types/course'
 import type { LearningCourseDetail, LearningLesson, LearningSection } from './types/learning'
 
@@ -20,6 +20,7 @@ export interface CourseQuestionItem {
   body: string
   views: number
   createdAt: string
+  commentCount?: number
   comments: CourseQuestionReply[]
 }
 
@@ -84,6 +85,23 @@ const fallbackJobCards: CourseJobCard[] = [
     iconShellClassName: 'bg-purple-50 text-purple-600',
   },
 ]
+
+function normalizeCourseNewsHref(url: string | null | undefined) {
+  const value = url?.trim()
+  if (!value) return null
+
+  if (/^\/?api(?:\/|$)/i.test(value)) return null
+
+  try {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost'
+    const parsed = new URL(value, baseUrl)
+    if (parsed.pathname.startsWith('/api/')) return null
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
+    return parsed.origin === baseUrl ? `${parsed.pathname}${parsed.search}${parsed.hash}` : parsed.href
+  } catch {
+    return value.startsWith('/') && !value.startsWith('/api/') ? value : null
+  }
+}
 
 export const fallbackCourseDetailPage: LearningCourseDetail = normalizeCourseDetail({
   ...fallbackCourseDetail,
@@ -313,25 +331,17 @@ export const fallbackCourseQuestions: CourseQuestionItem[] = [
 ]
 
 export function mergeCourseDetailWithFallback(course: LearningCourseDetail | null | undefined) {
-  const source = course ? normalizeCourseDetail(course) : fallbackCourseDetailPage
+  if (!course) {
+    return fallbackCourseDetailPage
+  }
 
+  const source = normalizeCourseDetail(course)
   return normalizeCourseDetail({
-    ...fallbackCourseDetailPage,
     ...source,
-    description: source.description || fallbackCourseDetailPage.description,
-    subtitle: source.subtitle || fallbackCourseDetailPage.subtitle,
-    thumbnailUrl: source.thumbnailUrl || fallbackCourseDetailPage.thumbnailUrl,
-    introVideoUrl: source.introVideoUrl || fallbackCourseDetailPage.introVideoUrl,
-    prerequisites: source.prerequisites.length ? source.prerequisites : fallbackCourseDetailPage.prerequisites,
-    jobRelevance: source.jobRelevance.length ? source.jobRelevance : fallbackCourseDetailPage.jobRelevance,
-    objectives: source.objectives.length ? source.objectives : fallbackCourseDetailPage.objectives,
-    targetAudiences: source.targetAudiences.length ? source.targetAudiences : fallbackCourseDetailPage.targetAudiences,
-    tags: source.tags.length ? source.tags : fallbackCourseDetailPage.tags,
+    description: source.description ?? '',
     instructor: source.instructor
       ? { ...fallbackCourseDetailPage.instructor!, ...source.instructor }
       : fallbackCourseDetailPage.instructor,
-    sections: source.sections.length ? source.sections : fallbackCourseDetailPage.sections,
-    news: source.news.length ? source.news : fallbackCourseDetailPage.news,
   })
 }
 
@@ -373,21 +383,33 @@ export function getPreviewLesson(course: LearningCourseDetail | null) {
   return preview ?? course.sections[0]?.lessons[0] ?? null
 }
 
-export function formatSectionMeta(section: LearningSection) {
+export function formatSectionMeta(section: LearningSection, durationOverrides: Record<number, number> = {}) {
   const lessonCount = section.lessons.length
   const videoLessons = section.lessons.filter(isCourseDetailVideoLesson)
-  const totalSeconds = videoLessons.reduce((sum, lesson) => sum + (lesson.durationSeconds ?? 0), 0)
+  const totalSeconds = videoLessons.reduce(
+    (sum, lesson) => sum + (durationOverrides[lesson.lessonId] ?? lesson.durationSeconds ?? 0),
+    0,
+  )
 
   if (!videoLessons.length) {
     return `${lessonCount}개 항목`
   }
 
-  const totalMinutes = Math.max(1, Math.round(totalSeconds / 60))
-  return `${lessonCount}개 항목 · 영상 ${videoLessons.length}개 · ${totalMinutes}분`
+  return `${lessonCount}개 항목 · 영상 ${videoLessons.length}개 · ${formatCurriculumDuration(totalSeconds)}`
 }
 
 export function formatLessonDuration(value: number | null) {
-  return formatTime(value ?? 0)
+  return value && value > 0 ? formatCurriculumDuration(value) : '영상'
+}
+
+function formatCurriculumDuration(value: number) {
+  const totalSeconds = Math.max(0, Math.round(value))
+  if (totalSeconds <= 0) return '0초'
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  if (minutes <= 0) return `${seconds}초`
+  if (seconds === 0) return `${minutes}분`
+  return `${minutes}분 ${seconds}초`
 }
 
 function normalizeLessonType(lesson: LearningLesson) {
@@ -420,10 +442,10 @@ export function getCourseDetailLessonIconClassName(lesson: LearningLesson) {
   return 'fas fa-code text-indigo-500'
 }
 
-export function getCourseDetailLessonMetaLabel(lesson: LearningLesson) {
+export function getCourseDetailLessonMetaLabel(lesson: LearningLesson, durationOverride?: number) {
   if (isCourseDetailAssignmentLesson(lesson)) return '과제'
   if (isCourseDetailQuizLesson(lesson)) return '퀴즈'
-  if (isCourseDetailVideoLesson(lesson)) return formatLessonDuration(lesson.durationSeconds)
+  if (isCourseDetailVideoLesson(lesson)) return formatLessonDuration(durationOverride ?? lesson.durationSeconds)
   if (normalizeLessonType(lesson) === 'READING') return '읽기'
   return '실습'
 }
@@ -431,19 +453,28 @@ export function getCourseDetailLessonMetaLabel(lesson: LearningLesson) {
 export function buildCourseNewsCards(course: LearningCourseDetail) {
   if (!course.news.length) return fallbackNewsCards
 
-  return course.news.map((item, index) => ({
+  return course.news.map((item, index) => {
+    const card = {
     id: `news-${index + 1}`,
     title: item.title,
     summary: fallbackNewsCards[index]?.summary ?? '강의와 관련된 새로운 업데이트 소식입니다.',
     dateLabel: fallbackNewsCards[index]?.dateLabel ?? '업데이트',
     badgeLabel: fallbackNewsCards[index]?.badgeLabel ?? '공지',
     badgeClassName: fallbackNewsCards[index]?.badgeClassName ?? 'bg-primary text-white',
-    href: item.url,
-  }))
+    href: normalizeCourseNewsHref(item.url),
+    }
+
+    return {
+      ...card,
+      summary: course.title
+        ? `${course.title} 관련 새소식입니다.`
+        : '강의와 관련된 새로운 업데이트 소식입니다.',
+    }
+  })
 }
 
 export function buildCourseJobCards(course: LearningCourseDetail) {
-  if (!course.jobRelevance.length) return fallbackJobCards
+  if (!course.jobRelevance.length) return []
 
   return course.jobRelevance.slice(0, 2).map((item, index) => {
     const fallback = fallbackJobCards[index] ?? fallbackJobCards[0]
@@ -483,7 +514,7 @@ export function buildReviewAvatarSeed(review: CourseReview) {
 }
 
 export function buildQuestionCommentCount(question: CourseQuestionItem) {
-  return question.comments.length
+  return question.commentCount ?? question.comments.length
 }
 
 export function buildQuestionStatusLabel(status: CourseQuestionStatus) {

@@ -16,6 +16,13 @@ export interface LearningCourseTargetAudience {
   displayOrder: number | null
 }
 
+export interface LearningCourseInfoSection {
+  sectionKey: string | null
+  title: string
+  displayOrder: number | null
+  items: string[]
+}
+
 export interface LearningCourseInstructor {
   instructorId: number
   channelName: string | null
@@ -153,6 +160,7 @@ export interface LearningCourseDetail {
   jobRelevance: string[]
   objectives: LearningCourseObjective[]
   targetAudiences: LearningCourseTargetAudience[]
+  infoSections?: LearningCourseInfoSection[] | null
   tags: LearningCourseTag[]
   isBookmarked: boolean | null
   isEnrolled: boolean | null
@@ -199,6 +207,7 @@ export interface LearningSubmissionFile {
   fileUrl: string
   fileSize: number
   fileType: string
+  textContent?: string | null
 }
 
 export interface AssignmentPrecheckRequest {
@@ -232,6 +241,8 @@ export interface AssignmentSubmissionResponse {
   qualityScore: number | null
   totalScore: number | null
   fileCount: number | null
+  individualFeedback: string | null
+  commonFeedback: string | null
 }
 
 export interface SubmissionHistoryItem {

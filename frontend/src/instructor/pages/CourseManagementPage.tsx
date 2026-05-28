@@ -79,7 +79,7 @@ function formatCompactDate(value: string | null | undefined) {
     return '-'
   }
 
-  const year = String(date.getFullYear()).slice(-2)
+  const year = String(date.getFullYear())
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}.${month}.${day}`
@@ -169,7 +169,7 @@ function toCourseCardModel(course: InstructorCourseListItem): CourseCardModel {
     displayCategoryChip: getInstructorCategoryChipLabel(course.categoryLabel, course.title),
     displayLevel: normalizeInstructorLevelLabel(course.levelLabel),
     displayThumbnailUrl: resolveInstructorCourseThumbnailUrl(course.thumbnailUrl, course.title),
-    displayDate: formatCompactDate(course.publishedAt),
+    displayDate: formatCompactDate(course.publishedAt ?? course.createdAt),
     displayDuration: formatDuration(course.durationSeconds),
     displayRatingValue: course.averageRating.toFixed(1),
     displayReviewCountLabel: formatCount(reviewCount),
@@ -326,7 +326,7 @@ function PublishedCourseCard(_: {
             <button
               type="button"
               onClick={() => {
-                window.location.href = `instructor-course-detail.html?courseId=${course.courseId}`
+                window.location.href = `/instructor-course-detail?courseId=${course.courseId}`
               }}
               className="inline-flex h-[34px] items-center justify-center rounded-[10px] bg-gray-900 px-[14px] text-[12px] font-semibold text-white transition hover:bg-gray-700"
             >
@@ -553,14 +553,6 @@ export default function CourseManagementPage() {
   )
   const averageRating = totalReviewCount > 0 ? weightedRatingSum / totalReviewCount : 0
 
-  const isFilterActive =
-    filterStatus !== 'all' ||
-    filterCategory !== 'all' ||
-    filterLevel !== 'all' ||
-    quickViewFilter !== 'latest' ||
-    pendingOnly ||
-    search.trim() !== ''
-
   const visibleCourses = courseCards
     .filter((course) => {
       if (filterStatus === 'published' && course.displayStatus !== 'published') {
@@ -654,15 +646,6 @@ export default function CourseManagementPage() {
     setNotices([])
   }
 
-  function resetFilters() {
-    setFilterStatus('all')
-    setFilterCategory('all')
-    setFilterLevel('all')
-    setQuickViewFilter('latest')
-    setPendingOnly(false)
-    setSearch('')
-  }
-
   function toggleNoticeExpansion(announcementId: number) {
     setExpandedNoticeIds((current) =>
       current.includes(announcementId)
@@ -699,7 +682,7 @@ export default function CourseManagementPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="course-management-page p-6">
         <LoadingCard label="강의 목록을 불러오는 중입니다." />
       </div>
     )
@@ -707,14 +690,14 @@ export default function CourseManagementPage() {
 
   if (error) {
     return (
-      <div className="p-6">
+      <div className="course-management-page p-6">
         <ErrorCard message={error} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-full bg-[#F8F9FA] p-6">
+    <div className="course-management-page min-h-full bg-[#F8F9FA] p-6">
       <div className="mx-auto max-w-[1200px] pb-10">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -835,15 +818,6 @@ export default function CourseManagementPage() {
               미답변 질문 있는 강의만
             </label>
 
-            {isFilterActive ? (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="text-xs font-medium text-gray-400 underline underline-offset-2 hover:text-gray-600"
-              >
-                필터 초기화
-              </button>
-            ) : null}
           </div>
 
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">

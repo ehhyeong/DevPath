@@ -211,7 +211,7 @@ export default function InstructorCourseDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="instructor-course-detail-page p-8">
         <LoadingCard label="강의 상세 정보를 불러오는 중입니다." />
       </div>
     )
@@ -219,7 +219,7 @@ export default function InstructorCourseDetailPage() {
 
   if (error || !detail || !courseId) {
     return (
-      <div className="p-8">
+      <div className="instructor-course-detail-page p-8">
         <ErrorCard message={error ?? '강의 정보를 찾을 수 없습니다.'} />
       </div>
     )
@@ -242,17 +242,17 @@ export default function InstructorCourseDetailPage() {
   const pendingQuestionCount = courseSummary?.pendingQuestionCount ?? 0
 
   return (
-    <div className="p-8">
-      <div className="mx-auto max-w-[1240px]">
+    <div className="instructor-course-detail-page p-8">
+      <div className="instructor-course-detail-content mx-auto max-w-[1240px]">
         {actionError ? (
           <div className="mb-6 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
             {actionError}
           </div>
         ) : null}
 
-        <section className="mb-8 flex flex-col items-start justify-between gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm xl:flex-row">
+        <section className="instructor-course-detail-hero mb-8 flex flex-col items-start justify-between gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm xl:flex-row">
           <div className="flex flex-col gap-6 md:flex-row">
-            <div className="flex h-24 w-40 items-center justify-center overflow-hidden rounded-lg bg-gray-200 text-gray-400">
+            <div className="instructor-course-detail-thumbnail flex h-24 w-40 items-center justify-center overflow-hidden rounded-lg bg-gray-200 text-gray-400">
               {detail.thumbnailUrl ? (
                 <img src={detail.thumbnailUrl} alt={detail.title} className="h-full w-full object-cover" />
               ) : (
@@ -283,14 +283,14 @@ export default function InstructorCourseDetailPage() {
               onClick={() => {
                 window.location.href = `/course-editor?courseId=${courseId}`
               }}
-              className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-green-600"
+              className="instructor-course-detail-edit-button flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-green-600"
             >
               <i className="fas fa-edit" /> 커리큘럼/영상 편집
             </button>
           </div>
         </section>
 
-        <div className="mb-6 flex border-b border-gray-200">
+        <div className="instructor-course-detail-tabs mb-6 flex border-b border-gray-200">
           {[
             ['dashboard', '대시보드'],
             ['students', '수강생 관리'],
@@ -300,7 +300,7 @@ export default function InstructorCourseDetailPage() {
               key={key}
               type="button"
               onClick={() => setActiveTab(key as DetailTab)}
-              className={`px-6 py-3 text-sm font-bold transition ${
+              className={`instructor-course-detail-tab px-6 py-3 text-sm font-bold transition ${
                 activeTab === key ? 'border-b-2 border-brand text-brand' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
@@ -312,7 +312,7 @@ export default function InstructorCourseDetailPage() {
         {activeTab === 'dashboard' ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <article className="instructor-course-detail-stat-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <p className="mb-2 text-xs font-bold uppercase text-gray-500">이번 달 수익</p>
                 <h3 className="text-2xl font-extrabold text-gray-900">{formatCurrency(currentMonthRevenue, detail.currency ?? 'KRW')}</h3>
                 <p className="mt-2 text-xs text-green-600">
@@ -320,7 +320,7 @@ export default function InstructorCourseDetailPage() {
                 </p>
               </article>
 
-              <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <article className="instructor-course-detail-stat-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <p className="mb-2 text-xs font-bold uppercase text-gray-500">평균 진도율</p>
                 <h3 className="text-2xl font-extrabold text-gray-900">{averageProgress.toFixed(1)}%</h3>
                 <div className="mt-3 h-1.5 w-full rounded-full bg-gray-100">
@@ -328,7 +328,7 @@ export default function InstructorCourseDetailPage() {
                 </div>
               </article>
 
-              <article className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <article className="instructor-course-detail-stat-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <p className="mb-2 text-xs font-bold uppercase text-gray-500">미답변 질문</p>
                 <h3 className="text-2xl font-extrabold text-red-500">{formatNumber(pendingQuestionCount)}건</h3>
                 <button
@@ -343,7 +343,7 @@ export default function InstructorCourseDetailPage() {
               </article>
             </div>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <section className="instructor-course-detail-chart-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
               <h3 className="mb-4 font-bold text-gray-900">최근 7일 판매 추이</h3>
               <div className="flex h-40 items-end justify-between gap-2">
                 {dailySales.map((item) => (
@@ -369,7 +369,7 @@ export default function InstructorCourseDetailPage() {
             {students.length === 0 ? (
               <EmptyCard title="수강생 데이터가 없습니다." description="아직 이 강의를 수강 중인 학생이 없습니다." />
             ) : (
-              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+              <div className="instructor-course-detail-table-wrap overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                     <tr>
@@ -419,7 +419,7 @@ export default function InstructorCourseDetailPage() {
         ) : null}
 
         {activeTab === 'settings' ? (
-          <section className="max-w-2xl rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+          <section className="instructor-course-detail-settings-card max-w-2xl rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
             <div className="mb-6 border-b border-gray-100 pb-6">
               <h3 className="mb-4 font-bold text-gray-900">가격 설정</h3>
               <div className="flex items-center gap-4">
@@ -466,7 +466,7 @@ export default function InstructorCourseDetailPage() {
                 type="button"
                 onClick={handleSaveSettings}
                 disabled={saving}
-                className="rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="instructor-course-detail-save-button rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? '저장 중...' : '저장하기'}
               </button>

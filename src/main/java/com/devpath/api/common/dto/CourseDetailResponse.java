@@ -8,71 +8,73 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-// 강의 상세 조회 공통 응답 DTO를 제공한다.
 @Getter
 @Builder
 @AllArgsConstructor
-@Schema(description = "강의 상세 조회 응답 DTO")
+@Schema(description = "Course detail response DTO")
 public class CourseDetailResponse {
 
-  @Schema(description = "강의 ID", example = "1")
+  @Schema(description = "Course ID", example = "1")
   private Long courseId;
 
-  @Schema(description = "강의 제목", example = "Spring Security 완전 정복")
+  @Schema(description = "Course title")
   private String title;
 
-  @Schema(description = "강의 부제목", example = "JWT, OAuth2, Spring Security 실전 가이드")
+  @Schema(description = "Course subtitle")
   private String subtitle;
 
-  @Schema(description = "강의 설명")
+  @Schema(description = "Course description")
   private String description;
 
-  @Schema(description = "강의 상태", example = "DRAFT")
+  @Schema(description = "Course status", example = "DRAFT")
   private String status;
 
-  @Schema(description = "판매가", example = "99000")
+  @Schema(description = "Price", example = "99000")
   private BigDecimal price;
 
-  @Schema(description = "정가", example = "129000")
+  @Schema(description = "Original price", example = "129000")
   private BigDecimal originalPrice;
 
-  @Schema(description = "통화 코드", example = "KRW")
+  @Schema(description = "Currency code", example = "KRW")
   private String currency;
 
-  @Schema(description = "난이도", example = "BEGINNER")
+  @Schema(description = "Difficulty level", example = "BEGINNER")
   private String difficultyLevel;
 
-  @Schema(description = "강의 언어", example = "ko")
+  @Schema(description = "Course language", example = "ko")
   private String language;
 
-  @Schema(description = "수료증 제공 여부", example = "true")
+  @Schema(description = "Certificate availability", example = "true")
   private Boolean hasCertificate;
 
-  @Schema(description = "썸네일 URL")
+  @Schema(description = "Thumbnail URL")
   private String thumbnailUrl;
 
-  @Schema(description = "인트로/트레일러 영상 URL")
+  @Schema(description = "Intro video URL")
   private String introVideoUrl;
 
-  @Schema(description = "비디오 에셋 키")
+  @Schema(description = "Video asset key")
   private String videoAssetKey;
 
-  @Schema(description = "비디오 길이(초)", example = "95")
+  @Schema(description = "Video duration seconds", example = "95")
   private Integer durationSeconds;
 
-  @Schema(description = "선수지식 목록")
+  @Schema(description = "Prerequisites")
   private List<String> prerequisites;
 
-  @Schema(description = "직무 연관성 목록")
+  @Schema(description = "Job relevance")
   private List<String> jobRelevance;
 
-  @Schema(description = "강의 목표 목록")
+  @Schema(description = "Objectives")
   private List<ObjectiveItem> objectives;
 
-  @Schema(description = "수강 대상 목록")
+  @Schema(description = "Target audiences")
   private List<TargetAudienceItem> targetAudiences;
 
-  @Schema(description = "강의 태그 목록")
+  @Schema(description = "Learner-facing course info sections")
+  private List<InfoSectionItem> infoSections;
+
+  @Schema(description = "Course tags")
   private List<TagItem> tags;
 
   @Schema(description = "Bookmarked by current user", example = "false")
@@ -81,287 +83,296 @@ public class CourseDetailResponse {
   @Schema(description = "Enrolled by current user", example = "false")
   private Boolean isEnrolled;
 
-  @Schema(description = "강사 정보")
+  @Schema(description = "Instructor info")
   private InstructorInfo instructor;
 
-  @Schema(description = "섹션 목록")
+  @Schema(description = "Course sections")
   private List<SectionItem> sections;
 
-  @Schema(description = "뉴스 목록")
+  @Schema(description = "Course news")
   private List<NewsItem> news;
 
-  // 강의 목표 응답 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "강의 목표 응답 DTO")
+  @Schema(description = "Objective item")
   public static class ObjectiveItem {
 
-    @Schema(description = "강의 목표 ID", example = "10")
+    @Schema(description = "Objective ID", example = "10")
     private Long objectiveId;
 
-    @Schema(description = "강의 목표 내용")
+    @Schema(description = "Objective text")
     private String objectiveText;
 
-    @Schema(description = "표시 순서", example = "0")
+    @Schema(description = "Display order", example = "0")
     private Integer displayOrder;
   }
 
-  // 수강 대상 응답 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "수강 대상 응답 DTO")
+  @Schema(description = "Target audience item")
   public static class TargetAudienceItem {
 
-    @Schema(description = "수강 대상 ID", example = "20")
+    @Schema(description = "Target audience ID", example = "20")
     private Long targetAudienceId;
 
-    @Schema(description = "수강 대상 설명")
+    @Schema(description = "Audience description")
     private String audienceDescription;
 
-    @Schema(description = "표시 순서", example = "0")
+    @Schema(description = "Display order", example = "0")
     private Integer displayOrder;
   }
 
-  // 강의 태그 응답 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "강의 태그 응답 DTO")
+  @Schema(description = "Course info section")
+  public static class InfoSectionItem {
+
+    @Schema(description = "Section key", example = "OBJECTIVES")
+    private String sectionKey;
+
+    @Schema(description = "Section title")
+    private String title;
+
+    @Schema(description = "Display order", example = "0")
+    private Integer displayOrder;
+
+    @Schema(description = "Bullet items")
+    private List<String> items;
+  }
+
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  @Schema(description = "Tag item")
   public static class TagItem {
 
-    @Schema(description = "태그 ID", example = "3")
+    @Schema(description = "Tag ID", example = "3")
     private Long tagId;
 
-    @Schema(description = "태그명", example = "Spring Boot")
+    @Schema(description = "Tag name")
     private String tagName;
 
-    @Schema(description = "숙련도", example = "3")
+    @Schema(description = "Proficiency level", example = "3")
     private Integer proficiencyLevel;
   }
 
-  // 강사 정보 응답 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "강사 정보 응답 DTO")
+  @Schema(description = "Instructor info")
   public static class InstructorInfo {
 
-    @Schema(description = "강사 회원 ID", example = "7")
+    @Schema(description = "Instructor user ID", example = "7")
     private Long instructorId;
 
-    @Schema(description = "채널명", example = "태형의 백엔드 실험실")
+    @Schema(description = "Channel name")
     private String channelName;
 
-    @Schema(description = "프로필 이미지 URL")
+    @Schema(description = "Profile image URL")
     private String profileImage;
 
-    @Schema(description = "한줄 소개", example = "Spring Boot와 Security를 실전 중심으로 가르치는 강사입니다.")
+    @Schema(description = "Headline")
     private String headline;
 
-    @Schema(description = "전문 분야 목록")
+    @Schema(description = "Specialties")
     private List<String> specialties;
 
-    @Schema(description = "강사 채널 상세 조회 API 경로", example = "/api/instructors/7/channel")
+    @Schema(description = "Instructor channel API path")
     private String channelApiPath;
   }
 
-  // 섹션 응답 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "섹션 응답 DTO")
+  @Schema(description = "Section item")
   public static class SectionItem {
 
-    @Schema(description = "섹션 ID", example = "101")
+    @Schema(description = "Section ID", example = "101")
     private Long sectionId;
 
-    @Schema(description = "섹션 제목")
+    @Schema(description = "Section title")
     private String title;
 
-    @Schema(description = "섹션 설명")
+    @Schema(description = "Section description")
     private String description;
 
-    @Schema(description = "섹션 순서", example = "1")
+    @Schema(description = "Sort order", example = "1")
     private Integer sortOrder;
 
-    @Schema(description = "섹션 공개 여부", example = "true")
+    @Schema(description = "Published", example = "true")
     private Boolean isPublished;
 
-    @Schema(description = "레슨 목록")
+    @Schema(description = "Lessons")
     private List<LessonItem> lessons;
   }
 
-  // 레슨 응답 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "레슨 응답 DTO")
+  @Schema(description = "Lesson item")
   public static class LessonItem {
 
-    @Schema(description = "레슨 ID", example = "1001")
+    @Schema(description = "Lesson ID", example = "1001")
     private Long lessonId;
 
-    @Schema(description = "레슨 제목")
+    @Schema(description = "Lesson title")
     private String title;
 
-    @Schema(description = "레슨 설명")
+    @Schema(description = "Lesson description")
     private String description;
 
-    @Schema(description = "레슨 타입", example = "VIDEO")
+    @Schema(description = "Lesson type", example = "VIDEO")
     private String lessonType;
 
-    @Schema(description = "영상 URL")
+    @Schema(description = "Video URL")
     private String videoUrl;
 
-    @Schema(description = "영상 에셋 키")
+    @Schema(description = "Video asset key")
     private String videoAssetKey;
 
-    @Schema(description = "썸네일 URL")
+    @Schema(description = "Thumbnail URL")
     private String thumbnailUrl;
 
-    @Schema(description = "영상 길이(초)", example = "780")
+    @Schema(description = "Duration seconds", example = "780")
     private Integer durationSeconds;
 
-    @Schema(description = "미리보기 여부", example = "false")
+    @Schema(description = "Preview lesson", example = "false")
     private Boolean isPreview;
 
-    @Schema(description = "공개 여부", example = "true")
+    @Schema(description = "Published", example = "true")
     private Boolean isPublished;
 
-    @Schema(description = "레슨 순서", example = "1")
+    @Schema(description = "Sort order", example = "1")
     private Integer sortOrder;
 
-    @Schema(description = "첨부 자료 목록")
+    @Schema(description = "Materials")
     private List<MaterialItem> materials;
 
-    @Schema(description = "레슨에 연결된 과제 정보")
+    @Schema(description = "Assignment summary")
     private AssignmentItem assignment;
   }
 
-  // 첨부 자료 응답 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "첨부 자료 응답 DTO")
+  @Schema(description = "Material item")
   public static class MaterialItem {
 
-    @Schema(description = "자료 ID", example = "5001")
+    @Schema(description = "Material ID", example = "5001")
     private Long materialId;
 
-    @Schema(description = "자료 타입", example = "SLIDE")
+    @Schema(description = "Material type", example = "SLIDE")
     private String materialType;
 
-    @Schema(description = "자료 URL")
+    @Schema(description = "Material URL")
     private String materialUrl;
 
-    @Schema(description = "스토리지 에셋 키")
+    @Schema(description = "Asset key")
     private String assetKey;
 
-    @Schema(description = "원본 파일명")
+    @Schema(description = "Original file name")
     private String originalFileName;
 
-    @Schema(description = "정렬 순서", example = "0")
+    @Schema(description = "Sort order", example = "0")
     private Integer sortOrder;
   }
 
-  // 학습 플레이어에서 사용하는 과제 요약 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "학습 플레이어용 과제 요약 DTO")
+  @Schema(description = "Assignment item")
   public static class AssignmentItem {
 
-    @Schema(description = "과제 ID", example = "20")
+    @Schema(description = "Assignment ID", example = "20")
     private Long assignmentId;
 
-    @Schema(description = "로드맵 노드 ID", example = "301")
+    @Schema(description = "Roadmap node ID", example = "301")
     private Long roadmapNodeId;
 
-    @Schema(description = "과제 제목")
+    @Schema(description = "Assignment title")
     private String title;
 
-    @Schema(description = "과제 설명")
+    @Schema(description = "Assignment description")
     private String description;
 
-    @Schema(description = "제출 규칙 설명")
+    @Schema(description = "Submission rule description")
     private String submissionRuleDescription;
 
-    @Schema(description = "총점", example = "100")
+    @Schema(description = "Total score", example = "100")
     private Integer totalScore;
 
-    @Schema(description = "합격 점수", example = "80")
+    @Schema(description = "Pass score", example = "80")
     private Integer passScore;
 
-    @Schema(description = "AI 리뷰 여부", example = "false")
+    @Schema(description = "AI review enabled", example = "false")
     private Boolean aiReviewEnabled;
 
-    @Schema(description = "텍스트 제출 허용 여부", example = "true")
+    @Schema(description = "Allow text submission", example = "true")
     private Boolean allowTextSubmission;
 
-    @Schema(description = "파일 제출 허용 여부", example = "true")
+    @Schema(description = "Allow file submission", example = "true")
     private Boolean allowFileSubmission;
 
-    @Schema(description = "URL 제출 허용 여부", example = "false")
+    @Schema(description = "Allow URL submission", example = "false")
     private Boolean allowUrlSubmission;
 
-    @Schema(description = "README 필수 여부", example = "true")
+    @Schema(description = "README required", example = "true")
     private Boolean readmeRequired;
 
-    @Schema(description = "테스트 통과 필수 여부", example = "true")
+    @Schema(description = "Test required", example = "true")
     private Boolean testRequired;
 
-    @Schema(description = "린트 통과 필수 여부", example = "true")
+    @Schema(description = "Lint required", example = "true")
     private Boolean lintRequired;
 
-    @Schema(description = "지각 제출 허용 여부", example = "false")
+    @Schema(description = "Allow late submission", example = "false")
     private Boolean allowLateSubmission;
 
-    @Schema(description = "마감 일시", example = "2026-04-20T23:59:00")
+    @Schema(description = "Due date time")
     private LocalDateTime dueAt;
 
-    @Schema(description = "허용 파일 형식 목록")
+    @Schema(description = "Allowed file formats")
     private List<String> allowedFileFormats;
 
-    @Schema(description = "자동채점 루브릭 목록")
+    @Schema(description = "Rubrics")
     private List<AssignmentRubricItem> rubrics;
   }
 
-  // 학습 플레이어에서 과제 채점 기준을 표시하는 루브릭 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "학습 플레이어용 과제 루브릭 DTO")
+  @Schema(description = "Assignment rubric item")
   public static class AssignmentRubricItem {
 
-    @Schema(description = "루브릭 ID", example = "501")
+    @Schema(description = "Rubric ID", example = "501")
     private Long rubricId;
 
-    @Schema(description = "평가 항목명")
+    @Schema(description = "Criteria name")
     private String criteriaName;
 
-    @Schema(description = "평가 항목 설명")
+    @Schema(description = "Criteria description")
     private String criteriaDescription;
 
-    @Schema(description = "배점", example = "30")
+    @Schema(description = "Max points", example = "30")
     private Integer maxPoints;
 
-    @Schema(description = "노출 순서", example = "1")
+    @Schema(description = "Display order", example = "1")
     private Integer displayOrder;
   }
 
-  // 뉴스 응답 DTO다.
   @Getter
   @Builder
   @AllArgsConstructor
-  @Schema(description = "뉴스 응답 DTO")
+  @Schema(description = "News item")
   public static class NewsItem {
 
-    @Schema(description = "뉴스 제목")
+    @Schema(description = "News title")
     private String title;
 
-    @Schema(description = "뉴스 URL")
+    @Schema(description = "News URL")
     private String url;
   }
 }

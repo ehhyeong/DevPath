@@ -33,6 +33,8 @@ public class AssignmentPrecheckService {
       Long userId, Long assignmentId, AssignmentPrecheckRequest request) {
     getLearner(userId);
     Assignment assignment = getAvailableAssignment(assignmentId);
+    SubmissionMethods submissionMethods = resolveSubmissionMethods(assignment);
+    validateSubmissionMethods(submissionMethods, request);
 
     boolean readmePassed =
         !Boolean.TRUE.equals(assignment.getReadmeRequired())
@@ -101,7 +103,7 @@ public class AssignmentPrecheckService {
 
     // FILE 또는 MULTIPLE 제출 과제는 최소 한 개 이상의 파일이 있어야 한다.
     if (files == null || files.isEmpty()) {
-      return false;
+      return true;
     }
 
     // 허용 형식이 비어 있으면 파일 존재만으로 통과 처리한다.
@@ -139,6 +141,81 @@ public class AssignmentPrecheckService {
   }
 
   // README, 테스트, 린트, 파일 형식 각각 25점씩 부여하는 단순 품질 점수 계산식이다.
+  private SubmissionMethods resolveSubmissionMethods(Assignment assignment) {
+    SubmissionType submissionType = assignment.getSubmissionType();
+    boolean allowText =
+        assignment.getAllowTextSubmission() == null
+            ? submissionType == null
+                || submissionType == SubmissionType.TEXT
+                || submissionType == SubmissionType.MULTIPLE
+            : Boolean.TRUE.equals(assignment.getAllowTextSubmission());
+    boolean allowFile =
+        assignment.getAllowFileSubmission() == null
+            ? submissionType == null
+                || submissionType == SubmissionType.FILE
+                || submissionType == SubmissionType.MULTIPLE
+            : Boolean.TRUE.equals(assignment.getAllowFileSubmission());
+    boolean allowUrl =
+        assignment.getAllowUrlSubmission() == null
+            ? submissionType == SubmissionType.URL
+            : Boolean.TRUE.equals(assignment.getAllowUrlSubmission());
+    return new SubmissionMethods(allowText, allowFile, allowUrl);
+  }
+
+  private void validateSubmissionMethods(
+      SubmissionMethods methods, AssignmentPrecheckRequest request) {
+    boolean hasText = hasText(request.getSubmissionText());
+    boolean hasUrl = hasText(request.getSubmissionUrl());
+    boolean hasFiles = request.getFiles() != null && !request.getFiles().isEmpty();
+
+    if (hasText && !methods.allowText()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "Text submission is not allowed for this assignment.");
+    }
+    if (hasUrl && !methods.allowUrl()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "URL submission is not allowed for this assignment.");
+    }
+    if (hasFiles && !methods.allowFile()) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "File submission is not allowed for this assignment.");
+    }
+
+    boolean hasAllowedSubmission =
+        (methods.allowText() && hasText)
+            || (methods.allowUrl() && hasUrl)
+            || (methods.allowFile() && hasFiles);
+    if (!hasAllowedSubmission) {
+      throw new CustomException(
+          ErrorCode.INVALID_INPUT, "At least one allowed submission method is required.");
+    }
+  }
+
+  private boolean hasText(String value) {
+    return value != null && !value.isBlank();
+  }
+
+  private static class SubmissionMethods {
+    private final boolean allowText;
+    private final boolean allowFile;
+    private final boolean allowUrl;
+
+    private SubmissionMethods(boolean allowText, boolean allowFile, boolean allowUrl) {
+      this.allowText = allowText;
+      this.allowFile = allowFile;
+      this.allowUrl = allowUrl;
+    }
+
+    private boolean allowText() {
+      return allowText;
+    }
+
+    private boolean allowFile() {
+      return allowFile;
+    }
+
+    private boolean allowUrl() {
+      return allowUrl;
+    }
+  }
+
   private int calculateQualityScore(
       boolean readmePassed, boolean testPassed, boolean lintPassed, boolean fileFormatPassed) {
     int score = 0;

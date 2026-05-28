@@ -42,6 +42,12 @@ public class SubmissionResponse {
   @Schema(description = "첨부 파일 개수", example = "2")
   private Integer fileCount;
 
+  @Schema(description = "AI individual feedback", example = "AI code review feedback.")
+  private String individualFeedback;
+
+  @Schema(description = "AI common feedback", example = "Rubric-based auto review result.")
+  private String commonFeedback;
+
   @Builder
   public SubmissionResponse(
       Long submissionId,
@@ -52,7 +58,9 @@ public class SubmissionResponse {
       LocalDateTime submittedAt,
       Integer qualityScore,
       Integer totalScore,
-      Integer fileCount) {
+      Integer fileCount,
+      String individualFeedback,
+      String commonFeedback) {
     this.submissionId = submissionId;
     this.assignmentId = assignmentId;
     this.learnerId = learnerId;
@@ -62,6 +70,8 @@ public class SubmissionResponse {
     this.qualityScore = qualityScore;
     this.totalScore = totalScore;
     this.fileCount = fileCount;
+    this.individualFeedback = individualFeedback;
+    this.commonFeedback = commonFeedback;
   }
 
   public static SubmissionResponse from(Submission submission) {
@@ -75,6 +85,8 @@ public class SubmissionResponse {
         .qualityScore(submission.getQualityScore())
         .totalScore(submission.getTotalScore())
         .fileCount(submission.getFiles() == null ? 0 : submission.getFiles().size())
+        .individualFeedback(submission.getIndividualFeedback())
+        .commonFeedback(submission.getCommonFeedback())
         .build();
   }
 }

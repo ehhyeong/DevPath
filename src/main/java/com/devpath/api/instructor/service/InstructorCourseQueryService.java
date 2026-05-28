@@ -8,6 +8,7 @@ import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseEnrollment;
+import com.devpath.domain.course.entity.CourseInfoSectionItem;
 import com.devpath.domain.course.entity.CourseMaterial;
 import com.devpath.domain.course.entity.CourseObjective;
 import com.devpath.domain.course.entity.CourseSection;
@@ -16,6 +17,7 @@ import com.devpath.domain.course.entity.CourseTargetAudience;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.repository.CourseEnrollmentRepository;
+import com.devpath.domain.course.repository.CourseInfoSectionItemRepository;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
 import com.devpath.domain.course.repository.CourseObjectiveRepository;
 import com.devpath.domain.course.repository.CourseRepository;
@@ -30,6 +32,7 @@ import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +49,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class InstructorCourseQueryService {
+
+  private static final String INFO_SECTION_TARGET_AUDIENCE = "TARGET_AUDIENCE";
+  private static final String INFO_SECTION_PREREQUISITES = "PREREQUISITES";
+  private static final String INFO_SECTION_OBJECTIVES = "OBJECTIVES";
 
   private static final String DEFAULT_COURSE_THUMBNAIL =
       "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80";
@@ -78,6 +85,7 @@ public class InstructorCourseQueryService {
   private final CourseSectionRepository courseSectionRepository;
   private final LessonRepository lessonRepository;
   private final CourseMaterialRepository courseMaterialRepository;
+  private final CourseInfoSectionItemRepository courseInfoSectionItemRepository;
   private final CourseObjectiveRepository courseObjectiveRepository;
   private final CourseTargetAudienceRepository courseTargetAudienceRepository;
   private final CourseTagMapRepository courseTagMapRepository;
@@ -155,6 +163,7 @@ public class InstructorCourseQueryService {
                   (long) reviews.size(),
                   round(averageRating),
                   resolveCourseThumbnailUrl(course),
+                  course.getCreatedAt(),
                   course.getPublishedAt(),
                   tags);
             })
@@ -171,6 +180,10 @@ public class InstructorCourseQueryService {
         courseObjectiveRepository.findAllByCourseCourseIdOrderByDisplayOrderAsc(courseId);
     List<CourseTargetAudience> targetAudiences =
         courseTargetAudienceRepository.findAllByCourseCourseIdOrderByDisplayOrderAsc(courseId);
+    List<CourseInfoSectionItem> infoSectionItems =
+        courseInfoSectionItemRepository
+            .findAllByCourseCourseIdOrderBySectionOrderAscItemOrderAscInfoSectionItemIdAsc(
+                courseId);
     List<CourseTagMap> tagMaps = courseTagMapRepository.findAllByCourseCourseId(courseId);
     List<CourseSection> sections =
         courseSectionRepository.findAllByCourseCourseIdOrderBySortOrderAsc(courseId);
@@ -201,6 +214,7 @@ public class InstructorCourseQueryService {
         .jobRelevance(course.getJobRelevance())
         .objectives(mapObjectives(objectives))
         .targetAudiences(mapTargetAudiences(targetAudiences))
+        .infoSections(mapInfoSections(course, objectives, targetAudiences, infoSectionItems))
         .tags(mapTags(tagMaps))
         .instructor(mapInstructor(course, userProfile, specialties))
         .sections(mapSections(sections))
@@ -265,6 +279,68 @@ public class InstructorCourseQueryService {
   }
 
   // 강의 태그 매핑 목록을 응답 DTO로 변환한다.
+  private List<CourseDetailResponse.InfoSectionItem> mapInfoSections(
+      Course course,
+      List<CourseObjective> objectives,
+      List<CourseTargetAudience> targetAudiences,
+      List<CourseInfoSectionItem> infoSectionItems) {
+    if (!infoSectionItems.isEmpty()) {
+      Map<String, List<CourseInfoSectionItem>> itemsBySection =
+          infoSectionItems.stream()
+              .collect(
+                  Collectors.groupingBy(
+                      item -> item.getSectionOrder() + ":" + item.getSectionKey(),
+                      LinkedHashMap::new,
+                      Collectors.toList()));
+
+      return itemsBySection.values().stream()
+          .map(
+              items -> {
+                CourseInfoSectionItem first = items.get(0);
+                return CourseDetailResponse.InfoSectionItem.builder()
+                    .sectionKey(first.getSectionKey())
+                    .title(first.getSectionTitle())
+                    .displayOrder(first.getSectionOrder())
+                    .items(items.stream().map(CourseInfoSectionItem::getItemText).toList())
+                    .build();
+              })
+          .toList();
+    }
+
+    List<CourseDetailResponse.InfoSectionItem> fallback = new ArrayList<>();
+    if (!targetAudiences.isEmpty()) {
+      fallback.add(
+          CourseDetailResponse.InfoSectionItem.builder()
+              .sectionKey(INFO_SECTION_TARGET_AUDIENCE)
+              .title("이런 분들에게 추천합니다")
+              .displayOrder(fallback.size())
+              .items(
+                  targetAudiences.stream()
+                      .map(CourseTargetAudience::getAudienceDescription)
+                      .toList())
+              .build());
+    }
+    if (course.getPrerequisites() != null && !course.getPrerequisites().isEmpty()) {
+      fallback.add(
+          CourseDetailResponse.InfoSectionItem.builder()
+              .sectionKey(INFO_SECTION_PREREQUISITES)
+              .title("수강 전 알아두면 좋아요")
+              .displayOrder(fallback.size())
+              .items(course.getPrerequisites())
+              .build());
+    }
+    if (!objectives.isEmpty()) {
+      fallback.add(
+          CourseDetailResponse.InfoSectionItem.builder()
+              .sectionKey(INFO_SECTION_OBJECTIVES)
+              .title("이 강의를 듣고 나면")
+              .displayOrder(fallback.size())
+              .items(objectives.stream().map(CourseObjective::getObjectiveText).toList())
+              .build());
+    }
+    return fallback;
+  }
+
   private List<CourseDetailResponse.TagItem> mapTags(List<CourseTagMap> tagMaps) {
     return tagMaps.stream()
         .map(

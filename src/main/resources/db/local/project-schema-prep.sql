@@ -53,6 +53,41 @@ BEGIN
     ALTER TABLE public.project ALTER COLUMN recruiting_status SET NOT NULL;
 END $$;
 ^^^ END OF SCRIPT ^^^
+
+DO $$
+BEGIN
+    IF to_regclass('public.courses') IS NOT NULL THEN
+        CREATE TABLE IF NOT EXISTS public.course_info_section_items (
+            info_section_item_id BIGSERIAL PRIMARY KEY,
+            course_id BIGINT NOT NULL REFERENCES public.courses(course_id) ON DELETE CASCADE,
+            section_key VARCHAR(50) NOT NULL,
+            section_title VARCHAR(255) NOT NULL,
+            section_order INTEGER NOT NULL,
+            item_text VARCHAR(1000) NOT NULL,
+            item_order INTEGER NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_course_info_section_items_course_order
+            ON public.course_info_section_items (course_id, section_order, item_order);
+    END IF;
+END $$;
+^^^ END OF SCRIPT ^^^
+
+DO $$
+BEGIN
+    IF to_regclass('public.users') IS NULL THEN
+        RETURN;
+    END IF;
+
+    UPDATE public.users
+       SET name = CASE email
+           WHEN 'frontend@devpath.com' THEN '김강사'
+           WHEN 'learner@devpath.com' THEN '이학습'
+           ELSE name
+       END
+     WHERE email IN ('frontend@devpath.com', 'learner@devpath.com');
+END $$;
+^^^ END OF SCRIPT ^^^
 DO $$
 BEGIN
     IF to_regclass('public.roadmap_hub_items') IS NULL THEN

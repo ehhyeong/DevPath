@@ -307,8 +307,15 @@ public class AiQuizDraftService {
   }
 
   private List<DraftQuestionState> generateQuestionsWithAi(CreateAiQuizDraftRequest request) {
+    if (Boolean.TRUE.equals(request.getFallbackOnly())) {
+      log.warn("[AiQuizDraftService] AI input is empty. Fallback 실행.");
+      return generateFallbackQuestions(request);
+    }
+
     String prompt = buildPrompt(request);
-    String raw = geminiProvider.generate(prompt);
+    String raw =
+        geminiProvider.generate(
+            prompt, request.getSourceMimeType(), request.getSourceBase64Content());
 
     if (raw == null) {
       log.warn("[AiQuizDraftService] Gemini API 응답 없음. Fallback 실행.");

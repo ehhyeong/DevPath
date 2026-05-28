@@ -221,7 +221,11 @@ public class InstructorLessonEvaluationService {
                 .quizType(resolveGeneratedQuizType(request.getMode()))
                 .sourceText(buildQuizSourceText(lesson, request))
                 .sourceTimestamp(normalizeText(request.getVideoFileName()))
+                .sourceMimeType(normalizeText(request.getVideoMimeType()))
+                .sourceBase64Content(normalizeText(request.getVideoBase64Content()))
+                .fallbackOnly(!hasGenerationInput(request))
                 .questionCount(clampQuestionCount(request.getQuestionCount()))
+                .difficultyLevel(clampDifficultyLevel(request.getDifficultyLevel()))
                 .build());
 
     return buildQuizDraftResponse(lesson, node, existingQuiz, draft);
@@ -261,7 +265,7 @@ public class InstructorLessonEvaluationService {
     boolean allowTextSubmission = resolveFlag(request.getAllowTextSubmission(), true);
     boolean allowFileSubmission = resolveFlag(request.getAllowFileSubmission(), true);
     boolean allowUrlSubmission = resolveFlag(request.getAllowUrlSubmission(), false);
-    boolean aiReviewEnabled = resolveFlag(request.getAiReviewEnabled(), false);
+    boolean aiReviewEnabled = resolveFlag(request.getAiReviewEnabled(), true);
 
     List<InstructorLessonEvaluationDto.AssignmentRubricInput> rubricInputs =
         request.getRubrics() == null
@@ -559,7 +563,7 @@ public class InstructorLessonEvaluationService {
           .description(defaultIfBlank(lesson.getDescription(), ""))
           .totalScore(100)
           .passScore(80)
-          .aiReviewEnabled(false)
+          .aiReviewEnabled(true)
           .allowTextSubmission(true)
           .allowFileSubmission(true)
           .allowUrlSubmission(false)
@@ -586,7 +590,7 @@ public class InstructorLessonEvaluationService {
             assignment.getPassScore() == null
                 ? Math.min(defaultNumber(assignment.getTotalScore(), 100), 80)
                 : assignment.getPassScore())
-        .aiReviewEnabled(Boolean.TRUE.equals(assignment.getAiReviewEnabled()))
+        .aiReviewEnabled(assignment.getAiReviewEnabled() == null || Boolean.TRUE.equals(assignment.getAiReviewEnabled()))
         .allowTextSubmission(submissionFlags.allowTextSubmission())
         .allowFileSubmission(submissionFlags.allowFileSubmission())
         .allowUrlSubmission(submissionFlags.allowUrlSubmission())
@@ -741,11 +745,29 @@ public class InstructorLessonEvaluationService {
     return parts.isEmpty() ? "기본 학습 내용을 바탕으로 퀴즈를 생성합니다." : String.join("\n", parts);
   }
 
+  private boolean hasGenerationInput(InstructorLessonEvaluationDto.GenerateQuizRequest request) {
+    if ("video".equalsIgnoreCase(request.getMode())) {
+      return !isBlank(request.getVideoBase64Content()) || !isBlank(request.getVideoFileName());
+    }
+
+    boolean hasKeyword =
+        request.getKeywords() != null
+            && request.getKeywords().stream().anyMatch(value -> !isBlank(value));
+    return hasKeyword || !isBlank(request.getScriptText());
+  }
+
   private int clampQuestionCount(Integer questionCount) {
     if (questionCount == null) {
       return 3;
     }
     return Math.max(1, Math.min(questionCount, 10));
+  }
+
+  private int clampDifficultyLevel(Integer difficultyLevel) {
+    if (difficultyLevel == null) {
+      return 2;
+    }
+    return Math.max(1, Math.min(difficultyLevel, 3));
   }
 
   private boolean hasRubricContent(InstructorLessonEvaluationDto.AssignmentRubricInput input) {

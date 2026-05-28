@@ -15,6 +15,9 @@ public interface ModerationReportRepository extends JpaRepository<ModerationRepo
   // 신고 목록은 최신 접수 순으로 보여주기 위해 생성 시각 기준으로 정렬한다.
   List<ModerationReport> findAllByStatusOrderByCreatedAtDesc(ModerationReportStatus status);
 
+  boolean existsByReporterUserIdAndContentIdAndStatus(
+      Long reporterUserId, Long contentId, ModerationReportStatus status);
+
   long countByStatus(ModerationReportStatus status);
 
   long countByActionTaken(ModerationActionType actionTaken);

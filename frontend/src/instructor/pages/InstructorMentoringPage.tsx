@@ -490,9 +490,9 @@ export default function InstructorMentoringPage() {
   }
 
   return (
-    <div className="p-6" onClick={() => setOpenMenuId(null)}>
-      <div className="mx-auto max-w-[1200px]">
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="instructor-mentoring-page p-6" onClick={() => setOpenMenuId(null)}>
+      <div className="instructor-mentoring-content mx-auto max-w-[1200px]">
+        <div className="instructor-mentoring-heading-row mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <h1 className="text-2xl font-bold text-gray-900">멘토링 관리</h1>
           <button
             type="button"
@@ -500,13 +500,13 @@ export default function InstructorMentoringPage() {
               event.stopPropagation()
               openProjectForm()
             }}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-green-600"
+            className="instructor-mentoring-create-button inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-green-600"
           >
             <i className="fas fa-bullhorn" /> 멘토링 모집 공고 등록
           </button>
         </div>
 
-        <div className="mb-6 flex gap-2 border-b border-gray-200">
+        <div className="instructor-mentoring-tabs mb-6 flex gap-2 border-b border-gray-200">
           {[
             ['recruiting', '모집 중 (Recruiting)', projects.length, 'bg-blue-100 text-blue-600'],
             ['requests', '신청 관리', requests.length, 'bg-red-500 text-white'],
@@ -515,7 +515,7 @@ export default function InstructorMentoringPage() {
           ].map(([key, label, count, badgeTone]) => {
             const active = tab === key
             return (
-              <button key={key} type="button" onClick={() => setTab(key as MentoringTab)} className={`tab-btn px-4 py-3 text-sm transition ${active ? 'active border-b-2 border-brand font-bold text-brand' : 'font-medium text-gray-500 hover:text-gray-800'}`}>
+              <button key={key} type="button" onClick={() => setTab(key as MentoringTab)} className={`instructor-mentoring-tab tab-btn px-4 py-3 text-sm transition ${active ? 'active border-b-2 border-brand font-bold text-brand' : 'font-medium text-gray-500 hover:text-gray-800'}`}>
                 {label}
                 {count !== null ? <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] ${badgeTone}`}>{count}</span> : null}
               </button>
@@ -524,9 +524,9 @@ export default function InstructorMentoringPage() {
         </div>
 
         {tab === 'recruiting' ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="instructor-mentoring-card-grid grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
-              <article key={project.id} className="group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-brand" onClick={(event) => event.stopPropagation()}>
+              <article key={project.id} className="instructor-mentoring-card group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-brand" onClick={(event) => event.stopPropagation()}>
                 <div className="mb-4 flex items-start justify-between">
                   <div className="flex flex-wrap gap-1.5">
                     <span className="rounded border border-blue-200 bg-blue-100 px-2 py-1 text-[10px] font-bold text-blue-700">{project.recruitStatus}</span>
@@ -538,7 +538,7 @@ export default function InstructorMentoringPage() {
                       <i className="fas fa-ellipsis-h" />
                     </button>
                     {openMenuId === `recruit-${project.id}` ? (
-                      <div className="absolute top-[calc(100%+8px)] right-0 z-20 min-w-[160px] rounded-lg border border-gray-200 bg-white shadow-lg">
+                      <div className="instructor-mentoring-dropdown absolute top-[calc(100%+8px)] right-0 z-20 min-w-[160px] rounded-lg border border-gray-200 bg-white shadow-lg">
                         <button type="button" onClick={(event) => { event.stopPropagation(); openProjectForm(project) }} className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-brand"><i className="fas fa-edit mr-2" />공고 수정</button>
                         <button type="button" onClick={(event) => { event.stopPropagation(); deleteProject(project.id) }} className="block w-full border-t border-gray-100 px-4 py-2 text-left text-sm text-red-500 transition hover:bg-red-50"><i className="fas fa-trash-alt mr-2" />삭제</button>
                       </div>
@@ -572,14 +572,14 @@ export default function InstructorMentoringPage() {
 
         {tab === 'requests' ? (
           <section>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="instructor-mentoring-request-toolbar mb-4 flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2">
-                <select value={requestModeFilter} onChange={(event) => setRequestModeFilter(event.target.value as 'all' | MentoringMode)} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm outline-none transition hover:bg-gray-50 focus:border-brand">
+                <select value={requestModeFilter} onChange={(event) => setRequestModeFilter(event.target.value as 'all' | MentoringMode)} className="instructor-mentoring-select cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm outline-none transition hover:bg-gray-50 focus:border-brand">
                   <option value="all">전체 방식</option>
                   <option value="study">공통 과제형 (스터디)</option>
                   <option value="team">역할 분담형 (팀 프로젝트)</option>
                 </select>
-                <select value={requestProjectFilter} onChange={(event) => setRequestProjectFilter(event.target.value)} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm outline-none transition hover:bg-gray-50 focus:border-brand">
+                <select value={requestProjectFilter} onChange={(event) => setRequestProjectFilter(event.target.value)} className="instructor-mentoring-select cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm outline-none transition hover:bg-gray-50 focus:border-brand">
                   <option value="all">전체 프로젝트 보기</option>
                   {projects.map((project) => <option key={project.id} value={project.id}>{project.requestTitle}</option>)}
                 </select>
@@ -587,8 +587,8 @@ export default function InstructorMentoringPage() {
               <p className="text-xs font-bold text-gray-500">총 <span className="text-brand">{pendingRequests.length}</span>건의 대기 중인 신청</p>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-              <table className="min-w-full border-collapse text-left">
+            <div className="instructor-mentoring-table-wrap overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+              <table className="instructor-mentoring-table min-w-full border-collapse text-left">
                 <thead className="border-b border-gray-100 bg-gray-50 text-[11px] font-bold tracking-wider text-gray-400 uppercase">
                   <tr>
                     <th className="px-6 py-4">신청자</th>
@@ -631,9 +631,9 @@ export default function InstructorMentoringPage() {
         ) : null}
 
         {tab === 'ongoing' ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="instructor-mentoring-card-grid grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {ongoingProjects.map((project) => (
-              <article key={project.id} className="group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-brand" onClick={(event) => event.stopPropagation()}>
+              <article key={project.id} className="instructor-mentoring-card instructor-mentoring-ongoing-card group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-brand" onClick={(event) => event.stopPropagation()}>
                 <div className="mb-4 flex items-start justify-between">
                   <div className="flex flex-wrap gap-1.5">
                     <span className="rounded border border-green-200 bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">진행 중 ({project.week}주차)</span>
@@ -645,7 +645,7 @@ export default function InstructorMentoringPage() {
                       <i className="fas fa-ellipsis-h" />
                     </button>
                     {openMenuId === `ongoing-${project.id}` ? (
-                      <div className="absolute top-[calc(100%+8px)] right-0 z-20 min-w-[170px] rounded-lg border border-gray-200 bg-white shadow-lg">
+                      <div className="instructor-mentoring-dropdown absolute top-[calc(100%+8px)] right-0 z-20 min-w-[170px] rounded-lg border border-gray-200 bg-white shadow-lg">
                         {project.menuActions.map((action, index) => (
                           <button key={action} type="button" onClick={(event) => { event.stopPropagation(); runOngoingAction(project, action) }} className={`block w-full px-4 py-2 text-left text-sm transition ${index === project.menuActions.length - 1 ? 'border-t border-gray-100 text-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50 hover:text-brand'}`}>
                             <i className={`mr-2 ${index === 0 ? 'fas fa-cog' : index === 1 ? 'fas fa-users' : 'fas fa-check-circle'}`} />{action}
@@ -670,12 +670,12 @@ export default function InstructorMentoringPage() {
           </div>
         ) : null}
 
-        {tab === 'completed' ? <div className="p-8 text-center font-bold text-gray-500">종료된 멘토링 내역입니다.</div> : null}
+        {tab === 'completed' ? <div className="instructor-mentoring-completed p-8 text-center font-bold text-gray-500">종료된 멘토링 내역입니다.</div> : null}
       </div>
 
       {selectedRequest ? (
         <ModalShell onClose={() => setApplicationId(null)}>
-          <div className="relative overflow-hidden rounded-2xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          <div className="instructor-mentoring-application-modal relative overflow-hidden rounded-2xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-3">
               <h3 className="text-lg font-bold text-gray-900"><i className="fas fa-file-signature mr-1 text-brand" /> 참여 신청서 확인</h3>
               <button type="button" onClick={() => setApplicationId(null)} className="text-gray-400 transition hover:text-gray-900"><i className="fas fa-times" /></button>
@@ -714,7 +714,7 @@ export default function InstructorMentoringPage() {
 
       {selectedSetupProject ? (
         <ModalShell onClose={() => setSetupProjectId(null)} size="max-w-lg">
-          <div className="overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          <div className="instructor-mentoring-setup-modal overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
               <div>
                 <h3 className="text-lg font-extrabold text-gray-900"><i className="fas fa-rocket mr-2 text-brand" />프로젝트 시작 설정</h3>
@@ -751,8 +751,8 @@ export default function InstructorMentoringPage() {
       ) : null}
 
       {projectFormOpen ? (
-        <div className="fixed inset-0 z-[2400] flex items-center justify-center bg-[rgba(17,24,39,0.50)] p-4 backdrop-blur-[2px]">
-          <div className="flex max-h-[90vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-[18px] border border-gray-200 bg-white shadow-[0_30px_90px_rgba(17,24,39,0.28)]" onClick={(event) => event.stopPropagation()}>
+        <div className="instructor-mentoring-form-backdrop fixed inset-0 z-[2400] flex items-center justify-center bg-[rgba(17,24,39,0.50)] p-4 backdrop-blur-[2px]">
+          <div className="instructor-mentoring-form-modal flex max-h-[90vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-[18px] border border-gray-200 bg-white shadow-[0_30px_90px_rgba(17,24,39,0.28)]" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 py-[14px]">
               <div className="flex items-center gap-2 text-sm font-black text-gray-900"><i className="fas fa-pen-nib text-brand" />멘토링 모집 공고 작성 (학습자 화면 미리보기)</div>
               <button type="button" onClick={closeProjectForm} className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition hover:-translate-y-px hover:bg-gray-50"><i className="fas fa-times" /></button>
@@ -765,16 +765,16 @@ export default function InstructorMentoringPage() {
                     <div className="text-xs font-bold text-gray-400">* 필수 입력</div>
                   </div>
                   <div className="space-y-4 p-3">
-                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-                      <label className="mb-2 block text-xs font-black text-gray-700">진행 방식 선택 *</label>
-                      <div className="grid grid-cols-2 gap-2">
+                    <div className="instructor-mentoring-mode-panel rounded-xl border border-gray-100 bg-gray-50 p-3">
+                      <label className="instructor-mentoring-mode-label mb-2 block text-xs font-black text-gray-700">진행 방식 선택 *</label>
+                      <div className="instructor-mentoring-mode-grid grid grid-cols-2 gap-2">
                         {(['study', 'team'] as MentoringMode[]).map((mode) => (
-                          <button key={mode} type="button" onClick={() => updateForm('mode', mode)} className={`rounded-lg border px-3 py-2.5 text-center text-xs font-bold shadow-sm transition ${form.mode === mode ? 'border-[#7C3AED] bg-purple-50 text-[#7C3AED]' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
-                            <i className={`${modeMeta[mode].icon} mb-1 block text-lg`} />{modeMeta[mode].fullLabel}
+                          <button key={mode} type="button" onClick={() => updateForm('mode', mode)} className={`instructor-mentoring-mode-option rounded-lg border px-3 py-2.5 text-center text-xs font-bold shadow-sm transition ${form.mode === mode ? 'is-active border-[#7C3AED] bg-purple-50 text-[#7C3AED]' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
+                            <i className={`instructor-mentoring-mode-icon ${modeMeta[mode].icon} mb-1 block text-lg`} />{modeMeta[mode].fullLabel}
                           </button>
                         ))}
                       </div>
-                      <p className="mt-2 text-center text-[10px] text-gray-500">{form.mode === 'study' ? '모든 수강생이 동일한 개인 과제를 수행하며 개별 피드백을 받습니다.' : '수강생들이 역할을 나누어 하나의 팀 프로젝트를 완성합니다.'}</p>
+                      <p className="instructor-mentoring-mode-desc mt-2 text-center text-[10px] text-gray-500">{form.mode === 'study' ? '모든 수강생이 동일한 개인 과제를 수행하며 개별 피드백을 받습니다.' : '수강생들이 역할을 나누어 하나의 팀 프로젝트를 완성합니다.'}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <label className="block"><span className="mb-2 block text-xs font-black text-gray-700">카테고리 (분야) *</span><select value={form.category} onChange={(event) => updateForm('category', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,196,113,0.18)]">{['Backend', 'Frontend', 'Full Stack', 'DevOps', 'AI/Data', 'App', 'Game'].map((category) => <option key={category} value={category}>{category}</option>)}</select></label>

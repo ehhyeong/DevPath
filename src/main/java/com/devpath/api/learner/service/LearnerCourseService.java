@@ -8,6 +8,7 @@ import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseAnnouncement;
 import com.devpath.domain.course.entity.CourseDifficulty;
 import com.devpath.domain.course.entity.CourseDifficultyLevel;
+import com.devpath.domain.course.entity.CourseInfoSectionItem;
 import com.devpath.domain.course.entity.CourseMaterial;
 import com.devpath.domain.course.entity.CourseObjective;
 import com.devpath.domain.course.entity.CourseSection;
@@ -17,6 +18,7 @@ import com.devpath.domain.course.entity.CourseTargetAudience;
 import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.entity.LessonType;
 import com.devpath.domain.course.repository.CourseAnnouncementRepository;
+import com.devpath.domain.course.repository.CourseInfoSectionItemRepository;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
 import com.devpath.domain.course.repository.CourseObjectiveRepository;
 import com.devpath.domain.course.repository.CourseRepository;
@@ -34,6 +36,7 @@ import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -54,11 +57,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class LearnerCourseService {
 
+  private static final String INFO_SECTION_TARGET_AUDIENCE = "TARGET_AUDIENCE";
+  private static final String INFO_SECTION_PREREQUISITES = "PREREQUISITES";
+  private static final String INFO_SECTION_OBJECTIVES = "OBJECTIVES";
+
   private final CourseRepository courseRepository;
   private final CourseTagMapRepository courseTagMapRepository;
   private final CourseSectionRepository courseSectionRepository;
   private final LessonRepository lessonRepository;
   private final CourseMaterialRepository courseMaterialRepository;
+  private final CourseInfoSectionItemRepository courseInfoSectionItemRepository;
   private final CourseObjectiveRepository courseObjectiveRepository;
   private final CourseTargetAudienceRepository courseTargetAudienceRepository;
   private final CourseAnnouncementRepository courseAnnouncementRepository;
@@ -125,6 +133,10 @@ public class LearnerCourseService {
         courseObjectiveRepository.findAllByCourseCourseIdOrderByDisplayOrderAsc(courseId);
     List<CourseTargetAudience> targetAudiences =
         courseTargetAudienceRepository.findAllByCourseCourseIdOrderByDisplayOrderAsc(courseId);
+    List<CourseInfoSectionItem> infoSectionItems =
+        courseInfoSectionItemRepository
+            .findAllByCourseCourseIdOrderBySectionOrderAscItemOrderAscInfoSectionItemIdAsc(
+                courseId);
     List<CourseTagMap> tagMaps = courseTagMapRepository.findAllByCourseCourseId(courseId);
     List<CourseSection> sections =
         courseSectionRepository.findAllByCourseCourseIdOrderBySortOrderAsc(courseId);
@@ -178,6 +190,7 @@ public class LearnerCourseService {
         .jobRelevance(course.getJobRelevance())
         .objectives(mapObjectives(objectives))
         .targetAudiences(mapTargetAudiences(targetAudiences))
+        .infoSections(mapInfoSections(course, objectives, targetAudiences, infoSectionItems))
         .tags(mapTags(tagMaps))
         .isBookmarked(isBookmarked)
         .isEnrolled(isEnrolled)
@@ -240,6 +253,68 @@ public class LearnerCourseService {
                     .displayOrder(targetAudience.getDisplayOrder())
                     .build())
         .toList();
+  }
+
+  private List<CourseDetailResponse.InfoSectionItem> mapInfoSections(
+      Course course,
+      List<CourseObjective> objectives,
+      List<CourseTargetAudience> targetAudiences,
+      List<CourseInfoSectionItem> infoSectionItems) {
+    if (!infoSectionItems.isEmpty()) {
+      Map<String, List<CourseInfoSectionItem>> itemsBySection =
+          infoSectionItems.stream()
+              .collect(
+                  Collectors.groupingBy(
+                      item -> item.getSectionOrder() + ":" + item.getSectionKey(),
+                      LinkedHashMap::new,
+                      Collectors.toList()));
+
+      return itemsBySection.values().stream()
+          .map(
+              items -> {
+                CourseInfoSectionItem first = items.get(0);
+                return CourseDetailResponse.InfoSectionItem.builder()
+                    .sectionKey(first.getSectionKey())
+                    .title(first.getSectionTitle())
+                    .displayOrder(first.getSectionOrder())
+                    .items(items.stream().map(CourseInfoSectionItem::getItemText).toList())
+                    .build();
+              })
+          .toList();
+    }
+
+    List<CourseDetailResponse.InfoSectionItem> fallback = new ArrayList<>();
+    if (!targetAudiences.isEmpty()) {
+      fallback.add(
+          CourseDetailResponse.InfoSectionItem.builder()
+              .sectionKey(INFO_SECTION_TARGET_AUDIENCE)
+              .title("이런 분들에게 추천합니다")
+              .displayOrder(fallback.size())
+              .items(
+                  targetAudiences.stream()
+                      .map(CourseTargetAudience::getAudienceDescription)
+                      .toList())
+              .build());
+    }
+    if (course.getPrerequisites() != null && !course.getPrerequisites().isEmpty()) {
+      fallback.add(
+          CourseDetailResponse.InfoSectionItem.builder()
+              .sectionKey(INFO_SECTION_PREREQUISITES)
+              .title("수강 전 알아두면 좋아요")
+              .displayOrder(fallback.size())
+              .items(course.getPrerequisites())
+              .build());
+    }
+    if (!objectives.isEmpty()) {
+      fallback.add(
+          CourseDetailResponse.InfoSectionItem.builder()
+              .sectionKey(INFO_SECTION_OBJECTIVES)
+              .title("이 강의를 듣고 나면")
+              .displayOrder(fallback.size())
+              .items(objectives.stream().map(CourseObjective::getObjectiveText).toList())
+              .build());
+    }
+    return fallback;
   }
 
   private List<CourseDetailResponse.TagItem> mapTags(List<CourseTagMap> tagMaps) {

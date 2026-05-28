@@ -350,6 +350,37 @@ class InstructorCourseServiceIntegrationTest {
   }
 
   @Test
+  @DisplayName("섹션 삭제 시 포함된 레슨과 자료를 함께 정리한다")
+  void deleteSectionCleansLessonsAndMaterials() {
+    Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
+    Long sectionId =
+        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+    Long lessonId1 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+    Long lessonId2 =
+        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+    Long materialId =
+        instructorCourseService.createMaterial(instructorId, lessonId1, createMaterialRequest());
+
+    instructorCourseService.updateLessonPrerequisites(
+        instructorId, lessonId2, updateLessonPrerequisitesRequest(List.of(lessonId1)));
+    flushAndClear();
+
+    instructorCourseService.deleteSection(instructorId, sectionId);
+    flushAndClear();
+
+    assertThat(courseSectionRepository.findById(sectionId)).isEmpty();
+    assertThat(lessonRepository.findById(lessonId1)).isEmpty();
+    assertThat(lessonRepository.findById(lessonId2)).isEmpty();
+    assertThat(courseMaterialRepository.findById(materialId)).isEmpty();
+    assertThat(
+            lessonPrerequisiteRepository.findAllByLessonLessonIdOrderByLessonPrerequisiteIdAsc(
+                lessonId2))
+        .isEmpty();
+    assertThat(courseRepository.findById(courseId)).isPresent();
+  }
+
+  @Test
   @DisplayName("레슨 선행 조건은 자기 자신, 중복, 다른 강의 레슨을 허용하지 않는다")
   void updateLessonPrerequisitesRejectsInvalidCases() {
     Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());

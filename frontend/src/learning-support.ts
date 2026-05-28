@@ -234,6 +234,7 @@ export function normalizeCourseDetail(course: LearningCourseDetail): LearningCou
     jobRelevance: course.jobRelevance ?? [],
     objectives: course.objectives ?? [],
     targetAudiences: course.targetAudiences ?? [],
+    infoSections: course.infoSections ?? [],
     tags: course.tags ?? [],
     isBookmarked: course.isBookmarked ?? false,
     isEnrolled: course.isEnrolled ?? false,
@@ -298,6 +299,8 @@ export function simulateAssignmentSubmission(assignment: LearningAssignmentDraft
     qualityScore: precheck.qualityScore,
     totalScore: precheck.passed ? Math.min(100, (precheck.qualityScore ?? 80) - 2) : Math.max(45, (precheck.qualityScore ?? 60) - 20),
     fileCount: payload.files.length,
+    individualFeedback: 'AI 코드 리뷰어가 제출 내용을 기준으로 자동 피드백을 생성했습니다.',
+    commonFeedback: '루브릭 기준 자동 채점 결과입니다.',
   }
 }
 
