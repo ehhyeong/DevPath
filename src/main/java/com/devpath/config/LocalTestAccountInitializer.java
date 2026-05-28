@@ -24,7 +24,7 @@ public class LocalTestAccountInitializer implements CommandLineRunner {
   private static final String TEST_PASSWORD = "devpath1234";
   private static final List<TestAccountSeed> TEST_ACCOUNTS =
       List.of(
-          new TestAccountSeed("learner@devpath.com", "\uAE40\uD558\uB298", UserRole.ROLE_LEARNER),
+          new TestAccountSeed("learner@devpath.com", "\uC774\uD559\uC2B5", UserRole.ROLE_LEARNER),
           new TestAccountSeed(
               "instructor@devpath.com", "\uD64D\uC9C0\uD6C8", UserRole.ROLE_INSTRUCTOR),
           new TestAccountSeed("admin@devpath.com", "\uBC15\uC11C\uC5F0", UserRole.ROLE_ADMIN));
