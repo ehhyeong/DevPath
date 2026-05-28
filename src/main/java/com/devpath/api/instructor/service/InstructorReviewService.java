@@ -9,6 +9,9 @@ import com.devpath.api.instructor.dto.review.ReviewStatusUpdateRequest;
 import com.devpath.api.instructor.dto.review.ReviewSummaryResponse;
 import com.devpath.api.instructor.dto.review.ReviewTemplateRequest;
 import com.devpath.api.instructor.dto.review.ReviewTemplateResponse;
+import com.devpath.api.admin.entity.ModerationReport;
+import com.devpath.api.admin.entity.ModerationReportStatus;
+import com.devpath.api.admin.repository.ModerationReportRepository;
 import com.devpath.api.instructor.entity.ReviewReply;
 import com.devpath.api.instructor.entity.ReviewTemplate;
 import com.devpath.api.instructor.repository.ReviewReplyRepository;
@@ -43,6 +46,7 @@ public class InstructorReviewService {
   private final ReviewReplyRepository reviewReplyRepository;
   private final ReviewTemplateRepository reviewTemplateRepository;
   private final ReviewReportRepository reviewReportRepository;
+  private final ModerationReportRepository moderationReportRepository;
   private final CourseRepository courseRepository;
   private final UserRepository userRepository;
   private final UserProfileRepository userProfileRepository;
@@ -183,6 +187,7 @@ public class InstructorReviewService {
             .collect(Collectors.joining(","));
 
     review.updateIssueTags(tagsRaw);
+    createModerationReportIfMissing(review, instructorId, tagsRaw);
   }
 
   @Transactional(readOnly = true)
@@ -319,6 +324,28 @@ public class InstructorReviewService {
         .map(String::trim)
         .filter(tag -> !tag.isBlank())
         .toList();
+  }
+
+  private void createModerationReportIfMissing(
+      Review review, Long instructorId, String issueTagsRaw) {
+    if (moderationReportRepository.existsByReporterUserIdAndContentIdAndStatus(
+        instructorId, review.getId(), ModerationReportStatus.PENDING)) {
+      return;
+    }
+
+    String reason =
+        issueTagsRaw == null || issueTagsRaw.isBlank()
+            ? "강사가 리뷰 이슈로 등록했습니다."
+            : "강사가 리뷰 이슈로 등록했습니다. 태그: %s".formatted(issueTagsRaw);
+
+    moderationReportRepository.save(
+        ModerationReport.builder()
+            .reporterUserId(instructorId)
+            .targetUserId(review.getLearnerId())
+            .contentId(review.getId())
+            .reason(reason)
+            .status(ModerationReportStatus.PENDING)
+            .build());
   }
 
   private String getInstructorDisplayName(Long instructorId) {

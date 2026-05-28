@@ -18,6 +18,9 @@ import com.devpath.domain.learning.entity.SubmissionStatus;
 import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.QuizAttemptRepository;
 import com.devpath.domain.learning.repository.SubmissionRepository;
+import com.devpath.common.provider.GeminiProvider;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -38,6 +41,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class InstructorAnalyticsService {
 
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+
   private final CourseRepository courseRepository;
   private final CourseEnrollmentRepository courseEnrollmentRepository;
   private final LessonRepository lessonRepository;
@@ -46,6 +51,7 @@ public class InstructorAnalyticsService {
   private final QuizAttemptRepository quizAttemptRepository;
   private final SubmissionRepository submissionRepository;
   private final InstructorCourseQueryService instructorCourseQueryService;
+  private final GeminiProvider geminiProvider;
 
   public InstructorAnalyticsDashboardResponse getDashboard(Long instructorId, Long courseId) {
     List<InstructorCourseListResponse> courseOptions =
@@ -141,6 +147,10 @@ public class InstructorAnalyticsService {
             : submissionRepository
                 .findAllByAssignmentRoadmapNodeNodeIdInAndIsDeletedFalseOrderBySubmittedAtDesc(
                     nodeIds);
+    List<InstructorAnalyticsDashboardResponse.DifficultyItem> difficultyItems =
+        buildDifficultyItems(quizAttempts, submissions, dropOffs);
+    List<InstructorAnalyticsDashboardResponse.WeakPointItem> weakPoints =
+        buildWeakPoints(difficultyItems);
 
     return new InstructorAnalyticsDashboardResponse(
         buildOverview(scopedCourses, enrollments, lessons, progresses),
@@ -150,11 +160,12 @@ public class InstructorAnalyticsService {
         buildCompletionRateItems(coursesById, enrollmentsByCourse),
         buildAverageWatchTimeItems(coursesById, progressesByCourse),
         dropOffs,
-        buildDifficultyItems(quizAttempts, submissions, dropOffs),
+        difficultyItems,
         buildQuizStats(quizAttempts),
         buildAssignmentStats(submissions),
         buildFunnel(enrollments, progresses),
-        buildWeakPoints(buildDifficultyItems(quizAttempts, submissions, dropOffs)));
+        weakPoints,
+        buildAiInsights(difficultyItems, weakPoints, dropOffs));
   }
 
   private InstructorAnalyticsDashboardResponse.Overview buildOverview(
@@ -573,6 +584,160 @@ public class InstructorAnalyticsService {
         .toList();
   }
 
+  private List<InstructorAnalyticsDashboardResponse.AiInsightItem> buildAiInsights(
+      List<InstructorAnalyticsDashboardResponse.DifficultyItem> difficultyItems,
+      List<InstructorAnalyticsDashboardResponse.WeakPointItem> weakPoints,
+      List<InstructorAnalyticsDashboardResponse.DropOffItem> dropOffs) {
+    List<InstructorAnalyticsDashboardResponse.AiInsightItem> fallback =
+        buildRuleBasedAiInsights(difficultyItems, weakPoints, dropOffs);
+    String prompt = buildAiInsightPrompt(difficultyItems, weakPoints, dropOffs);
+    String response = geminiProvider.generate(prompt);
+    List<InstructorAnalyticsDashboardResponse.AiInsightItem> generated =
+        parseAiInsightResponse(response);
+
+    return generated.isEmpty() ? fallback : generated;
+  }
+
+  private List<InstructorAnalyticsDashboardResponse.AiInsightItem> buildRuleBasedAiInsights(
+      List<InstructorAnalyticsDashboardResponse.DifficultyItem> difficultyItems,
+      List<InstructorAnalyticsDashboardResponse.WeakPointItem> weakPoints,
+      List<InstructorAnalyticsDashboardResponse.DropOffItem> dropOffs) {
+    List<InstructorAnalyticsDashboardResponse.AiInsightItem> insights = new ArrayList<>();
+
+    difficultyItems.stream()
+        .limit(2)
+        .forEach(
+            item ->
+                insights.add(
+                    new InstructorAnalyticsDashboardResponse.AiInsightItem(
+                        item.nodeTitle() + " 보강",
+                        "%s 구간은 퀴즈 통과율 %.1f%%, 과제 점수 %.1f%%라서 예제와 중간 점검 문항을 추가하는 것이 좋습니다."
+                            .formatted(
+                                item.nodeTitle(), item.quizPassRate(), item.assignmentScoreRate()),
+                        item.difficultyLabel())));
+    weakPoints.stream()
+        .findFirst()
+        .ifPresent(
+            item ->
+                insights.add(
+                    new InstructorAnalyticsDashboardResponse.AiInsightItem(
+                        "오답 패턴 재설계",
+                        "%s 오답 신호가 높습니다. 핵심 개념 설명 뒤 바로 따라 하는 실습을 붙여 회복 동선을 짧게 가져가세요."
+                            .formatted(item.nodeTitle()),
+                        item.weaknessScore() >= 65.0 ? "HIGH" : item.weaknessScore() >= 40.0 ? "MEDIUM" : "LOW")));
+    dropOffs.stream()
+        .findFirst()
+        .ifPresent(
+            item ->
+                insights.add(
+                    new InstructorAnalyticsDashboardResponse.AiInsightItem(
+                        "이탈 구간 분할",
+                        "%s에서 이탈률이 %.1f%%입니다. 긴 설명을 5분 안쪽 단위로 나누고 체크 질문을 추가하세요."
+                            .formatted(item.lessonTitle(), item.dropOffRate()),
+                        item.dropOffRate() >= 40.0 ? "HIGH" : item.dropOffRate() >= 20.0 ? "MEDIUM" : "LOW")));
+
+    return insights.stream().limit(3).toList();
+  }
+
+  private String buildAiInsightPrompt(
+      List<InstructorAnalyticsDashboardResponse.DifficultyItem> difficultyItems,
+      List<InstructorAnalyticsDashboardResponse.WeakPointItem> weakPoints,
+      List<InstructorAnalyticsDashboardResponse.DropOffItem> dropOffs) {
+    return """
+        You are an instructional analytics assistant for an online course instructor.
+        Use only the provided metrics. Return only a JSON array of 3 items.
+        Each item must have title, body, and level fields.
+        Write title and body in Korean. level must be HIGH, MEDIUM, or LOW.
+        Focus on concrete improvement actions for lecture content, practice, quizzes, or assignments.
+
+        Difficulty metrics:
+        %s
+
+        Wrong answer pattern metrics:
+        %s
+
+        Drop-off metrics:
+        %s
+        """
+        .formatted(
+            difficultyItems.stream()
+                .limit(6)
+                .map(
+                    item ->
+                        "%s difficulty=%.1f quizPass=%.1f assignment=%.1f dropOff=%.1f"
+                            .formatted(
+                                item.nodeTitle(),
+                                item.difficultyScore(),
+                                item.quizPassRate(),
+                                item.assignmentScoreRate(),
+                                item.dropOffRate()))
+                .collect(Collectors.joining("\n")),
+            weakPoints.stream()
+                .map(
+                    item ->
+                        "%s weakness=%.1f summary=%s"
+                            .formatted(item.nodeTitle(), item.weaknessScore(), item.summary()))
+                .collect(Collectors.joining("\n")),
+            dropOffs.stream()
+                .limit(5)
+                .map(
+                    item ->
+                        "%s started=%d completed=%d dropOff=%.1f"
+                            .formatted(
+                                item.lessonTitle(),
+                                item.startedLearnerCount(),
+                                item.completedLearnerCount(),
+                                item.dropOffRate()))
+                .collect(Collectors.joining("\n")));
+  }
+
+  private List<InstructorAnalyticsDashboardResponse.AiInsightItem> parseAiInsightResponse(
+      String response) {
+    if (response == null || response.isBlank()) {
+      return List.of();
+    }
+
+    try {
+      JsonNode root = MAPPER.readTree(extractJsonArray(response));
+
+      if (!root.isArray()) {
+        return List.of();
+      }
+
+      List<InstructorAnalyticsDashboardResponse.AiInsightItem> items = new ArrayList<>();
+
+      for (JsonNode node : root) {
+        String title = normalize(node.path("title").asText());
+        String body = normalize(node.path("body").asText());
+        String level = normalize(node.path("level").asText("MEDIUM")).toUpperCase();
+
+        if (!title.isBlank() && !body.isBlank()) {
+          items.add(
+              new InstructorAnalyticsDashboardResponse.AiInsightItem(
+                  title,
+                  body,
+                  level.equals("HIGH") || level.equals("LOW") ? level : "MEDIUM"));
+        }
+      }
+
+      return items.stream().limit(3).toList();
+    } catch (Exception ignored) {
+      return List.of();
+    }
+  }
+
+  private String extractJsonArray(String value) {
+    String normalized = normalize(value);
+    int start = normalized.indexOf('[');
+    int end = normalized.lastIndexOf(']');
+
+    if (start >= 0 && end > start) {
+      return normalized.substring(start, end + 1);
+    }
+
+    return normalized;
+  }
+
   private InstructorAnalyticsDashboardResponse.Funnel buildFunnel(
       List<CourseEnrollment> enrollments, List<LessonProgress> progresses) {
     long enrolledCount = enrollments.size();
@@ -650,6 +815,10 @@ public class InstructorAnalyticsService {
     return value == null ? 0 : value;
   }
 
+  private String normalize(String value) {
+    return value == null ? "" : value.trim();
+  }
+
   private double roundToOneDecimal(double value) {
     return Math.round(value * 10.0) / 10.0;
   }
@@ -676,14 +845,14 @@ public class InstructorAnalyticsService {
 
   private String buildWeakPointSummary(InstructorAnalyticsDashboardResponse.DifficultyItem item) {
     if (item.quizPassRate() < 60.0 && item.assignmentScoreRate() < 60.0) {
-      return "Quiz and assignment results are both weak. Add reinforcement materials for this node.";
+      return "퀴즈와 과제 결과가 모두 낮습니다. 이 구간에 보강 자료와 단계별 실습을 추가하세요.";
     }
     if (item.quizPassRate() < 60.0) {
-      return "Quiz pass rate is low. Review explanations and extra examples are recommended.";
+      return "퀴즈 통과율이 낮습니다. 개념 설명과 추가 예제를 보강하는 것이 좋습니다.";
     }
     if (item.assignmentScoreRate() < 60.0) {
-      return "Assignment scores are low. A guided practice task would help learners recover.";
+      return "과제 점수가 낮습니다. 따라 할 수 있는 가이드 실습 과제를 추가하세요.";
     }
-    return "Drop-off is high around this node. Breaking the content into smaller steps is recommended.";
+    return "이 구간 주변의 이탈률이 높습니다. 콘텐츠를 더 작은 단계로 나누는 것이 좋습니다.";
   }
 }

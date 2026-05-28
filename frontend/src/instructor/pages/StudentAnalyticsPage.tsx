@@ -65,9 +65,21 @@ function getDifficultyTone(score: number): 'red' | 'orange' | 'yellow' {
   return 'yellow'
 }
 
+function getAiInsightTone(level: string): 'red' | 'orange' | 'yellow' {
+  if (level === 'HIGH') {
+    return 'red'
+  }
+
+  if (level === 'MEDIUM') {
+    return 'orange'
+  }
+
+  return 'yellow'
+}
+
 function buildQuizDistribution(data: InstructorAnalyticsDashboard) {
   const buckets = [
-    { label: '90+점', helper: 'Excellent', count: 0, tone: 'from-green-500 to-green-600' },
+    { label: '90점 이상', helper: 'Excellent', count: 0, tone: 'from-green-500 to-green-600' },
     { label: '80-89점', helper: 'Strong', count: 0, tone: 'from-blue-500 to-blue-600' },
     { label: '70-79점', helper: 'Stable', count: 0, tone: 'from-yellow-500 to-yellow-600' },
     { label: '60-69점', helper: 'Watch', count: 0, tone: 'from-orange-500 to-orange-600' },
@@ -120,6 +132,47 @@ function buildPerformanceSummary(data: InstructorAnalyticsDashboard) {
   ]
 }
 
+function buildAnalysisResult(data: InstructorAnalyticsDashboard) {
+  const highScoreShare = Math.round(
+    data.quizStats.items.length === 0
+      ? 0
+      : (data.quizStats.items.filter((item) => item.averageScoreRate >= 80).length / data.quizStats.items.length) * 100,
+  )
+  const lowScoreShare = Math.round(
+    data.quizStats.items.length === 0
+      ? 0
+      : (data.quizStats.items.filter((item) => item.averageScoreRate < 60).length / data.quizStats.items.length) * 100,
+  )
+  const hardest = data.difficultyItems[0]
+
+  if (!hardest) {
+    return '분석할 퀴즈 데이터가 아직 부족합니다. 학습 이력이 쌓이면 점수 분포와 취약 구간을 함께 보여줍니다.'
+  }
+
+  return `80점 이상 구간은 ${highScoreShare}%이고 60점 미만 구간은 ${lowScoreShare}%입니다. 현재 가장 어려운 구간은 ${hardest.nodeTitle}입니다.`
+}
+
+function buildImprovementDirection(data: InstructorAnalyticsDashboard) {
+  const weakest = data.weakPoints[0]
+
+  if (!weakest) {
+    return '오답 데이터가 아직 부족합니다. 퀴즈 응시가 누적되면 주요 오답 패턴과 개선 방향을 자동으로 정리합니다.'
+  }
+
+  return `${weakest.nodeTitle}에서 오답 신호가 가장 높습니다. 개념 설명을 짧게 분리하고 실습 예제를 3개 이상 추가하는 방향이 적절합니다.`
+}
+
+function buildImprovementProposal(data: InstructorAnalyticsDashboard) {
+  const riskGroup = data.students.filter((item) => (item.progressPercent ?? 0) < 40)
+  const dropOff = data.dropOffs[0]
+
+  if (!dropOff) {
+    return '학습 이탈 데이터가 아직 부족합니다. 수강 이력이 쌓이면 하위 그룹 보충 강의와 Q&A 개입 시점을 제안합니다.'
+  }
+
+  return `진도 40% 미만 학습자 ${riskGroup.length}명을 대상으로 ${dropOff.lessonTitle} 보충 강의와 체크 질문을 제공하면 이탈률을 낮출 수 있습니다.`
+}
+
 export default function StudentAnalyticsPage() {
   const [courseId, setCourseId] = useState<number | null>(null)
   const [analytics, setAnalytics] = useState<InstructorAnalyticsDashboard | null>(null)
@@ -163,7 +216,7 @@ export default function StudentAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="student-analytics-page p-6">
         <LoadingCard label="학생 분석 데이터를 불러오는 중입니다." />
       </div>
     )
@@ -171,7 +224,7 @@ export default function StudentAnalyticsPage() {
 
   if (error || !analytics) {
     return (
-      <div className="p-6">
+      <div className="student-analytics-page p-6">
         <ErrorCard message={error ?? '학생 분석 데이터를 불러오지 못했습니다.'} />
       </div>
     )
@@ -181,12 +234,19 @@ export default function StudentAnalyticsPage() {
     analytics.averageWatchTimes.length > 0
       ? analytics.averageWatchTimes.reduce((sum, item) => sum + item.averageWatchSeconds, 0) / analytics.averageWatchTimes.length
       : 0
-  const aiInsights = analytics.difficultyItems.slice(0, 3).map((item, index) => ({
+  const fallbackAiInsights = analytics.difficultyItems.slice(0, 3).map((item, index) => ({
     rank: index + 1,
-    title: item.nodeTitle,
-    body: `Difficulty ${item.difficultyScore.toFixed(1)} · quiz pass ${item.quizPassRate.toFixed(1)}% · assignment ${item.assignmentScoreRate.toFixed(1)}%`,
+    title: `${item.nodeTitle} 보강`,
+    body: `퀴즈 통과율 ${item.quizPassRate.toFixed(1)}%, 과제 점수 ${item.assignmentScoreRate.toFixed(1)}% 기준으로 예제와 중간 점검 문항을 추가하세요.`,
     level: item.difficultyLabel,
     tone: getDifficultyTone(item.difficultyScore),
+  }))
+  const aiInsights = (analytics.aiInsights.length > 0 ? analytics.aiInsights : fallbackAiInsights).slice(0, 3).map((item, index) => ({
+    rank: index + 1,
+    title: item.title,
+    body: item.body,
+    level: item.level,
+    tone: getAiInsightTone(item.level),
   }))
   const dropoutSections = analytics.dropOffs.map((item) => ({
     title: item.lessonTitle,
@@ -202,13 +262,16 @@ export default function StudentAnalyticsPage() {
   const quizDistribution = buildQuizDistribution(analytics)
   const weakPatterns = analytics.weakPoints.map((item) => ({
     title: item.nodeTitle,
-    errorRate: `난이도 ${item.weaknessScore.toFixed(1)}`,
+    errorRate: `오답률 ${item.weaknessScore.toFixed(1)}%`,
     body: item.summary,
-    retry: `${item.weaknessScore >= 65 ? 'High' : item.weaknessScore >= 40 ? 'Medium' : 'Low'} priority`,
+    retry: item.weaknessScore >= 65 ? '높음' : item.weaknessScore >= 40 ? '보통' : '낮음',
     tone: getDifficultyTone(item.weaknessScore),
   }))
   const performanceSummary = buildPerformanceSummary(analytics)
   const courseOptions = availableCourseOptions
+  const analysisResult = buildAnalysisResult(analytics)
+  const improvementDirection = buildImprovementDirection(analytics)
+  const improvementProposal = buildImprovementProposal(analytics)
 
   const metrics = [
     {
@@ -250,19 +313,19 @@ export default function StudentAnalyticsPage() {
   ]
 
   return (
-    <div className="bg-gray-50 p-6">
-      <div className="mx-auto max-w-[1400px]">
-        <div className="mb-6 flex items-center justify-between">
+    <div className="student-analytics-page bg-gray-50 p-6">
+      <div className="student-analytics-content mx-auto max-w-[1400px]">
+        <div className="student-analytics-header mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900">학생 분석 리포트</h1>
-            <p className="mt-1 text-sm text-gray-600">학습 이탈 구간과 약점 노드를 서버 데이터 기준으로 집계합니다.</p>
+            <p className="mt-1 text-sm text-gray-600">AI 기반 이탈 구간 분석 및 개선 포인트 제공</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="student-analytics-controls flex items-center gap-3">
             <select
               value={courseId ?? 'all'}
               onChange={(event) => setCourseId(event.target.value === 'all' ? null : Number(event.target.value))}
-              className="cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300"
+              className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300"
             >
               <option value="all">전체 강의</option>
               {courseOptions.map(([value, label]) => (
@@ -271,15 +334,15 @@ export default function StudentAnalyticsPage() {
                 </option>
               ))}
             </select>
-            <select className="cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300">
+            <select className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300">
               <option>최근 30일</option>
             </select>
           </div>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="student-analytics-metric-grid mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {metrics.map((metric) => (
-            <div key={metric.label} className="rounded-2xl border border-gray-100 bg-white p-5 transition hover:shadow-md">
+            <div key={metric.label} className="student-analytics-metric-card rounded-2xl border border-gray-100 bg-white p-5 transition hover:shadow-md">
               <div className="mb-3 flex items-center gap-3">
                 <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${metric.iconTone}`}>
                   <i className={`${metric.icon} text-lg`} />
@@ -297,8 +360,8 @@ export default function StudentAnalyticsPage() {
           ))}
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <div className="rounded-[32px] border border-gray-100 bg-white p-6 transition hover:shadow-lg xl:col-span-2">
+        <div className="student-analytics-main-grid mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <div className="student-analytics-panel student-analytics-panel-wide rounded-[32px] border border-gray-100 bg-white p-6 transition hover:shadow-lg xl:col-span-2">
             <div className="mb-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
@@ -319,7 +382,7 @@ export default function StudentAnalyticsPage() {
                 const tone = getDropoutTone(section.tone as Tone)
 
                 return (
-                  <div key={section.title} className={`rounded-xl border p-4 transition hover:shadow-sm ${tone.container}`}>
+                  <div key={section.title} className={`student-analytics-list-card rounded-xl border p-4 transition hover:shadow-sm ${tone.container}`}>
                     <div className="mb-2 flex items-center justify-between">
                       <span className="text-sm font-semibold text-gray-800">{section.title}</span>
                       <span className={`text-sm font-semibold ${tone.text}`}>{section.rate}% 이탈</span>
@@ -334,20 +397,20 @@ export default function StudentAnalyticsPage() {
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-blue-50/30 p-6 transition hover:shadow-lg">
+          <div className="student-analytics-panel student-analytics-ai-panel rounded-[32px] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-blue-50/30 p-6 transition hover:shadow-lg">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
                 <i className="fas fa-robot text-blue-600" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-gray-900">AI 개선 인사이트</h3>
-                <p className="mt-0.5 text-xs text-gray-600">난이도 상위 노드 기준 우선순위입니다.</p>
+                <h3 className="text-base font-bold text-gray-900">AI 개선 포인트</h3>
+                <p className="mt-0.5 text-xs text-gray-600">Gemini와 학습 지표 기반 우선순위 액션입니다.</p>
               </div>
             </div>
 
             <div className="space-y-3">
               {aiInsights.map((item) => (
-                <div key={item.rank} className="rounded-xl border border-blue-100 bg-white p-4 transition hover:shadow-sm">
+                <div key={item.rank} className="student-analytics-list-card rounded-xl border border-blue-100 bg-white p-4 transition hover:shadow-sm">
                   <div className="mb-3 flex items-start gap-3">
                     <div
                       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white ${
@@ -362,7 +425,7 @@ export default function StudentAnalyticsPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between border-t border-gray-100 pt-3">
-                    <span className="text-xs text-gray-600">priority</span>
+                    <span className="text-xs text-gray-600">우선순위</span>
                     <span className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${getToneClasses(item.tone)}`}>{item.level}</span>
                   </div>
                 </div>
@@ -372,15 +435,15 @@ export default function StudentAnalyticsPage() {
             <button
               type="button"
               onClick={() => window.alert('상세 리포트 다운로드는 다음 단계에서 연결합니다.')}
-              className="mt-4 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md"
+              className="student-analytics-primary-button mt-4 w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 hover:shadow-md"
             >
               상세 리포트 다운로드
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-          <div className="rounded-[32px] border border-gray-100 bg-white p-6 transition hover:shadow-lg">
+        <div className="student-analytics-bottom-grid grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <div className="student-analytics-panel rounded-[32px] border border-gray-100 bg-white p-6 transition hover:shadow-lg">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50">
                 <i className="fas fa-chart-bar text-purple-600" />
@@ -405,36 +468,52 @@ export default function StudentAnalyticsPage() {
                 </div>
               ))}
             </div>
+
+            <div className="student-analytics-summary-box mt-4 rounded-xl border border-blue-100 bg-blue-50 p-3">
+              <p className="text-xs leading-relaxed text-blue-700">
+                <span className="font-semibold">분석 결과</span>
+                <br />
+                {analysisResult}
+              </p>
+            </div>
           </div>
 
-          <div className="rounded-[32px] border border-gray-100 bg-white p-6 transition hover:shadow-lg">
+          <div className="student-analytics-panel rounded-[32px] border border-gray-100 bg-white p-6 transition hover:shadow-lg">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
                 <i className="fas fa-magnifying-glass-chart text-red-600" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-gray-900">약점 패턴 분석</h3>
-                <p className="mt-0.5 text-xs text-gray-600">서버에서 집계한 weak point 목록입니다.</p>
+                <h3 className="text-base font-bold text-gray-900">오답 패턴 분석</h3>
+                <p className="mt-0.5 text-xs text-gray-600">주요 취약 부분 파악</p>
               </div>
             </div>
 
             <div className="mb-4 space-y-3">
               {weakPatterns.map((item) => (
-                <div key={item.title} className={`rounded-xl border p-3 ${getToneClasses(item.tone)}`}>
+                <div key={item.title} className={`student-analytics-compact-card rounded-xl border p-3 ${getToneClasses(item.tone)}`}>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-semibold text-gray-900">{item.title}</span>
                     <span className="rounded-lg border px-2.5 py-1 text-xs font-semibold">{item.errorRate}</span>
                   </div>
                   <p className="mb-2 text-xs text-gray-700">{item.body}</p>
                   <div className="text-xs text-gray-600">
-                    <span className="font-medium">Priority:</span> {item.retry}
+                    <span className="font-medium">재도전율:</span> {item.retry}
                   </div>
                 </div>
               ))}
             </div>
+
+            <div className="student-analytics-summary-box rounded-xl border border-purple-100 bg-purple-50 p-3">
+              <div className="mb-1 flex items-center gap-2">
+                <i className="fas fa-lightbulb text-purple-600" />
+                <p className="text-xs font-semibold text-purple-900">개선 방향</p>
+              </div>
+              <p className="text-xs leading-relaxed text-purple-700">{improvementDirection}</p>
+            </div>
           </div>
 
-          <div className="rounded-[32px] border border-gray-100 bg-white p-6 transition hover:shadow-lg">
+          <div className="student-analytics-panel rounded-[32px] border border-gray-100 bg-white p-6 transition hover:shadow-lg">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-50">
                 <i className="fas fa-trophy text-yellow-600" />
@@ -449,7 +528,7 @@ export default function StudentAnalyticsPage() {
               {performanceSummary.map((item) => (
                 <div
                   key={item.label}
-                  className={`rounded-xl border p-3 transition hover:shadow-sm ${item.tone === 'orange' ? 'border-orange-100 bg-orange-50/50' : 'border-gray-100 bg-white'}`}
+                  className={`student-analytics-compact-card rounded-xl border p-3 transition hover:shadow-sm ${item.tone === 'orange' ? 'border-orange-100 bg-orange-50/50' : 'border-gray-100 bg-white'}`}
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-800">{item.label}</span>
@@ -466,11 +545,9 @@ export default function StudentAnalyticsPage() {
             <div className="rounded-xl border border-purple-100 bg-gradient-to-r from-purple-50 to-blue-50 p-3">
               <div className="mb-1 flex items-center gap-2">
                 <i className="fas fa-lightbulb text-purple-600" />
-                <p className="text-xs font-semibold text-purple-900">추천 액션</p>
+                <p className="text-xs font-semibold text-purple-900">개선 제안</p>
               </div>
-              <p className="text-xs leading-relaxed text-purple-700">
-                진행률 40% 미만 그룹을 대상으로 추가 보강 자료와 Q&A 응답 SLA를 강화하면 이탈률을 줄이는 데 도움이 됩니다.
-              </p>
+              <p className="text-xs leading-relaxed text-purple-700">{improvementProposal}</p>
             </div>
           </div>
         </div>

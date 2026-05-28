@@ -19,6 +19,33 @@ import type { UserProfile } from '../../types/learner'
 type ReviewTabKey = 'all' | 'unreplied' | 'low'
 type TemplateOption = { key: string; title: string; description: string; content: string }
 
+const fallbackReviewTemplates: TemplateOption[] = [
+  {
+    key: 'thanks',
+    title: '💖 감사 인사 (일반)',
+    description: '소중한 수강평 감사합니다! 완강까지 응원하겠습니다.',
+    content: '소중한 수강평 남겨주셔서 감사합니다! 도움이 되었다니 정말 기쁘네요. 완강까지 힘내시고 궁금한 점은 언제든 질문주세요! :)',
+  },
+  {
+    key: 'apology',
+    title: '🙇 사과 및 개선 약속',
+    description: '불편을 드려 죄송합니다. 해당 내용은 확인 후 빠르게 수정하겠습니다.',
+    content: '안녕하세요, 수강에 불편을 드려 죄송합니다. 말씀해주신 부분은 확인 후 최대한 빠르게 조치하겠습니다. 더 나은 강의가 되도록 노력하겠습니다.',
+  },
+  {
+    key: 'guide',
+    title: '📘 학습 가이드 제안',
+    description: '어려움을 느끼셨군요. 섹션 3의 보충 강의를 먼저 보시면 도움이 됩니다.',
+    content: "안녕하세요! 해당 부분은 조금 난이도가 있는 구간입니다. 섹션 3의 '보충 강의' 파트를 먼저 선수강하시면 이해에 큰 도움이 됩니다. 화이팅입니다!",
+  },
+  {
+    key: 'review',
+    title: '⭐ 5점 유도 (만족 시)',
+    description: '도움이 되셨다니 다행입니다! 주변에도 많이 추천 부탁드려요 :)',
+    content: '만족하셨다니 다행입니다! 괜찮으시다면 주변 동료분들께도 추천 부탁드립니다. 앞으로도 좋은 콘텐츠로 보답하겠습니다.',
+  },
+]
+
 const legacyReviewContent: Record<string, string> = {
   'Examples were practical and the explanation flow was very clear.':
     '예제가 실무와 바로 연결돼서 좋았고, 설명 흐름도 자연스러워서 끝까지 집중해서 들을 수 있었습니다.',
@@ -226,7 +253,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
     if (!activeReplyTargetId) return
     setReplyDrafts((current) => ({
       ...current,
-      [activeReplyTargetId]: current[activeReplyTargetId] ? `${current[activeReplyTargetId].trimEnd()}\n\n${template.content}` : template.content,
+      [activeReplyTargetId]: template.content,
     }))
     setTemplateModalOpen(false)
   }
@@ -256,6 +283,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
     try {
       await instructorReviewApi.addIssueTags(reviewId, nextTags)
       await refreshReviewData()
+      window.alert('관리자 신고 대기열에 등록되었습니다.')
     } catch (nextError) {
       window.alert(nextError instanceof Error ? nextError.message : '이슈 등록에 실패했습니다.')
     }
@@ -276,19 +304,20 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
     }
   }, [courseFilter, availableCourseOptions])
 
-  if (loading) return <div className="p-6"><LoadingCard label="수강평 데이터를 불러오는 중입니다." /></div>
-  if (error || !summary || !helpful) return <div className="p-6"><ErrorCard message={error ?? '수강평 데이터를 불러오지 못했습니다.'} /></div>
+  if (loading) return <div className="instructor-reviews-page p-6"><LoadingCard label="수강평 데이터를 불러오는 중입니다." /></div>
+  if (error || !summary || !helpful) return <div className="instructor-reviews-page p-6"><ErrorCard message={error ?? '수강평 데이터를 불러오지 못했습니다.'} /></div>
 
   const totalReviewCount = summary.totalReviews
   const unansweredCount = helpful.unansweredCount
   const lowRatingCount = scopedReviews.filter((review) => review.rating <= 3).length
   const courseOptions = availableCourseOptions
   const keywordTags = buildKeywordTags(scopedReviews)
-  const templateOptions = templates.map((template) => {
+  const apiTemplateOptions = templates.map((template) => {
     const title = t(template.title, legacyTemplateTitle)
     const content = t(template.content, legacyTemplateContent)
     return { key: String(template.id), title, description: content.length > 52 ? `${content.slice(0, 52)}...` : content, content }
   })
+  const templateOptions = apiTemplateOptions.length > 0 ? apiTemplateOptions : fallbackReviewTemplates
 
   const filteredReviews = scopedReviews.filter((review) => {
     if (courseFilter !== 'all' && String(review.courseId) !== courseFilter) return false
@@ -305,7 +334,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
   const hasMore = filteredReviews.length > visibleLimit
 
   return (
-    <div className="w-full overflow-y-auto bg-[#F8F9FA] p-8">
+    <div className="instructor-reviews-page w-full overflow-y-auto bg-[#F8F9FA] p-8">
       <div className="mx-auto max-w-[1200px]">
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
@@ -313,14 +342,14 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
             <p className="text-sm font-medium text-gray-500">수강생의 피드백을 확인하고 답변으로 소통해 강의 만족도를 높여보세요.</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)} className="min-w-[240px] cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-bold text-gray-700 shadow-sm outline-none focus:border-green-500">
+            <div className="instructor-reviews-course-filter relative">
+              <select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)} className="instructor-reviews-course-select min-w-[240px] cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-bold text-gray-700 shadow-sm outline-none focus:border-green-500">
                 <option value="all">전체 강의 보기</option>
                 {courseOptions.map(([courseId, courseTitle]) => <option key={courseId} value={courseId}>{courseTitle}</option>)}
               </select>
-              <i className="fas fa-chevron-down pointer-events-none absolute right-3 top-3 text-xs text-gray-400" />
+              <i className="instructor-reviews-course-arrow fas fa-chevron-down pointer-events-none absolute right-3 top-3 text-xs text-gray-400" />
             </div>
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 shadow-sm">
+            <div className="instructor-reviews-search-box flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 shadow-sm">
               <i className="fas fa-search text-gray-400" />
               <input value={search} onChange={(event) => setSearch(event.target.value)} type="text" placeholder="검색" className="w-32 bg-transparent text-sm font-bold text-gray-600 outline-none placeholder:text-gray-400" />
             </div>
@@ -531,7 +560,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
                   </div>
                 ) : null}
 
-                {!review.reply ? (
+                {!review.reply && openReplyFormId !== review.reviewId ? (
                   <div className="flex gap-2">
                     <button type="button" onClick={() => toggleReplyForm(review)} className="rounded-lg border border-[#00C471] bg-green-50 px-3.5 py-2 text-xs font-bold text-[#00C471] transition hover:bg-green-100">
                       <i className="fas fa-reply mr-1" />답글 작성

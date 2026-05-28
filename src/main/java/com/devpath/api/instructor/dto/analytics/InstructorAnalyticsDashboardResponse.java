@@ -16,7 +16,8 @@ public record InstructorAnalyticsDashboardResponse(
     QuizStats quizStats,
     AssignmentStats assignmentStats,
     Funnel funnel,
-    List<WeakPointItem> weakPoints) {
+    List<WeakPointItem> weakPoints,
+    List<AiInsightItem> aiInsights) {
 
   public static InstructorAnalyticsDashboardResponse empty(
       List<InstructorCourseListResponse> courseOptions) {
@@ -32,6 +33,7 @@ public record InstructorAnalyticsDashboardResponse(
         QuizStats.empty(),
         AssignmentStats.empty(),
         new Funnel(List.of()),
+        List.of(),
         List.of());
   }
 
@@ -130,4 +132,6 @@ public record InstructorAnalyticsDashboardResponse(
 
   public record WeakPointItem(
       Long nodeId, String nodeTitle, double weaknessScore, String summary) {}
+
+  public record AiInsightItem(String title, String body, String level) {}
 }

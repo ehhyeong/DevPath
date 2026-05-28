@@ -85,6 +85,7 @@ const EMPTY_ANALYTICS_DASHBOARD: InstructorAnalyticsDashboard = {
     steps: [],
   },
   weakPoints: [],
+  aiInsights: [],
 }
 
 const SOFT_CARD =
