@@ -152,7 +152,8 @@ public class GeminiJobAnalysisService {
     return sb.toString();
   }
 
-  // Gemini 점수 배열을 받아 상위 7개(matched) + 하위 3개(stretch, missingSkills 계산 포함) 분리
+  // Gemini 점수 배열을 받아 상위 N개(matched) + 하위 3개(stretch) 동적 분리
+  // 결과 수가 적어도 항상 stretch 3개를 보장 (matched 수를 줄여서라도)
   private GeminiJobAnalysisResponse.Analysis buildAnalysis(
       String raw,
       List<JobkoreaJobResponse.Posting> postings,
@@ -160,6 +161,11 @@ public class GeminiJobAnalysisService {
 
     List<GeminiScore> scores = parseScores(raw, postings);
     scores.sort(Comparator.comparingInt(GeminiScore::matchScore).reversed());
+
+    int dynamicMatchedLimit =
+        Math.min(MATCHED_LIMIT, Math.max(0, scores.size() - STRETCH_LIMIT));
+    int stretchStart = dynamicMatchedLimit;
+    int stretchEnd = Math.min(scores.size(), stretchStart + STRETCH_LIMIT);
 
     List<String> userSkills =
         (profile != null && profile.skillSignals() != null)
@@ -172,7 +178,7 @@ public class GeminiJobAnalysisService {
     for (int i = 0; i < scores.size(); i++) {
       GeminiScore s = scores.get(i);
       JobkoreaJobResponse.Posting p = postings.get(s.index());
-      boolean isStretch = i >= MATCHED_LIMIT && i < MATCHED_LIMIT + STRETCH_LIMIT;
+      boolean isStretch = i >= stretchStart && i < stretchEnd;
 
       List<String> missingSkills =
           isStretch ? computeMissingSkills(p.keywords(), userSkills) : List.of();
@@ -192,7 +198,7 @@ public class GeminiJobAnalysisService {
               s.reason().isBlank() ? null : s.reason(),
               missingSkills);
 
-      if (i < MATCHED_LIMIT) {
+      if (i < dynamicMatchedLimit) {
         matched.add(posting);
       } else if (isStretch) {
         stretch.add(posting);
