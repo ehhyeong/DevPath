@@ -102,8 +102,8 @@ ocr:
 gemini:
   api:
     key: ${GEMINI_API_KEY}
-    model: ${GEMINI_MODEL:gemini-3-flash-preview}
-    fallback-models: ${GEMINI_FALLBACK_MODELS:gemini-2.5-flash,gemini-2.5-flash-lite}
+    model: ${GEMINI_MODEL:gemini-3.5-flash}
+    fallback-models: ${GEMINI_FALLBACK_MODELS:gemini-3.1-flash-lite}
 anthropic:
   # Claude Vision OCR 사용 시 필요 (없으면 Python OCR 서버 → Tesseract.js 폴백)
   api-key: ${ANTHROPIC_API_KEY:}
