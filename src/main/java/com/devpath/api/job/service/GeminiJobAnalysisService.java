@@ -147,9 +147,10 @@ public class GeminiJobAnalysisService {
     sb.append("  \"matched\": [{\"index\": 0, \"matchScore\": 87, \"reason\": \"추천 이유\"}],\n");
     sb.append("  \"stretch\": [{\"index\": 4, \"matchScore\": 62, \"reason\": \"보완 후 지원 가능\", \"missingSkills\": [\"Docker\", \"AWS\"]}]\n");
     sb.append("}\n");
-    sb.append("- matched: 점수 높은 순 최대 7건 (matchScore 70 이상 권장)\n");
-    sb.append("- stretch: 점수 50~75 구간에서 몇 가지 스킬을 보완하면 지원 가능한 공고 최대 3건\n");
-    sb.append("- stretch.missingSkills: 공고 키워드 중 사용자가 보유하지 않은 핵심 기술 1~3개 (영문)\n");
+    sb.append("- matched: 점수 높은 순 최대 7건\n");
+    sb.append("- stretch: matched에 포함되지 않은 공고 중 점수 낮은 순 최대 3건 (점수 구간 제한 없음)\n");
+    sb.append("- stretch.missingSkills: 해당 공고 키워드 중 사용자가 보유하지 않은 핵심 기술 1~3개 (영문)\n");
+    sb.append("- 공고가 부족해 stretch를 채울 수 없으면 있는 만큼만 반환\n");
     sb.append("- matchScore: 위 채점 기준 3개 항목 합산 0~100 정수\n");
     sb.append("- reason: 30자 이내 한국어 (예: \"Spring·JPA 일치, 프로젝트 경험 풍부\")\n");
     sb.append("- matched와 stretch에는 서로 다른 공고 index를 사용할 것\n");
