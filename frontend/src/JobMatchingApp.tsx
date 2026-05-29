@@ -542,10 +542,13 @@ function sortJobs(jobs: MatchingJob[]) {
 
 // missingSkills 1~3개인 공고를 성장 공고 후보로 추출 (score 내림차순)
 function extractStretchJobs(candidates: MatchingJob[], count = 3): MatchingJob[] {
-  return sortJobs(candidates)
-    .filter((j) => j.missingSkills.length >= 1 && j.missingSkills.length <= 3)
-    .slice(0, count)
-    .map((j) => ({ ...j, isStretch: true }))
+  const sorted = sortJobs(candidates)
+  // missingSkills 있는 공고 우선, 없으면 점수 하위 공고로 fallback
+  const withMissing = sorted.filter((j) => j.missingSkills.length >= 1 && j.missingSkills.length <= 3)
+  const result = withMissing.length >= count
+    ? withMissing.slice(0, count)
+    : sorted.slice(-count)   // 점수 낮은 순 하위 3개
+  return result.map((j) => ({ ...j, isStretch: true }))
 }
 
 export default function JobMatchingApp() {
@@ -624,7 +627,7 @@ export default function JobMatchingApp() {
   useEffect(() => {
     if (!session) return
 
-    projectApiRequest<ActivityProfile>('/api/jobs/activity-profile/me')
+    projectApiRequest<ActivityProfile>('/api/jobs/activity-profile/me', {}, 'required')
       .then((data) => setActivityProfile(data))
       .catch(() => setActivityProfile(null))
   }, [session])
@@ -706,6 +709,8 @@ export default function JobMatchingApp() {
         })
         const analysis = await projectApiRequest<GeminiAnalysis>(
           `/api/jobs/gemini-recommendations/me${geminiQuery}`,
+          {},
+          'required',
         )
         clearTimeout(stepTimer)
         setLoadingStep('finishing')
@@ -772,7 +777,7 @@ export default function JobMatchingApp() {
         })
 
         const [dbResult, jobkoreaResult] = await Promise.allSettled([
-          projectApiRequest<RecommendedJob[]>('/api/jobs/recommendations/me'),
+          projectApiRequest<RecommendedJob[]>('/api/jobs/recommendations/me', {}, 'required'),
           projectApiRequest<JobkoreaResult>(`/api/jobs/jobkorea${jobkoreaQuery}`),
         ])
 
