@@ -82,7 +82,7 @@ public class JobRecommendationController {
       return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
           .body(
               ApiResponse.ok(
-                  new GeminiJobAnalysisResponse.Analysis(List.of(), false, e.getMessage())));
+                  new GeminiJobAnalysisResponse.Analysis(List.of(), List.of(), false, e.getMessage())));
     }
   }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import LoginRequiredView from '../components/LoginRequiredView'
 import SiteHeader from '../components/SiteHeader'
-import { authApi, userApi } from '../lib/api'
+import { authApi, roadmapApi, userApi } from '../lib/api'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
@@ -36,19 +36,21 @@ const QUESTIONS: Question[] = [
       { text: '사용자가 직접 보고 사용하는 웹사이트 화면', scores: { frontend: 5, fullstack: 3 } },
       { text: '보이지 않는 곳에서 데이터를 처리하는 서버 시스템', scores: { backend: 5, fullstack: 3, architect: 2 } },
       { text: '스마트폰에서 돌아가는 앱 (iOS 또는 Android)', scores: { android: 3, ios: 3 } },
-      { text: '스스로 학습하고 예측하는 AI/ML 모델', scores: { ai_engineer: 5, mlops: 3 } },
-      { text: '게임이나 가상 현실 세계', scores: { game: 5, frontend: 1 } },
+      { text: '스스로 학습하고 예측하는 AI/ML 모델', scores: { ai_engineer: 5, mlops: 3, machine_learning: 4, ai_data_scientist: 4 } },
+      { text: '게임이나 가상 현실 세계', scores: { game: 5, server_side_game: 3, frontend: 1 } },
       { text: '해킹 방어, 시스템 보안 및 안전성', scores: { security: 5, devsecops: 4, backend: 1 } },
+      { text: 'UX/UI 사용자 경험과 서비스 디자인', scores: { uiux: 5, pm: 2 } },
     ],
   },
   {
     id: 2,
     text: '선호하는 작업 방식은 무엇인가요?',
     options: [
-      { text: '시각적 UI 컴포넌트 설계와 인터랙션 구현', scores: { frontend: 4, fullstack: 2 } },
-      { text: '터미널과 서버·인프라·자동화 관리', scores: { devops: 5, devsecops: 3, backend: 2 } },
-      { text: '데이터 수집·분석·시각화 대시보드 구축', scores: { data_analyst: 5, data_eng: 3 } },
-      { text: '기술 문서·가이드·API 명세 작성', scores: { technical_writer: 5, pm: 2 } },
+      { text: '시각적 UI 컴포넌트 설계와 인터랙션 구현', scores: { frontend: 4, fullstack: 2, uiux: 2 } },
+      { text: '터미널과 서버·인프라·자동화 관리', scores: { devops: 5, devsecops: 3, backend: 2, server_side_game: 2 } },
+      { text: '데이터 수집·분석·시각화 대시보드 구축', scores: { data_analyst: 5, data_eng: 3, bi_analyst: 3 } },
+      { text: '기술 문서·가이드·API 명세 작성', scores: { technical_writer: 5, pm: 2, developer_relations: 3 } },
+      { text: '개발팀 리더십과 구성원 성장 코칭', scores: { engineering_manager: 5, pm: 2, architect: 1 } },
     ],
   },
   {
@@ -65,8 +67,8 @@ const QUESTIONS: Question[] = [
     id: 4,
     text: '팀 프로젝트에서 맡고 싶은 역할은 무엇인가요?',
     options: [
-      { text: '전체 시스템 구조 설계 및 기술 방향 결정', scores: { architect: 5, fullstack: 2, backend: 1 } },
-      { text: '제품 방향 기획 및 팀 조율 (PM)', scores: { pm: 5 } },
+      { text: '전체 시스템 구조 설계 및 기술 방향 결정', scores: { architect: 5, fullstack: 2, backend: 1, engineering_manager: 2 } },
+      { text: '제품 방향 기획 및 팀 조율 (PM)', scores: { pm: 5, engineering_manager: 2, developer_relations: 1 } },
       { text: '개발·배포·테스트 프로세스 자동화', scores: { devops: 5, devsecops: 3, qa: 2 } },
       { text: '주어진 기능을 코드로 정확하게 구현', scores: { frontend: 3, backend: 3 } },
     ],
@@ -77,43 +79,51 @@ const QUESTIONS: Question[] = [
     options: [
       { text: '블록체인, Web3, 스마트 컨트랙트', scores: { blockchain: 5 } },
       { text: '대규모 데이터 파이프라인 구축 (Big Data)', scores: { data_eng: 5, mlops: 2 } },
-      { text: 'AI 모델 운영·서빙·자동화 (MLOps)', scores: { mlops: 5, ai_engineer: 3 } },
+      { text: 'AI 모델 운영·서빙·자동화 (MLOps)', scores: { mlops: 5, ai_engineer: 3, machine_learning: 2 } },
       { text: '소프트웨어 품질 보증과 테스트 자동화', scores: { qa: 5, backend: 1 } },
+      { text: '데이터베이스 설계·최적화와 DBA 전문성 (SQL/PostgreSQL)', scores: { postgresql: 5, data_eng: 2, backend: 1 } },
     ],
   },
   {
     id: 6,
     text: '데이터와 분석에 대한 나의 관심은?',
     options: [
-      { text: '비즈니스 지표 분석과 인사이트 도출', scores: { data_analyst: 5, pm: 2 } },
-      { text: 'AI/ML 모델 연구 및 학습 실험', scores: { ai_engineer: 5, mlops: 2 } },
+      { text: '비즈니스 지표 분석과 인사이트 도출', scores: { data_analyst: 5, pm: 2, bi_analyst: 4 } },
+      { text: 'AI/ML 모델 연구 및 학습 실험', scores: { ai_engineer: 5, mlops: 2, machine_learning: 4, ai_data_scientist: 3 } },
       { text: '대규모 데이터 인프라·ETL 파이프라인 구축', scores: { data_eng: 5 } },
       { text: '딱히 없다, 로직과 개발 구현이 더 좋다', scores: { backend: 2, frontend: 2, fullstack: 1 } },
     ],
   },
 ]
 
-// 설문 결과 키 → 공식 로드맵 ID 매핑
-// 준비된 로드맵: frontend(2), backend(1) / 나머지는 준비 전까지 backend(1)로 임시 연결
-const SURVEY_KEY_TO_ROADMAP_ID: Record<string, number> = {
-  frontend: 2,
-  backend: 1,
-  devops: 1,
-  fullstack: 1,
-  ai_engineer: 1,
-  data_eng: 1,
-  data_analyst: 1,
-  android: 1,
-  ios: 1,
-  game: 1,
-  blockchain: 1,
-  architect: 1,
-  qa: 1,
-  security: 1,
-  devsecops: 1,
-  mlops: 1,
-  pm: 1,
-  technical_writer: 1,
+// 설문 결과 키 → 공식 로드맵 타이틀 매핑 (ID는 런타임에 hub catalog에서 조회)
+const SURVEY_KEY_TO_ROADMAP_TITLE: Record<string, string> = {
+  frontend: 'Frontend Entry Roadmap',
+  backend: 'Backend Master Roadmap',
+  fullstack: 'Full Stack',
+  devops: 'DevOps',
+  devsecops: 'DevSecOps',
+  data_analyst: 'Data Analyst',
+  ai_engineer: 'AI Engineer',
+  ai_data_scientist: 'AI and Data Scientist',
+  data_eng: 'Data Engineer',
+  android: 'Android',
+  machine_learning: 'Machine Learning',
+  postgresql: 'PostgreSQL',
+  ios: 'iOS',
+  blockchain: 'Blockchain',
+  qa: 'QA',
+  architect: 'Software Architect',
+  security: 'Cyber Security',
+  uiux: 'UX Design',
+  technical_writer: 'Technical Writer',
+  game: 'Game Developer',
+  server_side_game: 'Server Side Game Developer',
+  mlops: 'MLOps',
+  pm: 'Product Manager',
+  engineering_manager: 'Engineering Manager',
+  developer_relations: 'Developer Relations',
+  bi_analyst: 'BI Analyst',
 }
 
 const ROADMAPS: Record<string, RoadmapData> = {
@@ -135,6 +145,14 @@ const ROADMAPS: Record<string, RoadmapData> = {
   mlops: { title: 'MLOps', desc: 'ML 파이프라인 자동화, 모델 서빙, 모니터링을 담당합니다.', icon: 'fa-gears' },
   pm: { title: '프로덕트 매니저', desc: '제품의 비전을 수립하고 개발팀과 협업하여 프로젝트를 이끕니다.', icon: 'fa-clipboard-list' },
   technical_writer: { title: '테크니컬 라이터', desc: 'API 문서, 개발 가이드, 기술 블로그 등 기술 콘텐츠를 작성합니다.', icon: 'fa-pen-fancy' },
+  ai_data_scientist: { title: 'AI·데이터 사이언티스트', desc: '머신러닝 모델 연구와 데이터 분석을 결합하여 AI 서비스를 구현합니다.', icon: 'fa-atom' },
+  machine_learning: { title: '머신러닝 엔지니어', desc: '딥러닝 모델을 설계·학습하고 성능을 최적화합니다.', icon: 'fa-microchip' },
+  postgresql: { title: 'PostgreSQL 전문가', desc: '관계형 DB 설계, 쿼리 최적화, DBA 전문 업무를 담당합니다.', icon: 'fa-database' },
+  uiux: { title: 'UX 디자이너', desc: '사용자 리서치와 프로토타이핑으로 직관적인 서비스 경험을 설계합니다.', icon: 'fa-bezier-curve' },
+  server_side_game: { title: '서버 사이드 게임 개발자', desc: '게임 서버와 멀티플레이어 인프라를 구현하고 운영합니다.', icon: 'fa-dice-d20' },
+  engineering_manager: { title: '엔지니어링 매니저', desc: '개발팀을 이끌고 기술 로드맵과 구성원 성장을 관리합니다.', icon: 'fa-users' },
+  developer_relations: { title: '데브렐', desc: '개발자 커뮤니티를 운영하고 기술 전파와 생태계 성장을 지원합니다.', icon: 'fa-bullhorn' },
+  bi_analyst: { title: 'BI 분석가', desc: '비즈니스 데이터를 분석하여 대시보드와 인사이트 리포트를 제공합니다.', icon: 'fa-chart-pie' },
 }
 
 function initScores(): Record<string, number> {
@@ -148,6 +166,21 @@ function SurveyPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [scores, setScores] = useState<Record<string, number>>(initScores)
   const [results, setResults] = useState<[string, number][]>([])
+  const [roadmapTitleToId, setRoadmapTitleToId] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    roadmapApi.getHubCatalog().then((catalog) => {
+      const map: Record<string, number> = {}
+      for (const section of catalog.sections) {
+        for (const item of section.items) {
+          if (item.linkedRoadmapId != null && item.linkedRoadmapTitle) {
+            map[item.linkedRoadmapTitle] = item.linkedRoadmapId
+          }
+        }
+      }
+      setRoadmapTitleToId(map)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     document.title = 'DevPath - 나만의 로드맵 찾기'
@@ -243,9 +276,16 @@ function SurveyPage() {
     window.location.href = '/home?auth=login'
   }
 
+  function getRoadmapId(key: string): number | null {
+    const title = SURVEY_KEY_TO_ROADMAP_TITLE[key]
+    if (!title) return null
+    return roadmapTitleToId[title] ?? null
+  }
+
   const progress = Math.round((currentStep / QUESTIONS.length) * 100)
   const question = QUESTIONS[currentStep]
   const topResult = results[0] ? ROADMAPS[results[0][0]] : null
+  const topRoadmapId = results[0] ? getRoadmapId(results[0][0]) : null
 
   if (!session) return <LoginRequiredView />
 
@@ -363,7 +403,7 @@ function SurveyPage() {
               <p className="relative mb-6 leading-relaxed text-gray-600">{topResult.desc}</p>
               <div className="relative flex flex-col gap-3">
                 <a
-                    href={`/roadmap?original=${SURVEY_KEY_TO_ROADMAP_ID[results[0]?.[0]] ?? 1}`}
+                  href={topRoadmapId ? `/roadmap?original=${topRoadmapId}` : '/roadmap-hub'}
                   className="bg-brand block w-full rounded-lg py-3 font-bold text-white shadow-md transition hover:bg-green-600"
                 >
                   로드맵 보러 가기
@@ -383,10 +423,11 @@ function SurveyPage() {
               <div className="flex flex-wrap justify-center gap-4">
                 {results.slice(1, 4).filter(([, score]) => score > 0).map(([key]) => {
                   const data = ROADMAPS[key]
+                  const rid = getRoadmapId(key)
                   return data ? (
                     <a
                       key={key}
-                      href="#"
+                      href={rid ? `/roadmap?original=${rid}` : '/roadmap-hub'}
                       className="survey-result-card flex items-center gap-2 rounded border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
                     >
                       <i className={`fas ${data.icon} text-gray-400`} /> {data.title}

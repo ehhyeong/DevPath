@@ -48,9 +48,7 @@ public class GeminiJobAnalysisService {
       throw new RuntimeException("Gemini 응답이 없습니다.");
     }
 
-    List<GeminiJobAnalysisResponse.RecommendedPosting> recommendations = parseAndMap(raw, postings);
-
-    return new GeminiJobAnalysisResponse.Analysis(recommendations, true, null);
+    return parseResponse(raw, postings);
   }
 
   private JobActivityProfileResponse.Summary fetchProfile(Long userId) {
@@ -143,57 +141,88 @@ public class GeminiJobAnalysisService {
     sb.append("- 0~39: 기술 스택 불일치, 비추천\n");
 
     sb.append("\n## 응답 규칙\n");
-    sb.append("- 순수 JSON 배열만 반환하세요. 설명, 마크다운 코드블록 없이.\n");
-    sb.append("- 형식: [{\"index\": 0, \"matchScore\": 87, \"reason\": \"추천 이유\"}]\n");
+    sb.append("- 순수 JSON 객체만 반환하세요. 설명, 마크다운 코드블록 없이.\n");
+    sb.append("- 형식:\n");
+    sb.append("{\n");
+    sb.append("  \"matched\": [{\"index\": 0, \"matchScore\": 87, \"reason\": \"추천 이유\"}],\n");
+    sb.append("  \"stretch\": [{\"index\": 4, \"matchScore\": 62, \"reason\": \"보완 후 지원 가능\", \"missingSkills\": [\"Docker\", \"AWS\"]}]\n");
+    sb.append("}\n");
+    sb.append("- matched: 점수 높은 순 최대 7건 (matchScore 70 이상 권장)\n");
+    sb.append("- stretch: 점수 50~75 구간에서 몇 가지 스킬을 보완하면 지원 가능한 공고 최대 3건\n");
+    sb.append("- stretch.missingSkills: 공고 키워드 중 사용자가 보유하지 않은 핵심 기술 1~3개 (영문)\n");
     sb.append("- matchScore: 위 채점 기준 3개 항목 합산 0~100 정수\n");
-    sb.append("- reason: 점수의 주요 근거를 30자 이내 한국어로 (예: \"Spring·JPA 일치, 프로젝트 경험 풍부\")\n");
-    sb.append("- 모든 공고(").append(postings.size()).append("건)에 대해 응답 필수\n");
+    sb.append("- reason: 30자 이내 한국어 (예: \"Spring·JPA 일치, 프로젝트 경험 풍부\")\n");
+    sb.append("- matched와 stretch에는 서로 다른 공고 index를 사용할 것\n");
 
     return sb.toString();
   }
 
-  private List<GeminiJobAnalysisResponse.RecommendedPosting> parseAndMap(
+  private GeminiJobAnalysisResponse.Analysis parseResponse(
       String raw, List<JobkoreaJobResponse.Posting> postings) {
 
-    String cleaned = stripToJsonArray(raw);
+    String cleaned = stripToJson(raw);
 
     try {
-      JsonNode array = MAPPER.readTree(cleaned);
-      if (!array.isArray()) {
-        throw new RuntimeException("Gemini 응답이 JSON 배열 형식이 아닙니다.");
-      }
+      JsonNode root = MAPPER.readTree(cleaned);
 
-      List<GeminiJobAnalysisResponse.RecommendedPosting> result = new ArrayList<>();
-      for (JsonNode node : array) {
-        int index = node.path("index").asInt(-1);
-        if (index < 0 || index >= postings.size()) {
-          continue;
-        }
-        int matchScore = Math.max(0, Math.min(100, node.path("matchScore").asInt(50)));
-        String reason = node.path("reason").asText("");
+      List<GeminiJobAnalysisResponse.RecommendedPosting> matched =
+          parsePostingList(root.path("matched"), postings, false);
+      List<GeminiJobAnalysisResponse.RecommendedPosting> stretch =
+          parsePostingList(root.path("stretch"), postings, true);
 
-        JobkoreaJobResponse.Posting p = postings.get(index);
-        result.add(
-            new GeminiJobAnalysisResponse.RecommendedPosting(
-                p.externalId(),
-                p.companyName(),
-                p.title(),
-                p.keywords(),
-                p.areaCode(),
-                p.careerCode(),
-                p.deadline(),
-                p.postedDate(),
-                p.jobkoreaUrl(),
-                resolveScore(matchScore, p),
-                reason.isBlank() ? null : reason));
-      }
+      matched.sort((a, b) -> Integer.compare(b.aiMatchScore(), a.aiMatchScore()));
 
-      result.sort((a, b) -> Integer.compare(b.aiMatchScore(), a.aiMatchScore()));
-      return result;
+      return new GeminiJobAnalysisResponse.Analysis(matched, stretch, true, null);
 
     } catch (Exception e) {
       throw new RuntimeException("Gemini 응답 파싱 실패: " + e.getMessage(), e);
     }
+  }
+
+  private List<GeminiJobAnalysisResponse.RecommendedPosting> parsePostingList(
+      JsonNode array, List<JobkoreaJobResponse.Posting> postings, boolean includesMissingSkills) {
+
+    List<GeminiJobAnalysisResponse.RecommendedPosting> result = new ArrayList<>();
+    if (array == null || array.isMissingNode() || !array.isArray()) {
+      return result;
+    }
+
+    for (JsonNode node : array) {
+      int index = node.path("index").asInt(-1);
+      if (index < 0 || index >= postings.size()) {
+        continue;
+      }
+      int matchScore = Math.max(0, Math.min(100, node.path("matchScore").asInt(50)));
+      String reason = node.path("reason").asText("");
+
+      List<String> missingSkills = new ArrayList<>();
+      if (includesMissingSkills && node.has("missingSkills") && node.path("missingSkills").isArray()) {
+        for (JsonNode skill : node.path("missingSkills")) {
+          String s = skill.asText("").trim();
+          if (!s.isBlank()) {
+            missingSkills.add(s);
+          }
+        }
+      }
+
+      JobkoreaJobResponse.Posting p = postings.get(index);
+      result.add(
+          new GeminiJobAnalysisResponse.RecommendedPosting(
+              p.externalId(),
+              p.companyName(),
+              p.title(),
+              p.keywords(),
+              p.areaCode(),
+              p.careerCode(),
+              p.deadline(),
+              p.postedDate(),
+              p.jobkoreaUrl(),
+              resolveScore(matchScore, p),
+              reason.isBlank() ? null : reason,
+              missingSkills));
+    }
+
+    return result;
   }
 
   /** 스코어링 교체 포인트. 현재는 Gemini 점수를 그대로 사용한다. 추후 정밀 알고리즘(스킬 매칭 가중치 등)으로 교체 시 이 메서드만 수정한다. */
@@ -202,7 +231,7 @@ public class GeminiJobAnalysisService {
     return geminiScore;
   }
 
-  private String stripToJsonArray(String raw) {
+  private String stripToJson(String raw) {
     String cleaned = raw.trim();
 
     // 마크다운 코드블록 제거 (```json ... ``` 또는 ``` ... ```)
@@ -214,15 +243,23 @@ public class GeminiJobAnalysisService {
       }
     }
 
-    // JSON 배열 범위 추출
-    int start = cleaned.indexOf('[');
-    int end = cleaned.lastIndexOf(']');
-    if (start < 0 || end <= start) {
-      throw new RuntimeException(
-          "Gemini 응답에서 JSON 배열을 찾을 수 없습니다. raw=" + raw.substring(0, Math.min(200, raw.length())));
+    // JSON 객체 범위 추출
+    int start = cleaned.indexOf('{');
+    int end = cleaned.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      return cleaned.substring(start, end + 1);
     }
 
-    return cleaned.substring(start, end + 1);
+    // fallback: 배열 형식으로도 시도 (이전 응답과의 하위 호환)
+    int arrStart = cleaned.indexOf('[');
+    int arrEnd = cleaned.lastIndexOf(']');
+    if (arrStart >= 0 && arrEnd > arrStart) {
+      // 배열을 matched 키로 감싸서 객체로 변환
+      return "{\"matched\":" + cleaned.substring(arrStart, arrEnd + 1) + ",\"stretch\":[]}";
+    }
+
+    throw new RuntimeException(
+        "Gemini 응답에서 JSON을 찾을 수 없습니다. raw=" + raw.substring(0, Math.min(200, raw.length())));
   }
 
   @SuppressWarnings("unused")

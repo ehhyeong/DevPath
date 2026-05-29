@@ -10,7 +10,9 @@ public class GeminiJobAnalysisResponse {
 
   @Schema(name = "GeminiJobAnalysisResponse", description = "Gemini AI 기반 채용공고 분석 결과")
   public record Analysis(
-      @Schema(description = "AI가 분석한 추천 공고 목록") List<RecommendedPosting> recommendations,
+      @Schema(description = "AI가 분석한 추천 공고 목록 (최대 7건)") List<RecommendedPosting> recommendations,
+      @Schema(description = "AI가 선별한 성장 공고 목록 (최대 3건, missingSkills 포함)")
+          List<RecommendedPosting> stretchRecommendations,
       @Schema(description = "Gemini AI 분석 성공 여부", example = "true") boolean aiAnalyzed,
       @Schema(description = "분석 비고 (실패 사유 등)") String analysisNote) {}
 
@@ -27,5 +29,7 @@ public class GeminiJobAnalysisResponse {
       @Schema(description = "잡코리아 상세 공고 URL") String jobkoreaUrl,
       @Schema(description = "AI 매칭 점수 (0~100)", example = "87") int aiMatchScore,
       @Schema(description = "AI 추천 이유", example = "Java·Spring Boot 역량이 공고 요건과 일치합니다.")
-          String aiReason) {}
+          String aiReason,
+      @Schema(description = "부족한 스킬 목록 (성장 공고 전용, 1~3개)", example = "[\"Docker\",\"AWS\"]")
+          List<String> missingSkills) {}
 }
