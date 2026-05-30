@@ -44,6 +44,9 @@ public class QuestionSummaryResponse {
   @Schema(description = "질문 제목", example = "Spring Security에서 403이 발생합니다.")
   private String title;
 
+  @Schema(description = "질문 본문", example = "OncePerRequestFilter를 사용했는데도 로그가 두 번 찍힙니다.")
+  private String content;
+
   @Schema(description = "채택된 답변 ID", example = "25", nullable = true)
   private Long adoptedAnswerId;
 
@@ -80,6 +83,7 @@ public class QuestionSummaryResponse {
         .templateType(question.getTemplateType().name())
         .difficulty(question.getDifficulty().name())
         .title(question.getTitle())
+        .content(question.getContent())
         .adoptedAnswerId(question.getAdoptedAnswerId())
         .lectureTimestamp(question.getLectureTimestamp())
         .qnaStatus(question.getQnaStatus().name())

@@ -97,6 +97,25 @@ public class WorkspaceQuestionController {
                 requireUserId(authenticatedUserId), questionId, request)));
   }
 
+  @PatchMapping("/workspace-questions/{questionId}/answers/{answerId}")
+  @Operation(summary = "워크스페이스 질문 답변 수정", description = "워크스페이스 전용 질문에 등록된 답변 내용을 수정합니다.")
+  public ResponseEntity<ApiResponse<AnswerResponse>> updateAnswer(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
+      @Parameter(description = "워크스페이스 질문 ID", example = "1")
+          @Positive(message = "questionId는 양수여야 합니다.")
+          @PathVariable
+          Long questionId,
+      @Parameter(description = "답변 ID", example = "10")
+          @Positive(message = "answerId는 양수여야 합니다.")
+          @PathVariable
+          Long answerId,
+      @Valid @RequestBody AnswerCreateRequest request) {
+    return ResponseEntity.ok(
+        ApiResponse.ok(
+            workspaceQuestionService.updateAnswer(
+                requireUserId(authenticatedUserId), questionId, answerId, request)));
+  }
+
   @PatchMapping("/workspace-questions/{questionId}/status")
   @Operation(summary = "워크스페이스 질문 상태 변경", description = "워크스페이스 질문 상태를 답변 대기 또는 답변 완료로 변경합니다.")
   public ResponseEntity<ApiResponse<QuestionDetailResponse>> updateStatus(

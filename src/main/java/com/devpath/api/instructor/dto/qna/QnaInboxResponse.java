@@ -13,6 +13,7 @@ public record QnaInboxResponse(
     String lessonTitle,
     String learnerName,
     String learnerAvatarSeed,
+    String learnerProfileImage,
     String title,
     String content,
     QnaStatus status,
@@ -38,6 +39,16 @@ public record QnaInboxResponse(
 
   public static QnaInboxResponse from(
       Question question, String courseTitle, Long lessonId, String lessonTitle, QnaStatus status) {
+    return from(question, courseTitle, lessonId, lessonTitle, status, null);
+  }
+
+  public static QnaInboxResponse from(
+      Question question,
+      String courseTitle,
+      Long lessonId,
+      String lessonTitle,
+      QnaStatus status,
+      String learnerProfileImage) {
     Long learnerId = question.getUser() == null ? null : question.getUser().getId();
     String learnerName = question.getUser() == null ? null : question.getUser().getName();
     return new QnaInboxResponse(
@@ -49,6 +60,7 @@ public record QnaInboxResponse(
         lessonTitle,
         learnerName,
         learnerName,
+        learnerProfileImage,
         question.getTitle(),
         question.getContent(),
         status,

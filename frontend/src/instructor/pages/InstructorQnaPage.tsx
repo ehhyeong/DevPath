@@ -783,10 +783,12 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(buildLearnerAvatarSeed(question))}`}
+                      <UserAvatar
+                        name={question.learnerName ?? buildLearnerAvatarSeed(question)}
+                        imageUrl={question.learnerProfileImage}
                         alt={question.learnerName ?? '수강생'}
-                        className="h-7 w-7 rounded-full border border-gray-200 bg-white"
+                        className="h-7 w-7 bg-white"
+                        iconClassName="text-[10px]"
                       />
                       <span className="text-xs font-bold text-gray-900">{question.learnerName ?? '수강생'}</span>
                     </div>
@@ -863,10 +865,12 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                   <div className="instructor-qna-question-card rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm lg:p-8">
                     <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-5">
                       <div className="flex items-center gap-4">
-                        <img
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(buildLearnerAvatarSeed(current))}`}
+                        <UserAvatar
+                          name={current.learnerName ?? buildLearnerAvatarSeed(current)}
+                          imageUrl={current.learnerProfileImage}
                           alt={current.learnerName ?? '수강생'}
-                          className="h-11 w-11 rounded-full border border-gray-200 bg-gray-50 shadow-sm"
+                          className="h-11 w-11 bg-gray-50 shadow-sm"
+                          iconClassName="text-base"
                         />
                         <div>
                           <p className="flex items-center gap-2 text-sm font-bold text-gray-900">
