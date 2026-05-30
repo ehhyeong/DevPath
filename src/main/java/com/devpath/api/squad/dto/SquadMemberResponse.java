@@ -25,6 +25,9 @@ public class SquadMemberResponse {
   @Schema(description = "사용자 이름", example = "김태형")
   private String userName;
 
+  @Schema(description = "사용자 프로필 이미지")
+  private String profileImage;
+
   @Schema(description = "스쿼드 역할", example = "MEMBER")
   private String role;
 
@@ -40,6 +43,7 @@ public class SquadMemberResponse {
       Long squadId,
       Long userId,
       String userName,
+      String profileImage,
       String role,
       LocalDateTime joinedAt,
       boolean deleted) {
@@ -47,17 +51,23 @@ public class SquadMemberResponse {
     this.squadId = squadId;
     this.userId = userId;
     this.userName = userName;
+    this.profileImage = profileImage;
     this.role = role;
     this.joinedAt = joinedAt;
     this.deleted = deleted;
   }
 
   public static SquadMemberResponse from(SquadMember member) {
+    return from(member, null);
+  }
+
+  public static SquadMemberResponse from(SquadMember member, String profileImage) {
     return SquadMemberResponse.builder()
         .memberId(member.getId())
         .squadId(member.getSquad().getId())
         .userId(member.getUser().getId())
         .userName(member.getUser().getName())
+        .profileImage(profileImage)
         .role(member.getRole().name())
         .joinedAt(member.getJoinedAt())
         .deleted(Boolean.TRUE.equals(member.getIsDeleted()))

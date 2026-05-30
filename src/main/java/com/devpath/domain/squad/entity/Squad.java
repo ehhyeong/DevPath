@@ -43,6 +43,9 @@ public class Squad {
   @Column(name = "roles", length = 500)
   private String roles;
 
+  @Column(name = "workspace_id")
+  private Long workspaceId;
+
   @Column(name = "view_count")
   private Long viewCount = 0L;
 
@@ -110,6 +113,10 @@ public class Squad {
   public void archive() {
     this.isArchived = true;
     this.archivedAt = LocalDateTime.now();
+  }
+
+  public void linkWorkspace(Long workspaceId) {
+    this.workspaceId = workspaceId;
   }
 
   public void restore() {

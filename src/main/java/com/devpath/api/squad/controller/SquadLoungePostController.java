@@ -4,6 +4,7 @@ import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 
 import com.devpath.api.squad.dto.SquadLoungePostRequest;
 import com.devpath.api.squad.dto.SquadLoungePostResponse;
+import com.devpath.api.squad.dto.SquadWorkspaceLinkRequest;
 import com.devpath.api.squad.service.SquadLoungePostService;
 import com.devpath.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -55,5 +56,14 @@ public class SquadLoungePostController {
   public ApiResponse<SquadLoungePostResponse> closePost(
       @PathVariable Long squadId, @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(squadLoungePostService.closePost(squadId, requireUserId(userId)));
+  }
+
+  @PatchMapping("/{squadId}/workspace")
+  public ApiResponse<SquadLoungePostResponse> linkWorkspace(
+      @PathVariable Long squadId,
+      @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody SquadWorkspaceLinkRequest request) {
+    return ApiResponse.ok(
+        squadLoungePostService.linkWorkspace(squadId, requireUserId(userId), request));
   }
 }

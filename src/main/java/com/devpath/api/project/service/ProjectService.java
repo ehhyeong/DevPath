@@ -68,9 +68,9 @@ public class ProjectService {
             .roleType(ProjectRoleType.LEADER)
             .build();
     projectMemberRepository.save(leaderMember);
-    createWorkspaceForProject(savedProject, creatorId, WorkspaceType.SQUAD);
+    Workspace workspace = createWorkspaceForProject(savedProject, creatorId, WorkspaceType.SQUAD);
 
-    return ProjectResponse.from(savedProject);
+    return ProjectResponse.from(savedProject, List.of(leaderMember), workspace.getId());
   }
 
   // POST /api/projects/solo (솔로 프로젝트 생성)
@@ -94,10 +94,10 @@ public class ProjectService {
             .roleType(ProjectRoleType.LEADER)
             .build();
     projectMemberRepository.save(leaderMember);
-    createWorkspaceForProject(savedProject, creatorId, WorkspaceType.SOLO);
+    Workspace workspace = createWorkspaceForProject(savedProject, creatorId, WorkspaceType.SOLO);
 
     List<ProjectMember> members = projectMemberRepository.findAllByProjectId(savedProject.getId());
-    return ProjectResponse.from(savedProject, members);
+    return ProjectResponse.from(savedProject, members, workspace.getId());
   }
 
   // GET /api/projects (목록 - 기존)
@@ -221,7 +221,7 @@ public class ProjectService {
     }
   }
 
-  private void createWorkspaceForProject(
+  private Workspace createWorkspaceForProject(
       Project project, Long creatorId, WorkspaceType workspaceType) {
     Workspace workspace =
         Workspace.builder()
@@ -234,6 +234,7 @@ public class ProjectService {
     Workspace savedWorkspace = workspaceRepository.save(workspace);
     workspaceMemberRepository.save(
         WorkspaceMember.builder().workspaceId(savedWorkspace.getId()).learnerId(creatorId).build());
+    return savedWorkspace;
   }
 
   private ProjectRecommendationResponse toRecommendation(Project project, List<String> skillTags) {
