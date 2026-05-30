@@ -136,6 +136,26 @@ public class WorkspaceDocController {
         workspaceDocService.getDoc(workspaceId, requireUserId(userId), WorkspaceDocType.INFRA));
   }
 
+  @PutMapping("/workspaces/{workspaceId}/meeting-settings")
+  @Operation(summary = "밋업 설정 저장", description = "워크스페이스 라이브 밋업 설정을 저장합니다.")
+  public ApiResponse<WorkspaceDocResponse> upsertMeetingSettings(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @RequestBody UpdateWorkspaceDocRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.upsertMeetingSettings(workspaceId, requireUserId(userId), request));
+  }
+
+  @GetMapping("/workspaces/{workspaceId}/meeting-settings")
+  @Operation(summary = "밋업 설정 조회", description = "워크스페이스 라이브 밋업 설정을 조회합니다.")
+  public ApiResponse<WorkspaceDocResponse> getMeetingSettings(
+      @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.ok(
+        workspaceDocService.getDoc(
+            workspaceId, requireUserId(userId), WorkspaceDocType.MEETING_SETTINGS));
+  }
+
   @PostMapping("/workspaces/{workspaceId}/meeting-notes")
   @Operation(summary = "회의록 생성", description = "워크스페이스에 회의록을 생성합니다.")
   @ApiResponses({

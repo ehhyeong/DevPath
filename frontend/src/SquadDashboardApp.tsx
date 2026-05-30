@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import SquadWorkspaceAside from './components/SquadWorkspaceAside'
@@ -377,6 +377,88 @@ export default function SquadDashboardApp() {
   const pipChatScrollRef = useRef<HTMLDivElement | null>(null)
   const pipDirectScrollRef = useRef<HTMLDivElement | null>(null)
   const chatPipWindowRef = useRef<Window | null>(null)
+  const dashboardRefreshRef = useRef(false)
+
+  const loadDashboardData = useCallback(async (options?: { signal?: AbortSignal; blocking?: boolean; silent?: boolean }) => {
+    if (!workspaceId) {
+      return
+    }
+
+    if (options?.blocking) {
+      setLoading(true)
+    }
+    if (!options?.silent) {
+      setError(null)
+    }
+
+    try {
+      const [dashboardData, taskData, eventData, noticeData, activityData, erdChangeData, voiceChannelData, messageData] =
+        await Promise.all([
+          projectApiRequest<WorkspaceDashboard>(
+            `/api/workspaces/${workspaceId}/dashboard`,
+            { signal: options?.signal },
+            'required',
+          ),
+          projectApiRequest<WorkspaceTask[]>(
+            `/api/workspaces/${workspaceId}/tasks`,
+            { signal: options?.signal },
+            'required',
+          ),
+          projectApiRequest<CalendarEvent[]>(
+            `/api/workspaces/${workspaceId}/calendar-events`,
+            { signal: options?.signal },
+            'required',
+          ),
+          projectApiRequest<Notice[]>(
+            `/api/workspaces/${workspaceId}/notices`,
+            { signal: options?.signal },
+            'required',
+          ).catch(() => []),
+          projectApiRequest<ActivityLog[]>(
+            `/api/workspaces/${workspaceId}/activities/recent`,
+            { signal: options?.signal },
+            'required',
+          ).catch(() => []),
+          projectApiRequest<WorkspaceErdChange[]>(
+            `/api/workspaces/${workspaceId}/erd/recent-changes`,
+            { signal: options?.signal },
+            'required',
+          ).catch(() => []),
+          projectApiRequest<VoiceChannel[]>(
+            `/api/workspaces/${workspaceId}/voice-channels`,
+            { signal: options?.signal },
+            'required',
+          ).catch(() => []),
+          projectApiRequest<TeamMessage[]>(
+            `/api/lounge/chats/messages?loungeId=${workspaceId}`,
+            { signal: options?.signal },
+            'required',
+          ).catch(() => []),
+        ])
+
+      if (options?.signal?.aborted) {
+        return
+      }
+
+      setDashboard(dashboardData)
+      setTasks(taskData ?? [])
+      setEvents((eventData ?? []).sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()))
+      setNotices(noticeData ?? [])
+      setActivities(activityData ?? [])
+      setErdChanges(erdChangeData ?? [])
+      setVoiceChannels(voiceChannelData ?? [])
+      setMessages(messageData ?? [])
+    } catch (loadError) {
+      if (!options?.signal?.aborted && !options?.silent) {
+        const message = loadError instanceof Error ? loadError.message : '스쿼드 대시보드를 불러오지 못했습니다.'
+        setError(message)
+      }
+    } finally {
+      if (!options?.signal?.aborted && options?.blocking) {
+        setLoading(false)
+      }
+    }
+  }, [workspaceId])
 
   useEffect(() => {
     document.title = 'DevPath - 스쿼드 대시보드'
@@ -428,84 +510,50 @@ export default function SquadDashboardApp() {
     }
 
     const controller = new AbortController()
+    void loadDashboardData({ signal: controller.signal, blocking: true })
 
-    async function loadDashboard() {
-      setLoading(true)
-      setError(null)
+    return () => controller.abort()
+  }, [loadDashboardData, workspaceId])
 
+  useEffect(() => {
+    if (!workspaceId || !session?.accessToken || loading) {
+      return undefined
+    }
+
+    async function refreshDashboardData() {
+      if (document.hidden || dashboardRefreshRef.current) {
+        return
+      }
+
+      dashboardRefreshRef.current = true
       try {
-        const [dashboardData, taskData, eventData, noticeData, activityData, erdChangeData, voiceChannelData, messageData] =
-          await Promise.all([
-            projectApiRequest<WorkspaceDashboard>(
-              `/api/workspaces/${workspaceId}/dashboard`,
-              { signal: controller.signal },
-              'required',
-            ),
-            projectApiRequest<WorkspaceTask[]>(
-              `/api/workspaces/${workspaceId}/tasks`,
-              { signal: controller.signal },
-              'required',
-            ),
-            projectApiRequest<CalendarEvent[]>(
-              `/api/workspaces/${workspaceId}/calendar-events`,
-              { signal: controller.signal },
-              'required',
-            ),
-            projectApiRequest<Notice[]>(
-              `/api/workspaces/${workspaceId}/notices`,
-              { signal: controller.signal },
-              'required',
-            ).catch(() => []),
-            projectApiRequest<ActivityLog[]>(
-              `/api/workspaces/${workspaceId}/activities/recent`,
-              { signal: controller.signal },
-              'required',
-            ).catch(() => []),
-            projectApiRequest<WorkspaceErdChange[]>(
-              `/api/workspaces/${workspaceId}/erd/recent-changes`,
-              { signal: controller.signal },
-              'required',
-            ).catch(() => []),
-            projectApiRequest<VoiceChannel[]>(
-              `/api/workspaces/${workspaceId}/voice-channels`,
-              { signal: controller.signal },
-              'required',
-            ).catch(() => []),
-            projectApiRequest<TeamMessage[]>(
-              `/api/lounge/chats/messages?loungeId=${workspaceId}`,
-              { signal: controller.signal },
-              'required',
-            ).catch(() => []),
-          ])
-
-        if (controller.signal.aborted) {
-          return
-        }
-
-        setDashboard(dashboardData)
-        setTasks(taskData ?? [])
-        setEvents((eventData ?? []).sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()))
-        setNotices(noticeData ?? [])
-        setActivities(activityData ?? [])
-        setErdChanges(erdChangeData ?? [])
-        setVoiceChannels(voiceChannelData ?? [])
-        setMessages(messageData ?? [])
-      } catch (loadError) {
-        if (!controller.signal.aborted) {
-          const message = loadError instanceof Error ? loadError.message : '스쿼드 대시보드를 불러오지 못했습니다.'
-          setError(message)
-        }
+        await loadDashboardData({ silent: true })
       } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false)
-        }
+        dashboardRefreshRef.current = false
       }
     }
 
-    void loadDashboard()
+    const intervalId = window.setInterval(() => {
+      void refreshDashboardData()
+    }, 5000)
+    const refreshOnFocus = () => {
+      void refreshDashboardData()
+    }
+    const refreshOnVisible = () => {
+      if (!document.hidden) {
+        void refreshDashboardData()
+      }
+    }
 
-    return () => controller.abort()
-  }, [workspaceId])
+    window.addEventListener('focus', refreshOnFocus)
+    document.addEventListener('visibilitychange', refreshOnVisible)
+
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshOnFocus)
+      document.removeEventListener('visibilitychange', refreshOnVisible)
+    }
+  }, [loadDashboardData, loading, session?.accessToken, workspaceId])
 
   useEffect(() => {
     if (!workspaceId || !session?.accessToken) {

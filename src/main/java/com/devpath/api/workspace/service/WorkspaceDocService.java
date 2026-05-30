@@ -76,6 +76,34 @@ public class WorkspaceDocService {
   }
 
   @Transactional
+  public WorkspaceDocResponse upsertMeetingSettings(
+      Long workspaceId, Long userId, UpdateWorkspaceDocRequest request) {
+    validateWorkspaceExists(workspaceId);
+    validateMember(workspaceId, userId);
+
+    Optional<WorkspaceDoc> existing =
+        workspaceDocRepository.findByWorkspaceIdAndDocType(
+            workspaceId, WorkspaceDocType.MEETING_SETTINGS);
+
+    WorkspaceDoc savedDoc;
+    if (existing.isPresent()) {
+      savedDoc = existing.get();
+      savedDoc.update(request.getContent(), userId);
+    } else {
+      WorkspaceDoc doc =
+          WorkspaceDoc.builder()
+              .workspaceId(workspaceId)
+              .docType(WorkspaceDocType.MEETING_SETTINGS)
+              .content(request.getContent())
+              .updatedById(userId)
+              .build();
+      savedDoc = workspaceDocRepository.save(doc);
+    }
+
+    return WorkspaceDocResponse.from(savedDoc);
+  }
+
+  @Transactional
   public MeetingNoteResponse createMeetingNote(
       Long workspaceId, Long userId, CreateMeetingNoteRequest request) {
     validateWorkspaceExists(workspaceId);
@@ -172,6 +200,7 @@ public class WorkspaceDocService {
       case API_SPEC -> "API 명세서";
       case ERD -> "ERD";
       case INFRA -> "인프라 구조도";
+      case MEETING_SETTINGS -> "밋업 설정";
     };
   }
 }
