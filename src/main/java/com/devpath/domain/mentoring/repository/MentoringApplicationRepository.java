@@ -1,6 +1,8 @@
 package com.devpath.domain.mentoring.repository;
 
 import com.devpath.domain.mentoring.entity.MentoringApplication;
+import com.devpath.domain.mentoring.entity.MentoringApplicationStatus;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -21,7 +23,17 @@ public interface MentoringApplicationRepository extends JpaRepository<MentoringA
   List<MentoringApplication> findAllByPost_Mentor_IdAndIsDeletedFalseOrderByCreatedAtDesc(
       Long mentorId);
 
+  @EntityGraph(attributePaths = {"post", "post.mentor", "applicant"})
+  List<MentoringApplication>
+      findAllByPost_Mentor_IdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+          Long mentorId, MentoringApplicationStatus status);
+
   // 신청 상세와 상태 조회에서 Soft Delete 된 신청은 제외한다.
   @EntityGraph(attributePaths = {"post", "post.mentor", "applicant"})
   Optional<MentoringApplication> findByIdAndIsDeletedFalse(Long id);
+
+  @EntityGraph(attributePaths = {"post", "post.mentor", "applicant"})
+  List<MentoringApplication>
+      findAllByPost_Mentor_IdAndApplicant_IdInAndStatusAndIsDeletedFalseOrderByProcessedAtDesc(
+          Long mentorId, Collection<Long> applicantIds, MentoringApplicationStatus status);
 }

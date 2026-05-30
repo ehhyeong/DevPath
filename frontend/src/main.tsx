@@ -108,9 +108,41 @@ if (pathname === '/admin-dashboard') {
                   : pathname === '/instructor-edit-profile'
                     ? suspense(<InstructorEditProfileApp />)
                     : pathname === '/instructor-ws-dashboard'
-                      ? suspense(<InstructorWsDashboardApp />)
+                      ? suspense(<InstructorWsDashboardApp page="dashboard" />)
+                    : pathname === '/instructor-ws-assignments'
+                      ? suspense(<InstructorWsDashboardApp page="assignments" />)
+                    : pathname === '/instructor-ws-students'
+                      ? suspense(<InstructorWsDashboardApp page="students" />)
+                    : pathname === '/instructor-ws-qna'
+                      ? suspense(<InstructorWsDashboardApp page="qna" />)
+                    : pathname === '/instructor-ws-schedule'
+                      ? suspense(<InstructorWsDashboardApp page="schedule" />)
+                    : pathname === '/instructor-ws-files'
+                      ? suspense(<InstructorWsDashboardApp page="files" />)
+                    : pathname === '/instructor-ws-meeting'
+                      ? suspense(<InstructorWsDashboardApp page="meeting" />)
+                    : pathname === '/instructor-ws-live-meeting'
+                      ? suspense(<InstructorWsDashboardApp page="live-meeting" />)
                     : pathname === '/instructor-team-ws-dashboard'
-                      ? suspense(<InstructorTeamWsDashboardApp />)
+                      ? suspense(<InstructorTeamWsDashboardApp page="dashboard" />)
+                    : pathname === '/instructor-team-ws-milestone'
+                      ? suspense(<InstructorTeamWsDashboardApp page="milestone" />)
+                    : pathname === '/instructor-team-ws-kanban'
+                      ? suspense(<InstructorTeamWsDashboardApp page="kanban" />)
+                    : pathname === '/instructor-team-ws-architecture'
+                      ? suspense(<InstructorTeamWsDashboardApp page="architecture" />)
+                    : pathname === '/instructor-team-ws-qna'
+                      ? suspense(<InstructorTeamWsDashboardApp page="qna" />)
+                    : pathname === '/instructor-team-ws-schedule'
+                      ? suspense(<InstructorTeamWsDashboardApp page="schedule" />)
+                    : pathname === '/instructor-team-ws-files'
+                      ? suspense(<InstructorTeamWsDashboardApp page="files" />)
+                    : pathname === '/instructor-team-ws-meeting'
+                      ? suspense(<InstructorTeamWsDashboardApp page="meeting" />)
+                    : pathname === '/instructor-team-live-meeting'
+                      ? suspense(<InstructorTeamWsDashboardApp page="live-meeting" />)
+                    : pathname === '/instructor-team-voice-channel'
+                      ? suspense(<InstructorTeamWsDashboardApp page="voice-channel" />)
                     : instructorPageRoutes.has(pathname)
                       ? suspense(<InstructorApp />)
                       : pathname === '/course-editor'

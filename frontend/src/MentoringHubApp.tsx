@@ -411,6 +411,7 @@ export default function MentoringHubApp() {
           method: 'POST',
           body: JSON.stringify({
             message: extra.length ? `${message}\n\n${extra.join('\n')}` : message,
+            desiredPosition: applyProject.mType === 'team' ? applyRole : null,
           }),
         },
         'required',
@@ -448,7 +449,7 @@ export default function MentoringHubApp() {
         />
 
         <main className="flex-1 overflow-y-auto bg-[#F8F9FA] relative" id="mainContainer">
-          <div className="max-w-7xl mx-auto px-6 py-10">
+          <div className="mentoring-hub-main-content max-w-7xl mx-auto px-6 py-10">
             <div className="flex flex-col md:flex-row md:justify-between items-start md:items-end mb-8 gap-4">
               <div>
                 <span className="text-brand font-bold text-xs bg-green-50 px-3 py-1 rounded-full mb-3 inline-block border border-green-100">

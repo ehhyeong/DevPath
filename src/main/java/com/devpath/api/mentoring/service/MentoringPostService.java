@@ -36,8 +36,14 @@ public class MentoringPostService {
             .title(request.title())
             .content(request.content())
             .requiredStacks(request.requiredStacks())
+            .category(request.category())
+            .mentoringType(request.mentoringType())
+            .durationWeeks(request.durationWeeks())
+            .curriculum(request.curriculum())
+            .deadlineAt(request.deadlineAt())
             .maxParticipants(request.maxParticipants())
             .build();
+    applyStatus(post, request.status());
 
     return MentoringPostResponse.Detail.from(mentoringPostRepository.save(post));
   }
@@ -67,6 +73,14 @@ public class MentoringPostService {
     // setter 대신 Entity의 의미 있는 비즈니스 메서드로 상태를 변경한다.
     post.update(
         request.title(), request.content(), request.requiredStacks(), request.maxParticipants());
+    post.updateHubFields(
+        request.category(),
+        request.mentoringType(),
+        request.durationWeeks(),
+        request.curriculum(),
+        request.deadlineAt(),
+        null);
+    applyStatus(post, request.status());
 
     return MentoringPostResponse.Detail.from(post);
   }
@@ -91,5 +105,14 @@ public class MentoringPostService {
     if (!post.getMentor().getId().equals(mentorId)) {
       throw new CustomException(ErrorCode.MENTORING_POST_FORBIDDEN);
     }
+  }
+
+  private void applyStatus(MentoringPost post, MentoringPostStatus status) {
+    if (status == null || status == MentoringPostStatus.OPEN) {
+      post.reopen();
+      return;
+    }
+
+    post.close();
   }
 }

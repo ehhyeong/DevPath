@@ -55,6 +55,7 @@ public class MentoringApplicationService {
             .post(post)
             .applicant(applicant)
             .message(request.message())
+            .desiredPosition(request.desiredPosition())
             .build();
 
     return MentoringApplicationResponse.Detail.from(

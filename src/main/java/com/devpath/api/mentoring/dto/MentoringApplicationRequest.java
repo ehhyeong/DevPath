@@ -16,7 +16,11 @@ public class MentoringApplicationRequest {
       @Schema(description = "신청 메시지", example = "Spring Boot 포트폴리오 리뷰를 받고 싶습니다.")
           @NotBlank(message = "신청 메시지는 필수입니다.")
           @Size(max = 2000, message = "신청 메시지는 2000자 이하여야 합니다.")
-          String message) {}
+          String message,
+
+      @Schema(description = "팀 프로젝트형 신청 시 희망 직군", example = "Frontend 개발자")
+          @Size(max = 80, message = "희망 직군은 80자 이하여야 합니다.")
+          String desiredPosition) {}
 
   @Schema(name = "MentoringApplicationApproveRequest", description = "멘토링 신청 승인 요청")
   public record Approve(@Schema(hidden = true) Long mentorId) {}
