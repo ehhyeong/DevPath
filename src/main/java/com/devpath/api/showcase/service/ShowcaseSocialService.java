@@ -8,7 +8,11 @@ import com.devpath.domain.showcase.entity.ShowcaseComment;
 import com.devpath.domain.showcase.entity.ShowcaseLike;
 import com.devpath.domain.showcase.repository.ShowcaseCommentRepository;
 import com.devpath.domain.showcase.repository.ShowcaseLikeRepository;
+import com.devpath.domain.user.entity.UserProfile;
+import com.devpath.domain.user.repository.UserProfileRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +25,7 @@ public class ShowcaseSocialService {
   private final ShowcaseLikeRepository showcaseLikeRepository;
   private final ShowcaseCommentRepository showcaseCommentRepository;
   private final ShowcaseService showcaseService;
+  private final UserProfileRepository userProfileRepository;
 
   @Transactional
   public void addLike(Long showcaseId, Long userId) {
@@ -56,15 +61,20 @@ public class ShowcaseSocialService {
             .userId(userId)
             .content(request.getContent())
             .build();
-    return ShowcaseCommentResponse.from(showcaseCommentRepository.save(comment));
+    return ShowcaseCommentResponse.from(
+        showcaseCommentRepository.save(comment), profileImage(userId));
   }
 
   public List<ShowcaseCommentResponse> getComments(Long showcaseId) {
     showcaseService.getShowcaseEntity(showcaseId);
-    return showcaseCommentRepository
+    List<ShowcaseComment> comments =
+        showcaseCommentRepository
         .findAllByShowcaseIdAndIsDeletedFalseOrderByCreatedAtAsc(showcaseId)
         .stream()
-        .map(ShowcaseCommentResponse::from)
+        .toList();
+    Map<Long, String> profileImages = profileImages(comments);
+    return comments.stream()
+        .map(comment -> ShowcaseCommentResponse.from(comment, profileImages.get(comment.getUserId())))
         .toList();
   }
 
@@ -78,5 +88,25 @@ public class ShowcaseSocialService {
       throw new CustomException(ErrorCode.SHOWCASE_COMMENT_FORBIDDEN);
     }
     comment.delete();
+  }
+
+  private String profileImage(Long userId) {
+    return userProfileRepository
+        .findByUserId(userId)
+        .map(UserProfile::getDisplayProfileImage)
+        .orElse(null);
+  }
+
+  private Map<Long, String> profileImages(List<ShowcaseComment> comments) {
+    List<Long> userIds = comments.stream().map(ShowcaseComment::getUserId).distinct().toList();
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+    return userProfileRepository.findAllByUserIdIn(userIds).stream()
+        .collect(
+            Collectors.toMap(
+                profile -> profile.getUser().getId(),
+                UserProfile::getDisplayProfileImage,
+                (left, right) -> left));
   }
 }
