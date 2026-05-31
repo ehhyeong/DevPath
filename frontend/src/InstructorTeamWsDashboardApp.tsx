@@ -2,200 +2,47 @@ import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, t
 import AuthModal, { type AuthView } from './components/AuthModal'
 import { clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
-import { projectApiRequest } from './project-api'
+import {
+  createInstructorTeamCalendarEvent,
+  createInstructorTeamFileLink,
+  createInstructorTeamMeetingNote,
+  createInstructorTeamMilestone,
+  createInstructorTeamQuestionAnswer,
+  createInstructorTeamTask,
+  deleteInstructorTeamCalendarEvent,
+  deleteInstructorTeamMeetingNote,
+  deleteInstructorTeamTask,
+  deleteInstructorTeamWorkspaceFile,
+  fetchInstructorTeamQuestionDetail,
+  loadInstructorTeamWorkspaceData,
+  saveInstructorTeamWorkspaceDoc,
+  updateInstructorTeamMilestone,
+  updateInstructorTeamQuestionAnswer,
+  updateInstructorTeamTask,
+  updateInstructorTeamTaskAssignee,
+  updateInstructorTeamTaskStatus,
+  updateInstructorTeamWorkspaceFile,
+  uploadInstructorTeamWorkspaceFile,
+} from './instructor-team-workspace-api'
 
-export type InstructorTeamWsPage =
-  | 'dashboard'
-  | 'milestone'
-  | 'kanban'
-  | 'architecture'
-  | 'qna'
-  | 'schedule'
-  | 'files'
-  | 'meeting'
-  | 'live-meeting'
-  | 'voice-channel'
-
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
-type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-type WorkspaceFileType = 'FILE' | 'FOLDER' | 'LINK'
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-  role?: string | null
-  roleLabel?: string | null
-  position?: string | null
-  online?: boolean
-  lastActiveAt?: string | null
-  joinedAt?: string | null
-}
-
-type WorkspaceDashboard = {
-  workspaceId: number
-  name: string
-  description?: string | null
-  type: WorkspaceType
-  status: string
-  ownerId: number
-  ownerName?: string | null
-  ownerProfileImage?: string | null
-  members: WorkspaceMember[]
-  unresolvedTaskCount: number
-  activeMilestoneCount: number
-  createdAt?: string | null
-}
-
-type WorkspaceTask = {
-  taskId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  status: TaskStatus
-  priority?: TaskPriority | null
-  assigneeId?: number | null
-  assigneeName?: string | null
-  dueDate?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type CalendarEvent = {
-  eventId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  startAt: string
-  endAt?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type QuestionSummary = {
-  id: number
-  authorId: number
-  authorName?: string | null
-  title: string
-  content?: string | null
-  qnaStatus?: string | null
-  answerCount: number
-  viewCount?: number
-  createdAt?: string | null
-}
-
-type AnswerSummary = {
-  id: number
-  authorId: number
-  authorName?: string | null
-  content: string
-  adopted?: boolean
-  createdAt?: string | null
-}
-
-type QuestionDetail = QuestionSummary & {
-  updatedAt?: string | null
-  answers: AnswerSummary[]
-}
-
-type MilestoneItem = {
-  milestoneId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  startDate?: string | null
-  dueDate?: string | null
-  status: 'OPEN' | 'ACTIVE' | 'COMPLETED' | 'OVERDUE' | string
-  createdAt?: string | null
-}
-
-type WorkspaceFile = {
-  fileId: number
-  workspaceId: number
-  itemType: WorkspaceFileType
-  originalFileName?: string | null
-  displayName?: string | null
-  fileSize?: number | null
-  contentType?: string | null
-  objectKey?: string | null
-  uploadedById?: number | null
-  uploadedByName?: string | null
-  uploaderProfileImage?: string | null
-  createdAt?: string | null
-}
-
-type WorkspaceDoc = {
-  docId?: number | null
-  workspaceId: number
-  docType: string
-  content?: string | null
-  updatedAt?: string | null
-}
-
-type MeetingNote = {
-  noteId: number
-  workspaceId: number
-  title: string
-  content?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type ActivityLogItem = {
-  logId: number
-  actorName?: string | null
-  actionType?: string | null
-  activityType?: string | null
-  targetTitle?: string | null
-  description?: string | null
-  createdAt?: string | null
-}
-
-type TeamNotification = {
-  id: string
-  title: string
-  description: string
-  createdAt: string
-  href: string
-  icon: string
-  source: 'activity' | 'derived' | 'local'
-}
-
-type TeamNotificationDraft = Omit<TeamNotification, 'id' | 'createdAt' | 'source'> & {
-  createdAt?: string
-}
-
-type VoiceChannelSummary = {
-  channelId: number
-  workspaceId: number
-  name: string
-  description?: string | null
-  activeParticipantCount: number
-  currentSessionStartedAt?: string | null
-  createdAt?: string | null
-}
-
-type TeamData = {
-  dashboard: WorkspaceDashboard | null
-  tasks: WorkspaceTask[]
-  events: CalendarEvent[]
-  questions: QuestionSummary[]
-  milestones: MilestoneItem[]
-  files: WorkspaceFile[]
-  apiSpec: WorkspaceDoc | null
-  erdDoc: WorkspaceDoc | null
-  infraDoc: WorkspaceDoc | null
-  notes: MeetingNote[]
-  activityLogs: ActivityLogItem[]
-  voiceChannels: VoiceChannelSummary[]
-}
-
-type PageConfig = { path: string; label: string; title: string; icon: string; section: 'admin' | 'team' | 'resources' }
+import type {
+  ActivityLogItem,
+  CalendarEvent,
+  InstructorTeamWsPage,
+  MeetingNote,
+  MilestoneItem,
+  PageConfig,
+  QuestionDetail,
+  QuestionSummary,
+  TaskPriority,
+  TaskStatus,
+  TeamData,
+  TeamNotification,
+  TeamNotificationDraft,
+  WorkspaceFile,
+  WorkspaceMember,
+  WorkspaceTask,
+} from './instructor-team-workspace-types'
 
 const EMPTY_DATA: TeamData = {
   dashboard: null,
@@ -789,21 +636,15 @@ function MilestonePage({ data, workspaceId, reload }: { data: TeamData; workspac
     const startDate = selectedWeek.milestone?.startDate ?? defaultMilestoneDate(currentWeek, 0)
     const dueDate = selectedWeek.milestone?.dueDate ?? defaultMilestoneDate(currentWeek, 6)
     if (selectedWeek.milestone) {
-      await projectApiRequest(`/api/milestones/${selectedWeek.milestone.milestoneId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          title: form.title,
-          description,
-          startDate,
-          dueDate,
-          status: normalizeMilestoneStatus(selectedWeek.milestone.status),
-        }),
-      }, 'required')
+      await updateInstructorTeamMilestone(selectedWeek.milestone.milestoneId, {
+        title: form.title,
+        description,
+        startDate,
+        dueDate,
+        status: normalizeMilestoneStatus(selectedWeek.milestone.status),
+      })
     } else {
-      await projectApiRequest(`/api/workspaces/${workspaceId}/milestones`, {
-        method: 'POST',
-        body: JSON.stringify({ title: form.title, description, startDate, dueDate }),
-      }, 'required')
+      await createInstructorTeamMilestone(workspaceId, { title: form.title, description, startDate, dueDate })
     }
     pushTeamNotification(workspaceId, {
       title: selectedWeek.milestone ? '마일스톤 가이드 수정' : '마일스톤 가이드 등록',
@@ -819,10 +660,7 @@ function MilestonePage({ data, workspaceId, reload }: { data: TeamData; workspac
   async function setEvaluation(status: 'wait' | 'pass' | 'fail') {
     if (!workspaceId || !selectedStudent?.task) return
     const nextStatus = status === 'pass' ? 'DONE' : status === 'wait' ? 'IN_REVIEW' : 'TODO'
-    await projectApiRequest(`/api/workspaces/${workspaceId}/tasks/${selectedStudent.task.taskId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: nextStatus }),
-    }, 'required')
+    await updateInstructorTeamTaskStatus(workspaceId, selectedStudent.task.taskId, nextStatus)
     pushTeamNotification(workspaceId, {
       title: '과제 평가 변경',
       description: `${selectedStudent.member.learnerName ?? '팀원'}님의 "${selectedStudent.task.title}" 과제를 ${taskStatusMeta(nextStatus).label} 처리했습니다.`,
@@ -1197,13 +1035,13 @@ function KanbanPage({ data, workspaceId, reload }: { data: TeamData; workspaceId
 
   async function saveTask(form: { title: string; description: string; priority: TaskPriority; assigneeId: string; dueDate: string; role: KanbanFilter | 'common' }) {
     if (!workspaceId || !form.title.trim()) return
-    const body = JSON.stringify({ title: form.title, description: buildKanbanDescription(form.description, form.role), priority: form.priority, dueDate: form.dueDate || null, assigneeId: form.assigneeId ? Number(form.assigneeId) : null })
+    const payload = { title: form.title, description: buildKanbanDescription(form.description, form.role), priority: form.priority, dueDate: form.dueDate || null, assigneeId: form.assigneeId ? Number(form.assigneeId) : null }
     const editing = Boolean(modalTask && modalTask !== 'new')
     if (modalTask && modalTask !== 'new') {
-      await projectApiRequest(`/api/workspaces/${workspaceId}/tasks/${modalTask.taskId}`, { method: 'PUT', body }, 'required')
-      await projectApiRequest(`/api/workspaces/${workspaceId}/tasks/${modalTask.taskId}/assignee`, { method: 'PATCH', body: JSON.stringify({ assigneeId: form.assigneeId ? Number(form.assigneeId) : null }) }, 'required')
+      await updateInstructorTeamTask(workspaceId, modalTask.taskId, payload)
+      await updateInstructorTeamTaskAssignee(workspaceId, modalTask.taskId, payload.assigneeId)
     } else {
-      await projectApiRequest(`/api/workspaces/${workspaceId}/tasks`, { method: 'POST', body }, 'required')
+      await createInstructorTeamTask(workspaceId, payload)
     }
     pushTeamNotification(workspaceId, {
       title: editing ? '칸반 티켓 수정' : '칸반 티켓 추가',
@@ -1217,7 +1055,7 @@ function KanbanPage({ data, workspaceId, reload }: { data: TeamData; workspaceId
 
   async function deleteTask(task: WorkspaceTask) {
     if (!workspaceId || !window.confirm('이 티켓을 강제로 삭제하시겠습니까? (팀원 칸반 보드에서도 사라집니다)')) return
-    await projectApiRequest(`/api/workspaces/${workspaceId}/tasks/${task.taskId}`, { method: 'DELETE' }, 'required')
+    await deleteInstructorTeamTask(workspaceId, task.taskId)
     pushTeamNotification(workspaceId, {
       title: '칸반 티켓 삭제',
       description: `"${task.title}" 티켓이 삭제되었습니다.`,
@@ -1232,7 +1070,7 @@ function KanbanPage({ data, workspaceId, reload }: { data: TeamData; workspaceId
     if (!workspaceId) return
     const task = data.tasks.find((item) => item.taskId === taskId)
     if (!task || task.status === status) return
-    await projectApiRequest(`/api/workspaces/${workspaceId}/tasks/${taskId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }, 'required')
+    await updateInstructorTeamTaskStatus(workspaceId, taskId, status)
     pushTeamNotification(workspaceId, {
       title: '칸반 상태 변경',
       description: `"${task.title}" 티켓이 ${taskStatusMeta(status).column} 단계로 이동했습니다.`,
@@ -1487,7 +1325,7 @@ function ArchitecturePage({ data, workspaceId, reload }: { data: TeamData; works
 
   async function saveDoc(nextDoc: ArchitectureDocData, targetMode: ArchitectureTab = mode) {
     if (!workspaceId) return
-    await projectApiRequest(architectureEndpointFor(targetMode, workspaceId), { method: 'PUT', body: JSON.stringify({ content: serializeArchitectureDoc(nextDoc) }) }, 'required')
+    await saveInstructorTeamWorkspaceDoc(architectureEndpointFor(targetMode, workspaceId), serializeArchitectureDoc(nextDoc))
     pushTeamNotification(workspaceId, {
       title: '아키텍처 문서 저장',
       description: `${architectureLabel(targetMode)} 문서가 업데이트되었습니다.`,
@@ -1750,7 +1588,7 @@ function QnaPage({ data, workspaceId, reload }: { data: TeamData; workspaceId: n
     setAnswerContent('')
     setDetailLoading(true)
     try {
-      const response = await projectApiRequest<QuestionDetail>(`/api/workspace-questions/${question.id}`, undefined, 'required')
+      const response = await fetchInstructorTeamQuestionDetail(question.id)
       setDetail(response)
       setAnswerContent(response.answers[0]?.content ?? '')
     } catch {
@@ -1765,9 +1603,9 @@ function QnaPage({ data, workspaceId, reload }: { data: TeamData; workspaceId: n
     if (!trimmed) return
     const existingAnswer = detail?.answers[0]
     if (existingAnswer) {
-      await projectApiRequest(`/api/workspace-questions/${question.id}/answers/${existingAnswer.id}`, { method: 'PATCH', body: JSON.stringify({ content: trimmed }) }, 'required')
+      await updateInstructorTeamQuestionAnswer(question.id, existingAnswer.id, trimmed)
     } else {
-      await projectApiRequest(`/api/workspace-questions/${question.id}/answers`, { method: 'POST', body: JSON.stringify({ content: trimmed }) }, 'required')
+      await createInstructorTeamQuestionAnswer(question.id, trimmed)
     }
     pushTeamNotification(workspaceId, {
       title: existingAnswer ? 'Q&A 답변 수정' : 'Q&A 답변 등록',
@@ -1977,10 +1815,12 @@ function SchedulePage({ data, workspaceId, reload }: { data: TeamData; workspace
     const startAt = `${form.date}T${form.time || '00:00'}:00`
     const endAt = new Date(startAt)
     endAt.setHours(endAt.getHours() + 1)
-    await projectApiRequest(`/api/workspaces/${workspaceId}/calendar-events`, {
-      method: 'POST',
-      body: JSON.stringify({ title: form.title, description: buildScheduleDescription(form.type, form.description), startAt, endAt: localDateTimeInput(endAt) }),
-    }, 'required')
+    await createInstructorTeamCalendarEvent(workspaceId, {
+      title: form.title,
+      description: buildScheduleDescription(form.type, form.description),
+      startAt,
+      endAt: localDateTimeInput(endAt),
+    })
     pushTeamNotification(workspaceId, {
       title: '공식 일정 등록',
       description: `${form.date} ${form.time || '00:00'} · "${form.title}" 일정이 등록되었습니다.`,
@@ -1993,7 +1833,7 @@ function SchedulePage({ data, workspaceId, reload }: { data: TeamData; workspace
   }
 
   async function deleteEvent(event: CalendarEvent) {
-    await projectApiRequest(`/api/calendar-events/${event.eventId}`, { method: 'DELETE' }, 'required')
+    await deleteInstructorTeamCalendarEvent(event.eventId)
     pushTeamNotification(workspaceId, {
       title: '공식 일정 삭제',
       description: `"${event.title}" 일정이 삭제되었습니다.`,
@@ -2185,19 +2025,13 @@ function FilesPage({ data, workspaceId, reload }: { data: TeamData; workspaceId:
     if (!workspaceId) return
     const title = form.title.trim()
     if (form.mode === 'link') {
-      await projectApiRequest(`/api/workspaces/${workspaceId}/files/links`, {
-        method: 'POST',
-        body: JSON.stringify({ title, url: form.url.trim() }),
-      }, 'required')
+      await createInstructorTeamFileLink(workspaceId, { title, url: form.url.trim() })
     } else if (form.file) {
       const body = new FormData()
       body.append('file', form.file)
-      const uploaded = await projectApiRequest<WorkspaceFile>(`/api/workspaces/${workspaceId}/files`, { method: 'POST', body }, 'required')
+      const uploaded = await uploadInstructorTeamWorkspaceFile(workspaceId, body)
       if (title && title !== workspaceFileTitle(uploaded)) {
-        await projectApiRequest<WorkspaceFile>(`/api/workspace-files/${uploaded.fileId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ name: title }),
-        }, 'required')
+        await updateInstructorTeamWorkspaceFile(uploaded.fileId, { name: title })
       }
     }
     pushTeamNotification(workspaceId, {
@@ -2213,7 +2047,7 @@ function FilesPage({ data, workspaceId, reload }: { data: TeamData; workspaceId:
 
   async function deleteFile(file: WorkspaceFile) {
     if (!window.confirm('이 자료를 삭제하시겠습니까?')) return
-    await projectApiRequest(`/api/workspace-files/${file.fileId}`, { method: 'DELETE' }, 'required')
+    await deleteInstructorTeamWorkspaceFile(file.fileId)
     pushTeamNotification(workspaceId, {
       title: '자료 삭제',
       description: `"${workspaceFileTitle(file)}" 자료가 삭제되었습니다.`,
@@ -2600,15 +2434,12 @@ function MeetingPage({ data, workspaceId, reload }: { data: TeamData; workspaceI
     const startAt = `${form.date}T${form.time}:00`
     const endDate = new Date(startAt)
     endDate.setMinutes(endDate.getMinutes() + 90)
-    await projectApiRequest(`/api/workspaces/${workspaceId}/calendar-events`, {
-      method: 'POST',
-      body: JSON.stringify({
-        title: form.title,
-        description: buildScheduleDescription('meetup', form.description),
-        startAt,
-        endAt: localDateTimeInput(endDate),
-      }),
-    }, 'required')
+    await createInstructorTeamCalendarEvent(workspaceId, {
+      title: form.title,
+      description: buildScheduleDescription('meetup', form.description),
+      startAt,
+      endAt: localDateTimeInput(endDate),
+    })
     pushTeamNotification(workspaceId, {
       title: '라이브 밋업 예약',
       description: `${form.date} ${form.time} · "${form.title}" 밋업이 예약되었습니다.`,
@@ -2622,7 +2453,7 @@ function MeetingPage({ data, workspaceId, reload }: { data: TeamData; workspaceI
 
   async function saveNote(form: { title: string; content: string }) {
     if (!workspaceId) return
-    await projectApiRequest(`/api/workspaces/${workspaceId}/meeting-notes`, { method: 'POST', body: JSON.stringify(form) }, 'required')
+    await createInstructorTeamMeetingNote(workspaceId, form)
     pushTeamNotification(workspaceId, {
       title: '공식 회의록 발행',
       description: `"${form.title}" 회의록이 발행되었습니다.`,
@@ -2636,7 +2467,7 @@ function MeetingPage({ data, workspaceId, reload }: { data: TeamData; workspaceI
 
   async function deleteNote(note: MeetingNote) {
     if (!window.confirm('관리자(강사) 권한으로 해당 회의록을 삭제하시겠습니까?')) return
-    await projectApiRequest(`/api/meeting-notes/${note.noteId}`, { method: 'DELETE' }, 'required')
+    await deleteInstructorTeamMeetingNote(note.noteId)
     pushTeamNotification(workspaceId, {
       title: '회의록 삭제',
       description: `"${note.title}" 회의록이 삭제되었습니다.`,
@@ -3308,24 +3139,6 @@ function VoiceChannelPage({ data, workspaceId }: { data: TeamData; workspaceId: 
   )
 }
 
-async function loadTeamData(workspaceId: number, signal?: AbortSignal): Promise<TeamData> {
-  const [dashboard, tasks, events, questions, milestones, files, apiSpec, erdDoc, infraDoc, notes, activityLogs, voiceChannels] = await Promise.all([
-    projectApiRequest<WorkspaceDashboard>(`/api/workspaces/${workspaceId}/dashboard`, { signal }, 'required'),
-    projectApiRequest<WorkspaceTask[]>(`/api/workspaces/${workspaceId}/tasks`, { signal }, 'required').catch(() => []),
-    projectApiRequest<CalendarEvent[]>(`/api/workspaces/${workspaceId}/calendar-events`, { signal }, 'required').catch(() => []),
-    projectApiRequest<QuestionSummary[]>(`/api/workspaces/${workspaceId}/questions`, { signal }, 'required').catch(() => []),
-    projectApiRequest<MilestoneItem[]>(`/api/workspaces/${workspaceId}/milestones`, { signal }, 'required').catch(() => []),
-    projectApiRequest<WorkspaceFile[]>(`/api/workspaces/${workspaceId}/files`, { signal }, 'required').catch(() => []),
-    projectApiRequest<WorkspaceDoc>(`/api/workspaces/${workspaceId}/api-spec`, { signal }, 'required').catch(() => null),
-    projectApiRequest<WorkspaceDoc>(`/api/workspaces/${workspaceId}/docs/erd`, { signal }, 'required').catch(() => null),
-    projectApiRequest<WorkspaceDoc>(`/api/workspaces/${workspaceId}/docs/infra`, { signal }, 'required').catch(() => null),
-    projectApiRequest<MeetingNote[]>(`/api/workspaces/${workspaceId}/meeting-notes`, { signal }, 'required').catch(() => []),
-    projectApiRequest<ActivityLogItem[]>(`/api/workspaces/${workspaceId}/activities/recent`, { signal }, 'required').catch(() => []),
-    projectApiRequest<VoiceChannelSummary[]>(`/api/workspaces/${workspaceId}/voice-channels`, { signal }, 'required').catch(() => []),
-  ])
-  return { dashboard, tasks, events, questions, milestones, files, apiSpec, erdDoc, infraDoc, notes, activityLogs, voiceChannels }
-}
-
 export default function InstructorTeamWsDashboardApp({ page = 'dashboard' }: { page?: InstructorTeamWsPage }) {
   const session = useMemo(() => readStoredAuthSession(), [])
   const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
@@ -3337,14 +3150,14 @@ export default function InstructorTeamWsDashboardApp({ page = 'dashboard' }: { p
 
   async function reload() {
     if (!workspaceId) return
-    setData(await loadTeamData(workspaceId))
+    setData(await loadInstructorTeamWorkspaceData(workspaceId))
   }
 
   async function refreshRealtimeData() {
     if (!workspaceId || document.hidden || realtimeRefreshRef.current) return
     realtimeRefreshRef.current = true
     try {
-      setData(await loadTeamData(workspaceId))
+      setData(await loadInstructorTeamWorkspaceData(workspaceId))
     } catch {
       // 실시간 보조 갱신 실패는 화면을 에러 상태로 밀지 않는다.
     } finally {
@@ -3370,7 +3183,7 @@ export default function InstructorTeamWsDashboardApp({ page = 'dashboard' }: { p
     const controller = new AbortController()
     setLoading(true)
     setError(null)
-    loadTeamData(workspaceId, controller.signal)
+    loadInstructorTeamWorkspaceData(workspaceId, controller.signal)
       .then(setData)
       .catch((nextError) => {
         if (!controller.signal.aborted) setError(nextError instanceof Error ? nextError.message : '데이터 로딩 실패')
