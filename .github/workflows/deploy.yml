@@ -72,11 +72,15 @@ jobs:
             # 1) systemd 서비스 정지
             sudo systemctl stop devpath || true
 
-            # 2) 포트가 아니라 JAR 이름 기준으로 모든 백엔드 프로세스를 정리한다.
-            #    systemd 외부에서 수동(nohup 등)으로 띄워진 좀비나, build/libs 등 다른
-            #    경로의 옛 JAR 프로세스까지 모두 종료해야 옛 코드가 8083을 다시 점유하는 것을 막는다.
-            #    (기존 fuser -k 8083 은 "그 순간 포트를 쥔 프로세스 하나"만 죽여 좀비를 놓쳤다.)
-            sudo pkill -f 'DevPath-0.0.1-SNAPSHOT.jar' 2>/dev/null || true
+            # 2) systemd 외부에서 수동으로 띄워진 백엔드 좀비(build/libs 등 다른 경로 JAR 포함)를
+            #    JAR 이름으로 찾되 'java 실행 프로세스만' 종료한다.
+            #    pkill -f 'DevPath-...jar' 는 스크립트 텍스트에 같은 문자열이 있어 배포 셸 자신까지
+            #    매칭 → 스스로 SIGTERM(143)으로 죽는 문제가 있으므로, comm=java 필터로 셸을 제외한다.
+            for pid in $(pgrep -f 'DevPath-0.0.1-SNAPSHOT' 2>/dev/null || true); do
+              if [ "$(ps -p "$pid" -o comm= 2>/dev/null)" = "java" ]; then
+                sudo kill "$pid" 2>/dev/null || true
+              fi
+            done
 
             # 3) 그래도 8083을 쥔 잔존 프로세스가 있으면 포트 기준으로 마저 정리
             sudo fuser -k 8083/tcp 2>/dev/null || true
@@ -85,16 +89,17 @@ jobs:
             # 4) systemd로 단독 기동 (ExecStart = 방금 SCP된 루트 JAR)
             sudo systemctl start devpath
 
-            # 5) 헬스체크: 새 버전이 실제 8083에 떠서 응답하는지 최대 90초 폴링.
-            #    실패 시 배포를 실패 처리하여 "옛 코드가 계속 서비스되는데 배포는 성공" 상황을 방지한다.
+            # 5) 헬스체크: 8083이 응답하는지 최대 90초 폴링. (인증 유무와 무관하게 HTTP 코드가
+            #    잡히면 새 프로세스가 포트를 잡은 것으로 본다. 000=무응답 → 실패 처리)
             for i in $(seq 1 18); do
-              if curl -sf http://localhost:8083/actuator/health >/dev/null 2>&1; then
-                echo "Backend healthy (attempt $i)"
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8083/actuator/health || echo 000)
+              if [ "$code" != "000" ]; then
+                echo "Backend up on 8083 (HTTP $code, attempt $i)"
                 exit 0
               fi
               sleep 5
             done
-            echo "Backend health check FAILED"
+            echo "Backend health check FAILED (no response on 8083)"
             sudo systemctl status devpath --no-pager -l | tail -30 || true
             exit 1
 
