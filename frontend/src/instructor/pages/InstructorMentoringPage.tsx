@@ -53,6 +53,7 @@ type OngoingProject = {
   secondaryAction: string
   menuActions: string[]
   workspaceId?: number | null
+  startDate?: string | null
 }
 
 type MentoringPostDetail = {
@@ -599,11 +600,14 @@ export default function InstructorMentoringPage() {
     setOngoingProjects(nextOngoingProjects)
 
     try {
-      await instructorMentoringApi.saveBoard({
+      const savedBoard = await instructorMentoringApi.saveBoard({
         projects: nextProjects,
         requests: nextRequests,
         ongoingProjects: nextOngoingProjects,
       } as InstructorMentoringBoard)
+      setProjects(savedBoard.projects as RecruitingProject[])
+      setRequests(savedBoard.requests as PendingRequest[])
+      setOngoingProjects(savedBoard.ongoingProjects as OngoingProject[])
     } catch (nextError) {
       window.alert(nextError instanceof Error ? nextError.message : '멘토링 보드 저장에 실패했습니다.')
     }
@@ -798,6 +802,33 @@ export default function InstructorMentoringPage() {
     setApplicationId((current) => (current === requestId ? null : current))
   }
 
+  async function approveLiveRequestsForProject(projectId: string) {
+    const projectRequests = requests.filter((request) => request.projectId === projectId)
+
+    for (const request of projectRequests) {
+      const liveApplicationId = getLiveApplicationId(request.id)
+      if (!liveApplicationId) {
+        continue
+      }
+
+      try {
+        await projectApiRequest(
+          `/api/mentoring-applications/${liveApplicationId}/approve`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({}),
+          },
+          'required',
+        )
+      } catch (nextError) {
+        window.alert(nextError instanceof Error ? nextError.message : '멘토링 신청 승인에 실패했습니다.')
+        return false
+      }
+    }
+
+    return true
+  }
+
   async function confirmStartProject() {
     if (!setupStartDate || !setupWelcome.trim()) {
       window.alert('필수 항목을 입력해주세요.')
@@ -805,6 +836,11 @@ export default function InstructorMentoringPage() {
     }
 
     if (!selectedSetupProject) {
+      return
+    }
+
+    const approved = await approveLiveRequestsForProject(selectedSetupProject.id)
+    if (!approved) {
       return
     }
 
@@ -825,6 +861,7 @@ export default function InstructorMentoringPage() {
           ? ['워크스페이스 설정', '멤버 관리', '완료 처리']
           : ['과제 설정', '공지 전송', '멘토링 종료'],
       workspaceId: null,
+      startDate: setupStartDate,
     }
     const nextOngoingProjects = [
       nextOngoingProject,

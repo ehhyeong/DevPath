@@ -461,6 +461,7 @@ export interface InstructorMentoringOngoingItem {
   secondaryAction: string
   menuActions: string[]
   workspaceId?: number | null
+  startDate?: string | null
 }
 
 export interface InstructorMentoringBoard {

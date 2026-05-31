@@ -33,6 +33,10 @@ public interface MentoringApplicationRepository extends JpaRepository<MentoringA
   Optional<MentoringApplication> findByIdAndIsDeletedFalse(Long id);
 
   @EntityGraph(attributePaths = {"post", "post.mentor", "applicant"})
+  List<MentoringApplication> findAllByPost_IdAndStatusAndIsDeletedFalseOrderByProcessedAtDesc(
+      Long postId, MentoringApplicationStatus status);
+
+  @EntityGraph(attributePaths = {"post", "post.mentor", "applicant"})
   List<MentoringApplication>
       findAllByPost_Mentor_IdAndApplicant_IdInAndStatusAndIsDeletedFalseOrderByProcessedAtDesc(
           Long mentorId, Collection<Long> applicantIds, MentoringApplicationStatus status);
