@@ -14,258 +14,57 @@ import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
-import { projectApiRequest } from './project-api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
+import {
+  appendSquadVoiceMinutesTranscriptLine,
+  clearSquadVoiceChatMessages,
+  createSquadVoiceEvent,
+  createSquadVoiceMinutesKanbanTasks,
+  createSquadVoiceMinutesSummary,
+  fetchSquadVoiceChatMessages,
+  fetchSquadVoiceMinutes,
+  fetchSquadVoiceParticipants,
+  fetchSquadVoicePresence,
+  joinSquadVoiceChannel,
+  leaveSquadVoiceChannel,
+  loadSquadMeetingInitialData,
+  sendSquadVoiceChatMessage,
+  touchSquadVoicePresence,
+  updateSquadVoiceMinutes,
+} from './squad-meeting-api'
 
-type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type VoiceEventType = 'MUTE' | 'UNMUTE' | 'SPEAKING' | 'STOP_SPEAKING'
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-}
-
-type WorkspaceDashboard = {
-  workspaceId: number
-  name: string
-  type: WorkspaceType
-  status: WorkspaceStatus
-  ownerId: number
-  members: WorkspaceMember[]
-  unresolvedTaskCount: number
-}
-
-type VoiceChannel = {
-  channelId: number
-  workspaceId: number
-  creatorId: number
-  creatorName: string
-  name: string
-  description?: string | null
-  activeParticipantCount?: number | null
-  currentSessionStartedAt?: string | null
-  createdAt?: string | null
-}
-
-type VoiceParticipant = {
-  participantId: number
-  channelId: number
-  userId: number
-  userName: string
-  active: boolean
-  muted: boolean
-  handRaised: boolean
-  speaking: boolean
-  currentSessionStartedAt?: string | null
-  joinedAt?: string | null
-  leftAt?: string | null
-}
-
-type VoicePresence = {
-  channelId: number
-  userId: number
-  userName: string
-  lastSeenAt?: string | null
-}
-
-type VoiceChatMessage = {
-  messageId: number
-  channelId: number
-  senderId: number
-  senderName: string
-  content: string
-  createdAt?: string | null
-}
-
-type VoiceMeetingMinutes = {
-  channelId: number
-  recording: boolean
-  transcript?: string | null
-  summary?: string | null
-  updatedByUserId?: number | null
-  updatedByUserName?: string | null
-  updatedAt?: string | null
-}
-
-type WorkspaceTaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-
-type VoiceMeetingActionItem = {
-  title: string
-  description?: string | null
-  priority?: WorkspaceTaskPriority | null
-  assigneeName?: string | null
-  dueDate?: string | null
-}
-
-type VoiceMeetingAnalysis = {
-  minutes: VoiceMeetingMinutes
-  actionItems: VoiceMeetingActionItem[]
-}
-
-type VoiceMeetingSummaryResponse = VoiceMeetingAnalysis | VoiceMeetingMinutes
-
-type VoiceMinutesKanbanTasks = {
-  tasks: { taskId: number }[]
-}
-
-type RoomPanelTab = 'minutes' | 'chat'
-
-type AudioDeviceOption = {
-  deviceId: string
-  label: string
-}
-
-type SinkAudioElement = HTMLAudioElement & {
-  setSinkId?: (sinkId: string) => Promise<void>
-}
-
-type AudioProcessingStatus = {
-  echoCancellation: boolean | null
-  noiseSuppression: boolean | null
-  autoGainControl: boolean | null
-  noiseGate: boolean
-}
-
-type VoiceConnectionStatus = 'idle' | 'connecting' | 'connected' | 'error'
-type NetworkTone = 'checking' | 'good' | 'fair' | 'poor' | 'offline'
-type SecurityTone = 'checking' | 'secure' | 'warning'
-
-type VoiceSignalingPeer = {
-  userId: number
-  userName: string
-}
-
-type VoiceReactionPayload = {
-  reaction?: string
-}
-
-type ScreenShareSignalPayload = {
-  sharing?: boolean
-}
-
-type ScreenShareView = {
-  userId: number
-  userName: string
-  stream: MediaStream
-  local: boolean
-}
-
-type ScreenSharePan = {
-  x: number
-  y: number
-}
-
-type ScreenShareDragState = {
-  pointerId: number
-  startX: number
-  startY: number
-  originX: number
-  originY: number
-}
-
-type VoiceSignalingMessage = {
-  type:
-    | 'peer-list'
-    | 'peer-joined'
-    | 'peer-left'
-    | 'offer'
-    | 'answer'
-    | 'ice-candidate'
-    | 'reaction'
-    | 'speaking'
-    | 'stop-speaking'
-    | 'screen-share-start'
-    | 'screen-share-stop'
-    | 'error'
-  channelId?: number
-  peers?: VoiceSignalingPeer[]
-  fromUserId?: number
-  fromUserName?: string
-  targetUserId?: number
-  payload?:
-    | RTCSessionDescriptionInit
-    | RTCIceCandidateInit
-    | VoiceReactionPayload
-    | ScreenShareSignalPayload
-    | null
-  detail?: string
-}
-
-type FloatingReaction = {
-  id: string
-  reaction: string
-  left: number
-  dx: number
-  fromUserId?: number
-  fromUserName?: string
-}
-
-type NetworkStatus = {
-  label: string
-  detail: string
-  latencyMs: number | null
-  tone: NetworkTone
-}
-
-type SecurityStatus = {
-  label: string
-  detail: string
-  tone: SecurityTone
-}
-
-type BrowserNetworkInformation = EventTarget & {
-  downlink?: number
-  effectiveType?: string
-  rtt?: number
-  saveData?: boolean
-}
-
-type NavigatorWithNetworkInformation = Navigator & {
-  connection?: BrowserNetworkInformation
-  mozConnection?: BrowserNetworkInformation
-  webkitConnection?: BrowserNetworkInformation
-}
-
-type SpeechRecognitionAlternativeLike = {
-  transcript: string
-}
-
-type SpeechRecognitionResultLike = {
-  isFinal: boolean
-  [index: number]: SpeechRecognitionAlternativeLike
-}
-
-type SpeechRecognitionResultListLike = {
-  length: number
-  [index: number]: SpeechRecognitionResultLike
-}
-
-type SpeechRecognitionEventLike = Event & {
-  resultIndex: number
-  results: SpeechRecognitionResultListLike
-}
-
-type SpeechRecognitionLike = EventTarget & {
-  lang: string
-  continuous: boolean
-  interimResults: boolean
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null
-  onend: (() => void) | null
-  onerror: ((event: { error?: string }) => void) | null
-  start: () => void
-  stop: () => void
-  abort: () => void
-}
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
-
-type WindowWithSpeechRecognition = Window & {
-  SpeechRecognition?: SpeechRecognitionConstructor
-  webkitSpeechRecognition?: SpeechRecognitionConstructor
-}
+import type {
+  AudioDeviceOption,
+  AudioProcessingStatus,
+  FloatingReaction,
+  NavigatorWithNetworkInformation,
+  NetworkStatus,
+  NetworkTone,
+  RoomPanelTab,
+  ScreenShareDragState,
+  ScreenSharePan,
+  ScreenShareView,
+  SecurityStatus,
+  SecurityTone,
+  SinkAudioElement,
+  SpeechRecognitionLike,
+  VoiceChannel,
+  VoiceChatMessage,
+  VoiceConnectionStatus,
+  VoiceEventType,
+  VoiceMeetingActionItem,
+  VoiceMeetingAnalysis,
+  VoiceMeetingMinutes,
+  VoiceMeetingSummaryResponse,
+  VoiceParticipant,
+  VoicePresence,
+  VoiceReactionPayload,
+  VoiceSignalingMessage,
+  VoiceSignalingPeer,
+  WindowWithSpeechRecognition,
+  WorkspaceDashboard,
+  WorkspaceMember,
+} from './squad-meeting-types'
 
 function MediaStreamVideo({
   stream,
@@ -855,47 +654,14 @@ export default function SquadMeetingApp() {
     }
 
     let ignore = false
+    const targetWorkspaceId = workspaceId
 
     async function load() {
       setLoading(true)
       setError(null)
 
       try {
-        const dashboardData = await projectApiRequest<WorkspaceDashboard>(
-          `/api/workspaces/${workspaceId}/dashboard`,
-          {},
-          'required',
-        )
-        let channelData = await projectApiRequest<VoiceChannel[]>(
-          `/api/workspaces/${workspaceId}/voice-channels`,
-          {},
-          'required',
-        )
-        let selectedChannel = channelData[0] ?? null
-
-        if (!selectedChannel) {
-          const createdChannel = await projectApiRequest<VoiceChannel>(
-            '/api/voice-channels',
-            {
-              method: 'POST',
-              body: JSON.stringify({
-                workspaceId,
-                name: `${dashboardData.name} 음성 회의`,
-                description: '스쿼드 프로젝트 진행을 위한 음성 회의 채널입니다.',
-              }),
-            },
-            'required',
-          )
-
-          selectedChannel = { ...createdChannel, activeParticipantCount: 0 }
-          channelData = [selectedChannel]
-        }
-
-        const participantData = await projectApiRequest<VoiceParticipant[]>(
-          `/api/voice-channels/${selectedChannel.channelId}/participants`,
-          {},
-          'required',
-        )
+        const { dashboard: dashboardData, channels: channelData, selectedChannel, participants: participantData } = await loadSquadMeetingInitialData(targetWorkspaceId)
 
         if (ignore) {
           return
@@ -2393,46 +2159,23 @@ export default function SquadMeetingApp() {
   }
 
   async function fetchParticipants(channelId: number) {
-    return projectApiRequest<VoiceParticipant[]>(
-      `/api/voice-channels/${channelId}/participants`,
-      {},
-      'required',
-    )
+    return fetchSquadVoiceParticipants(channelId)
   }
 
   async function fetchPresence(channelId: number) {
-    return projectApiRequest<VoicePresence[]>(
-      `/api/voice-channels/${channelId}/presence`,
-      {},
-      'required',
-    )
+    return fetchSquadVoicePresence(channelId)
   }
 
   async function touchPresence(channelId: number) {
-    return projectApiRequest<VoicePresence>(
-      `/api/voice-channels/${channelId}/presence`,
-      {
-        method: 'POST',
-        body: JSON.stringify({}),
-      },
-      'required',
-    )
+    return touchSquadVoicePresence(channelId)
   }
 
   async function fetchVoiceChatMessages(channelId: number) {
-    return projectApiRequest<VoiceChatMessage[]>(
-      `/api/voice-channels/${channelId}/chat-messages`,
-      {},
-      'required',
-    )
+    return fetchSquadVoiceChatMessages(channelId)
   }
 
   async function fetchVoiceMinutes(channelId: number) {
-    return projectApiRequest<VoiceMeetingMinutes>(
-      `/api/voice-channels/${channelId}/minutes`,
-      {},
-      'required',
-    )
+    return fetchSquadVoiceMinutes(channelId)
   }
 
   async function refreshVoiceMeetingPanel(channelId = activeChannel?.channelId, syncDraft = false) {
@@ -2507,14 +2250,7 @@ export default function SquadMeetingApp() {
       return
     }
 
-    await projectApiRequest(
-      `/api/voice-channels/${activeChannel.channelId}/events`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ type, memo }),
-      },
-      'required',
-    )
+    await createSquadVoiceEvent(activeChannel.channelId, type, memo)
   }
 
   function getSpeechRecognitionConstructor() {
@@ -2564,14 +2300,7 @@ export default function SquadMeetingApp() {
     }
 
     try {
-      const minutes = await projectApiRequest<VoiceMeetingMinutes>(
-        `/api/voice-channels/${activeChannel.channelId}/minutes/transcript-lines`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ text }),
-        },
-        'required',
-      )
+      const minutes = await appendSquadVoiceMinutesTranscriptLine(activeChannel.channelId, text)
 
       minutesAppendErrorShownRef.current = false
       setVoiceMinutes(minutes)
@@ -2684,14 +2413,7 @@ export default function SquadMeetingApp() {
     setChatSending(true)
 
     try {
-      const message = await projectApiRequest<VoiceChatMessage>(
-        `/api/voice-channels/${activeChannel.channelId}/chat-messages`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ content }),
-        },
-        'required',
-      )
+      const message = await sendSquadVoiceChatMessage(activeChannel.channelId, content)
 
       setVoiceChatInput('')
       setVoiceChatMessages((current) => [...current, message])
@@ -2719,14 +2441,7 @@ export default function SquadMeetingApp() {
     setChatClearing(true)
 
     try {
-      await projectApiRequest(
-        `/api/voice-channels/${activeChannel.channelId}/chat-messages/clear`,
-        {
-          method: 'POST',
-          body: JSON.stringify({}),
-        },
-        'required',
-      )
+      await clearSquadVoiceChatMessages(activeChannel.channelId)
       setVoiceChatMessages([])
       void createSquadNotification(workspaceId, {
         pageKey: 'squad-meeting',
@@ -2755,14 +2470,7 @@ export default function SquadMeetingApp() {
     setMinutesSaving(true)
 
     try {
-      const minutes = await projectApiRequest<VoiceMeetingMinutes>(
-        `/api/voice-channels/${activeChannel.channelId}/minutes`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify(payload),
-        },
-        'required',
-      )
+      const minutes = await updateSquadVoiceMinutes(activeChannel.channelId, payload)
 
       setVoiceMinutes(minutes)
 
@@ -2841,14 +2549,7 @@ export default function SquadMeetingApp() {
     setMinutesSaving(true)
 
     try {
-      const response = await projectApiRequest<VoiceMeetingSummaryResponse>(
-        `/api/voice-channels/${activeChannel.channelId}/minutes/summary`,
-        {
-          method: 'POST',
-          body: JSON.stringify({}),
-        },
-        'required',
-      )
+      const response = await createSquadVoiceMinutesSummary(activeChannel.channelId)
 
       const analysis = normalizeVoiceMeetingSummaryResponse(response)
       const minutes = analysis.minutes
@@ -2895,14 +2596,7 @@ export default function SquadMeetingApp() {
     setKanbanTaskCreating(true)
 
     try {
-      const result = await projectApiRequest<VoiceMinutesKanbanTasks>(
-        `/api/voice-channels/${activeChannel.channelId}/minutes/action-items/tasks`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ actionItems }),
-        },
-        'required',
-      )
+      const result = await createSquadVoiceMinutesKanbanTasks(activeChannel.channelId, actionItems)
 
       showAuthToast({
         message: `${result.tasks.length}개의 할 일을 칸반 보드에 등록했습니다.`,
@@ -2993,14 +2687,7 @@ export default function SquadMeetingApp() {
     try {
       let toastMessage = '음성 회의에 입장했습니다.'
 
-      await projectApiRequest<VoiceParticipant>(
-        `/api/voice-channels/${activeChannel.channelId}/join`,
-        {
-          method: 'POST',
-          body: JSON.stringify({}),
-        },
-        'required',
-      )
+      await joinSquadVoiceChannel(activeChannel.channelId)
 
       await startLocalVoiceStream(waitingMicMuted)
 
@@ -3023,14 +2710,7 @@ export default function SquadMeetingApp() {
       showAuthToast({ message: toastMessage, durationMs: 1800 })
     } catch (joinError) {
       disconnectVoiceSession()
-      await projectApiRequest<VoiceParticipant>(
-        `/api/voice-channels/${activeChannel.channelId}/leave`,
-        {
-          method: 'POST',
-          body: JSON.stringify({}),
-        },
-        'required',
-      ).catch(() => undefined)
+      await leaveSquadVoiceChannel(activeChannel.channelId).catch(() => undefined)
       await refreshVoiceRoomState(activeChannel.channelId).catch(() => undefined)
       showAuthToast({
         message: joinError instanceof Error ? joinError.message : '음성 회의 입장에 실패했습니다.',
@@ -3051,14 +2731,7 @@ export default function SquadMeetingApp() {
     disconnectVoiceSession()
 
     try {
-      await projectApiRequest<VoiceParticipant>(
-        `/api/voice-channels/${activeChannel.channelId}/leave`,
-        {
-          method: 'POST',
-          body: JSON.stringify({}),
-        },
-        'required',
-      )
+      await leaveSquadVoiceChannel(activeChannel.channelId)
       await refreshVoiceRoomState(activeChannel.channelId)
       setWaitingMicMuted(nextWaitingMicMuted)
       void createSquadNotification(workspaceId, {

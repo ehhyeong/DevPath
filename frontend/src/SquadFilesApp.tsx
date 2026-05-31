@@ -8,110 +8,20 @@ import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
-type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type FileFilter = 'all' | 'folder' | 'pdf' | 'image' | 'doc'
-type SortMode = 'date-desc' | 'date-asc' | 'name-asc' | 'name-desc'
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-}
-
-type WorkspaceDashboard = {
-  workspaceId: number
-  name: string
-  type: WorkspaceType
-  status: WorkspaceStatus
-  ownerId: number
-  members: WorkspaceMember[]
-  unresolvedTaskCount: number
-}
-
-type WorkspaceFileItem = {
-  fileId: number
-  workspaceId: number
-  parentId?: number | null
-  itemType: 'FILE' | 'FOLDER'
-  originalFileName: string
-  displayName?: string | null
-  fileSize: number
-  contentType?: string | null
-  storageProvider?: string | null
-  objectKey?: string | null
-  uploadedById: number
-  uploadedByName?: string | null
-  uploaderProfileImage?: string | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type StorageSummary = {
-  usedBytes: number
-  quotaBytes: number
-  storageProvider: string
-}
-
-type ApiResponse<T> = {
-  data: T
-}
-
-type ArchiveEntry = {
-  name: string
-  directory: boolean
-  size?: number | null
-  compressedSize?: number | null
-}
-
-type ArchivePreview = {
-  entries: ArchiveEntry[]
-  truncated: boolean
-}
-
-type PresentationElement = {
-  type: 'text' | 'image' | 'shape'
-  x: number
-  y: number
-  width: number
-  height: number
-  text?: string | null
-  imageDataUri?: string | null
-  fillColor?: string | null
-  textColor?: string | null
-  fontSize?: number | null
-  bold: boolean
-  italic: boolean
-}
-
-type PresentationSlide = {
-  slideNumber: number
-  width: number
-  height: number
-  backgroundColor?: string | null
-  elements: PresentationElement[]
-}
-
-type DocumentPreview = {
-  documentType: string
-  text: string
-  truncated: boolean
-  renderedContentType?: string | null
-  renderedDataUri?: string | null
-  slides?: PresentationSlide[] | null
-}
-
-type FolderCrumb = {
-  id: number
-  name: string
-}
-
-type ActionMenuState = {
-  fileId: number
-  top: number
-  left: number
-}
+import type {
+  ActionMenuState,
+  ApiResponse,
+  ArchivePreview,
+  DocumentPreview,
+  FileFilter,
+  FolderCrumb,
+  PresentationElement,
+  PresentationSlide,
+  SortMode,
+  StorageSummary,
+  WorkspaceDashboard,
+  WorkspaceFileItem,
+} from './squad-files-types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 const SQUAD_FILES_MAX_UPLOAD_BYTES = 50 * 1024 * 1024

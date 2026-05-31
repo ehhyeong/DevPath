@@ -10,132 +10,20 @@ import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sy
 import { projectApiRequest } from './project-api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
-type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE'
-type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-type ChatTab = 'team' | 'dm'
-
-type DocumentPictureInPictureOptions = {
-  width?: number
-  height?: number
-  disallowReturnToOpener?: boolean
-  preferInitialWindowPlacement?: boolean
-}
-
-type DocumentPictureInPictureController = {
-  window: Window | null
-  requestWindow: (options?: DocumentPictureInPictureOptions) => Promise<Window>
-}
-
-declare global {
-  interface Window {
-    documentPictureInPicture?: DocumentPictureInPictureController
-  }
-}
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-  joinedAt?: string | null
-}
-
-type WorkspaceDashboard = {
-  workspaceId: number
-  name: string
-  type: WorkspaceType
-  status: WorkspaceStatus
-  ownerId: number
-  members: WorkspaceMember[]
-  unresolvedTaskCount: number
-  activeMilestoneCount: number
-  createdAt?: string | null
-}
-
-type WorkspaceTask = {
-  taskId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  status: TaskStatus
-  priority?: TaskPriority | null
-  assigneeId?: number | null
-  dueDate?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type CalendarEvent = {
-  eventId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  startAt: string
-  endAt?: string | null
-  createdById?: number | null
-}
-
-type Notice = {
-  id: number
-  workspaceId: number
-  title: string
-  content: string
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type ActivityLog = {
-  logId: number
-  workspaceId: number
-  actorId?: number | null
-  activityType?: string | null
-  description?: string | null
-  createdAt?: string | null
-}
-
-type WorkspaceErdChange = {
-  versionId: number
-  workspaceId: number
-  version: number
-  summary?: string | null
-  updatedById?: number | null
-  updatedByName?: string | null
-  createdAt?: string | null
-}
-
-type VoiceChannel = {
-  channelId: number
-  workspaceId: number
-  name: string
-  description?: string | null
-  activeParticipantCount?: number | null
-  currentSessionStartedAt?: string | null
-  createdAt?: string | null
-}
-
-type TeamMessage = {
-  messageId: number
-  loungeId: number
-  senderId: number
-  senderName: string
-  isMine: boolean
-  content: string
-  createdAt: string
-}
-
-type DirectMessage = {
-  messageId: number
-  senderId: number
-  senderName: string
-  receiverId: number
-  receiverName: string
-  isMine: boolean
-  content: string
-  createdAt: string
-}
+import type {
+  ActivityLog,
+  ChatTab,
+  DirectMessage,
+  CalendarEvent,
+  Notice,
+  TeamMessage,
+  VoiceChannel,
+  WorkspaceDashboard,
+  WorkspaceErdChange,
+  WorkspaceMember,
+  WorkspaceStatus,
+  WorkspaceTask,
+} from './squad-dashboard-types'
 
 function copyDocumentPictureInPictureStyles(pipWindow: Window) {
   const baseStyle = pipWindow.document.createElement('style')

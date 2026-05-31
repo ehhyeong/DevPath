@@ -7,112 +7,19 @@ import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-}
-
-type ErdColumn = {
-  name: string
-  type: string
-  pk?: boolean
-  fk?: boolean
-  notNull?: boolean
-  unique?: boolean
-  indexed?: boolean
-  defaultValue?: string
-  autoIncrement?: boolean
-  check?: string
-}
-
-type ErdTable = {
-  id: string
-  name: string
-  columns: ErdColumn[]
-}
-
-type ErdRelationship = {
-  id: string
-  from: string
-  to: string
-  type: string
-  label: string
-  fromColumn?: string
-  toColumn?: string
-  onDelete?: 'RESTRICT' | 'CASCADE' | 'SET NULL' | 'NO ACTION'
-}
-
-type ErdSchema = {
-  tables: ErdTable[]
-  relationships: ErdRelationship[]
-}
-
-type ErdDocument = {
-  workspaceId: number
-  projectName: string
-  mermaidCode: string
-  schemaJson: string
-  version: number
-  updatedById?: number | null
-  updatedByName?: string | null
-  updatedAt?: string | null
-  members: WorkspaceMember[]
-}
-
-type TeamMessage = {
-  messageId: number
-  loungeId: number
-  senderId: number
-  senderName: string
-  content: string
-  createdAt?: string | null
-  isMine: boolean
-}
-
-type ErdVersion = {
-  versionId: number
-  workspaceId: number
-  version: number
-  mermaidCode: string
-  schemaJson: string
-  summary?: string | null
-  updatedById?: number | null
-  updatedByName?: string | null
-  discussionMessageId?: number | null
-  createdAt?: string | null
-}
-
-type ErdComment = {
-  commentId: number
-  workspaceId: number
-  targetType: string
-  targetId: string
-  targetLabel?: string | null
-  authorId: number
-  authorName: string
-  body: string
-  isMine: boolean
-  createdAt?: string | null
-}
-
-type ErdCommentTarget = {
-  targetType: string
-  targetId: string
-  targetLabel: string
-}
-
-type MermaidApi = {
-  initialize: (options: Record<string, unknown>) => void
-  render: (id: string, code: string) => Promise<{ svg: string }> | { svg: string }
-}
-
-declare global {
-  interface Window {
-    mermaid?: MermaidApi
-  }
-}
+import type {
+  ErdColumn,
+  ErdComment,
+  ErdCommentTarget,
+  ErdDocument,
+  ErdRelationship,
+  ErdSchema,
+  ErdTable,
+  ErdVersion,
+  MermaidApi,
+  TeamMessage,
+  WorkspaceMember,
+} from './squad-erd-types'
 
 const EMPTY_SCHEMA: ErdSchema = {
   tables: [],

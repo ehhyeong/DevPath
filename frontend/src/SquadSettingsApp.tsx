@@ -7,55 +7,16 @@ import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
-type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type SettingsTab = 'general' | 'members' | 'integrations' | 'danger'
-type IntegrationProvider = 'GITHUB' | 'SLACK' | 'DISCORD' | 'JIRA'
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-  joinedAt?: string | null
-  lastActiveAt?: string | null
-  online?: boolean
-}
-
-type WorkspaceSettings = {
-  workspaceId: number
-  name: string
-  description?: string | null
-  type: WorkspaceType
-  status: WorkspaceStatus
-  ownerId: number
-  deleted: boolean
-  canManage: boolean
-  memberCount: number
-  members: WorkspaceMember[]
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type ExternalIntegration = {
-  id: number
-  workspaceId: number
-  provider: IntegrationProvider
-  active?: boolean
-  isActive?: boolean
-  connectedAt?: string | null
-  repositoryUrl?: string | null
-  repositoryOwner?: string | null
-  repositoryName?: string | null
-  lastSyncedAt?: string | null
-  lastSyncMessage?: string | null
-  githubTokenConfigured?: boolean
-}
-
-type SettingsForm = {
-  name: string
-  description: string
-}
+import type {
+  ExternalIntegration,
+  IntegrationProvider,
+  SettingsForm,
+  SettingsTab,
+  WorkspaceMember,
+  WorkspaceSettings,
+  WorkspaceStatus,
+  WorkspaceType,
+} from './squad-settings-types'
 
 const settingsTabs: Array<{ id: SettingsTab; label: string; icon: string }> = [
   { id: 'general', label: '일반 설정', icon: 'fas fa-sliders-h' },
