@@ -5330,6 +5330,47 @@ body.squad-dashboard-body .app-viewport {
   min-height: 110px;
 }
 
+.squad-review-page main > div:first-child > div:first-child > div:first-child > button {
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  flex: 0 0 32px !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.squad-review-page main > div:first-child > div:first-child > div:first-child > button > i {
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+.squad-review-page main > div:first-child > div:first-child > div:nth-child(2) {
+  gap: 8px !important;
+  background-color: #F9FAFB !important;
+  border: 1px solid #F3F4F6 !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+  box-sizing: border-box !important;
+}
+
+.squad-review-page main > div:first-child > div:first-child > div:nth-child(2) > button {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
 .squad-review-page .squad-review-create-modal {
   max-width: 512px !important;
 }

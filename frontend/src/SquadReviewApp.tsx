@@ -922,7 +922,7 @@ export default function SquadReviewApp() {
                 <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 px-6 flex justify-between items-center shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-20">
                   <div className="text-xs font-bold text-gray-500" id="statusMessage">
                     <i className={`${detail.aiReview ? 'fas fa-check-circle text-green-500' : 'fas fa-robot text-indigo-500'} mr-1`}></i>
-                    {detail.aiReview ? 'AI checks have passed' : 'AI review is required before merge'}
+                    {detail.aiReview ? 'AI 리뷰 검토가 완료되었습니다' : '머지 전에 AI 리뷰가 필요합니다'}
                   </div>
                   <div className="flex gap-3">
                     <button
