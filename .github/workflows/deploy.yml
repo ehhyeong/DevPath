@@ -67,15 +67,36 @@ jobs:
           key: ${{ secrets.ORACLE_SSH_KEY }}
           port: 22
           script: |
-            # systemd 서비스 정지 후, 8083 포트를 점유한 잔존 프로세스
-            # (과거 nohup/setsid 방식으로 띄워진 좀비 프로세스 등)를 정리한 뒤 재기동한다.
-            # 잔존 프로세스가 포트를 쥐고 있으면 새 JAR이 바인딩에 실패(webServerStartStop)하여
-            # 옛 코드가 계속 서비스되는 문제를 방지한다.
+            set -e
+
+            # 1) systemd 서비스 정지
             sudo systemctl stop devpath || true
+
+            # 2) 포트가 아니라 JAR 이름 기준으로 모든 백엔드 프로세스를 정리한다.
+            #    systemd 외부에서 수동(nohup 등)으로 띄워진 좀비나, build/libs 등 다른
+            #    경로의 옛 JAR 프로세스까지 모두 종료해야 옛 코드가 8083을 다시 점유하는 것을 막는다.
+            #    (기존 fuser -k 8083 은 "그 순간 포트를 쥔 프로세스 하나"만 죽여 좀비를 놓쳤다.)
+            sudo pkill -f 'DevPath-0.0.1-SNAPSHOT.jar' 2>/dev/null || true
+
+            # 3) 그래도 8083을 쥔 잔존 프로세스가 있으면 포트 기준으로 마저 정리
             sudo fuser -k 8083/tcp 2>/dev/null || true
             sleep 3
+
+            # 4) systemd로 단독 기동 (ExecStart = 방금 SCP된 루트 JAR)
             sudo systemctl start devpath
-            echo "Backend restarted successfully"
+
+            # 5) 헬스체크: 새 버전이 실제 8083에 떠서 응답하는지 최대 90초 폴링.
+            #    실패 시 배포를 실패 처리하여 "옛 코드가 계속 서비스되는데 배포는 성공" 상황을 방지한다.
+            for i in $(seq 1 18); do
+              if curl -sf http://localhost:8083/actuator/health >/dev/null 2>&1; then
+                echo "Backend healthy (attempt $i)"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "Backend health check FAILED"
+            sudo systemctl status devpath --no-pager -l | tail -30 || true
+            exit 1
 
   # ─────────────────────────────────────────────
   # Job 2. 프론트엔드 Docker 재빌드 (백엔드 완료 후 실행)

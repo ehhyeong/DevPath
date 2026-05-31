@@ -83,6 +83,14 @@ public class Quiz {
   @Column(name = "is_deleted", nullable = false)
   private Boolean isDeleted = false;
 
+  // AI 퀴즈 생성에 사용한 키워드(쉼표 구분)를 보존해 재진입 시 복원한다.
+  @Column(name = "generation_keywords", columnDefinition = "TEXT")
+  private String generationKeywords;
+
+  // AI 퀴즈 생성에 사용한 강의 스크립트를 보존해 재진입 시 복원한다.
+  @Column(name = "generation_script", columnDefinition = "TEXT")
+  private String generationScript;
+
   // 하나의 퀴즈는 여러 개의 문항을 가지며 문항 삭제 시 함께 정리되도록 cascade와 orphanRemoval을 사용한다.
   @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<QuizQuestion> questions = new ArrayList<>();
@@ -175,6 +183,12 @@ public class Quiz {
   public void updateExposePolicy(Boolean exposeAnswer, Boolean exposeExplanation) {
     this.exposeAnswer = exposeAnswer;
     this.exposeExplanation = exposeExplanation;
+  }
+
+  // AI 퀴즈 생성에 사용한 키워드/스크립트를 보존한다.
+  public void updateGenerationSource(String generationKeywords, String generationScript) {
+    this.generationKeywords = generationKeywords;
+    this.generationScript = generationScript;
   }
 
   // 퀴즈를 soft delete 처리하면서 비활성 및 비공개 상태로 함께 전환한다.

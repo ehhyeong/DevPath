@@ -28,6 +28,7 @@ import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -189,6 +190,10 @@ public class InstructorLessonEvaluationService {
         totalScore,
         request.getPassScore(),
         request.getTimeLimitMinutes());
+
+    // AI 생성에 사용한 키워드/스크립트를 보존해 재진입 시 복원되도록 한다.
+    quiz.updateGenerationSource(
+        joinKeywords(request.getKeywords()), normalizeText(request.getScriptText()));
 
     Quiz savedQuiz = quizRepository.save(quiz);
     return mapQuizEditor(lesson, node, savedQuiz);
@@ -503,6 +508,8 @@ public class InstructorLessonEvaluationService {
           .exposeAnswer(false)
           .exposeExplanation(false)
           .isPublished(false)
+          .keywords(List.of())
+          .scriptText(null)
           .questions(List.of())
           .build();
     }
@@ -520,6 +527,8 @@ public class InstructorLessonEvaluationService {
         .exposeAnswer(Boolean.TRUE.equals(quiz.getExposeAnswer()))
         .exposeExplanation(Boolean.TRUE.equals(quiz.getExposeExplanation()))
         .isPublished(Boolean.TRUE.equals(quiz.getIsPublished()))
+        .keywords(splitKeywords(quiz.getGenerationKeywords()))
+        .scriptText(quiz.getGenerationScript())
         .questions(
             quiz.getQuestions().stream()
                 .filter(question -> !Boolean.TRUE.equals(question.getIsDeleted()))
@@ -755,6 +764,34 @@ public class InstructorLessonEvaluationService {
         request.getKeywords() != null
             && request.getKeywords().stream().anyMatch(value -> !isBlank(value));
     return hasKeyword || !isBlank(request.getScriptText());
+  }
+
+  // 키워드 목록을 저장용 쉼표 구분 문자열로 합친다.
+  private String joinKeywords(List<String> keywords) {
+    if (keywords == null || keywords.isEmpty()) {
+      return null;
+    }
+
+    String joined =
+        keywords.stream()
+            .map(this::normalizeText)
+            .filter(keyword -> !isBlank(keyword))
+            .distinct()
+            .collect(Collectors.joining(","));
+
+    return joined.isBlank() ? null : joined;
+  }
+
+  // 저장된 쉼표 구분 문자열을 키워드 목록으로 분리한다.
+  private List<String> splitKeywords(String generationKeywords) {
+    if (isBlank(generationKeywords)) {
+      return List.of();
+    }
+
+    return Arrays.stream(generationKeywords.split(","))
+        .map(String::trim)
+        .filter(keyword -> !keyword.isBlank())
+        .toList();
   }
 
   private int clampQuestionCount(Integer questionCount) {

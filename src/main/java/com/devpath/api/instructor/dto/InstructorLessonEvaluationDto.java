@@ -24,6 +24,8 @@ public class InstructorLessonEvaluationDto {
     private Boolean exposeAnswer;
     private Boolean exposeExplanation;
     private Boolean isPublished;
+    private List<String> keywords;
+    private String scriptText;
     private List<QuizQuestionItem> questions;
   }
 
@@ -59,6 +61,8 @@ public class InstructorLessonEvaluationDto {
     private Boolean exposeAnswer;
     private Boolean exposeExplanation;
     private Boolean isPublished;
+    private List<String> keywords = new ArrayList<>();
+    private String scriptText;
 
     @Valid private List<QuizQuestionInput> questions = new ArrayList<>();
   }

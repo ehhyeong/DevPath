@@ -51,19 +51,37 @@ public class GeminiProvider {
   }
 
   /**
-   * 순수 텍스트 분석(채용공고 채점 등) 전용. thinking 모델의 추론 단계를 끄고 JSON 응답을 강제해 응답 지연과 출력 잘림을 방지한다. 이미지/멀티모달
-   * 호출에는 사용하지 않는다.
+   * 순수 텍스트 분석(채용공고 채점 등) 전용. thinking 모델의 추론 단계를 끄고 JSON 응답을 강제해 응답 지연과 출력 잘림을 방지한다.
    */
   public String generateJson(String prompt) {
+    return generateJson(prompt, null, null, 4096);
+  }
+
+  /**
+   * thinking 비활성화 + JSON 강제 경로에 멀티모달(영상/이미지) 입력과 출력 토큰 한도를 함께 지정할 수 있는 변형. 퀴즈 생성처럼 응답이 길고
+   * inline_data가 필요한 경우에 사용해 추론 지연을 줄인다.
+   */
+  public String generateJson(
+      String prompt, String inlineMimeType, String inlineBase64Data, int maxOutputTokens) {
+    List<Object> parts = new ArrayList<>();
+    parts.add(Map.of("text", prompt));
+
+    if (!normalize(inlineMimeType).isBlank() && !normalize(inlineBase64Data).isBlank()) {
+      parts.add(
+          Map.of(
+              "inline_data",
+              Map.of("mime_type", normalize(inlineMimeType), "data", normalize(inlineBase64Data))));
+    }
+
     Map<String, Object> generationConfig =
         Map.of(
             "responseMimeType", "application/json",
             "thinkingConfig", Map.of("thinkingBudget", 0),
-            "maxOutputTokens", 4096);
+            "maxOutputTokens", maxOutputTokens);
 
     Map<String, Object> body =
         Map.of(
-            "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
+            "contents", List.of(Map.of("parts", parts)),
             "generationConfig", generationConfig);
     return execute(body);
   }

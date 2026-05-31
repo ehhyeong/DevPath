@@ -148,6 +148,13 @@ export default function CourseQuizEditorOverlay({
       .getQuizEditor(lessonId, controller.signal)
       .then((response) => {
         setDraft(normalizeEditor(response))
+        // 저장된 생성 키워드/스크립트가 있으면 복원한다.
+        if (response.keywords && response.keywords.length) {
+          setKeywords(normalizeKeywordList(response.keywords))
+        }
+        if (response.scriptText != null) {
+          setScriptText(response.scriptText)
+        }
         setLoading(false)
       })
       .catch((nextError: Error) => {
@@ -379,6 +386,8 @@ export default function CourseQuizEditorOverlay({
       exposeAnswer: current.exposeAnswer,
       exposeExplanation: current.exposeExplanation,
       isPublished: current.isPublished,
+      keywords,
+      scriptText,
       questions: current.questions.map((question, questionIndex) => ({
         questionId: question.questionId,
         questionType: question.questionType,

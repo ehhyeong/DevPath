@@ -29,6 +29,8 @@ export interface InstructorQuizEditor {
   exposeAnswer: boolean
   exposeExplanation: boolean
   isPublished: boolean
+  keywords: string[]
+  scriptText: string | null
   questions: InstructorQuizEditorQuestion[]
 }
 
@@ -41,6 +43,8 @@ export interface SaveInstructorQuizEditorRequest {
   exposeAnswer: boolean
   exposeExplanation: boolean
   isPublished: boolean
+  keywords: string[]
+  scriptText: string | null
   questions: InstructorQuizEditorQuestion[]
 }
 

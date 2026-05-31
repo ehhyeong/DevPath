@@ -314,9 +314,10 @@ public class AiQuizDraftService {
     }
 
     String prompt = buildPrompt(request);
+    // thinking 비활성화 + JSON 강제로 생성 지연을 줄인다. (영상 모드는 inline_data 함께 전달)
     String raw =
-        geminiProvider.generate(
-            prompt, request.getSourceMimeType(), request.getSourceBase64Content());
+        geminiProvider.generateJson(
+            prompt, request.getSourceMimeType(), request.getSourceBase64Content(), 8192);
 
     if (raw == null) {
       log.warn("[AiQuizDraftService] Gemini API 응답 없음. Fallback 실행.");
