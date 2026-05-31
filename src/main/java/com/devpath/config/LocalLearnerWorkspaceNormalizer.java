@@ -23,7 +23,6 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
     ensureAllowedWorkspaces();
     ensureMentoringWorkspaceOwners();
     ensureMentoringPositionSchema();
-    pruneLearnerWorkspaceMemberships();
     ensureAllowedWorkspaceMemberships();
     ensureWorkspaceTaskStatusConstraint();
     ensureSquadWorkspaceTasks();
@@ -104,22 +103,6 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
            AND workspace.type = 'MENTORING'
            AND COALESCE(workspace.is_deleted, FALSE) = FALSE
            AND workspace.owner_id IS DISTINCT FROM mentor.user_id;
-        """);
-  }
-
-  private void pruneLearnerWorkspaceMemberships() {
-    jdbcTemplate.execute(
-        """
-        DELETE FROM workspace_member member
-        USING workspace workspace, users learner
-        WHERE member.workspace_id = workspace.id
-          AND member.learner_id = learner.user_id
-          AND learner.email = 'learner@devpath.com'
-          AND workspace.name NOT IN (
-              '배달비 절약 플랫폼',
-              '대용량 트래픽 커머스 서버',
-              'Next.js 블로그 플랫폼 구축'
-          );
         """);
   }
 
