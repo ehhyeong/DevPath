@@ -551,27 +551,82 @@ function extractStretchJobs(candidates: MatchingJob[], count = 3): MatchingJob[]
   return result.map((j) => ({ ...j, isStretch: true }))
 }
 
+// 채용 분석 결과를 탭 세션 동안 보존하기 위한 스냅샷 (페이지 이동 후 복귀 시 복원)
+const JOB_MATCHING_SNAPSHOT_KEY = 'devpath:job-matching:v1'
+
+type JobMatchingSnapshot = {
+  userId: number | null
+  roleFilter: RoleFilter
+  regionFilter: RegionFilter
+  careerFilter: CareerFilter
+  highMatchOnly: boolean
+  jobs: MatchingJob[]
+  stretchJobs: MatchingJob[]
+  scanned: boolean
+  geminiMode: boolean
+  sourceWarnings: string[]
+  jobkoreaAttribution: JobkoreaResult['attribution']
+  pageSize: number
+}
+
+function loadJobMatchingSnapshot(userId: number | null): JobMatchingSnapshot | null {
+  try {
+    const raw = sessionStorage.getItem(JOB_MATCHING_SNAPSHOT_KEY)
+    if (!raw) return null
+
+    const snapshot = JSON.parse(raw) as JobMatchingSnapshot
+
+    // 다른 계정으로 로그인한 경우 stale 결과는 폐기
+    if (snapshot.userId !== userId) {
+      sessionStorage.removeItem(JOB_MATCHING_SNAPSHOT_KEY)
+      return null
+    }
+
+    return snapshot
+  } catch {
+    return null
+  }
+}
+
+function saveJobMatchingSnapshot(snapshot: JobMatchingSnapshot) {
+  try {
+    sessionStorage.setItem(JOB_MATCHING_SNAPSHOT_KEY, JSON.stringify(snapshot))
+  } catch {
+    // quota 등 저장 실패는 무시 (캐시는 부가 기능)
+  }
+}
+
+function clearJobMatchingSnapshot() {
+  try {
+    sessionStorage.removeItem(JOB_MATCHING_SNAPSHOT_KEY)
+  } catch {
+    // 무시
+  }
+}
+
 export default function JobMatchingApp() {
   useInternalPageScroll()
 
   const [session, setSession] = useState(() => readStoredAuthSession())
+  // 탭 세션에 보존된 이전 분석 결과 (현재 로그인 계정과 일치할 때만 복원)
+  const [snapshot] = useState<JobMatchingSnapshot | null>(() => loadJobMatchingSnapshot(session?.userId ?? null))
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(null)
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all')
-  const [regionFilter, setRegionFilter] = useState<RegionFilter>('all')
-  const [careerFilter, setCareerFilter] = useState<CareerFilter>('all')
-  const [highMatchOnly, setHighMatchOnly] = useState(false)
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>(() => snapshot?.roleFilter ?? 'all')
+  const [regionFilter, setRegionFilter] = useState<RegionFilter>(() => snapshot?.regionFilter ?? 'all')
+  const [careerFilter, setCareerFilter] = useState<CareerFilter>(() => snapshot?.careerFilter ?? 'all')
+  const [highMatchOnly, setHighMatchOnly] = useState(() => snapshot?.highMatchOnly ?? false)
   const [loading, setLoading] = useState(false)
-  const [scanned, setScanned] = useState(false)
-  const [jobs, setJobs] = useState<MatchingJob[]>([])
-  const [stretchJobs, setStretchJobs] = useState<MatchingJob[]>([])
-  const [sourceWarnings, setSourceWarnings] = useState<string[]>([])
-  const [jobkoreaAttribution, setJobkoreaAttribution] = useState<JobkoreaResult['attribution']>(null)
+  const [scanned, setScanned] = useState(() => snapshot?.scanned ?? false)
+  const [jobs, setJobs] = useState<MatchingJob[]>(() => snapshot?.jobs ?? [])
+  const [stretchJobs, setStretchJobs] = useState<MatchingJob[]>(() => snapshot?.stretchJobs ?? [])
+  const [sourceWarnings, setSourceWarnings] = useState<string[]>(() => snapshot?.sourceWarnings ?? [])
+  const [jobkoreaAttribution, setJobkoreaAttribution] = useState<JobkoreaResult['attribution']>(() => snapshot?.jobkoreaAttribution ?? null)
   const [activityProfile, setActivityProfile] = useState<ActivityProfile | null>(null)
-  const [geminiMode, setGeminiMode] = useState(false)
+  const [geminiMode, setGeminiMode] = useState(() => snapshot?.geminiMode ?? false)
   const [loadingStep, setLoadingStep] = useState<LoadingStep>(null)
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
-  const [pageSize, setPageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(() => snapshot?.pageSize ?? 20)
 
   const role = useMemo(() => optionOf(roleOptions, roleFilter), [roleFilter])
   const visibleJobs = useMemo(
@@ -642,6 +697,39 @@ export default function JobMatchingApp() {
     }
   }, [])
 
+  // 분석 결과/필터를 탭 세션에 저장해 페이지 이동 후 복귀 시 복원되도록 한다.
+  useEffect(() => {
+    if (!scanned) return
+
+    saveJobMatchingSnapshot({
+      userId: session?.userId ?? null,
+      roleFilter,
+      regionFilter,
+      careerFilter,
+      highMatchOnly,
+      jobs,
+      stretchJobs,
+      scanned,
+      geminiMode,
+      sourceWarnings,
+      jobkoreaAttribution,
+      pageSize,
+    })
+  }, [
+    session,
+    roleFilter,
+    regionFilter,
+    careerFilter,
+    highMatchOnly,
+    jobs,
+    stretchJobs,
+    scanned,
+    geminiMode,
+    sourceWarnings,
+    jobkoreaAttribution,
+    pageSize,
+  ])
+
   async function handleLogout() {
     const currentSession = readStoredAuthSession()
 
@@ -653,6 +741,7 @@ export default function JobMatchingApp() {
       // 서버 로그아웃 실패와 관계없이 브라우저 세션은 정리한다.
     } finally {
       clearStoredAuthSession()
+      clearJobMatchingSnapshot()
       setSession(null)
       setProfile(null)
       setActivityProfile(null)

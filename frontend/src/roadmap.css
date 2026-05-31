@@ -338,36 +338,23 @@
   50%       { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
 }
 
-/* ── Proof Card 배지 ── */
-.proof-card-wrapper {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  z-index: 15;
-  cursor: pointer;
-}
-.proof-card-wrapper.left  { right: 100%; flex-direction: row-reverse; }
-.proof-card-wrapper.right { left: 100%; }
-
-.proof-card-line {
-  width: 40px; height: 2px;
-  background: #00c471;
-}
-.proof-card-box {
-  background: #fff;
-  border: 2px solid #00c471;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px; font-weight: 800;
+/* ── Proof Card 배지 (노드 좌상단, 필수 배지와 동일 높이) ── */
+.proof-card-badge {
+  position: absolute; top: -10px; left: 10px;
+  max-width: calc(100% - 72px); /* 우상단 rule-badge와 겹치지 않도록 폭 제한 */
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #fff; border: 1px solid #00c471;
   color: #00c471;
-  display: flex; align-items: center; gap: 6px;
-  box-shadow: 0 4px 10px rgba(0, 196, 113, 0.15);
-  white-space: nowrap;
+  font-size: 0.7rem; font-weight: 800;
+  padding: 2px 8px; border-radius: 99px;
+  z-index: 30;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
   transition: transform 0.2s;
 }
-.proof-card-box:hover { transform: translateY(-2px); }
+.proof-card-badge:hover { transform: translateY(-1px); }
+.proof-card-badge i { color: #f59e0b; flex: 0 0 auto; }
+.proof-card-badge-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Rule badge ── */
 .rule-badge {

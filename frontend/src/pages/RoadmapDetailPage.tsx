@@ -186,30 +186,14 @@ function changeChipLabel(type?: ChangeType | null) {
 
 interface ProofCardBadgeProps {
   card: ProofCardSummary
-  side: 'left' | 'right'
 }
 
-function ProofCardBadge({ card, side }: ProofCardBadgeProps) {
+// Proof 카드를 노드 내부 왼쪽 위(필수 배지와 동일 높이)에 출력해 옆 브랜치 노드와의 겹침을 방지한다.
+function ProofCardBadge({ card }: ProofCardBadgeProps) {
   return (
-    <div className={`proof-card-wrapper ${side}`} onClick={(e) => e.stopPropagation()}>
-      {side === 'left' && (
-        <>
-          <div className="proof-card-box">
-            <i className="fas fa-medal" style={{ color: '#f59e0b' }} />
-            {card.title}
-          </div>
-          <div className="proof-card-line" />
-        </>
-      )}
-      {side === 'right' && (
-        <>
-          <div className="proof-card-line" />
-          <div className="proof-card-box">
-            <i className="fas fa-medal" style={{ color: '#f59e0b' }} />
-            {card.title}
-          </div>
-        </>
-      )}
+    <div className="proof-card-badge" title={card.title} onClick={(e) => e.stopPropagation()}>
+      <i className="fas fa-medal" />
+      <span className="proof-card-badge-text">{card.title}</span>
     </div>
   )
 }
@@ -634,13 +618,12 @@ function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationCha
 interface RoadmapNodeCardProps {
   node: RoadmapNodeItem
   proofCard?: ProofCardSummary
-  proofSide: 'left' | 'right'
   pendingChange?: RecommendationChange
   badge?: BranchBadgeMeta
   onNodeClick?: (node: RoadmapNodeItem) => void
 }
 
-function RoadmapNodeCard({ node, proofCard, proofSide, pendingChange, badge, onNodeClick }: RoadmapNodeCardProps) {
+function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }: RoadmapNodeCardProps) {
   const readyToClear = isNodeReadyToClear(node)
   const progressPercent = node.requiredTagsSatisfied ? 100 : getNodeLessonProgressPercent(node)
   const visibleBadge = badge ?? {
@@ -667,7 +650,7 @@ function RoadmapNodeCard({ node, proofCard, proofSide, pendingChange, badge, onN
     <div className={getNodeBoxClass(node, pendingChange)} onClick={handleClick}>
       {pendingChange && <ChangeLabel change={pendingChange} />}
       {proofCard && node.status === 'COMPLETED' && (
-        <ProofCardBadge card={proofCard} side={proofSide} />
+        <ProofCardBadge card={proofCard} />
       )}
       <div
         className="rule-badge"
@@ -934,14 +917,12 @@ function RoadmapGraph({
   }
 
   function renderSlot(slot: LayoutSlot) {
-    const proofSide: 'left' | 'right' = slot.lane === 'right' || slot.lane === 'side-right' ? 'left' : 'right'
     if (slot.node) {
       const nodeOriginalId = slot.node.originalNodeId
       return (
         <RoadmapNodeCard
           node={slot.node}
           proofCard={nodeOriginalId == null ? undefined : proofCardByNodeId[nodeOriginalId]}
-          proofSide={proofSide}
           pendingChange={nodeOriginalId == null ? undefined : changeByNodeId[nodeOriginalId]}
           badge={slot.badge}
           onNodeClick={onNodeClick}

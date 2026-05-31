@@ -523,39 +523,56 @@ function RoadmapHubPage() {
             <br />
             역할과 기술별로 정리된 로드맵을 확인하고 성장 흐름을 바로 시작해 보세요.
           </p>
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!session) {
+                    showAuthToast('로그인 후 이용할 수 있습니다.')
+                    return
+                  }
+                  window.location.href = '/my-roadmap-list'
+                }}
+                className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full bg-brand px-8 py-4 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-600 hover:shadow-xl"
+              >
+                <i className="fas fa-list-ul" />
+                <span className="text-lg">로드맵 목록으로 가기</span>
+                <i className="fas fa-arrow-right transition-transform group-hover:translate-x-1" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!session) {
+                    showAuthToast('로그인 후 이용할 수 있습니다.')
+                    return
+                  }
+                  roadmapApi.getMyRoadmaps().then((list) => {
+                    if (list.roadmaps.length === 0) {
+                      showAuthToast('아직 학습 로드맵이 없습니다. 아래에서 로드맵을 선택해 시작해보세요.')
+                    } else {
+                      window.location.href = '/roadmap'
+                    }
+                  }).catch(() => {
+                    showAuthToast('로드맵 정보를 불러오는 데 실패했습니다. 다시 시도해주세요.')
+                  })
+                }}
+                className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full bg-gray-800 px-8 py-4 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gray-900 hover:shadow-xl"
+              >
+                <span className="text-lg">최근 학습한 로드맵 이어가기</span>
+                <i className="fas fa-arrow-right transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => {
                 window.location.href = '/my-roadmap'
               }}
-              className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full bg-brand px-8 py-4 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-600 hover:shadow-xl"
+              className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full border-2 border-brand bg-white px-8 py-4 font-bold text-brand shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-green-50 hover:shadow-md"
             >
-              <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
+              <div className="h-2 w-2 animate-pulse rounded-full bg-brand" />
               <span className="text-lg">나만의 로드맵 만들기</span>
               <i className="fas fa-pen-ruler ml-1 transition-transform group-hover:rotate-12" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!session) {
-                  showAuthToast('로그인 후 이용할 수 있습니다.')
-                  return
-                }
-                roadmapApi.getMyRoadmaps().then((list) => {
-                  if (list.roadmaps.length === 0) {
-                    showAuthToast('아직 학습 로드맵이 없습니다. 아래에서 로드맵을 선택해 시작해보세요.')
-                  } else {
-                    window.location.href = '/roadmap'
-                  }
-                }).catch(() => {
-                  showAuthToast('로드맵 정보를 불러오는 데 실패했습니다. 다시 시도해주세요.')
-                })
-              }}
-              className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full bg-gray-800 px-8 py-4 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gray-900 hover:shadow-xl"
-            >
-              <span className="text-lg">최근 학습한 로드맵 이어가기</span>
-              <i className="fas fa-arrow-right transition-transform group-hover:translate-x-1" />
             </button>
           </div>
         </header>
