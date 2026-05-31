@@ -456,6 +456,9 @@ BEGIN
     ALTER TABLE public.workspace ADD COLUMN IF NOT EXISTS updated_at timestamp(6);
     ALTER TABLE public.workspace_member ADD COLUMN IF NOT EXISTS joined_at timestamp(6);
     ALTER TABLE public.workspace_member ADD COLUMN IF NOT EXISTS last_active_at timestamp(6);
+    ALTER TABLE public.workspace_member ADD COLUMN IF NOT EXISTS position_label varchar(80);
+    ALTER TABLE public.mentoring_applications ADD COLUMN IF NOT EXISTS desired_position varchar(80);
+    ALTER TABLE public.squads ADD COLUMN IF NOT EXISTS workspace_id bigint;
 
     DELETE FROM public.workspace_member wm
      USING public.workspace w
@@ -1395,7 +1398,12 @@ END $$;
 DO $$
 BEGIN
     IF to_regclass('public.learner_notification') IS NOT NULL THEN
-        ALTER TABLE public.learner_notification ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT false;
+        ALTER TABLE public.learner_notification ADD COLUMN IF NOT EXISTS is_deleted boolean;
+        UPDATE public.learner_notification
+           SET is_deleted = false
+         WHERE is_deleted IS NULL;
+        ALTER TABLE public.learner_notification ALTER COLUMN is_deleted SET DEFAULT false;
+        ALTER TABLE public.learner_notification ALTER COLUMN is_deleted SET NOT NULL;
     END IF;
 END $$;
 ^^^ END OF SCRIPT ^^^

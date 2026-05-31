@@ -7,48 +7,14 @@ import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } f
 import { projectApiRequest } from './project-api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
-type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
-type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-type FilterType = 'all' | 'me' | 'urgent'
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-}
-
-type WorkspaceDashboard = {
-  workspaceId: number
-  name: string
-  type: WorkspaceType
-  status: WorkspaceStatus
-  ownerId: number
-  members: WorkspaceMember[]
-  unresolvedTaskCount: number
-}
-
-type WorkspaceTask = {
-  taskId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  status: TaskStatus
-  priority?: TaskPriority | null
-  assigneeId?: number | null
-  dueDate?: string | null
-}
-
-type TaskFormState = {
-  title: string
-  description: string
-  status: TaskStatus
-  priority: TaskPriority
-  assigneeId: string
-  dueDate: string
-}
+import type {
+  FilterType,
+  TaskFormState,
+  TaskPriority,
+  TaskStatus,
+  WorkspaceDashboard,
+  WorkspaceTask,
+} from './squad-workspace-types'
 
 const TASK_COLUMNS: Array<{
   id: TaskStatus

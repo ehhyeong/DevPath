@@ -60,6 +60,15 @@ CREATE INDEX IF NOT EXISTS idx_ocr_results_user_lesson_frame
 ALTER TABLE workspace_member
     ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP;
 
+ALTER TABLE workspace_member
+    ADD COLUMN IF NOT EXISTS position_label VARCHAR(80);
+
+ALTER TABLE mentoring_applications
+    ADD COLUMN IF NOT EXISTS desired_position VARCHAR(80);
+
+ALTER TABLE squads
+    ADD COLUMN IF NOT EXISTS workspace_id BIGINT;
+
 -- QnA lesson link for opening the exact lecture screen from instructor inbox.
 ALTER TABLE qna_questions
     ADD COLUMN IF NOT EXISTS lesson_id BIGINT;

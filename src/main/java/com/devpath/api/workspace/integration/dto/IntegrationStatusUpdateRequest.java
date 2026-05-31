@@ -20,6 +20,10 @@ public class IntegrationStatusUpdateRequest {
   @Schema(description = "GitHub 저장소 URL", example = "https://github.com/devpath/app")
   private String repositoryUrl;
 
+  @Size(max = 2000, message = "GitHub 토큰은 2000자 이하여야 합니다.")
+  @Schema(description = "GitHub API 호출용 서버 저장 토큰", example = "github_pat_...")
+  private String githubToken;
+
   public IntegrationStatusUpdateRequest(Boolean isActive) {
     this.isActive = isActive;
   }
@@ -27,5 +31,11 @@ public class IntegrationStatusUpdateRequest {
   public IntegrationStatusUpdateRequest(Boolean isActive, String repositoryUrl) {
     this.isActive = isActive;
     this.repositoryUrl = repositoryUrl;
+  }
+
+  public IntegrationStatusUpdateRequest(Boolean isActive, String repositoryUrl, String githubToken) {
+    this.isActive = isActive;
+    this.repositoryUrl = repositoryUrl;
+    this.githubToken = githubToken;
   }
 }

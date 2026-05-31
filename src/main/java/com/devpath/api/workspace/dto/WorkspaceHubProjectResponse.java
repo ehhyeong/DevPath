@@ -20,6 +20,8 @@ import lombok.Getter;
 public class WorkspaceHubProjectResponse {
 
   private Long projectId;
+  private boolean owner;
+  private boolean canDelete;
   private String domId;
   private String menuId;
   private String type;
@@ -35,6 +37,7 @@ public class WorkspaceHubProjectResponse {
   private String footerKind;
   private String footerDateLabel;
   private List<String> memberAvatarSeeds;
+  private List<String> memberAvatarUrls;
   private Integer extraMemberCount;
   private String footerAvatarSeed;
   private String footerAvatarUrl;
@@ -47,6 +50,8 @@ public class WorkspaceHubProjectResponse {
   public static WorkspaceHubProjectResponse from(WorkspaceHubProject project) {
     return WorkspaceHubProjectResponse.builder()
         .projectId(project.getId())
+        .owner(false)
+        .canDelete(false)
         .domId(project.getDomId())
         .menuId(project.getMenuId())
         .type(project.getType())
@@ -62,6 +67,7 @@ public class WorkspaceHubProjectResponse {
         .footerKind(project.getFooterKind())
         .footerDateLabel(project.getFooterDateLabel())
         .memberAvatarSeeds(parseSeeds(project.getMemberAvatarSeeds()))
+        .memberAvatarUrls(List.of())
         .extraMemberCount(project.getExtraMemberCount())
         .footerAvatarSeed(project.getFooterAvatarSeed())
         .footerAvatarUrl(null)
@@ -77,9 +83,11 @@ public class WorkspaceHubProjectResponse {
       Long currentUserId,
       User mentor,
       UserProfile mentorProfile,
+      java.util.Map<Long, UserProfile> memberProfiles,
       CalendarEvent nextSchedule,
       String roleLabel,
-      int progressPercent) {
+      int progressPercent,
+      boolean canDelete) {
     String type = typeOf(workspace.getType());
     String status = statusOf(workspace.getStatus());
     String mentoringModeLabel = mentoringModeLabel(workspace);
@@ -89,6 +97,8 @@ public class WorkspaceHubProjectResponse {
 
     return WorkspaceHubProjectResponse.builder()
         .projectId(workspace.getId())
+        .owner(workspace.getOwnerId() != null && workspace.getOwnerId().equals(currentUserId))
+        .canDelete(canDelete)
         .domId("workspace-" + workspace.getId())
         .menuId("workspace-menu-" + workspace.getId())
         .type(type)
@@ -107,6 +117,7 @@ public class WorkspaceHubProjectResponse {
         .footerKind(mentoring ? "mentor" : "avatars")
         .footerDateLabel(dateText(workspace.getCreatedAt()))
         .memberAvatarSeeds(memberSeeds(members, currentUserId))
+        .memberAvatarUrls(memberProfileImages(members, currentUserId, memberProfiles))
         .extraMemberCount(extraMemberCount(members))
         .footerAvatarSeed(mentoring ? "mentor-" + workspace.getOwnerId() : null)
         .footerAvatarUrl(mentoring ? mentorAvatarUrl : null)
@@ -139,7 +150,7 @@ public class WorkspaceHubProjectResponse {
     return "squad";
   }
 
-  private static String dashboardUrl(Workspace workspace) {
+  public static String dashboardUrl(Workspace workspace) {
     if (workspace.getType() == WorkspaceType.SQUAD) {
       return "/squad-dashboard?workspaceId=" + workspace.getId();
     }
@@ -218,6 +229,39 @@ public class WorkspaceHubProjectResponse {
         .toList();
   }
 
+  private static List<String> memberProfileImages(
+      List<WorkspaceMember> members,
+      Long currentUserId,
+      java.util.Map<Long, UserProfile> memberProfiles) {
+    return sortedVisibleMembers(members, currentUserId).stream()
+        .map(
+            member -> {
+              UserProfile profile = memberProfiles.get(member.getLearnerId());
+              return profile == null ? null : profile.getDisplayProfileImage();
+            })
+        .toList();
+  }
+
+  private static List<WorkspaceMember> sortedVisibleMembers(
+      List<WorkspaceMember> members, Long currentUserId) {
+    return members.stream()
+        .sorted(
+            (left, right) -> {
+              boolean leftIsCurrent =
+                  currentUserId != null && currentUserId.equals(left.getLearnerId());
+              boolean rightIsCurrent =
+                  currentUserId != null && currentUserId.equals(right.getLearnerId());
+
+              if (leftIsCurrent == rightIsCurrent) {
+                return 0;
+              }
+
+              return leftIsCurrent ? -1 : 1;
+            })
+        .limit(2)
+        .toList();
+  }
+
   private static Integer extraMemberCount(List<WorkspaceMember> members) {
     int extraCount = members.size() - 2;
     return extraCount > 0 ? extraCount : null;
@@ -225,22 +269,22 @@ public class WorkspaceHubProjectResponse {
 
   private static String roleCategoryLabel(String roleLabel) {
     String normalized = roleLabel.toLowerCase(Locale.ROOT);
-    if (normalized.contains("backend")) {
+    if (normalized.equals("be") || normalized.contains("backend")) {
       return "Backend";
     }
-    if (normalized.contains("frontend")) {
+    if (normalized.equals("fe") || normalized.contains("frontend")) {
       return "Frontend";
     }
-    if (normalized.contains("app")) {
+    if (normalized.equals("app") || normalized.contains("app")) {
       return "App";
     }
-    if (normalized.contains("design")) {
+    if (normalized.equals("des") || normalized.contains("design")) {
       return "Design";
     }
-    if (normalized.contains("pm")) {
+    if (normalized.equals("pm") || normalized.contains("pm")) {
       return "PM";
     }
-    if (normalized.contains("fullstack")) {
+    if (normalized.equals("fs") || normalized.contains("fullstack")) {
       return "Fullstack";
     }
     return "Role";

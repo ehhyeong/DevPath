@@ -64,9 +64,11 @@ public class WorkspaceCodeReviewController {
   public ApiResponse<WorkspaceCodeReviewResponse.Detail> createAiReview(
       @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(description = "리뷰 요청 ID", example = "9") @PathVariable Long reviewId,
+      @RequestBody(required = false) WorkspaceCodeReviewRequest.AiReviewCreate request,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(
-        workspaceCodeReviewService.createAiReview(workspaceId, reviewId, requireUserId(userId)));
+        workspaceCodeReviewService.createAiReview(
+            workspaceId, reviewId, requireUserId(userId), request));
   }
 
   @PostMapping("/{reviewId}/close")

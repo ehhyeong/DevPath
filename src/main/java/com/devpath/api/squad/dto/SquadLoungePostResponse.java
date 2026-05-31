@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +24,7 @@ public class SquadLoungePostResponse {
   private Long id;
   private Long authorId;
   private String authorName;
+  private String authorProfileImage;
   private String title;
   private String type;
   private LocalDate deadline;
@@ -33,11 +35,18 @@ public class SquadLoungePostResponse {
   private int maxMembers;
   private long views;
   private boolean closed;
+  private Long workspaceId;
+  private String workspaceUrl;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
   private List<SquadMemberResponse> members;
 
   public static SquadLoungePostResponse from(Squad squad, List<SquadMember> members) {
+    return from(squad, members, Map.of());
+  }
+
+  public static SquadLoungePostResponse from(
+      Squad squad, List<SquadMember> members, Map<Long, String> profileImages) {
     SquadMember leader =
         members.stream()
             .filter(member -> member.getRole() == SquadRole.LEADER)
@@ -52,6 +61,8 @@ public class SquadLoungePostResponse {
         .id(squad.getId())
         .authorId(leader == null ? null : leader.getUser().getId())
         .authorName(leader == null ? "사용자" : leader.getUser().getName())
+        .authorProfileImage(
+            leader == null ? null : profileImages.get(leader.getUser().getId()))
         .title(squad.getName())
         .type(toWireType(squad.getLoungeType()))
         .deadline(squad.getRecruitingDeadline())
@@ -62,9 +73,14 @@ public class SquadLoungePostResponse {
         .maxMembers(maxMembers)
         .views(squad.getViewCount() == null ? 0L : squad.getViewCount())
         .closed(Boolean.TRUE.equals(squad.getIsArchived()))
+        .workspaceId(squad.getWorkspaceId())
+        .workspaceUrl(squad.getWorkspaceId() == null ? null : "/squad-dashboard?workspaceId=" + squad.getWorkspaceId())
         .createdAt(squad.getCreatedAt())
         .updatedAt(squad.getUpdatedAt())
-        .members(members.stream().map(SquadMemberResponse::from).toList())
+        .members(
+            members.stream()
+                .map(member -> SquadMemberResponse.from(member, profileImages.get(member.getUser().getId())))
+                .toList())
         .build();
   }
 

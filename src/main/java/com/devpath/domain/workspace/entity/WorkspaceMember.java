@@ -39,13 +39,28 @@ public class WorkspaceMember {
   @Column(name = "last_active_at")
   private LocalDateTime lastActiveAt;
 
+  @Column(name = "position_label", length = 80)
+  private String positionLabel;
+
   @Builder
-  public WorkspaceMember(Long workspaceId, Long learnerId) {
+  public WorkspaceMember(Long workspaceId, Long learnerId, String positionLabel) {
     this.workspaceId = workspaceId;
     this.learnerId = learnerId;
+    this.positionLabel = normalizePositionLabel(positionLabel);
   }
 
   public void markActive(LocalDateTime activeAt) {
     this.lastActiveAt = activeAt;
+  }
+
+  public void assignPositionLabel(String positionLabel) {
+    this.positionLabel = normalizePositionLabel(positionLabel);
+  }
+
+  private static String normalizePositionLabel(String positionLabel) {
+    if (positionLabel == null || positionLabel.isBlank()) {
+      return null;
+    }
+    return positionLabel.trim();
   }
 }

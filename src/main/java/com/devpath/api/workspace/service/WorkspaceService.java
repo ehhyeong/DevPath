@@ -8,6 +8,9 @@ import com.devpath.api.workspace.dto.WorkspaceResponse;
 import com.devpath.api.workspace.dto.WorkspaceSettingsResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.mentoring.entity.MentoringApplication;
+import com.devpath.domain.mentoring.entity.MentoringApplicationStatus;
+import com.devpath.domain.mentoring.repository.MentoringApplicationRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
@@ -28,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +52,7 @@ public class WorkspaceService {
   private final CalendarEventRepository calendarEventRepository;
   private final UserRepository userRepository;
   private final UserProfileRepository userProfileRepository;
+  private final MentoringApplicationRepository mentoringApplicationRepository;
 
   public List<WorkspaceResponse> getMyWorkspaces(Long userId, WorkspaceType type) {
     List<Long> workspaceIds = getWorkspaceIdsByMember(userId);
@@ -95,7 +100,7 @@ public class WorkspaceService {
     validateMember(workspaceId, userId);
 
     List<WorkspaceMember> members = workspaceMemberRepository.findAllByWorkspaceId(workspaceId);
-    List<WorkspaceMemberResponse> memberResponses = buildMemberResponses(members);
+    List<WorkspaceMemberResponse> memberResponses = buildMemberResponses(workspace, members);
     long unresolvedTaskCount =
         workspaceTaskRepository.countByWorkspaceIdAndStatusNotAndIsDeletedFalse(
             workspaceId, WorkspaceTaskStatus.DONE);
@@ -200,7 +205,8 @@ public class WorkspaceService {
 
   // --- 내부 헬퍼 ---
 
-  private List<WorkspaceMemberResponse> buildMemberResponses(List<WorkspaceMember> members) {
+  private List<WorkspaceMemberResponse> buildMemberResponses(
+      Workspace workspace, List<WorkspaceMember> members) {
     if (members.isEmpty()) {
       return List.of();
     }
@@ -212,23 +218,80 @@ public class WorkspaceService {
     Map<Long, UserProfile> profilesByUserId =
         userProfileRepository.findAllByUserIdIn(userIds).stream()
             .collect(Collectors.toMap(profile -> profile.getUser().getId(), Function.identity()));
+    Map<Long, String> positionsByLearnerId = buildMentoringPositions(workspace, userIds);
 
     return members.stream()
         .map(
-            member ->
-                WorkspaceMemberResponse.from(
-                    member,
-                    usersById.get(member.getLearnerId()),
-                    profilesByUserId.get(member.getLearnerId()),
-                    isOnline(member)))
+            member -> {
+              String positionLabel =
+                  firstNonBlank(
+                      member.getPositionLabel(), positionsByLearnerId.get(member.getLearnerId()));
+              return WorkspaceMemberResponse.from(
+                  member,
+                  usersById.get(member.getLearnerId()),
+                  profilesByUserId.get(member.getLearnerId()),
+                  isOnline(member),
+                  positionLabel);
+            })
         .toList();
   }
 
   private WorkspaceSettingsResponse buildWorkspaceSettingsResponse(
       Workspace workspace, Long viewerId) {
     List<WorkspaceMemberResponse> memberResponses =
-        buildMemberResponses(workspaceMemberRepository.findAllByWorkspaceId(workspace.getId()));
+        buildMemberResponses(workspace, workspaceMemberRepository.findAllByWorkspaceId(workspace.getId()));
     return WorkspaceSettingsResponse.from(workspace, memberResponses, viewerId);
+  }
+
+  private Map<Long, String> buildMentoringPositions(Workspace workspace, List<Long> learnerIds) {
+    if (workspace == null || workspace.getOwnerId() == null || learnerIds.isEmpty()) {
+      return Map.of();
+    }
+
+    return mentoringApplicationRepository
+        .findAllByPost_Mentor_IdAndApplicant_IdInAndStatusAndIsDeletedFalseOrderByProcessedAtDesc(
+            workspace.getOwnerId(), learnerIds, MentoringApplicationStatus.APPROVED)
+        .stream()
+        .filter(application -> application.getPost() != null)
+        .filter(application -> Objects.equals(application.getPost().getTitle(), workspace.getName()))
+        .map(
+            application -> {
+              String position =
+                  firstNonBlank(
+                      application.getDesiredPosition(),
+                      parseDesiredPositionFromMessage(application.getMessage()));
+              if (position == null || application.getApplicant() == null) {
+                return null;
+              }
+              return Map.entry(application.getApplicant().getId(), position);
+            })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, ignored) -> first));
+  }
+
+  private String parseDesiredPositionFromMessage(String message) {
+    if (message == null || message.isBlank()) {
+      return null;
+    }
+    for (String line : message.split("\\R")) {
+      String trimmed = line.trim();
+      if (trimmed.startsWith("지원 직군:")) {
+        return normalizeNullable(trimmed.substring("지원 직군:".length()));
+      }
+    }
+    return null;
+  }
+
+  private String firstNonBlank(String first, String second) {
+    String normalizedFirst = normalizeNullable(first);
+    return normalizedFirst == null ? normalizeNullable(second) : normalizedFirst;
+  }
+
+  private String normalizeNullable(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    return value.trim();
   }
 
   private Workspace getWorkspaceEntity(Long workspaceId) {

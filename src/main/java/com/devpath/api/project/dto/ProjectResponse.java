@@ -26,12 +26,18 @@ public class ProjectResponse {
   private String status;
   private String visibility;
   private String recruitingStatus;
+  private Long workspaceId;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
   private List<ProjectMemberResponse> members;
 
   // 상세 조회 (멤버 포함)
   public static ProjectResponse from(Project project, List<ProjectMember> members) {
+    return from(project, members, null);
+  }
+
+  public static ProjectResponse from(
+      Project project, List<ProjectMember> members, Long workspaceId) {
     return ProjectResponse.builder()
         .projectId(project.getId())
         .ownerId(project.getOwnerId())
@@ -42,6 +48,7 @@ public class ProjectResponse {
         .status(project.getStatus().name())
         .visibility(project.getVisibility().name())
         .recruitingStatus(project.getRecruitingStatus().name())
+        .workspaceId(workspaceId)
         .createdAt(project.getCreatedAt())
         .updatedAt(project.getUpdatedAt())
         .members(members.stream().map(ProjectMemberResponse::from).toList())

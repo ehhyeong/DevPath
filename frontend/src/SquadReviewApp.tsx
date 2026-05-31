@@ -7,91 +7,14 @@ import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } f
 import { projectApiRequest } from './project-api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-}
-
-type CodeReviewSummary = {
-  reviewId: number
-  workspaceId: number
-  issueKey: string
-  title: string
-  status: 'OPEN' | 'CLOSED' | 'MERGED'
-  authorId: number
-  authorName?: string | null
-  authorProfileImage?: string | null
-  authorRole?: string | null
-  filePath: string
-  sourceBranch: string
-  targetBranch: string
-  additions: number
-  deletions: number
-  aiCommentCount: number
-  aiCodeReviewId?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type AiReviewComment = {
-  commentId: number
-  category: string
-  lineNumber?: number | null
-  title: string
-  message: string
-  suggestion?: string | null
-}
-
-type AiReviewDetail = {
-  reviewId: number
-  summary: string
-  commentCount: number
-  providerName: string
-  comments: AiReviewComment[]
-  createdAt?: string | null
-}
-
-type CodeReviewDetail = {
-  summary: CodeReviewSummary
-  description?: string | null
-  prUrl?: string | null
-  diffText: string
-  aiReview?: AiReviewDetail | null
-  members: WorkspaceMember[]
-  comments: MemberComment[]
-}
-
-type MemberComment = {
-  commentId: number
-  reviewId: number
-  authorId: number
-  authorName?: string | null
-  authorProfileImage?: string | null
-  body: string
-  statusLabel: string
-  createdAt?: string | null
-}
-
-type CodeReviewBoard = {
-  workspaceId: number
-  projectName: string
-  members: WorkspaceMember[]
-  openReviews: CodeReviewSummary[]
-  closedReviews: CodeReviewSummary[]
-}
-
-type ReviewTab = 'open' | 'closed'
-
-type CreateForm = {
-  title: string
-  filePath: string
-  sourceBranch: string
-  targetBranch: string
-  description: string
-  diffText: string
-}
+import type {
+  CodeReviewBoard,
+  CodeReviewDetail,
+  CodeReviewFile,
+  CodeReviewSummary,
+  CreateForm,
+  ReviewTab,
+} from './squad-review-types'
 
 const EMPTY_FORM: CreateForm = {
   title: '',
@@ -186,6 +109,41 @@ function categoryIconClass(category: string) {
   return 'fas fa-check-circle text-green-500'
 }
 
+function resolveReviewFiles(detail: CodeReviewDetail | null): CodeReviewFile[] {
+  if (!detail) {
+    return []
+  }
+
+  if (detail.files?.length) {
+    return detail.files
+  }
+
+  return [{
+    fileId: null,
+    reviewId: detail.summary.reviewId,
+    filePath: detail.summary.filePath,
+    diffText: detail.diffText,
+    additions: detail.summary.additions,
+    deletions: detail.summary.deletions,
+    changeType: 'legacy',
+  }]
+}
+
+function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: string | null) {
+  const reviewFiles = resolveReviewFiles(detail)
+  const preferred = preferredFilePath?.trim()
+
+  if (preferred && reviewFiles.some((file) => file.filePath === preferred)) {
+    return preferred
+  }
+
+  if (reviewFiles.some((file) => file.filePath === detail.summary.filePath)) {
+    return detail.summary.filePath
+  }
+
+  return reviewFiles[0]?.filePath ?? detail.summary.filePath
+}
+
 export default function SquadReviewApp() {
   const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
   const [session, setSession] = useState(() => readStoredAuthSession())
@@ -195,12 +153,15 @@ export default function SquadReviewApp() {
   const [activeTab, setActiveTab] = useState<ReviewTab>('open')
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [statusLoading, setStatusLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM)
   const [commentDraft, setCommentDraft] = useState('')
+  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null)
+  const [openFileMenu, setOpenFileMenu] = useState<'diff' | 'comment' | null>(null)
   const [commentSaving, setCommentSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -233,6 +194,27 @@ export default function SquadReviewApp() {
     setCommentDraft('')
   }, [selectedReviewId])
 
+  function selectedFileStorageKey(reviewId: number) {
+    return `devpath.squadReview.${workspaceId ?? 'unknown'}.${reviewId}.selectedFilePath`
+  }
+
+  function applyDetail(detailData: CodeReviewDetail) {
+    const storedFilePath = window.localStorage.getItem(selectedFileStorageKey(detailData.summary.reviewId))
+    const nextFilePath = resolveDefaultFilePath(detailData, storedFilePath)
+
+    setDetail(detailData)
+    setSelectedFilePath(nextFilePath)
+  }
+
+  function selectReviewFile(filePath: string) {
+    if (detail) {
+      window.localStorage.setItem(selectedFileStorageKey(detail.summary.reviewId), filePath)
+    }
+
+    setSelectedFilePath(filePath)
+    setOpenFileMenu(null)
+  }
+
   useEffect(() => {
     if (!workspaceId) {
       setError('워크스페이스 정보를 찾을 수 없습니다.')
@@ -264,7 +246,8 @@ export default function SquadReviewApp() {
 
         if (firstReview) {
           setSelectedReviewId(firstReview.reviewId)
-          await loadDetail(firstReview.reviewId, ignore)
+          setDetail(null)
+          void loadDetail(firstReview.reviewId, ignore)
         } else {
           setSelectedReviewId(null)
           setDetail(null)
@@ -311,7 +294,8 @@ export default function SquadReviewApp() {
 
     if (nextId) {
       setSelectedReviewId(nextId)
-      await loadDetail(nextId)
+      setDetail(null)
+      void loadDetail(nextId)
     } else {
       setSelectedReviewId(null)
       setDetail(null)
@@ -323,14 +307,26 @@ export default function SquadReviewApp() {
       return
     }
 
-    const detailData = await projectApiRequest<CodeReviewDetail>(
-      `/api/workspaces/${workspaceId}/code-reviews/${reviewId}`,
-      {},
-      'required',
-    )
+    setDetailLoading(true)
 
-    if (!ignore) {
-      setDetail(detailData)
+    try {
+      const detailData = await projectApiRequest<CodeReviewDetail>(
+        `/api/workspaces/${workspaceId}/code-reviews/${reviewId}`,
+        {},
+        'required',
+      )
+
+      if (!ignore) {
+        applyDetail(detailData)
+      }
+    } catch {
+      if (!ignore) {
+        setToast('리뷰 상세를 불러오지 못했습니다.')
+      }
+    } finally {
+      if (!ignore) {
+        setDetailLoading(false)
+      }
     }
   }
 
@@ -416,10 +412,15 @@ export default function SquadReviewApp() {
     try {
       const updated = await projectApiRequest<CodeReviewDetail>(
         `/api/workspaces/${workspaceId}/code-reviews/${detail.summary.reviewId}/ai-review`,
-        { method: 'POST' },
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            filePath: selectedFilePath,
+          }),
+        },
         'required',
       )
-      setDetail(updated)
+      applyDetail(updated)
       void createSquadNotification(workspaceId, {
         pageKey: 'squad-review',
         message: `${squadActorName(session?.name)}님이 코드 리뷰 "${updated.summary.title}"의 AI 리뷰를 실행했습니다.`,
@@ -450,7 +451,7 @@ export default function SquadReviewApp() {
         { method: 'POST' },
         'required',
       )
-      setDetail(updated)
+        applyDetail(updated)
       setActiveTab('closed')
       void createSquadNotification(workspaceId, {
         pageKey: 'squad-review',
@@ -508,12 +509,15 @@ export default function SquadReviewApp() {
         `/api/workspaces/${workspaceId}/code-reviews/${detail.summary.reviewId}/comments`,
         {
           method: 'POST',
-          body: JSON.stringify({ body }),
+          body: JSON.stringify({
+            body,
+            filePath: selectedFilePath,
+          }),
         },
         'required',
       )
 
-      setDetail(updated)
+      applyDetail(updated)
       setCommentDraft('')
       void createSquadNotification(workspaceId, {
         pageKey: 'squad-review',
@@ -537,6 +541,9 @@ export default function SquadReviewApp() {
     : null
   const currentUserName = currentMember?.learnerName ?? session?.name ?? '사용자'
   const currentProfileImage = currentMember?.profileImage ?? null
+  const currentReviewFiles = resolveReviewFiles(detail)
+  const selectedReviewFile =
+    currentReviewFiles.find((file) => file.filePath === selectedFilePath) ?? currentReviewFiles[0] ?? null
 
 
   function renderReviewCard(review: CodeReviewSummary) {
@@ -549,6 +556,8 @@ export default function SquadReviewApp() {
         key={review.reviewId}
         onClick={() => {
           setSelectedReviewId(review.reviewId)
+          setDetail(null)
+          setSelectedFilePath(null)
           void loadDetail(review.reviewId)
         }}
         className={`pr-card w-full text-left p-4 rounded-xl cursor-pointer transition ${
@@ -569,6 +578,13 @@ export default function SquadReviewApp() {
         <h3 className={`font-bold text-sm mb-3 leading-snug ${closed ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
           {review.title}
         </h3>
+        <div className="mb-3 flex items-center gap-2 text-[10px] font-bold text-gray-400">
+          <span className="inline-flex min-w-0 items-center gap-1 truncate" title={review.filePath}>
+            <i className="fas fa-file-code"></i>
+            <span className="truncate">{review.filePath}</span>
+          </span>
+          <span className="shrink-0">{review.fileCount ?? 1} files</span>
+        </div>
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-1.5 min-w-0">
             <UserAvatar
@@ -591,8 +607,87 @@ export default function SquadReviewApp() {
     )
   }
 
+  function renderFileSelector(reviewFiles: CodeReviewFile[], activeFile: CodeReviewFile | null, compact = false) {
+    if (!activeFile) {
+      return null
+    }
+
+    const menuId = compact ? 'comment' : 'diff'
+    const menuOpen = openFileMenu === menuId
+    const tooltip = menuOpen ? null : (
+      <span className="pointer-events-none absolute left-0 top-full z-40 mt-2 hidden max-w-[min(34rem,80vw)] rounded-lg border border-gray-200 bg-gray-900 px-3 py-2 text-left text-[11px] font-bold leading-relaxed text-white shadow-xl group-hover:block group-focus-within:block">
+        {activeFile.filePath}
+      </span>
+    )
+
+    if (reviewFiles.length <= 1) {
+      return (
+        <span className="group relative inline-flex min-w-0 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-600 shadow-sm">
+          <i className="fas fa-file-code text-gray-400"></i>
+          <span className="truncate">{activeFile.filePath}</span>
+          {tooltip}
+        </span>
+      )
+    }
+
+    return (
+      <div
+        className={`group relative inline-flex min-w-0 ${compact ? 'max-w-[60%]' : 'w-full md:max-w-xl'}`}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setOpenFileMenu(null)
+          }
+        }}
+      >
+        <button
+          type="button"
+          aria-label="리뷰 파일 선택"
+          aria-expanded={menuOpen}
+          onClick={() => setOpenFileMenu(menuOpen ? null : menuId)}
+          className="inline-flex w-full min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-xs font-bold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 focus:border-gray-400 focus:outline-none"
+        >
+          <i className="fas fa-file-code shrink-0 text-xs text-gray-400"></i>
+          <span className="min-w-0 flex-1 truncate">{activeFile.filePath}</span>
+          <span className="shrink-0 text-[10px] font-black text-gray-400">
+            +{activeFile.additions} -{activeFile.deletions}
+          </span>
+          <i className={`fas fa-chevron-down shrink-0 text-[10px] text-gray-400 transition ${menuOpen ? 'rotate-180' : ''}`}></i>
+        </button>
+        {menuOpen ? (
+          <div className="absolute left-0 top-full z-50 mt-2 max-h-64 w-full min-w-[18rem] overflow-y-auto rounded-xl border border-gray-200 bg-white p-1.5 text-xs font-bold shadow-2xl">
+            {reviewFiles.map((file) => {
+              const selected = file.filePath === activeFile.filePath
+
+              return (
+                <button
+                  type="button"
+                  key={`${file.fileId ?? file.filePath}-custom-select`}
+                  onClick={() => selectReviewFile(file.filePath)}
+                  className={`flex w-full min-w-0 items-center justify-between gap-3 rounded-lg px-3 py-2 text-left transition ${
+                    selected
+                      ? 'border border-gray-200 bg-gray-50 text-gray-900 shadow-sm'
+                      : 'border border-transparent text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="min-w-0 truncate">{file.filePath}</span>
+                  <span className={`shrink-0 text-[10px] font-black ${selected ? 'text-gray-500' : 'text-gray-400'}`}>
+                    +{file.additions} -{file.deletions}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        ) : null}
+        {tooltip}
+      </div>
+    )
+  }
+
   function renderAiReviewCard() {
     const aiReview = detail?.aiReview
+    const reviewFiles = resolveReviewFiles(detail)
+    const activeFile =
+      reviewFiles.find((file) => file.filePath === selectedFilePath) ?? reviewFiles[0] ?? null
 
     return (
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 shadow-sm p-6 relative overflow-hidden" id="aiReviewCard">
@@ -617,12 +712,26 @@ export default function SquadReviewApp() {
               type="button"
               onClick={requestAiReview}
               disabled={aiLoading}
-              className="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 text-xs font-bold rounded-lg hover:bg-indigo-50 transition shadow-sm disabled:opacity-50"
+              className="origin-top-right scale-90 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 text-xs font-bold rounded-lg hover:bg-indigo-50 transition shadow-sm disabled:opacity-50"
             >
               {aiLoading ? '분석 중' : 'AI 리뷰 실행'}
             </button>
           ) : null}
         </div>
+
+        {reviewFiles.length ? (
+          <div className="relative z-10 mb-4 rounded-xl border border-indigo-100 bg-white/70 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500">Review scope</span>
+              <span className="text-[10px] font-bold text-indigo-700">{reviewFiles.length} files</span>
+            </div>
+            {activeFile ? (
+                <p className="mt-2 truncate text-[10px] font-bold text-indigo-700" title={activeFile.filePath}>
+                  기본 표시 파일. {activeFile.filePath}
+                </p>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 relative z-10 space-y-3">
           {aiReview?.comments.length ? (
@@ -663,42 +772,82 @@ export default function SquadReviewApp() {
   }
 
   function renderDiff() {
-    const lines = (detail?.diffText ?? '').split(/\r?\n/)
+    const reviewFiles = resolveReviewFiles(detail)
+    const activeFile =
+      reviewFiles.find((file) => file.filePath === selectedFilePath) ?? reviewFiles[0] ?? null
 
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden" id="codeDiffSection">
-        <div className="bg-gray-50 border-b border-gray-200 p-3 flex justify-between items-center">
-          <span className="text-xs font-bold text-gray-700 font-mono">
-            <i className="fas fa-file-code text-gray-400 mr-1"></i> {detail?.summary.filePath}
-          </span>
-          {detail?.prUrl ? (
-            <a
-              href={detail.prUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[10px] text-gray-500 hover:text-brand border border-gray-300 hover:border-brand rounded px-3 py-1.5 font-bold bg-white shadow-sm transition flex items-center gap-1"
-            >
-              <i className="fas fa-external-link-alt"></i> View File
-            </a>
-          ) : (
-            <span className="text-[10px] text-gray-400 border border-gray-200 rounded px-3 py-1.5 font-bold bg-white shadow-sm">
-              Manual Diff
+      <div className="space-y-4" id="codeDiffSection">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-extrabold text-gray-900">파일별 변경 diff</h3>
+              <p className="mt-1 text-xs font-medium text-gray-500">
+                PR 전체는 하나의 리뷰로 유지하고, 변경 파일은 아래 목록에서 선택해 확인합니다.
+              </p>
+            </div>
+            <span className="rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-black text-gray-600">
+              변경 파일 {reviewFiles.length}개
             </span>
-          )}
-        </div>
+            {detail?.prUrl ? (
+              <a
+                href={detail.prUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-3 py-1.5 text-[10px] font-bold text-gray-500 shadow-sm transition hover:border-brand hover:text-brand"
+              >
+                <i className="fas fa-external-link-alt"></i> View PR
+              </a>
+            ) : (
+              <span className="rounded border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-bold text-gray-400 shadow-sm">
+                Manual Diff
+              </span>
+            )}
+          </div>
 
-        <div className="overflow-x-auto relative">
-          {lines.map((line, index) => {
-            const lineClass = line.startsWith('+') ? 'line-add' : line.startsWith('-') ? 'line-remove' : 'text-gray-500 hover:bg-gray-50'
-
-            return (
-              <div key={`${index}-${line}`} className={`code-line group ${lineClass}`}>
-                <div className="code-num">{index + 1}</div>
-                <div className="whitespace-pre">{line || ' '}</div>
+          {reviewFiles.length > 0 ? (
+            <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  {renderFileSelector(reviewFiles, activeFile)}
+                </div>
+                <span className="text-[10px] font-bold text-gray-500">
+                  +{detail?.summary.additions ?? 0} -{detail?.summary.deletions ?? 0}
+                </span>
               </div>
-            )
-          })}
+            </div>
+          ) : null}
         </div>
+
+        {activeFile ? (() => {
+          const lines = (activeFile.diffText ?? '').split(/\r?\n/)
+
+          return (
+            <div id="selectedReviewFile" key={`${activeFile.fileId ?? activeFile.filePath}-selected`} className="scroll-mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 p-3">
+                <span className="min-w-0 truncate text-xs font-bold text-gray-700" title={activeFile.filePath}>
+                  <i className="fas fa-file-code mr-1 text-gray-400"></i> {activeFile.filePath}
+                </span>
+                <span className="shrink-0 rounded border border-gray-200 bg-white px-2 py-1 text-[10px] font-black text-gray-500">
+                  +{activeFile.additions} -{activeFile.deletions}
+                </span>
+              </div>
+
+              <div className="relative overflow-x-auto">
+                {lines.map((line, index) => {
+                  const lineClass = line.startsWith('+') ? 'line-add' : line.startsWith('-') ? 'line-remove' : 'text-gray-500 hover:bg-gray-50'
+
+                  return (
+                    <div key={`${activeFile.filePath}-${index}-${line}`} className={`code-line group ${lineClass}`}>
+                      <div className="code-num">{index + 1}</div>
+                      <div className="whitespace-pre">{line || ' '}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })() : null}
       </div>
     )
   }
@@ -716,6 +865,16 @@ export default function SquadReviewApp() {
         <button onClick={openCreateModal} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 font-bold rounded-lg hover:bg-gray-50 hover:text-gray-900 transition shadow-sm flex items-center gap-2 text-sm">
           수동으로 리뷰 요청하기
         </button>
+      </div>
+    )
+  }
+
+  function renderDetailLoading() {
+    return (
+      <div className="flex h-full flex-1 flex-col items-center justify-center p-8 text-center">
+        <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-700"></div>
+        <p className="text-sm font-bold text-gray-700">리뷰 상세를 불러오는 중입니다</p>
+        <p className="mt-1 text-xs font-medium text-gray-400">목록은 먼저 사용할 수 있습니다.</p>
       </div>
     )
   }
@@ -794,6 +953,18 @@ export default function SquadReviewApp() {
                   {hasAnyReviews ? `닫힘 (${closedReviews.length})` : `Closed (${closedReviews.length})`}
                 </button>
               </div>
+
+              <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-800">
+                <div className="mb-1 flex items-center gap-1.5 font-extrabold text-amber-900">
+                  <i className="fas fa-circle-info text-amber-500"></i>
+                  GitHub 동기화 안내
+                </div>
+                <ul className="space-y-0.5 pl-4 list-disc">
+                  <li>GitHub 토큰을 연결하면 더 많은 PR과 파일 변경 내역을 안정적으로 가져옵니다.</li>
+                  <li>토큰이 없을 때는 기본 조회 범위 안에서 최근 PR만 먼저 보여줍니다.</li>
+                  <li>전체 리뷰 흐름이 필요하면 스쿼드 설정에서 GitHub 토큰을 저장하세요.</li>
+                </ul>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2 relative">
@@ -813,14 +984,18 @@ export default function SquadReviewApp() {
           </div>
 
           <div className="flex-1 flex flex-col bg-[#F9FAFB] relative" id="prDetailView">
-            {detail ? (
+            {detailLoading && !detail ? (
+              renderDetailLoading()
+            ) : detail ? (
               <>
                 <div className="p-6 border-b border-gray-200 bg-white shrink-0">
                   <div className="flex items-center gap-3 mb-2">
                     <span className={`${statusBadgeClass(detail.summary.status)} text-xs font-bold px-2 py-1 rounded-md border flex items-center gap-1`}>
                       <i className="fas fa-code-branch"></i> {statusLabel(detail.summary.status)}
                     </span>
-                    <h1 className="text-xl font-extrabold text-gray-900">{detail.summary.title}</h1>
+                    <h1 className="min-w-0 truncate text-base font-semibold leading-snug tracking-normal text-gray-800" title={detail.summary.title}>
+                      {detail.summary.title}
+                    </h1>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
                     <span className="font-bold text-gray-700">{detail.summary.authorName ?? '팀원'}</span> wants to merge into
@@ -837,9 +1012,16 @@ export default function SquadReviewApp() {
                   {renderDiff()}
 
                   <div className="space-y-4 pt-4" id="commentThread">
-                    <h3 className="font-extrabold text-gray-900 text-sm flex items-center gap-2 mb-6">
-                      <i className="fas fa-comments text-gray-400"></i> 팀원 피드백
-                    </h3>
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                      <h3 className="font-extrabold text-gray-900 text-sm flex items-center gap-2">
+                        <i className="fas fa-comments text-gray-400"></i> 팀원 피드백
+                      </h3>
+                      {selectedReviewFile ? (
+                        <span className="max-w-full truncate rounded-lg border border-green-100 bg-green-50 px-3 py-1.5 text-[10px] font-black text-green-700" title={selectedReviewFile.filePath}>
+                          선택 파일. {selectedReviewFile.filePath}
+                        </span>
+                      ) : null}
+                    </div>
 
                     {(detail.comments ?? []).length ? (
                       (detail.comments ?? []).map((comment) => (
@@ -852,10 +1034,17 @@ export default function SquadReviewApp() {
                           />
                           <div className="flex-1 bg-white border border-gray-200 rounded-2xl rounded-tl-none shadow-sm overflow-hidden">
                             <div className="bg-gray-50 border-b border-gray-100 p-3 flex justify-between items-center">
-                              <span className="text-xs font-bold text-gray-900">
-                                {comment.authorName ?? '팀원'}
-                                <span className="font-normal text-gray-500 ml-1">{formatRelativeTime(comment.createdAt)}</span>
-                              </span>
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-gray-900">
+                                  {comment.authorName ?? '팀원'}
+                                  <span className="font-normal text-gray-500 ml-1">{formatRelativeTime(comment.createdAt)}</span>
+                                </span>
+                                {comment.filePath ? (
+                                  <p className="mt-1 max-w-full truncate text-[10px] font-bold text-gray-400" title={comment.filePath}>
+                                    <i className="fas fa-file-code mr-1"></i>{comment.filePath}
+                                  </p>
+                                ) : null}
+                              </div>
                               <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded border border-gray-200">
                                 {comment.statusLabel || 'Commented'}
                               </span>
@@ -881,6 +1070,11 @@ export default function SquadReviewApp() {
                       />
                       <div className="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden focus-within:border-brand transition-colors">
                         <div className="bg-gray-50 border-b border-gray-200 p-2 flex gap-1 text-gray-600">
+                          {selectedReviewFile ? (
+                            <div className="mr-auto min-w-0 flex-1">
+                              {renderFileSelector(currentReviewFiles, selectedReviewFile, true)}
+                            </div>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => insertCommentFormat('**', '**')}
@@ -922,7 +1116,7 @@ export default function SquadReviewApp() {
                 <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 px-6 flex justify-between items-center shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-20">
                   <div className="text-xs font-bold text-gray-500" id="statusMessage">
                     <i className={`${detail.aiReview ? 'fas fa-check-circle text-green-500' : 'fas fa-robot text-indigo-500'} mr-1`}></i>
-                    {detail.aiReview ? 'AI checks have passed' : 'AI review is required before merge'}
+                    {detail.aiReview ? 'AI 리뷰 검토가 완료되었습니다' : '머지 전에 AI 리뷰가 필요합니다'}
                   </div>
                   <div className="flex gap-3">
                     <button

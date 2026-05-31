@@ -1,9 +1,11 @@
 package com.devpath.api.workspace.integration;
 
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
+import com.devpath.api.workspace.service.WorkspaceCodeReviewSchema;
 import com.devpath.domain.operation.integration.ExternalIntegration;
 import com.devpath.domain.operation.integration.ExternalIntegrationRepository;
 import com.devpath.domain.operation.integration.IntegrationProvider;
-import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,12 +43,23 @@ public class GithubPullRequestSyncService {
             integration.getRepositoryOwner(),
             integration.getRepositoryName(),
             integration.getRepositoryUrl());
-    List<GithubPullRequest> pullRequests = githubPullRequestClient.fetchPullRequests(repository);
+    List<GithubPullRequest> pullRequests;
+    try {
+      pullRequests =
+          githubPullRequestClient.fetchPullRequests(repository, integration.getRepositoryAccessToken());
+    } catch (CustomException exception) {
+      String message =
+          "GitHub 저장소는 연결했지만 PR 동기화는 실패했습니다. 저장소 권한, API 제한, 서버 인증 설정을 확인해주세요.";
+      integration.markSyncFailed(message);
+      return new SyncResult(0, 0, 0, true, message);
+    }
 
     int created = 0;
     int updated = 0;
     for (GithubPullRequest pullRequest : pullRequests) {
-      if (upsertPullRequest(workspaceId, actorId, repository, pullRequest)) {
+      ReviewUpsertResult result = upsertPullRequest(workspaceId, actorId, repository, pullRequest);
+      replacePullRequestFiles(workspaceId, result.reviewId(), pullRequest.normalizedFiles());
+      if (result.created()) {
         created++;
       } else {
         updated++;
@@ -74,7 +87,7 @@ public class GithubPullRequestSyncService {
     try {
       syncWorkspacePullRequests(workspaceId, actorId, integration.get());
     } catch (RuntimeException ignored) {
-      // A GitHub outage or rate limit should not block the code review board from loading.
+      // GitHub outages or rate limits should not block the review board.
     }
   }
 
@@ -93,7 +106,7 @@ public class GithubPullRequestSyncService {
         || lastSyncedAt.plusMinutes(AUTO_SYNC_INTERVAL_MINUTES).isBefore(LocalDateTime.now());
   }
 
-  private boolean upsertPullRequest(
+  private ReviewUpsertResult upsertPullRequest(
       Long workspaceId,
       Long actorId,
       GithubRepositoryReference repository,
@@ -127,7 +140,7 @@ public class GithubPullRequestSyncService {
           trimToNull(pullRequest.body()),
           pullRequest.htmlUrl(),
           defaultText(pullRequest.filePath(), "."),
-          defaultText(pullRequest.diffText(), "GitHub diff가 비어 있습니다."),
+          defaultText(pullRequest.diffText(), "GitHub diff is empty."),
           defaultText(pullRequest.sourceBranch(), "feature/github-pr"),
           defaultText(pullRequest.targetBranch(), "main"),
           pullRequest.reviewStatus(),
@@ -138,45 +151,76 @@ public class GithubPullRequestSyncService {
           toTimestamp(pullRequest.updatedAt()),
           existingId.get(),
           workspaceId);
-      return false;
+      return new ReviewUpsertResult(existingId.get(), false);
     }
 
+    Long reviewId =
+        jdbcTemplate.queryForObject(
+            """
+            INSERT INTO workspace_code_reviews (
+                workspace_id, title, description, pr_url, file_path, diff_text,
+                source_branch, target_branch, author_id, status,
+                additions, deletions, ai_code_review_id, is_deleted,
+                external_provider, external_id, external_author_name,
+                external_author_avatar_url, external_updated_at,
+                created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, FALSE,
+                    'GITHUB', ?, ?, ?, ?, COALESCE(?, now()), now())
+            RETURNING id
+            """,
+            Long.class,
+            workspaceId,
+            pullRequest.title(),
+            trimToNull(pullRequest.body()),
+            pullRequest.htmlUrl(),
+            defaultText(pullRequest.filePath(), "."),
+            defaultText(pullRequest.diffText(), "GitHub diff is empty."),
+            defaultText(pullRequest.sourceBranch(), "feature/github-pr"),
+            defaultText(pullRequest.targetBranch(), "main"),
+            actorId,
+            pullRequest.reviewStatus(),
+            pullRequest.additions(),
+            pullRequest.deletions(),
+            externalId,
+            defaultText(pullRequest.authorLogin(), "github-user"),
+            trimToNull(pullRequest.authorAvatarUrl()),
+            toTimestamp(pullRequest.updatedAt()),
+            toTimestamp(pullRequest.createdAt()));
+
+    if (reviewId == null) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+
+    return new ReviewUpsertResult(reviewId, true);
+  }
+
+  private void replacePullRequestFiles(
+      Long workspaceId, Long reviewId, List<GithubPullRequest.FileChange> files) {
     jdbcTemplate.update(
-        connection -> {
-          PreparedStatement statement =
-              connection.prepareStatement(
-                  """
-                  INSERT INTO workspace_code_reviews (
-                      workspace_id, title, description, pr_url, file_path, diff_text,
-                      source_branch, target_branch, author_id, status,
-                      additions, deletions, ai_code_review_id, is_deleted,
-                      external_provider, external_id, external_author_name,
-                      external_author_avatar_url, external_updated_at,
-                      created_at, updated_at
-                  )
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, FALSE,
-                          'GITHUB', ?, ?, ?, ?, COALESCE(?, now()), now())
-                  """);
-          statement.setLong(1, workspaceId);
-          statement.setString(2, pullRequest.title());
-          statement.setString(3, trimToNull(pullRequest.body()));
-          statement.setString(4, pullRequest.htmlUrl());
-          statement.setString(5, defaultText(pullRequest.filePath(), "."));
-          statement.setString(6, defaultText(pullRequest.diffText(), "GitHub diff가 비어 있습니다."));
-          statement.setString(7, defaultText(pullRequest.sourceBranch(), "feature/github-pr"));
-          statement.setString(8, defaultText(pullRequest.targetBranch(), "main"));
-          statement.setLong(9, actorId);
-          statement.setString(10, pullRequest.reviewStatus());
-          statement.setInt(11, pullRequest.additions());
-          statement.setInt(12, pullRequest.deletions());
-          statement.setString(13, externalId);
-          statement.setString(14, defaultText(pullRequest.authorLogin(), "github-user"));
-          statement.setString(15, trimToNull(pullRequest.authorAvatarUrl()));
-          statement.setTimestamp(16, toTimestamp(pullRequest.updatedAt()));
-          statement.setTimestamp(17, toTimestamp(pullRequest.createdAt()));
-          return statement;
-        });
-    return true;
+        "DELETE FROM workspace_code_review_files WHERE workspace_id = ? AND review_id = ?",
+        workspaceId,
+        reviewId);
+
+    for (int index = 0; index < files.size(); index++) {
+      GithubPullRequest.FileChange file = files.get(index);
+      jdbcTemplate.update(
+          """
+          INSERT INTO workspace_code_review_files (
+              review_id, workspace_id, file_path, diff_text, additions,
+              deletions, change_type, display_order, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, now(), now())
+          """,
+          reviewId,
+          workspaceId,
+          defaultText(file.filePath(), "."),
+          defaultText(file.diffText(), "GitHub did not expose this file diff."),
+          file.additions(),
+          file.deletions(),
+          defaultText(file.changeType(), "modified"),
+          index);
+    }
   }
 
   private Optional<Long> findExistingReviewId(Long workspaceId, String externalId) {
@@ -200,40 +244,7 @@ public class GithubPullRequestSyncService {
   }
 
   private void ensureCodeReviewSchema() {
-    jdbcTemplate.execute(
-        """
-        CREATE TABLE IF NOT EXISTS workspace_code_reviews (
-            id bigserial PRIMARY KEY,
-            workspace_id bigint NOT NULL,
-            title varchar(180) NOT NULL,
-            description text,
-            pr_url varchar(1000),
-            file_path varchar(300) NOT NULL DEFAULT 'src/main/java/com/devpath/auth/AuthService.java',
-            diff_text text NOT NULL,
-            source_branch varchar(120) NOT NULL DEFAULT 'feature/manual-review',
-            target_branch varchar(120) NOT NULL DEFAULT 'main',
-            author_id bigint NOT NULL,
-            status varchar(20) NOT NULL DEFAULT 'OPEN',
-            additions integer NOT NULL DEFAULT 0,
-            deletions integer NOT NULL DEFAULT 0,
-            ai_code_review_id bigint,
-            is_deleted boolean NOT NULL DEFAULT false,
-            created_at timestamp NOT NULL DEFAULT now(),
-            updated_at timestamp NOT NULL DEFAULT now()
-        )
-        """);
-    jdbcTemplate.execute(
-        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_provider varchar(50)");
-    jdbcTemplate.execute(
-        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_id varchar(220)");
-    jdbcTemplate.execute(
-        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_author_name varchar(120)");
-    jdbcTemplate.execute(
-        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_author_avatar_url varchar(1000)");
-    jdbcTemplate.execute(
-        "ALTER TABLE workspace_code_reviews ADD COLUMN IF NOT EXISTS external_updated_at timestamp");
-    jdbcTemplate.execute(
-        "CREATE INDEX IF NOT EXISTS ix_workspace_code_reviews_external ON workspace_code_reviews(workspace_id, external_provider, external_id)");
+    WorkspaceCodeReviewSchema.ensure(jdbcTemplate);
   }
 
   private String defaultText(String value, String fallback) {
@@ -247,6 +258,8 @@ public class GithubPullRequestSyncService {
   private Timestamp toTimestamp(LocalDateTime value) {
     return value == null ? null : Timestamp.valueOf(value);
   }
+
+  private record ReviewUpsertResult(Long reviewId, boolean created) {}
 
   public record SyncResult(
       int createdCount, int updatedCount, int totalCount, boolean skipped, String message) {

@@ -25,6 +25,12 @@ public class WorkspaceMemberResponse {
   @Schema(description = "Learner profile image URL")
   private String profileImage;
 
+  @Schema(description = "워크스페이스에서 확정된 상세 포지션", example = "Frontend 개발자")
+  private String position;
+
+  @Schema(description = "화면 표시용 직군 약어", example = "FE")
+  private String roleLabel;
+
   @Schema(description = "참여 일시")
   private LocalDateTime joinedAt;
 
@@ -42,6 +48,8 @@ public class WorkspaceMemberResponse {
     return builder()
         .memberId(member.getId())
         .learnerId(member.getLearnerId())
+        .position(member.getPositionLabel())
+        .roleLabel(toRoleLabel(member.getPositionLabel()))
         .joinedAt(member.getJoinedAt())
         .lastActiveAt(member.getLastActiveAt())
         .online(online)
@@ -55,14 +63,51 @@ public class WorkspaceMemberResponse {
 
   public static WorkspaceMemberResponse from(
       WorkspaceMember member, User user, UserProfile profile, boolean online) {
+    return from(member, user, profile, online, member.getPositionLabel());
+  }
+
+  public static WorkspaceMemberResponse from(
+      WorkspaceMember member,
+      User user,
+      UserProfile profile,
+      boolean online,
+      String resolvedPositionLabel) {
     return builder()
         .memberId(member.getId())
         .learnerId(member.getLearnerId())
         .learnerName(user == null ? null : user.getName())
         .profileImage(profile == null ? null : profile.getDisplayProfileImage())
+        .position(resolvedPositionLabel)
+        .roleLabel(toRoleLabel(resolvedPositionLabel))
         .joinedAt(member.getJoinedAt())
         .lastActiveAt(member.getLastActiveAt())
         .online(online)
         .build();
+  }
+
+  private static String toRoleLabel(String positionLabel) {
+    if (positionLabel == null || positionLabel.isBlank()) {
+      return null;
+    }
+    String normalized = positionLabel.trim().toLowerCase();
+    if (normalized.contains("front")) {
+      return "FE";
+    }
+    if (normalized.contains("back")) {
+      return "BE";
+    }
+    if (normalized.contains("full")) {
+      return "FS";
+    }
+    if (normalized.contains("design") || normalized.contains("디자")) {
+      return "DES";
+    }
+    if (normalized.contains("기획") || normalized.contains("pm")) {
+      return "PM";
+    }
+    if (normalized.contains("devops") || normalized.contains("infra") || normalized.contains("인프라")) {
+      return "OPS";
+    }
+    return positionLabel.trim();
   }
 }

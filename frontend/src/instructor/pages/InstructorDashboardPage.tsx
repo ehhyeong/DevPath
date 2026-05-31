@@ -108,7 +108,7 @@ function DashboardTabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-[32px] items-center rounded-[8px] px-[14px] text-[12px] font-semibold leading-none transition duration-200 ${
+      className={`inline-flex h-[32px] items-center whitespace-nowrap rounded-[8px] px-[14px] text-[12px] font-semibold leading-none transition duration-200 ${
         active
           ? 'bg-white text-gray-900 shadow-[0_1px_4px_rgba(0,0,0,0.06)]'
           : 'text-gray-500 hover:bg-white/60 hover:text-gray-900'
@@ -142,9 +142,9 @@ function DashboardMetricCard({
     <article className={`${SOFT_CARD} p-5 ${accent ?? ''}`}>
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-gray-500">{title}</p>
-          <h3 className={`mt-1 text-2xl font-semibold leading-tight ${valueTone}`}>{value}</h3>
-          <p className={`mt-1 text-xs font-medium ${helperTone}`}>{helper}</p>
+          <p className="truncate text-[13px] font-medium text-gray-500">{title}</p>
+          <h3 className={`mt-1 truncate text-2xl font-semibold leading-tight ${valueTone}`}>{value}</h3>
+          <p className={`mt-1 truncate text-xs font-medium ${helperTone}`}>{helper}</p>
         </div>
         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[15px] ${iconTone}`}>
           <i className={icon} />
@@ -410,7 +410,7 @@ function QuickReplyModal({
     >
       <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
         <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-5 py-4">
-          <h3 className="text-[15px] font-semibold text-gray-900">
+          <h3 className="flex items-center whitespace-nowrap text-[15px] font-semibold text-gray-900">
             <i className="fas fa-reply mr-1.5 text-brand" />
             빠른 답변 작성
           </h3>
@@ -452,7 +452,7 @@ function QuickReplyModal({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-600 transition hover:bg-gray-50"
+            className="whitespace-nowrap rounded-lg border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-600 transition hover:bg-gray-50"
           >
             취소
           </button>
@@ -460,7 +460,7 @@ function QuickReplyModal({
             type="button"
             onClick={onSubmit}
             disabled={submitting}
-            className="rounded-lg bg-gray-900 px-5 py-2 text-[13px] font-medium text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+            className="whitespace-nowrap rounded-lg bg-gray-900 px-5 py-2 text-[13px] font-medium text-white shadow-sm transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? '등록 중' : '답변 등록'}
           </button>
@@ -545,7 +545,7 @@ function IssueReviewList({ issueReviews }: { issueReviews: InstructorReviewListI
           className={`${SOFT_LIST_ITEM} block`}
         >
           <div className="mb-1.5 flex items-start justify-between gap-3">
-            <span className="rounded-md border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600">
+            <span className="inline-flex max-w-[140px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-red-100 bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600">
               {review.issueTags[0] ?? (review.hidden ? '숨김 처리' : '이슈')}
             </span>
             <span className="shrink-0 text-[11px] font-medium text-gray-400">{formatElapsed(review.createdAt)}</span>
@@ -568,11 +568,11 @@ function QnaListPanel({
   return (
     <article className={`${SOFT_PANEL} flex min-h-[300px] flex-col overflow-hidden`}>
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-100 bg-[#F9FAFB] p-4">
-        <h3 className="flex items-center gap-2 text-[14px] font-semibold text-gray-900">
+        <h3 className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[14px] font-semibold text-gray-900">
           <i className="fas fa-bolt text-yellow-500" />
           답변이 필요한 Q&amp;A
         </h3>
-        <a href="/instructor-qna" className="text-xs font-medium text-gray-500 transition hover:text-brand">
+        <a href="/instructor-qna" className="shrink-0 whitespace-nowrap text-xs font-medium text-gray-500 transition hover:text-brand">
           게시판 가기
           <i className="fas fa-chevron-right ml-1 text-[10px]" />
         </a>
@@ -581,7 +581,7 @@ function QnaListPanel({
       <div className="hidden shrink-0 border-b border-gray-100 bg-gray-50/70 px-4 py-2.5 text-[11px] font-medium text-gray-400 md:flex">
         <div className="w-36 shrink-0">강의 / 학습자</div>
         <div className="flex-1 px-4">질문 내용</div>
-        <div className="w-32 shrink-0 text-right">대기 시간 / 조치</div>
+        <div className="w-32 shrink-0 whitespace-nowrap text-right">대기 시간 / 조치</div>
       </div>
 
       {questions.length > 0 ? (
@@ -605,14 +605,14 @@ function QnaListPanel({
                   <p className="truncate text-xs text-gray-500">{question.content}</p>
                 </div>
                 <div className="flex items-center justify-between gap-3 md:flex-col md:items-end md:border-l md:border-gray-100 md:pl-4">
-                  <span className={`text-[11px] font-medium ${overdue ? 'text-red-500' : 'text-gray-400'}`}>
+                  <span className={`shrink-0 whitespace-nowrap text-[11px] font-medium ${overdue ? 'text-red-500' : 'text-gray-400'}`}>
                     <i className={`${overdue ? 'fas fa-exclamation-circle' : 'far fa-clock'} mr-1 text-[10px]`} />
                     {formatElapsed(question.createdAt)}
                   </span>
                   <button
                     type="button"
                     onClick={() => onReply(question)}
-                    className={`w-28 rounded-md px-3 py-1.5 text-xs font-medium shadow-sm transition ${
+                    className={`w-28 whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium shadow-sm transition ${
                       overdue
                         ? 'bg-gray-900 text-white hover:bg-black'
                         : 'border border-gray-200 bg-white text-gray-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:bg-gray-50'
@@ -644,7 +644,7 @@ function AssignmentStatsCard({ summary }: { summary: InstructorAnalyticsDashboar
 
   return (
     <article className="rounded-lg border border-gray-800/90 bg-[#111827] p-5 text-white shadow-[0_14px_28px_rgba(17,24,39,0.18)]">
-      <h3 className="mb-4 flex items-center gap-2 text-[14px] font-semibold text-gray-100">
+      <h3 className="mb-4 flex items-center gap-2 whitespace-nowrap text-[14px] font-semibold text-gray-100">
         <i className="fas fa-magic text-brand" />
         자동 채점 현황
       </h3>
@@ -697,11 +697,11 @@ function LatestReviewsCard({
   return (
     <article className={`${SOFT_PANEL} flex min-h-[300px] flex-col p-5`}>
       <h3 className="mb-4 flex shrink-0 items-center justify-between gap-3 text-[14px] font-semibold text-gray-900">
-        <span className="flex items-center gap-2">
+        <span className="flex shrink-0 items-center gap-2 whitespace-nowrap">
           <i className="fas fa-star text-yellow-500" />
           신규 리뷰
         </span>
-        <span className="rounded-full border border-yellow-100 bg-yellow-50 px-2 py-0.5 text-[10px] font-medium text-yellow-600">
+        <span className="inline-flex shrink-0 whitespace-nowrap rounded-full border border-yellow-100 bg-yellow-50 px-2 py-0.5 text-[10px] font-medium text-yellow-600">
           {formatNumber(pendingCount)}건 대기
         </span>
       </h3>
@@ -733,7 +733,7 @@ function LatestReviewsCard({
 
       <a
         href="/instructor-reviews"
-        className="mt-4 block shrink-0 rounded-lg border border-gray-200 bg-white py-2 text-center text-[13px] font-medium text-gray-700 transition hover:bg-gray-50"
+        className="mt-4 block shrink-0 whitespace-nowrap rounded-lg border border-gray-200 bg-white py-2 text-center text-[13px] font-medium text-gray-700 transition hover:bg-gray-50"
       >
         리뷰 전체 보기
       </a>
@@ -754,25 +754,25 @@ function LearningSummaryCard({
 }) {
   return (
     <article className={`${SOFT_PANEL} p-5`}>
-      <h3 className="mb-4 flex items-center gap-2 text-[14px] font-semibold text-gray-900">
+      <h3 className="mb-4 flex items-center gap-2 whitespace-nowrap text-[14px] font-semibold text-gray-900">
         <i className="fas fa-users text-brand" />
         강의 운영 요약
       </h3>
       <div className="grid grid-cols-2 gap-3 text-center">
         <div className="rounded-lg border border-gray-100 bg-[#F9FAFB] p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-          <p className="text-xs font-medium text-gray-500">공개 강의</p>
+          <p className="whitespace-nowrap text-xs font-medium text-gray-500">공개 강의</p>
           <p className="mt-1 text-lg font-semibold text-gray-900">{formatNumber(publishedCourseCount)}</p>
         </div>
         <div className="rounded-lg border border-gray-100 bg-[#F9FAFB] p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-          <p className="text-xs font-medium text-gray-500">수강생</p>
+          <p className="whitespace-nowrap text-xs font-medium text-gray-500">수강생</p>
           <p className="mt-1 text-lg font-semibold text-gray-900">{formatNumber(totalStudents)}</p>
         </div>
         <div className="rounded-lg border border-gray-100 bg-[#F9FAFB] p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-          <p className="text-xs font-medium text-gray-500">평균 진도</p>
+          <p className="whitespace-nowrap text-xs font-medium text-gray-500">평균 진도</p>
           <p className="mt-1 text-lg font-semibold text-gray-900">{formatPercent(averageProgress)}</p>
         </div>
         <div className="rounded-lg border border-gray-100 bg-[#F9FAFB] p-3 shadow-[0_1px_2px_rgba(15,23,42,0.02)]">
-          <p className="text-xs font-medium text-gray-500">평균 평점</p>
+          <p className="whitespace-nowrap text-xs font-medium text-gray-500">평균 평점</p>
           <p className="mt-1 text-lg font-semibold text-gray-900">{averageRating.toFixed(1)}</p>
         </div>
       </div>
@@ -837,7 +837,7 @@ function LearningDashboardContent({
                 <i className="fas fa-robot text-base" />
               </div>
               <div>
-                <h3 className="mb-1 text-[14px] font-semibold text-gray-900">운영 인사이트</h3>
+                <h3 className="mb-1 whitespace-nowrap text-[14px] font-semibold text-gray-900">운영 인사이트</h3>
                 <p className="text-[13px] leading-6 text-gray-600">{insightText}</p>
               </div>
             </div>
@@ -846,12 +846,12 @@ function LearningDashboardContent({
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <article className={`${SOFT_PANEL} flex flex-col p-5`}>
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="flex items-center gap-2 text-[14px] font-semibold text-gray-900">
+                <h3 className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[14px] font-semibold text-gray-900">
                   <i className="fas fa-chart-area text-blue-500" />
                   이탈 위험 분석
                 </h3>
                 <select
-                  className="cursor-pointer rounded border border-gray-200 bg-white p-1.5 text-[12px] font-medium text-gray-600 shadow-sm outline-none transition focus:border-brand disabled:cursor-wait disabled:opacity-60"
+                  className="min-w-0 max-w-[180px] cursor-pointer rounded border border-gray-200 bg-white p-1.5 text-[12px] font-medium text-gray-600 shadow-sm outline-none transition focus:border-brand disabled:cursor-wait disabled:opacity-60 sm:max-w-[220px]"
                   value={selectedDropOffCourseId === null ? 'all' : String(selectedDropOffCourseId)}
                   disabled={dropOffLoading}
                   aria-label="이탈 위험 분석 강의 선택"
@@ -873,7 +873,7 @@ function LearningDashboardContent({
 
             <article className={`${SOFT_PANEL} flex min-h-[240px] flex-col p-5`}>
               <h3 className="mb-4 flex items-center justify-between gap-3 text-[14px] font-semibold text-gray-900">
-                <span className="flex items-center gap-2">
+                <span className="flex shrink-0 items-center gap-2 whitespace-nowrap">
                   <i className="fas fa-bug text-gray-400" />
                   콘텐츠 오류/이슈
                 </span>
@@ -959,7 +959,7 @@ function MentoringDashboardContent({ mentoringBoard }: { mentoringBoard: Instruc
                 <i className="fas fa-lightbulb" />
               </div>
               <div>
-                <h3 className="mb-1 text-[15px] font-semibold text-gray-900">멘토링 브리프</h3>
+                <h3 className="mb-1 whitespace-nowrap text-[15px] font-semibold text-gray-900">멘토링 브리프</h3>
                 <p className="text-sm leading-6 text-gray-600">
                   {pendingMentoringRequests > 0
                     ? `새 신청 ${formatNumber(pendingMentoringRequests)}건이 대기 중입니다. 신청서 검토 후 프로젝트 참여 여부를 확정해주세요.`
@@ -970,7 +970,7 @@ function MentoringDashboardContent({ mentoringBoard }: { mentoringBoard: Instruc
           </article>
 
           <article className={`${SOFT_PANEL} p-5`}>
-            <h3 className="mb-6 flex items-center gap-2 text-base font-semibold text-gray-900">
+            <h3 className="mb-6 flex items-center gap-2 whitespace-nowrap text-base font-semibold text-gray-900">
               <i className="fas fa-users text-sm text-gray-400" />
               프로젝트 진행 현황
             </h3>
@@ -984,7 +984,7 @@ function MentoringDashboardContent({ mentoringBoard }: { mentoringBoard: Instruc
                         <h4 className="truncate text-sm font-semibold text-gray-900">{project.title}</h4>
                         <p className="mt-1 truncate text-[11px] text-gray-400">{project.subtitle}</p>
                       </div>
-                      <span className="shrink-0 rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-600">
+                      <span className="shrink-0 whitespace-nowrap rounded-md bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-600">
                         {project.week}주차 ({project.progress}%)
                       </span>
                     </div>
@@ -1005,22 +1005,24 @@ function MentoringDashboardContent({ mentoringBoard }: { mentoringBoard: Instruc
 
           <article className={`${SOFT_PANEL} overflow-hidden`}>
             <div className="border-b border-gray-100 bg-white p-5">
-              <h3 className="text-base font-semibold text-gray-900">신청 대기열</h3>
+              <h3 className="whitespace-nowrap text-base font-semibold text-gray-900">신청 대기열</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="min-w-[640px] w-full text-left text-sm">
                 <tbody className="divide-y divide-gray-100">
                   {mentoringBoard.requests.length > 0 ? (
                     mentoringBoard.requests.slice(0, 3).map((request) => (
                       <tr key={request.id} className="transition hover:bg-gray-50">
-                        <td className="w-20 px-6 py-4">
-                          <span className="rounded-md bg-gray-100 px-2 py-1 text-[10px] font-semibold uppercase">
+                        <td className="w-24 whitespace-nowrap px-6 py-4">
+                          <span className="inline-flex whitespace-nowrap rounded-md bg-gray-100 px-2 py-1 text-[10px] font-semibold uppercase">
                             {getModeLabel(request.mode)}
                           </span>
                         </td>
-                        <td className="min-w-48 px-4 font-semibold text-gray-900">{request.projectTitle}</td>
-                        <td className="px-4 text-xs text-gray-400">{request.role}</td>
-                        <td className="px-6 text-right font-semibold text-blue-500">{request.applicantName}</td>
+                        <td className="min-w-48 px-4 font-semibold text-gray-900">
+                          <span className="block truncate">{request.projectTitle}</span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 text-xs text-gray-400">{request.role}</td>
+                        <td className="whitespace-nowrap px-6 text-right font-semibold text-blue-500">{request.applicantName}</td>
                       </tr>
                     ))
                   ) : (
@@ -1038,7 +1040,7 @@ function MentoringDashboardContent({ mentoringBoard }: { mentoringBoard: Instruc
 
         <div className="space-y-5">
           <article className={`${SOFT_PANEL} p-5`}>
-            <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-gray-900">
+            <h3 className="mb-5 flex items-center gap-2 whitespace-nowrap text-sm font-semibold text-gray-900">
               <i className="fas fa-calendar-alt text-brand" />
               멘토링 타임라인
             </h3>
@@ -1054,7 +1056,7 @@ function MentoringDashboardContent({ mentoringBoard }: { mentoringBoard: Instruc
                     <p className={`mb-1 text-xs font-semibold ${index === 0 ? 'text-blue-600' : 'text-gray-400'}`}>
                       {project.week}주차
                     </p>
-                    <p className="text-sm font-semibold text-gray-900">{project.primaryAction}</p>
+                    <p className="truncate text-sm font-semibold text-gray-900">{project.primaryAction}</p>
                   </div>
                 ))}
               </div>
@@ -1071,10 +1073,10 @@ function MentoringDashboardContent({ mentoringBoard }: { mentoringBoard: Instruc
             <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-lg bg-gray-200 text-lg text-gray-500">
               <i className="fas fa-plus" />
             </div>
-            <p className="mb-3 text-sm font-semibold text-gray-400">새 멘토링 프로젝트 시작</p>
+            <p className="mb-3 whitespace-nowrap text-sm font-semibold text-gray-400">새 멘토링 프로젝트 시작</p>
             <a
               href="/instructor-mentoring"
-              className="rounded-lg border border-gray-300 bg-white px-6 py-2 text-xs font-semibold text-gray-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-200 hover:bg-gray-50 hover:shadow-[0_6px_14px_rgba(15,23,42,0.06)]"
+              className="whitespace-nowrap rounded-lg border border-gray-300 bg-white px-6 py-2 text-xs font-semibold text-gray-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-200 hover:bg-gray-50 hover:shadow-[0_6px_14px_rgba(15,23,42,0.06)]"
             >
               멘토링 보드 열기
             </a>
@@ -1323,13 +1325,13 @@ export default function InstructorDashboardPage({ session }: { session: AuthSess
       <section className="border-b border-gray-200 bg-white px-5 py-5 shadow-sm sm:px-6 lg:px-8">
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">수강 관리 센터</h1>
+            <h1 className="whitespace-nowrap text-xl font-semibold text-gray-900">수강 관리 센터</h1>
             <p className="mt-1 text-sm text-gray-500">
               {session.name} 강사님의 강의 운영 이슈와 조치 항목을 실제 데이터 기준으로 확인합니다.
             </p>
           </div>
 
-          <div className="inline-flex w-fit rounded-[12px] bg-[#F3F4F6] p-1">
+          <div className="inline-flex w-fit max-w-full overflow-x-auto rounded-[12px] bg-[#F3F4F6] p-1">
             <DashboardTabButton active={activeTab === 'learning'} onClick={() => setActiveTab('learning')}>
               강의 운영
             </DashboardTabButton>
@@ -1369,7 +1371,9 @@ export default function InstructorDashboardPage({ session }: { session: AuthSess
             onDropOffCourseChange={handleDropOffCourseChange}
           />
         ) : (
-          <MentoringDashboardContent mentoringBoard={mentoringBoard} />
+          <div className="origin-top-left [zoom:0.9]">
+            <MentoringDashboardContent mentoringBoard={mentoringBoard} />
+          </div>
         )}
       </div>
 

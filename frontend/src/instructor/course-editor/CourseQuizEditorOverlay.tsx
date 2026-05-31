@@ -24,6 +24,8 @@ type Props = {
   standalone?: boolean
 }
 
+const QUESTION_EXPLANATION_MAX_LENGTH = 120
+
 function createLocalId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
 }
@@ -856,6 +858,23 @@ export default function CourseQuizEditorOverlay({
                       </button>
                     </div>
                   )}
+
+                  <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                    <div className="mb-1 flex items-center justify-between gap-3">
+                      <label className="text-xs font-bold text-gray-700">해설</label>
+                      <span className="shrink-0 text-[10px] font-semibold text-gray-400">
+                        {(question.explanation ?? '').length} / {QUESTION_EXPLANATION_MAX_LENGTH}
+                      </span>
+                    </div>
+                    <textarea
+                      value={question.explanation ?? ''}
+                      onChange={(event) => updateQuestion(question.localId, 'explanation', event.target.value)}
+                      maxLength={QUESTION_EXPLANATION_MAX_LENGTH}
+                      rows={2}
+                      placeholder="정답 근거를 한두 문장으로 간결하게 입력하세요."
+                      className="w-full resize-none rounded border border-gray-200 bg-white p-2 text-sm leading-5 text-gray-700 outline-none transition focus:border-emerald-500"
+                    />
+                  </div>
                 </div>
               ))}
 

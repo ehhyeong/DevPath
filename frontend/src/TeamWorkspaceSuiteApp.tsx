@@ -3,246 +3,89 @@ import LoginRequiredView from './components/LoginRequiredView'
 import TeamWorkspaceHeader from './components/TeamWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
-import { projectApiRequest } from './project-api'
 import {
   TEAM_WORKSPACE_COLLABORATION_NAV,
   TEAM_WORKSPACE_PAGE_META,
   TEAM_WORKSPACE_RESOURCE_NAV,
-  type TeamWorkspaceNavKey,
 } from './team-workspace-nav'
 
-type TeamWorkspacePage = TeamWorkspaceNavKey
-
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
-type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-type WorkspaceFileType = 'FILE' | 'FOLDER' | 'LINK'
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-  role?: string | null
-  roleType?: string | null
-  roleLabel?: string | null
-  position?: string | null
-  positionLabel?: string | null
-  online?: boolean
-  lastActiveAt?: string | null
-}
-
-type WorkspaceDashboard = {
-  workspaceId: number
-  name: string
-  description?: string | null
-  type: WorkspaceType
-  status: WorkspaceStatus
-  ownerId: number
-  members: WorkspaceMember[]
-  unresolvedTaskCount: number
-  activeMilestoneCount: number
-  createdAt?: string | null
-}
-
-type WorkspaceTask = {
-  taskId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  status: TaskStatus
-  priority?: TaskPriority | null
-  assigneeId?: number | null
-  dueDate?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type CalendarEvent = {
-  eventId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  startAt: string
-  endAt?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type WorkspaceFile = {
-  fileId: number
-  workspaceId: number
-  parentId?: number | null
-  itemType: WorkspaceFileType
-  originalFileName?: string | null
-  displayName?: string | null
-  fileSize?: number | null
-  contentType?: string | null
-  storageProvider?: string | null
-  objectKey?: string | null
-  uploadedById?: number | null
-  uploadedByName?: string | null
-  uploaderProfileImage?: string | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type WorkspaceFileStorage = {
-  usedBytes: number
-  quotaBytes: number
-  storageProvider?: string | null
-}
-
-type QuestionSummary = {
-  id: number
-  authorId: number
-  authorName?: string | null
-  templateType?: string | null
-  difficulty?: string | null
-  title: string
-  adoptedAnswerId?: number | null
-  qnaStatus: string
-  answerCount: number
-  viewCount?: number
-  createdAt?: string | null
-}
-
-type QuestionDetail = QuestionSummary & {
-  content?: string | null
-  updatedAt?: string | null
-  answers?: Array<{
-    id: number
-    authorId?: number | null
-    authorName?: string | null
-    content: string
-    adopted?: boolean
-    createdAt?: string | null
-  }>
-}
-
-type WorkspaceDoc = {
-  docId?: number | null
-  workspaceId: number
-  docType: string
-  content?: string | null
-  updatedById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type MeetingNote = {
-  noteId: number
-  workspaceId: number
-  title: string
-  content?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type ActivityLog = {
-  logId: number
-  workspaceId: number
-  actorId?: number | null
-  activityType: string
-  description: string
-  createdAt?: string | null
-}
-
-type VoiceChannelSummary = {
-  channelId: number
-  workspaceId: number
-  name: string
-  description?: string | null
-  activeParticipantCount: number
-  currentSessionStartedAt?: string | null
-  createdAt?: string | null
-}
-
-type SuiteData = {
-  dashboard: WorkspaceDashboard | null
-  tasks: WorkspaceTask[]
-  files: WorkspaceFile[]
-  storage: WorkspaceFileStorage | null
-  questions: QuestionSummary[]
-  events: CalendarEvent[]
-  apiSpec: WorkspaceDoc | null
-  erdDoc: WorkspaceDoc | null
-  infraDoc: WorkspaceDoc | null
-  notes: MeetingNote[]
-  activities: ActivityLog[]
-  voiceChannels: VoiceChannelSummary[]
-}
-
-type TaskForm = {
-  title: string
-  description: string
-  role: string
-  priority: TaskPriority
-  assigneeId: string
-  dueDate: string
-}
-
-type QuestionForm = {
-  title: string
-  content: string
-  templateType: string
-  difficulty: string
-}
-
-type QuestionContextPicker = 'task' | 'file' | 'api'
-
-type QuestionContextSelection = {
-  type: QuestionContextPicker
-  id: string
-  label: string
-  description: string
-  iconClassName: string
-  toneClassName: string
-}
-
-type EventForm = {
-  title: string
-  description: string
-  type: string
-  date: string
-  time: string
-  duration: string
-}
-
-type DocForm = {
-  mode: 'api' | 'erd' | 'infra'
-  title: string
-  content: string
-  method: string
-  endpoint: string
-  status: string
-  owner: string
-  request: string
-  response: string
-  editingApiId?: string
-}
-
-type ArchitectureApiEndpoint = {
-  id: string
-  sourceIndex: number
-  method: string
-  endpoint: string
-  description: string
-  status: string
-  owner: string
-  request?: string
-  response?: string
-}
-
-type NoteForm = {
-  noteId?: number | null
-  title: string
-  content: string
-}
+import {
+  KANBAN_COLUMNS,
+  QUESTION_ASK_TAGS,
+  QUESTION_STATUS_FILTERS,
+  QUESTION_TAGS,
+  ROLE_FILTERS,
+} from './team-workspace-constants'
+import {
+  adoptTeamWorkspaceAnswer,
+  createTeamWorkspaceEvent,
+  createTeamWorkspaceFileLink,
+  createTeamWorkspaceMeetingNote,
+  createTeamWorkspaceQuestion,
+  createTeamWorkspaceTask,
+  deleteTeamWorkspaceEvent,
+  deleteTeamWorkspaceFile,
+  deleteTeamWorkspaceMeetingNote,
+  deleteTeamWorkspaceTask,
+  downloadTeamWorkspaceFile,
+  fetchTeamWorkspaceQuestionDetail,
+  loadTeamWorkspaceSuiteData,
+  saveTeamWorkspaceDoc,
+  updateTeamWorkspaceMeetingNote,
+  updateTeamWorkspaceTask,
+  updateTeamWorkspaceTaskAssignee,
+  updateTeamWorkspaceTaskStatus,
+  uploadTeamWorkspaceFile,
+} from './team-workspace-api'
+import {
+  clampNumber,
+  fallbackMemberPosition,
+  formatConnectionTime,
+  formatDate,
+  formatFileSize,
+  formatRelativeTime,
+  formatTime,
+  formatVoiceChatTime,
+  getWorkspaceIdFromUrl,
+  liveMediaTracks,
+  measureBrowserPing,
+  memberAssignedPosition,
+  memberPositionBadgeClass,
+  memberPositionLightBadgeClass,
+  navHref,
+  parseDate,
+  percent,
+  priorityBadgeLabel,
+  priorityClass,
+  roleForTask,
+  setMediaTrackEnabled,
+  stopMediaStream,
+  stripTaskRolePrefix,
+  taskRoleBadgeClass,
+  taskTicketCode,
+} from './team-workspace-utils'
+import type {
+  ArchitectureApiEndpoint,
+  CalendarEvent,
+  DocForm,
+  EventForm,
+  MeetingNote,
+  NoteForm,
+  QuestionContextPicker,
+  QuestionContextSelection,
+  QuestionDetail,
+  QuestionForm,
+  QuestionSummary,
+  SuiteData,
+  TaskForm,
+  TaskPriority,
+  TaskStatus,
+  TeamWorkspacePage,
+  WorkspaceDashboard,
+  WorkspaceFile,
+  WorkspaceMember,
+  WorkspaceTask,
+} from './team-workspace-types'
 
 const PAGE_META = TEAM_WORKSPACE_PAGE_META
 
@@ -261,256 +104,7 @@ const DEFAULT_DATA: SuiteData = {
   voiceChannels: [],
 }
 
-const ROLE_FILTERS = ['전체 보기', '내 작업', 'Frontend', 'Backend']
-const QUESTION_STATUS_FILTERS = ['전체', '답변 대기', '답변 완료', '해결됨']
-const QUESTION_TAGS = ['전체', 'Frontend', 'Backend', '에러/버그', '기획/설계']
-const QUESTION_ASK_TAGS = ['Frontend', 'Backend', '에러/버그', '기획/설계']
-const KANBAN_COLUMNS: Array<{
-  key: TaskStatus
-  title: string
-  shellClassName: string
-  headerClassName: string
-  titleClassName: string
-  countClassName: string
-  dotClassName: string
-}> = [
-  {
-    key: 'TODO',
-    title: '할 일 (To Do)',
-    shellClassName: 'border-gray-200 bg-gray-100/50',
-    headerClassName: 'border-gray-200',
-    titleClassName: 'text-gray-800',
-    countClassName: 'border-gray-200 text-gray-500',
-    dotClassName: 'bg-gray-400',
-  },
-  {
-    key: 'IN_PROGRESS',
-    title: '진행 중 (In Progress)',
-    shellClassName: 'border-blue-100 bg-blue-50/30',
-    headerClassName: 'border-blue-100',
-    titleClassName: 'text-blue-800',
-    countClassName: 'border-blue-200 text-blue-600 shadow-sm',
-    dotClassName: 'bg-blue-500',
-  },
-  {
-    key: 'IN_REVIEW',
-    title: '리뷰 대기 (In Review)',
-    shellClassName: 'border-yellow-100 bg-yellow-50/30',
-    headerClassName: 'border-yellow-100',
-    titleClassName: 'text-yellow-800',
-    countClassName: 'border-yellow-200 text-yellow-600 shadow-sm',
-    dotClassName: 'bg-yellow-500',
-  },
-  {
-    key: 'DONE',
-    title: '완료 (Done)',
-    shellClassName: 'border-green-100 bg-green-50/30',
-    headerClassName: 'border-green-100',
-    titleClassName: 'text-green-800',
-    countClassName: 'border-green-200 text-green-600 shadow-sm',
-    dotClassName: 'bg-green-500',
-  },
-]
 
-function getWorkspaceIdFromUrl() {
-  const params = new URLSearchParams(window.location.search)
-  const value = params.get('workspaceId') ?? params.get('squadId')
-  const parsed = Number(value)
-
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-}
-
-function navHref(path: string, workspaceId: number | null) {
-  return workspaceId ? `${path}?workspaceId=${workspaceId}` : path
-}
-
-function parseDate(value?: string | null) {
-  if (!value) return null
-
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date
-}
-
-function formatDate(value?: string | null) {
-  const date = parseDate(value)
-  if (!date) return '일정 미정'
-
-  return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }).format(date)
-}
-
-function formatTime(value?: string | null) {
-  const date = parseDate(value)
-  if (!date) return '--:--'
-
-  return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit' }).format(date)
-}
-
-function formatRelativeTime(value?: string | null) {
-  const date = parseDate(value)
-  if (!date) return '방금 전'
-
-  const diffMinutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000))
-  if (diffMinutes < 1) return '방금 전'
-  if (diffMinutes < 60) return `${diffMinutes}분 전`
-
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours}시간 전`
-
-  return `${Math.floor(diffHours / 24)}일 전`
-}
-
-function formatFileSize(bytes?: number | null) {
-  if (!bytes || bytes <= 0) return '0 KB'
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-
-function percent(done: number, total: number) {
-  return total > 0 ? Math.round((done / total) * 100) : 0
-}
-
-function roleForTask(task: WorkspaceTask) {
-  const text = `${task.title} ${task.description ?? ''}`.toLowerCase()
-  if (/(front|react|next|ui|화면|프론트)/i.test(text)) return 'Frontend'
-  if (/(back|api|server|spring|jpa|db|서버|백엔드)/i.test(text)) return 'Backend'
-  if (/(design|designer|figma|wireframe|디자인|기획)/i.test(text)) return 'Designer'
-  if (/(common|공통)/i.test(text)) return '공통'
-
-  return '공통'
-}
-
-function stripTaskRolePrefix(description?: string | null) {
-  return (description ?? '').replace(/^\[(Frontend|Backend|Designer|Design|공통|Common|Planning)\]\s*/i, '')
-}
-
-function priorityClass(priority?: TaskPriority | null) {
-  if (priority === 'HIGH') return 'bg-red-50 text-red-500'
-  if (priority === 'LOW') return 'bg-gray-100 text-gray-400'
-
-  return 'bg-orange-50 text-orange-500'
-}
-
-function taskRoleBadgeClass(role: string) {
-  if (role === 'Backend') return 'border-purple-200 bg-purple-50 text-purple-600'
-  if (role === 'Designer' || role === 'Design') return 'border-pink-200 bg-pink-50 text-pink-600'
-  if (role === '공통' || role === 'Common' || role === 'Planning') return 'border-gray-200 bg-gray-100 text-gray-600'
-
-  return 'border-blue-200 bg-blue-50 text-blue-600'
-}
-
-function taskTicketCode(task: WorkspaceTask, role: string) {
-  const prefix = role === 'Backend' ? 'BE' : role === 'Designer' || role === 'Design' ? 'DE' : role === '공통' || role === 'Common' ? 'CO' : 'FE'
-
-  return `#${prefix}-${String(task.taskId).padStart(2, '0').slice(-2)}`
-}
-
-function normalizeMemberPosition(value?: string | null) {
-  const raw = value?.trim()
-  if (!raw) return null
-
-  const compact = raw.replace(/[\s_-]/g, '').toLowerCase()
-  if (/^(fe|front|frontend|프론트|프론트엔드)$/.test(compact)) return 'FE'
-  if (/^(be|back|backend|server|서버|백엔드)$/.test(compact)) return 'BE'
-  if (/^(design|designer|de|uiux|ui|ux|디자인|디자이너)$/.test(compact)) return 'DE'
-  if (/^(pm|planner|planning|기획|기획자)$/.test(compact)) return 'PM'
-  if (/^(fullstack|full|fs|풀스택)$/.test(compact)) return 'FS'
-  if (/^(leader|lead|팀장)$/.test(compact)) return 'LEAD'
-  if (/^(common|co|공통)$/.test(compact)) return 'CO'
-
-  return raw.length <= 6 ? raw.toUpperCase() : raw
-}
-
-function memberAssignedPosition(member: WorkspaceMember, tasks: WorkspaceTask[]) {
-  const explicit = normalizeMemberPosition(
-    member.positionLabel ?? member.roleLabel ?? member.position ?? member.roleType ?? member.role,
-  )
-  if (explicit) return explicit
-
-  const counts = new Map<string, number>()
-  tasks
-    .filter((task) => task.assigneeId === member.learnerId)
-    .forEach((task) => {
-      const nextPosition = normalizeMemberPosition(roleForTask(task))
-      if (nextPosition) counts.set(nextPosition, (counts.get(nextPosition) ?? 0) + 1)
-    })
-
-  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null
-}
-
-function fallbackMemberPosition(index: number) {
-  return index % 2 === 0 ? 'FE' : 'BE'
-}
-
-function memberPositionBadgeClass(position: string) {
-  if (position === 'BE') return 'border border-purple-500/30 bg-purple-500/20 text-purple-400'
-  if (position === 'DE') return 'border border-pink-500/30 bg-pink-500/20 text-pink-400'
-  if (position === 'PM') return 'border border-amber-500/30 bg-amber-500/20 text-amber-300'
-  if (position === 'FS') return 'border border-emerald-500/30 bg-emerald-500/20 text-emerald-300'
-  if (position === 'LEAD') return 'border border-red-500/30 bg-red-500/20 text-red-300'
-  if (position === 'CO') return 'border border-gray-600 bg-gray-700 text-gray-300'
-
-  return 'border border-blue-500/30 bg-blue-500/20 text-blue-400'
-}
-
-function memberPositionLightBadgeClass(position: string) {
-  if (position === 'BE') return 'border border-purple-100 bg-purple-50 text-purple-600'
-  if (position === 'DE') return 'border border-pink-100 bg-pink-50 text-pink-600'
-  if (position === 'PM') return 'border border-amber-100 bg-amber-50 text-amber-600'
-  if (position === 'FS') return 'border border-emerald-100 bg-emerald-50 text-emerald-600'
-  if (position === 'LEAD') return 'border border-red-100 bg-red-50 text-red-600'
-  if (position === 'CO') return 'border border-gray-200 bg-gray-100 text-gray-600'
-
-  return 'border border-blue-100 bg-blue-50 text-blue-600'
-}
-
-function formatConnectionTime(totalSeconds: number) {
-  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0')
-  const seconds = String(totalSeconds % 60).padStart(2, '0')
-
-  return `${minutes}:${seconds}`
-}
-
-function formatVoiceChatTime(value: Date) {
-  const hours = value.getHours()
-  const minutes = String(value.getMinutes()).padStart(2, '0')
-  const period = hours >= 12 ? '오후' : '오전'
-  const displayHour = hours % 12 || 12
-
-  return `${period} ${displayHour}:${minutes}`
-}
-
-function stopMediaStream(stream: MediaStream | null) {
-  stream?.getTracks().forEach((track) => track.stop())
-}
-
-function liveMediaTracks(stream: MediaStream | null, kind: 'audio' | 'video') {
-  return stream?.getTracks().filter((track) => track.kind === kind && track.readyState === 'live') ?? []
-}
-
-function setMediaTrackEnabled(stream: MediaStream | null, kind: 'audio' | 'video', enabled: boolean) {
-  liveMediaTracks(stream, kind).forEach((track) => {
-    track.enabled = enabled
-  })
-}
-
-function clampNumber(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
-}
-
-async function measureBrowserPing() {
-  const start = performance.now()
-  await fetch(`${window.location.origin}/?voicePing=${Date.now()}`, { method: 'HEAD', cache: 'no-store' })
-
-  return Math.max(1, Math.round(performance.now() - start))
-}
-
-function priorityBadgeLabel(priority?: TaskPriority | null) {
-  if (priority === 'HIGH') return '긴급'
-  if (priority === 'LOW') return '낮음'
-
-  return '보통'
-}
 
 function priorityBadgeIcon(priority?: TaskPriority | null) {
   return priority === 'HIGH' ? <i className="fas fa-fire mr-0.5"></i> : null
@@ -813,39 +407,6 @@ function buildApiEndpointLine(form: DocForm) {
     form.request.trim(),
     form.response.trim(),
   ].filter((part) => part.length > 0).join(' | ')
-}
-
-function apiBaseUrl() {
-  return import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
-}
-
-function downloadUrl(fileId: number) {
-  return `${apiBaseUrl()}/api/workspace-files/${fileId}/download`
-}
-
-async function downloadFileFromApi(file: WorkspaceFile) {
-  const headers = new Headers()
-  const session = readStoredAuthSession()
-
-  if (session?.accessToken) {
-    headers.set('Authorization', `${session.tokenType} ${session.accessToken}`)
-  }
-
-  const response = await fetch(downloadUrl(file.fileId), { headers })
-  if (!response.ok) {
-    throw new Error(`Download failed with status ${response.status}`)
-  }
-
-  const blob = await response.blob()
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-
-  link.href = url
-  link.download = file.originalFileName || file.displayName || `workspace-file-${file.fileId}`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
 }
 
 function toLocalDateTime(date: string, time: string) {
@@ -1218,25 +779,21 @@ function KanbanPage({
     setError(null)
 
     try {
-      const body = JSON.stringify({
+      const payload = {
         title: form.title.trim(),
         description: `[${form.role}] ${stripTaskRolePrefix(form.description).trim()}`.trim(),
         priority: form.priority,
         assigneeId: form.assigneeId ? Number(form.assigneeId) : null,
         dueDate: form.dueDate || null,
-      })
+      }
 
       if (modalTask) {
-        await projectApiRequest<WorkspaceTask>(`/api/workspaces/${workspaceId}/tasks/${modalTask.taskId}`, { method: 'PUT', body }, 'required')
+        await updateTeamWorkspaceTask(workspaceId, modalTask.taskId, payload)
         if (form.assigneeId) {
-          await projectApiRequest<WorkspaceTask>(
-            `/api/workspaces/${workspaceId}/tasks/${modalTask.taskId}/assignee`,
-            { method: 'PATCH', body: JSON.stringify({ assigneeId: Number(form.assigneeId) }) },
-            'required',
-          )
+          await updateTeamWorkspaceTaskAssignee(workspaceId, modalTask.taskId, Number(form.assigneeId))
         }
       } else {
-        await projectApiRequest<WorkspaceTask>(`/api/workspaces/${workspaceId}/tasks`, { method: 'POST', body }, 'required')
+        await createTeamWorkspaceTask(workspaceId, payload)
       }
 
       setModalTask(null)
@@ -1252,11 +809,7 @@ function KanbanPage({
   async function updateStatus(task: WorkspaceTask, status: TaskStatus) {
     if (task.status === status) return
 
-    await projectApiRequest<WorkspaceTask>(
-      `/api/workspaces/${workspaceId}/tasks/${task.taskId}/status`,
-      { method: 'PATCH', body: JSON.stringify({ status }) },
-      'required',
-    )
+    await updateTeamWorkspaceTaskStatus(workspaceId, task.taskId, status)
     await reload()
   }
 
@@ -1275,11 +828,7 @@ function KanbanPage({
     setError(null)
 
     try {
-      await projectApiRequest<void>(
-        `/api/workspaces/${workspaceId}/tasks/${modalTask.taskId}`,
-        { method: 'DELETE' },
-        'required',
-      )
+      await deleteTeamWorkspaceTask(workspaceId, modalTask.taskId)
       setModalTask(null)
       setTaskModalOpen(false)
       await reload()
@@ -1599,15 +1148,11 @@ function FilesPage({
 
     try {
       if (uploadMode === 'link') {
-        await projectApiRequest<WorkspaceFile>(
-          `/api/workspaces/${workspaceId}/files/links`,
-          { method: 'POST', body: JSON.stringify({ title: trimmedTitle, url: linkForm.url.trim() }) },
-          'required',
-        )
+        await createTeamWorkspaceFileLink(workspaceId, trimmedTitle, linkForm.url.trim())
       } else {
         const body = new FormData()
         body.append('file', uploadFile as File)
-        await projectApiRequest<WorkspaceFile>(`/api/workspaces/${workspaceId}/files`, { method: 'POST', body }, 'required')
+        await uploadTeamWorkspaceFile(workspaceId, body)
       }
 
       setUploadOpen(false)
@@ -1627,7 +1172,7 @@ function FilesPage({
   async function deleteSelectedFile() {
     if (!selectedFile) return
 
-    await projectApiRequest<void>(`/api/workspace-files/${selectedFile.fileId}`, { method: 'DELETE' }, 'required')
+    await deleteTeamWorkspaceFile(selectedFile.fileId)
     setSelectedFile(null)
     await reload()
   }
@@ -1638,7 +1183,7 @@ function FilesPage({
       return
     }
 
-    void downloadFileFromApi(file).catch((nextError) => {
+    void downloadTeamWorkspaceFile(file).catch((nextError) => {
       setDownloadError(nextError instanceof Error ? nextError.message : '다운로드에 실패했습니다.')
     })
   }
@@ -1986,7 +1531,7 @@ function QnaPage({
   }
 
   async function openDetail(question: QuestionSummary) {
-    const nextDetail = await projectApiRequest<QuestionDetail>(`/api/workspace-questions/${question.id}`, {}, 'required')
+    const nextDetail = await fetchTeamWorkspaceQuestionDetail(question.id)
     setDetailError(null)
     setDetail(nextDetail)
   }
@@ -2002,19 +1547,12 @@ function QnaPage({
     setError(null)
 
     try {
-      await projectApiRequest<QuestionDetail>(
-        `/api/workspaces/${workspaceId}/questions`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            templateType: templateTypeFromQuestionTags(selectedQuestionTags),
-            difficulty: form.difficulty,
-            title: form.title.trim(),
-            content: buildQuestionContent(form.content, selectedQuestionContexts),
-          }),
-        },
-        'required',
-      )
+      await createTeamWorkspaceQuestion(workspaceId, {
+        templateType: templateTypeFromQuestionTags(selectedQuestionTags),
+        difficulty: form.difficulty,
+        title: form.title.trim(),
+        content: buildQuestionContent(form.content, selectedQuestionContexts),
+      })
       setModalOpen(false)
       setForm({ title: '', content: '', templateType: 'PROJECT', difficulty: 'MEDIUM' })
       setSelectedQuestionTags(['Frontend', '에러/버그'])
@@ -2032,11 +1570,7 @@ function QnaPage({
 
     try {
       setDetailError(null)
-      const nextDetail = await projectApiRequest<QuestionDetail>(
-        `/api/qna/questions/${detail.id}/answers/${answerId}/adopt`,
-        { method: 'PATCH' },
-        'required',
-      )
+      const nextDetail = await adoptTeamWorkspaceAnswer(detail.id, answerId)
       setDetail(nextDetail)
       await reload()
     } catch (nextError) {
@@ -2493,19 +2027,12 @@ function SchedulePage({
 
     try {
       const startAt = toLocalDateTime(form.date, form.time)
-      const createdEvent = await projectApiRequest<CalendarEvent>(
-        `/api/workspaces/${workspaceId}/calendar-events`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            title: form.title.trim(),
-            description: buildTeamScheduleDescription(form.type, form.description),
-            startAt,
-            endAt: addMinutes(startAt, Number(form.duration) || 60),
-          }),
-        },
-        'required',
-      )
+      const createdEvent = await createTeamWorkspaceEvent(workspaceId, {
+        title: form.title.trim(),
+        description: buildTeamScheduleDescription(form.type, form.description),
+        startAt,
+        endAt: addMinutes(startAt, Number(form.duration) || 60),
+      })
       setOptimisticEvents((current) => [createdEvent, ...current.filter((event) => event.eventId !== createdEvent.eventId)])
       setRecentEventIds((current) => [createdEvent.eventId, ...current.filter((eventId) => eventId !== createdEvent.eventId)].slice(0, 6))
       setModalOpen(false)
@@ -2526,7 +2053,7 @@ function SchedulePage({
     setDeleteError(null)
 
     try {
-      await projectApiRequest<void>(`/api/calendar-events/${deleteTarget.eventId}`, { method: 'DELETE' }, 'required')
+      await deleteTeamWorkspaceEvent(deleteTarget.eventId)
       setOptimisticEvents((current) => current.filter((event) => event.eventId !== deleteTarget.eventId))
       setRecentEventIds((current) => current.filter((eventId) => eventId !== deleteTarget.eventId))
       setSelectedEvent(null)
@@ -2851,7 +2378,7 @@ function ArchitecturePage({
             })()
           : [previousContent, nextApiLine].filter(Boolean).join('\n')
         : `${form.title.trim() ? `# ${form.title.trim()}\n\n` : ''}${form.content.trim()}`
-      await projectApiRequest<WorkspaceDoc>(endpoint, { method: 'PUT', body: JSON.stringify({ content: nextContent }) }, 'required')
+      await saveTeamWorkspaceDoc(endpoint, nextContent)
       setModalOpen(false)
       await reload()
     } catch (nextError) {
@@ -3277,17 +2804,9 @@ function MeetingPage({
 
     try {
       if (form.noteId) {
-        await projectApiRequest<MeetingNote>(
-          `/api/meeting-notes/${form.noteId}`,
-          { method: 'PUT', body: JSON.stringify({ title: form.title.trim(), content: form.content.trim() }) },
-          'required',
-        )
+        await updateTeamWorkspaceMeetingNote(form.noteId, { title: form.title.trim(), content: form.content.trim() })
       } else {
-        await projectApiRequest<MeetingNote>(
-          `/api/workspaces/${workspaceId}/meeting-notes`,
-          { method: 'POST', body: JSON.stringify({ title: form.title.trim(), content: form.content.trim() }) },
-          'required',
-        )
+        await createTeamWorkspaceMeetingNote(workspaceId, { title: form.title.trim(), content: form.content.trim() })
       }
       setModalOpen(false)
       setForm({ noteId: null, title: '', content: '' })
@@ -3309,7 +2828,7 @@ function MeetingPage({
   async function deleteNote(noteId: number) {
     if (!window.confirm('정말 이 회의록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return
 
-    await projectApiRequest<void>(`/api/meeting-notes/${noteId}`, { method: 'DELETE' }, 'required')
+    await deleteTeamWorkspaceMeetingNote(noteId)
     setSelectedNote(null)
     await reload()
   }
@@ -4394,38 +3913,6 @@ function RealtimePage({
   )
 }
 
-async function loadSuiteData(workspaceId: number, signal: AbortSignal): Promise<SuiteData> {
-  const [dashboard, tasks, files, storage, questions, events, apiSpec, erdDoc, infraDoc, notes, activities, voiceChannels] = await Promise.all([
-    projectApiRequest<WorkspaceDashboard>(`/api/workspaces/${workspaceId}/dashboard`, { signal }, 'required'),
-    projectApiRequest<WorkspaceTask[]>(`/api/workspaces/${workspaceId}/tasks`, { signal }, 'required').catch(() => []),
-    projectApiRequest<WorkspaceFile[]>(`/api/workspaces/${workspaceId}/files`, { signal }, 'required').catch(() => []),
-    projectApiRequest<WorkspaceFileStorage>(`/api/workspaces/${workspaceId}/files/storage`, { signal }, 'required').catch(() => null),
-    projectApiRequest<QuestionSummary[]>(`/api/workspaces/${workspaceId}/questions`, { signal }, 'required').catch(() => []),
-    projectApiRequest<CalendarEvent[]>(`/api/workspaces/${workspaceId}/calendar-events`, { signal }, 'required').catch(() => []),
-    projectApiRequest<WorkspaceDoc>(`/api/workspaces/${workspaceId}/api-spec`, { signal }, 'required').catch(() => null),
-    projectApiRequest<WorkspaceDoc>(`/api/workspaces/${workspaceId}/docs/erd`, { signal }, 'required').catch(() => null),
-    projectApiRequest<WorkspaceDoc>(`/api/workspaces/${workspaceId}/docs/infra`, { signal }, 'required').catch(() => null),
-    projectApiRequest<MeetingNote[]>(`/api/workspaces/${workspaceId}/meeting-notes`, { signal }, 'required').catch(() => []),
-    projectApiRequest<ActivityLog[]>(`/api/workspaces/${workspaceId}/activities/recent`, { signal }, 'required').catch(() => []),
-    projectApiRequest<VoiceChannelSummary[]>(`/api/workspaces/${workspaceId}/voice-channels`, { signal }, 'required').catch(() => []),
-  ])
-
-  return {
-    dashboard,
-    tasks: tasks ?? [],
-    files: files ?? [],
-    storage,
-    questions: questions ?? [],
-    events: events ?? [],
-    apiSpec,
-    erdDoc,
-    infraDoc,
-    notes: notes ?? [],
-    activities: activities ?? [],
-    voiceChannels: voiceChannels ?? [],
-  }
-}
-
 export default function TeamWorkspaceSuiteApp({ page }: { page?: TeamWorkspacePage }) {
   const activePage = page ?? 'kanban'
   const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
@@ -4461,7 +3948,7 @@ export default function TeamWorkspaceSuiteApp({ page }: { page?: TeamWorkspacePa
     return async () => {
       if (!workspaceId) return
 
-      const nextData = await loadSuiteData(workspaceId, new AbortController().signal)
+      const nextData = await loadTeamWorkspaceSuiteData(workspaceId, new AbortController().signal)
       setData(nextData)
     }
   }, [workspaceId])
@@ -4480,7 +3967,7 @@ export default function TeamWorkspaceSuiteApp({ page }: { page?: TeamWorkspacePa
       setError(null)
 
       try {
-        const nextData = await loadSuiteData(currentWorkspaceId, controller.signal)
+        const nextData = await loadTeamWorkspaceSuiteData(currentWorkspaceId, controller.signal)
         if (controller.signal.aborted) return
         setData(nextData)
       } catch (nextError) {

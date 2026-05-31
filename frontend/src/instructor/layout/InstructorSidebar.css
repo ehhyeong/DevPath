@@ -1,6 +1,18 @@
+.instructor-layout-main.app-main {
+  overflow: hidden;
+}
+
+.instructor-layout-content.app-responsive-main {
+  height: calc(100dvh - var(--app-header-height));
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .instructor-sidebar {
   display: none;
   width: 250px;
+  height: calc(100dvh - var(--app-header-height));
   min-height: calc(100dvh - var(--app-header-height));
   align-self: stretch;
   flex-shrink: 0;
@@ -19,10 +31,11 @@
 }
 
 .sidebar-sticky-content {
-  position: sticky;
-  top: calc(var(--app-header-height) + 24px);
+  position: relative;
+  top: auto;
   display: flex;
-  max-height: calc(100dvh - var(--app-header-height) - 48px);
+  height: 100%;
+  max-height: none;
   flex: 1;
   flex-direction: column;
 }

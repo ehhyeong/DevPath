@@ -54,6 +54,9 @@ public class ExternalIntegration {
   @Column(name = "repository_name", length = 160)
   private String repositoryName;
 
+  @Column(name = "repository_access_token", length = 2000)
+  private String repositoryAccessToken;
+
   @Column(name = "last_synced_at")
   private LocalDateTime lastSyncedAt;
 
@@ -91,8 +94,16 @@ public class ExternalIntegration {
     this.repositoryName = repositoryName;
   }
 
+  public void configureRepositoryAccessToken(String repositoryAccessToken) {
+    this.repositoryAccessToken = repositoryAccessToken;
+  }
+
   public void markSynced(String message) {
     this.lastSyncedAt = LocalDateTime.now();
+    this.lastSyncMessage = message;
+  }
+
+  public void markSyncFailed(String message) {
     this.lastSyncMessage = message;
   }
 }

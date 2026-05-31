@@ -3431,6 +3431,10 @@ body.mentoring-hub-body #root {
   min-height: 0;
 }
 
+.mentoring-hub-page .mentoring-hub-main-content {
+  zoom: 0.9;
+}
+
 .hide-scroll::-webkit-scrollbar { display: none; }
 .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -3909,7 +3913,109 @@ input[type="checkbox"]:checked { background-color: #00C471; border-color: #00C47
 }
 
 .workspace-hub-project-create-modal {
-  max-width: 56rem !important;
+  max-width: 64rem !important;
+}
+
+.github-input-group:focus-within i,
+.github-input-group:focus-within span.prefix {
+  color: #3B82F6;
+}
+
+.project-create-panel,
+.project-create-panel * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.project-create-panel {
+  height: 560px !important;
+  max-width: 1024px !important;
+  border-radius: 16px !important;
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.project-create-panel > div:first-child {
+  width: 35% !important;
+  padding: 32px !important;
+}
+
+.project-create-panel > form {
+  width: 65% !important;
+  padding: 32px !important;
+}
+
+.project-create-panel h2 {
+  margin-bottom: 16px !important;
+  color: #ffffff !important;
+  font-size: 30px !important;
+  font-weight: 900 !important;
+  line-height: 36px !important;
+}
+
+.project-create-panel h3 {
+  color: #111827 !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  line-height: 28px !important;
+}
+
+.project-create-panel p {
+  font-size: 12px !important;
+  line-height: 19px !important;
+}
+
+.project-create-panel label {
+  margin-bottom: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 16px !important;
+}
+
+.project-create-panel input {
+  height: 38px !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  color: #111827 !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.project-create-panel input::placeholder {
+  color: #9ca3af !important;
+  font-size: 14px !important;
+}
+
+.project-create-panel .github-input-group input {
+  height: 46px !important;
+  border-width: 2px !important;
+  padding: 10px 12px 10px 140px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+.project-create-panel .github-input-group .prefix {
+  left: 12px !important;
+  color: #9ca3af !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.project-create-panel button[type="submit"] {
+  height: 50px !important;
+  border-radius: 12px !important;
+  padding: 14px 0 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 20px !important;
+}
+
+.project-create-panel button[type="button"] {
+  width: fit-content !important;
+  min-height: 32px !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 16px !important;
 }
 
 .workspace-hub-filter-row {
@@ -5222,6 +5328,47 @@ body.squad-dashboard-body .app-viewport {
 
 .squad-review-page .pr-card {
   min-height: 110px;
+}
+
+.squad-review-page main > div:first-child > div:first-child > div:first-child > button {
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  flex: 0 0 32px !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.squad-review-page main > div:first-child > div:first-child > div:first-child > button > i {
+  font-size: 14px !important;
+  line-height: 1 !important;
+}
+
+.squad-review-page main > div:first-child > div:first-child > div:nth-child(2) {
+  gap: 8px !important;
+  background-color: #F9FAFB !important;
+  border: 1px solid #F3F4F6 !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+  box-sizing: border-box !important;
+}
+
+.squad-review-page main > div:first-child > div:first-child > div:nth-child(2) > button {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
 }
 
 .squad-review-page .squad-review-create-modal {
@@ -9392,6 +9539,122 @@ body.team-ws-dashboard-body #root {
   line-height: 24px !important;
 }
 
+/* Instructor common assignment workspace lock */
+.instructor-ws-page {
+  background-color: #F3F4F6 !important;
+  color: #1F2937 !important;
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 16px !important;
+  line-height: 24px !important;
+}
+
+.instructor-ws-page button,
+.instructor-ws-page input,
+.instructor-ws-page select,
+.instructor-ws-page textarea {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.instructor-ws-page .text-2xl {
+  font-size: 24px !important;
+  line-height: 32px !important;
+}
+
+.instructor-ws-page .text-xl {
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
+.instructor-ws-page .text-lg {
+  font-size: 18px !important;
+  line-height: 28px !important;
+}
+
+.instructor-ws-page .text-sm,
+.instructor-ws-page button,
+.instructor-ws-page input,
+.instructor-ws-page textarea {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-ws-page .text-xs {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.instructor-ws-page .text-\[11px\] {
+  font-size: 11px !important;
+  line-height: 16px !important;
+}
+
+.instructor-ws-page .text-\[10px\] {
+  font-size: 10px !important;
+  line-height: 14px !important;
+}
+
+.instructor-ws-page .text-\[9px\] {
+  font-size: 9px !important;
+  line-height: 12px !important;
+}
+
+.instructor-ws-page .nav-item {
+  display: flex !important;
+  align-items: center !important;
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1rem !important;
+  color: #6B7280 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease !important;
+}
+
+.instructor-ws-page .nav-item:hover {
+  background-color: #F9FAFB !important;
+  color: #111827 !important;
+  transform: translateX(2px) !important;
+}
+
+.instructor-ws-page .nav-item.active {
+  background-color: #111827 !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+.instructor-ws-page .nav-item.active i {
+  color: #A78BFA !important;
+}
+
+.instructor-ws-page .sidebar-text {
+  width: 0 !important;
+  margin-left: 0 !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  opacity: 0 !important;
+  transition: width 0.25s ease, margin-left 0.25s ease, opacity 0.2s ease !important;
+}
+
+.instructor-ws-page .instructor-ws-sidebar:hover .sidebar-text {
+  width: auto !important;
+  margin-left: 0.75rem !important;
+  opacity: 1 !important;
+}
+
+.instructor-ws-page .sidebar-section-title {
+  height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  transition: height 0.3s ease, margin 0.3s ease, opacity 0.3s ease !important;
+}
+
+.instructor-ws-page .instructor-ws-sidebar:hover .sidebar-section-title {
+  height: auto !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+  opacity: 1 !important;
+}
+
 .mentoring-common-page button,
 .mentoring-common-page input,
 .mentoring-common-page select,
@@ -13431,4 +13694,595 @@ body.team-ws-dashboard-body #root {
 .content-assignment-editor-page .content-assignment-editor-toast-container {
   top: calc(var(--app-header-height) + 16px) !important;
   right: 32px !important;
+}
+
+.instructor-team-milestone,
+.instructor-team-milestone * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.instructor-team-milestone {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-milestone button,
+.instructor-team-milestone input,
+.instructor-team-milestone textarea {
+  font-family: 'Pretendard', sans-serif !important;
+  line-height: inherit !important;
+}
+
+.instructor-team-milestone h1 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-milestone .itw-top-action,
+.instructor-team-milestone .itw-week-tab,
+.instructor-team-milestone .itw-modal-button {
+  min-height: 42px !important;
+  padding: 10px 20px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-milestone .itw-eval-button {
+  min-height: 34px !important;
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-milestone .itw-send-button {
+  min-height: 36px !important;
+  padding: 10px 0 !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-milestone .itw-icon-button {
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+}
+
+.instructor-team-milestone .itw-confirm-button {
+  min-height: 48px !important;
+  padding: 14px 0 !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-kanban,
+.instructor-team-kanban * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.instructor-team-kanban {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-kanban button,
+.instructor-team-kanban input,
+.instructor-team-kanban select,
+.instructor-team-kanban textarea {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.instructor-team-kanban h1 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-kanban .itw-kanban-filter-tab {
+  min-height: 30px !important;
+  padding: 6px 16px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-kanban .itw-kanban-top-button {
+  min-height: 42px !important;
+  padding: 10px 20px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-kanban .kanban-card {
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s,
+    transform 0.2s !important;
+}
+
+.instructor-team-kanban .kanban-card:active {
+  cursor: grabbing !important;
+  transform: scale(0.98) !important;
+}
+
+.instructor-team-architecture,
+.instructor-team-architecture * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.instructor-team-architecture {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-architecture button,
+.instructor-team-architecture input,
+.instructor-team-architecture select,
+.instructor-team-architecture textarea {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.instructor-team-architecture h1 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-architecture .arch-tab {
+  border-bottom: 2px solid transparent !important;
+  cursor: pointer !important;
+  transition:
+    border-color 0.2s,
+    color 0.2s !important;
+}
+
+.instructor-team-architecture .arch-tab.active {
+  border-color: #7c3aed !important;
+  color: #7c3aed !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-architecture .api-row {
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s !important;
+}
+
+.instructor-team-architecture .api-row:hover {
+  background-color: #f9fafb !important;
+}
+
+.instructor-team-qna,
+.instructor-team-qna * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.instructor-team-qna {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-qna button,
+.instructor-team-qna input,
+.instructor-team-qna textarea {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.instructor-team-qna h1 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-qna .filter-tab {
+  min-height: 42px !important;
+  padding: 10px 20px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s !important;
+}
+
+.instructor-team-qna .filter-tab.active {
+  border-color: #111827 !important;
+  background-color: #111827 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-schedule,
+.instructor-team-schedule * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.instructor-team-schedule {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-schedule button,
+.instructor-team-schedule input,
+.instructor-team-schedule select,
+.instructor-team-schedule textarea {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.instructor-team-schedule h1 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-schedule .calendar-grid {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 1px !important;
+  overflow: hidden !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  background-color: #e5e7eb !important;
+}
+
+.instructor-team-schedule .calendar-header {
+  padding: 6px 8px !important;
+  background-color: #f9fafb !important;
+  text-align: center !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 800 !important;
+  color: #6b7280 !important;
+}
+
+.instructor-team-schedule .calendar-day {
+  min-height: 76px !important;
+  padding: 6px 8px !important;
+  border: 0 !important;
+  background-color: #ffffff !important;
+  transition: background-color 0.2s !important;
+  cursor: pointer !important;
+}
+
+.instructor-team-schedule .calendar-day:hover {
+  background-color: #f9fafb !important;
+}
+
+.instructor-team-schedule .calendar-day.today {
+  background-color: #eef2ff !important;
+}
+
+.instructor-team-schedule .calendar-day.other-month {
+  background-color: #f9fafb !important;
+  color: #d1d5db !important;
+  cursor: default !important;
+}
+
+.instructor-team-files,
+.instructor-team-files * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.instructor-team-files {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-files button,
+.instructor-team-files input,
+.instructor-team-files textarea {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.instructor-team-files h1 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-files .team-files-filter-tab {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 2px solid transparent !important;
+  color: #9ca3af !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 700 !important;
+  transition:
+    color 0.2s,
+    border-color 0.2s !important;
+}
+
+.instructor-team-files .team-files-filter-tab.active {
+  border-color: #111827 !important;
+  color: #111827 !important;
+}
+
+.instructor-team-files .file-card:hover {
+  transform: translateY(-4px) !important;
+  border-color: #c4b5fd !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06) !important;
+}
+
+.instructor-team-files .file-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  border-radius: 9999px !important;
+  padding: 4px 8px !important;
+  font-size: 10px !important;
+  line-height: 12px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-files .file-badge.official {
+  background-color: #f3e8ff !important;
+  color: #7c3aed !important;
+}
+
+.instructor-team-files .file-badge.shared {
+  background-color: #e0e7ff !important;
+  color: #4f46e5 !important;
+}
+
+.instructor-team-files .file-detail-badge {
+  display: inline-block !important;
+  margin-bottom: 8px !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-radius: 4px !important;
+  padding: 2px 6px !important;
+  font-size: 9px !important;
+  line-height: 12px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-files .file-detail-badge.official {
+  border-color: #ddd6fe !important;
+  background-color: #f3e8ff !important;
+  color: #7c3aed !important;
+}
+
+.instructor-team-files .file-detail-badge.shared {
+  border-color: #c7d2fe !important;
+  background-color: #e0e7ff !important;
+  color: #4f46e5 !important;
+}
+
+.instructor-team-files .file-ext-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 34px !important;
+  border-radius: 8px !important;
+  background-color: #f3f4f6 !important;
+  padding: 4px 7px !important;
+  color: #6b7280 !important;
+  font-size: 10px !important;
+  line-height: 12px !important;
+  font-weight: 900 !important;
+}
+
+.instructor-team-files .upload-zone {
+  background-color: #f9fafb !important;
+}
+
+.instructor-team-files .upload-zone:hover,
+.instructor-team-files .upload-zone.dragging {
+  border-color: #7c3aed !important;
+  background-color: #f5f3ff !important;
+}
+
+.instructor-team-meeting,
+.instructor-team-meeting * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.instructor-team-meeting {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-meeting button,
+.instructor-team-meeting a,
+.instructor-team-meeting input,
+.instructor-team-meeting textarea {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.instructor-team-meeting h1 {
+  font-size: 24px !important;
+  line-height: 32px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-meeting h3 {
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 800 !important;
+}
+
+.instructor-team-meeting h4 {
+  font-size: 17px !important;
+  line-height: 24px !important;
+}
+
+.instructor-team-meeting p,
+.instructor-team-meeting span,
+.instructor-team-meeting label,
+.instructor-team-meeting input,
+.instructor-team-meeting textarea {
+  line-height: 1.45 !important;
+}
+
+.instructor-team-meeting > div:first-child button {
+  min-height: 42px !important;
+  padding: 10px 18px !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-meeting section a,
+.instructor-team-meeting section button {
+  font-size: 13px !important;
+  line-height: 18px !important;
+  font-weight: 700 !important;
+}
+
+.instructor-team-meeting section a[class*="py-3.5"],
+.instructor-team-meeting section button[class*="py-3.5"] {
+  min-height: 42px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+.instructor-team-meeting section button[class*="py-2.5"],
+.instructor-team-meeting section a[class*="py-2.5"] {
+  min-height: 34px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.instructor-team-meeting .rounded-lg.px-4.py-2 {
+  min-height: 30px !important;
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.instructor-team-meeting .text-sm {
+  font-size: 13px !important;
+  line-height: 19px !important;
+}
+
+.instructor-team-meeting .text-xs {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.instructor-team-meeting .text-lg {
+  font-size: 17px !important;
+  line-height: 24px !important;
+}
+
+@keyframes instructor-team-live-recording-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.instructor-team-live-meeting .recording-pulse {
+  animation: instructor-team-live-recording-pulse 2s infinite !important;
+}
+
+.instructor-team-live-meeting,
+.instructor-team-live-meeting * {
+  box-sizing: border-box !important;
+  letter-spacing: 0 !important;
+}
+
+.instructor-team-live-meeting {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-live-meeting button,
+.instructor-team-live-meeting input {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+.instructor-team-live-meeting h1,
+.instructor-team-live-meeting .text-sm {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-live-meeting h3,
+.instructor-team-live-meeting .text-lg {
+  font-size: 18px !important;
+  line-height: 28px !important;
+}
+
+.instructor-team-live-meeting .text-xs {
+  font-size: 12px !important;
+  line-height: 16px !important;
+}
+
+.instructor-team-live-meeting .text-\[10px\] {
+  font-size: 10px !important;
+  line-height: 12px !important;
+}
+
+.instructor-team-live-meeting .text-\[9px\] {
+  font-size: 9px !important;
+  line-height: 12px !important;
+}
+
+.instructor-team-live-meeting header button.h-10.w-10 {
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+}
+
+.instructor-team-live-meeting footer button.h-12.w-12 {
+  width: 48px !important;
+  min-width: 48px !important;
+  height: 48px !important;
+  padding: 0 !important;
+  font-size: 18px !important;
+  line-height: 28px !important;
+}
+
+.instructor-team-live-meeting footer button.h-12:not(.w-12) {
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 24px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-live-meeting aside button {
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.instructor-team-live-meeting aside button.text-\[10px\] {
+  font-size: 10px !important;
+  line-height: 12px !important;
 }

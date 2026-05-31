@@ -42,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class InstructorLessonEvaluationService {
 
   private static final String DEFAULT_FILE_FORMATS = "pdf,zip,png,jpg,jpeg";
+  private static final int MAX_QUESTION_EXPLANATION_LENGTH = 120;
 
   private final UserRepository userRepository;
   private final LessonRepository lessonRepository;
@@ -161,7 +162,7 @@ public class InstructorLessonEvaluationService {
           QuizQuestion.builder()
               .questionType(questionType)
               .questionText(defaultIfBlank(questionInput.getQuestionText(), "문항"))
-              .explanation(normalizeText(questionInput.getExplanation()))
+              .explanation(normalizeExplanation(questionInput.getExplanation()))
               .points(defaultNumber(questionInput.getPoints(), 5))
               .displayOrder(defaultNumber(questionInput.getDisplayOrder(), questionIndex + 1))
               .sourceTimestamp(normalizeText(questionInput.getSourceTimestamp()))
@@ -860,6 +861,17 @@ public class InstructorLessonEvaluationService {
 
   private String normalizeText(String value) {
     return isBlank(value) ? null : value.trim();
+  }
+
+  private String normalizeExplanation(String value) {
+    if (isBlank(value)) {
+      return null;
+    }
+
+    String normalized = value.replace("\n", " ").replace("\r", " ").trim();
+    return normalized.length() <= MAX_QUESTION_EXPLANATION_LENGTH
+        ? normalized
+        : normalized.substring(0, MAX_QUESTION_EXPLANATION_LENGTH).trim();
   }
 
   private Integer defaultNumber(Integer value, int fallback) {

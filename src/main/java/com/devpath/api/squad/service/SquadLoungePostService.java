@@ -2,6 +2,7 @@ package com.devpath.api.squad.service;
 
 import com.devpath.api.squad.dto.SquadLoungePostRequest;
 import com.devpath.api.squad.dto.SquadLoungePostResponse;
+import com.devpath.api.squad.dto.SquadWorkspaceLinkRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.squad.entity.Squad;
@@ -11,8 +12,15 @@ import com.devpath.domain.squad.entity.SquadRole;
 import com.devpath.domain.squad.repository.SquadMemberRepository;
 import com.devpath.domain.squad.repository.SquadRepository;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.entity.UserProfile;
+import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;
+import com.devpath.domain.workspace.entity.Workspace;
+import com.devpath.domain.workspace.entity.WorkspaceType;
+import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +33,8 @@ public class SquadLoungePostService {
   private final SquadRepository squadRepository;
   private final SquadMemberRepository squadMemberRepository;
   private final UserRepository userRepository;
+  private final UserProfileRepository userProfileRepository;
+  private final WorkspaceRepository workspaceRepository;
 
   public List<SquadLoungePostResponse> getPosts() {
     return squadRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc().stream()
@@ -55,7 +65,7 @@ public class SquadLoungePostService {
         SquadMember.builder().squad(squad).user(leader).role(SquadRole.LEADER).build();
     squadMemberRepository.save(leaderMember);
 
-    return SquadLoungePostResponse.from(squad, List.of(leaderMember));
+    return toResponse(squad);
   }
 
   @Transactional
@@ -78,6 +88,27 @@ public class SquadLoungePostService {
     return toResponse(squad);
   }
 
+  @Transactional
+  public SquadLoungePostResponse linkWorkspace(
+      Long squadId, Long userId, SquadWorkspaceLinkRequest request) {
+    Squad squad = findNonDeletedSquad(squadId);
+    validateLeader(squad, userId);
+
+    Workspace workspace =
+        workspaceRepository
+            .findByIdAndIsDeletedFalse(request.getWorkspaceId())
+            .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_NOT_FOUND));
+    if (!userId.equals(workspace.getOwnerId()) || workspace.getType() != WorkspaceType.SQUAD) {
+      throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
+    }
+
+    squad.linkWorkspace(workspace.getId());
+    if (!Boolean.TRUE.equals(squad.getIsArchived())) {
+      squad.archive();
+    }
+    return toResponse(squad);
+  }
+
   private void applyLoungeFields(Squad squad, SquadLoungePostRequest request) {
     squad.updateLoungePost(
         request.getTitle().trim(),
@@ -90,7 +121,20 @@ public class SquadLoungePostService {
   }
 
   private SquadLoungePostResponse toResponse(Squad squad) {
-    return SquadLoungePostResponse.from(squad, squadMemberRepository.findBySquadWithUser(squad));
+    List<SquadMember> members = squadMemberRepository.findBySquadWithUser(squad);
+    Map<Long, String> profileImages =
+        userProfileRepository
+            .findAllByUserIdIn(
+                members.stream().map(member -> member.getUser().getId()).collect(Collectors.toSet()))
+            .stream()
+            .filter(profile -> profile.getUser() != null)
+            .filter(profile -> profile.getDisplayProfileImage() != null)
+            .collect(
+                Collectors.toMap(
+                    profile -> profile.getUser().getId(),
+                    UserProfile::getDisplayProfileImage,
+                    (left, right) -> left));
+    return SquadLoungePostResponse.from(squad, members, profileImages);
   }
 
   private Integer normalizeMaxMembers(SquadLoungePostRequest request) {

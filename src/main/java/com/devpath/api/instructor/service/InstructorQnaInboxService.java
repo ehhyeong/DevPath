@@ -70,17 +70,20 @@ public class InstructorQnaInboxService {
     Map<Long, String> courseTitles = resolveCourseTitles(questions);
     Map<Long, Lesson> lessonsByQuestionId = resolveLessonsByQuestionId(questions);
     Map<Long, QnaStatus> statusesByQuestionId = resolveStatuses(questions);
+    Map<Long, String> learnerProfileImages = resolveProfileImages(questions);
 
     return questions.stream()
         .map(
             question -> {
+              Long learnerId = question.getUser() == null ? null : question.getUser().getId();
               Lesson lesson = lessonsByQuestionId.get(question.getId());
               return QnaInboxResponse.from(
                   question,
                   courseTitles.get(question.getCourseId()),
                   lesson == null ? question.getLessonId() : lesson.getLessonId(),
                   lesson == null ? null : lesson.getTitle(),
-                  statusesByQuestionId.getOrDefault(question.getId(), QnaStatus.UNANSWERED));
+                  statusesByQuestionId.getOrDefault(question.getId(), QnaStatus.UNANSWERED),
+                  learnerId == null ? null : learnerProfileImages.get(learnerId));
             })
         .toList();
   }
@@ -217,7 +220,8 @@ public class InstructorQnaInboxService {
             resolveCourseTitle(question.getCourseId()),
             lesson == null ? question.getLessonId() : lesson.getLessonId(),
             lessonTitle,
-            publishedAnswer == null ? QnaStatus.UNANSWERED : QnaStatus.ANSWERED),
+            publishedAnswer == null ? QnaStatus.UNANSWERED : QnaStatus.ANSWERED,
+            getProfileImage(question.getUser() == null ? null : question.getUser().getId())),
         publishedAnswer,
         draft,
         lessonTitle,
@@ -373,10 +377,33 @@ public class InstructorQnaInboxService {
   }
 
   private String getInstructorProfileImage(Long instructorId) {
-    return userProfileRepository
-        .findByUserId(instructorId)
-        .map(UserProfile::getDisplayProfileImage)
-        .orElse(null);
+    return getProfileImage(instructorId);
+  }
+
+  private String getProfileImage(Long userId) {
+    if (userId == null) {
+      return null;
+    }
+    return userProfileRepository.findByUserId(userId).map(UserProfile::getDisplayProfileImage).orElse(null);
+  }
+
+  private Map<Long, String> resolveProfileImages(List<Question> questions) {
+    List<Long> userIds =
+        questions.stream()
+            .map(Question::getUser)
+            .filter(user -> user != null)
+            .map(User::getId)
+            .distinct()
+            .toList();
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+    return userProfileRepository.findAllByUserIdIn(userIds).stream()
+        .collect(
+            Collectors.toMap(
+                profile -> profile.getUser().getId(),
+                UserProfile::getDisplayProfileImage,
+                (left, right) -> left));
   }
 
   private Map<Long, QnaStatus> resolveStatuses(List<Question> questions) {

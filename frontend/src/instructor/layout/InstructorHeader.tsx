@@ -1,14 +1,15 @@
 import type { CSSProperties } from 'react'
 import AccountUserMenu from '../../components/AccountUserMenu'
+import HeaderAlerts from '../../components/HeaderAlerts'
 import { siteHeaderTuning } from '../../components/SiteHeader'
 import type { AuthSession } from '../../types/auth'
 
 const headerLinks = [
-  { href: '/roadmap-hub', label: '로드맵' },
-  { href: '/lecture-list', label: '강의' },
-  { href: '/lounge-dashboard', label: '프로젝트' },
-  { href: 'community-list.html', label: '커뮤니티' },
-  { href: '/job-matching', label: '채용분석' },
+  { href: '/roadmap-hub', label: '\uB85C\uB4DC\uB9F5' },
+  { href: '/lecture-list', label: '\uAC15\uC758' },
+  { href: '/lounge-dashboard', label: '\uD504\uB85C\uC81D\uD2B8' },
+  { href: '/job-matching', label: '\uCC44\uC6A9\uBD84\uC11D' },
+  { href: '/community-list', label: '\uCEE4\uBBA4\uB2C8\uD2F0' },
 ]
 
 function getMoveStyle(offset: { x: number; y: number }): CSSProperties {
@@ -39,12 +40,11 @@ export default function InstructorHeader({
   }
   const navStyle: CSSProperties = {
     gap: `${siteHeaderTuning.navGapPx}px`,
-    transform: `translate(${siteHeaderTuning.navBaseXPx + siteHeaderTuning.navGroup.x}px, ${siteHeaderTuning.navGroup.y}px)`,
-  }
-  const instructorStyle: CSSProperties = {
-    marginLeft: `${siteHeaderTuning.instructorGapPx}px`,
+    transform: `translate(${siteHeaderTuning.navBaseXPx + siteHeaderTuning.navGroup.x + 58}px, ${siteHeaderTuning.navGroup.y}px)`,
   }
   const userStyle = getMoveStyle(siteHeaderTuning.userGroup)
+  const defaultNavLinkClassName = 'site-header-nav-link'
+  const activeNavLinkClassName = 'site-header-nav-link site-header-nav-link--active'
 
   return (
     <>
@@ -57,7 +57,7 @@ export default function InstructorHeader({
               <i className="fas fa-code-branch text-brand inline-block transition group-hover:rotate-12" />
               <span className="flex -translate-y-1 flex-col leading-tight">
                 <span>DevPath</span>
-                <span className="text-[11px] font-extrabold tracking-wide text-gray-400">Instructor Center</span>
+                <span className="text-[11px] font-extrabold tracking-wide text-gray-400">{'\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC'}</span>
               </span>
             </a>
           </div>
@@ -67,7 +67,7 @@ export default function InstructorHeader({
               <i className="fas fa-code-branch text-brand inline-block transition group-hover:rotate-12" />
               <span className="flex -translate-y-1 flex-col leading-tight">
                 <span>DevPath</span>
-                <span className="text-[11px] font-extrabold tracking-wide text-gray-400">Instructor Center</span>
+                <span className="text-[11px] font-extrabold tracking-wide text-gray-400">{'\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC'}</span>
               </span>
             </a>
           </div>
@@ -75,25 +75,28 @@ export default function InstructorHeader({
           <div className="hidden flex-1 items-center justify-center text-sm font-bold text-gray-500 md:flex">
             <div className="relative inline-flex items-center" style={navStyle}>
               {headerLinks.map((item) => (
-                <a key={item.href} href={item.href} className="inline-block whitespace-nowrap transition hover:text-brand">
+                <a key={item.href} href={item.href} className={defaultNavLinkClassName}>
                   {item.label}
                 </a>
               ))}
               <a
                 href="/instructor-dashboard"
-                className="absolute top-1/2 left-full inline-block -translate-y-1/2 whitespace-nowrap border-b-2 border-brand pb-1 text-brand"
-                style={instructorStyle}
+                className={activeNavLinkClassName}
               >
-                강사 대시보드
+                {'\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC'}
               </a>
             </div>
           </div>
 
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2 md:ml-0 md:w-60 md:flex-none">
-            <div className="hidden md:block" style={userStyle}>
+            <div className="hidden items-center justify-end gap-2 md:flex" style={userStyle}>
+              <HeaderAlerts session={session} />
+              <div className="mx-4 h-6 w-px bg-gray-200" />
               <AccountUserMenu session={session} profileImage={profileImage} onLogout={onLogout} />
             </div>
-            <div className="md:hidden" style={userStyle}>
+            <div className="flex items-center justify-end gap-2 md:hidden" style={userStyle}>
+              <HeaderAlerts session={session} />
+              <div className="mx-4 h-6 w-px bg-gray-200" />
               <AccountUserMenu session={session} profileImage={profileImage} onLogout={onLogout} />
             </div>
           </div>

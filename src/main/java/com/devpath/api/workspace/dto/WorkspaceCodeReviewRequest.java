@@ -34,10 +34,19 @@ public class WorkspaceCodeReviewRequest {
           @Size(max = 30000, message = "diffText는 30000자 이하여야 합니다.")
           String diffText) {}
 
+  @Schema(name = "WorkspaceCodeReviewAiReviewCreateRequest", description = "스쿼드 AI 코드 리뷰 실행")
+  public record AiReviewCreate(
+      @Schema(description = "기본으로 표시할 선택 파일 경로", example = "src/main/java/com/devpath/auth/AuthService.java")
+          @Size(max = 500, message = "파일 경로는 500자 이하여야 합니다.")
+          String filePath) {}
+
   @Schema(name = "WorkspaceCodeReviewCommentCreateRequest", description = "스쿼드 코드 리뷰 팀원 피드백 등록")
   public record CommentCreate(
       @Schema(description = "피드백 내용", example = "토큰 만료 예외 케이스도 같이 확인하면 좋겠습니다.")
           @NotBlank(message = "피드백 내용을 입력해주세요.")
           @Size(max = 4000, message = "피드백 내용은 4000자 이하여야 합니다.")
-          String body) {}
+          String body,
+      @Schema(description = "피드백 대상 파일 경로", example = "src/main/java/com/devpath/auth/AuthService.java")
+          @Size(max = 500, message = "파일 경로는 500자 이하여야 합니다.")
+          String filePath) {}
 }

@@ -5,6 +5,7 @@ import ProjectAside, { type ProjectAsideSquad } from './components/ProjectAside'
 import ProjectHeader from './components/ProjectHeader'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import LoginRequiredView from './components/LoginRequiredView'
+import UserAvatar from './components/UserAvatar'
 import { showAuthToast } from './lib/auth-toast'
 import { projectApiRequest } from './project-api'
 
@@ -15,6 +16,7 @@ type SortFilter = 'popular' | 'recent' | 'views' | 'comments'
 type ShowcaseSummary = {
   showcaseId: number
   userId: number
+  authorProfileImage?: string | null
   title: string
   description?: string | null
   thumbnailUrl?: string | null
@@ -38,11 +40,15 @@ type ShowcaseDetail = ShowcaseSummary & {
 type ShowcaseComment = {
   commentId: number
   userId: number
+  authorProfileImage?: string | null
   content: string
   createdAt?: string | null
 }
 
 type LoungeShellResponse = {
+  user?: {
+    profileImage?: string | null
+  } | null
   mySquads?: ProjectAsideSquad[]
 }
 
@@ -129,7 +135,7 @@ function mapCompletedWorkspaceProject(project: WorkspaceHubProject): CompletedWo
 function getShowcaseTeam(showcase: ShowcaseSummary) {
   return {
     name: `작성자 ${showcase.userId}`,
-    image: `https://api.dicebear.com/7.x/avataaars/svg?seed=showcase-user-${showcase.userId}`,
+    image: showcase.authorProfileImage ?? null,
   }
 }
 
@@ -195,6 +201,7 @@ export default function DevShowcaseApp() {
   const [dataReloadKey, setDataReloadKey] = useState(0)
   const [showcases, setShowcases] = useState<ShowcaseSummary[]>([])
   const [asideSquads, setAsideSquads] = useState<ProjectAsideSquad[]>([])
+  const [profileImage, setProfileImage] = useState<string | null>(null)
   const [completedProjects, setCompletedProjects] = useState<CompletedWorkspaceProject[]>([])
   const [category, setCategory] = useState<CategoryFilter>('all')
   const [sort, setSort] = useState<SortFilter>('popular')
@@ -251,6 +258,7 @@ export default function DevShowcaseApp() {
             : Promise.resolve([]),
         ])
         setAsideSquads(shell?.mySquads ?? [])
+        setProfileImage(shell?.user?.profileImage ?? null)
         setShowcases(list)
         setCompletedProjects(workspaceProjects.filter((project) => project.status === 'completed').map(mapCompletedWorkspaceProject))
       } catch (error) {
@@ -294,6 +302,7 @@ export default function DevShowcaseApp() {
   function handleLogout() {
     clearStoredAuthSession()
     setSession(null)
+    setProfileImage(null)
     setCompletedProjects([])
     setAsideSquads([])
   }
@@ -448,13 +457,10 @@ export default function DevShowcaseApp() {
   if (!session) return <LoginRequiredView />
 
   return (
-    <div className="dev-showcase-page relative h-screen overflow-hidden text-gray-800">
-      <div className="fixed inset-y-0 left-0 z-50 flex">
-        <ProjectAside activeKey="showcase" mySquads={asideSquads} />
-      </div>
-
+    <div className="dev-showcase-page flex h-screen overflow-hidden text-gray-800">
+      <ProjectAside activeKey="showcase" mySquads={asideSquads} />
       <div className="flex min-w-0 flex-1 flex-col h-screen overflow-hidden">
-        <ProjectHeader session={session} activeHref="/lounge-dashboard" onLoginClick={() => openAuthModal()} onLogout={handleLogout} />
+        <ProjectHeader session={session} profileImage={profileImage} activeHref="/lounge-dashboard" onLoginClick={() => openAuthModal()} onLogout={handleLogout} />
 
         <main className="relative flex-1 overflow-y-auto bg-[#F8F9FA]">
           <div className="p-8">
@@ -542,6 +548,8 @@ export default function DevShowcaseApp() {
           showcase={activeShowcase}
           comments={comments}
           commentText={commentText}
+          currentUserName={session?.name ?? '나'}
+          currentUserProfileImage={profileImage}
           liked={likedShowcaseIds.has(activeShowcase.showcaseId)}
           onCommentTextChange={setCommentText}
           onClose={() => setActiveShowcase(null)}
@@ -770,7 +778,7 @@ function ShowcaseCard({
 
       <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
         <div className="flex min-w-0 items-center gap-2">
-          <img src={team.image} alt="" className="h-6 w-6 rounded-full border border-gray-100 bg-gray-50" />
+          <UserAvatar name={team.name} imageUrl={team.image} className="h-6 w-6 border-gray-100 bg-gray-50" iconClassName="text-[10px]" />
           <span className="truncate text-xs font-extrabold text-gray-700">{team.name}</span>
         </div>
         <div className="flex gap-4 text-xs font-bold text-gray-400">
@@ -796,6 +804,8 @@ function DetailModal({
   showcase,
   comments,
   commentText,
+  currentUserName,
+  currentUserProfileImage,
   liked,
   onCommentTextChange,
   onClose,
@@ -805,6 +815,8 @@ function DetailModal({
   showcase: ShowcaseDetail
   comments: ShowcaseComment[]
   commentText: string
+  currentUserName: string
+  currentUserProfileImage: string | null
   liked: boolean
   onCommentTextChange: (value: string) => void
   onClose: () => void
@@ -868,7 +880,7 @@ function DetailModal({
                 </div>
 
                 <div className="mb-6 flex items-start gap-3">
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=MyUser" alt="" className="h-10 w-10 rounded-full border border-gray-200 shadow-sm" />
+                  <UserAvatar name={currentUserName} imageUrl={currentUserProfileImage} className="h-10 w-10 shadow-sm" iconClassName="text-sm" />
                   <div className="flex-1">
                     <textarea
                       value={commentText}
@@ -889,7 +901,7 @@ function DetailModal({
                   {comments.length > 0 ? (
                     comments.map((comment) => (
                       <div key={comment.commentId} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:bg-gray-50">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.userId}`} alt="" className="h-10 w-10 rounded-full border border-gray-200 bg-white" />
+                        <UserAvatar name={getCommentAuthorName(comment.userId)} imageUrl={comment.authorProfileImage} className="h-10 w-10 bg-white" iconClassName="text-sm" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-extrabold text-gray-900">{getCommentAuthorName(comment.userId)}</p>
@@ -916,7 +928,7 @@ function DetailModal({
             <aside className="space-y-6">
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <img src={team.image} alt="" className="h-12 w-12 rounded-full border border-gray-200 bg-gray-50 shadow-sm" />
+                  <UserAvatar name={team.name} imageUrl={team.image} className="h-12 w-12 bg-gray-50 shadow-sm" iconClassName="text-base" />
                   <div className="min-w-0">
                     <p className="text-[10px] font-extrabold tracking-wider text-gray-400">TEAM</p>
                     <p className="truncate text-base font-extrabold text-gray-900">{team.name}</p>

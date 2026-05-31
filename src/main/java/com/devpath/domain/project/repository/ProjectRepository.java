@@ -1,6 +1,7 @@
 package com.devpath.domain.project.repository;
 
 import com.devpath.domain.project.entity.Project;
+import com.devpath.domain.project.entity.ProjectType;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -19,4 +20,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
   Optional<Project> findByIdAndIsDeletedFalse(Long projectId);
 
   Optional<Project> findByNameAndOwnerIdAndIsDeletedFalse(String name, Long ownerId);
+
+  List<Project> findAllByNameAndProjectTypeAndIsDeletedFalse(String name, ProjectType projectType);
 }

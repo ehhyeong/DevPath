@@ -45,6 +45,9 @@ public class MentoringApplication {
   @Column(nullable = false, columnDefinition = "TEXT")
   private String message;
 
+  @Column(name = "desired_position", length = 80)
+  private String desiredPosition;
+
   // 신청 처리 상태를 enum으로 고정한다.
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -73,10 +76,12 @@ public class MentoringApplication {
   private LocalDateTime updatedAt;
 
   @Builder
-  private MentoringApplication(MentoringPost post, User applicant, String message) {
+  private MentoringApplication(
+      MentoringPost post, User applicant, String message, String desiredPosition) {
     this.post = post;
     this.applicant = applicant;
     this.message = message;
+    this.desiredPosition = normalizeDesiredPosition(desiredPosition);
     this.status = MentoringApplicationStatus.PENDING;
     this.isDeleted = false;
   }
@@ -103,5 +108,12 @@ public class MentoringApplication {
   // 신청 내역을 논리 삭제한다.
   public void delete() {
     this.isDeleted = true;
+  }
+
+  private static String normalizeDesiredPosition(String desiredPosition) {
+    if (desiredPosition == null || desiredPosition.isBlank()) {
+      return null;
+    }
+    return desiredPosition.trim();
   }
 }

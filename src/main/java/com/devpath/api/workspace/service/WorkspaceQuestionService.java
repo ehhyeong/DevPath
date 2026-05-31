@@ -118,6 +118,30 @@ public class WorkspaceQuestionService {
   }
 
   @Transactional
+  public AnswerResponse updateAnswer(
+      Long userId, Long questionId, Long answerId, AnswerCreateRequest request) {
+    User user = getUser(userId);
+    Question question = getActiveWorkspaceQuestion(questionId);
+    Workspace workspace = getActiveWorkspace(question.getWorkspaceId());
+
+    validateWorkspaceMember(workspace, user.getId());
+
+    Answer answer =
+        answerRepository
+            .findByQuestion_IdAndIdAndIsDeletedFalse(questionId, answerId)
+            .orElseThrow(() -> new CustomException(ErrorCode.ANSWER_NOT_FOUND));
+
+    if (!answer.getUser().getId().equals(user.getId()) && !workspace.getOwnerId().equals(user.getId())) {
+      throw new CustomException(ErrorCode.QNA_FORBIDDEN);
+    }
+
+    answer.updateContent(request.getContent());
+    question.markAsAnswered();
+
+    return AnswerResponse.from(answer);
+  }
+
+  @Transactional
   public QuestionDetailResponse updateStatus(
       Long userId, Long questionId, QuestionStatusUpdateRequest request) {
     User user = getUser(userId);

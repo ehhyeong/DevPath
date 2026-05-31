@@ -1,7 +1,10 @@
 package com.devpath.api.notification.service;
 
 import com.devpath.api.notification.dto.ProjectHeaderNotificationResponse;
+import com.devpath.domain.notification.repository.InstructorNotificationRepository;
 import com.devpath.domain.notification.repository.LearnerNotificationRepository;
+import com.devpath.domain.user.entity.UserRole;
+import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.repository.CalendarEventRepository;
@@ -30,6 +33,8 @@ public class ProjectHeaderNotificationService {
   private static final int MAX_TODAY_SCHEDULE_NOTIFICATIONS = 8;
 
   private final LearnerNotificationRepository learnerNotificationRepository;
+  private final InstructorNotificationRepository instructorNotificationRepository;
+  private final UserRepository userRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final WorkspaceRepository workspaceRepository;
   private final CalendarEventRepository calendarEventRepository;
@@ -46,7 +51,11 @@ public class ProjectHeaderNotificationService {
     List<ProjectHeaderNotificationResponse> notifications = new ArrayList<>();
     notifications.addAll(todayScheduleNotifications(workspaceIds, workspaceById));
     notifications.addAll(workspaceActivityNotifications(workspaceIds, workspaceById));
-    notifications.addAll(learnerNotifications(userId));
+    if (isInstructor(userId)) {
+      notifications.addAll(instructorNotifications(userId));
+    } else {
+      notifications.addAll(learnerNotifications(userId));
+    }
 
     return notifications.stream()
         .sorted(
@@ -60,11 +69,19 @@ public class ProjectHeaderNotificationService {
 
   @Transactional
   public List<ProjectHeaderNotificationResponse> markAllRead(Long userId) {
-    learnerNotificationRepository
-        .findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
-        .stream()
-        .filter(notification -> !Boolean.TRUE.equals(notification.getIsRead()))
-        .forEach(notification -> notification.markAsRead());
+    if (isInstructor(userId)) {
+      instructorNotificationRepository
+          .findAllByInstructorIdOrderByCreatedAtDesc(userId)
+          .stream()
+          .filter(notification -> !Boolean.TRUE.equals(notification.getIsRead()))
+          .forEach(notification -> notification.markAsRead());
+    } else {
+      learnerNotificationRepository
+          .findAllByLearnerIdAndIsDeletedFalseOrderByCreatedAtDesc(userId)
+          .stream()
+          .filter(notification -> !Boolean.TRUE.equals(notification.getIsRead()))
+          .forEach(notification -> notification.markAsRead());
+    }
 
     return getNotifications(userId);
   }
@@ -76,6 +93,22 @@ public class ProjectHeaderNotificationService {
         .limit(MAX_HEADER_NOTIFICATIONS)
         .map(ProjectHeaderNotificationResponse::from)
         .toList();
+  }
+
+  private List<ProjectHeaderNotificationResponse> instructorNotifications(Long userId) {
+    return instructorNotificationRepository
+        .findAllByInstructorIdOrderByCreatedAtDesc(userId)
+        .stream()
+        .limit(MAX_HEADER_NOTIFICATIONS)
+        .map(ProjectHeaderNotificationResponse::from)
+        .toList();
+  }
+
+  private boolean isInstructor(Long userId) {
+    return userRepository
+        .findById(userId)
+        .map(user -> user.getRole() == UserRole.ROLE_INSTRUCTOR)
+        .orElse(false);
   }
 
   private List<ProjectHeaderNotificationResponse> workspaceActivityNotifications(

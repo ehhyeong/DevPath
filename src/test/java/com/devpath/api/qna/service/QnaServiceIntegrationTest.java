@@ -3,10 +3,12 @@ package com.devpath.api.qna.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.qna.dto.AnswerCreateRequest;
 import com.devpath.api.qna.dto.AnswerResponse;
 import com.devpath.api.qna.dto.QuestionCreateRequest;
 import com.devpath.api.qna.dto.QuestionDetailResponse;
+import com.devpath.api.qna.realtime.QnaRealtimePublisher;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.qna.entity.Answer;
@@ -27,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest(
@@ -40,6 +43,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 class QnaServiceIntegrationTest {
 
   @Autowired private QnaService qnaService;
+
+  @MockitoBean private QnaRealtimePublisher qnaRealtimePublisher;
+
+  @MockitoBean private InstructorNotificationService instructorNotificationService;
 
   @Autowired private UserRepository userRepository;
 

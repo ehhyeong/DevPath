@@ -42,6 +42,9 @@ public class IntegrationResponse {
   @Schema(description = "마지막 GitHub PR 동기화 메시지")
   private String lastSyncMessage;
 
+  @Schema(description = "GitHub API 호출용 서버 저장 토큰 설정 여부", example = "true")
+  private boolean githubTokenConfigured;
+
   public static IntegrationResponse from(ExternalIntegration integration) {
     return IntegrationResponse.builder()
         .id(integration.getId())
@@ -54,6 +57,8 @@ public class IntegrationResponse {
         .repositoryName(integration.getRepositoryName())
         .lastSyncedAt(integration.getLastSyncedAt())
         .lastSyncMessage(integration.getLastSyncMessage())
+        .githubTokenConfigured(
+            org.springframework.util.StringUtils.hasText(integration.getRepositoryAccessToken()))
         .build();
   }
 }

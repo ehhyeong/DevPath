@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,5 +39,14 @@ public class InstructorNotificationController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     instructorNotificationService.markAsRead(userId, notificationId);
     return ApiResponse.success("Notification marked as read.", null);
+  }
+
+  @Operation(summary = "강사 알림 삭제")
+  @DeleteMapping("/{notificationId}")
+  public ApiResponse<Void> deleteNotification(
+      @PathVariable Long notificationId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    instructorNotificationService.deleteNotification(userId, notificationId);
+    return ApiResponse.success("Notification deleted.", null);
   }
 }

@@ -90,6 +90,7 @@ export interface InstructorQnaInboxItem {
   lessonTitle: string | null
   learnerName: string | null
   learnerAvatarSeed: string | null
+  learnerProfileImage?: string | null
   title: string
   content: string
   status: 'UNANSWERED' | 'ANSWERED' | string
@@ -460,6 +461,7 @@ export interface InstructorMentoringOngoingItem {
   secondaryAction: string
   menuActions: string[]
   workspaceId?: number | null
+  startDate?: string | null
 }
 
 export interface InstructorMentoringBoard {

@@ -412,11 +412,11 @@ export default function LearningLogGalleryPage() {
                 }
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand"
               >
-                <option value="all">전체 보기</option>
-                <option value="backend">Backend Track</option>
-                <option value="framework">Framework</option>
-                <option value="language">Language</option>
-                <option value="cs">CS (Computer Science)</option>
+                <option value="all">🎯 전체 보기</option>
+                <option value="backend">💻 Backend Track</option>
+                <option value="framework">🌱 Framework</option>
+                <option value="language">☕ Language</option>
+                <option value="cs">🖥️ CS (Computer Science)</option>
               </select>
             </div>
             <div>
@@ -426,8 +426,8 @@ export default function LearningLogGalleryPage() {
                 onChange={(event) => setSortOrder(event.target.value as 'latest' | 'score')}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brand"
               >
-                <option value="latest">최신순 (Date)</option>
-                <option value="score">점수 높은순 (Score)</option>
+                <option value="latest">✨ 최신순 (Date)</option>
+                <option value="score">🏆 점수 높은순 (Score)</option>
               </select>
             </div>
           </div>

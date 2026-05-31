@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import ProjectAside from './components/ProjectAside'
 import ProjectHeader from './components/ProjectHeader'
+import UserAvatar from './components/UserAvatar'
 import { authApi } from './lib/api'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import LoginRequiredView from './components/LoginRequiredView'
@@ -45,9 +46,11 @@ type WorkspaceHubProjectResponse = {
   progressPercent?: number | null
   footerDateLabel?: string | null
   memberAvatarSeeds?: string[] | null
+  memberAvatarUrls?: (string | null)[] | null
   extraMemberCount?: number | null
   footerKind?: string | null
   footerAvatarSeed?: string | null
+  footerAvatarUrl?: string | null
   footerText?: string | null
   footerMetaText?: string | null
 }
@@ -636,6 +639,7 @@ export default function LoungeDashboardApp() {
                         const isMentoring = isMentoringHubProject(project)
                         const progressPercent = Math.max(0, Math.min(project.progressPercent ?? 0, 100))
                         const memberAvatarSeeds = project.memberAvatarSeeds ?? []
+                        const memberAvatarUrls = project.memberAvatarUrls ?? []
 
                         return (
                           <div key={project.projectId} className="bg-white rounded-2xl p-5 hover-card cursor-pointer flex flex-col justify-between relative h-[220px]" onClick={() => goTo(project.dashboardUrl ?? '/workspace-hub')}>
@@ -653,7 +657,12 @@ export default function LoungeDashboardApp() {
                             {isMentoring ? (
                               <div className="mt-auto">
                                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 flex items-start gap-3">
-                                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(project.footerAvatarSeed ?? String(project.projectId))}`} className="w-7 h-7 rounded-full border border-gray-200 shrink-0" />
+                                  <UserAvatar
+                                    name={project.footerText ?? '멘토'}
+                                    imageUrl={project.footerAvatarUrl ?? null}
+                                    className="w-7 h-7 shrink-0"
+                                    iconClassName="text-[10px]"
+                                  />
                                   <div>
                                     <p className="text-[10px] text-gray-500 font-bold mb-0.5">{project.footerText ?? '멘토링 워크스페이스'}</p>
                                     <p className="text-xs font-bold text-gray-800 line-clamp-1">{project.footerMetaText ?? '진행 중'}</p>
@@ -668,8 +677,14 @@ export default function LoungeDashboardApp() {
                                 </div>
                                 <div className="w-full bg-gray-100 rounded-full h-1.5 mb-4"><div className={`${getHubProjectProgressClass(project)} h-1.5 rounded-full`} style={{ width: `${progressPercent}%` }}></div></div>
                                 <div className="flex -space-x-2">
-                                  {memberAvatarSeeds.map((seed) => (
-                                    <img key={seed} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`} className="w-7 h-7 rounded-full border-2 border-white bg-gray-100" />
+                                  {memberAvatarSeeds.map((seed, index) => (
+                                    <UserAvatar
+                                      key={seed}
+                                      name={seed}
+                                      imageUrl={memberAvatarUrls[index] ?? null}
+                                      className="w-7 h-7 border-2 border-white bg-gray-100"
+                                      iconClassName="text-[10px]"
+                                    />
                                   ))}
                                   {project.extraMemberCount ? (
                                     <span className="w-7 h-7 rounded-full border-2 border-white bg-gray-100 text-[10px] font-bold text-gray-500 flex items-center justify-center">+{project.extraMemberCount}</span>

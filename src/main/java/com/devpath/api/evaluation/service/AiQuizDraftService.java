@@ -41,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AiQuizDraftService {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final int MAX_EXPLANATION_LENGTH = 120;
 
   private final AtomicLong draftSequence = new AtomicLong(1L);
   private final AtomicLong draftQuestionSequence = new AtomicLong(1L);
@@ -178,7 +179,7 @@ public class AiQuizDraftService {
                 ? QuestionType.MULTIPLE_CHOICE
                 : questionRequest.getQuestionType();
         question.questionText = questionRequest.getQuestionText();
-        question.explanation = questionRequest.getExplanation();
+        question.explanation = normalizeExplanation(questionRequest.getExplanation());
         question.points = questionRequest.getPoints() == null ? 5 : questionRequest.getPoints();
         question.displayOrder =
             questionRequest.getDisplayOrder() == null
@@ -365,6 +366,7 @@ public class AiQuizDraftService {
         + "\n\n"
         + "[출력 형식]\n"
         + "아래 JSON 배열만 반환하세요. 설명, 코드블록(```), 기타 텍스트 없이 순수 JSON 배열만 출력하세요.\n\n"
+        + "For every item, write explanation as one concise Korean sentence within 60 characters.\n\n"
         + "[\n"
         + "  {\n"
         + "    \"questionType\": \"MULTIPLE_CHOICE\",\n"
@@ -459,7 +461,7 @@ public class AiQuizDraftService {
       question.draftQuestionId = draftQuestionSequence.getAndIncrement();
       question.questionType = questionType;
       question.questionText = questionText;
-      question.explanation = node.path("explanation").asText("");
+      question.explanation = normalizeExplanation(node.path("explanation").asText(""));
       question.points = 5;
       question.displayOrder = displayOrder;
       question.options = new ArrayList<>();
@@ -565,6 +567,7 @@ public class AiQuizDraftService {
         question.options.add(option4);
       }
 
+      question.explanation = normalizeExplanation(question.explanation);
       questions.add(question);
     }
 
@@ -670,6 +673,17 @@ public class AiQuizDraftService {
 
     String normalized = sourceText.replace("\n", " ").replace("\r", " ").trim();
     return normalized.length() <= 120 ? normalized : normalized.substring(0, 120) + "...";
+  }
+
+  private String normalizeExplanation(String value) {
+    if (isBlank(value)) {
+      return "";
+    }
+
+    String normalized = value.replace("\n", " ").replace("\r", " ").trim();
+    return normalized.length() <= MAX_EXPLANATION_LENGTH
+        ? normalized
+        : normalized.substring(0, MAX_EXPLANATION_LENGTH).trim();
   }
 
   private boolean isBlank(String value) {

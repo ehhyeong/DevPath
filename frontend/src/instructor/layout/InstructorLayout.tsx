@@ -21,11 +21,11 @@ export default function InstructorLayout({
   useInternalPageScroll()
 
   return (
-    <div className="h-screen min-h-0 min-w-0 overflow-hidden text-gray-800">
+    <div className="instructor-layout-shell h-screen min-h-0 min-w-0 overflow-hidden text-gray-800">
       <InstructorHeader session={session} profileImage={profileImage} onLogout={onLogout} />
-      <div className="app-main flex min-h-screen min-w-0 bg-[#F3F4F6]">
+      <div className="instructor-layout-main app-main flex min-h-0 min-w-0 bg-[#F3F4F6]">
         <InstructorSidebar currentPageKey={currentPageKey} />
-        <main className="app-responsive-main bg-[#F3F4F6]">{children}</main>
+        <main className="instructor-layout-content app-responsive-main bg-[#F3F4F6]">{children}</main>
       </div>
     </div>
   )

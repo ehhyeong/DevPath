@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { projectApiRequest } from '../project-api'
 import type { AuthSession } from '../types/auth'
+import { showAuthToast } from '../lib/auth-toast'
 
 type HeaderMessage = {
   source?: string | null
@@ -14,6 +15,7 @@ type HeaderMessage = {
 }
 
 type HeaderNotification = {
+  source?: string | null
   id: number
   type?: string | null
   text?: string | null
@@ -43,8 +45,63 @@ const HEADER_TEXT = {
   allNotifications: '\uBAA8\uB4E0 \uC54C\uB9BC \uBCF4\uAE30',
 }
 
+const REJECTED_APPLICATION_TOAST_STORAGE_KEY = 'devpath.header.rejectedApplicationToast.v1'
+
 function avatarUrl(seed: string | number | null | undefined) {
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(String(seed || 'DevPath'))}`
+}
+
+function rejectedApplicationToastKey(userId: number) {
+  return `${REJECTED_APPLICATION_TOAST_STORAGE_KEY}.${userId}`
+}
+
+function readSeenRejectedNotificationIds(userId: number) {
+  try {
+    const rawValue = window.localStorage.getItem(rejectedApplicationToastKey(userId))
+    const parsedValue = rawValue ? JSON.parse(rawValue) : []
+    return new Set(Array.isArray(parsedValue) ? parsedValue.map((value) => Number(value)).filter(Number.isFinite) : [])
+  } catch {
+    return new Set<number>()
+  }
+}
+
+function saveSeenRejectedNotificationIds(userId: number, ids: Set<number>) {
+  window.localStorage.setItem(rejectedApplicationToastKey(userId), JSON.stringify([...ids]))
+}
+
+function isRejectedApplicationNotification(notification: HeaderNotification) {
+  return String(notification.type || '').toUpperCase().includes('APPLICATION_REJECTED')
+}
+
+function showRejectedApplicationNotificationToast(notifications: HeaderNotification[], userId: number | null) {
+  if (userId == null) {
+    return
+  }
+
+  const seenIds = readSeenRejectedNotificationIds(userId)
+  const newlyRejected = notifications.filter(
+    (notification) =>
+      notification.id > 0 &&
+      notification.read !== true &&
+      isRejectedApplicationNotification(notification) &&
+      !seenIds.has(notification.id),
+  )
+
+  if (newlyRejected.length === 0) {
+    return
+  }
+
+  newlyRejected.forEach((notification) => seenIds.add(notification.id))
+  saveSeenRejectedNotificationIds(userId, seenIds)
+
+  showAuthToast({
+    message:
+      newlyRejected.length === 1
+        ? newlyRejected[0].text || '참여 신청이 거절되었습니다. 자세한 내용은 알림에서 확인해주세요.'
+        : `거절된 참여 신청 알림이 ${newlyRejected.length}건 있습니다. 자세한 내용은 알림에서 확인해주세요.`,
+    variant: 'error',
+    durationMs: 7000,
+  })
 }
 
 function iconForNotification(type: string | null | undefined) {
@@ -84,6 +141,26 @@ function iconForNotification(type: string | null | undefined) {
   return 'fas fa-bell'
 }
 
+function notificationReadPath(notification: HeaderNotification) {
+  if (notification.id <= 0) {
+    return null
+  }
+
+  return notification.source === 'instructor'
+    ? `/api/instructor/notifications/${notification.id}/read`
+    : `/api/notifications/${notification.id}/read`
+}
+
+function notificationDeletePath(notification: HeaderNotification) {
+  if (notification.id <= 0) {
+    return null
+  }
+
+  return notification.source === 'instructor'
+    ? `/api/instructor/notifications/${notification.id}`
+    : `/api/notifications/${notification.id}`
+}
+
 export default function HeaderAlerts({ session }: HeaderAlertsProps) {
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
   const [messages, setMessages] = useState<HeaderMessage[]>([])
@@ -106,11 +183,11 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
 
         const shell = shellResult.status === 'fulfilled' ? shellResult.value : null
         setMessages(shell?.messages ?? [])
-        setNotifications(
-          notificationsResult.status === 'fulfilled'
-            ? notificationsResult.value
-            : shell?.notifications ?? [],
-        )
+        const nextNotifications = notificationsResult.status === 'fulfilled'
+          ? notificationsResult.value
+          : shell?.notifications ?? []
+        setNotifications(nextNotifications)
+        showRejectedApplicationNotificationToast(nextNotifications, session.userId ?? null)
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -176,18 +253,18 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
     } catch {
       await Promise.allSettled(
         unread
-          .filter((notification) => notification.id > 0)
-          .map((notification) =>
-            projectApiRequest(`/api/notifications/${notification.id}/read`, { method: 'PATCH' }, 'required'),
-          ),
+          .map(notificationReadPath)
+          .filter((path): path is string => path != null)
+          .map((path) => projectApiRequest(path, { method: 'PATCH' }, 'required')),
       )
       setNotifications((current) => current.map((notification) => ({ ...notification, read: true })))
     }
   }
 
   function openNotification(notification: HeaderNotification) {
-    if (notification.read === false && notification.id > 0) {
-      void projectApiRequest(`/api/notifications/${notification.id}/read`, { method: 'PATCH' }, 'required')
+    const readPath = notificationReadPath(notification)
+    if (notification.read === false && readPath) {
+      void projectApiRequest(readPath, { method: 'PATCH' }, 'required')
         .then(() => {
           setNotifications((current) =>
             current.map((item) => (item.id === notification.id ? { ...item, read: true } : item)),
@@ -206,7 +283,10 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
     if (!target || target.read !== false) {
       return
     }
-    void projectApiRequest(`/api/notifications/${id}/read`, { method: 'PATCH' }, 'required')
+    const readPath = notificationReadPath(target)
+    if (readPath) {
+      void projectApiRequest(readPath, { method: 'PATCH' }, 'required')
+    }
     setNotifications((current) =>
       current.map((n) => (n.id === id ? { ...n, read: true } : n)),
     )
@@ -214,7 +294,11 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
 
   function deleteNotification(id: number, e: React.MouseEvent) {
     e.stopPropagation()
-    void projectApiRequest(`/api/notifications/${id}`, { method: 'DELETE' }, 'required')
+    const target = notifications.find((n) => n.id === id)
+    const deletePath = target ? notificationDeletePath(target) : null
+    if (deletePath) {
+      void projectApiRequest(deletePath, { method: 'DELETE' }, 'required')
+    }
     setNotifications((current) => current.filter((n) => n.id !== id))
   }
 
@@ -316,7 +400,7 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
               {visibleNotifications.length > 0 ? (
                 visibleNotifications.map((notification) => (
                   <div
-                    key={`notification-${notification.id}`}
+                    key={`${notification.source || 'notification'}-${notification.id}`}
                     className="group p-3 hover:bg-gray-50 border-b border-gray-50 cursor-pointer flex gap-3 items-start"
                     onMouseEnter={() => markNotificationRead(notification.id)}
                     onClick={() => openNotification(notification)}

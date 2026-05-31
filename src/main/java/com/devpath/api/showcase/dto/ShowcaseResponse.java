@@ -13,6 +13,7 @@ public class ShowcaseResponse {
 
   private Long showcaseId;
   private Long userId;
+  private String authorProfileImage;
   private String title;
   private String description;
   private String thumbnailUrl;
@@ -26,9 +27,18 @@ public class ShowcaseResponse {
 
   public static ShowcaseResponse of(
       Showcase showcase, long likeCount, List<ShowcaseLinkResponse> links) {
+    return of(showcase, likeCount, links, null);
+  }
+
+  public static ShowcaseResponse of(
+      Showcase showcase,
+      long likeCount,
+      List<ShowcaseLinkResponse> links,
+      String authorProfileImage) {
     return ShowcaseResponse.builder()
         .showcaseId(showcase.getId())
         .userId(showcase.getUserId())
+        .authorProfileImage(authorProfileImage)
         .title(showcase.getTitle())
         .description(showcase.getDescription())
         .thumbnailUrl(showcase.getThumbnailUrl())

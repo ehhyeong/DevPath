@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ErrorCard, LoadingCard } from '../../account/ui'
 import { instructorMentoringApi } from '../../lib/api'
+import { projectApiRequest } from '../../project-api'
 import type { InstructorMentoringBoard } from '../../types/instructor'
 
 type MentoringTab = 'recruiting' | 'requests' | 'ongoing' | 'completed'
@@ -52,6 +53,81 @@ type OngoingProject = {
   secondaryAction: string
   menuActions: string[]
   workspaceId?: number | null
+  startDate?: string | null
+}
+
+type MentoringPostDetail = {
+  postId: number
+  title: string
+  content?: string | null
+  requiredStacks?: string | null
+  category?: string | null
+  mentoringType?: string | null
+  durationWeeks?: number | null
+  curriculum?: string | null
+  maxParticipants?: number | null
+  status?: string | null
+}
+
+type WorkspaceMemberSummary = {
+  memberId: number
+  learnerId: number
+  learnerName?: string | null
+  profileImage?: string | null
+  roleLabel?: string | null
+  position?: string | null
+  online?: boolean
+  lastActiveAt?: string | null
+  joinedAt?: string | null
+}
+
+type WorkspaceDashboardSummary = {
+  workspaceId: number
+  name?: string | null
+  description?: string | null
+  ownerId?: number | null
+  ownerName?: string | null
+  members?: WorkspaceMemberSummary[]
+}
+
+type WorkspaceSettingsSummary = {
+  workspaceId: number
+  name?: string | null
+  description?: string | null
+  ownerId?: number | null
+  canManage?: boolean
+  members?: WorkspaceMemberSummary[]
+}
+
+type WorkspaceMilestoneSummary = {
+  milestoneId: number
+  title: string
+  startDate?: string | null
+  dueDate?: string | null
+  status?: string | null
+  createdAt?: string | null
+}
+
+type WorkspaceTaskSummary = {
+  taskId: number
+  title: string
+  status?: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | string
+  assigneeId?: number | null
+  dueDate?: string | null
+  createdAt?: string | null
+}
+
+type OngoingProjectView = OngoingProject & {
+  displayWeek: number
+  displayProgress: number
+  milestoneTotal: number
+  progressSource: 'milestone' | 'assignment' | 'board'
+}
+
+type WorkspaceSettingsForm = {
+  title: string
+  subtitle: string
+  category: string
 }
 
 type ProjectRoleInput = { name: string; count: number }
@@ -195,6 +271,187 @@ function applyApprovedRequest(project: RecruitingProject, request: PendingReques
   return { ...project, roles, current: roles.reduce((sum, role) => sum + role.current, 0) }
 }
 
+function getLiveApplicationId(requestId: string) {
+  if (!requestId.startsWith('application-')) {
+    return null
+  }
+
+  const applicationId = Number(requestId.replace('application-', ''))
+  return Number.isFinite(applicationId) && applicationId > 0 ? applicationId : null
+}
+
+function getLivePostId(projectId: string) {
+  if (!projectId.startsWith('post-')) {
+    return null
+  }
+
+  const postId = Number(projectId.replace('post-', ''))
+  return Number.isFinite(postId) && postId > 0 ? postId : null
+}
+
+function toMentoringPostPayload(project: RecruitingProject) {
+  return {
+    title: project.title,
+    content: project.intro || project.description,
+    requiredStacks: project.tags.join(', '),
+    category: project.category,
+    mentoringType: project.mode,
+    durationWeeks: project.durationWeeks,
+    curriculum: project.weeks.join('\n'),
+    maxParticipants: Math.max(1, project.total || 1),
+    status: project.recruitStatus === '모집마감' ? 'CLOSED' : 'OPEN',
+  }
+}
+
+function withPostId(project: RecruitingProject, post: MentoringPostDetail): RecruitingProject {
+  return {
+    ...project,
+    id: `post-${post.postId}`,
+    title: post.title || project.title,
+    requestTitle: post.title || project.requestTitle,
+    description: post.content ?? project.description,
+    intro: post.content ?? project.intro,
+    category: post.category ?? project.category,
+    mode: post.mentoringType === 'team' ? 'team' : 'study',
+    durationWeeks: post.durationWeeks ?? project.durationWeeks,
+    total: post.maxParticipants ?? project.total,
+    recruitStatus: post.status === 'CLOSED' ? '모집마감' : '모집중',
+  }
+}
+
+function parseDate(value?: string | null) {
+  if (!value) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function startOfDay(date: Date) {
+  const nextDate = new Date(date)
+  nextDate.setHours(0, 0, 0, 0)
+  return nextDate
+}
+
+function addDays(date: Date, days: number) {
+  const nextDate = new Date(date)
+  nextDate.setDate(nextDate.getDate() + days)
+  return nextDate
+}
+
+function sortMilestones(milestones: WorkspaceMilestoneSummary[]) {
+  return [...milestones].sort((a, b) => {
+    const left = parseDate(a.startDate)?.getTime() ?? parseDate(a.dueDate)?.getTime() ?? parseDate(a.createdAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
+    const right = parseDate(b.startDate)?.getTime() ?? parseDate(b.dueDate)?.getTime() ?? parseDate(b.createdAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
+    return left - right
+  })
+}
+
+function inferAssignmentWeek(task: WorkspaceTaskSummary, fallback: number) {
+  const koreanWeek = task.title.match(/(\d+)\s*주차/i)
+  const englishWeek = task.title.match(/week\s*(\d+)/i)
+  const parsed = Number(koreanWeek?.[1] ?? englishWeek?.[1] ?? NaN)
+  return Number.isFinite(parsed) && parsed >= 1 ? parsed : fallback
+}
+
+function sortTasks(tasks: WorkspaceTaskSummary[]) {
+  return [...tasks].sort((a, b) => {
+    const left = parseDate(a.dueDate)?.getTime() ?? parseDate(a.createdAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
+    const right = parseDate(b.dueDate)?.getTime() ?? parseDate(b.createdAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
+    if (left !== right) return left - right
+    return a.taskId - b.taskId
+  })
+}
+
+function calculateAssignmentProgress(project: OngoingProject, tasks: WorkspaceTaskSummary[]): OngoingProjectView | null {
+  const sorted = sortTasks(tasks)
+  if (sorted.length === 0) return null
+
+  const taskByWeek = new Map<number, WorkspaceTaskSummary[]>()
+  sorted.forEach((task, index) => {
+    const week = inferAssignmentWeek(task, (index % 4) + 1)
+    taskByWeek.set(week, [...(taskByWeek.get(week) ?? []), task])
+  })
+
+  const weeks = [...taskByWeek.keys()].sort((a, b) => a - b)
+  const total = weeks.length
+  const today = startOfDay(new Date())
+  const completedCount = weeks.filter((week) => {
+    const weekTasks = taskByWeek.get(week) ?? []
+    const dueDates = weekTasks.map((task) => startOfDay(parseDate(task.dueDate) ?? new Date(Number.NaN))).filter((date) => !Number.isNaN(date.getTime()))
+    const weekDueDate = dueDates.length ? new Date(Math.max(...dueDates.map((date) => date.getTime()))) : null
+    const allDone = weekTasks.length > 0 && weekTasks.every((task) => String(task.status ?? '').toUpperCase() === 'DONE')
+    return allDone || (weekDueDate !== null && today > weekDueDate)
+  }).length
+  const displayWeek = completedCount >= total ? weeks[weeks.length - 1] : weeks[Math.min(completedCount, total - 1)]
+
+  return {
+    ...project,
+    displayWeek: Math.max(1, displayWeek),
+    displayProgress: Math.max(0, Math.min(100, Math.round((completedCount / total) * 100))),
+    milestoneTotal: total,
+    progressSource: 'assignment',
+  }
+}
+
+function calculateOngoingProgress(project: OngoingProject, milestones: WorkspaceMilestoneSummary[], tasks: WorkspaceTaskSummary[]): OngoingProjectView {
+  if (project.mode === 'study') {
+    const assignmentProgress = calculateAssignmentProgress(project, tasks)
+    if (assignmentProgress) return assignmentProgress
+  }
+
+  const sorted = sortMilestones(milestones)
+  const total = sorted.length
+
+  if (project.mode !== 'team' || total === 0) {
+    return {
+      ...project,
+      displayWeek: Math.max(1, project.week || 1),
+      displayProgress: Math.max(0, Math.min(100, project.progress || 0)),
+      milestoneTotal: Math.max(1, project.week || 1),
+      progressSource: 'board',
+    }
+  }
+
+  const today = startOfDay(new Date())
+  const ranges = sorted.map((milestone, index) => {
+    const start = startOfDay(parseDate(milestone.startDate) ?? parseDate(milestone.dueDate) ?? addDays(today, index * 7))
+    const due = startOfDay(parseDate(milestone.dueDate) ?? addDays(start, 6))
+    return { milestone, start, due }
+  })
+  const currentRangeIndex = ranges.findIndex((range) => today >= range.start && today <= range.due)
+  const firstFutureIndex = ranges.findIndex((range) => today < range.start)
+  const completedCount = ranges.filter((range) => String(range.milestone.status ?? '').toUpperCase() === 'COMPLETED' || today > range.due).length
+  const week = currentRangeIndex >= 0
+    ? currentRangeIndex + 1
+    : firstFutureIndex >= 0
+      ? Math.max(1, firstFutureIndex + 1)
+      : total
+  const progress = Math.round((completedCount / total) * 100)
+
+  return {
+    ...project,
+    displayWeek: Math.max(1, Math.min(total, week)),
+    displayProgress: Math.max(0, Math.min(100, progress)),
+    milestoneTotal: total,
+    progressSource: 'milestone',
+  }
+}
+
+function shortRoleLabel(position?: string | null) {
+  if (!position) return null
+  const normalized = position.toLowerCase()
+  if (normalized.includes('front')) return 'FE'
+  if (normalized.includes('back')) return 'BE'
+  if (normalized.includes('full')) return 'FS'
+  if (normalized.includes('design') || normalized.includes('디자')) return 'DES'
+  if (normalized.includes('pm') || normalized.includes('기획')) return 'PM'
+  if (normalized.includes('devops') || normalized.includes('infra') || normalized.includes('인프라')) return 'OPS'
+  return position
+}
+
+function avatarUrl(name?: string | null) {
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'DevPath')}`
+}
+
 function ModalShell({
   onClose,
   size = 'max-w-md',
@@ -229,15 +486,29 @@ export default function InstructorMentoringPage() {
   const [setupWelcome, setSetupWelcome] = useState('')
   const [projectFormOpen, setProjectFormOpen] = useState(false)
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null)
+  const [workspaceSettingsProjectId, setWorkspaceSettingsProjectId] = useState<string | null>(null)
+  const [memberManagementProjectId, setMemberManagementProjectId] = useState<string | null>(null)
+  const [workspaceSettingsForm, setWorkspaceSettingsForm] = useState<WorkspaceSettingsForm>({ title: '', subtitle: '', category: '' })
+  const [workspaceDashboards, setWorkspaceDashboards] = useState<Record<number, WorkspaceDashboardSummary>>({})
+  const [workspaceSettings, setWorkspaceSettings] = useState<Record<number, WorkspaceSettingsSummary>>({})
+  const [workspaceMilestones, setWorkspaceMilestones] = useState<Record<number, WorkspaceMilestoneSummary[]>>({})
+  const [workspaceTasks, setWorkspaceTasks] = useState<Record<number, WorkspaceTaskSummary[]>>({})
   const [tagInput, setTagInput] = useState('')
   const [form, setForm] = useState<ProjectFormState>(() => createDefaultForm())
 
   const selectedRequest = requests.find((request) => request.id === applicationId) ?? null
   const selectedSetupProject = projects.find((project) => project.id === setupProjectId) ?? null
+  const selectedWorkspaceSettingsProject = ongoingProjects.find((project) => project.id === workspaceSettingsProjectId) ?? null
+  const selectedMemberManagementProject = ongoingProjects.find((project) => project.id === memberManagementProjectId) ?? null
   const editingProject = projects.find((project) => project.id === editingProjectId)
   const pendingRequests = requests.filter((request) => (requestModeFilter === 'all' || request.mode === requestModeFilter) && (requestProjectFilter === 'all' || request.projectId === requestProjectFilter))
   const previewCapacity = getPreviewCapacity(form)
-  const lockBody = projectFormOpen || selectedRequest !== null || selectedSetupProject !== null
+  const ongoingProjectViews = useMemo(() => ongoingProjects.map((project) => calculateOngoingProgress(
+    project,
+    project.workspaceId ? workspaceMilestones[project.workspaceId] ?? [] : [],
+    project.workspaceId ? workspaceTasks[project.workspaceId] ?? [] : [],
+  )), [ongoingProjects, workspaceMilestones, workspaceTasks])
+  const lockBody = projectFormOpen || selectedRequest !== null || selectedSetupProject !== null || selectedWorkspaceSettingsProject !== null || selectedMemberManagementProject !== null
 
   useEffect(() => {
     const controller = new AbortController()
@@ -269,6 +540,50 @@ export default function InstructorMentoringPage() {
   }, [])
 
   useEffect(() => {
+    const workspaceIds = Array.from(new Set(ongoingProjects
+      .filter((project) => project.workspaceId)
+      .map((project) => project.workspaceId as number)))
+
+    if (workspaceIds.length === 0) {
+      setWorkspaceDashboards({})
+      setWorkspaceSettings({})
+      setWorkspaceMilestones({})
+      setWorkspaceTasks({})
+      return
+    }
+
+    const controller = new AbortController()
+
+    Promise.all(workspaceIds.map(async (workspaceId) => {
+      const [dashboard, settings, milestones, tasks] = await Promise.all([
+        projectApiRequest<WorkspaceDashboardSummary>(`/api/workspaces/${workspaceId}/dashboard`, { signal: controller.signal }, 'required').catch(() => null),
+        projectApiRequest<WorkspaceSettingsSummary>(`/api/workspaces/${workspaceId}/settings`, { signal: controller.signal }, 'required').catch(() => null),
+        projectApiRequest<WorkspaceMilestoneSummary[]>(`/api/workspaces/${workspaceId}/milestones`, { signal: controller.signal }, 'required').catch(() => []),
+        projectApiRequest<WorkspaceTaskSummary[]>(`/api/workspaces/${workspaceId}/tasks`, { signal: controller.signal }, 'required').catch(() => []),
+      ])
+      return { workspaceId, dashboard, settings, milestones, tasks }
+    })).then((results) => {
+      if (controller.signal.aborted) return
+      const nextDashboards: Record<number, WorkspaceDashboardSummary> = {}
+      const nextSettings: Record<number, WorkspaceSettingsSummary> = {}
+      const nextMilestones: Record<number, WorkspaceMilestoneSummary[]> = {}
+      const nextTasks: Record<number, WorkspaceTaskSummary[]> = {}
+      results.forEach((result) => {
+        if (result.dashboard) nextDashboards[result.workspaceId] = result.dashboard
+        if (result.settings) nextSettings[result.workspaceId] = result.settings
+        nextMilestones[result.workspaceId] = result.milestones
+        nextTasks[result.workspaceId] = result.tasks
+      })
+      setWorkspaceDashboards(nextDashboards)
+      setWorkspaceSettings(nextSettings)
+      setWorkspaceMilestones(nextMilestones)
+      setWorkspaceTasks(nextTasks)
+    })
+
+    return () => controller.abort()
+  }, [ongoingProjects])
+
+  useEffect(() => {
     document.body.style.overflow = lockBody ? 'hidden' : ''
     return () => {
       document.body.style.overflow = ''
@@ -285,11 +600,14 @@ export default function InstructorMentoringPage() {
     setOngoingProjects(nextOngoingProjects)
 
     try {
-      await instructorMentoringApi.saveBoard({
+      const savedBoard = await instructorMentoringApi.saveBoard({
         projects: nextProjects,
         requests: nextRequests,
         ongoingProjects: nextOngoingProjects,
       } as InstructorMentoringBoard)
+      setProjects(savedBoard.projects as RecruitingProject[])
+      setRequests(savedBoard.requests as PendingRequest[])
+      setOngoingProjects(savedBoard.ongoingProjects as OngoingProject[])
     } catch (nextError) {
       window.alert(nextError instanceof Error ? nextError.message : '멘토링 보드 저장에 실패했습니다.')
     }
@@ -379,7 +697,25 @@ export default function InstructorMentoringPage() {
       return
     }
 
-    const nextProject = buildProjectFromForm(form, editingProject)
+    const draftProject = buildProjectFromForm(form, editingProject)
+    const livePostId = editingProject ? getLivePostId(editingProject.id) : null
+    let nextProject = draftProject
+
+    try {
+      const savedPost = await projectApiRequest<MentoringPostDetail>(
+        livePostId ? `/api/mentoring-posts/${livePostId}` : '/api/mentoring-posts',
+        {
+          method: livePostId ? 'PATCH' : 'POST',
+          body: JSON.stringify(toMentoringPostPayload(draftProject)),
+        },
+        'required',
+      )
+      nextProject = withPostId(draftProject, savedPost)
+    } catch (nextError) {
+      window.alert(nextError instanceof Error ? nextError.message : '멘토링 공고 저장에 실패했습니다.')
+      return
+    }
+
     const nextProjects = editingProjectId
       ? projects.map((project) => (project.id === editingProjectId ? nextProject : project))
       : [nextProject, ...projects]
@@ -393,6 +729,16 @@ export default function InstructorMentoringPage() {
   async function deleteProject(projectId: string) {
     if (!window.confirm('이 공고를 삭제할까요?')) return
 
+    const livePostId = getLivePostId(projectId)
+    if (livePostId) {
+      try {
+        await projectApiRequest(`/api/mentoring-posts/${livePostId}`, { method: 'DELETE' }, 'required')
+      } catch (nextError) {
+        window.alert(nextError instanceof Error ? nextError.message : '멘토링 공고 삭제에 실패했습니다.')
+        return
+      }
+    }
+
     const nextProjects = projects.filter((project) => project.id !== projectId)
     const nextRequests = requests.filter((request) => request.projectId !== projectId)
 
@@ -403,6 +749,23 @@ export default function InstructorMentoringPage() {
   async function approveRequest(requestId: string) {
     const request = requests.find((item) => item.id === requestId)
     if (!request) return
+
+    const liveApplicationId = getLiveApplicationId(request.id)
+    if (liveApplicationId) {
+      try {
+        await projectApiRequest(
+          `/api/mentoring-applications/${liveApplicationId}/approve`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({}),
+          },
+          'required',
+        )
+      } catch (nextError) {
+        window.alert(nextError instanceof Error ? nextError.message : '멘토링 신청 승인에 실패했습니다.')
+        return
+      }
+    }
 
     const nextProjects = projects.map((project) => (project.id === request.projectId ? applyApprovedRequest(project, request) : project))
     const nextRequests = requests.filter((item) => item.id !== requestId)
@@ -416,10 +779,54 @@ export default function InstructorMentoringPage() {
     const request = requests.find((item) => item.id === requestId)
     if (!request || !window.confirm(`${request.applicantName}님의 신청을 거절할까요?`)) return
 
+    const liveApplicationId = getLiveApplicationId(request.id)
+    if (liveApplicationId) {
+      try {
+        await projectApiRequest(
+          `/api/mentoring-applications/${liveApplicationId}/reject`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({}),
+          },
+          'required',
+        )
+      } catch (nextError) {
+        window.alert(nextError instanceof Error ? nextError.message : '멘토링 신청 거절에 실패했습니다.')
+        return
+      }
+    }
+
     const nextRequests = requests.filter((item) => item.id !== requestId)
 
     await persistBoard(projects, nextRequests, ongoingProjects)
     setApplicationId((current) => (current === requestId ? null : current))
+  }
+
+  async function approveLiveRequestsForProject(projectId: string) {
+    const projectRequests = requests.filter((request) => request.projectId === projectId)
+
+    for (const request of projectRequests) {
+      const liveApplicationId = getLiveApplicationId(request.id)
+      if (!liveApplicationId) {
+        continue
+      }
+
+      try {
+        await projectApiRequest(
+          `/api/mentoring-applications/${liveApplicationId}/approve`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify({}),
+          },
+          'required',
+        )
+      } catch (nextError) {
+        window.alert(nextError instanceof Error ? nextError.message : '멘토링 신청 승인에 실패했습니다.')
+        return false
+      }
+    }
+
+    return true
   }
 
   async function confirmStartProject() {
@@ -429,6 +836,11 @@ export default function InstructorMentoringPage() {
     }
 
     if (!selectedSetupProject) {
+      return
+    }
+
+    const approved = await approveLiveRequestsForProject(selectedSetupProject.id)
+    if (!approved) {
       return
     }
 
@@ -449,6 +861,7 @@ export default function InstructorMentoringPage() {
           ? ['워크스페이스 설정', '멤버 관리', '완료 처리']
           : ['과제 설정', '공지 전송', '멘토링 종료'],
       workspaceId: null,
+      startDate: setupStartDate,
     }
     const nextOngoingProjects = [
       nextOngoingProject,
@@ -463,11 +876,101 @@ export default function InstructorMentoringPage() {
     window.alert(`설정이 저장되었습니다.\n성공적으로 ${title} 프로젝트가 시작되며, 워크스페이스로 이동합니다.`)
   }
 
+  function openWorkspaceSettings(project: OngoingProject) {
+    if (!project.workspaceId) {
+      window.alert('연결된 팀 프로젝트 워크스페이스가 아직 없습니다.')
+      return
+    }
+    const settings = workspaceSettings[project.workspaceId]
+    const dashboard = workspaceDashboards[project.workspaceId]
+    setWorkspaceSettingsForm({
+      title: settings?.name ?? dashboard?.name ?? project.title,
+      subtitle: settings?.description ?? dashboard?.description ?? project.subtitle,
+      category: project.category,
+    })
+    setWorkspaceSettingsProjectId(project.id)
+  }
+
+  async function saveWorkspaceSettings() {
+    if (!selectedWorkspaceSettingsProject) return
+    const title = workspaceSettingsForm.title.trim()
+    const subtitle = workspaceSettingsForm.subtitle.trim()
+    const category = workspaceSettingsForm.category.trim()
+    if (!title || !subtitle || !category) {
+      window.alert('워크스페이스 설정값을 모두 입력해주세요.')
+      return
+    }
+
+    if (selectedWorkspaceSettingsProject.workspaceId) {
+      try {
+        const savedSettings = await projectApiRequest<WorkspaceSettingsSummary>(`/api/workspaces/${selectedWorkspaceSettingsProject.workspaceId}/settings`, {
+          method: 'PATCH',
+          body: JSON.stringify({ name: title, description: subtitle }),
+        }, 'required')
+        setWorkspaceSettings((current) => ({ ...current, [savedSettings.workspaceId]: savedSettings }))
+        setWorkspaceDashboards((current) => ({
+          ...current,
+          [savedSettings.workspaceId]: {
+            ...(current[savedSettings.workspaceId] ?? { workspaceId: savedSettings.workspaceId }),
+            name: savedSettings.name,
+            description: savedSettings.description,
+            members: savedSettings.members ?? current[savedSettings.workspaceId]?.members,
+          },
+        }))
+      } catch (nextError) {
+        window.alert(nextError instanceof Error ? nextError.message : '워크스페이스 설정 저장에 실패했습니다.')
+        return
+      }
+    }
+
+    const nextOngoingProjects = ongoingProjects.map((project) => (
+      project.id === selectedWorkspaceSettingsProject.id
+        ? { ...project, title, subtitle, category }
+        : project
+    ))
+    await persistBoard(projects, requests, nextOngoingProjects)
+    setWorkspaceSettingsProjectId(null)
+  }
+
+  function openMemberManagement(project: OngoingProject) {
+    if (!project.workspaceId) {
+      window.alert('연결된 팀 프로젝트 워크스페이스가 아직 없습니다.')
+      return
+    }
+    setMemberManagementProjectId(project.id)
+  }
+
   function runOngoingAction(project: OngoingProject, actionLabel: string) {
     setOpenMenuId(null)
-    if (actionLabel === '워크스페이스 이동' && project.workspaceId) {
-      const dashPath = project.mode === 'team' ? '/instructor-team-ws-dashboard' : '/instructor-ws-dashboard'
-      window.location.href = `${dashPath}?workspaceId=${project.workspaceId}`
+    if (project.mode === 'team' && actionLabel === '워크스페이스 설정') {
+      openWorkspaceSettings(project)
+      return
+    }
+    if (project.mode === 'team' && actionLabel === '멤버 관리') {
+      openMemberManagement(project)
+      return
+    }
+
+    if (project.workspaceId) {
+      const commonRoutes: Record<string, string> = {
+        '워크스페이스 이동': '/instructor-ws-dashboard',
+        '일정 관리': '/instructor-ws-schedule',
+        '과제 설정': '/instructor-ws-assignments',
+        '공지 전송': '/instructor-ws-dashboard',
+        '멤버 관리': '/instructor-ws-students',
+      }
+      const teamRoutes: Record<string, string> = {
+        '워크스페이스 이동': '/instructor-team-ws-dashboard',
+        '일정 관리': '/instructor-team-ws-schedule',
+      }
+      const route = project.mode === 'team' ? teamRoutes[actionLabel] : commonRoutes[actionLabel]
+      if (route) {
+        window.location.href = `${route}?workspaceId=${project.workspaceId}`
+        return
+      }
+    }
+    if (actionLabel === '워크스페이스 이동') {
+      window.alert('연결된 워크스페이스가 아직 없습니다. 멘토링 워크스페이스를 먼저 생성해주세요.')
       return
     }
     window.alert(`${project.title}: ${actionLabel}`)
@@ -575,9 +1078,9 @@ export default function InstructorMentoringPage() {
             <div className="instructor-mentoring-request-toolbar mb-4 flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2">
                 <select value={requestModeFilter} onChange={(event) => setRequestModeFilter(event.target.value as 'all' | MentoringMode)} className="instructor-mentoring-select cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm outline-none transition hover:bg-gray-50 focus:border-brand">
-                  <option value="all">전체 방식</option>
-                  <option value="study">공통 과제형 (스터디)</option>
-                  <option value="team">역할 분담형 (팀 프로젝트)</option>
+                  <option value="all">🎯 전체 방식</option>
+                  <option value="study">👥 공통 과제형 (스터디)</option>
+                  <option value="team">🧩 역할 분담형 (팀 프로젝트)</option>
                 </select>
                 <select value={requestProjectFilter} onChange={(event) => setRequestProjectFilter(event.target.value)} className="instructor-mentoring-select cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 shadow-sm outline-none transition hover:bg-gray-50 focus:border-brand">
                   <option value="all">전체 프로젝트 보기</option>
@@ -632,11 +1135,11 @@ export default function InstructorMentoringPage() {
 
         {tab === 'ongoing' ? (
           <div className="instructor-mentoring-card-grid grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {ongoingProjects.map((project) => (
+            {ongoingProjectViews.map((project) => (
               <article key={project.id} className="instructor-mentoring-card instructor-mentoring-ongoing-card group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:border-brand" onClick={(event) => event.stopPropagation()}>
                 <div className="mb-4 flex items-start justify-between">
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="rounded border border-green-200 bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">진행 중 ({project.week}주차)</span>
+                    <span className="rounded border border-green-200 bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">진행 중 ({project.displayWeek}주차)</span>
                     <span className={`rounded border px-2 py-1 text-[10px] font-bold ${modeMeta[project.mode].tone}`}><i className={`${modeMeta[project.mode].icon} mr-1`} />{modeMeta[project.mode].label}</span>
                     <span className="rounded border border-gray-200 bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-600">{project.category}</span>
                   </div>
@@ -658,8 +1161,11 @@ export default function InstructorMentoringPage() {
                 <h3 className="mb-2 text-lg font-extrabold text-gray-900 transition group-hover:text-brand">{project.title}</h3>
                 <p className="mb-6 text-xs text-gray-500">{project.subtitle}</p>
                 <div className="mt-auto">
-                  <div className="mb-2 h-1.5 w-full rounded-full bg-gray-100"><div className="h-1.5 rounded-full bg-brand" style={{ width: `${project.progress}%` }} /></div>
-                  <div className="mb-5 flex justify-between text-[10px] font-bold text-gray-400"><span>진척도</span><span className="text-brand">{project.progress}%</span></div>
+                  <div className="mb-2 h-1.5 w-full rounded-full bg-gray-100"><div className="h-1.5 rounded-full bg-brand" style={{ width: `${project.displayProgress}%` }} /></div>
+                  <div className="mb-5 flex justify-between text-[10px] font-bold text-gray-400">
+                    <span>{project.progressSource === 'milestone' ? `마일스톤 ${project.displayWeek}/${project.milestoneTotal}` : project.progressSource === 'assignment' ? `과제 ${project.displayWeek}/${project.milestoneTotal}` : '진척도'}</span>
+                    <span className="text-brand">{project.displayProgress}%</span>
+                  </div>
                   <div className="flex gap-2 border-t border-gray-100 pt-4">
                     <button type="button" onClick={() => runOngoingAction(project, project.primaryAction)} className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100">{project.primaryAction}</button>
                     <button type="button" onClick={() => runOngoingAction(project, project.secondaryAction)} className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-gray-100">{project.secondaryAction}</button>
@@ -672,6 +1178,106 @@ export default function InstructorMentoringPage() {
 
         {tab === 'completed' ? <div className="instructor-mentoring-completed p-8 text-center font-bold text-gray-500">종료된 멘토링 내역입니다.</div> : null}
       </div>
+
+      {selectedWorkspaceSettingsProject ? (
+        <ModalShell onClose={() => setWorkspaceSettingsProjectId(null)} size="max-w-xl">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
+              <div>
+                <h3 className="text-lg font-extrabold text-gray-900"><i className="fas fa-cog mr-2 text-brand" />워크스페이스 설정</h3>
+                <p className="mt-1 text-xs text-gray-500">진행 중 카드와 팀프로젝트 워크스페이스 진입 정보를 관리합니다.</p>
+              </div>
+              <button type="button" onClick={() => setWorkspaceSettingsProjectId(null)} className="text-gray-400 transition hover:text-gray-900"><i className="fas fa-times" /></button>
+            </div>
+            <div className="space-y-4 p-6">
+              <label className="block">
+                <span className="mb-2 block text-xs font-bold text-gray-600">프로젝트명</span>
+                <input value={workspaceSettingsForm.title} onChange={(event) => setWorkspaceSettingsForm((current) => ({ ...current, title: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-xs font-bold text-gray-600">카드 설명</span>
+                <input value={workspaceSettingsForm.subtitle} onChange={(event) => setWorkspaceSettingsForm((current) => ({ ...current, subtitle: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-xs font-bold text-gray-600">분야</span>
+                <input value={workspaceSettingsForm.category} onChange={(event) => setWorkspaceSettingsForm((current) => ({ ...current, category: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand" />
+              </label>
+              <div className="grid grid-cols-2 gap-2 rounded-xl border border-gray-100 bg-gray-50 p-3">
+                {[
+                  ['대시보드', '/instructor-team-ws-dashboard', 'fas fa-chart-line'],
+                  ['마일스톤', '/instructor-team-ws-milestone', 'fas fa-flag-checkered'],
+                  ['일정', '/instructor-team-ws-schedule', 'fas fa-calendar-alt'],
+                  ['자료실', '/instructor-team-ws-files', 'fas fa-folder-open'],
+                ].map(([label, route, icon]) => (
+                  <a key={label} href={`${route}?workspaceId=${selectedWorkspaceSettingsProject.workspaceId}`} className="flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 transition hover:border-brand hover:text-brand">
+                    <i className={icon} />{label}
+                  </a>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 p-5">
+              <button type="button" onClick={() => setWorkspaceSettingsProjectId(null)} className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">닫기</button>
+              <button type="button" onClick={saveWorkspaceSettings} className="rounded-xl bg-brand px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-green-600">설정 저장</button>
+            </div>
+          </div>
+        </ModalShell>
+      ) : null}
+
+      {selectedMemberManagementProject ? (
+        <ModalShell onClose={() => setMemberManagementProjectId(null)} size="max-w-2xl">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
+              <div>
+                <h3 className="text-lg font-extrabold text-gray-900"><i className="fas fa-users mr-2 text-brand" />멤버 관리</h3>
+                <p className="mt-1 text-xs text-gray-500">{selectedMemberManagementProject.title}</p>
+              </div>
+              <button type="button" onClick={() => setMemberManagementProjectId(null)} className="text-gray-400 transition hover:text-gray-900"><i className="fas fa-times" /></button>
+            </div>
+            <div className="max-h-[60vh] space-y-3 overflow-y-auto p-6">
+              {(() => {
+                const dashboard = selectedMemberManagementProject.workspaceId ? workspaceDashboards[selectedMemberManagementProject.workspaceId] : null
+                const settings = selectedMemberManagementProject.workspaceId ? workspaceSettings[selectedMemberManagementProject.workspaceId] : null
+                const ownerId = dashboard?.ownerId ?? settings?.ownerId
+                const members = (dashboard?.members ?? settings?.members ?? []).filter((member) => member.learnerId !== ownerId)
+                if (!dashboard && !settings) {
+                  return <div className="rounded-xl border border-gray-100 bg-gray-50 p-8 text-center text-sm font-bold text-gray-400">멤버 정보를 불러오는 중입니다.</div>
+                }
+                if (members.length === 0) {
+                  return <div className="rounded-xl border border-gray-100 bg-gray-50 p-8 text-center text-sm font-bold text-gray-400">아직 참여 중인 학습자가 없습니다.</div>
+                }
+                return members.map((member) => {
+                  const roleLabel = member.roleLabel ?? shortRoleLabel(member.position)
+                  return (
+                    <div key={member.memberId} className="flex items-center justify-between gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <img src={member.profileImage ?? avatarUrl(member.learnerName)} className="h-10 w-10 shrink-0 rounded-full border border-gray-200 bg-gray-50" alt="" />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-extrabold text-gray-900">{member.learnerName ?? '팀원'}</p>
+                            {roleLabel ? <span className="rounded-md bg-gray-900 px-1.5 py-0.5 text-[10px] font-extrabold text-white">{roleLabel}</span> : null}
+                          </div>
+                          <p className="mt-0.5 text-[11px] font-medium text-gray-400">{member.joinedAt ? `참여일 ${member.joinedAt.slice(0, 10)}` : '참여일 정보 없음'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] font-bold">
+                        <span className={`rounded-full px-2 py-1 ${member.online ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>{member.online ? '온라인' : '오프라인'}</span>
+                        <span className="hidden rounded-full bg-gray-50 px-2 py-1 text-gray-400 sm:inline">{member.lastActiveAt ? `최근 ${member.lastActiveAt.slice(0, 10)}` : '활동 기록 없음'}</span>
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+            <div className="flex justify-between gap-2 border-t border-gray-100 bg-gray-50 p-5">
+              <div className="flex gap-2">
+                <a href={`/instructor-team-ws-kanban?workspaceId=${selectedMemberManagementProject.workspaceId}`} className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">칸반 이동</a>
+                <a href={`/instructor-team-ws-qna?workspaceId=${selectedMemberManagementProject.workspaceId}`} className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">Q&A 이동</a>
+              </div>
+              <button type="button" onClick={() => setMemberManagementProjectId(null)} className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-green-600">확인</button>
+            </div>
+          </div>
+        </ModalShell>
+      ) : null}
 
       {selectedRequest ? (
         <ModalShell onClose={() => setApplicationId(null)}>

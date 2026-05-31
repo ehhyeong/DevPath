@@ -4,5 +4,6 @@ public enum InstructorNotificationType {
   REVIEW,
   QNA,
   SUBSCRIBE,
+  MENTORING_APPLICATION,
   SYSTEM
 }

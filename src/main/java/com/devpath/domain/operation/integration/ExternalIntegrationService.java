@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -92,11 +93,11 @@ public class ExternalIntegrationService {
   private void configureGithubRepository(
       ExternalIntegration integration, IntegrationStatusUpdateRequest request) {
     String repositoryUrl = request.getRepositoryUrl();
-    if (!org.springframework.util.StringUtils.hasText(repositoryUrl)) {
+    if (!StringUtils.hasText(repositoryUrl)) {
       repositoryUrl = integration.getRepositoryUrl();
     }
 
-    if (!org.springframework.util.StringUtils.hasText(repositoryUrl)) {
+    if (!StringUtils.hasText(repositoryUrl)) {
       throw new CustomException(ErrorCode.INVALID_INPUT, "GitHub 저장소 URL을 입력해 주세요.");
     }
 
@@ -104,6 +105,10 @@ public class ExternalIntegrationService {
         githubPullRequestSyncService.parseRepositoryUrl(repositoryUrl);
     integration.configureRepository(
         repository.normalizedUrl(), repository.owner(), repository.name());
+
+    if (StringUtils.hasText(request.getGithubToken())) {
+      integration.configureRepositoryAccessToken(request.getGithubToken().trim());
+    }
   }
 
   private void ensureDefaultIntegrations(Long workspaceId) {
@@ -123,7 +128,9 @@ public class ExternalIntegrationService {
             .findByIdAndIsDeletedFalse(workspaceId)
             .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_NOT_FOUND));
 
-    if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
+    boolean isMember = workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId);
+    boolean isOwner = workspace.getOwnerId().equals(userId);
+    if (!isMember && !isOwner) {
       throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);
     }
 

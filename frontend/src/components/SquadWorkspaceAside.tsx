@@ -1,4 +1,6 @@
-import type { MouseEvent } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
+import { showAuthToast } from '../lib/auth-toast'
+import { projectApiRequest } from '../project-api'
 
 export type SquadWorkspaceAsidePage =
   | 'dashboard'
@@ -28,6 +30,13 @@ type NavItem = {
   badgeCount?: number | null
 }
 
+type ExternalIntegration = {
+  provider: string
+  active?: boolean
+  isActive?: boolean
+  repositoryUrl?: string | null
+}
+
 type NavSection = {
   title: string
   items: NavItem[]
@@ -35,6 +44,11 @@ type NavSection = {
 
 function navHref(path: string, workspaceId: number | null) {
   return workspaceId ? `${path}?workspaceId=${workspaceId}` : path
+}
+
+function isGithubLinked(integrations: ExternalIntegration[]) {
+  const github = integrations.find((integration) => integration.provider === 'GITHUB')
+  return Boolean((github?.active ?? github?.isActive) && github?.repositoryUrl?.trim())
 }
 
 export default function SquadWorkspaceAside({
@@ -46,6 +60,7 @@ export default function SquadWorkspaceAside({
   reviewBadgeCount,
   onNavigate,
 }: SquadWorkspaceAsideProps) {
+  const [githubLinked, setGithubLinked] = useState<boolean | null>(null)
   const projectLabel = projectName?.trim() || '스쿼드 프로젝트'
   const sections: NavSection[] = [
     {
@@ -83,7 +98,50 @@ export default function SquadWorkspaceAside({
     },
   ]
 
-  function handleNavigate(event: MouseEvent<HTMLAnchorElement>, href: string) {
+  useEffect(() => {
+    if (!workspaceId) {
+      setGithubLinked(false)
+      return
+    }
+
+    let ignore = false
+
+    async function loadGithubIntegration() {
+      try {
+        const integrations = await projectApiRequest<ExternalIntegration[]>(
+          `/api/workspaces/${workspaceId}/integrations`,
+          {},
+          'required',
+        )
+
+        if (!ignore) {
+          setGithubLinked(isGithubLinked(integrations))
+        }
+      } catch {
+        if (!ignore) {
+          setGithubLinked(false)
+        }
+      }
+    }
+
+    void loadGithubIntegration()
+
+    return () => {
+      ignore = true
+    }
+  }, [workspaceId])
+
+  function handleNavigate(event: MouseEvent<HTMLAnchorElement>, href: string, item?: NavItem) {
+    if (item?.key === 'review' && githubLinked !== true) {
+      event.preventDefault()
+      showAuthToast({
+        message: '코드 피드백은 GitHub 저장소를 연동한 뒤 이용할 수 있습니다.',
+        variant: 'error',
+        durationMs: 2200,
+      })
+      return
+    }
+
     onNavigate?.(event, href)
   }
 
@@ -128,13 +186,15 @@ export default function SquadWorkspaceAside({
             {section.items.map((item) => {
               const href = navHref(item.path, workspaceId)
               const badgeCount = item.badgeCount ?? 0
+              const blocked = item.key === 'review' && githubLinked !== true
 
               return (
                 <a
                   key={item.key}
                   href={href}
-                  onClick={(event) => handleNavigate(event, href)}
-                  className={activePage === item.key ? 'nav-item active' : 'nav-item'}
+                  onClick={(event) => handleNavigate(event, href, item)}
+                  className={`${activePage === item.key ? 'nav-item active' : 'nav-item'} ${blocked ? 'opacity-50' : ''}`}
+                  aria-disabled={blocked}
                 >
                   <i className={`${item.icon} w-6 text-center text-lg`}></i>
                   <span className="sidebar-text squad-dashboard-review-link flex-1">

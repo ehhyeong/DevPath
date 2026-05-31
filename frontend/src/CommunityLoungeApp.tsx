@@ -26,6 +26,7 @@ type LoungeShellResponse = {
 type SquadMemberResponse = {
   userId?: number | null
   userName?: string | null
+  profileImage?: string | null
   role?: string | null
 }
 
@@ -33,6 +34,7 @@ type SquadLoungePostResponse = {
   id: number
   authorId?: number | null
   authorName?: string | null
+  authorProfileImage?: string | null
   title?: string | null
   type?: string | null
   deadline?: string | null
@@ -43,6 +45,8 @@ type SquadLoungePostResponse = {
   maxMembers?: number | null
   views?: number | null
   closed?: boolean | null
+  workspaceId?: number | null
+  workspaceUrl?: string | null
   createdAt?: string | null
   updatedAt?: string | null
   members?: SquadMemberResponse[] | null
@@ -55,8 +59,10 @@ type LoungeApplicationSummary = {
   targetTitle?: string | null
   senderId?: number | null
   senderName?: string | null
+  senderProfileImage?: string | null
   receiverId?: number | null
   receiverName?: string | null
+  receiverProfileImage?: string | null
   title?: string | null
   content?: string | null
   status?: 'PENDING' | 'APPROVED' | 'REJECTED' | string | null
@@ -68,16 +74,18 @@ type LoungeApplication = {
   type: 'project_apply' | 'scout'
   title: string
   sender: string
-  senderImg: string
+  senderImageUrl: string | null
   date: string
   status: string
   content: string
 }
 
 type SquadMember = {
+  userId: number | null
   name: string
   role: string
   img: string
+  imageUrl: string | null
 }
 
 type SquadPost = {
@@ -85,6 +93,7 @@ type SquadPost = {
   authorId: number | null
   author: string
   authorImg: string
+  authorProfileImage: string | null
   title: string
   type: LoungeType
   deadline: string
@@ -102,6 +111,8 @@ type SquadPost = {
   sortDate: string
   isClosed: boolean
   isMine: boolean
+  workspaceId: number | null
+  workspaceUrl: string | null
 }
 
 type CreateForm = {
@@ -131,14 +142,10 @@ const templates: Record<LoungeType, string> = {
 }
 
 const typeConfig: Record<LoungeType, { iconClass: string; iconBg: string; iconCol: string }> = {
-  project: { iconClass: 'fa-plane', iconBg: 'bg-blue-50', iconCol: 'text-blue-600' },
+  project: { iconClass: 'fa-laptop-code', iconBg: 'bg-blue-50', iconCol: 'text-blue-600' },
   join_wish: { iconClass: 'fa-user-check', iconBg: 'bg-green-50', iconCol: 'text-brand' },
   study: { iconClass: 'fa-book', iconBg: 'bg-purple-50', iconCol: 'text-purple-600' },
   networking: { iconClass: 'fa-coffee', iconBg: 'bg-orange-50', iconCol: 'text-orange-600' },
-}
-
-function diceAvatar(seed: string | number | null | undefined) {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(String(seed || 'DevPath'))}`
 }
 
 function toDateText(value: string | null | undefined) {
@@ -192,7 +199,7 @@ function mapApplication(item: LoungeApplicationSummary): LoungeApplication {
     type: item.type === 'SQUAD_APPLICATION' ? 'project_apply' : 'scout',
     title: item.targetTitle || item.title || '제목 없음',
     sender: item.senderName || '사용자',
-    senderImg: `sender-${item.senderId || item.applicationId}`,
+    senderImageUrl: item.senderProfileImage ?? null,
     date: toDateText(item.createdAt),
     status: item.status === 'APPROVED' ? '승인됨' : item.status === 'REJECTED' ? '거절됨' : '대기중',
     content: item.content || item.title || '',
@@ -211,6 +218,7 @@ function mapSquadPost(post: SquadLoungePostResponse, currentUserId: number | nul
     authorId: post.authorId ?? null,
     author: post.authorName || '사용자',
     authorImg: `squad-${post.authorId ?? post.id}`,
+    authorProfileImage: post.authorProfileImage ?? null,
     title: post.title || '제목 없음',
     type,
     deadline: toDateText(post.deadline),
@@ -221,9 +229,11 @@ function mapSquadPost(post: SquadLoungePostResponse, currentUserId: number | nul
     desc: post.description || '',
     roles: Array.isArray(post.roles) ? post.roles : [],
     members: members.map((member) => ({
+      userId: member.userId ?? null,
       name: member.userName || `사용자 #${member.userId || ''}`,
       role: member.role || 'Member',
       img: `member-${member.userId || member.userName || 'Member'}`,
+      imageUrl: member.profileImage ?? null,
     })),
     current: currentMembers,
     max: maxMembers,
@@ -232,6 +242,18 @@ function mapSquadPost(post: SquadLoungePostResponse, currentUserId: number | nul
     sortDate: post.createdAt || post.updatedAt || '',
     isClosed: post.closed === true,
     isMine: currentUserId !== null && Number(post.authorId) === currentUserId,
+    workspaceId: post.workspaceId ?? null,
+    workspaceUrl: post.workspaceUrl ?? null,
+  }
+}
+
+function authorToMember(squad: SquadPost, currentUserProfileImage: string | null = null): SquadMember {
+  return {
+    userId: squad.authorId,
+    name: squad.author,
+    role: '작성자',
+    img: squad.authorImg,
+    imageUrl: squad.isMine ? currentUserProfileImage : squad.authorProfileImage,
   }
 }
 
@@ -335,7 +357,8 @@ export default function CommunityLoungeApp() {
           setLoadError('스쿼드 라운지 글을 불러오지 못했습니다.')
         }
 
-        setSentApplications(sentResult.status === 'fulfilled' ? sentResult.value.map(mapApplication) : [])
+        const nextSentApplications = sentResult.status === 'fulfilled' ? sentResult.value.map(mapApplication) : []
+        setSentApplications(nextSentApplications)
         setReceivedApplications(receivedResult.status === 'fulfilled' ? receivedResult.value.map(mapApplication) : [])
       })
       .finally(() => {
@@ -367,7 +390,10 @@ export default function CommunityLoungeApp() {
   }, [activeFilter, hideClosed, search, sort])
 
   useEffect(() => {
-    const syncSession = () => setSession(readStoredAuthSession())
+    const syncSession = () => {
+      setSession(readStoredAuthSession())
+      setReloadKey((key) => key + 1)
+    }
     window.addEventListener('storage', syncSession)
     window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     return () => {
@@ -452,6 +478,7 @@ export default function CommunityLoungeApp() {
     const nextSession = readStoredAuthSession()
     setSession(nextSession)
     setAuthView(null)
+    setReloadKey((key) => key + 1)
 
     const redirect = getPostLoginRedirect(nextSession?.role ?? null)
     if (redirect !== '/') {
@@ -596,13 +623,22 @@ export default function CommunityLoungeApp() {
       return
     }
 
-    const confirmed = window.confirm("모집을 마감하고, 팀원들과 함께할 '워크스페이스'를 바로 생성하시겠습니까?\n(작성하신 스쿼드 제목, 기술 스택, 소개글이 자동으로 넘어갑니다.)")
-    if (!confirmed) {
+    if (detailSquad.workspaceUrl) {
+      window.location.href = detailSquad.workspaceUrl
       return
     }
 
-    await projectApiRequest(`/api/lounge/squads/${detailSquad.id}/close`, { method: 'PATCH' }, 'required')
+    if (!detailSquad.isClosed) {
+      const confirmed = window.confirm("모집을 마감하고, 팀원들과 함께할 '워크스페이스'를 바로 생성하시겠습니까?\n(작성하신 스쿼드 제목, 기술 스택, 소개글이 자동으로 넘어갑니다.)")
+      if (!confirmed) {
+        return
+      }
+
+      await projectApiRequest(`/api/lounge/squads/${detailSquad.id}/close`, { method: 'PATCH' }, 'required')
+    }
+
     const params = new URLSearchParams({
+      squadId: String(detailSquad.id),
       title: detailSquad.title,
       tech: detailSquad.tags.join(','),
       desc: detailSquad.desc,
@@ -670,8 +706,8 @@ export default function CommunityLoungeApp() {
         'required',
       )
       showAuthToast({
-        message: '전송되었습니다.',
-        durationMs: 1800,
+        message: applySquad.type === 'join_wish' ? '스카우트 제안을 보냈습니다.' : '참여 신청을 보냈습니다.',
+        durationMs: 2200,
       })
       setApplySquad(null)
       setDetailSquad(null)
@@ -720,6 +756,11 @@ export default function CommunityLoungeApp() {
     )
     setReceivedDetail(null)
     setReloadKey((key) => key + 1)
+  }
+
+  function openMemberProfile(member: SquadMember) {
+    setMemberProfile(member)
+    setMemberMessage('')
   }
 
   function sendDM() {
@@ -866,10 +907,8 @@ export default function CommunityLoungeApp() {
                       currentUserProfileImage={profileImage}
                       onOpen={() => openDetailModal(squad)}
                       onEdit={() => openCreateModal(squad)}
-                      onMemberOpen={(member) => {
-                        setMemberProfile(member)
-                        setMemberMessage('')
-                      }}
+                      onAuthorOpen={() => openMemberProfile(authorToMember(squad, profileImage))}
+                      onMemberOpen={openMemberProfile}
                     />
                   ))
                 )}
@@ -926,6 +965,7 @@ export default function CommunityLoungeApp() {
           squad={detailSquad}
           onClose={() => setDetailSquad(null)}
           onApply={openApplyForm}
+          onMessageAuthor={() => openMemberProfile(authorToMember(detailSquad, profileImage))}
           onEdit={() => {
             openCreateModal(detailSquad)
             setDetailSquad(null)
@@ -1018,12 +1058,14 @@ function SquadCard({
   currentUserProfileImage,
   onOpen,
   onEdit,
+  onAuthorOpen,
   onMemberOpen,
 }: {
   squad: SquadPost
   currentUserProfileImage: string | null
   onOpen: () => void
   onEdit: () => void
+  onAuthorOpen: () => void
   onMemberOpen: (member: SquadMember) => void
 }) {
   const isJoin = squad.type === 'join_wish'
@@ -1079,7 +1121,14 @@ function SquadCard({
       </p>
 
       <div className="mt-auto pt-4 border-t flex justify-between items-center">
-        <div className="flex items-center gap-2 min-w-0">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onAuthorOpen()
+          }}
+          className="flex min-w-0 items-center gap-2 rounded-lg pr-2 outline-none transition hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-brand/30"
+        >
           {squad.isMine ? (
             <UserAvatar
               name={squad.author}
@@ -1088,10 +1137,15 @@ function SquadCard({
               iconClassName="text-[10px]"
             />
           ) : (
-            <img src={diceAvatar(squad.authorImg)} className="w-6 h-6 rounded-full border shadow-sm" />
+            <UserAvatar
+              name={squad.author}
+              imageUrl={squad.authorProfileImage}
+              className="w-6 h-6 shadow-sm"
+              iconClassName="text-[10px]"
+            />
           )}
           <span className="text-xs font-bold text-gray-600 truncate">{squad.author}</span>
-        </div>
+        </button>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-gray-400 font-medium">
             <i className="far fa-eye mr-1"></i>
@@ -1111,17 +1165,23 @@ function SquadCard({
           <div className="flex -space-x-2">
             {squad.members.map((member) => (
               <button
-                key={`${member.name}-${member.img}`}
+                key={`${member.userId ?? member.name}-${member.role}`}
                 type="button"
+                aria-label={`${member.name} 프로필 보기`}
+                className="group/member relative z-0 rounded-full outline-none hover:z-20 focus-visible:z-20"
                 onClick={(event) => {
                   event.stopPropagation()
                   onMemberOpen(member)
                 }}
-                title={member.name}
               >
-                <img
-                  src={diceAvatar(member.img)}
-                  className="w-6 h-6 rounded-full border border-white cursor-pointer hover:scale-110 transition"
+                <span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] font-bold leading-none text-white opacity-0 shadow-lg transition group-hover/member:translate-y-0 group-hover/member:opacity-100 group-focus-visible/member:translate-y-0 group-focus-visible/member:opacity-100">
+                  {member.name}
+                </span>
+                <UserAvatar
+                  name={member.name}
+                  imageUrl={member.imageUrl}
+                  className="w-6 h-6 cursor-pointer border-white transition hover:scale-110"
+                  iconClassName="text-[10px]"
                 />
               </button>
             ))}
@@ -1136,6 +1196,7 @@ function DetailModal({
   squad,
   onClose,
   onApply,
+  onMessageAuthor,
   onEdit,
   onCloseOnly,
   onCreateWorkspace,
@@ -1143,6 +1204,7 @@ function DetailModal({
   squad: SquadPost
   onClose: () => void
   onApply: () => void
+  onMessageAuthor: () => void
   onEdit: () => void
   onCloseOnly: () => void
   onCreateWorkspace: () => void
@@ -1191,6 +1253,11 @@ function DetailModal({
           <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition">
             닫기
           </button>
+          {!squad.isMine ? (
+            <button type="button" onClick={onMessageAuthor} className="px-5 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition flex items-center gap-2">
+              <i className="fas fa-paper-plane"></i> 메시지 보내기
+            </button>
+          ) : null}
           {squad.isMine && !squad.isClosed ? (
             <>
               <button type="button" onClick={onCloseOnly} className="px-4 py-3 rounded-xl text-red-400 text-sm font-bold hover:bg-red-50 transition">
@@ -1203,6 +1270,11 @@ function DetailModal({
                 <i className="fas fa-rocket"></i> 마감 및 워크스페이스 생성
               </button>
             </>
+          ) : squad.isMine && squad.isClosed ? (
+            <button type="button" onClick={onCreateWorkspace} className="px-6 py-3 rounded-xl bg-brand text-white text-sm font-bold hover:bg-green-600 transition shadow-sm flex items-center gap-2">
+              <i className={squad.workspaceUrl ? 'fas fa-arrow-right' : 'fas fa-rotate-right'}></i>
+              {squad.workspaceUrl ? '워크스페이스로 이동' : '워크스페이스 생성 재개'}
+            </button>
           ) : !squad.isClosed ? (
             <button type="button" onClick={onApply} className="px-8 py-3 rounded-xl bg-brand text-white text-sm font-bold hover:bg-green-600 transition flex items-center gap-2">
               <i className="fas fa-hand-sparkles"></i>
@@ -1355,10 +1427,10 @@ function CreateSquadModal({
                 onChange={(event) => onTypeChange(event.target.value as LoungeType)}
                 className="community-lounge-create-type-select w-full border border-gray-300 rounded-xl px-3 py-3 text-sm outline-none bg-white font-medium"
               >
-                <option value="project">팀 프로젝트 모집</option>
-                <option value="join_wish">참여 희망 (Hire Me)</option>
-                <option value="study">스터디 모집</option>
-                <option value="networking">모각코</option>
+                <option value="project">🚀 팀 프로젝트 모집</option>
+                <option value="join_wish">🙋 참여 희망 (Hire Me)</option>
+                <option value="study">📚 스터디 모집</option>
+                <option value="networking">☕ 모각코</option>
               </select>
             </div>
             <div>
@@ -1522,7 +1594,12 @@ function ReceivedApplicationModal({
         </div>
         <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
           <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
-            <img src={diceAvatar(application.senderImg)} className="w-12 h-12 rounded-full border" />
+            <UserAvatar
+              name={application.sender}
+              imageUrl={application.senderImageUrl}
+              className="w-12 h-12"
+              iconClassName="text-base"
+            />
             <div>
               <p className="font-bold text-gray-900">{application.sender}</p>
               <p className="text-xs text-gray-400">{application.date}</p>
@@ -1578,7 +1655,12 @@ function MemberProfileModal({
           </button>
         </div>
         <div className="px-6 pb-6 -mt-10 text-center">
-          <img src={diceAvatar(member.img)} className="w-20 h-20 rounded-full border-4 border-white shadow-md mx-auto mb-3" />
+          <UserAvatar
+            name={member.name}
+            imageUrl={member.imageUrl}
+            className="mx-auto mb-3 h-20 w-20 border-4 border-white shadow-md"
+            iconClassName="text-2xl"
+          />
           <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
           <p className="text-sm text-gray-500 mb-6">{member.role || 'Member'}</p>
           <div className="space-y-3">

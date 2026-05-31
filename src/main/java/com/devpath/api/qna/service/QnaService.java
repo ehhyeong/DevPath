@@ -1,5 +1,6 @@
 package com.devpath.api.qna.service;
 
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.qna.dto.AnswerCreateRequest;
 import com.devpath.api.qna.dto.AnswerResponse;
 import com.devpath.api.qna.dto.DuplicateQuestionSuggestionResponse;
@@ -11,6 +12,7 @@ import com.devpath.api.qna.realtime.QnaRealtimePublisher;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Lesson;
+import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.qna.entity.Answer;
 import com.devpath.domain.qna.entity.Question;
@@ -54,6 +56,8 @@ public class QnaService {
   private final UserRepository userRepository;
   private final LessonRepository lessonRepository;
   private final QnaRealtimePublisher qnaRealtimePublisher;
+  private final CourseRepository courseRepository;
+  private final InstructorNotificationService instructorNotificationService;
 
   @Transactional
   public QuestionDetailResponse createQuestion(Long userId, QuestionCreateRequest request) {
@@ -76,7 +80,22 @@ public class QnaService {
             .build();
 
     Question savedQuestion = questionRepository.save(question);
+    notifyInstructorAboutQuestion(savedQuestion);
     return QuestionDetailResponse.from(savedQuestion, List.of());
+  }
+
+  private void notifyInstructorAboutQuestion(Question question) {
+    Long courseId = question.getCourseId();
+    if (courseId == null) {
+      return;
+    }
+
+    courseRepository
+        .findById(courseId)
+        .ifPresent(
+            course ->
+                instructorNotificationService.notifyQna(
+                    course.getInstructorId(), question.getTitle()));
   }
 
   public List<QuestionSummaryResponse> getQuestions(Long userId, Long courseId) {

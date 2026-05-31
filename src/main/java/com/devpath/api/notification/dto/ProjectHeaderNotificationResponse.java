@@ -1,5 +1,7 @@
 package com.devpath.api.notification.dto;
 
+import com.devpath.domain.notification.entity.InstructorNotification;
+import com.devpath.domain.notification.entity.InstructorNotificationType;
 import com.devpath.domain.notification.entity.LearnerNotification;
 import com.devpath.domain.notification.entity.LearnerNotificationType;
 import com.devpath.domain.workspace.entity.CalendarEvent;
@@ -27,6 +29,7 @@ public class ProjectHeaderNotificationResponse {
   private Boolean read;
   private String targetPath;
   private LocalDateTime createdAt;
+  private String source;
 
   public static ProjectHeaderNotificationResponse from(LearnerNotification notification) {
     LearnerNotificationType type = notification.getType();
@@ -38,6 +41,21 @@ public class ProjectHeaderNotificationResponse {
         .read(Boolean.TRUE.equals(notification.getIsRead()))
         .targetPath(targetPathFor(type))
         .createdAt(notification.getCreatedAt())
+        .source("learner")
+        .build();
+  }
+
+  public static ProjectHeaderNotificationResponse from(InstructorNotification notification) {
+    InstructorNotificationType type = notification.getType();
+    return ProjectHeaderNotificationResponse.builder()
+        .id(notification.getId())
+        .type(type == null ? "SYSTEM" : type.name())
+        .text(notification.getMessage())
+        .dateText(timeText(notification.getCreatedAt()))
+        .read(Boolean.TRUE.equals(notification.getIsRead()))
+        .targetPath(targetPathFor(type))
+        .createdAt(notification.getCreatedAt())
+        .source("instructor")
         .build();
   }
 
@@ -52,6 +70,7 @@ public class ProjectHeaderNotificationResponse {
         .read(true)
         .targetPath(withWorkspaceId(notification.getTargetPath(), notification.getWorkspaceId()))
         .createdAt(notification.getCreatedAt())
+        .source("workspace")
         .build();
   }
 
@@ -65,6 +84,7 @@ public class ProjectHeaderNotificationResponse {
         .read(true)
         .targetPath(scheduleTargetPath(workspace))
         .createdAt(event.getStartAt())
+        .source("schedule")
         .build();
   }
 
@@ -153,6 +173,20 @@ public class ProjectHeaderNotificationResponse {
       case PR_REVIEW_CREATED -> "/team-ws-review";
       case PROJECT -> "/workspace-hub";
       default -> "/home";
+    };
+  }
+
+  private static String targetPathFor(InstructorNotificationType type) {
+    if (type == null) {
+      return "/instructor-dashboard";
+    }
+
+    return switch (type) {
+      case REVIEW -> "/instructor-reviews";
+      case QNA -> "/instructor-qna";
+      case SUBSCRIBE -> "/instructor-channel";
+      case MENTORING_APPLICATION -> "/instructor-mentoring";
+      case SYSTEM -> "/instructor-dashboard";
     };
   }
 

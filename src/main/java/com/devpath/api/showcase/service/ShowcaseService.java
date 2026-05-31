@@ -16,7 +16,11 @@ import com.devpath.domain.showcase.entity.ShowcaseSort;
 import com.devpath.domain.showcase.repository.ShowcaseLikeRepository;
 import com.devpath.domain.showcase.repository.ShowcaseLinkRepository;
 import com.devpath.domain.showcase.repository.ShowcaseRepository;
+import com.devpath.domain.user.entity.UserProfile;
+import com.devpath.domain.user.repository.UserProfileRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +33,7 @@ public class ShowcaseService {
   private final ShowcaseRepository showcaseRepository;
   private final ShowcaseLikeRepository showcaseLikeRepository;
   private final ShowcaseLinkRepository showcaseLinkRepository;
+  private final UserProfileRepository userProfileRepository;
 
   @Transactional
   public ShowcaseResponse createShowcase(Long userId, CreateShowcaseRequest request) {
@@ -58,9 +63,12 @@ public class ShowcaseService {
               ? showcaseRepository.findAllByCategoryAndIsDeletedFalseOrderByCreatedAtDesc(category)
               : showcaseRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc();
     }
+    Map<Long, String> profileImages = profileImages(showcases);
     return showcases.stream()
         .map(
-            s -> ShowcaseSummaryResponse.of(s, showcaseLikeRepository.countByShowcaseId(s.getId())))
+            s ->
+                ShowcaseSummaryResponse.of(
+                    s, showcaseLikeRepository.countByShowcaseId(s.getId()), profileImages.get(s.getUserId())))
         .toList();
   }
 
@@ -148,6 +156,26 @@ public class ShowcaseService {
         showcaseLinkRepository.findAllByShowcaseId(showcase.getId()).stream()
             .map(ShowcaseLinkResponse::from)
             .toList();
-    return ShowcaseResponse.of(showcase, likeCount, links);
+    return ShowcaseResponse.of(showcase, likeCount, links, profileImage(showcase.getUserId()));
+  }
+
+  private String profileImage(Long userId) {
+    return userProfileRepository
+        .findByUserId(userId)
+        .map(UserProfile::getDisplayProfileImage)
+        .orElse(null);
+  }
+
+  private Map<Long, String> profileImages(List<Showcase> showcases) {
+    List<Long> userIds = showcases.stream().map(Showcase::getUserId).distinct().toList();
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+    return userProfileRepository.findAllByUserIdIn(userIds).stream()
+        .collect(
+            Collectors.toMap(
+                profile -> profile.getUser().getId(),
+                UserProfile::getDisplayProfileImage,
+                (left, right) -> left));
   }
 }

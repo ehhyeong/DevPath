@@ -22,7 +22,7 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
   public void run(String... args) {
     ensureAllowedWorkspaces();
     ensureMentoringWorkspaceOwners();
-    pruneLearnerWorkspaceMemberships();
+    ensureMentoringPositionSchema();
     ensureAllowedWorkspaceMemberships();
     ensureWorkspaceTaskStatusConstraint();
     ensureSquadWorkspaceTasks();
@@ -106,22 +106,6 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
         """);
   }
 
-  private void pruneLearnerWorkspaceMemberships() {
-    jdbcTemplate.execute(
-        """
-        DELETE FROM workspace_member member
-        USING workspace workspace, users learner
-        WHERE member.workspace_id = workspace.id
-          AND member.learner_id = learner.user_id
-          AND learner.email = 'learner@devpath.com'
-          AND workspace.name NOT IN (
-              '배달비 절약 플랫폼',
-              '대용량 트래픽 커머스 서버',
-              'Next.js 블로그 플랫폼 구축'
-          );
-        """);
-  }
-
   private void ensureAllowedWorkspaceMemberships() {
     jdbcTemplate.execute(
         """
@@ -195,6 +179,27 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
               WHERE member.workspace_id = workspace.id
                 AND member.learner_id = mentor.user_id
           );
+
+        UPDATE workspace_member member
+           SET position_label = 'Frontend 개발자'
+          FROM workspace workspace, users learner
+         WHERE member.workspace_id = workspace.id
+           AND member.learner_id = learner.user_id
+           AND workspace.name = 'Next.js 블로그 플랫폼 구축'
+           AND workspace.type = 'MENTORING'
+           AND learner.email = 'learner@devpath.com'
+           AND member.position_label IS DISTINCT FROM 'Frontend 개발자';
+        """);
+  }
+
+  private void ensureMentoringPositionSchema() {
+    jdbcTemplate.execute(
+        """
+        ALTER TABLE workspace_member
+            ADD COLUMN IF NOT EXISTS position_label VARCHAR(80);
+
+        ALTER TABLE mentoring_applications
+            ADD COLUMN IF NOT EXISTS desired_position VARCHAR(80);
         """);
   }
 
@@ -729,12 +734,13 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
            AND post.mentor_id IS DISTINCT FROM mentor.user_id;
 
         INSERT INTO mentoring_applications (
-            mentoring_post_id, applicant_id, message, status, reject_reason,
+            mentoring_post_id, applicant_id, message, desired_position, status, reject_reason,
             processed_at, is_deleted, created_at, updated_at
         )
         SELECT post.mentoring_post_id,
                learner.user_id,
                '공통 과제형 멘토링으로 대용량 트래픽 과제를 수행하며 피드백을 받고 싶습니다.',
+               NULL,
                'APPROVED',
                NULL,
                CURRENT_DATE - 2 + TIME '10:20',
@@ -751,12 +757,13 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
           );
 
         INSERT INTO mentoring_applications (
-            mentoring_post_id, applicant_id, message, status, reject_reason,
+            mentoring_post_id, applicant_id, message, desired_position, status, reject_reason,
             processed_at, is_deleted, created_at, updated_at
         )
         SELECT post.mentoring_post_id,
                learner.user_id,
                '팀 프로젝트형 멘토링으로 Next.js 블로그 플랫폼을 역할 분담해서 완성하고 싶습니다.',
+               'Frontend 개발자',
                'APPROVED',
                NULL,
                CURRENT_DATE - 1 + TIME '10:20',
@@ -771,6 +778,16 @@ public class LocalLearnerWorkspaceNormalizer implements CommandLineRunner {
               WHERE application.mentoring_post_id = post.mentoring_post_id
                 AND application.applicant_id = learner.user_id
           );
+
+        UPDATE mentoring_applications application
+           SET desired_position = 'Frontend 개발자',
+               updated_at = now()
+          FROM mentoring_posts post, users learner
+         WHERE application.mentoring_post_id = post.mentoring_post_id
+           AND application.applicant_id = learner.user_id
+           AND post.title = 'Next.js 블로그 플랫폼 구축'
+           AND learner.email = 'learner@devpath.com'
+           AND application.desired_position IS DISTINCT FROM 'Frontend 개발자';
 
         INSERT INTO mentorings (
             mentoring_post_id, mentor_id, mentee_id, status, started_at,

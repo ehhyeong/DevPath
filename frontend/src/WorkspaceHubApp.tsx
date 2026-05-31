@@ -15,6 +15,8 @@ type ProjectStatus = 'all' | 'progress' | 'completed'
 
 type WorkspaceHubProject = {
   projectId: number
+  owner?: boolean
+  canDelete?: boolean
   domId: string
   menuId: string
   type: Exclude<ProjectType, 'all'>
@@ -30,12 +32,36 @@ type WorkspaceHubProject = {
   footerKind: 'avatars' | 'mentor' | 'text'
   footerDateLabel?: string | null
   memberAvatarSeeds: string[]
+  memberAvatarUrls?: (string | null)[]
   extraMemberCount?: number | null
   footerAvatarSeed?: string | null
   footerAvatarUrl?: string | null
   footerText?: string | null
   footerMetaText?: string | null
   footerMetaIcon?: string | null
+}
+
+type WorkspaceHubMember = {
+  memberId: number
+  learnerId: number
+  learnerName?: string | null
+  profileImage?: string | null
+  position?: string | null
+  roleLabel?: string | null
+  joinedAt?: string | null
+  online?: boolean | null
+}
+
+type WorkspaceSettingsResponse = {
+  workspaceId: number
+  canManage: boolean
+  members: WorkspaceHubMember[]
+}
+
+type WorkspaceInviteAcceptResponse = {
+  workspaceId: number
+  dashboardUrl: string
+  alreadyMember: boolean
 }
 
 type ApiEnvelope<T> = {
@@ -53,6 +79,22 @@ type LoungeShellResponse = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 
+function asideSquadMatchesProject(squad: ProjectAsideSquad, projectId: number) {
+  const normalizedProjectId = String(projectId)
+  if (String(squad.id) === normalizedProjectId) {
+    return true
+  }
+  if (!squad.href) {
+    return false
+  }
+
+  try {
+    return new URL(squad.href, window.location.origin).searchParams.get('workspaceId') === normalizedProjectId
+  } catch {
+    return squad.href.includes(`workspaceId=${normalizedProjectId}`)
+  }
+}
+
 export default function WorkspaceHubApp() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
@@ -64,9 +106,11 @@ export default function WorkspaceHubApp() {
   const [statusFilter, setStatusFilter] = useState<ProjectStatus>('all')
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const [settingsProject, setSettingsProject] = useState<WorkspaceHubProject | null>(null)
-  const [membersModalOpen, setMembersModalOpen] = useState(false)
+  const [membersProject, setMembersProject] = useState<WorkspaceHubProject | null>(null)
   const [projectCreateModalOpen, setProjectCreateModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [acceptedInviteToken, setAcceptedInviteToken] = useState<string | null>(null)
+  const [leavingProjectId, setLeavingProjectId] = useState<number | null>(null)
 
   useEffect(() => {
     document.title = 'DevPath - 워크스페이스 허브'
@@ -148,6 +192,43 @@ export default function WorkspaceHubApp() {
     }
   }, [])
 
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('inviteToken')
+    if (!token || !session?.accessToken || acceptedInviteToken === token) {
+      return
+    }
+
+    const headers = { Authorization: `${session.tokenType} ${session.accessToken}` }
+    setAcceptedInviteToken(token)
+    axios
+      .post<ApiEnvelope<WorkspaceInviteAcceptResponse>>(
+        `${API_BASE_URL}/api/workspaces/hub/invites/${encodeURIComponent(token)}/accept`,
+        {},
+        { headers },
+      )
+      .then((response) => {
+        const result = response.data.data
+        showAuthToast({
+          message: result.alreadyMember
+            ? '이미 참여 중인 프로젝트입니다.'
+            : '초대 링크로 프로젝트에 참여했습니다.',
+          durationMs: 2600,
+        })
+        setDataReloadKey((current) => current + 1)
+        const nextUrl = new URL(window.location.href)
+        nextUrl.searchParams.delete('inviteToken')
+        window.history.replaceState(null, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
+      })
+      .catch((error) => {
+        setAcceptedInviteToken(null)
+        showAuthToast({
+          message: axios.isAxiosError(error) ? error.response?.data?.message ?? '초대 링크를 처리하지 못했습니다.' : '초대 링크를 처리하지 못했습니다.',
+          variant: 'error',
+          durationMs: 3200,
+        })
+      })
+  }, [acceptedInviteToken, session])
+
   const visibleProjects = useMemo(
     () =>
       projects.filter((project) => {
@@ -211,11 +292,11 @@ export default function WorkspaceHubApp() {
     setSettingsProject(project)
   }
 
-  function openMembersModal(event: MouseEvent<HTMLElement>) {
+  function openMembersModal(event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) {
     event.preventDefault()
     event.stopPropagation()
     setActiveMenuId(null)
-    setMembersModalOpen(true)
+    setMembersProject(project)
   }
 
   function openProjectCreateModal(event: MouseEvent<HTMLButtonElement>) {
@@ -235,6 +316,62 @@ export default function WorkspaceHubApp() {
       return
     }
     setProjectCreateModalOpen(true)
+  }
+
+  async function leaveProject(event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) {
+    event.preventDefault()
+    event.stopPropagation()
+    setActiveMenuId(null)
+
+    const currentSession = readStoredAuthSession()
+    if (!currentSession?.accessToken) {
+      openAuthModal('워크스페이스 나가기는 로그인 후 이용할 수 있습니다.')
+      return
+    }
+
+    const deleting = project.canDelete === true
+    const confirmMessage = deleting
+      ? `${project.title} 워크스페이스를 삭제할까요? 모든 멤버의 접근이 종료됩니다.`
+      : `${project.title} 워크스페이스에서 나갈까요?`
+
+    if (!window.confirm(confirmMessage)) {
+      return
+    }
+
+    setLeavingProjectId(project.projectId)
+    try {
+      const headers = { Authorization: `${currentSession.tokenType} ${currentSession.accessToken}` }
+      if (deleting) {
+        await axios.delete<ApiEnvelope<null>>(`${API_BASE_URL}/api/workspaces/${project.projectId}/settings`, { headers })
+      } else {
+        await axios.delete<ApiEnvelope<null>>(
+          `${API_BASE_URL}/api/workspaces/hub/projects/${project.projectId}/membership`,
+          { headers },
+        )
+      }
+      setProjects((current) => current.filter((item) => item.projectId !== project.projectId))
+      setAsideSquads((current) => current.filter((squad) => !asideSquadMatchesProject(squad, project.projectId)))
+      if (settingsProject?.projectId === project.projectId) {
+        setSettingsProject(null)
+      }
+      if (membersProject?.projectId === project.projectId) {
+        setMembersProject(null)
+      }
+      showAuthToast({
+        message: deleting ? '워크스페이스를 삭제했습니다.' : '워크스페이스에서 나갔습니다.',
+        durationMs: 2200,
+      })
+    } catch (error) {
+      showAuthToast({
+        message: axios.isAxiosError(error)
+          ? error.response?.data?.message ?? '워크스페이스에서 나가지 못했습니다.'
+          : '워크스페이스에서 나가지 못했습니다.',
+        variant: 'error',
+        durationMs: 3000,
+      })
+    } finally {
+      setLeavingProjectId(null)
+    }
   }
 
   function handleProjectCreated() {
@@ -278,7 +415,6 @@ export default function WorkspaceHubApp() {
             <div className="workspace-hub-filter-row flex flex-wrap items-center gap-3 mb-6">
               <div className="workspace-hub-filter-group flex gap-1.5 bg-gray-100/80 p-0.5 rounded-full">
                 <button onClick={() => setTypeFilter('all')} className={typeFilter === 'all' ? 'workspace-hub-filter-btn type-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn type-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>전체 보기</button>
-                <button onClick={() => setTypeFilter('solo')} className={typeFilter === 'solo' ? 'workspace-hub-filter-btn type-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn type-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>개인 (Solo)</button>
                 <button onClick={() => setTypeFilter('squad')} className={typeFilter === 'squad' ? 'workspace-hub-filter-btn type-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn type-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>팀 (Squad)</button>
                 <button onClick={() => setTypeFilter('mentoring')} className={typeFilter === 'mentoring' ? 'workspace-hub-filter-btn type-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn type-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>멘토링</button>
               </div>
@@ -302,6 +438,8 @@ export default function WorkspaceHubApp() {
                     setActiveMenuId={setActiveMenuId}
                     openSettingsModal={openSettingsModal}
                     openMembersModal={openMembersModal}
+                    onLeaveProject={leaveProject}
+                    leavingProjectId={leavingProjectId}
                   />
                 ))}
 
@@ -319,9 +457,9 @@ export default function WorkspaceHubApp() {
 
       <SettingsModal project={settingsProject} onClose={() => setSettingsProject(null)} />
       <MembersModal
-        open={membersModalOpen}
+        project={membersProject}
         currentUserProfileImage={profileImage}
-        onClose={() => setMembersModalOpen(false)}
+        onClose={() => setMembersProject(null)}
       />
       <ProjectCreateModal
         open={projectCreateModalOpen}
@@ -349,6 +487,8 @@ function WorkspaceProjectCard({
   setActiveMenuId,
   openSettingsModal,
   openMembersModal,
+  onLeaveProject,
+  leavingProjectId,
 }: {
   project: WorkspaceHubProject
   activeMenuId: string | null
@@ -356,7 +496,9 @@ function WorkspaceProjectCard({
   currentUserProfileImage: string | null
   setActiveMenuId: (menuId: string | null) => void
   openSettingsModal: (event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) => void
-  openMembersModal: (event: MouseEvent<HTMLElement>) => void
+  openMembersModal: (event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) => void
+  onLeaveProject: (event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) => void
+  leavingProjectId: number | null
 }) {
   const currentUserMemberSeed = currentUserId == null ? null : `workspace-member-${currentUserId}`
   const progressPercent = clampProgressPercent(project.progressPercent)
@@ -400,6 +542,8 @@ function WorkspaceProjectCard({
               visible={activeMenuId === project.menuId}
               openSettingsModal={openSettingsModal}
               openMembersModal={openMembersModal}
+              onLeaveProject={onLeaveProject}
+              leaving={leavingProjectId === project.projectId}
             />
           </div>
           <h3 className="font-bold text-gray-900 text-lg mb-1 group-hover:text-mentor transition" id={`title-${project.domId}`}>
@@ -423,11 +567,12 @@ function WorkspaceProjectCard({
           </div>
           <div className="flex items-center justify-between text-xs text-gray-400 border-t border-gray-100 pt-3">
             <div className="flex items-center gap-2">
-              {project.footerAvatarUrl || project.footerAvatarSeed ? (
-                <img
-                  src={project.footerAvatarUrl ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${project.footerAvatarSeed}`}
-                  className="w-5 h-5 rounded-full border border-gray-200 object-cover"
-                  alt=""
+              {project.footerText ? (
+                <UserAvatar
+                  name={project.footerText}
+                  imageUrl={project.footerAvatarUrl ?? null}
+                  className="w-5 h-5"
+                  iconClassName="text-[9px]"
                 />
               ) : null}
               <span className="font-bold text-gray-600">{project.footerText}</span>
@@ -460,6 +605,8 @@ function WorkspaceProjectCard({
             visible={activeMenuId === project.menuId}
             openSettingsModal={openSettingsModal}
             openMembersModal={openMembersModal}
+            onLeaveProject={onLeaveProject}
+            leaving={leavingProjectId === project.projectId}
           />
         </div>
         <h3 className={project.type === 'squad' ? 'font-bold text-gray-900 text-lg mb-1 group-hover:text-blue-600 transition' : 'font-bold text-gray-900 text-lg mb-1 group-hover:text-brand transition'} id={`title-${project.domId}`}>
@@ -486,17 +633,23 @@ function WorkspaceProjectCard({
             <i className="far fa-clock mr-1"></i> {project.footerDateLabel}
           </span>
           <div className="flex -space-x-2">
-            {project.memberAvatarSeeds.map((seed) => (
+            {project.memberAvatarSeeds.map((seed, index) => (
               seed === currentUserMemberSeed ? (
                 <UserAvatar
                   key={seed}
                   name="나"
-                  imageUrl={currentUserProfileImage}
+                  imageUrl={project.memberAvatarUrls?.[index] ?? currentUserProfileImage}
                   className="w-6 h-6 border-white"
                   iconClassName="text-[10px]"
                 />
               ) : (
-                <img key={seed} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} className="w-6 h-6 rounded-full border border-white" />
+                <UserAvatar
+                  key={seed}
+                  name={seed}
+                  imageUrl={project.memberAvatarUrls?.[index] ?? null}
+                  className="w-6 h-6 border-white"
+                  iconClassName="text-[10px]"
+                />
               )
             ))}
             {project.extraMemberCount ? <div className="w-6 h-6 rounded-full bg-gray-100 border border-white flex items-center justify-center text-[9px] font-bold">+{project.extraMemberCount}</div> : null}
@@ -512,11 +665,15 @@ function ProjectMenu({
   visible,
   openSettingsModal,
   openMembersModal,
+  onLeaveProject,
+  leaving,
 }: {
   project: WorkspaceHubProject
   visible: boolean
   openSettingsModal: (event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) => void
-  openMembersModal: (event: MouseEvent<HTMLElement>) => void
+  openMembersModal: (event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) => void
+  onLeaveProject: (event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) => void
+  leaving: boolean
 }) {
   function closeOnly(event: MouseEvent<HTMLElement>) {
     event.preventDefault()
@@ -533,7 +690,7 @@ function ProjectMenu({
             </a>
           </li>
           <li>
-            <a href="#" onClick={openMembersModal} className="block px-4 py-2 hover:bg-gray-50 hover:text-brand">
+            <a href="#" onClick={(event) => openMembersModal(event, project)} className="block px-4 py-2 hover:bg-gray-50 hover:text-brand">
               <i className="fas fa-users mr-2"></i>멤버 관리
             </a>
           </li>
@@ -543,8 +700,8 @@ function ProjectMenu({
             </a>
           </li>
           <li className="border-t border-gray-100">
-            <a href="#" onClick={closeOnly} className="block px-4 py-2 text-red-500 hover:bg-red-50">
-              <i className="fas fa-sign-out-alt mr-2"></i>나가기
+            <a href="#" onClick={(event) => onLeaveProject(event, project)} className="block px-4 py-2 text-red-500 hover:bg-red-50">
+              <i className={`${leaving ? 'fas fa-spinner fa-spin' : project.canDelete ? 'fas fa-trash-alt' : 'fas fa-sign-out-alt'} mr-2`}></i>{leaving ? '처리 중' : project.canDelete ? '삭제하기' : '나가기'}
             </a>
           </li>
         </ul>
@@ -552,14 +709,14 @@ function ProjectMenu({
         <ul className="py-1 text-sm text-gray-700">
           {project.roleLabel ? (
             <li>
-              <a href="#" onClick={openMembersModal} className="block px-4 py-2 hover:bg-gray-50 hover:text-brand">
+              <a href="#" onClick={(event) => openMembersModal(event, project)} className="block px-4 py-2 hover:bg-gray-50 hover:text-brand">
                 <i className="fas fa-users mr-2"></i>팀 멤버
               </a>
             </li>
           ) : null}
           <li className="border-t border-gray-100">
-            <a href="#" onClick={closeOnly} className="block px-4 py-2 text-red-500 hover:bg-red-50">
-              <i className="fas fa-sign-out-alt mr-2"></i>포기하기
+            <a href="#" onClick={(event) => onLeaveProject(event, project)} className="block px-4 py-2 text-red-500 hover:bg-red-50">
+              <i className={`${leaving ? 'fas fa-spinner fa-spin' : project.canDelete ? 'fas fa-trash-alt' : 'fas fa-sign-out-alt'} mr-2`}></i>{leaving ? '처리 중' : project.canDelete ? '삭제하기' : '포기하기'}
             </a>
           </li>
         </ul>
@@ -627,16 +784,67 @@ function SettingsModal({ project, onClose }: { project: WorkspaceHubProject | nu
 }
 
 function MembersModal({
-  open,
+  project,
   currentUserProfileImage,
   onClose,
 }: {
-  open: boolean
+  project: WorkspaceHubProject | null
   currentUserProfileImage: string | null
   onClose: () => void
 }) {
+  const [settings, setSettings] = useState<WorkspaceSettingsResponse | null>(null)
+  const [loadingMembers, setLoadingMembers] = useState(false)
+
+  useEffect(() => {
+    if (!project) {
+      setSettings(null)
+      return
+    }
+
+    const currentSession = readStoredAuthSession()
+    if (!currentSession?.accessToken) {
+      return
+    }
+
+    const controller = new AbortController()
+    const headers = { Authorization: `${currentSession.tokenType} ${currentSession.accessToken}` }
+    setLoadingMembers(true)
+
+    axios
+      .get<ApiEnvelope<WorkspaceSettingsResponse>>(
+        `${API_BASE_URL}/api/workspaces/${project.projectId}/settings`,
+        { headers, signal: controller.signal },
+      )
+      .then((response) => setSettings(response.data.data))
+      .catch((error) => {
+        if ((error as Error).name !== 'CanceledError') {
+          showAuthToast({
+            message: axios.isAxiosError(error)
+              ? error.response?.data?.message ?? '멤버 목록을 불러오지 못했습니다.'
+              : '멤버 목록을 불러오지 못했습니다.',
+            variant: 'error',
+            durationMs: 2600,
+          })
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoadingMembers(false)
+        }
+      })
+
+    return () => controller.abort()
+  }, [project])
+
+  if (!project) {
+    return null
+  }
+
+  const currentUserId = readStoredAuthSession()?.userId ?? null
+  const members = settings?.members ?? []
+
   return (
-    <div id="membersModal" className={open ? 'workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active' : 'workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4'}>
+    <div id="membersModal" className="workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active">
       <div className="workspace-hub-modal-content workspace-hub-members-modal bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <h3 className="font-extrabold text-gray-900 text-lg">
@@ -646,39 +854,37 @@ function MembersModal({
             <i className="fas fa-times text-xl"></i>
           </button>
         </div>
-        <div className="workspace-hub-members-invite p-4 border-b border-gray-50 flex justify-between items-center bg-blue-50">
-          <span className="workspace-hub-members-invite-text text-sm font-bold text-blue-800">초대 링크 공유하기</span>
-          <button className="workspace-hub-members-copy bg-white border border-blue-200 text-blue-600 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-100 transition shadow-sm">
-            <i className="fas fa-copy mr-1"></i>복사
-          </button>
-        </div>
         <div className="workspace-hub-members-list p-2 max-h-60 overflow-y-auto">
-          <div className="workspace-hub-member-row flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition">
-            <div className="flex items-center gap-3">
-              <UserAvatar
-                name="나"
-                imageUrl={currentUserProfileImage}
-                className="workspace-hub-member-avatar w-10 h-10 shadow-sm"
-                iconClassName="text-sm"
-              />
-              <div>
-                <p className="workspace-hub-member-name text-sm font-bold text-gray-900 flex items-center gap-1">
-                  나 <span className="bg-brand text-white text-[9px] px-1.5 py-0.5 rounded">팀장</span>
-                </p>
-                <p className="workspace-hub-member-role text-[10px] text-gray-400">Backend</p>
+          {loadingMembers ? (
+            <div className="p-6 text-center text-xs font-bold text-gray-400">멤버 목록을 불러오는 중입니다.</div>
+          ) : null}
+          {!loadingMembers && members.length === 0 ? (
+            <div className="p-6 text-center text-xs font-bold text-gray-400">아직 참여한 멤버가 없습니다.</div>
+          ) : null}
+          {!loadingMembers &&
+            members.map((member) => (
+              <div key={member.memberId} className="workspace-hub-member-row flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition">
+                <div className="flex items-center gap-3 min-w-0">
+                  <UserAvatar
+                    name={member.learnerName ?? `member-${member.learnerId}`}
+                    imageUrl={member.learnerId === currentUserId ? currentUserProfileImage ?? member.profileImage ?? null : member.profileImage ?? null}
+                    className="workspace-hub-member-avatar w-10 h-10 shadow-sm shrink-0"
+                    iconClassName="text-sm"
+                  />
+                  <div className="min-w-0">
+                    <p className="workspace-hub-member-name text-sm font-bold text-gray-900 flex items-center gap-1 truncate">
+                      <span className="truncate">{member.learnerName ?? '이름 없는 멤버'}</span>
+                      {member.learnerId === currentUserId ? (
+                        <span className="bg-brand text-white text-[9px] px-1.5 py-0.5 rounded shrink-0">나</span>
+                      ) : null}
+                    </p>
+                    <p className="workspace-hub-member-role text-[10px] text-gray-400">
+                      {member.position ?? member.roleLabel ?? '역할 미정'}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="workspace-hub-member-row flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition">
-            <div className="flex items-center gap-3">
-              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=A" className="workspace-hub-member-avatar w-10 h-10 rounded-full border border-gray-200 shadow-sm" />
-              <div>
-                <p className="workspace-hub-member-name text-sm font-bold text-gray-900">김데브</p>
-                <p className="workspace-hub-member-role text-[10px] text-gray-400">Frontend</p>
-              </div>
-            </div>
-            <button className="workspace-hub-member-remove-btn text-xs font-bold text-red-400 bg-red-50 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition">내보내기</button>
-          </div>
+            ))}
         </div>
         <div className="workspace-hub-members-footer p-4 border-t border-gray-100 bg-gray-50 text-center">
           <button onClick={onClose} className="workspace-hub-members-footer-button w-full py-2.5 rounded-xl text-sm font-bold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition shadow-sm">
@@ -705,7 +911,7 @@ function ProjectCreateModal({
 
   return (
     <div className="workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active" onClick={onClose}>
-      <div className="workspace-hub-modal-content workspace-hub-project-create-modal w-full max-w-4xl" onClick={(event) => event.stopPropagation()}>
+      <div className="workspace-hub-modal-content workspace-hub-project-create-modal w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
         <ProjectCreatePanel onClose={onClose} onCreated={onCreated} />
       </div>
     </div>

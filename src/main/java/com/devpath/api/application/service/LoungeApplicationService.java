@@ -8,8 +8,13 @@ import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.application.entity.LoungeApplication;
 import com.devpath.domain.application.repository.LoungeApplicationRepository;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.entity.UserProfile;
+import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +26,7 @@ public class LoungeApplicationService {
 
   private final LoungeApplicationRepository loungeApplicationRepository;
   private final UserRepository userRepository;
+  private final UserProfileRepository userProfileRepository;
   private final NotificationEventService notificationEventService;
 
   @Transactional
@@ -51,7 +57,7 @@ public class LoungeApplicationService {
     notificationEventService.notifyLoungeApplicationReceived(
         receiver.getId(), sender.getName(), request.title());
 
-    return LoungeApplicationResponse.Detail.from(saved);
+    return toDetail(saved);
   }
 
   public List<LoungeApplicationResponse.Summary> getSentApplications(Long senderId) {
@@ -61,8 +67,7 @@ public class LoungeApplicationService {
     return loungeApplicationRepository
         .findAllBySender_IdAndIsDeletedFalseOrderByCreatedAtDesc(senderId)
         .stream()
-        .map(LoungeApplicationResponse.Summary::from)
-        .toList();
+        .collect(Collectors.collectingAndThen(Collectors.toList(), this::toSummaries));
   }
 
   public List<LoungeApplicationResponse.Summary> getReceivedApplications(Long receiverId) {
@@ -72,12 +77,11 @@ public class LoungeApplicationService {
     return loungeApplicationRepository
         .findAllByReceiver_IdAndIsDeletedFalseOrderByCreatedAtDesc(receiverId)
         .stream()
-        .map(LoungeApplicationResponse.Summary::from)
-        .toList();
+        .collect(Collectors.collectingAndThen(Collectors.toList(), this::toSummaries));
   }
 
   public LoungeApplicationResponse.Detail getApplication(Long applicationId) {
-    return LoungeApplicationResponse.Detail.from(getActiveApplication(applicationId));
+    return toDetail(getActiveApplication(applicationId));
   }
 
   public LoungeApplicationResponse.Status getStatus(Long applicationId) {
@@ -99,7 +103,7 @@ public class LoungeApplicationService {
     notificationEventService.notifyApplicationApproved(
         application.getSender().getId(), application.getTitle());
 
-    return LoungeApplicationResponse.Detail.from(application);
+    return toDetail(application);
   }
 
   @Transactional
@@ -117,7 +121,51 @@ public class LoungeApplicationService {
     notificationEventService.notifyApplicationRejected(
         application.getSender().getId(), application.getTitle());
 
-    return LoungeApplicationResponse.Detail.from(application);
+    return toDetail(application);
+  }
+
+  private List<LoungeApplicationResponse.Summary> toSummaries(
+      List<LoungeApplication> applications) {
+    Map<Long, String> profileImages = profileImages(applications);
+    return applications.stream()
+        .map(
+            application ->
+                LoungeApplicationResponse.Summary.from(
+                    application,
+                    profileImages.get(application.getSender().getId()),
+                    profileImages.get(application.getReceiver().getId())))
+        .toList();
+  }
+
+  private LoungeApplicationResponse.Detail toDetail(LoungeApplication application) {
+    Map<Long, String> profileImages = profileImages(List.of(application));
+    return LoungeApplicationResponse.Detail.from(
+        application,
+        profileImages.get(application.getSender().getId()),
+        profileImages.get(application.getReceiver().getId()));
+  }
+
+  private Map<Long, String> profileImages(List<LoungeApplication> applications) {
+    Set<Long> userIds =
+        applications.stream()
+            .flatMap(
+                application ->
+                    List.of(
+                            application.getSender().getId(),
+                            application.getReceiver().getId())
+                        .stream())
+            .collect(Collectors.toSet());
+
+    if (userIds.isEmpty()) {
+      return Map.of();
+    }
+
+    return userProfileRepository.findAllByUserIdIn(userIds).stream()
+        .collect(
+            Collectors.toMap(
+                profile -> profile.getUser().getId(),
+                UserProfile::getDisplayProfileImage,
+                (left, right) -> left));
   }
 
   private LoungeApplication getActiveApplication(Long applicationId) {

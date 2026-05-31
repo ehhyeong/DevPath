@@ -783,10 +783,12 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(buildLearnerAvatarSeed(question))}`}
+                      <UserAvatar
+                        name={question.learnerName ?? buildLearnerAvatarSeed(question)}
+                        imageUrl={question.learnerProfileImage}
                         alt={question.learnerName ?? '수강생'}
-                        className="h-7 w-7 rounded-full border border-gray-200 bg-white"
+                        className="h-7 w-7 bg-white"
+                        iconClassName="text-[10px]"
                       />
                       <span className="text-xs font-bold text-gray-900">{question.learnerName ?? '수강생'}</span>
                     </div>
@@ -863,10 +865,12 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                   <div className="instructor-qna-question-card rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm lg:p-8">
                     <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-5">
                       <div className="flex items-center gap-4">
-                        <img
-                          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(buildLearnerAvatarSeed(current))}`}
+                        <UserAvatar
+                          name={current.learnerName ?? buildLearnerAvatarSeed(current)}
+                          imageUrl={current.learnerProfileImage}
                           alt={current.learnerName ?? '수강생'}
-                          className="h-11 w-11 rounded-full border border-gray-200 bg-gray-50 shadow-sm"
+                          className="h-11 w-11 bg-gray-50 shadow-sm"
+                          iconClassName="text-base"
                         />
                         <div>
                           <p className="flex items-center gap-2 text-sm font-bold text-gray-900">
@@ -1169,8 +1173,8 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                   <i className="fas fa-inbox text-xl" />
                 </div>
                 <h3 className="text-lg font-black text-gray-900">표시할 질문이 없습니다.</h3>
-                <p className="mt-2 text-sm leading-6 text-gray-500">
-                  왼쪽 목록에서 다른 필터를 선택하거나, 새 질문이 들어오면 여기서 바로 확인할 수 있습니다.
+                <p className="mt-2 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-500">
+                  필터 변경이나 새 질문은 바로 표시됩니다.
                 </p>
               </div>
             </div>

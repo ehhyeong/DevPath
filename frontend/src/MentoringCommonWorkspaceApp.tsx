@@ -16,250 +16,48 @@ import {
 } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
-import { projectApiRequest } from './project-api'
+import {
+  createMentoringCalendarEvent,
+  createMentoringFileLink,
+  createMentoringMeetingNote,
+  createMentoringQuestion,
+  createMentoringTask,
+  createMentoringVoiceChannel,
+  fetchMentoringQuestionDetail,
+  joinMentoringVoiceChannel,
+  leaveMentoringVoiceChannel,
+  loadMentoringHeaderNotifications,
+  loadMentoringLiveChannelData,
+  loadMentoringWorkspaceData,
+  saveMentoringErd,
+  sendMentoringDirectMessage,
+  sendMentoringVoiceMessage,
+  updateMentoringTaskStatus,
+  uploadMentoringWorkspaceFile,
+} from './mentoring-common-workspace-api'
 
-export type MentoringCommonPage =
-  | 'dashboard'
-  | 'workspace'
-  | 'curriculum'
-  | 'qna'
-  | 'schedule'
-  | 'files'
-  | 'meeting'
-  | 'live-meeting'
-  | 'erd'
-
-type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE'
-type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-type QnaStatus = 'OPEN' | 'ANSWERED' | 'CLOSED'
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-  joinedAt?: string | null
-  lastActiveAt?: string | null
-  online?: boolean
-}
-
-type WorkspaceDashboard = {
-  workspaceId: number
-  name: string
-  description?: string | null
-  type: WorkspaceType
-  status: WorkspaceStatus
-  ownerId: number
-  ownerName?: string | null
-  ownerProfileImage?: string | null
-  ownerBio?: string | null
-  members: WorkspaceMember[]
-  unresolvedTaskCount: number
-  activeMilestoneCount: number
-  createdAt?: string | null
-}
-
-type WorkspaceTask = {
-  taskId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  status: TaskStatus
-  priority?: TaskPriority | null
-  assigneeId?: number | null
-  dueDate?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type CalendarEvent = {
-  eventId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  startAt: string
-  endAt?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type QuestionSummary = {
-  id: number
-  authorId: number
-  authorName?: string | null
-  title: string
-  qnaStatus?: QnaStatus | null
-  answerCount: number
-  viewCount: number
-  createdAt?: string | null
-  templateType?: string | null
-  difficulty?: string | null
-}
-
-type Answer = {
-  id: number
-  authorId: number
-  authorName?: string | null
-  content: string
-  createdAt?: string | null
-}
-
-type QuestionDetail = QuestionSummary & {
-  content: string
-  answers: Answer[]
-}
-
-type WorkspaceFile = {
-  fileId: number
-  workspaceId: number
-  parentId?: number | null
-  itemType: 'FILE' | 'FOLDER' | 'LINK'
-  originalFileName?: string | null
-  displayName?: string | null
-  fileSize: number
-  contentType?: string | null
-  objectKey?: string | null
-  uploadedById?: number | null
-  uploadedByName?: string | null
-  uploaderProfileImage?: string | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type WorkspaceErdDocument = {
-  workspaceId: number
-  projectName?: string | null
-  mermaidCode?: string | null
-  schemaJson?: string | null
-  version?: number | null
-  updatedById?: number | null
-  updatedByName?: string | null
-  updatedAt?: string | null
-  members?: WorkspaceMember[] | null
-}
-
-type WorkspaceErdVersion = {
-  versionId: number
-  workspaceId: number
-  version: number
-  mermaidCode?: string | null
-  schemaJson?: string | null
-  summary?: string | null
-  updatedById?: number | null
-  updatedByName?: string | null
-  createdAt?: string | null
-}
-
-type MeetingNote = {
-  noteId: number
-  workspaceId: number
-  title: string
-  content?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type VoiceChannel = {
-  channelId: number
-  workspaceId: number
-  creatorId?: number | null
-  creatorName?: string | null
-  name: string
-  description?: string | null
-  activeParticipantCount?: number | null
-  currentSessionStartedAt?: string | null
-  createdAt?: string | null
-}
-
-type VoiceParticipant = {
-  participantId: number
-  channelId: number
-  userId: number
-  userName?: string | null
-  active?: boolean | null
-  muted?: boolean | null
-  handRaised?: boolean | null
-  speaking?: boolean | null
-  joinedAt?: string | null
-}
-
-type VoiceChatMessage = {
-  messageId: number
-  channelId: number
-  senderId: number
-  senderName?: string | null
-  content: string
-  createdAt?: string | null
-}
-
-type DirectMessageResponse = {
-  messageId: number
-  senderId: number
-  senderName?: string | null
-  receiverId: number
-  receiverName?: string | null
-  isMine?: boolean | null
-  content: string
-  createdAt?: string | null
-}
-
-type MentoringHeaderNotification = {
-  id: number
-  workspaceId: number
-  pageKey: string
-  message: string
-  highlightText?: string | null
-  actionLabel?: string | null
-  timeLabel: string
-  targetPath?: string | null
-  modalTitle?: string | null
-  modalBody?: string | null
-  createdAt?: string | null
-}
-
-type VoiceMinutes = {
-  channelId: number
-  recording?: boolean | null
-  transcript?: string | null
-  summary?: string | null
-  updatedByUserId?: number | null
-  updatedByUserName?: string | null
-  updatedAt?: string | null
-}
-
-type WorkspaceNotice = {
-  id: number
-  workspaceId: number
-  title: string
-  content: string
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type MentoringWorkspaceData = {
-  dashboard: WorkspaceDashboard | null
-  tasks: WorkspaceTask[]
-  events: CalendarEvent[]
-  questions: QuestionSummary[]
-  files: WorkspaceFile[]
-  erd: WorkspaceErdDocument | null
-  erdVersions: WorkspaceErdVersion[]
-  meetingNotes: MeetingNote[]
-  voiceChannels: VoiceChannel[]
-  notices: WorkspaceNotice[]
-}
-
-type PageConfig = {
-  path: string
-  label: string
-  title: string
-  icon: string
-}
+import type {
+  CalendarEvent,
+  MeetingNote,
+  MentoringCommonPage,
+  MentoringHeaderNotification,
+  MentoringWorkspaceData,
+  PageConfig,
+  QuestionDetail,
+  QuestionSummary,
+  TaskPriority,
+  TaskStatus,
+  VoiceChannel,
+  VoiceChatMessage,
+  VoiceMinutes,
+  VoiceParticipant,
+  WorkspaceDashboard,
+  WorkspaceErdDocument,
+  WorkspaceErdVersion,
+  WorkspaceFile,
+  WorkspaceMember,
+  WorkspaceTask,
+} from './mentoring-common-workspace-types'
 
 const PAGE_CONFIG: Record<MentoringCommonPage, PageConfig> = {
   dashboard: {
@@ -421,22 +219,6 @@ function renderMentoringNotificationMessage(notification: MentoringHeaderNotific
       {after}
     </>
   )
-}
-
-function isAbortError(error: unknown) {
-  return error instanceof DOMException && error.name === 'AbortError'
-}
-
-async function optionalRequest<T>(request: Promise<T>, fallback: T) {
-  try {
-    return await request
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw error
-    }
-
-    return fallback
-  }
 }
 
 function parseDate(value?: string | null) {
@@ -1016,11 +798,7 @@ function MentoringShell({
 
     const controller = new AbortController()
 
-    projectApiRequest<MentoringHeaderNotification[]>(
-      `/api/workspaces/${workspaceId}/mentoring-header-notifications?page=${encodeURIComponent(page)}`,
-      { signal: controller.signal },
-      'required',
-    )
+    loadMentoringHeaderNotifications(workspaceId, page, controller.signal)
       .then((items) => {
         if (!controller.signal.aborted) {
           setNotifications(items ?? [])
@@ -4268,6 +4046,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
       return undefined
     }
 
+    const targetWorkspaceId = workspaceId
     const controller = new AbortController()
 
     async function loadData() {
@@ -4275,94 +4054,23 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
       setError(null)
 
       try {
-        const [
-          dashboard,
-          tasks,
-          events,
-          questions,
-          files,
-          erd,
-          erdVersions,
-          meetingNotes,
-          voiceChannels,
-          notices,
-        ] = await Promise.all([
-          projectApiRequest<WorkspaceDashboard>(
-            `/api/workspaces/${workspaceId}/dashboard`,
-            { signal: controller.signal },
-            'required',
-          ),
-          projectApiRequest<WorkspaceTask[]>(
-            `/api/workspaces/${workspaceId}/tasks`,
-            { signal: controller.signal },
-            'required',
-          ),
-          projectApiRequest<CalendarEvent[]>(
-            `/api/workspaces/${workspaceId}/calendar-events`,
-            { signal: controller.signal },
-            'required',
-          ),
-          projectApiRequest<QuestionSummary[]>(
-            `/api/workspaces/${workspaceId}/questions`,
-            { signal: controller.signal },
-            'required',
-          ),
-          projectApiRequest<WorkspaceFile[]>(
-            `/api/workspaces/${workspaceId}/files`,
-            { signal: controller.signal },
-            'required',
-          ),
-          optionalRequest(
-            projectApiRequest<WorkspaceErdDocument>(
-              `/api/workspaces/${workspaceId}/erd`,
-              { signal: controller.signal },
-              'required',
-            ),
-            null,
-          ),
-          optionalRequest(
-            projectApiRequest<WorkspaceErdVersion[]>(
-              `/api/workspaces/${workspaceId}/erd/versions`,
-              { signal: controller.signal },
-              'required',
-            ),
-            [],
-          ),
-          projectApiRequest<MeetingNote[]>(
-            `/api/workspaces/${workspaceId}/meeting-notes`,
-            { signal: controller.signal },
-            'required',
-          ),
-          projectApiRequest<VoiceChannel[]>(
-            `/api/workspaces/${workspaceId}/voice-channels`,
-            { signal: controller.signal },
-            'required',
-          ),
-          optionalRequest(
-            projectApiRequest<WorkspaceNotice[]>(
-              `/api/workspaces/${workspaceId}/notices`,
-              { signal: controller.signal },
-              'required',
-            ),
-            [],
-          ),
-        ])
+        const nextData = await loadMentoringWorkspaceData(targetWorkspaceId, controller.signal)
 
         if (controller.signal.aborted) {
           return
         }
 
         setData({
-          dashboard,
-          tasks: sortByRecent(tasks ?? []),
-          events: [...(events ?? [])].sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()),
-          questions: sortByRecent(questions ?? []),
-          files: sortByRecent(files ?? []),
-          erd,
-          erdVersions: sortByRecent(erdVersions ?? []),
-          meetingNotes: sortByRecent(meetingNotes ?? []),
-          voiceChannels: voiceChannels ?? [],
-          notices: sortByRecent(notices ?? []),
+          dashboard: nextData.dashboard,
+          tasks: sortByRecent(nextData.tasks ?? []),
+          events: [...(nextData.events ?? [])].sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()),
+          questions: sortByRecent(nextData.questions ?? []),
+          files: sortByRecent(nextData.files ?? []),
+          erd: nextData.erd,
+          erdVersions: sortByRecent(nextData.erdVersions ?? []),
+          meetingNotes: sortByRecent(nextData.meetingNotes ?? []),
+          voiceChannels: nextData.voiceChannels ?? [],
+          notices: sortByRecent(nextData.notices ?? []),
         })
       } catch (loadError) {
         if (!controller.signal.aborted) {
@@ -4462,26 +4170,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     async function loadLiveData() {
       try {
-        const [participants, messages, minutes] = await Promise.all([
-          projectApiRequest<VoiceParticipant[]>(
-            `/api/voice-channels/${selectedLiveChannelId}/participants`,
-            { signal: controller.signal },
-            'required',
-          ),
-          projectApiRequest<VoiceChatMessage[]>(
-            `/api/voice-channels/${selectedLiveChannelId}/chat-messages`,
-            { signal: controller.signal },
-            'required',
-          ),
-          optionalRequest(
-            projectApiRequest<VoiceMinutes>(
-              `/api/voice-channels/${selectedLiveChannelId}/minutes`,
-              { signal: controller.signal },
-              'required',
-            ),
-            null,
-          ),
-        ])
+        const { participants, messages, minutes } = await loadMentoringLiveChannelData(selectedLiveChannelId, controller.signal)
 
         if (!controller.signal.aborted) {
           setLiveParticipants(participants ?? [])
@@ -4565,20 +4254,13 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<WorkspaceTask>(
-          `/api/workspaces/${workspaceId}/tasks`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              title: payload.title,
-              description: payload.description || null,
-              priority: payload.priority,
-              assigneeId: session?.userId ?? null,
-              dueDate: payload.dueDate || null,
-            }),
-          },
-          'required',
-        ).then(() => undefined),
+        createMentoringTask(workspaceId, {
+          title: payload.title,
+          description: payload.description || null,
+          priority: payload.priority,
+          assigneeId: session?.userId ?? null,
+          dueDate: payload.dueDate || null,
+        }).then(() => undefined),
       '과제를 추가했습니다.',
     )
   }
@@ -4590,37 +4272,21 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<WorkspaceTask>(
-          `/api/workspaces/${workspaceId}/tasks/${task.taskId}/status`,
-          {
-            method: 'PATCH',
-            body: JSON.stringify({ status }),
-          },
-          'required',
-        ).then(() => undefined),
+        updateMentoringTaskStatus(workspaceId, task.taskId, status).then(() => undefined),
       '과제 상태를 변경했습니다.',
     )
   }
 
   async function sendMentorDm(content: string) {
-    if (!workspaceId || !data.dashboard?.ownerId) {
+    const mentorId = data.dashboard?.ownerId
+    if (!workspaceId || !mentorId) {
       showAuthToast({ message: '멘토 정보를 찾지 못했습니다.', variant: 'error' })
       return
     }
 
     await withSubmit(
       () =>
-        projectApiRequest<DirectMessageResponse>(
-          `/api/workspaces/${workspaceId}/direct-messages`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              receiverId: data.dashboard?.ownerId,
-              content,
-            }),
-          },
-          'required',
-        ).then(() => undefined),
+        sendMentoringDirectMessage(workspaceId, mentorId, content).then(() => undefined),
       '멘토님에게 메시지가 전송되었습니다.',
     )
   }
@@ -4632,19 +4298,12 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<QuestionDetail>(
-          `/api/workspaces/${workspaceId}/questions`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              title: payload.title,
-              content: payload.content,
-              difficulty: payload.difficulty,
-              templateType: payload.templateType,
-            }),
-          },
-          'required',
-        ).then(() => undefined),
+        createMentoringQuestion(workspaceId, {
+          title: payload.title,
+          content: payload.content,
+          difficulty: payload.difficulty,
+          templateType: payload.templateType,
+        }).then(() => undefined),
       '질문을 등록했습니다.',
     )
   }
@@ -4662,11 +4321,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
     }
 
     try {
-      const detail = await projectApiRequest<QuestionDetail>(
-        `/api/workspace-questions/${questionId}`,
-        {},
-        'required',
-      )
+      const detail = await fetchMentoringQuestionDetail(questionId)
       setQuestionDetails((previous) => {
         const next = new Map(previous)
         next.set(questionId, detail)
@@ -4687,19 +4342,12 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<CalendarEvent>(
-          `/api/workspaces/${workspaceId}/calendar-events`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              title: payload.title,
-              description: payload.description || null,
-              startAt: payload.startAt,
-              endAt: payload.endAt,
-            }),
-          },
-          'required',
-        ).then(() => undefined),
+        createMentoringCalendarEvent(workspaceId, {
+          title: payload.title,
+          description: payload.description || null,
+          startAt: payload.startAt,
+          endAt: payload.endAt,
+        }).then(() => undefined),
       '일정을 추가했습니다.',
     )
   }
@@ -4714,14 +4362,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<WorkspaceFile>(
-          `/api/workspaces/${workspaceId}/files`,
-          {
-            method: 'POST',
-            body: formData,
-          },
-          'required',
-        ).then(() => undefined),
+        uploadMentoringWorkspaceFile(workspaceId, formData).then(() => undefined),
       '파일을 업로드했습니다.',
     )
   }
@@ -4733,18 +4374,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<WorkspaceFile>(
-          `/api/workspaces/${workspaceId}/files/links`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              title: payload.title,
-              url: payload.url,
-              parentId: null,
-            }),
-          },
-          'required',
-        ).then(() => undefined),
+        createMentoringFileLink(workspaceId, { title: payload.title, url: payload.url, parentId: null }).then(() => undefined),
       '링크를 공유했습니다.',
     )
   }
@@ -4756,18 +4386,11 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<WorkspaceErdDocument>(
-          `/api/workspaces/${workspaceId}/erd`,
-          {
-            method: 'PUT',
-            body: JSON.stringify({
-              mermaidCode: payload.mermaidCode,
-              schemaJson: payload.schemaJson || null,
-              changeSummary: payload.changeSummary || null,
-            }),
-          },
-          'required',
-        ).then(() => undefined),
+        saveMentoringErd(workspaceId, {
+          mermaidCode: payload.mermaidCode,
+          schemaJson: payload.schemaJson || null,
+          changeSummary: payload.changeSummary || null,
+        }).then(() => undefined),
       'ERD를 저장했습니다.',
     )
   }
@@ -4779,17 +4402,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<MeetingNote>(
-          `/api/workspaces/${workspaceId}/meeting-notes`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              title: payload.title,
-              content: payload.content || null,
-            }),
-          },
-          'required',
-        ).then(() => undefined),
+        createMentoringMeetingNote(workspaceId, { title: payload.title, content: payload.content || null }).then(() => undefined),
       '회의록을 저장했습니다.',
     )
   }
@@ -4801,18 +4414,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
     await withSubmit(
       () =>
-        projectApiRequest<VoiceChannel>(
-          '/api/voice-channels',
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              workspaceId,
-              name: payload.name,
-              description: payload.description || null,
-            }),
-          },
-          'required',
-        ).then(() => undefined),
+        createMentoringVoiceChannel(workspaceId, { name: payload.name, description: payload.description || null }).then(() => undefined),
       '라이브 채널을 생성했습니다.',
     )
   }
@@ -4820,14 +4422,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
   async function joinChannel(channelId: number) {
     await withSubmit(
       () =>
-        projectApiRequest<VoiceParticipant>(
-          `/api/voice-channels/${channelId}/join`,
-          {
-            method: 'POST',
-            body: JSON.stringify({}),
-          },
-          'required',
-        ).then(() => undefined),
+        joinMentoringVoiceChannel(channelId).then(() => undefined),
       '라이브 채널에 참여했습니다.',
     )
     refreshLive()
@@ -4836,14 +4431,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
   async function leaveChannel(channelId: number) {
     await withSubmit(
       () =>
-        projectApiRequest<VoiceParticipant>(
-          `/api/voice-channels/${channelId}/leave`,
-          {
-            method: 'POST',
-            body: JSON.stringify({}),
-          },
-          'required',
-        ).then(() => undefined),
+        leaveMentoringVoiceChannel(channelId).then(() => undefined),
       '라이브 채널에서 나갔습니다.',
     )
     refreshLive()
@@ -4853,14 +4441,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
     setSubmitting(true)
 
     try {
-      await projectApiRequest<VoiceChatMessage>(
-        `/api/voice-channels/${channelId}/chat-messages`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ content }),
-        },
-        'required',
-      )
+      await sendMentoringVoiceMessage(channelId, content)
       setLiveReloadKey((key) => key + 1)
     } catch (messageError) {
       showAuthToast({

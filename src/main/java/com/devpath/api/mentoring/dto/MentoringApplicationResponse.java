@@ -18,6 +18,8 @@ public class MentoringApplicationResponse {
       @Schema(description = "멘토 이름", example = "김멘토") String mentorName,
       @Schema(description = "신청자 사용자 ID", example = "2") Long applicantId,
       @Schema(description = "신청자 이름", example = "이학습") String applicantName,
+      @Schema(description = "팀 프로젝트형 신청 시 희망 직군", example = "Frontend 개발자")
+          String desiredPosition,
       @Schema(description = "신청 상태", example = "PENDING") MentoringApplicationStatus status,
       @Schema(description = "신청일시", example = "2026-05-02T11:10:00") LocalDateTime createdAt) {
 
@@ -31,6 +33,7 @@ public class MentoringApplicationResponse {
           application.getPost().getMentor().getName(),
           application.getApplicant().getId(),
           application.getApplicant().getName(),
+          application.getDesiredPosition(),
           application.getStatus(),
           application.getCreatedAt());
     }
@@ -46,6 +49,8 @@ public class MentoringApplicationResponse {
       @Schema(description = "멘토 이름", example = "김멘토") String mentorName,
       @Schema(description = "신청자 사용자 ID", example = "2") Long applicantId,
       @Schema(description = "신청자 이름", example = "이학습") String applicantName,
+      @Schema(description = "팀 프로젝트형 신청 시 희망 직군", example = "Frontend 개발자")
+          String desiredPosition,
       @Schema(description = "신청 메시지", example = "Spring Boot 포트폴리오 리뷰를 받고 싶습니다.") String message,
       @Schema(description = "신청 상태", example = "APPROVED") MentoringApplicationStatus status,
       @Schema(description = "거절 사유", example = "이번 기수 모집 인원이 마감되었습니다.") String rejectReason,
@@ -68,6 +73,7 @@ public class MentoringApplicationResponse {
           application.getPost().getMentor().getName(),
           application.getApplicant().getId(),
           application.getApplicant().getName(),
+          application.getDesiredPosition(),
           application.getMessage(),
           application.getStatus(),
           application.getRejectReason(),

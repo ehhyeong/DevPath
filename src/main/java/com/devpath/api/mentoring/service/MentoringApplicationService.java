@@ -1,5 +1,6 @@
 package com.devpath.api.mentoring.service;
 
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.mentoring.dto.MentoringApplicationRequest;
 import com.devpath.api.mentoring.dto.MentoringApplicationResponse;
 import com.devpath.api.notification.service.NotificationEventService;
@@ -29,6 +30,7 @@ public class MentoringApplicationService {
   private final MentoringRepository mentoringRepository;
   private final UserRepository userRepository;
   private final NotificationEventService notificationEventService;
+  private final InstructorNotificationService instructorNotificationService;
 
   @Transactional
   public MentoringApplicationResponse.Detail apply(
@@ -55,10 +57,14 @@ public class MentoringApplicationService {
             .post(post)
             .applicant(applicant)
             .message(request.message())
+            .desiredPosition(request.desiredPosition())
             .build();
 
-    return MentoringApplicationResponse.Detail.from(
-        mentoringApplicationRepository.save(application));
+    MentoringApplication savedApplication = mentoringApplicationRepository.save(application);
+    instructorNotificationService.notifyMentoringApplication(
+        post.getMentor().getId(), post.getTitle(), applicant.getName());
+
+    return MentoringApplicationResponse.Detail.from(savedApplication);
   }
 
   public List<MentoringApplicationResponse.Summary> getSentApplications(Long userId) {
