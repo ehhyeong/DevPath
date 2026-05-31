@@ -34,7 +34,9 @@ public class GithubPullRequestClient {
   private static final Pattern SSH_REPOSITORY_PATTERN =
       Pattern.compile("^git@github\\.com:([^/]+)/(.+?)(?:\\.git)?$");
   private static final int MAX_PULL_REQUESTS = 30;
-  private static final int MAX_FILES_PER_PULL_REQUEST = 30;
+  private static final int MAX_UNAUTHENTICATED_PULL_REQUESTS = 5;
+  private static final int MAX_FILES_PER_PULL_REQUEST = 100;
+  private static final int MAX_UNAUTHENTICATED_FILE_DETAIL_REQUESTS = 5;
   private static final int MAX_DIFF_LENGTH = 30_000;
 
   private final RestTemplate restTemplate;
@@ -66,23 +68,42 @@ public class GithubPullRequestClient {
   }
 
   public List<GithubPullRequest> fetchPullRequests(GithubRepositoryReference repository) {
+    return fetchPullRequests(repository, null);
+  }
+
+  public List<GithubPullRequest> fetchPullRequests(
+      GithubRepositoryReference repository, String repositoryAccessToken) {
+    String accessToken = effectiveGithubToken(repositoryAccessToken);
     JsonNode pulls =
         requestJson(
             UriComponentsBuilder.fromUriString("https://api.github.com/repos/{owner}/{repo}/pulls")
                 .queryParam("state", "all")
                 .queryParam("sort", "updated")
                 .queryParam("direction", "desc")
-                .queryParam("per_page", MAX_PULL_REQUESTS)
-                .build(repository.owner(), repository.name()));
+                .queryParam("per_page", maxPullRequestsPerSync(accessToken))
+                .build(repository.owner(), repository.name()),
+            accessToken);
 
     if (!pulls.isArray()) {
       return List.of();
     }
 
     List<GithubPullRequest> result = new ArrayList<>();
+    int fileDetailRequests = 0;
     for (JsonNode pull : pulls) {
       long number = pull.path("number").asLong();
-      PullRequestFiles files = fetchPullRequestFiles(repository, number);
+      PullRequestFiles files;
+      if (canFetchFileDetails(fileDetailRequests, accessToken)) {
+        fileDetailRequests++;
+        try {
+          files = fetchPullRequestFiles(repository, number, accessToken);
+        } catch (CustomException exception) {
+          files = fileDetailFallback("GitHub did not return file diffs for this pull request.");
+        }
+      } else {
+        files =
+            fileDetailFallback("GitHub file diff sync is limited without server authentication.");
+      }
 
       result.add(
           new GithubPullRequest(
@@ -99,6 +120,7 @@ public class GithubPullRequestClient {
               files.diffText(),
               files.additions(),
               files.deletions(),
+              files.files(),
               parseDateTime(text(pull, "created_at", null)),
               parseDateTime(text(pull, "updated_at", null)),
               parseDateTime(text(pull, "merged_at", null))));
@@ -107,14 +129,36 @@ public class GithubPullRequestClient {
     return result;
   }
 
+  private boolean canFetchFileDetails(int fileDetailRequests, String accessToken) {
+    return StringUtils.hasText(accessToken)
+        || fileDetailRequests < MAX_UNAUTHENTICATED_FILE_DETAIL_REQUESTS;
+  }
+
+  private int maxPullRequestsPerSync(String accessToken) {
+    return StringUtils.hasText(accessToken) ? MAX_PULL_REQUESTS : MAX_UNAUTHENTICATED_PULL_REQUESTS;
+  }
+
+  private String effectiveGithubToken(String repositoryAccessToken) {
+    if (StringUtils.hasText(repositoryAccessToken)) {
+      return repositoryAccessToken.trim();
+    }
+
+    return StringUtils.hasText(githubToken) ? githubToken.trim() : null;
+  }
+
+  private PullRequestFiles fileDetailFallback(String message) {
+    return new PullRequestFiles(".", message, 0, 0);
+  }
+
   private PullRequestFiles fetchPullRequestFiles(
-      GithubRepositoryReference repository, long pullRequestNumber) {
+      GithubRepositoryReference repository, long pullRequestNumber, String accessToken) {
     JsonNode files =
         requestJson(
             UriComponentsBuilder.fromUriString(
                     "https://api.github.com/repos/{owner}/{repo}/pulls/{number}/files")
                 .queryParam("per_page", MAX_FILES_PER_PULL_REQUEST)
-                .build(repository.owner(), repository.name(), pullRequestNumber));
+                .build(repository.owner(), repository.name(), pullRequestNumber),
+            accessToken);
 
     if (!files.isArray() || files.isEmpty()) {
       return new PullRequestFiles(".", "GitHub에서 이 Pull Request의 파일 diff를 찾지 못했습니다.", 0, 0);
@@ -122,6 +166,7 @@ public class GithubPullRequestClient {
 
     String firstFilePath = ".";
     StringBuilder diff = new StringBuilder();
+    List<GithubPullRequest.FileChange> fileChanges = new ArrayList<>();
     int additions = 0;
     int deletions = 0;
 
@@ -134,23 +179,37 @@ public class GithubPullRequestClient {
       additions += file.path("additions").asInt(0);
       deletions += file.path("deletions").asInt(0);
 
-      appendDiff(diff, filename, text(file, "patch", null));
-      if (diff.length() >= MAX_DIFF_LENGTH) {
-        break;
+      String patch = text(file, "patch", null);
+      String fileDiff = buildFileDiff(filename, patch);
+      fileChanges.add(
+          new GithubPullRequest.FileChange(
+              filename,
+              fileDiff,
+              file.path("additions").asInt(0),
+              file.path("deletions").asInt(0),
+              text(file, "status", "modified")));
+
+      if (diff.length() < MAX_DIFF_LENGTH) {
+        appendDiff(diff, fileDiff);
       }
     }
 
     String diffText =
         diff.length() > MAX_DIFF_LENGTH ? diff.substring(0, MAX_DIFF_LENGTH) : diff.toString();
 
-    return new PullRequestFiles(firstFilePath, diffText, additions, deletions);
+    return new PullRequestFiles(firstFilePath, diffText, additions, deletions, fileChanges);
   }
 
-  private void appendDiff(StringBuilder diff, String filename, String patch) {
+  private void appendDiff(StringBuilder diff, String fileDiff) {
     if (diff.length() > 0) {
       diff.append("\n");
     }
 
+    diff.append(fileDiff);
+  }
+
+  private String buildFileDiff(String filename, String patch) {
+    StringBuilder diff = new StringBuilder();
     diff.append("diff --git a/").append(filename).append(" b/").append(filename).append("\n");
 
     if (StringUtils.hasText(patch)) {
@@ -158,15 +217,17 @@ public class GithubPullRequestClient {
     } else {
       diff.append("// GitHub did not expose a text patch for this file.");
     }
+
+    return diff.toString();
   }
 
-  private JsonNode requestJson(URI uri) {
+  private JsonNode requestJson(URI uri, String accessToken) {
     try {
       ResponseEntity<String> response =
           restTemplate.exchange(
               uri,
               HttpMethod.GET,
-              new HttpEntity<>(headers()),
+              new HttpEntity<>(headers(accessToken)),
               new ParameterizedTypeReference<>() {});
 
       return objectMapper.readTree(response.getBody() == null ? "[]" : response.getBody());
@@ -177,13 +238,14 @@ public class GithubPullRequestClient {
     }
   }
 
-  private HttpHeaders headers() {
+  private HttpHeaders headers(String accessToken) {
     HttpHeaders headers = new HttpHeaders();
     headers.setAccept(List.of(MediaType.valueOf("application/vnd.github+json")));
     headers.set("X-GitHub-Api-Version", "2022-11-28");
+    headers.set(HttpHeaders.USER_AGENT, "DevPath-local");
 
-    if (StringUtils.hasText(githubToken)) {
-      headers.setBearerAuth(githubToken.trim());
+    if (StringUtils.hasText(accessToken)) {
+      headers.setBearerAuth(accessToken);
     }
 
     return headers;
@@ -220,5 +282,20 @@ public class GithubPullRequestClient {
     }
   }
 
-  private record PullRequestFiles(String filePath, String diffText, int additions, int deletions) {}
+  private record PullRequestFiles(
+      String filePath,
+      String diffText,
+      int additions,
+      int deletions,
+      List<GithubPullRequest.FileChange> files) {
+
+    private PullRequestFiles(String filePath, String diffText, int additions, int deletions) {
+      this(
+          filePath,
+          diffText,
+          additions,
+          deletions,
+          List.of(new GithubPullRequest.FileChange(filePath, diffText, additions, deletions, "unknown")));
+    }
+  }
 }

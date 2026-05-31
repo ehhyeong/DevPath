@@ -1,6 +1,7 @@
 package com.devpath.api.workspace.integration;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record GithubPullRequest(
     long number,
@@ -16,6 +17,7 @@ public record GithubPullRequest(
     String diffText,
     int additions,
     int deletions,
+    List<FileChange> files,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
     LocalDateTime mergedAt) {
@@ -31,4 +33,15 @@ public record GithubPullRequest(
 
     return mergedAt == null ? "CLOSED" : "MERGED";
   }
+
+  public List<FileChange> normalizedFiles() {
+    if (files != null && !files.isEmpty()) {
+      return files;
+    }
+
+    return List.of(new FileChange(filePath, diffText, additions, deletions, "modified"));
+  }
+
+  public record FileChange(
+      String filePath, String diffText, int additions, int deletions, String changeType) {}
 }
