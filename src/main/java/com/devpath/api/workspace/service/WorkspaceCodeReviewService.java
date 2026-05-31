@@ -6,9 +6,9 @@ import com.devpath.api.ai.service.AiCodeReviewService;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewRequest;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewResponse;
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
-import com.devpath.api.workspace.integration.GithubPullRequestSyncService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import jakarta.annotation.PostConstruct;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -29,14 +29,17 @@ public class WorkspaceCodeReviewService {
   private final JdbcTemplate jdbcTemplate;
   private final WorkspaceService workspaceService;
   private final AiCodeReviewService aiCodeReviewService;
-  private final GithubPullRequestSyncService githubPullRequestSyncService;
 
-  @Transactional
+  @PostConstruct
+  void initializeSchema() {
+    ensureSchema();
+  }
+
+  @Transactional(readOnly = true)
   public WorkspaceCodeReviewResponse.Board getBoard(Long workspaceId, Long userId) {
     ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
-    githubPullRequestSyncService.syncWorkspacePullRequestsIfStale(workspaceId, userId);
     List<WorkspaceCodeReviewResponse.Summary> reviews = findSummaries(workspaceId);
 
     return new WorkspaceCodeReviewResponse.Board(
@@ -47,7 +50,7 @@ public class WorkspaceCodeReviewService {
         reviews.stream().filter(review -> !"OPEN".equals(review.status())).toList());
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public WorkspaceCodeReviewResponse.Detail getDetail(
       Long workspaceId, Long reviewId, Long userId) {
     ensureSchema();
@@ -127,7 +130,8 @@ public class WorkspaceCodeReviewService {
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
     DetailRow row = findDetailRow(workspaceId, reviewId);
-    String selectedFilePath = resolveSelectedFilePath(row, request == null ? null : request.filePath());
+    String selectedFilePath =
+        resolveSelectedFilePath(row, request == null ? null : request.filePath());
     String reviewDiff = buildAiReviewDiff(row, selectedFilePath);
 
     AiCodeReviewResponse.Detail aiReview =
@@ -400,7 +404,8 @@ public class WorkspaceCodeReviewService {
                   rs.getString("description"),
                   rs.getString("pr_url"),
                   rs.getString("diff_text"),
-                  findFiles(workspaceId, reviewId, rs.getString("file_path"), rs.getString("diff_text")));
+                  findFiles(
+                      workspaceId, reviewId, rs.getString("file_path"), rs.getString("diff_text")));
             },
             workspaceId,
             reviewId);
@@ -528,8 +533,7 @@ public class WorkspaceCodeReviewService {
     }
 
     String current = trimToNull(row.summary().filePath());
-    if (current != null
-        && row.files().stream().anyMatch(file -> file.filePath().equals(current))) {
+    if (current != null && row.files().stream().anyMatch(file -> file.filePath().equals(current))) {
       return current;
     }
 

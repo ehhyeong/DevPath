@@ -7,104 +7,14 @@ import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } f
 import { projectApiRequest } from './project-api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-}
-
-type CodeReviewSummary = {
-  reviewId: number
-  workspaceId: number
-  issueKey: string
-  title: string
-  status: 'OPEN' | 'CLOSED' | 'MERGED'
-  authorId: number
-  authorName?: string | null
-  authorProfileImage?: string | null
-  authorRole?: string | null
-  filePath: string
-  fileCount?: number | null
-  sourceBranch: string
-  targetBranch: string
-  additions: number
-  deletions: number
-  aiCommentCount: number
-  aiCodeReviewId?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type AiReviewComment = {
-  commentId: number
-  category: string
-  lineNumber?: number | null
-  title: string
-  message: string
-  suggestion?: string | null
-}
-
-type AiReviewDetail = {
-  reviewId: number
-  summary: string
-  commentCount: number
-  providerName: string
-  comments: AiReviewComment[]
-  createdAt?: string | null
-}
-
-type CodeReviewDetail = {
-  summary: CodeReviewSummary
-  description?: string | null
-  prUrl?: string | null
-  diffText: string
-  files?: CodeReviewFile[]
-  aiReview?: AiReviewDetail | null
-  members: WorkspaceMember[]
-  comments: MemberComment[]
-}
-
-type CodeReviewFile = {
-  fileId?: number | null
-  reviewId: number
-  filePath: string
-  diffText: string
-  additions: number
-  deletions: number
-  changeType?: string | null
-}
-
-type MemberComment = {
-  commentId: number
-  reviewId: number
-  authorId: number
-  authorName?: string | null
-  authorProfileImage?: string | null
-  body: string
-  filePath?: string | null
-  statusLabel: string
-  createdAt?: string | null
-}
-
-type CodeReviewBoard = {
-  workspaceId: number
-  projectName: string
-  members: WorkspaceMember[]
-  openReviews: CodeReviewSummary[]
-  closedReviews: CodeReviewSummary[]
-}
-
-type ReviewTab = 'open' | 'closed'
-
-type CreateForm = {
-  title: string
-  filePath: string
-  sourceBranch: string
-  targetBranch: string
-  description: string
-  diffText: string
-}
+import type {
+  CodeReviewBoard,
+  CodeReviewDetail,
+  CodeReviewFile,
+  CodeReviewSummary,
+  CreateForm,
+  ReviewTab,
+} from './squad-review-types'
 
 const EMPTY_FORM: CreateForm = {
   title: '',
@@ -243,6 +153,7 @@ export default function SquadReviewApp() {
   const [activeTab, setActiveTab] = useState<ReviewTab>('open')
   const [selectedReviewId, setSelectedReviewId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [statusLoading, setStatusLoading] = useState(false)
@@ -335,7 +246,8 @@ export default function SquadReviewApp() {
 
         if (firstReview) {
           setSelectedReviewId(firstReview.reviewId)
-          await loadDetail(firstReview.reviewId, ignore)
+          setDetail(null)
+          void loadDetail(firstReview.reviewId, ignore)
         } else {
           setSelectedReviewId(null)
           setDetail(null)
@@ -382,7 +294,8 @@ export default function SquadReviewApp() {
 
     if (nextId) {
       setSelectedReviewId(nextId)
-      await loadDetail(nextId)
+      setDetail(null)
+      void loadDetail(nextId)
     } else {
       setSelectedReviewId(null)
       setDetail(null)
@@ -394,14 +307,26 @@ export default function SquadReviewApp() {
       return
     }
 
-    const detailData = await projectApiRequest<CodeReviewDetail>(
-      `/api/workspaces/${workspaceId}/code-reviews/${reviewId}`,
-      {},
-      'required',
-    )
+    setDetailLoading(true)
 
-    if (!ignore) {
-      applyDetail(detailData)
+    try {
+      const detailData = await projectApiRequest<CodeReviewDetail>(
+        `/api/workspaces/${workspaceId}/code-reviews/${reviewId}`,
+        {},
+        'required',
+      )
+
+      if (!ignore) {
+        applyDetail(detailData)
+      }
+    } catch {
+      if (!ignore) {
+        setToast('리뷰 상세를 불러오지 못했습니다.')
+      }
+    } finally {
+      if (!ignore) {
+        setDetailLoading(false)
+      }
     }
   }
 
@@ -631,6 +556,8 @@ export default function SquadReviewApp() {
         key={review.reviewId}
         onClick={() => {
           setSelectedReviewId(review.reviewId)
+          setDetail(null)
+          setSelectedFilePath(null)
           void loadDetail(review.reviewId)
         }}
         className={`pr-card w-full text-left p-4 rounded-xl cursor-pointer transition ${
@@ -942,6 +869,16 @@ export default function SquadReviewApp() {
     )
   }
 
+  function renderDetailLoading() {
+    return (
+      <div className="flex h-full flex-1 flex-col items-center justify-center p-8 text-center">
+        <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-700"></div>
+        <p className="text-sm font-bold text-gray-700">리뷰 상세를 불러오는 중입니다</p>
+        <p className="mt-1 text-xs font-medium text-gray-400">목록은 먼저 사용할 수 있습니다.</p>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
@@ -1047,7 +984,9 @@ export default function SquadReviewApp() {
           </div>
 
           <div className="flex-1 flex flex-col bg-[#F9FAFB] relative" id="prDetailView">
-            {detail ? (
+            {detailLoading && !detail ? (
+              renderDetailLoading()
+            ) : detail ? (
               <>
                 <div className="p-6 border-b border-gray-200 bg-white shrink-0">
                   <div className="flex items-center gap-3 mb-2">
