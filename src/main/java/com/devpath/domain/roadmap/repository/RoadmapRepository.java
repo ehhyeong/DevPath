@@ -16,4 +16,7 @@ public interface RoadmapRepository extends JpaRepository<Roadmap, Long> {
   List<Roadmap> findAllByIsOfficialTrueAndIsDeletedFalseOrderByTitleAsc();
 
   Optional<Roadmap> findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(Long roadmapId);
+
+  // TASK-39: AI 동적 노드 보관용 시스템 로드맵을 제목으로 조회한다.
+  Optional<Roadmap> findFirstByTitle(String title);
 }
