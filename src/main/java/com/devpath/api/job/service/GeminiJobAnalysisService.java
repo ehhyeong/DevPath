@@ -31,6 +31,37 @@ public class GeminiJobAnalysisService {
   private static final int STRETCH_FALLBACK_SCORE = 50;
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
+  // 성장공고 보완 스킬(missingSkills)에서 비개발 태그(바이오/화학/회계/마케팅 등)를 걸러내기 위한 개발 스킬 화이트리스트.
+  // 공고 키워드를 소문자화한 값이 아래 토큰 중 하나라도 포함하면 개발 스킬로 인정한다. (목록은 필요 시 보강)
+  private static final Set<String> DEV_SKILL_KEYWORDS =
+      Set.of(
+          // 언어/런타임
+          "java", "kotlin", "spring", "jpa", "hibernate", "node", "nest", "express", "python",
+          "fastapi", "django", "flask", "golang", "rust", "c++", "c#", ".net", "php", "ruby",
+          "rails", "javascript", "typescript", "scala",
+          // 프론트엔드
+          "react", "vue", "nuxt", "next", "angular", "svelte", "tailwind", "redux", "zustand",
+          "webpack", "vite", "html", "css", "프론트엔드", "frontend",
+          // 데이터/DB
+          "sql", "mysql", "postgre", "oracle", "mongo", "redis", "kafka", "rabbitmq",
+          "elasticsearch", "db", "dbms", "etl", "spark", "hadoop", "airflow", "빅데이터", "데이터",
+          "모델링", "데이터마이닝", "dw",
+          // 인프라/DevOps
+          "docker", "kubernetes", "k8s", "aws", "azure", "gcp", "terraform", "ansible", "jenkins",
+          "ci/cd", "cicd", "linux", "nginx", "클라우드", "devops", "sre", "msa", "마이크로서비스",
+          "서버", "인프라", "네트워크", "모니터링",
+          // 보안
+          "보안", "security", "oauth", "jwt", "owasp",
+          // AI/ML
+          "머신러닝", "딥러닝", "인공지능", "자연어처리", "nlp", "음성인식", "이미지프로세싱", "챗봇", "tensorflow",
+          "pytorch", "keras", "llm", "mlops",
+          // 모바일
+          "android", "ios", "swift", "flutter", "reactnative", "안드로이드", "모바일",
+          // 일반 개발
+          "backend", "백엔드", "풀스택", "개발", "api", "rest", "graphql", "grpc", "http", "알고리즘",
+          "자료구조", "시스템", "아키텍처", "펌웨어", "임베디드", "qa", "playwright", "cypress",
+          "selenium", "junit", "git");
+
   private final JobActivityProfileService jobActivityProfileService;
   private final JobkoreaApiClient jobkoreaApiClient;
   private final GeminiProvider geminiProvider;
@@ -260,13 +291,10 @@ public class GeminiJobAnalysisService {
     }
   }
 
-  // 공고 키워드 중 사용자가 보유하지 않은 기술 최대 3개 추출
+  // 공고 키워드 중 '개발 스킬'이면서 사용자가 보유하지 않은 기술 최대 3개 추출
   private List<String> computeMissingSkills(List<String> jobKeywords, List<String> userSkills) {
     if (jobKeywords == null || jobKeywords.isEmpty()) {
       return List.of();
-    }
-    if (userSkills.isEmpty()) {
-      return jobKeywords.stream().filter(Objects::nonNull).limit(STRETCH_LIMIT).toList();
     }
 
     Set<String> userNormalized =
@@ -277,13 +305,23 @@ public class GeminiJobAnalysisService {
 
     return jobKeywords.stream()
         .filter(kw -> kw != null && !kw.isBlank())
+        // 개발 스킬만 남겨 비개발 태그(바이오/화학/회계/마케팅 등) 제거
+        .filter(this::isDevSkill)
+        // 사용자가 이미 보유한 스킬 제외
         .filter(kw -> {
           String kwNorm = kw.toLowerCase(Locale.ROOT).trim();
           return userNormalized.stream()
               .noneMatch(us -> us.contains(kwNorm) || kwNorm.contains(us));
         })
+        .distinct()
         .limit(STRETCH_LIMIT)
         .toList();
+  }
+
+  // 공고 키워드가 개발 스킬 화이트리스트에 해당하는지 판정한다.
+  private boolean isDevSkill(String keyword) {
+    String normalized = keyword.toLowerCase(Locale.ROOT).trim();
+    return DEV_SKILL_KEYWORDS.stream().anyMatch(normalized::contains);
   }
 
   /** 스코어링 교체 포인트. 현재는 Gemini 점수를 그대로 사용한다. 추후 정밀 알고리즘(스킬 매칭 가중치 등)으로 교체 시 이 메서드만 수정한다. */
