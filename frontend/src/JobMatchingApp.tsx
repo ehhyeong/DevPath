@@ -605,6 +605,17 @@ function clearJobMatchingSnapshot() {
   }
 }
 
+type SkillSuggestionResult = {
+  mode: 'ADD' | 'CREATED'
+  changeId?: number | null
+  targetCustomRoadmapId: number
+  roadmapTitle: string
+  anchorNodeTitle?: string | null
+  newNodeTitle?: string | null
+  branchType?: string | null
+  redirectUrl: string
+}
+
 export default function JobMatchingApp() {
   useInternalPageScroll()
 
@@ -628,6 +639,9 @@ export default function JobMatchingApp() {
   const [loadingStep, setLoadingStep] = useState<LoadingStep>(null)
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
   const [pageSize, setPageSize] = useState(() => snapshot?.pageSize ?? 20)
+  const [skillLoading, setSkillLoading] = useState<string | null>(null)
+  const [skillSuggestion, setSkillSuggestion] = useState<SkillSuggestionResult | null>(null)
+  const [skillApplying, setSkillApplying] = useState(false)
 
   const role = useMemo(() => optionOf(roleOptions, roleFilter), [roleFilter])
   const visibleJobs = useMemo(
@@ -915,13 +929,72 @@ export default function JobMatchingApp() {
     }
   }
 
-  function handleMissingSkill(skill: string) {
+  async function handleMissingSkill(skill: string, jobTitle?: string) {
     if (!session) {
       openAuthModal('역량 로드맵 추가는 로그인 후 이용할 수 있습니다.')
       return
     }
+    if (skillLoading) return
 
-    window.location.href = `/roadmap-hub?skill=${encodeURIComponent(skill)}`
+    setSkillLoading(skill)
+    showAuthToast({ message: 'AI가 내 로드맵을 분석하고 있어요...', durationMs: 1800 })
+    try {
+      const result = await projectApiRequest<SkillSuggestionResult>(
+        '/api/jobs/skill-suggestions',
+        { method: 'POST', body: JSON.stringify({ skill, jobTitle: jobTitle ?? null }) },
+        'required',
+      )
+
+      if (result.mode === 'CREATED') {
+        // 학습 중인 로드맵이 없어 기술 로드맵을 새로 생성한 경우 → 바로 이동
+        showAuthToast({ message: `'${skill}' 학습 로드맵을 새로 만들었어요.`, durationMs: 2000 })
+        window.location.href = result.redirectUrl
+        return
+      }
+
+      // 기존 로드맵에 노드 추가 제안 → 확인 모달
+      setSkillSuggestion(result)
+    } catch (error) {
+      showAuthToast({
+        message: error instanceof Error ? error.message : '로드맵 연동에 실패했습니다.',
+        durationMs: 2200,
+      })
+    } finally {
+      setSkillLoading(null)
+    }
+  }
+
+  async function applySkillSuggestion() {
+    if (!skillSuggestion?.changeId || skillApplying) return
+
+    setSkillApplying(true)
+    try {
+      await projectApiRequest(
+        `/api/me/recommendation-changes/${skillSuggestion.changeId}/apply`,
+        { method: 'POST' },
+        'required',
+      )
+      showAuthToast({ message: '로드맵에 학습 노드를 추가했어요.', durationMs: 1500 })
+      window.location.href = skillSuggestion.redirectUrl
+    } catch (error) {
+      showAuthToast({
+        message: error instanceof Error ? error.message : '노드 추가에 실패했습니다.',
+        durationMs: 2200,
+      })
+      setSkillApplying(false)
+    }
+  }
+
+  function dismissSkillSuggestion() {
+    // 거절 시 생성된 pending 추천은 무시 처리(실패해도 모달은 닫는다)
+    if (skillSuggestion?.changeId) {
+      void projectApiRequest(
+        `/api/me/recommendation-changes/${skillSuggestion.changeId}/ignore`,
+        { method: 'POST' },
+        'required',
+      ).catch(() => {})
+    }
+    setSkillSuggestion(null)
   }
 
   function openJob(job: MatchingJob) {
@@ -1155,7 +1228,7 @@ export default function JobMatchingApp() {
                                 key={skill}
                                 onClick={(event) => {
                                   event.stopPropagation()
-                                  handleMissingSkill(skill)
+                                  void handleMissingSkill(skill, job.title)
                                 }}
                                 className="job-matching-missing-skill group/add flex justify-between items-center text-xs opacity-50 hover:opacity-100 cursor-pointer hover:bg-red-50 p-2 -mx-2 rounded-lg transition-all border border-transparent hover:border-red-100"
                               >
@@ -1228,7 +1301,7 @@ export default function JobMatchingApp() {
                                     key={skill}
                                     onClick={(event) => {
                                       event.stopPropagation()
-                                      handleMissingSkill(skill)
+                                      void handleMissingSkill(skill, job.title)
                                     }}
                                     className="flex justify-between items-center text-xs bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-50 p-2 rounded-lg cursor-pointer transition-all group/skill"
                                   >
@@ -1292,6 +1365,60 @@ export default function JobMatchingApp() {
           onViewChange={setAuthView}
           onAuthenticated={handleAuthenticated}
         />
+      ) : null}
+
+      {skillSuggestion ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                {skillSuggestion.branchType === 'REVIEW' ? '복습 노드' : '심화 노드'} 추천
+              </span>
+            </div>
+
+            <h3 className="mb-3 text-lg font-bold text-gray-900">
+              학습 중인 로드맵에 노드를 추가할까요?
+            </h3>
+
+            <div className="mb-5 space-y-3 rounded-xl bg-gray-50 p-4 text-sm">
+              <div className="flex items-start gap-2">
+                <span className="w-16 shrink-0 font-bold text-gray-500">로드맵</span>
+                <span className="font-bold text-gray-900">{skillSuggestion.roadmapTitle}</span>
+              </div>
+              {skillSuggestion.anchorNodeTitle ? (
+                <div className="flex items-start gap-2">
+                  <span className="w-16 shrink-0 font-bold text-gray-500">삽입 위치</span>
+                  <span className="text-gray-700">
+                    '{skillSuggestion.anchorNodeTitle}' 노드 바로 뒤
+                  </span>
+                </div>
+              ) : null}
+              <div className="flex items-start gap-2">
+                <span className="w-16 shrink-0 font-bold text-gray-500">추가 노드</span>
+                <span className="font-bold text-primary">{skillSuggestion.newNodeTitle}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={dismissSkillSuggestion}
+                disabled={skillApplying}
+                className="flex-1 rounded-lg border border-gray-300 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                거절
+              </button>
+              <button
+                type="button"
+                onClick={() => void applySkillSuggestion()}
+                disabled={skillApplying}
+                className="flex-1 rounded-lg bg-primary py-2.5 text-sm font-bold text-white hover:bg-green-600 disabled:opacity-50"
+              >
+                {skillApplying ? '추가 중...' : '수락하고 추가'}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </>
   )

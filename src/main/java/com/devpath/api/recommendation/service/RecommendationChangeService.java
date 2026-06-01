@@ -150,7 +150,12 @@ public class RecommendationChangeService {
 
     recommendationChange.apply();
 
-    if (recommendationChange.getNodeChangeType() == NodeChangeType.ADD) {
+    if (recommendationChange.getTargetCustomRoadmapId() != null) {
+      // TASK-39 성장공고 기원: 명시적 타깃(커스텀 로드맵 + anchor 커스텀 노드)으로 직접 삽입.
+      // 공식 복사본/빌더 기원 로드맵 양쪽 모두 지원한다.
+      addBranchNodeByExplicitTarget(recommendationChange);
+      registerRequiredTagsForNode(recommendationChange.getRoadmapNode());
+    } else if (recommendationChange.getNodeChangeType() == NodeChangeType.ADD) {
       addNodeToCustomRoadmap(
           recommendationChange.getRoadmapNode(),
           userId,
@@ -403,6 +408,76 @@ public class RecommendationChangeService {
     List<CustomRoadmapNode> allNodes =
         customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap);
     roadmapProgressService.updateProgressRate(customRoadmap, allNodes);
+  }
+
+  // TASK-39: 명시적 타깃(target_custom_roadmap_id + anchor_custom_node_id)으로 동적 노드를 삽입한다.
+  // addNodeToCustomRoadmap()과 달리 공식 로드맵 복사본 조회에 의존하지 않으므로 빌더 기원 로드맵도 지원한다.
+  private void addBranchNodeByExplicitTarget(RecommendationChange recommendationChange) {
+    CustomRoadmap customRoadmap =
+        customRoadmapRepository
+            .findById(recommendationChange.getTargetCustomRoadmapId())
+            .orElseThrow(() -> new CustomException(ErrorCode.CUSTOM_ROADMAP_NOT_FOUND));
+
+    // 소유권 검증: 추천을 받은 사용자의 로드맵이 맞는지 확인
+    if (!customRoadmap.getUser().getId().equals(recommendationChange.getUser().getId())) {
+      throw new CustomException(ErrorCode.CUSTOM_ROADMAP_NOT_FOUND);
+    }
+
+    // 중복 삽입 가드: 동일 동적 노드가 이미 해당 로드맵에 존재하면 skip
+    if (customRoadmapNodeRepository
+        .findByCustomRoadmapAndOriginalNode(customRoadmap, recommendationChange.getRoadmapNode())
+        .isPresent()) {
+      return;
+    }
+
+    List<CustomRoadmapNode> allNodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap);
+
+    // anchor 커스텀 노드(같은 로드맵 소속) 바로 뒤에 삽입. anchor가 없으면 맨 끝에 추가.
+    CustomRoadmapNode anchor =
+        recommendationChange.getAnchorCustomNodeId() == null
+            ? null
+            : allNodes.stream()
+                .filter(n -> n.getId().equals(recommendationChange.getAnchorCustomNodeId()))
+                .findFirst()
+                .orElse(null);
+
+    int insertAt;
+    if (anchor != null && anchor.getCustomSortOrder() != null) {
+      insertAt = anchor.getCustomSortOrder() + 1;
+    } else {
+      insertAt =
+          allNodes.stream()
+                  .map(CustomRoadmapNode::getCustomSortOrder)
+                  .filter(java.util.Objects::nonNull)
+                  .max(Integer::compareTo)
+                  .orElse(0)
+              + 1;
+    }
+
+    List<CustomRoadmapNode> nodesToShift =
+        customRoadmapNodeRepository.findAllByCustomRoadmapAndCustomSortOrderGreaterThanEqual(
+            customRoadmap, insertAt);
+    nodesToShift.forEach(n -> n.shiftSortOrder(1));
+
+    Long branchFromNodeId =
+        anchor != null && anchor.getOriginalNode() != null
+            ? anchor.getOriginalNode().getNodeId()
+            : null;
+
+    customRoadmapNodeRepository.save(
+        CustomRoadmapNode.builder()
+            .customRoadmap(customRoadmap)
+            .originalNode(recommendationChange.getRoadmapNode())
+            .customSortOrder(insertAt)
+            .isBranch(true)
+            .branchFromNodeId(branchFromNodeId)
+            .branchType(recommendationChange.getBranchType())
+            .build());
+
+    List<CustomRoadmapNode> refreshed =
+        customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap);
+    roadmapProgressService.updateProgressRate(customRoadmap, refreshed);
   }
 
   // 추천 노드 수락 시 subTopics 기반 태그를 node_required_tags에 등록

@@ -46,6 +46,17 @@ public class RecommendationChange {
   @Column(name = "branch_from_node_id")
   private Long branchFromNodeId;
 
+  // 성장공고(TASK-39) 기원 추천 전용: 삽입 대상 커스텀 로드맵 / anchor 커스텀 노드 / 분기 종류.
+  // 셋 다 null이면 기존(진단퀴즈/보강) 경로, target_custom_roadmap_id가 있으면 명시적 타깃 삽입 경로로 분기한다.
+  @Column(name = "target_custom_roadmap_id")
+  private Long targetCustomRoadmapId;
+
+  @Column(name = "anchor_custom_node_id")
+  private Long anchorCustomNodeId;
+
+  @Column(name = "branch_type", length = 20)
+  private String branchType;
+
   @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
   private String reason;
 
@@ -87,6 +98,9 @@ public class RecommendationChange {
       RoadmapNode roadmapNode,
       Long sourceRecommendationId,
       Long branchFromNodeId,
+      Long targetCustomRoadmapId,
+      Long anchorCustomNodeId,
+      String branchType,
       String reason,
       String contextSummary,
       NodeChangeType nodeChangeType,
@@ -97,6 +111,9 @@ public class RecommendationChange {
     this.roadmapNode = roadmapNode;
     this.sourceRecommendationId = sourceRecommendationId;
     this.branchFromNodeId = branchFromNodeId;
+    this.targetCustomRoadmapId = targetCustomRoadmapId;
+    this.anchorCustomNodeId = anchorCustomNodeId;
+    this.branchType = branchType;
     this.reason = reason;
     this.contextSummary = contextSummary;
     this.nodeChangeType = nodeChangeType == null ? NodeChangeType.ADD : nodeChangeType;
