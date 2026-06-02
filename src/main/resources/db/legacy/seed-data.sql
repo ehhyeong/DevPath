@@ -19326,3 +19326,22 @@ WHERE NOT EXISTS (
     WHERE lp.user_id = u.user_id
       AND lp.lesson_id = l.lesson_id
 );
+
+-- =====================================================================
+-- 공식 로드맵 이름 한글화 (직무별)
+--   허브 카드 라벨(roadmap_hub_items.title, 직무별=한글)과 roadmaps.title(영문)이
+--   불일치하던 문제를 해소: 로드맵 상세/어드민 '로드맵 기본정보'에서도 한글로 표시.
+--   - 모든 노드/허브아이템 시딩(FK 연결) 이후 마지막에 실행 → title 기반 참조 무영향
+--   - role-based 섹션만 대상 (skill-based는 허브도 영문이라 이미 일치, 기술명 영문 유지)
+--   - ddl-auto: create 재부팅 시에도 시드 재실행되어 한글 이름이 유지됨 (멱등)
+-- =====================================================================
+UPDATE roadmaps r
+SET title = hi.title
+FROM roadmap_hub_items hi
+JOIN roadmap_hub_sections s ON s.id = hi.section_id
+WHERE hi.linked_roadmap_id = r.roadmap_id
+  AND s.section_key = 'role-based'
+  AND r.is_official = TRUE
+  AND r.is_deleted = FALSE
+  AND hi.title IS NOT NULL
+  AND hi.title <> r.title;
