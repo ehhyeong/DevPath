@@ -20,6 +20,24 @@ type StatusMessage = {
   message: string
 }
 
+function resolveOAuthBaseUrl() {
+  const configuredBaseUrl =
+    import.meta.env.VITE_OAUTH_BASE_URL?.trim()
+    || import.meta.env.VITE_API_BASE_URL?.trim()
+
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.replace(/\/$/, '')
+  }
+
+  const { protocol, hostname, port, origin } = window.location
+
+  if ((hostname === 'localhost' || hostname === '127.0.0.1') && port !== '8083') {
+    return `${protocol}//${hostname}:8083`
+  }
+
+  return origin
+}
+
 function AuthModal({ view, onClose, onViewChange, onAuthenticated }: AuthModalProps) {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
@@ -183,7 +201,7 @@ function AuthModal({ view, onClose, onViewChange, onAuthenticated }: AuthModalPr
 
   function startOAuth(provider: 'google' | 'github') {
     storePostLoginReturnPath()
-    window.location.href = `/oauth2/authorization/${provider}`
+    window.location.href = `${resolveOAuthBaseUrl()}/oauth2/authorization/${provider}`
   }
 
   return (

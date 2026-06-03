@@ -26,7 +26,6 @@ export default defineConfig({
     port: 8084,
     proxy: {
       '/api': proxyToBackend,
-      '/oauth2': proxyToBackend,
       '/login/oauth2': proxyToBackend,
       '/swagger-ui': proxyToBackend,
       '/v3/api-docs': proxyToBackend,

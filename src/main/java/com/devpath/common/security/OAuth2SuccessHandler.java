@@ -1,5 +1,6 @@
 package com.devpath.common.security;
 
+import com.devpath.domain.user.entity.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -22,6 +23,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
   private final JwtTokenProvider jwtTokenProvider;
   private final TokenRedisService tokenRedisService;
+  private final OAuth2UserAccountService oAuth2UserAccountService;
 
   @Value("${app.oauth2.redirect-url}")
   private String oauth2RedirectUrl;
@@ -36,8 +38,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
     Map<String, Object> attributes = oAuth2User.getAttributes();
 
-    Long userId = extractUserId(attributes.get("userId"));
-    String role = extractRole(attributes.get("role"));
+    OAuthUserIdentity identity = resolveIdentity(attributes);
+    Long userId = identity.userId();
+    String role = identity.role();
+    String name = identity.name();
+    boolean newUser = identity.newUser();
 
     String accessToken = jwtTokenProvider.createAccessToken(userId, role);
     String refreshToken = jwtTokenProvider.createRefreshToken(userId, role);
@@ -50,6 +55,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             .queryParam("accessToken", accessToken)
             .queryParam("refreshToken", refreshToken)
             .queryParam("tokenType", "Bearer")
+            .queryParam("name", name)
+            .queryParam("newUser", newUser)
             .build()
             .encode()
             .toUriString();
@@ -67,6 +74,25 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     getRedirectStrategy().sendRedirect(request, response, targetUrl);
   }
 
+  private OAuthUserIdentity resolveIdentity(Map<String, Object> attributes) throws ServletException {
+    Object userIdValue = attributes.get("userId");
+    Object roleValue = attributes.get("role");
+    if (userIdValue != null && roleValue != null) {
+      return new OAuthUserIdentity(
+          extractUserId(userIdValue),
+          extractRole(roleValue),
+          extractName(attributes),
+          extractNewUser(attributes.get("newUser")));
+    }
+
+    String email = extractEmail(attributes.get("email"));
+    String name = extractName(attributes);
+    OAuth2UserAccountService.OAuth2UserAccount account =
+        oAuth2UserAccountService.findOrCreateUserWithStatus(email, name);
+    User user = account.user();
+    return new OAuthUserIdentity(user.getId(), user.getRole().name(), user.getName(), account.newUser());
+  }
+
   private Long extractUserId(Object userIdValue) throws ServletException {
     if (userIdValue instanceof Number number) {
       return number.longValue();
@@ -80,4 +106,36 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     }
     throw new ServletException("OAuth2 role attribute is missing.");
   }
+
+  private String extractEmail(Object emailValue) throws ServletException {
+    if (emailValue instanceof String email && !email.isBlank()) {
+      return email;
+    }
+    throw new ServletException("OAuth2 email attribute is missing.");
+  }
+
+  private String extractName(Map<String, Object> attributes) {
+    Object nameValue = attributes.get("name");
+    if (nameValue instanceof String name && !name.isBlank()) {
+      return name;
+    }
+    Object loginValue = attributes.get("login");
+    if (loginValue instanceof String login && !login.isBlank()) {
+      return login;
+    }
+    Object emailValue = attributes.get("email");
+    if (emailValue instanceof String email && !email.isBlank()) {
+      return email;
+    }
+    return "OAuth User";
+  }
+
+  private boolean extractNewUser(Object newUserValue) {
+    if (newUserValue instanceof Boolean newUser) {
+      return newUser;
+    }
+    return false;
+  }
+
+  private record OAuthUserIdentity(Long userId, String role, String name, boolean newUser) {}
 }
