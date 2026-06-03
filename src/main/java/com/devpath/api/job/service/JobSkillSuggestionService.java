@@ -90,8 +90,7 @@ public class JobSkillSuggestionService {
   private JobSkillSuggestionDto.Response suggestNodeIntoExistingRoadmap(
       User user, List<CustomRoadmap> roadmaps, String skill, String jobTitle) {
 
-    List<CustomRoadmap> limitedRoadmaps =
-        roadmaps.stream().limit(MAX_ROADMAPS_IN_PROMPT).toList();
+    List<CustomRoadmap> limitedRoadmaps = roadmaps.stream().limit(MAX_ROADMAPS_IN_PROMPT).toList();
 
     String prompt = buildBranchAPrompt(limitedRoadmaps, skill, jobTitle);
     JsonNode result = callGeminiJson(prompt);
@@ -122,7 +121,8 @@ public class JobSkillSuggestionService {
       anchorNode = lastNodeOf(targetRoadmap);
     }
 
-    String branchType = normalizeBranchType(result == null ? null : result.path("branchType").asText(null));
+    String branchType =
+        normalizeBranchType(result == null ? null : result.path("branchType").asText(null));
     String nodeTitle = textOrNull(result, "title");
     String nodeContent = textOrNull(result, "content");
     String nodeSubTopics = textOrNull(result, "subTopics");
@@ -183,7 +183,8 @@ public class JobSkillSuggestionService {
           .append(roadmap.getTitle())
           .append("\"\n");
       List<CustomRoadmapNode> nodes =
-          customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(roadmap)
+          customRoadmapNodeRepository
+              .findAllByCustomRoadmapOrderByCustomSortOrderAsc(roadmap)
               .stream()
               .limit(MAX_NODES_PER_ROADMAP)
               .toList();
@@ -222,7 +223,8 @@ public class JobSkillSuggestionService {
 
     if (officialRoadmapId != null) {
       // 매칭 공식 로드맵 복사
-      Long customRoadmapId = customRoadmapCopyService.copyToCustomRoadmap(user.getId(), officialRoadmapId);
+      Long customRoadmapId =
+          customRoadmapCopyService.copyToCustomRoadmap(user.getId(), officialRoadmapId);
       CustomRoadmap created =
           customRoadmapRepository
               .findById(customRoadmapId)
@@ -248,10 +250,7 @@ public class JobSkillSuggestionService {
     sb.append("아래 공식 로드맵 목록 중 이 기술 학습에 가장 적합한 로드맵의 id를 고르세요.\n");
     sb.append("적합한 로드맵이 없으면 null을 반환하세요.\n\n");
     for (Roadmap roadmap : officials) {
-      sb.append("- id=")
-          .append(roadmap.getRoadmapId())
-          .append(" | ")
-          .append(roadmap.getTitle());
+      sb.append("- id=").append(roadmap.getRoadmapId()).append(" | ").append(roadmap.getTitle());
       if (roadmap.getDescription() != null && !roadmap.getDescription().isBlank()) {
         sb.append(" | ").append(truncate(roadmap.getDescription(), 80));
       }
@@ -267,8 +266,7 @@ public class JobSkillSuggestionService {
     if (picked == null) {
       return null;
     }
-    Set<Long> validIds =
-        officials.stream().map(Roadmap::getRoadmapId).collect(Collectors.toSet());
+    Set<Long> validIds = officials.stream().map(Roadmap::getRoadmapId).collect(Collectors.toSet());
     return validIds.contains(picked) ? picked : null;
   }
 
@@ -280,8 +278,7 @@ public class JobSkillSuggestionService {
 
     List<GeneratedNode> generatedNodes = generateRoadmapNodesViaGemini(skill);
     if (generatedNodes.isEmpty()) {
-      generatedNodes =
-          List.of(new GeneratedNode("[입문] " + skill, skill + " 기초 학습 노드입니다.", skill));
+      generatedNodes = List.of(new GeneratedNode("[입문] " + skill, skill + " 기초 학습 노드입니다.", skill));
     }
 
     Roadmap systemRoadmap = resolveSystemRoadmap();
@@ -289,11 +286,7 @@ public class JobSkillSuggestionService {
     for (GeneratedNode generated : generatedNodes) {
       RoadmapNode dynamicNode =
           saveDynamicNode(
-              systemRoadmap,
-              generated.title(),
-              generated.content(),
-              generated.subTopics(),
-              "NODE");
+              systemRoadmap, generated.title(), generated.content(), generated.subTopics(), "NODE");
       customRoadmapNodeRepository.save(
           CustomRoadmapNode.builder()
               .customRoadmap(created)
@@ -383,7 +376,8 @@ public class JobSkillSuggestionService {
   }
 
   private CustomRoadmapNode lastNodeOf(CustomRoadmap roadmap) {
-    return customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(roadmap)
+    return customRoadmapNodeRepository
+        .findAllByCustomRoadmapOrderByCustomSortOrderAsc(roadmap)
         .stream()
         .reduce((first, second) -> second)
         .orElse(null);

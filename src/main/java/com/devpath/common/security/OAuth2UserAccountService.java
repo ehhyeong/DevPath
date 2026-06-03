@@ -29,14 +29,13 @@ public class OAuth2UserAccountService {
   }
 
   private User createUser(String email, String name) {
-    return userRepository
-        .save(
-            User.builder()
-                .email(email)
-                .name(name)
-                .password(OAUTH_USER_PASSWORD_DUMMY)
-                .role(UserRole.ROLE_LEARNER)
-                .build());
+    return userRepository.save(
+        User.builder()
+            .email(email)
+            .name(name)
+            .password(OAUTH_USER_PASSWORD_DUMMY)
+            .role(UserRole.ROLE_LEARNER)
+            .build());
   }
 
   public record OAuth2UserAccount(User user, boolean newUser) {}

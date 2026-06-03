@@ -24,9 +24,8 @@ public interface MentoringApplicationRepository extends JpaRepository<MentoringA
       Long mentorId);
 
   @EntityGraph(attributePaths = {"post", "post.mentor", "applicant"})
-  List<MentoringApplication>
-      findAllByPost_Mentor_IdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
-          Long mentorId, MentoringApplicationStatus status);
+  List<MentoringApplication> findAllByPost_Mentor_IdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+      Long mentorId, MentoringApplicationStatus status);
 
   // 신청 상세와 상태 조회에서 Soft Delete 된 신청은 제외한다.
   @EntityGraph(attributePaths = {"post", "post.mentor", "applicant"})

@@ -125,7 +125,9 @@ public class SquadLoungePostService {
     Map<Long, String> profileImages =
         userProfileRepository
             .findAllByUserIdIn(
-                members.stream().map(member -> member.getUser().getId()).collect(Collectors.toSet()))
+                members.stream()
+                    .map(member -> member.getUser().getId())
+                    .collect(Collectors.toSet()))
             .stream()
             .filter(profile -> profile.getUser() != null)
             .filter(profile -> profile.getDisplayProfileImage() != null)

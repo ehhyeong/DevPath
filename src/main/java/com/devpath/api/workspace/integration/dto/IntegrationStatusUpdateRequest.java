@@ -33,7 +33,8 @@ public class IntegrationStatusUpdateRequest {
     this.repositoryUrl = repositoryUrl;
   }
 
-  public IntegrationStatusUpdateRequest(Boolean isActive, String repositoryUrl, String githubToken) {
+  public IntegrationStatusUpdateRequest(
+      Boolean isActive, String repositoryUrl, String githubToken) {
     this.isActive = isActive;
     this.repositoryUrl = repositoryUrl;
     this.githubToken = githubToken;

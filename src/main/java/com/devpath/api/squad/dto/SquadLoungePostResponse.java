@@ -61,8 +61,7 @@ public class SquadLoungePostResponse {
         .id(squad.getId())
         .authorId(leader == null ? null : leader.getUser().getId())
         .authorName(leader == null ? "사용자" : leader.getUser().getName())
-        .authorProfileImage(
-            leader == null ? null : profileImages.get(leader.getUser().getId()))
+        .authorProfileImage(leader == null ? null : profileImages.get(leader.getUser().getId()))
         .title(squad.getName())
         .type(toWireType(squad.getLoungeType()))
         .deadline(squad.getRecruitingDeadline())
@@ -74,12 +73,18 @@ public class SquadLoungePostResponse {
         .views(squad.getViewCount() == null ? 0L : squad.getViewCount())
         .closed(Boolean.TRUE.equals(squad.getIsArchived()))
         .workspaceId(squad.getWorkspaceId())
-        .workspaceUrl(squad.getWorkspaceId() == null ? null : "/squad-dashboard?workspaceId=" + squad.getWorkspaceId())
+        .workspaceUrl(
+            squad.getWorkspaceId() == null
+                ? null
+                : "/squad-dashboard?workspaceId=" + squad.getWorkspaceId())
         .createdAt(squad.getCreatedAt())
         .updatedAt(squad.getUpdatedAt())
         .members(
             members.stream()
-                .map(member -> SquadMemberResponse.from(member, profileImages.get(member.getUser().getId())))
+                .map(
+                    member ->
+                        SquadMemberResponse.from(
+                            member, profileImages.get(member.getUser().getId())))
                 .toList())
         .build();
   }

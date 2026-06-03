@@ -50,9 +50,7 @@ public class GeminiProvider {
     return execute(body);
   }
 
-  /**
-   * 순수 텍스트 분석(채용공고 채점 등) 전용. thinking 모델의 추론 단계를 끄고 JSON 응답을 강제해 응답 지연과 출력 잘림을 방지한다.
-   */
+  /** 순수 텍스트 분석(채용공고 채점 등) 전용. thinking 모델의 추론 단계를 끄고 JSON 응답을 강제해 응답 지연과 출력 잘림을 방지한다. */
   public String generateJson(String prompt) {
     return generateJson(prompt, null, null, 4096);
   }
@@ -75,14 +73,15 @@ public class GeminiProvider {
 
     Map<String, Object> generationConfig =
         Map.of(
-            "responseMimeType", "application/json",
-            "thinkingConfig", Map.of("thinkingBudget", 0),
-            "maxOutputTokens", maxOutputTokens);
+            "responseMimeType",
+            "application/json",
+            "thinkingConfig",
+            Map.of("thinkingBudget", 0),
+            "maxOutputTokens",
+            maxOutputTokens);
 
     Map<String, Object> body =
-        Map.of(
-            "contents", List.of(Map.of("parts", parts)),
-            "generationConfig", generationConfig);
+        Map.of("contents", List.of(Map.of("parts", parts)), "generationConfig", generationConfig);
     return execute(body);
   }
 

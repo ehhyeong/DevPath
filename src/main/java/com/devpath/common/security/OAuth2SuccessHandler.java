@@ -74,7 +74,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     getRedirectStrategy().sendRedirect(request, response, targetUrl);
   }
 
-  private OAuthUserIdentity resolveIdentity(Map<String, Object> attributes) throws ServletException {
+  private OAuthUserIdentity resolveIdentity(Map<String, Object> attributes)
+      throws ServletException {
     Object userIdValue = attributes.get("userId");
     Object roleValue = attributes.get("role");
     if (userIdValue != null && roleValue != null) {
@@ -90,7 +91,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     OAuth2UserAccountService.OAuth2UserAccount account =
         oAuth2UserAccountService.findOrCreateUserWithStatus(email, name);
     User user = account.user();
-    return new OAuthUserIdentity(user.getId(), user.getRole().name(), user.getName(), account.newUser());
+    return new OAuthUserIdentity(
+        user.getId(), user.getRole().name(), user.getName(), account.newUser());
   }
 
   private Long extractUserId(Object userIdValue) throws ServletException {

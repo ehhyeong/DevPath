@@ -223,7 +223,9 @@ public class InstructorCourseDto {
   @Schema(description = "강의 에셋 업로드 응답 DTO")
   public static class UploadedAssetResponse {
 
-    @Schema(description = "브라우저에서 접근 가능한 에셋 URL", example = "/uploads/courses/1/thumbnail/course.png")
+    @Schema(
+        description = "브라우저에서 접근 가능한 에셋 URL",
+        example = "/uploads/courses/1/thumbnail/course.png")
     private String url;
 
     @Schema(description = "저장소 내부 에셋 키", example = "courses/1/thumbnail/course.png")

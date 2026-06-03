@@ -36,31 +36,139 @@ public class GeminiJobAnalysisService {
   private static final Set<String> DEV_SKILL_KEYWORDS =
       Set.of(
           // 언어/런타임
-          "java", "kotlin", "spring", "jpa", "hibernate", "node", "nest", "express", "python",
-          "fastapi", "django", "flask", "golang", "rust", "c++", "c#", ".net", "php", "ruby",
-          "rails", "javascript", "typescript", "scala",
+          "java",
+          "kotlin",
+          "spring",
+          "jpa",
+          "hibernate",
+          "node",
+          "nest",
+          "express",
+          "python",
+          "fastapi",
+          "django",
+          "flask",
+          "golang",
+          "rust",
+          "c++",
+          "c#",
+          ".net",
+          "php",
+          "ruby",
+          "rails",
+          "javascript",
+          "typescript",
+          "scala",
           // 프론트엔드
-          "react", "vue", "nuxt", "next", "angular", "svelte", "tailwind", "redux", "zustand",
-          "webpack", "vite", "html", "css", "프론트엔드", "frontend",
+          "react",
+          "vue",
+          "nuxt",
+          "next",
+          "angular",
+          "svelte",
+          "tailwind",
+          "redux",
+          "zustand",
+          "webpack",
+          "vite",
+          "html",
+          "css",
+          "프론트엔드",
+          "frontend",
           // 데이터/DB
-          "sql", "mysql", "postgre", "oracle", "mongo", "redis", "kafka", "rabbitmq",
-          "elasticsearch", "db", "dbms", "etl", "spark", "hadoop", "airflow", "빅데이터", "데이터",
-          "모델링", "데이터마이닝", "dw",
+          "sql",
+          "mysql",
+          "postgre",
+          "oracle",
+          "mongo",
+          "redis",
+          "kafka",
+          "rabbitmq",
+          "elasticsearch",
+          "db",
+          "dbms",
+          "etl",
+          "spark",
+          "hadoop",
+          "airflow",
+          "빅데이터",
+          "데이터",
+          "모델링",
+          "데이터마이닝",
+          "dw",
           // 인프라/DevOps
-          "docker", "kubernetes", "k8s", "aws", "azure", "gcp", "terraform", "ansible", "jenkins",
-          "ci/cd", "cicd", "linux", "nginx", "클라우드", "devops", "sre", "msa", "마이크로서비스",
-          "서버", "인프라", "네트워크", "모니터링",
+          "docker",
+          "kubernetes",
+          "k8s",
+          "aws",
+          "azure",
+          "gcp",
+          "terraform",
+          "ansible",
+          "jenkins",
+          "ci/cd",
+          "cicd",
+          "linux",
+          "nginx",
+          "클라우드",
+          "devops",
+          "sre",
+          "msa",
+          "마이크로서비스",
+          "서버",
+          "인프라",
+          "네트워크",
+          "모니터링",
           // 보안
-          "보안", "security", "oauth", "jwt", "owasp",
+          "보안",
+          "security",
+          "oauth",
+          "jwt",
+          "owasp",
           // AI/ML
-          "머신러닝", "딥러닝", "인공지능", "자연어처리", "nlp", "음성인식", "이미지프로세싱", "챗봇", "tensorflow",
-          "pytorch", "keras", "llm", "mlops",
+          "머신러닝",
+          "딥러닝",
+          "인공지능",
+          "자연어처리",
+          "nlp",
+          "음성인식",
+          "이미지프로세싱",
+          "챗봇",
+          "tensorflow",
+          "pytorch",
+          "keras",
+          "llm",
+          "mlops",
           // 모바일
-          "android", "ios", "swift", "flutter", "reactnative", "안드로이드", "모바일",
+          "android",
+          "ios",
+          "swift",
+          "flutter",
+          "reactnative",
+          "안드로이드",
+          "모바일",
           // 일반 개발
-          "backend", "백엔드", "풀스택", "개발", "api", "rest", "graphql", "grpc", "http", "알고리즘",
-          "자료구조", "시스템", "아키텍처", "펌웨어", "임베디드", "qa", "playwright", "cypress",
-          "selenium", "junit", "git");
+          "backend",
+          "백엔드",
+          "풀스택",
+          "개발",
+          "api",
+          "rest",
+          "graphql",
+          "grpc",
+          "http",
+          "알고리즘",
+          "자료구조",
+          "시스템",
+          "아키텍처",
+          "펌웨어",
+          "임베디드",
+          "qa",
+          "playwright",
+          "cypress",
+          "selenium",
+          "junit",
+          "git");
 
   private final JobActivityProfileService jobActivityProfileService;
   private final JobkoreaApiClient jobkoreaApiClient;
@@ -201,15 +309,12 @@ public class GeminiJobAnalysisService {
     List<GeminiScore> scores = parseScores(raw, postings);
     scores.sort(Comparator.comparingInt(GeminiScore::matchScore).reversed());
 
-    int dynamicMatchedLimit =
-        Math.min(MATCHED_LIMIT, Math.max(0, scores.size() - STRETCH_LIMIT));
+    int dynamicMatchedLimit = Math.min(MATCHED_LIMIT, Math.max(0, scores.size() - STRETCH_LIMIT));
     int stretchStart = dynamicMatchedLimit;
     int stretchEnd = Math.min(scores.size(), stretchStart + STRETCH_LIMIT);
 
     List<String> userSkills =
-        (profile != null && profile.skillSignals() != null)
-            ? profile.skillSignals()
-            : List.of();
+        (profile != null && profile.skillSignals() != null) ? profile.skillSignals() : List.of();
 
     List<GeminiJobAnalysisResponse.RecommendedPosting> matched = new ArrayList<>();
     List<GeminiJobAnalysisResponse.RecommendedPosting> stretch = new ArrayList<>();
@@ -235,7 +340,10 @@ public class GeminiJobAnalysisService {
     // Gemini가 유효 점수를 반환하지 못해 성장공고가 비는 경우, 공고에서 직접 보강해 항상 노출되도록 한다.
     if (stretch.isEmpty() && !postings.isEmpty()) {
       Set<Integer> usedIndexes =
-          scores.stream().limit(dynamicMatchedLimit).map(GeminiScore::index).collect(Collectors.toSet());
+          scores.stream()
+              .limit(dynamicMatchedLimit)
+              .map(GeminiScore::index)
+              .collect(Collectors.toSet());
       for (int i = postings.size() - 1; i >= 0 && stretch.size() < STRETCH_LIMIT; i--) {
         if (usedIndexes.contains(i)) {
           continue;
@@ -308,11 +416,12 @@ public class GeminiJobAnalysisService {
         // 개발 스킬만 남겨 비개발 태그(바이오/화학/회계/마케팅 등) 제거
         .filter(this::isDevSkill)
         // 사용자가 이미 보유한 스킬 제외
-        .filter(kw -> {
-          String kwNorm = kw.toLowerCase(Locale.ROOT).trim();
-          return userNormalized.stream()
-              .noneMatch(us -> us.contains(kwNorm) || kwNorm.contains(us));
-        })
+        .filter(
+            kw -> {
+              String kwNorm = kw.toLowerCase(Locale.ROOT).trim();
+              return userNormalized.stream()
+                  .noneMatch(us -> us.contains(kwNorm) || kwNorm.contains(us));
+            })
         .distinct()
         .limit(STRETCH_LIMIT)
         .toList();
@@ -347,8 +456,7 @@ public class GeminiJobAnalysisService {
     int end = cleaned.lastIndexOf(']');
     if (start < 0 || end <= start) {
       throw new RuntimeException(
-          "Gemini 응답에서 JSON 배열을 찾을 수 없습니다. raw="
-              + raw.substring(0, Math.min(200, raw.length())));
+          "Gemini 응답에서 JSON 배열을 찾을 수 없습니다. raw=" + raw.substring(0, Math.min(200, raw.length())));
     }
 
     return cleaned.substring(start, end + 1);

@@ -295,7 +295,9 @@ public class GithubPullRequestClient {
           diffText,
           additions,
           deletions,
-          List.of(new GithubPullRequest.FileChange(filePath, diffText, additions, deletions, "unknown")));
+          List.of(
+              new GithubPullRequest.FileChange(
+                  filePath, diffText, additions, deletions, "unknown")));
     }
   }
 }

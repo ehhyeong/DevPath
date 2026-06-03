@@ -169,13 +169,16 @@ public class AssignmentPrecheckService {
     boolean hasFiles = request.getFiles() != null && !request.getFiles().isEmpty();
 
     if (hasText && !methods.allowText()) {
-      throw new CustomException(ErrorCode.INVALID_INPUT, "Text submission is not allowed for this assignment.");
+      throw new CustomException(
+          ErrorCode.INVALID_INPUT, "Text submission is not allowed for this assignment.");
     }
     if (hasUrl && !methods.allowUrl()) {
-      throw new CustomException(ErrorCode.INVALID_INPUT, "URL submission is not allowed for this assignment.");
+      throw new CustomException(
+          ErrorCode.INVALID_INPUT, "URL submission is not allowed for this assignment.");
     }
     if (hasFiles && !methods.allowFile()) {
-      throw new CustomException(ErrorCode.INVALID_INPUT, "File submission is not allowed for this assignment.");
+      throw new CustomException(
+          ErrorCode.INVALID_INPUT, "File submission is not allowed for this assignment.");
     }
 
     boolean hasAllowedSubmission =

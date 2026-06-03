@@ -600,7 +600,9 @@ public class InstructorLessonEvaluationService {
             assignment.getPassScore() == null
                 ? Math.min(defaultNumber(assignment.getTotalScore(), 100), 80)
                 : assignment.getPassScore())
-        .aiReviewEnabled(assignment.getAiReviewEnabled() == null || Boolean.TRUE.equals(assignment.getAiReviewEnabled()))
+        .aiReviewEnabled(
+            assignment.getAiReviewEnabled() == null
+                || Boolean.TRUE.equals(assignment.getAiReviewEnabled()))
         .allowTextSubmission(submissionFlags.allowTextSubmission())
         .allowFileSubmission(submissionFlags.allowFileSubmission())
         .allowUrlSubmission(submissionFlags.allowUrlSubmission())

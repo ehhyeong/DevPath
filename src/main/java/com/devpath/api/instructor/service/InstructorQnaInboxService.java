@@ -1,7 +1,5 @@
 package com.devpath.api.instructor.service;
 
-import com.devpath.api.notification.service.NotificationEventService;
-import com.devpath.api.qna.realtime.QnaRealtimePublisher;
 import com.devpath.api.instructor.dto.qna.QnaAnswerRequest;
 import com.devpath.api.instructor.dto.qna.QnaAnswerResponse;
 import com.devpath.api.instructor.dto.qna.QnaDraftRequest;
@@ -16,6 +14,7 @@ import com.devpath.api.instructor.entity.QnaTemplate;
 import com.devpath.api.instructor.repository.QnaAnswerDraftRepository;
 import com.devpath.api.instructor.repository.QnaTemplateRepository;
 import com.devpath.api.notification.service.NotificationEventService;
+import com.devpath.api.qna.realtime.QnaRealtimePublisher;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -384,7 +383,10 @@ public class InstructorQnaInboxService {
     if (userId == null) {
       return null;
     }
-    return userProfileRepository.findByUserId(userId).map(UserProfile::getDisplayProfileImage).orElse(null);
+    return userProfileRepository
+        .findByUserId(userId)
+        .map(UserProfile::getDisplayProfileImage)
+        .orElse(null);
   }
 
   private Map<Long, String> resolveProfileImages(List<Question> questions) {

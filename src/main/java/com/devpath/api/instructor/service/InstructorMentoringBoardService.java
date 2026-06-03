@@ -82,7 +82,8 @@ public class InstructorMentoringBoardService {
 
     InstructorMentoringBoardPayload payload =
         filterLiveMentoringData(
-            createMissingMentoringWorkspaces(instructorId, readPayload(board.get().getPayloadJson())));
+            createMissingMentoringWorkspaces(
+                instructorId, readPayload(board.get().getPayloadJson())));
     String payloadJson = writePayload(payload);
     if (!Objects.equals(board.get().getPayloadJson(), payloadJson)) {
       board.get().updatePayload(payloadJson);
@@ -390,7 +391,8 @@ public class InstructorMentoringBoardService {
         Workspace.builder()
             .ownerId(instructorId)
             .name(firstNonBlank(post == null ? null : post.getTitle(), item.title(), "Mentoring"))
-            .description(firstNonBlank(post == null ? null : post.getContent(), item.subtitle(), null))
+            .description(
+                firstNonBlank(post == null ? null : post.getContent(), item.subtitle(), null))
             .type(WorkspaceType.MENTORING)
             .build();
     return workspaceRepository.save(workspace);
@@ -479,7 +481,9 @@ public class InstructorMentoringBoardService {
       }
     }
 
-    return item.title() == null || item.title().isBlank() ? List.of() : List.of(item.title().trim());
+    return item.title() == null || item.title().isBlank()
+        ? List.of()
+        : List.of(item.title().trim());
   }
 
   private LocalDate parseStartDate(String startDate) {
@@ -566,8 +570,7 @@ public class InstructorMentoringBoardService {
     List<MentoringPost> posts =
         mentoringPostRepository.findAllByMentor_IdAndIsDeletedFalseOrderByCreatedAtDesc(
             instructorId);
-    Map<String, InstructorMentoringBoardPayload.ProjectItem> mergedProjects =
-        new LinkedHashMap<>();
+    Map<String, InstructorMentoringBoardPayload.ProjectItem> mergedProjects = new LinkedHashMap<>();
     posts.forEach(
         post -> {
           InstructorMentoringBoardPayload.ProjectItem projectItem = toProjectItem(post);
@@ -608,7 +611,9 @@ public class InstructorMentoringBoardService {
         List.of(),
         tags,
         post.getMentor().getName(),
-        (post.getCategory() == null || post.getCategory().isBlank() ? "Backend" : post.getCategory())
+        (post.getCategory() == null || post.getCategory().isBlank()
+                ? "Backend"
+                : post.getCategory())
             + " 멘토",
         post.getContent(),
         post.getDurationWeeks() == null ? 4 : post.getDurationWeeks(),
@@ -619,7 +624,10 @@ public class InstructorMentoringBoardService {
     if (value == null || value.isBlank()) {
       return List.of();
     }
-    return List.of(value.split(",")).stream().map(String::trim).filter(token -> !token.isBlank()).toList();
+    return List.of(value.split(",")).stream()
+        .map(String::trim)
+        .filter(token -> !token.isBlank())
+        .toList();
   }
 
   private List<String> splitLines(String value) {
@@ -636,8 +644,7 @@ public class InstructorMentoringBoardService {
             .findAllByPost_Mentor_IdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
                 instructorId, MentoringApplicationStatus.PENDING);
 
-    Map<String, InstructorMentoringBoardPayload.RequestItem> mergedRequests =
-        new LinkedHashMap<>();
+    Map<String, InstructorMentoringBoardPayload.RequestItem> mergedRequests = new LinkedHashMap<>();
     pendingApplications.forEach(
         application -> {
           InstructorMentoringBoardPayload.RequestItem requestItem = toRequestItem(application);
@@ -773,11 +780,13 @@ public class InstructorMentoringBoardService {
         item.startDate());
   }
 
-  private boolean isLivePostOngoingProject(InstructorMentoringBoardPayload.OngoingProjectItem item) {
+  private boolean isLivePostOngoingProject(
+      InstructorMentoringBoardPayload.OngoingProjectItem item) {
     return item != null && parseLivePostId(item.id()) != null;
   }
 
-  private boolean hasCreatedWorkspaceMarker(InstructorMentoringBoardPayload.OngoingProjectItem item) {
+  private boolean hasCreatedWorkspaceMarker(
+      InstructorMentoringBoardPayload.OngoingProjectItem item) {
     return item != null && item.id() != null && item.id().contains("-workspace-");
   }
 
@@ -824,9 +833,7 @@ public class InstructorMentoringBoardService {
         teamMode ? 50 : 35,
         "워크스페이스 이동",
         "일정 관리",
-        teamMode
-            ? List.of("워크스페이스 설정", "멤버 관리", "완료 처리")
-            : List.of("과제 설정", "공지 전송", "멘토링 종료"),
+        teamMode ? List.of("워크스페이스 설정", "멤버 관리", "완료 처리") : List.of("과제 설정", "공지 전송", "멘토링 종료"),
         workspace.getId(),
         null);
   }

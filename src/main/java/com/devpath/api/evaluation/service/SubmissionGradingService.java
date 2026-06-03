@@ -214,9 +214,7 @@ public class SubmissionGradingService {
               .append(truncateForPrompt(file.getTextContent(), 12000))
               .append("\n```\n");
         } else {
-          sb.append("[")
-              .append(file.getFileName())
-              .append(" content unavailable for review]\n");
+          sb.append("[").append(file.getFileName()).append(" content unavailable for review]\n");
         }
       }
     }
@@ -305,7 +303,9 @@ public class SubmissionGradingService {
       int objectStart = raw.indexOf('{');
       int arrayStart = raw.indexOf('[');
       int start =
-          objectStart >= 0 && (arrayStart < 0 || objectStart < arrayStart) ? objectStart : arrayStart;
+          objectStart >= 0 && (arrayStart < 0 || objectStart < arrayStart)
+              ? objectStart
+              : arrayStart;
       int end = start == objectStart ? raw.lastIndexOf('}') : raw.lastIndexOf(']');
       if (start == -1 || end == -1 || start >= end) {
         log.warn("[SubmissionGradingService] Gemini 응답에서 JSON 배열 추출 실패. Fallback 실행.");
@@ -362,20 +362,20 @@ public class SubmissionGradingService {
     boolean weakSubmission = isWeakSubmission(submission);
     List<SubmissionGradeResponse.RubricGradeItem> items =
         rubrics.stream()
-        .map(
-            rubric ->
-                SubmissionGradeResponse.RubricGradeItem.builder()
-                    .rubricId(rubric.getId())
-                    .criteriaName(rubric.getCriteriaName())
-                    .maxPoints(rubric.getMaxPoints())
-                    .earnedPoints(weakSubmission ? 0 : rubric.getMaxPoints() / 2)
-                    .reviewComment(
-                        weakSubmission
-                            ? "제출 내용이 너무 짧거나 실제 구현을 확인할 수 없어 기준을 충족하지 못했습니다."
-                            : "AI 응답을 받지 못해 보수적인 기본 점수로 산정했습니다.")
-                    .earnedPoints(rubric.getMaxPoints() / 2)
-                    .build())
-        .toList();
+            .map(
+                rubric ->
+                    SubmissionGradeResponse.RubricGradeItem.builder()
+                        .rubricId(rubric.getId())
+                        .criteriaName(rubric.getCriteriaName())
+                        .maxPoints(rubric.getMaxPoints())
+                        .earnedPoints(weakSubmission ? 0 : rubric.getMaxPoints() / 2)
+                        .reviewComment(
+                            weakSubmission
+                                ? "제출 내용이 너무 짧거나 실제 구현을 확인할 수 없어 기준을 충족하지 못했습니다."
+                                : "AI 응답을 받지 못해 보수적인 기본 점수로 산정했습니다.")
+                        .earnedPoints(rubric.getMaxPoints() / 2)
+                        .build())
+            .toList();
     String feedback =
         weakSubmission
             ? "제출된 코드나 파일 내용만으로는 과제 요구사항을 충족했다고 보기 어렵습니다. 실제 구현, 예외 처리, 실행 결과, 설명을 포함해 다시 제출해야 합니다."
@@ -385,7 +385,9 @@ public class SubmissionGradingService {
 
   private boolean isWeakSubmission(Submission submission) {
     String content = buildSubmissionContent(submission).replaceAll("\\s+", "");
-    return content.length() < 80 || content.contains("print(\"hello\")") || content.contains("print('hello')");
+    return content.length() < 80
+        || content.contains("print(\"hello\")")
+        || content.contains("print('hello')");
   }
 
   private User validateInstructor(Long userId) {
