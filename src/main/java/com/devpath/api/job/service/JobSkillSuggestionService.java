@@ -4,6 +4,7 @@ import com.devpath.api.job.dto.JobSkillSuggestionDto;
 import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
 import com.devpath.api.roadmap.service.NodeRequiredTagRegistrar;
 import com.devpath.api.roadmap.service.RoadmapProgressService;
+import com.devpath.api.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.provider.GeminiProvider;
@@ -46,8 +47,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class JobSkillSuggestionService {
 
-  // AI 동적 노드 보관용 시스템 로드맵 제목 (is_official=false, UI/허브 미노출).
-  private static final String SYSTEM_ROADMAP_TITLE = "__SYSTEM_AI_DYNAMIC_NODES__";
   private static final int MAX_ROADMAPS_IN_PROMPT = 12;
   private static final int MAX_NODES_PER_ROADMAP = 30;
   private static final int MAX_OFFICIAL_ROADMAPS_IN_PROMPT = 40;
@@ -64,6 +63,7 @@ public class JobSkillSuggestionService {
   private final CustomRoadmapCopyService customRoadmapCopyService;
   private final RoadmapProgressService roadmapProgressService;
   private final NodeRequiredTagRegistrar nodeRequiredTagRegistrar;
+  private final SystemDynamicRoadmapProvider systemDynamicRoadmapProvider;
   private final GeminiProvider geminiProvider;
 
   @Transactional
@@ -142,7 +142,8 @@ public class JobSkillSuggestionService {
     nodeSubTopics = String.join(",", resolveNodeTags(nodeSubTopics, skill, jobTitle));
 
     RoadmapNode dynamicNode =
-        saveDynamicNode(resolveSystemRoadmap(), nodeTitle, nodeContent, nodeSubTopics, "BRANCH");
+        saveDynamicNode(
+            systemDynamicRoadmapProvider.resolve(), nodeTitle, nodeContent, nodeSubTopics, "BRANCH");
 
     String reason =
         (jobTitle != null && !jobTitle.isBlank() ? "'" + jobTitle + "' 공고의 " : "")
@@ -291,7 +292,7 @@ public class JobSkillSuggestionService {
           List.of(new GeneratedNode("[입문] " + skill, skill + " 기초 학습 노드입니다.", skill));
     }
 
-    Roadmap systemRoadmap = resolveSystemRoadmap();
+    Roadmap systemRoadmap = systemDynamicRoadmapProvider.resolve();
     int order = 0;
     for (GeneratedNode generated : generatedNodes) {
       String subTopics = String.join(",", resolveNodeTags(generated.subTopics(), skill, null));
@@ -359,21 +360,6 @@ public class JobSkillSuggestionService {
   private record GeneratedNode(String title, String content, String subTopics) {}
 
   // ────────────────────────────── 공통 유틸 ──────────────────────────────
-
-  private Roadmap resolveSystemRoadmap() {
-    return roadmapRepository
-        .findFirstByTitle(SYSTEM_ROADMAP_TITLE)
-        .orElseGet(
-            () ->
-                roadmapRepository.save(
-                    Roadmap.builder()
-                        .title(SYSTEM_ROADMAP_TITLE)
-                        .description("AI 동적 학습 노드 보관용 시스템 로드맵 (UI 비노출)")
-                        .isOfficial(false)
-                        .isPublic(false)
-                        .isDeleted(false)
-                        .build()));
-  }
 
   private RoadmapNode saveDynamicNode(
       Roadmap home, String title, String content, String subTopics, String nodeType) {

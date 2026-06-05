@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 // 공식 로드맵을 사용자 전용 커스텀 로드맵으로 복사하는 서비스
 public class CustomRoadmapCopyService {
+
+  // 공식 로드맵에 잘못 섞인 동적/평가용 노드는 복사하지 않는다.
+  private static final Set<String> NON_COPYABLE_NODE_TYPES =
+      Set.of("BRANCH", "COURSE_QUIZ", "COURSE_ASSIGNMENT");
 
   private final UserRepository userRepository;
   private final RoadmapRepository roadmapRepository;
@@ -98,6 +103,13 @@ public class CustomRoadmapCopyService {
         originalNodes.stream()
             .collect(Collectors.toMap(RoadmapNode::getNodeId, Function.identity()));
 
+    // 공식 로드맵에 잘못 섞인 동적/평가용 노드(BRANCH/퀴즈/과제·sort_order 없는 노드)는 복사 대상에서 제외한다.
+    Set<Long> excludedNodeIds =
+        originalNodes.stream()
+            .filter(node -> !isCopyableSpineNode(node))
+            .map(RoadmapNode::getNodeId)
+            .collect(Collectors.toSet());
+
     // 사용자가 이미 보유한 기술 태그와 노드별 필수 태그를 미리 준비한다.
     List<String> userTags = userTechStackRepository.findTagNamesByUserId(userId);
     Map<Long, List<String>> requiredTagsByNodeId = groupRequiredTagsByNodeId(originalNodeIds);
@@ -105,6 +117,7 @@ public class CustomRoadmapCopyService {
     // 노드 순서를 유지한 채 커스텀 노드 목록으로 변환한다.
     List<CustomRoadmapNode> customNodesToSave =
         snapshot.nodes().stream()
+            .filter(nodeItem -> !excludedNodeIds.contains(nodeItem.nodeId()))
             .sorted(
                 Comparator.comparing(
                     OfficialRoadmapSnapshot.NodeItem::orderIndex,
@@ -127,6 +140,10 @@ public class CustomRoadmapCopyService {
     // 원본 로드맵의 선수 관계를 커스텀 노드 기준 관계로 다시 생성한다.
     List<CustomNodePrerequisite> prerequisitesToSave =
         snapshot.prerequisiteEdges().stream()
+            .filter(
+                edge ->
+                    !excludedNodeIds.contains(edge.nodeId())
+                        && !excludedNodeIds.contains(edge.prerequisiteNodeId()))
             .map(edge -> buildPrerequisite(customRoadmap, customNodeByOriginalId, edge))
             .toList();
 
@@ -176,6 +193,14 @@ public class CustomRoadmapCopyService {
     }
 
     return customNode;
+  }
+
+  // 척추(정규) 노드만 복사 대상으로 인정한다. 동적/평가용 노드(BRANCH/퀴즈/과제)나 sort_order가 없는 노드는 제외.
+  private boolean isCopyableSpineNode(RoadmapNode node) {
+    if (node == null || node.getSortOrder() == null) {
+      return false;
+    }
+    return node.getNodeType() == null || !NON_COPYABLE_NODE_TYPES.contains(node.getNodeType());
   }
 
   // 원본 로드맵의 선수 관계를 커스텀 로드맵의 선수 관계로 다시 연결한다.

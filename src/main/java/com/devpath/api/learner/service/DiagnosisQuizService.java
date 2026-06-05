@@ -1,6 +1,7 @@
 package com.devpath.api.learner.service;
 
 import com.devpath.api.learner.dto.DiagnosisQuizDto;
+import com.devpath.api.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.provider.GeminiProvider;
@@ -50,6 +51,7 @@ public class DiagnosisQuizService {
   private final UserRepository userRepository;
   private final NodeRequiredTagRepository nodeRequiredTagRepository;
   private final RecommendationChangeRepository recommendationChangeRepository;
+  private final SystemDynamicRoadmapProvider systemDynamicRoadmapProvider;
   private final GeminiProvider geminiProvider;
 
   /** 진단 퀴즈 생성 */
@@ -265,7 +267,7 @@ public class DiagnosisQuizService {
           if (title != null) {
             return roadmapNodeRepository.save(
                 RoadmapNode.builder()
-                    .roadmap(baseNode.getRoadmap())
+                    .roadmap(systemDynamicRoadmapProvider.resolve())
                     .title(title)
                     .content(content)
                     .nodeType("BRANCH")
