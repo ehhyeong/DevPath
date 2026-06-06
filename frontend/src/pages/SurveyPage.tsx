@@ -96,10 +96,11 @@ const QUESTIONS: Question[] = [
   },
 ]
 
-// 설문 결과 키 → 공식 로드맵 타이틀 매핑 (ID는 런타임에 hub catalog에서 조회)
-const SURVEY_KEY_TO_ROADMAP_TITLE: Record<string, string> = {
-  frontend: 'Frontend Entry Roadmap',
-  backend: 'Backend Master Roadmap',
+// 설문 결과 키 → 허브 아이템 subtitle(영문 역할명) 매핑. subtitle은 로드맵 이름 한글화에도 불변이라 안정적.
+// (ID는 런타임에 hub catalog에서 조회)
+const SURVEY_KEY_TO_ROADMAP_SUBTITLE: Record<string, string> = {
+  frontend: 'Frontend',
+  backend: 'Backend',
   fullstack: 'Full Stack',
   devops: 'DevOps',
   devsecops: 'DevSecOps',
@@ -166,19 +167,19 @@ function SurveyPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [scores, setScores] = useState<Record<string, number>>(initScores)
   const [results, setResults] = useState<[string, number][]>([])
-  const [roadmapTitleToId, setRoadmapTitleToId] = useState<Record<string, number>>({})
+  const [roadmapSubtitleToId, setRoadmapSubtitleToId] = useState<Record<string, number>>({})
 
   useEffect(() => {
     roadmapApi.getHubCatalog().then((catalog) => {
       const map: Record<string, number> = {}
       for (const section of catalog.sections) {
         for (const item of section.items) {
-          if (item.linkedRoadmapId != null && item.linkedRoadmapTitle) {
-            map[item.linkedRoadmapTitle] = item.linkedRoadmapId
+          if (item.linkedRoadmapId != null && item.subtitle) {
+            map[item.subtitle] = item.linkedRoadmapId
           }
         }
       }
-      setRoadmapTitleToId(map)
+      setRoadmapSubtitleToId(map)
     }).catch(() => {})
   }, [])
 
@@ -277,9 +278,9 @@ function SurveyPage() {
   }
 
   function getRoadmapId(key: string): number | null {
-    const title = SURVEY_KEY_TO_ROADMAP_TITLE[key]
-    if (!title) return null
-    return roadmapTitleToId[title] ?? null
+    const subtitle = SURVEY_KEY_TO_ROADMAP_SUBTITLE[key]
+    if (!subtitle) return null
+    return roadmapSubtitleToId[subtitle] ?? null
   }
 
   const progress = Math.round((currentStep / QUESTIONS.length) * 100)
@@ -406,7 +407,7 @@ function SurveyPage() {
                   href={topRoadmapId ? `/roadmap?original=${topRoadmapId}` : '/roadmap-hub'}
                   className="bg-brand block w-full rounded-lg py-3 font-bold text-white shadow-md transition hover:bg-green-600"
                 >
-                  로드맵 보러 가기
+                  로드맵 학습하기
                 </a>
                 <button
                   type="button"
