@@ -216,6 +216,11 @@ public class MyRoadmapDto {
         Map<Long, Boolean> readyToClearByCustomNodeId,
         Map<Long, Integer> clearProgressByCustomNodeId) {
       Roadmap orig = customRoadmap.getOriginalRoadmap();
+      java.util.Set<Long> deferredCustomNodeIds =
+          nodes.stream()
+              .filter(CustomRoadmapNode::isDeferred)
+              .map(CustomRoadmapNode::getId)
+              .collect(java.util.stream.Collectors.toSet());
       return DetailResponse.builder()
           .customRoadmapId(customRoadmap.getId())
           .originalRoadmapId(orig != null ? orig.getRoadmapId() : null)
@@ -249,7 +254,8 @@ public class MyRoadmapDto {
                                       node.getOriginalNode().getNodeId())
                                   : null,
                               readyToClearByCustomNodeId.getOrDefault(node.getId(), false),
-                              clearProgressByCustomNodeId.getOrDefault(node.getId(), 100)))
+                              clearProgressByCustomNodeId.getOrDefault(node.getId(), 100),
+                              deferredCustomNodeIds))
                   .toList())
           .build();
     }
@@ -321,6 +327,9 @@ public class MyRoadmapDto {
     @Schema(description = "클리어 진행도(%) — 충족 태그/전체 필수 태그. 필수태그 없으면 100")
     private int clearProgressPercent;
 
+    @Schema(description = "스킵 여부 — 완료하지 않아도 다음 노드 진행 허용(미완료 상태 유지)")
+    private boolean deferred;
+
     @Schema(description = "노드 추천 무료 자료 목록")
     private List<NodeResourceItem> resources;
 
@@ -343,6 +352,7 @@ public class MyRoadmapDto {
         List<String> requiredTags,
         boolean readyToClear,
         int clearProgressPercent,
+        boolean deferred,
         List<NodeResourceItem> resources) {
       this.customNodeId = customNodeId;
       this.originalNodeId = originalNodeId;
@@ -361,6 +371,7 @@ public class MyRoadmapDto {
       this.requiredTags = requiredTags;
       this.readyToClear = readyToClear;
       this.clearProgressPercent = clearProgressPercent;
+      this.deferred = deferred;
       this.resources = resources;
     }
 
@@ -373,7 +384,8 @@ public class MyRoadmapDto {
         List<String> requiredTags,
         Boolean requiredTagsSatisfied,
         boolean readyToClear,
-        int clearProgressPercent) {
+        int clearProgressPercent,
+        java.util.Set<Long> deferredCustomNodeIds) {
 
       boolean isBuilderOrigin = node.getOriginalNode() == null;
 
@@ -416,7 +428,8 @@ public class MyRoadmapDto {
                     .anyMatch(
                         prereqId ->
                             statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
-                                != NodeStatus.COMPLETED);
+                                    != NodeStatus.COMPLETED
+                                && !deferredCustomNodeIds.contains(prereqId));
         displayStatus = isLocked ? DisplayNodeStatus.LOCKED : DisplayNodeStatus.PENDING;
       }
 
@@ -449,6 +462,7 @@ public class MyRoadmapDto {
           .requiredTags(requiredTags)
           .readyToClear(readyToClear)
           .clearProgressPercent(clearProgressPercent)
+          .deferred(node.isDeferred())
           .resources(resources.stream().map(NodeResourceItem::from).toList())
           .build();
     }

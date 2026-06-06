@@ -4,6 +4,7 @@ import com.devpath.api.roadmap.dto.CustomRoadmapCopyDto;
 import com.devpath.api.roadmap.dto.MyRoadmapDto;
 import com.devpath.api.roadmap.dto.NodeClearResponse;
 import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
+import com.devpath.api.roadmap.service.CustomRoadmapNodeCommandService;
 import com.devpath.api.roadmap.service.CustomRoadmapQueryService;
 import com.devpath.api.roadmap.service.NodeClearanceCommandService;
 import com.devpath.common.response.ApiResponse;
@@ -31,6 +32,7 @@ public class CustomRoadmapController {
   private final CustomRoadmapCopyService customRoadmapCopyService;
   private final CustomRoadmapQueryService customRoadmapQueryService;
   private final NodeClearanceCommandService nodeClearanceCommandService;
+  private final CustomRoadmapNodeCommandService customRoadmapNodeCommandService;
 
   @Operation(summary = "내 커스텀 로드맵 목록 조회", description = "JWT 로그인 사용자의 커스텀 로드맵 목록을 최신순으로 조회합니다.")
   @GetMapping
@@ -88,6 +90,40 @@ public class CustomRoadmapController {
         ApiResponse.success(
             "노드가 클리어되었습니다.",
             nodeClearanceCommandService.clearNode(userId, customRoadmapId, customNodeId)));
+  }
+
+  @Operation(
+      summary = "노드 스킵",
+      description = "노드를 완료하지 않아도 다음 노드를 진행할 수 있도록 스킵 처리합니다(미완료 상태 유지).")
+  @PostMapping("/{customRoadmapId}/nodes/{customNodeId}/defer")
+  public ResponseEntity<ApiResponse<Void>> deferNode(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "커스텀 로드맵 ID", example = "10") @PathVariable Long customRoadmapId,
+      @Parameter(description = "커스텀 노드 ID", example = "101") @PathVariable Long customNodeId) {
+    customRoadmapNodeCommandService.setDeferred(userId, customRoadmapId, customNodeId, true);
+    return ResponseEntity.ok(ApiResponse.success("노드를 스킵했습니다.", null));
+  }
+
+  @Operation(summary = "노드 스킵 해제", description = "스킵 처리된 노드의 스킵을 해제합니다.")
+  @DeleteMapping("/{customRoadmapId}/nodes/{customNodeId}/defer")
+  public ResponseEntity<ApiResponse<Void>> undeferNode(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "커스텀 로드맵 ID", example = "10") @PathVariable Long customRoadmapId,
+      @Parameter(description = "커스텀 노드 ID", example = "101") @PathVariable Long customNodeId) {
+    customRoadmapNodeCommandService.setDeferred(userId, customRoadmapId, customNodeId, false);
+    return ResponseEntity.ok(ApiResponse.success("노드 스킵을 해제했습니다.", null));
+  }
+
+  @Operation(
+      summary = "노드 삭제",
+      description = "커스텀 로드맵에서 노드를 삭제하고 선행관계를 정리한 뒤 진행률을 재계산합니다.")
+  @DeleteMapping("/{customRoadmapId}/nodes/{customNodeId}")
+  public ResponseEntity<ApiResponse<Void>> deleteNode(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "커스텀 로드맵 ID", example = "10") @PathVariable Long customRoadmapId,
+      @Parameter(description = "커스텀 노드 ID", example = "101") @PathVariable Long customNodeId) {
+    customRoadmapNodeCommandService.deleteNode(userId, customRoadmapId, customNodeId);
+    return ResponseEntity.ok(ApiResponse.success("노드를 삭제했습니다.", null));
   }
 
   // [TEMP] 추천 무료 강좌 조회 엔드포인트 — 임시 하드코딩, 추후 삭제 예정

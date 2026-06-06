@@ -73,6 +73,10 @@ public class CustomRoadmapNode {
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
 
+  // 보류(defer): 완료하지 않아도 다음 노드 진행을 허용한다. 클리어/삭제와 무관(미완료 상태 유지, 되돌리기 가능).
+  @Column(name = "is_deferred", nullable = false, columnDefinition = "boolean default false")
+  private boolean deferred = false;
+
   @PrePersist
   void onCreate() {
     if (this.createdAt == null) {
@@ -131,6 +135,16 @@ public class CustomRoadmapNode {
   public void completeLearning() {
     this.status = NodeStatus.COMPLETED;
     this.completedAt = LocalDateTime.now();
+    this.deferred = false;
+  }
+
+  // 보류 설정/해제 (완료하지 않아도 다음 노드 진행 허용)
+  public void defer() {
+    this.deferred = true;
+  }
+
+  public void undefer() {
+    this.deferred = false;
   }
 
   // 노드 완료 (스킵 포함) - completeLearning()과 동일한 동작

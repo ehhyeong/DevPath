@@ -19,7 +19,8 @@ public interface CustomNodePrerequisiteRepository
   @Query(
       "SELECT COUNT(p) FROM CustomNodePrerequisite p "
           + "WHERE p.customNode = :node "
-          + "AND p.prerequisiteCustomNode.status <> :status")
+          + "AND p.prerequisiteCustomNode.status <> :status "
+          + "AND p.prerequisiteCustomNode.deferred = false")
   long countByCustomNodeAndPrerequisiteNotCompleted(
       @Param("node") CustomRoadmapNode node, @Param("status") NodeStatus status);
 

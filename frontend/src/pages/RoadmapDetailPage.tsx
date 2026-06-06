@@ -692,9 +692,14 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
             <span className="meta-tag">완료가능</span>
           </div>
         )}
-        {isPendingNodeStatus(node.status) && !readyToClear && (
+        {isPendingNodeStatus(node.status) && !readyToClear && !node.deferred && (
           <div className="node-meta">
             <span className="meta-tag">대기중</span>
+          </div>
+        )}
+        {node.deferred && node.status !== 'COMPLETED' && (
+          <div className="node-meta">
+            <span className="meta-tag">스킵</span>
           </div>
         )}
       </div>
@@ -1031,8 +1036,44 @@ interface NodeDrawerProps {
 
 function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onCleared }: NodeDrawerProps) {
   const [clearing, setClearing] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   if (!node) return null
+
+  async function handleDefer() {
+    if (!node) return
+    const next = !node.deferred
+    const message = next
+      ? `"${node.title}" 노드를 스킵하시겠습니까? 완료하지 않아도 다음 노드를 진행할 수 있습니다.`
+      : `"${node.title}" 노드의 스킵을 해제하시겠습니까?`
+    if (!confirm(message)) return
+    setBusy(true)
+    try {
+      if (next) await roadmapApi.deferNode(customRoadmapId, node.customNodeId)
+      else await roadmapApi.undeferNode(customRoadmapId, node.customNodeId)
+      onCleared()
+      onClose()
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!node) return
+    if (!confirm(`"${node.title}" 노드를 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return
+    setBusy(true)
+    try {
+      await roadmapApi.deleteNode(customRoadmapId, node.customNodeId)
+      onCleared()
+      onClose()
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function handleClear() {
     if (!node) return
@@ -1083,6 +1124,9 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
               )}
               {node.status === 'IN_PROGRESS' && (
                 <span className="text-[10px] font-bold text-white bg-yellow-400 px-2 py-1 rounded">진행중</span>
+              )}
+              {node.deferred && node.status !== 'COMPLETED' && (
+                <span className="text-[10px] font-bold text-white bg-gray-400 px-2 py-1 rounded">스킵</span>
               )}
             </div>
             <h2 className="text-3xl font-bold text-gray-900 leading-tight break-words">{node.title}</h2>
@@ -1188,6 +1232,24 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
           >
             <i className="fas fa-list" /> 전체 강좌 목록 보기
           </button>
+          <div className="flex gap-3">
+            {node.status !== 'COMPLETED' && (
+              <button
+                onClick={handleDefer}
+                disabled={busy}
+                className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+              >
+                <i className="fas fa-pause-circle" /> {node.deferred ? '스킵 해제' : '스킵하기'}
+              </button>
+            )}
+            <button
+              onClick={handleDelete}
+              disabled={busy}
+              className="flex-1 bg-white border border-red-200 hover:bg-red-50 disabled:opacity-50 text-red-600 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+            >
+              <i className="fas fa-trash-alt" /> 삭제
+            </button>
+          </div>
         </div>
       </aside>
     </>

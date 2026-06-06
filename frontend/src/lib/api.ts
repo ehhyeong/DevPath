@@ -389,6 +389,27 @@ export const roadmapApi = {
       { auth: true },
     )
   },
+  deferNode(customRoadmapId: number, customNodeId: number) {
+    return request<void>(
+      `/api/my-roadmaps/${customRoadmapId}/nodes/${customNodeId}/defer`,
+      { method: 'POST' },
+      { auth: true },
+    )
+  },
+  undeferNode(customRoadmapId: number, customNodeId: number) {
+    return request<void>(
+      `/api/my-roadmaps/${customRoadmapId}/nodes/${customNodeId}/defer`,
+      { method: 'DELETE' },
+      { auth: true },
+    )
+  },
+  deleteNode(customRoadmapId: number, customNodeId: number) {
+    return request<void>(
+      `/api/my-roadmaps/${customRoadmapId}/nodes/${customNodeId}`,
+      { method: 'DELETE' },
+      { auth: true },
+    )
+  },
 
   // [TEMP] 추천 무료 강좌 courseId 조회 — 임시 하드코딩, 추후 삭제 예정
   getRecommendedFreeCourse(customRoadmapId: number, customNodeId: number) {
