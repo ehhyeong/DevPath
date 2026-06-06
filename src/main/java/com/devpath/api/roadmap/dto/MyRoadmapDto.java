@@ -212,7 +212,9 @@ public class MyRoadmapDto {
         Map<Long, NodeClearance> clearanceByNodeId,
         Map<Long, List<RoadmapNodeResource>> resourcesByNodeId,
         Map<Long, List<String>> requiredTagsByNodeId,
-        Map<Long, Boolean> requiredTagsSatisfiedByNodeId) {
+        Map<Long, Boolean> requiredTagsSatisfiedByNodeId,
+        Map<Long, Boolean> readyToClearByCustomNodeId,
+        Map<Long, Integer> clearProgressByCustomNodeId) {
       Roadmap orig = customRoadmap.getOriginalRoadmap();
       return DetailResponse.builder()
           .customRoadmapId(customRoadmap.getId())
@@ -245,7 +247,9 @@ public class MyRoadmapDto {
                               node.getOriginalNode() != null
                                   ? requiredTagsSatisfiedByNodeId.get(
                                       node.getOriginalNode().getNodeId())
-                                  : null))
+                                  : null,
+                              readyToClearByCustomNodeId.getOrDefault(node.getId(), false),
+                              clearProgressByCustomNodeId.getOrDefault(node.getId(), 100)))
                   .toList())
           .build();
     }
@@ -311,6 +315,12 @@ public class MyRoadmapDto {
     @Schema(description = "필수 태그 이름 목록 (강좌 목록 필터용)")
     private List<String> requiredTags;
 
+    @Schema(description = "실제 클리어 가능 여부 (선행완료 + 태그/재학습 게이트). UI는 이 값을 신뢰")
+    private boolean readyToClear;
+
+    @Schema(description = "클리어 진행도(%) — 충족 태그/전체 필수 태그. 필수태그 없으면 100")
+    private int clearProgressPercent;
+
     @Schema(description = "노드 추천 무료 자료 목록")
     private List<NodeResourceItem> resources;
 
@@ -331,6 +341,8 @@ public class MyRoadmapDto {
         Double lessonCompletionRate,
         boolean requiredTagsSatisfied,
         List<String> requiredTags,
+        boolean readyToClear,
+        int clearProgressPercent,
         List<NodeResourceItem> resources) {
       this.customNodeId = customNodeId;
       this.originalNodeId = originalNodeId;
@@ -347,6 +359,8 @@ public class MyRoadmapDto {
       this.lessonCompletionRate = lessonCompletionRate;
       this.requiredTagsSatisfied = requiredTagsSatisfied;
       this.requiredTags = requiredTags;
+      this.readyToClear = readyToClear;
+      this.clearProgressPercent = clearProgressPercent;
       this.resources = resources;
     }
 
@@ -357,7 +371,9 @@ public class MyRoadmapDto {
         NodeClearance clearance,
         List<RoadmapNodeResource> resources,
         List<String> requiredTags,
-        Boolean requiredTagsSatisfied) {
+        Boolean requiredTagsSatisfied,
+        boolean readyToClear,
+        int clearProgressPercent) {
 
       boolean isBuilderOrigin = node.getOriginalNode() == null;
 
@@ -431,6 +447,8 @@ public class MyRoadmapDto {
           .lessonCompletionRate(lessonRate)
           .requiredTagsSatisfied(tagsSatisfied)
           .requiredTags(requiredTags)
+          .readyToClear(readyToClear)
+          .clearProgressPercent(clearProgressPercent)
           .resources(resources.stream().map(NodeResourceItem::from).toList())
           .build();
     }

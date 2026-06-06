@@ -24,6 +24,7 @@ import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +51,7 @@ public class CustomRoadmapQueryService {
   private final CustomRoadmapPrerequisiteSyncService prerequisiteSyncService;
   private final CourseCompletionTagService courseCompletionTagService;
   private final UserTechStackRepository userTechStackRepository;
+  private final NodeClearanceGate nodeClearanceGate;
   // [TEMP] 추천 무료 강좌 조회용 — 임시 하드코딩, 추후 삭제 예정
   private final CourseRepository courseRepository;
   private final CourseTagMapRepository courseTagMapRepository;
@@ -137,6 +139,42 @@ public class CustomRoadmapQueryService {
                     Map.Entry::getKey,
                     entry -> areRequiredTagsSatisfied(entry.getValue(), userTags)));
 
+    // 노드별 클리어 진행도(충족 태그/전체) + 실제 클리어 가능 여부. 클리어 커맨드와 동일 게이트(NodeClearanceGate)로 단일 계산.
+    Map<Long, Integer> clearProgressByCustomNodeId = new HashMap<>();
+    Map<Long, Boolean> readyToClearByCustomNodeId = new HashMap<>();
+    for (CustomRoadmapNode node : customNodes) {
+      List<String> reqTags =
+          node.getOriginalNode() != null
+              ? requiredTagsByNodeId.getOrDefault(node.getOriginalNode().getNodeId(), List.of())
+              : List.of();
+
+      int progress;
+      boolean tagGateSatisfied;
+      if (reqTags.isEmpty()) {
+        progress = 100;
+        tagGateSatisfied = true;
+      } else {
+        int satisfied =
+            Math.min(
+                nodeClearanceGate.satisfiedTagCount(node, userId, reqTags, userTags),
+                reqTags.size());
+        progress = (int) Math.round(satisfied * 100.0 / reqTags.size());
+        tagGateSatisfied = satisfied >= reqTags.size();
+      }
+
+      boolean prerequisitesDone =
+          prerequisiteIdsByNodeId.getOrDefault(node.getId(), List.of()).stream()
+              .allMatch(
+                  prereqId ->
+                      statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
+                          == NodeStatus.COMPLETED);
+      boolean ready =
+          node.getStatus() != NodeStatus.COMPLETED && prerequisitesDone && tagGateSatisfied;
+
+      clearProgressByCustomNodeId.put(node.getId(), progress);
+      readyToClearByCustomNodeId.put(node.getId(), ready);
+    }
+
     return MyRoadmapDto.DetailResponse.from(
         customRoadmap,
         roadmapProgressService.calculateProgressRate(customNodes),
@@ -146,7 +184,9 @@ public class CustomRoadmapQueryService {
         clearanceByNodeId,
         resourcesByNodeId,
         requiredTagsByNodeId,
-        requiredTagsSatisfiedByNodeId);
+        requiredTagsSatisfiedByNodeId,
+        readyToClearByCustomNodeId,
+        clearProgressByCustomNodeId);
   }
 
   // [TEMP] 추천 무료 강좌 courseId 조회 — 임시 하드코딩, 추후 삭제 예정

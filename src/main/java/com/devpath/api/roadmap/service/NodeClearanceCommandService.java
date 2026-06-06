@@ -33,6 +33,7 @@ public class NodeClearanceCommandService {
   private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
   private final NodeRequiredTagRepository nodeRequiredTagRepository;
   private final UserTechStackRepository userTechStackRepository;
+  private final NodeClearanceGate nodeClearanceGate;
   private final NodeClearanceRepository nodeClearanceRepository;
   private final RoadmapProgressService roadmapProgressService;
   private final CustomRoadmapPrerequisiteSyncService prerequisiteSyncService;
@@ -76,15 +77,18 @@ public class NodeClearanceCommandService {
       throw new CustomException(ErrorCode.NODE_LOCKED);
     }
 
-    // 필수 태그 확인 (템플릿 기반 노드만)
+    // 필수 태그 게이트 (템플릿 기반 노드만) — 판정은 NodeClearanceGate(단일 소스)에 위임
     if (customNode.getOriginalNode() != null) {
       Long originalNodeId = customNode.getOriginalNode().getNodeId();
       List<String> requiredTags = nodeRequiredTagRepository.findTagNamesByNodeId(originalNodeId);
-      if (!requiredTags.isEmpty()) {
-        List<String> userTags = userTechStackRepository.findTagNamesByUserId(userId);
-        if (!userTags.containsAll(requiredTags)) {
-          throw new CustomException(ErrorCode.INSUFFICIENT_TAGS);
-        }
+      if (!requiredTags.isEmpty()
+          && !nodeClearanceGate.isTagGateSatisfied(
+              customNode,
+              userId,
+              requiredTags,
+              userTechStackRepository.findTagNamesByUserId(userId))) {
+        throw new CustomException(
+            customNode.isBranch() ? ErrorCode.NODE_RELEARN_REQUIRED : ErrorCode.INSUFFICIENT_TAGS);
       }
     }
 

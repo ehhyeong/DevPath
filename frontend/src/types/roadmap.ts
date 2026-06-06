@@ -17,6 +17,8 @@ export interface RoadmapNodeItem {
   branchType?: string | null
   lessonCompletionRate?: number
   requiredTagsSatisfied?: boolean
+  readyToClear?: boolean
+  clearProgressPercent?: number
   requiredTags?: string[]
   resources?: RoadmapNodeResourceItem[]
 }

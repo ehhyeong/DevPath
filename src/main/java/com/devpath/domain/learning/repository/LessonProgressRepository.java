@@ -72,4 +72,21 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
             """)
   List<LessonProgress> findRecentByUserIdWithLessonAndSection(
       @Param("userId") Long userId, Pageable pageable);
+
+  // branch 노드 재학습 진행: 노드의 필수태그 중, 기준 시각(노드 추가 시점) 이후 매칭 강의를 완료한 distinct 태그 수.
+  @Query(
+      """
+      select count(distinct nrt.tag.tagId)
+      from LessonProgress lp, CourseTagMap ctm, NodeRequiredTag nrt
+      where lp.user.id = :userId
+        and lp.isCompleted = true
+        and lp.lastWatchedAt > :since
+        and ctm.course.courseId = lp.lesson.section.course.courseId
+        and nrt.tag.tagId = ctm.tag.tagId
+        and nrt.node.nodeId = :nodeId
+      """)
+  long countRelearnedTagsForNode(
+      @Param("userId") Long userId,
+      @Param("nodeId") Long nodeId,
+      @Param("since") LocalDateTime since);
 }

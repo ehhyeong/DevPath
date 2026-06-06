@@ -80,7 +80,8 @@ function getNodeLessonProgressPercent(node: RoadmapNodeItem) {
 
 function isNodeReadyToClear(node: RoadmapNodeItem) {
   if (node.status === 'COMPLETED' || node.status === 'LOCKED') return false
-  return node.requiredTagsSatisfied || getNodeLessonProgressPercent(node) >= 100
+  // 클리어 가능 여부는 백엔드(NodeClearanceGate)가 단독 판정한 readyToClear를 신뢰한다.
+  return node.readyToClear === true
 }
 
 function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): string {
@@ -625,7 +626,7 @@ interface RoadmapNodeCardProps {
 
 function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }: RoadmapNodeCardProps) {
   const readyToClear = isNodeReadyToClear(node)
-  const progressPercent = node.requiredTagsSatisfied ? 100 : getNodeLessonProgressPercent(node)
+  const progressPercent = node.clearProgressPercent ?? getNodeLessonProgressPercent(node)
   const visibleBadge = badge ?? {
     label: '필수',
     background: '#ecfdf5',
@@ -710,7 +711,8 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
           ))}
         </div>
       )}
-      {(node.status === 'IN_PROGRESS' || readyToClear) && (
+      {node.status !== 'COMPLETED' && node.status !== 'LOCKED'
+        && (node.status === 'IN_PROGRESS' || readyToClear || progressPercent > 0) && (
         <div className="progress-container">
           <div className="node-progress-bg">
             <div

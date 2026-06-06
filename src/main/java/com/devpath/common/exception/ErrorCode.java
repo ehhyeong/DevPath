@@ -49,6 +49,8 @@ public enum ErrorCode {
   CUSTOM_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 노드를 찾을 수 없습니다."),
 
   INSUFFICIENT_TAGS(HttpStatus.BAD_REQUEST, "노드 진입에 필요한 태그가 부족합니다."),
+  NODE_RELEARN_REQUIRED(
+      HttpStatus.BAD_REQUEST, "심화/복습 노드는 추가 이후 관련 강의를 다시 학습해야 클리어할 수 있습니다."),
   NODE_LOCKED(HttpStatus.FORBIDDEN, "선행 노드를 먼저 완료해야 합니다."),
   NODE_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료된 노드입니다."),
 
