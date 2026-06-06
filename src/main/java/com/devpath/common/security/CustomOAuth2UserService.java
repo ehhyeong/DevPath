@@ -28,12 +28,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
       throw new OAuth2AuthenticationException("github_email_required");
     }
 
-    User user = oAuth2UserAccountService.findOrCreateUser(email, resolveName(attributes));
+    OAuth2UserAccountService.OAuth2UserAccount account =
+        oAuth2UserAccountService.findOrCreateUserWithStatus(email, resolveName(attributes));
+    User user = account.user();
 
     Map<String, Object> modifiedAttributes = new HashMap<>(attributes);
     modifiedAttributes.put("email", email);
+    modifiedAttributes.put("name", user.getName());
     modifiedAttributes.put("userId", user.getId());
     modifiedAttributes.put("role", user.getRole().name());
+    modifiedAttributes.put("newUser", account.newUser());
 
     String userNameAttributeName =
         userRequest

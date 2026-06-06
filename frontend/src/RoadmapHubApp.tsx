@@ -1,4 +1,3 @@
-import './roadmap-hub.css'
 import RoadmapHubPage from './pages/RoadmapHubPage'
 
 function RoadmapHubApp() {

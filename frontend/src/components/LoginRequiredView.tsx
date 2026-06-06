@@ -16,10 +16,14 @@ export default function LoginRequiredView({ message }: { message?: string }) {
     window.location.replace(`${window.location.pathname}${window.location.search}${window.location.hash}`)
   }
 
+  function handleClose() {
+    window.location.href = '/'
+  }
+
   return (
     <AuthModal
       view={authView}
-      onClose={() => undefined}
+      onClose={handleClose}
       onViewChange={setAuthView}
       onAuthenticated={handleAuthenticated}
     />

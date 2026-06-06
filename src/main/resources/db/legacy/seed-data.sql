@@ -18579,12 +18579,12 @@ SELECT
     'CONCEPT',
     COALESCE((SELECT MAX(rn.sort_order) FROM roadmap_nodes rn WHERE rn.roadmap_id = r.roadmap_id), 0) + 1
 FROM roadmaps r
-WHERE r.title = 'Backend Master Roadmap'
+WHERE r.title IN ('Backend Master Roadmap', '백엔드')
   AND NOT EXISTS (
       SELECT 1
       FROM roadmap_nodes rn
       WHERE rn.roadmap_id = r.roadmap_id
-        AND rn.title = 'Security and JWT'
+        AND rn.title IN ('Security and JWT', 'Spring Security & JWT')
   );
 
 -- ------------------------------------------------------------
@@ -19345,3 +19345,345 @@ WHERE hi.linked_roadmap_id = r.roadmap_id
   AND r.is_deleted = FALSE
   AND hi.title IS NOT NULL
   AND hi.title <> r.title;
+
+-- 한글 상세 노드와 겹치는 이전 Swagger 호환 노드가 기존 DB에 남아 있으면 안전하게 제거한다.
+DELETE FROM custom_roadmap_nodes crn
+USING roadmap_nodes rn
+JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+WHERE crn.original_node_id = rn.node_id
+  AND r.title = '백엔드'
+  AND rn.title = 'Security and JWT'
+  AND EXISTS (
+      SELECT 1
+      FROM roadmap_nodes replacement
+      WHERE replacement.roadmap_id = r.roadmap_id
+        AND replacement.title = 'Spring Security & JWT'
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM custom_node_prerequisites cnp
+      WHERE cnp.custom_node_id = crn.custom_node_id
+         OR cnp.prerequisite_custom_node_id = crn.custom_node_id
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM learning_proofs proof
+      WHERE proof.custom_node_id = crn.custom_node_id
+  );
+
+DELETE FROM roadmap_nodes rn
+USING roadmaps r
+WHERE rn.roadmap_id = r.roadmap_id
+  AND r.title = '백엔드'
+  AND rn.title = 'Security and JWT'
+  AND EXISTS (
+      SELECT 1
+      FROM roadmap_nodes replacement
+      WHERE replacement.roadmap_id = r.roadmap_id
+        AND replacement.title = 'Spring Security & JWT'
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM custom_roadmap_nodes crn
+      WHERE crn.original_node_id = rn.node_id
+  );
+
+-- =====================================================================
+-- learner@devpath.com 시연용 로드맵 진행 상태 복구
+--   공식 로드맵 제목 한글화 이후에도 최소 데모 진행 상태가 유지되도록 보정한다.
+--   이미 사용자가 더 많이 완료한 상태는 되돌리지 않는다.
+-- =====================================================================
+WITH demo_roadmaps(roadmap_title, completed_until, in_progress_sort, seeded_at) AS (
+    VALUES
+        ('백엔드', 2, 3, TIMESTAMP '2026-03-29 18:00:00'),
+        ('프론트엔드', 1, 2, TIMESTAMP '2026-04-03 18:00:00'),
+        ('데브옵스', 1, 2, TIMESTAMP '2026-04-04 18:00:00'),
+        ('AI 엔지니어', 1, 2, TIMESTAMP '2026-04-05 18:00:00'),
+        ('데이터 엔지니어', 1, 2, TIMESTAMP '2026-04-06 18:00:00')
+)
+INSERT INTO custom_roadmaps (
+    user_id, original_roadmap_id, title, progress_rate, is_builder_origin, created_at, updated_at
+)
+SELECT
+    u.user_id,
+    r.roadmap_id,
+    r.title,
+    0,
+    FALSE,
+    seed.seeded_at,
+    seed.seeded_at
+FROM demo_roadmaps seed
+JOIN users u ON u.email = 'learner@devpath.com'
+JOIN roadmaps r ON r.title = seed.roadmap_title
+WHERE r.is_official = TRUE
+  AND r.is_deleted = FALSE
+ON CONFLICT ON CONSTRAINT uk_custom_roadmap_user_original
+DO UPDATE SET
+    title = EXCLUDED.title,
+    is_builder_origin = FALSE,
+    updated_at = EXCLUDED.updated_at;
+
+WITH demo_roadmaps(roadmap_title, completed_until, in_progress_sort, seeded_at) AS (
+    VALUES
+        ('백엔드', 2, 3, TIMESTAMP '2026-03-29 18:00:00'),
+        ('프론트엔드', 1, 2, TIMESTAMP '2026-04-03 18:00:00'),
+        ('데브옵스', 1, 2, TIMESTAMP '2026-04-04 18:00:00'),
+        ('AI 엔지니어', 1, 2, TIMESTAMP '2026-04-05 18:00:00'),
+        ('데이터 엔지니어', 1, 2, TIMESTAMP '2026-04-06 18:00:00')
+),
+demo_nodes AS (
+    SELECT
+        cr.custom_roadmap_id,
+        rn.node_id,
+        rn.sort_order,
+        CASE
+            WHEN rn.sort_order <= seed.completed_until THEN 'COMPLETED'
+            WHEN rn.sort_order = seed.in_progress_sort THEN 'IN_PROGRESS'
+            ELSE 'NOT_STARTED'
+        END AS seeded_status,
+        CASE WHEN rn.sort_order <= seed.in_progress_sort THEN seed.seeded_at ELSE NULL END AS seeded_started_at,
+        CASE WHEN rn.sort_order <= seed.completed_until THEN seed.seeded_at ELSE NULL END AS seeded_completed_at
+    FROM demo_roadmaps seed
+    JOIN users u ON u.email = 'learner@devpath.com'
+    JOIN roadmaps r ON r.title = seed.roadmap_title
+    JOIN custom_roadmaps cr ON cr.user_id = u.user_id AND cr.original_roadmap_id = r.roadmap_id
+    JOIN roadmap_nodes rn ON rn.roadmap_id = r.roadmap_id
+    WHERE rn.title <> 'Security and JWT'
+)
+INSERT INTO custom_roadmap_nodes (
+    custom_roadmap_id, original_node_id, status, custom_sort_order, is_branch,
+    branch_from_node_id, branch_type, started_at, completed_at
+)
+SELECT
+    dn.custom_roadmap_id,
+    dn.node_id,
+    dn.seeded_status,
+    dn.sort_order,
+    FALSE,
+    NULL,
+    NULL,
+    dn.seeded_started_at,
+    dn.seeded_completed_at
+FROM demo_nodes dn
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM custom_roadmap_nodes existing
+    WHERE existing.custom_roadmap_id = dn.custom_roadmap_id
+      AND existing.original_node_id = dn.node_id
+);
+
+WITH demo_roadmaps(roadmap_title, completed_until, in_progress_sort, seeded_at) AS (
+    VALUES
+        ('백엔드', 2, 3, TIMESTAMP '2026-03-29 18:00:00'),
+        ('프론트엔드', 1, 2, TIMESTAMP '2026-04-03 18:00:00'),
+        ('데브옵스', 1, 2, TIMESTAMP '2026-04-04 18:00:00'),
+        ('AI 엔지니어', 1, 2, TIMESTAMP '2026-04-05 18:00:00'),
+        ('데이터 엔지니어', 1, 2, TIMESTAMP '2026-04-06 18:00:00')
+),
+demo_nodes AS (
+    SELECT
+        crn.custom_node_id,
+        CASE
+            WHEN rn.sort_order <= seed.completed_until THEN 'COMPLETED'
+            WHEN rn.sort_order = seed.in_progress_sort THEN 'IN_PROGRESS'
+            ELSE 'NOT_STARTED'
+        END AS seeded_status,
+        CASE WHEN rn.sort_order <= seed.in_progress_sort THEN seed.seeded_at ELSE NULL END AS seeded_started_at,
+        CASE WHEN rn.sort_order <= seed.completed_until THEN seed.seeded_at ELSE NULL END AS seeded_completed_at
+    FROM demo_roadmaps seed
+    JOIN users u ON u.email = 'learner@devpath.com'
+    JOIN roadmaps r ON r.title = seed.roadmap_title
+    JOIN custom_roadmaps cr ON cr.user_id = u.user_id AND cr.original_roadmap_id = r.roadmap_id
+    JOIN roadmap_nodes rn ON rn.roadmap_id = r.roadmap_id
+    JOIN custom_roadmap_nodes crn ON crn.custom_roadmap_id = cr.custom_roadmap_id
+        AND crn.original_node_id = rn.node_id
+    WHERE rn.title <> 'Security and JWT'
+)
+UPDATE custom_roadmap_nodes crn
+SET
+    status = CASE
+        WHEN crn.status = 'COMPLETED' THEN crn.status
+        ELSE dn.seeded_status
+    END,
+    started_at = COALESCE(crn.started_at, dn.seeded_started_at),
+    completed_at = CASE
+        WHEN crn.status = 'COMPLETED' THEN crn.completed_at
+        ELSE COALESCE(crn.completed_at, dn.seeded_completed_at)
+    END
+FROM demo_nodes dn
+WHERE crn.custom_node_id = dn.custom_node_id
+  AND dn.seeded_status <> 'NOT_STARTED'
+  AND crn.status <> 'COMPLETED';
+
+INSERT INTO custom_node_prerequisites (
+    custom_roadmap_id, custom_node_id, prerequisite_custom_node_id
+)
+SELECT
+    cr.custom_roadmap_id,
+    child_node.custom_node_id,
+    pre_node.custom_node_id
+FROM custom_roadmaps cr
+JOIN users u ON u.user_id = cr.user_id AND u.email = 'learner@devpath.com'
+JOIN custom_roadmap_nodes child_node ON child_node.custom_roadmap_id = cr.custom_roadmap_id
+JOIN prerequisites prerequisite ON prerequisite.node_id = child_node.original_node_id
+JOIN custom_roadmap_nodes pre_node ON pre_node.custom_roadmap_id = cr.custom_roadmap_id
+    AND pre_node.original_node_id = prerequisite.pre_node_id
+WHERE cr.original_roadmap_id IS NOT NULL
+  AND child_node.custom_node_id <> pre_node.custom_node_id
+  AND NOT EXISTS (
+      SELECT 1
+      FROM custom_node_prerequisites existing
+      WHERE existing.custom_roadmap_id = cr.custom_roadmap_id
+        AND existing.custom_node_id = child_node.custom_node_id
+        AND existing.prerequisite_custom_node_id = pre_node.custom_node_id
+  );
+
+WITH demo_roadmaps(roadmap_title, completed_until, in_progress_sort) AS (
+    VALUES
+        ('백엔드', 2, 3),
+        ('프론트엔드', 1, 2),
+        ('데브옵스', 1, 2),
+        ('AI 엔지니어', 1, 2),
+        ('데이터 엔지니어', 1, 2)
+)
+INSERT INTO user_tech_stacks (user_id, tag_id)
+SELECT DISTINCT u.user_id, nrt.tag_id
+FROM demo_roadmaps seed
+JOIN users u ON u.email = 'learner@devpath.com'
+JOIN roadmaps r ON r.title = seed.roadmap_title
+JOIN roadmap_nodes rn ON rn.roadmap_id = r.roadmap_id
+JOIN node_required_tags nrt ON nrt.node_id = rn.node_id
+WHERE rn.sort_order <= seed.in_progress_sort
+  AND NOT EXISTS (
+      SELECT 1
+      FROM user_tech_stacks existing
+      WHERE existing.user_id = u.user_id
+        AND existing.tag_id = nrt.tag_id
+  );
+
+WITH demo_roadmaps(roadmap_title, completed_until, in_progress_sort, seeded_at) AS (
+    VALUES
+        ('백엔드', 2, 3, TIMESTAMP '2026-03-29 18:00:00'),
+        ('프론트엔드', 1, 2, TIMESTAMP '2026-04-03 18:00:00'),
+        ('데브옵스', 1, 2, TIMESTAMP '2026-04-04 18:00:00'),
+        ('AI 엔지니어', 1, 2, TIMESTAMP '2026-04-05 18:00:00'),
+        ('데이터 엔지니어', 1, 2, TIMESTAMP '2026-04-06 18:00:00')
+),
+demo_nodes AS (
+    SELECT
+        u.user_id,
+        rn.node_id,
+        rn.sort_order,
+        CASE
+            WHEN rn.sort_order <= seed.completed_until THEN 'CLEARED'
+            ELSE 'NOT_CLEARED'
+        END AS clearance_status,
+        CASE
+            WHEN rn.sort_order <= seed.completed_until THEN 1.00
+            ELSE 0.65
+        END AS lesson_completion_rate,
+        CASE WHEN rn.sort_order <= seed.completed_until THEN TRUE ELSE FALSE END AS completed,
+        CASE WHEN rn.sort_order <= seed.completed_until THEN seed.seeded_at ELSE NULL END AS cleared_at,
+        seed.seeded_at
+    FROM demo_roadmaps seed
+    JOIN users u ON u.email = 'learner@devpath.com'
+    JOIN roadmaps r ON r.title = seed.roadmap_title
+    JOIN roadmap_nodes rn ON rn.roadmap_id = r.roadmap_id
+    WHERE rn.sort_order <= seed.in_progress_sort
+      AND rn.title <> 'Security and JWT'
+)
+INSERT INTO node_clearances (
+    user_id, node_id, clearance_status, lesson_completion_rate, required_tags_satisfied,
+    missing_tag_count, lesson_completed, quiz_passed, assignment_passed, proof_eligible,
+    cleared_at, last_calculated_at, created_at, updated_at
+)
+SELECT
+    dn.user_id,
+    dn.node_id,
+    dn.clearance_status,
+    dn.lesson_completion_rate,
+    TRUE,
+    0,
+    dn.completed,
+    dn.completed,
+    dn.completed,
+    dn.completed,
+    dn.cleared_at,
+    dn.seeded_at,
+    dn.seeded_at,
+    dn.seeded_at
+FROM demo_nodes dn
+ON CONFLICT ON CONSTRAINT uk_node_clearances_user_node
+DO UPDATE SET
+    clearance_status = CASE
+        WHEN node_clearances.clearance_status = 'CLEARED' THEN node_clearances.clearance_status
+        ELSE EXCLUDED.clearance_status
+    END,
+    lesson_completion_rate = GREATEST(node_clearances.lesson_completion_rate, EXCLUDED.lesson_completion_rate),
+    required_tags_satisfied = TRUE,
+    missing_tag_count = 0,
+    lesson_completed = node_clearances.lesson_completed OR EXCLUDED.lesson_completed,
+    quiz_passed = node_clearances.quiz_passed OR EXCLUDED.quiz_passed,
+    assignment_passed = node_clearances.assignment_passed OR EXCLUDED.assignment_passed,
+    proof_eligible = node_clearances.proof_eligible OR EXCLUDED.proof_eligible,
+    cleared_at = COALESCE(node_clearances.cleared_at, EXCLUDED.cleared_at),
+    last_calculated_at = GREATEST(node_clearances.last_calculated_at, EXCLUDED.last_calculated_at),
+    updated_at = EXCLUDED.updated_at;
+
+INSERT INTO proof_cards (
+    user_id, node_id, node_clearance_id, title, description, proof_card_status,
+    issued_at, created_at, updated_at
+)
+SELECT
+    nc.user_id,
+    nc.node_id,
+    nc.node_clearance_id,
+    rn.title || ' 수료',
+    r.title || ' 로드맵의 "' || rn.title || '" 노드를 완료한 시연용 학습 증명입니다.',
+    'ISSUED',
+    COALESCE(nc.cleared_at, nc.updated_at, CURRENT_TIMESTAMP),
+    COALESCE(nc.cleared_at, nc.updated_at, CURRENT_TIMESTAMP),
+    COALESCE(nc.updated_at, nc.cleared_at, CURRENT_TIMESTAMP)
+FROM node_clearances nc
+JOIN users u ON u.user_id = nc.user_id AND u.email = 'learner@devpath.com'
+JOIN roadmap_nodes rn ON rn.node_id = nc.node_id
+JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+WHERE nc.clearance_status = 'CLEARED'
+  AND r.title IN ('백엔드', '프론트엔드', '데브옵스', 'AI 엔지니어', '데이터 엔지니어')
+ON CONFLICT (node_clearance_id) DO NOTHING;
+
+INSERT INTO proof_card_tags (proof_card_id, tag_id, skill_evidence_type)
+SELECT DISTINCT
+    pc.proof_card_id,
+    nrt.tag_id,
+    'VERIFIED'
+FROM proof_cards pc
+JOIN users u ON u.user_id = pc.user_id AND u.email = 'learner@devpath.com'
+JOIN node_required_tags nrt ON nrt.node_id = pc.node_id
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM proof_card_tags existing
+    WHERE existing.proof_card_id = pc.proof_card_id
+      AND existing.tag_id = nrt.tag_id
+      AND existing.skill_evidence_type = 'VERIFIED'
+);
+
+UPDATE custom_roadmaps cr
+SET
+    progress_rate = progress.progress_rate,
+    updated_at = progress.updated_at
+FROM (
+    SELECT
+        crn.custom_roadmap_id,
+        CASE
+            WHEN COUNT(*) = 0 THEN 0
+            ELSE (COUNT(*) FILTER (WHERE crn.status = 'COMPLETED') * 100 / COUNT(*))::integer
+        END AS progress_rate,
+        MAX(COALESCE(crn.completed_at, crn.started_at, cr.updated_at, cr.created_at)) AS updated_at
+    FROM custom_roadmaps cr
+    JOIN users u ON u.user_id = cr.user_id AND u.email = 'learner@devpath.com'
+    JOIN custom_roadmap_nodes crn ON crn.custom_roadmap_id = cr.custom_roadmap_id
+    WHERE cr.original_roadmap_id IS NOT NULL
+    GROUP BY crn.custom_roadmap_id
+) progress
+WHERE cr.custom_roadmap_id = progress.custom_roadmap_id;

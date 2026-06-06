@@ -37,7 +37,7 @@ public class SecurityConfig {
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
         .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
         .exceptionHandling(
             exception ->
                 exception

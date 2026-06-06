@@ -302,7 +302,7 @@ function SurveyPage() {
             href="/home"
             className="pointer-events-auto absolute top-1/2 flex items-center gap-1 text-sm font-bold text-gray-500 transition hover:text-gray-800"
             style={{
-              left: 'calc((var(--left-rail) * -1) + clamp(8px, 2vw, 16px))',
+              left: 'calc((var(--left-rail) * -1) + clamp(8px, 2vw, 16px) + 14px)',
               transform: 'translateY(-50%)',
             }}
           >

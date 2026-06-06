@@ -10,6 +10,7 @@ import {
   readStoredAuthSession,
 } from '../lib/auth-session'
 import { useInternalPageScroll } from '../lib/useInternalPageScroll'
+import { getRoadmapHubIconClass } from '../lib/roadmap-icons'
 import type { RoadmapHubCatalog, RoadmapHubItem } from '../types/roadmap-hub'
 
 type RoadmapHubSection = RoadmapHubCatalog['sections'][number]
@@ -147,7 +148,7 @@ function syncAuthViewInLocation(view: AuthView | null) {
 
 function renderRoleCard(item: RoadmapHubItem) {
   const href = buildRoadmapHref(item.linkedRoadmapId)
-  const iconClass = item.iconClass?.trim() || 'fas fa-map'
+  const iconClass = getRoadmapHubIconClass(item, 'fas fa-map')
   const iconStyle = getIconStyle(item.iconColor)
   const cardClassName = item.featured
     ? 'roadmap-hub-card relative overflow-hidden rounded-lg border-2 border-brand bg-green-50/30 p-5 shadow-md'
@@ -187,7 +188,7 @@ function renderRoleCard(item: RoadmapHubItem) {
 function renderSkillChip(item: RoadmapHubItem) {
   const href = buildRoadmapHref(item.linkedRoadmapId)
   const chipKey = `${item.title}-${item.sortOrder}`
-  const iconClass = item.iconClass?.trim() || 'fas fa-code'
+  const iconClass = getRoadmapHubIconClass(item, 'fas fa-code')
   const iconStyle = getIconStyle(item.iconColor)
   const className = 'skill-btn rounded border border-gray-200 px-4 py-2 text-left text-sm text-gray-700 shadow-sm'
   const content = (

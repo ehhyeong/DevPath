@@ -20,6 +20,7 @@ import {
   clearStoredAuthSession,
   readStoredAuthSession,
 } from '../lib/auth-session'
+import { getRoadmapNodeVisual } from '../lib/roadmap-icons'
 import type { RoadmapHubCatalog, RoadmapHubItem } from '../types/roadmap-hub'
 import type { OfficialRoadmapDetail, OfficialRoadmapNode } from '../types/roadmap'
 
@@ -112,96 +113,18 @@ function getCategoryBadgeVisual(category: string) {
   }
 }
 
-const NODE_VISUAL_RULES = [
-  {
-    keywords: ['frontend', '프론트', 'ui', '화면', '브라우저', 'html', 'css', 'javascript', 'react', 'vite', '반응형', '폼'],
-    icon: 'fas fa-laptop-code',
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-50',
-  },
-  {
-    keywords: ['ci/cd', 'cicd', 'ci cd', '파이프라인', 'pipeline', 'workflow', '워크플로', 'github actions', 'jenkins', '자동화', '빌드', 'build'],
-    icon: 'fas fa-stream',
-    color: 'text-indigo-500',
-    bgColor: 'bg-indigo-50',
-  },
-  {
-    keywords: ['배포', 'deploy', 'deployment', 'release', '릴리스', 'docker', 'container', '컨테이너', 'kubernetes', 'k8s'],
-    icon: 'fas fa-rocket',
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-50',
-  },
-  {
-    keywords: ['환경 변수', '환경', '변수', 'env', 'config', 'configuration', '설정', '터미널', 'shell', 'cli'],
-    icon: 'fas fa-terminal',
-    color: 'text-slate-500',
-    bgColor: 'bg-slate-50',
-  },
-  {
-    keywords: ['테스트', '검증', 'test', 'testing', 'qa', '품질', '디버깅', 'debug'],
-    icon: 'fas fa-vial',
-    color: 'text-rose-500',
-    bgColor: 'bg-rose-50',
-  },
-  {
-    keywords: ['모니터링', 'monitoring', '로그', 'log', 'metric', 'metrics', '알림', 'alert', 'observability', '관측'],
-    icon: 'fas fa-chart-line',
-    color: 'text-cyan-500',
-    bgColor: 'bg-cyan-50',
-  },
-  {
-    keywords: ['데이터베이스', 'database', 'db', 'sql', 'mysql', 'postgres', 'redis', '데이터'],
-    icon: 'fas fa-database',
-    color: 'text-violet-500',
-    bgColor: 'bg-violet-50',
-  },
-  {
-    keywords: ['네트워크', 'network', '라우팅', 'routing', 'http', 'api', '서버 상태', '클라이언트 상태'],
-    icon: 'fas fa-network-wired',
-    color: 'text-sky-500',
-    bgColor: 'bg-sky-50',
-  },
-  {
-    keywords: ['인프라', 'infra', 'server', '서버', 'cloud', '클라우드', '클러스터', 'cluster', 'aws', 'gcp', 'azure', 'linux', '운영체제', 'os'],
-    icon: 'fas fa-server',
-    color: 'text-gray-500',
-    bgColor: 'bg-gray-100',
-  },
-  {
-    keywords: ['협업', 'git', 'github', 'branch', '브랜치', 'merge', '리뷰', 'review', 'pull request', 'pr'],
-    icon: 'fas fa-code-branch',
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-50',
-  },
-  {
-    keywords: ['보안', 'security', 'auth', '인증', '권한', 'oauth', 'jwt', 'login', '로그인'],
-    icon: 'fas fa-shield-alt',
-    color: 'text-red-500',
-    bgColor: 'bg-red-50',
-  },
-  {
-    keywords: ['computer science', '컴퓨터 사이언스', 'cs', '자료구조', '알고리즘', '원리', '기본', '기반'],
-    icon: 'fas fa-book-open',
-    color: 'text-[#00C471]',
-    bgColor: 'bg-green-50',
-  },
-]
-
-function getNodeVisual(node: OfficialRoadmapNode) {
-  const target = `${node.title} ${node.subTopics ?? ''}`.toLowerCase()
-  const matchedRule = NODE_VISUAL_RULES.find((rule) =>
-    rule.keywords.some((keyword) => target.includes(keyword.toLowerCase())),
-  )
-
-  return matchedRule ?? { icon: 'fas fa-book-open', color: 'text-[#00C471]', bgColor: 'bg-green-50' }
-}
-
 function mapOfficialNodeToModule(
   detail: OfficialRoadmapDetail,
   node: OfficialRoadmapNode,
   template: RoadmapTemplate | null,
 ): SkillModule {
-  const visual = getNodeVisual(node)
+  const visual = getRoadmapNodeVisual({
+    title: node.title,
+    subTopics: node.subTopics,
+    nodeType: node.nodeType,
+    roadmapTitle: template?.item.subtitle ?? template?.label ?? detail.title,
+    category: template?.sectionTitle ?? detail.title,
+  })
   const topics = splitSubTopics(node.subTopics)
 
   return {
@@ -373,39 +296,50 @@ function MyRoadmapBuilderPage() {
       .then(({ data }) => {
         setRoadmapTitle(data.title)
         setNodes(
-          data.modules.map((m) => ({
-            instanceId: makeInstanceId(),
-            sortOrder: m.sortOrder,
-            branchGroup: m.branchGroup,
-            module:
-              m.source === 'OFFICIAL_NODE'
-                ? {
-                    dbId: -(m.originalNodeId!),
-                    source: 'OFFICIAL_NODE' as const,
-                    builderModuleId: null,
-                    originalNodeId: m.originalNodeId,
-                    id: m.moduleId,
-                    title: m.title,
-                    category: m.category,
-                    icon: m.icon,
-                    color: m.color,
-                    bgColor: m.bgColor,
-                    topics: m.topics ?? [],
-                  }
-                : {
-                    dbId: m.builderModuleId!,
-                    source: 'BUILDER_MODULE' as const,
-                    builderModuleId: m.builderModuleId,
-                    originalNodeId: null,
-                    id: m.moduleId,
-                    title: m.title,
-                    category: m.category,
-                    icon: m.icon,
-                    color: m.color,
-                    bgColor: m.bgColor,
-                    topics: m.topics ?? [],
-                  },
-          })),
+          data.modules.map((m) => {
+            const officialVisual = m.source === 'OFFICIAL_NODE'
+              ? getRoadmapNodeVisual({
+                  title: m.title,
+                  subTopics: m.topics ?? [],
+                  roadmapTitle: m.category,
+                  category: m.category,
+                })
+              : null
+
+            return {
+              instanceId: makeInstanceId(),
+              sortOrder: m.sortOrder,
+              branchGroup: m.branchGroup,
+              module:
+                m.source === 'OFFICIAL_NODE'
+                  ? {
+                      dbId: -(m.originalNodeId!),
+                      source: 'OFFICIAL_NODE' as const,
+                      builderModuleId: null,
+                      originalNodeId: m.originalNodeId,
+                      id: m.moduleId,
+                      title: m.title,
+                      category: m.category,
+                      icon: officialVisual?.icon ?? m.icon,
+                      color: officialVisual?.color ?? m.color,
+                      bgColor: officialVisual?.bgColor ?? m.bgColor,
+                      topics: m.topics ?? [],
+                    }
+                  : {
+                      dbId: m.builderModuleId!,
+                      source: 'BUILDER_MODULE' as const,
+                      builderModuleId: m.builderModuleId,
+                      originalNodeId: null,
+                      id: m.moduleId,
+                      title: m.title,
+                      category: m.category,
+                      icon: m.icon,
+                      color: m.color,
+                      bgColor: m.bgColor,
+                      topics: m.topics ?? [],
+                    },
+            }
+          }),
         )
       })
       .catch((err) => {

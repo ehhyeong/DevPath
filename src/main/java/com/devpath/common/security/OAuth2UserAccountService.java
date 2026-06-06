@@ -17,16 +17,27 @@ public class OAuth2UserAccountService {
 
   @Transactional
   public User findOrCreateUser(String email, String name) {
+    return findOrCreateUserWithStatus(email, name).user();
+  }
+
+  @Transactional
+  public OAuth2UserAccount findOrCreateUserWithStatus(String email, String name) {
     return userRepository
         .findByEmail(email)
-        .orElseGet(
-            () ->
-                userRepository.save(
-                    User.builder()
-                        .email(email)
-                        .name(name)
-                        .password(OAUTH_USER_PASSWORD_DUMMY)
-                        .role(UserRole.ROLE_LEARNER)
-                        .build()));
+        .map(user -> new OAuth2UserAccount(user, false))
+        .orElseGet(() -> new OAuth2UserAccount(createUser(email, name), true));
   }
+
+  private User createUser(String email, String name) {
+    return userRepository
+        .save(
+            User.builder()
+                .email(email)
+                .name(name)
+                .password(OAUTH_USER_PASSWORD_DUMMY)
+                .role(UserRole.ROLE_LEARNER)
+                .build());
+  }
+
+  public record OAuth2UserAccount(User user, boolean newUser) {}
 }
