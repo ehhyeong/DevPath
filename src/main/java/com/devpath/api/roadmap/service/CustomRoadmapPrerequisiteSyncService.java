@@ -36,9 +36,132 @@ public class CustomRoadmapPrerequisiteSyncService {
     ensurePrerequisites(customRoadmap, customNodes);
   }
 
+  /**
+   * 현재 {@code customSortOrder}(+분기 그룹) 순서를 기준으로 선행관계 그래프를 전부 재생성한다. 기존 엣지를 모두 삭제하고
+   * 척추 선형 + 분기 split/merge 구조로 다시 만든다. 사용자의 수동 순서변경 적용에 사용한다(공식 엣지 무시).
+   */
+  @Transactional
+  public void rebuildFromCurrentOrder(CustomRoadmap customRoadmap) {
+    List<CustomRoadmapNode> customNodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
+
+    customNodePrerequisiteRepository.deleteAllByCustomRoadmap(customRoadmap);
+
+    if (customNodes.isEmpty()) {
+      return;
+    }
+
+    Map<Long, CustomRoadmapNode> customNodeById =
+        customNodes.stream()
+            .filter(node -> node.getId() != null)
+            .collect(Collectors.toMap(CustomRoadmapNode::getId, Function.identity()));
+
+    Set<EdgeKey> desiredEdges = inferEdgesByCustomOrder(customNodes);
+
+    List<CustomNodePrerequisite> edges =
+        desiredEdges.stream()
+            .map(edge -> buildPrerequisite(customRoadmap, customNodeById, edge))
+            .filter(Objects::nonNull)
+            .toList();
+
+    if (!edges.isEmpty()) {
+      customNodePrerequisiteRepository.saveAll(edges);
+    }
+  }
+
+  // customSortOrder + 분기 그룹(공식/빌더 노드 공통) 기준으로 구조 엣지를 추론한다.
+  private Set<EdgeKey> inferEdgesByCustomOrder(List<CustomRoadmapNode> customNodes) {
+    Comparator<CustomRoadmapNode> byCustomOrder =
+        Comparator.comparing(this::customOrderOf, Comparator.nullsLast(Integer::compareTo))
+            .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
+
+    List<CustomRoadmapNode> orderedNodes = customNodes.stream().sorted(byCustomOrder).toList();
+
+    Set<EdgeKey> edges = new LinkedHashSet<>();
+    List<CustomRoadmapNode> branchNodes =
+        orderedNodes.stream().filter(node -> unifiedBranchGroupOf(node) != null).toList();
+
+    if (branchNodes.isEmpty()) {
+      addLinearEdges(edges, orderedNodes);
+      return edges;
+    }
+
+    int minBranchOrder =
+        branchNodes.stream()
+            .map(this::customOrderOf)
+            .filter(Objects::nonNull)
+            .min(Integer::compareTo)
+            .orElse(0);
+    int maxBranchOrder =
+        branchNodes.stream()
+            .map(this::customOrderOf)
+            .filter(Objects::nonNull)
+            .max(Integer::compareTo)
+            .orElse(0);
+
+    List<CustomRoadmapNode> spineNodes =
+        orderedNodes.stream().filter(node -> unifiedBranchGroupOf(node) == null).toList();
+    List<CustomRoadmapNode> preBranchSpineNodes =
+        spineNodes.stream()
+            .filter(node -> customOrderOf(node) != null && customOrderOf(node) < minBranchOrder)
+            .toList();
+    List<CustomRoadmapNode> postBranchSpineNodes =
+        spineNodes.stream()
+            .filter(node -> customOrderOf(node) != null && customOrderOf(node) > maxBranchOrder)
+            .toList();
+
+    addLinearEdges(edges, preBranchSpineNodes);
+
+    CustomRoadmapNode splitSource =
+        preBranchSpineNodes.isEmpty()
+            ? null
+            : preBranchSpineNodes.get(preBranchSpineNodes.size() - 1);
+    List<CustomRoadmapNode> branchEndNodes = new ArrayList<>();
+
+    Map<Integer, List<CustomRoadmapNode>> branchNodesByGroup =
+        branchNodes.stream()
+            .collect(
+                Collectors.groupingBy(this::unifiedBranchGroupOf, TreeMap::new, Collectors.toList()));
+
+    for (List<CustomRoadmapNode> groupNodes : branchNodesByGroup.values()) {
+      List<CustomRoadmapNode> orderedGroupNodes =
+          groupNodes.stream().sorted(byCustomOrder).toList();
+
+      if (orderedGroupNodes.isEmpty()) {
+        continue;
+      }
+
+      addEdge(edges, orderedGroupNodes.get(0), splitSource);
+      addLinearEdges(edges, orderedGroupNodes);
+      branchEndNodes.add(orderedGroupNodes.get(orderedGroupNodes.size() - 1));
+    }
+
+    if (!postBranchSpineNodes.isEmpty()) {
+      CustomRoadmapNode firstPostBranchNode = postBranchSpineNodes.get(0);
+      for (CustomRoadmapNode branchEndNode : branchEndNodes) {
+        addEdge(edges, firstPostBranchNode, branchEndNode);
+      }
+      addLinearEdges(edges, postBranchSpineNodes);
+    }
+
+    return edges;
+  }
+
+  private Integer customOrderOf(CustomRoadmapNode node) {
+    return node.getCustomSortOrder();
+  }
+
+  private Integer unifiedBranchGroupOf(CustomRoadmapNode node) {
+    return node.effectiveBranchGroup();
+  }
+
   @Transactional
   public void ensurePrerequisites(
       CustomRoadmap customRoadmap, List<CustomRoadmapNode> customNodes) {
+    // 사용자가 순서/선행관계를 직접 편집한 로드맵은 공식 선행관계를 재적용하지 않는다(현재 엣지를 단일 진실로 사용).
+    if (customRoadmap.isPrerequisitesCustomized()) {
+      return;
+    }
     if (customRoadmap.getOriginalRoadmap() == null || customNodes.isEmpty()) {
       return;
     }

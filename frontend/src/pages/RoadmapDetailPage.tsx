@@ -60,7 +60,7 @@ function isPendingNodeStatus(status: NodeStatus) {
 }
 
 function normalizeChangeType(type?: string | null): ChangeType | null {
-  if (type === 'ADD' || type === 'MODIFY' || type === 'DELETE') return type
+  if (type === 'ADD' || type === 'MODIFY' || type === 'DELETE' || type === 'REORDER') return type
   return null
 }
 
@@ -89,6 +89,7 @@ function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): 
     if (change.nodeChangeType === 'ADD')    return 'node-box node-change-add'
     if (change.nodeChangeType === 'MODIFY') return 'node-box node-change-modify'
     if (change.nodeChangeType === 'DELETE') return 'node-box node-change-delete'
+    if (change.nodeChangeType === 'REORDER') return 'node-box node-change-reorder'
   }
   if (node.status === 'COMPLETED') return 'node-box status-done'
   if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return 'node-box status-active'
@@ -100,6 +101,7 @@ function getChangeItemClass(type?: ChangeType | null) {
   if (type === 'ADD')    return 'change-item new'
   if (type === 'MODIFY') return 'change-item modified'
   if (type === 'DELETE') return 'change-item delete'
+  if (type === 'REORDER') return 'change-item reorder'
   return 'change-item'
 }
 
@@ -107,6 +109,7 @@ function changeBadgeStyle(type?: ChangeType | null): CSSProperties {
   if (type === 'ADD')    return { background: '#3b82f6' }
   if (type === 'MODIFY') return { background: '#f59e0b' }
   if (type === 'DELETE') return { background: '#ef4444' }
+  if (type === 'REORDER') return { background: '#6366f1' }
   return { background: '#64748b' }
 }
 
@@ -114,6 +117,7 @@ function changeTypeLabel(type?: ChangeType | null) {
   if (type === 'ADD')    return '추가 제안'
   if (type === 'MODIFY') return '수정 제안'
   if (type === 'DELETE') return '삭제 제안'
+  if (type === 'REORDER') return '순서변경 제안'
   return '변경 제안'
 }
 
@@ -168,6 +172,7 @@ function changeTypeIcon(type?: ChangeType | null) {
   if (type === 'ADD')    return 'fa-plus'
   if (type === 'MODIFY') return 'fa-edit'
   if (type === 'DELETE') return 'fa-trash'
+  if (type === 'REORDER') return 'fa-arrows-up-down'
   return 'fa-history'
 }
 
@@ -175,6 +180,7 @@ function changeChipStyle(type?: ChangeType | null): string {
   if (type === 'ADD')    return 'text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded'
   if (type === 'MODIFY') return 'text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded'
   if (type === 'DELETE') return 'text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded'
+  if (type === 'REORDER') return 'text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded'
   return 'text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded'
 }
 
@@ -182,6 +188,7 @@ function changeChipLabel(type?: ChangeType | null) {
   if (type === 'ADD')    return '추가'
   if (type === 'MODIFY') return '수정'
   if (type === 'DELETE') return '삭제'
+  if (type === 'REORDER') return '순서변경'
   return '변경'
 }
 
@@ -446,9 +453,13 @@ function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationCha
     edgeKind: LayoutEdgeKind = 'suggestion',
     theme: EdgeTheme = 'suggestion',
   ) {
+    // 추천 노드는 출발 노드와 같은 쪽에 배치한다. 좌측 분기는 좌측, 우측 분기는 우측,
+    // 척추(center)에서 출발한 추천은 기존대로 우측에 둔다. (반대편 분기와의 겹침 방지)
+    const branchLane: RoadmapLane =
+      sourceSlot.lane === 'left' || sourceSlot.lane === 'side-left' ? 'left' : 'right'
     const branchSlot = addSlot({
       ...slot,
-      lane: 'right',
+      lane: branchLane,
       row: reserveBranchRow(sourceSlot.row + offset),
       stackOffset: slot.stackOffset ?? sourceSlot.stackOffset,
     })
@@ -580,6 +591,17 @@ function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationCha
   if (hasOfficialBranch) {
     const branchStartRow = row
     const splitSourceSlotId = previousCenterSlotId
+    const maxBranchDepth = Math.max(
+      0,
+      ...officialBranchGroups.map((branchGroup) => (
+        officialBranchNodes.filter((node) => node.branchGroup === branchGroup).length
+      )),
+    )
+    // 공식 분기 노드가 차지할 행을 미리 선점해, 분기 노드에 달리는 추천 노드가
+    // 분기 팬 아래의 빈 행으로 안전하게 내려가도록 한다(같은 컬럼 행 충돌 방지).
+    for (let i = 0; i < maxBranchDepth; i += 1) {
+      usedBranchRows.add(branchStartRow + i)
+    }
     const branchEndSlotIds = officialBranchGroups
       .map((branchGroup, index) => addOfficialBranchGroup(
         branchGroup,
@@ -588,12 +610,6 @@ function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationCha
         splitSourceSlotId,
       ))
       .filter((slotId): slotId is string => slotId != null)
-    const maxBranchDepth = Math.max(
-      0,
-      ...officialBranchGroups.map((branchGroup) => (
-        officialBranchNodes.filter((node) => node.branchGroup === branchGroup).length
-      )),
-    )
     row = Math.max(branchStartRow + maxBranchDepth, rowCount + 1)
 
     const postSpineItems = makeLayoutSpineItems(postSpineNodes, postSpineAdds)
@@ -692,9 +708,14 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
             <span className="meta-tag">완료가능</span>
           </div>
         )}
-        {isPendingNodeStatus(node.status) && !readyToClear && (
+        {isPendingNodeStatus(node.status) && !readyToClear && !node.deferred && (
           <div className="node-meta">
             <span className="meta-tag">대기중</span>
+          </div>
+        )}
+        {node.deferred && node.status !== 'COMPLETED' && (
+          <div className="node-meta">
+            <span className="meta-tag">스킵</span>
           </div>
         )}
       </div>
@@ -1025,14 +1046,80 @@ interface NodeDrawerProps {
   node: RoadmapNodeItem | null
   customRoadmapId: number
   originalRoadmapId: number | null
+  editMode: boolean
   onClose: () => void
   onCleared: () => void
 }
 
-function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onCleared }: NodeDrawerProps) {
+function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClose, onCleared }: NodeDrawerProps) {
   const [clearing, setClearing] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   if (!node) return null
+
+  async function handleDefer() {
+    if (!node) return
+    const next = !node.deferred
+    const message = next
+      ? `"${node.title}" 노드를 스킵하시겠습니까? 완료하지 않아도 다음 노드를 진행할 수 있습니다.`
+      : `"${node.title}" 노드의 스킵을 해제하시겠습니까?`
+    if (!confirm(message)) return
+    setBusy(true)
+    try {
+      if (next) await roadmapApi.deferNode(customRoadmapId, node.customNodeId)
+      else await roadmapApi.undeferNode(customRoadmapId, node.customNodeId)
+      onCleared()
+      onClose()
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!node) return
+    if (!confirm(`"${node.title}" 노드를 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return
+    setBusy(true)
+    try {
+      await roadmapApi.deleteNode(customRoadmapId, node.customNodeId)
+      onCleared()
+      onClose()
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleMove(up: boolean) {
+    if (!node) return
+    setBusy(true)
+    try {
+      if (up) await roadmapApi.moveNodeUp(customRoadmapId, node.customNodeId)
+      else await roadmapApi.moveNodeDown(customRoadmapId, node.customNodeId)
+      onCleared()
+      onClose()
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleSetBranch(branchGroup: number | null) {
+    if (!node) return
+    setBusy(true)
+    try {
+      await roadmapApi.setNodeBranch(customRoadmapId, node.customNodeId, branchGroup)
+      onCleared()
+      onClose()
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function handleClear() {
     if (!node) return
@@ -1083,6 +1170,9 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
               )}
               {node.status === 'IN_PROGRESS' && (
                 <span className="text-[10px] font-bold text-white bg-yellow-400 px-2 py-1 rounded">진행중</span>
+              )}
+              {node.deferred && node.status !== 'COMPLETED' && (
+                <span className="text-[10px] font-bold text-white bg-gray-400 px-2 py-1 rounded">스킵</span>
               )}
             </div>
             <h2 className="text-3xl font-bold text-gray-900 leading-tight break-words">{node.title}</h2>
@@ -1188,6 +1278,68 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
           >
             <i className="fas fa-list" /> 전체 강좌 목록 보기
           </button>
+          {editMode && (
+            <>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleMove(true)}
+                  disabled={busy}
+                  className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                >
+                  <i className="fas fa-arrow-up" /> 위로 이동
+                </button>
+                <button
+                  onClick={() => handleMove(false)}
+                  disabled={busy}
+                  className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                >
+                  <i className="fas fa-arrow-down" /> 아래로 이동
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <span className="self-center text-xs font-bold text-gray-400 shrink-0">분기</span>
+                {([
+                  { label: '중앙', value: null as number | null },
+                  { label: '좌', value: 1 as number | null },
+                  { label: '우', value: 2 as number | null },
+                ]).map((opt) => {
+                  const current = (node.branchGroup ?? null) === opt.value
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => handleSetBranch(opt.value)}
+                      disabled={busy || current}
+                      className={`flex-1 py-2 rounded-lg font-bold text-sm transition border ${
+                        current
+                          ? 'bg-indigo-50 border-indigo-300 text-indigo-600'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="flex gap-3">
+                {node.status !== 'COMPLETED' && (
+                  <button
+                    onClick={handleDefer}
+                    disabled={busy}
+                    className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                  >
+                    <i className="fas fa-pause-circle" /> {node.deferred ? '스킵 해제' : '스킵하기'}
+                  </button>
+                )}
+                <button
+                  onClick={handleDelete}
+                  disabled={busy}
+                  className="flex-1 bg-white border border-red-200 hover:bg-red-50 disabled:opacity-50 text-red-600 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                >
+                  <i className="fas fa-trash-alt" /> 삭제
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </aside>
     </>
@@ -1207,7 +1359,7 @@ interface ChangesPanelProps {
   processing: boolean
 }
 
-type FilterType = 'all' | 'ADD' | 'MODIFY' | 'DELETE'
+type FilterType = 'all' | 'ADD' | 'MODIFY' | 'DELETE' | 'REORDER'
 
 function ChangesPanel({
   open,
@@ -1255,13 +1407,21 @@ function ChangesPanel({
       {/* 필터 (pending 탭에서만) */}
       {tab === 'pending' && (
         <div className="flex gap-2 p-3 bg-white border-b border-gray-100 overflow-x-auto">
-          {(['all', 'ADD', 'MODIFY', 'DELETE'] as const).map((f) => (
+          {(['all', 'ADD', 'MODIFY', 'DELETE', 'REORDER'] as const).map((f) => (
             <button
               key={f}
               className={`filter-chip${filter === f ? ' active' : ''}`}
               onClick={() => setFilter(f)}
             >
-              {f === 'all' ? '전체' : f === 'ADD' ? '추가' : f === 'MODIFY' ? '수정' : '삭제'}
+              {f === 'all'
+                ? '전체'
+                : f === 'ADD'
+                  ? '추가'
+                  : f === 'MODIFY'
+                    ? '수정'
+                    : f === 'DELETE'
+                      ? '삭제'
+                      : '순서변경'}
             </button>
           ))}
         </div>
@@ -1282,7 +1442,8 @@ function ChangesPanel({
                     style={{
                       background:
                         change.nodeChangeType === 'ADD' ? '#dbeafe' :
-                        change.nodeChangeType === 'MODIFY' ? '#fed7aa' : '#fee2e2',
+                        change.nodeChangeType === 'MODIFY' ? '#fed7aa' :
+                        change.nodeChangeType === 'REORDER' ? '#e0e7ff' : '#fee2e2',
                     }}
                   >
                     <i
@@ -1290,7 +1451,8 @@ function ChangesPanel({
                       style={{
                         color:
                           change.nodeChangeType === 'ADD' ? '#2563eb' :
-                          change.nodeChangeType === 'MODIFY' ? '#d97706' : '#dc2626',
+                          change.nodeChangeType === 'MODIFY' ? '#d97706' :
+                          change.nodeChangeType === 'REORDER' ? '#4f46e5' : '#dc2626',
                       }}
                     />
                   </div>
@@ -1307,6 +1469,14 @@ function ChangesPanel({
                         change.nodeTitle
                       )}
                     </h4>
+                    {change.nodeChangeType === 'REORDER' && (
+                      <p className="text-xs text-indigo-600 mb-1">
+                        <i className="fas fa-arrow-right-long mr-1" />
+                        {change.reorderAfterNodeTitle
+                          ? `"${change.reorderAfterNodeTitle}" 다음으로 이동`
+                          : '맨 앞으로 이동'}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-600 mb-3 line-clamp-2">{change.reason}</p>
                     <div className="flex gap-2">
                       <button
@@ -1610,6 +1780,7 @@ export default function RoadmapDetailPage() {
   const [processing, setProcessing] = useState(false)
   const [drawerNode, setDrawerNode] = useState<RoadmapNodeItem | null>(null)
   const [myRoadmaps, setMyRoadmaps] = useState<MyRoadmapSummary[]>([])
+  const [editMode, setEditMode] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
   const resetRoadmapPageState = useCallback((options?: { keepRoadmap?: boolean }) => {
@@ -2084,11 +2255,26 @@ export default function RoadmapDetailPage() {
         </div>
       </header> : null}
 
+      {/* ── 편집모드 토글 ───────────────────────────────────────────────────── */}
+      <button
+        onClick={() => setEditMode((v) => !v)}
+        className={`fixed bottom-6 right-6 z-[60] flex items-center gap-2 px-4 py-3 rounded-full font-bold text-sm shadow-lg transition ${
+          editMode
+            ? 'bg-[#00c471] text-white hover:bg-green-600'
+            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+        }`}
+        title="노드 순서변경·스킵·삭제 편집"
+      >
+        <i className={`fas ${editMode ? 'fa-check' : 'fa-pen'}`} />
+        {editMode ? '편집 완료' : '편집'}
+      </button>
+
       {/* ── 노드 드로어 ──────────────────────────────────────────────────────── */}
       <NodeDrawer
         node={drawerNode}
         customRoadmapId={customRoadmapId}
         originalRoadmapId={roadmap.originalRoadmapId}
+        editMode={editMode}
         onClose={() => setDrawerNode(null)}
         onCleared={async () => {
           const updated = await roadmapApi.getMyRoadmapDetail(customRoadmapId)

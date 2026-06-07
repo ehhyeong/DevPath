@@ -57,6 +57,10 @@ public class RecommendationChange {
   @Column(name = "branch_type", length = 20)
   private String branchType;
 
+  // REORDER 전용: 이동 노드(roadmapNode)를 이 원본 노드 '뒤로' 옮긴다. null이면 맨 앞으로.
+  @Column(name = "reorder_after_node_id")
+  private Long reorderAfterNodeId;
+
   @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
   private String reason;
 
@@ -101,6 +105,7 @@ public class RecommendationChange {
       Long targetCustomRoadmapId,
       Long anchorCustomNodeId,
       String branchType,
+      Long reorderAfterNodeId,
       String reason,
       String contextSummary,
       NodeChangeType nodeChangeType,
@@ -114,6 +119,7 @@ public class RecommendationChange {
     this.targetCustomRoadmapId = targetCustomRoadmapId;
     this.anchorCustomNodeId = anchorCustomNodeId;
     this.branchType = branchType;
+    this.reorderAfterNodeId = reorderAfterNodeId;
     this.reason = reason;
     this.contextSummary = contextSummary;
     this.nodeChangeType = nodeChangeType == null ? NodeChangeType.ADD : nodeChangeType;

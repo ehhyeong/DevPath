@@ -6,6 +6,7 @@ import com.devpath.api.learning.service.WeaknessAnalysisService;
 import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.recommendation.dto.RecommendationChangeRequest;
 import com.devpath.api.recommendation.dto.RecommendationChangeResponse;
+import com.devpath.api.roadmap.service.CustomRoadmapNodeCommandService;
 import com.devpath.api.roadmap.service.NodeRequiredTagRegistrar;
 import com.devpath.api.roadmap.service.RoadmapProgressService;
 import com.devpath.common.exception.CustomException;
@@ -56,6 +57,7 @@ public class RecommendationChangeService {
   private final RoadmapProgressService roadmapProgressService;
   private final NodeRequiredTagRegistrar nodeRequiredTagRegistrar;
   private final NotificationEventService notificationEventService;
+  private final CustomRoadmapNodeCommandService customRoadmapNodeCommandService;
 
   @Transactional
   public List<RecommendationChangeResponse.Detail> createSuggestions(
@@ -159,6 +161,8 @@ public class RecommendationChangeService {
       nodeRequiredTagRegistrar.registerFromSubTopics(recommendationChange.getRoadmapNode());
     } else if (recommendationChange.getNodeChangeType() == NodeChangeType.DELETE) {
       deleteNodeFromCustomRoadmaps(recommendationChange.getRoadmapNode().getNodeId(), userId);
+    } else if (recommendationChange.getNodeChangeType() == NodeChangeType.REORDER) {
+      reorderNodeInCustomRoadmap(recommendationChange, userId);
     }
 
     if (recommendationChange.getSourceRecommendationId() != null) {
@@ -512,6 +516,36 @@ public class RecommendationChangeService {
     }
   }
 
+  // REORDER 타입 변경 적용: 이동 노드를 앵커 노드 뒤(앵커 null이면 맨 앞)로 옮기고 선행관계를 재구성한다.
+  private void reorderNodeInCustomRoadmap(RecommendationChange change, Long userId) {
+    RoadmapNode movedOriginal = change.getRoadmapNode();
+    Long roadmapId = movedOriginal.getRoadmap().getRoadmapId();
+
+    CustomRoadmap customRoadmap =
+        customRoadmapRepository
+            .findByUserIdAndOriginalRoadmapRoadmapId(userId, roadmapId)
+            .orElseThrow(() -> new CustomException(ErrorCode.CUSTOM_ROADMAP_NOT_FOUND));
+
+    CustomRoadmapNode moved =
+        customRoadmapNodeRepository
+            .findByCustomRoadmapAndOriginalNode(customRoadmap, movedOriginal)
+            .orElseThrow(() -> new CustomException(ErrorCode.CUSTOM_NODE_NOT_FOUND));
+
+    CustomRoadmapNode anchor = null;
+    if (change.getReorderAfterNodeId() != null) {
+      RoadmapNode anchorOriginal =
+          roadmapNodeRepository.findById(change.getReorderAfterNodeId()).orElse(null);
+      if (anchorOriginal != null) {
+        anchor =
+            customRoadmapNodeRepository
+                .findByCustomRoadmapAndOriginalNode(customRoadmap, anchorOriginal)
+                .orElse(null);
+      }
+    }
+
+    customRoadmapNodeCommandService.reorderAfter(customRoadmap, moved, anchor);
+  }
+
   // 양의 정수 문자열을 파싱한다.
   private int parsePositiveInt(String value, int defaultValue) {
     try {
@@ -533,6 +567,14 @@ public class RecommendationChangeService {
   }
 
   private RecommendationChangeResponse.Detail toDetail(RecommendationChange recommendationChange) {
+    String reorderAfterNodeTitle = null;
+    if (recommendationChange.getReorderAfterNodeId() != null) {
+      reorderAfterNodeTitle =
+          roadmapNodeRepository
+              .findById(recommendationChange.getReorderAfterNodeId())
+              .map(RoadmapNode::getTitle)
+              .orElse(null);
+    }
     return RecommendationChangeResponse.Detail.builder()
         .changeId(recommendationChange.getId())
         .sourceRecommendationId(recommendationChange.getSourceRecommendationId())
@@ -540,6 +582,8 @@ public class RecommendationChangeService {
         .nodeTitle(recommendationChange.getRoadmapNode().getTitle())
         .nodeSortOrder(recommendationChange.getRoadmapNode().getSortOrder())
         .branchFromNodeId(recommendationChange.getBranchFromNodeId())
+        .reorderAfterNodeId(recommendationChange.getReorderAfterNodeId())
+        .reorderAfterNodeTitle(reorderAfterNodeTitle)
         .reason(recommendationChange.getReason())
         .contextSummary(recommendationChange.getContextSummary())
         .nodeChangeType(recommendationChange.getNodeChangeType().name())

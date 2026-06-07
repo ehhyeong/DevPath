@@ -14653,6 +14653,12 @@ body.team-ws-dashboard-body #root {
   animation: pulse-red 2s infinite;
 }
 
+.node-change-reorder {
+  border: 3px dashed #6366f1 !important;
+  background: #eef2ff !important;
+  animation: pulse-indigo 2s infinite;
+}
+
 @keyframes pulse-blue {
   0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
   50%       { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
@@ -14660,6 +14666,10 @@ body.team-ws-dashboard-body #root {
 @keyframes pulse-orange {
   0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
   50%       { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+}
+@keyframes pulse-indigo {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6); }
+  50%       { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
 }
 @keyframes pulse-red {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
@@ -14814,6 +14824,7 @@ body.team-ws-dashboard-body #root {
 .change-item.new      { border-left-color: #3b82f6; }
 .change-item.modified { border-left-color: #f59e0b; }
 .change-item.delete   { border-left-color: #ef4444; }
+.change-item.reorder  { border-left-color: #6366f1; }
 
 /* ── 노드 카운트 배지 ── */
 .node-count-wrap {

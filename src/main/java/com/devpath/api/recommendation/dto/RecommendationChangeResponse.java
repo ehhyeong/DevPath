@@ -31,6 +31,12 @@ public class RecommendationChangeResponse {
     @Schema(description = "진단 퀴즈 추천 시 클리어한 원본 노드 ID (분기 위치 결정용)")
     private Long branchFromNodeId;
 
+    @Schema(description = "REORDER 전용: 이동 노드를 이 원본 노드 뒤로 옮김 (null=맨 앞)")
+    private Long reorderAfterNodeId;
+
+    @Schema(description = "REORDER 전용: 앵커 노드 제목 (표시용)")
+    private String reorderAfterNodeTitle;
+
     @Schema(
         description = "Reason",
         example = "Generated from supplement recommendation and weakness signals.")

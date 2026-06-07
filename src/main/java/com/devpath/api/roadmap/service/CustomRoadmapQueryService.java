@@ -103,6 +103,13 @@ public class CustomRoadmapQueryService {
         customNodes.stream()
             .collect(Collectors.toMap(CustomRoadmapNode::getId, CustomRoadmapNode::getStatus));
 
+    // 보류(defer)된 노드는 선행 조건 판정에서 통과로 간주(완료하지 않아도 다음 노드 진행 허용)
+    Set<Long> deferredCustomNodeIds =
+        customNodes.stream()
+            .filter(CustomRoadmapNode::isDeferred)
+            .map(CustomRoadmapNode::getId)
+            .collect(Collectors.toSet());
+
     Map<Long, NodeClearance> clearanceByNodeId =
         customRoadmap.getOriginalRoadmap() != null
             ? nodeClearanceRepository
@@ -167,7 +174,8 @@ public class CustomRoadmapQueryService {
               .allMatch(
                   prereqId ->
                       statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
-                          == NodeStatus.COMPLETED);
+                              == NodeStatus.COMPLETED
+                          || deferredCustomNodeIds.contains(prereqId));
       boolean ready =
           node.getStatus() != NodeStatus.COMPLETED && prerequisitesDone && tagGateSatisfied;
 
