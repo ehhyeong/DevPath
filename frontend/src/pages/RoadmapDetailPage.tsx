@@ -1107,6 +1107,20 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
     }
   }
 
+  async function handleSetBranch(branchGroup: number | null) {
+    if (!node) return
+    setBusy(true)
+    try {
+      await roadmapApi.setNodeBranch(customRoadmapId, node.customNodeId, branchGroup)
+      onCleared()
+      onClose()
+    } catch (err) {
+      alert((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function handleClear() {
     if (!node) return
     if (!confirm(`"${node.title}" 노드를 완료 처리하시겠습니까?`)) return
@@ -1281,6 +1295,30 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
                 >
                   <i className="fas fa-arrow-down" /> 아래로 이동
                 </button>
+              </div>
+              <div className="flex gap-2">
+                <span className="self-center text-xs font-bold text-gray-400 shrink-0">분기</span>
+                {([
+                  { label: '중앙', value: null as number | null },
+                  { label: '좌', value: 1 as number | null },
+                  { label: '우', value: 2 as number | null },
+                ]).map((opt) => {
+                  const current = (node.branchGroup ?? null) === opt.value
+                  return (
+                    <button
+                      key={opt.label}
+                      onClick={() => handleSetBranch(opt.value)}
+                      disabled={busy || current}
+                      className={`flex-1 py-2 rounded-lg font-bold text-sm transition border ${
+                        current
+                          ? 'bg-indigo-50 border-indigo-300 text-indigo-600'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
               </div>
               <div className="flex gap-3">
                 {node.status !== 'COMPLETED' && (

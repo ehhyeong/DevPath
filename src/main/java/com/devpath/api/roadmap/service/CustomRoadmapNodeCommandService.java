@@ -116,6 +116,40 @@ public class CustomRoadmapNodeCommandService {
     finalizeReorder(customRoadmap, ordered);
   }
 
+  /**
+   * 노드의 분기 소속을 변경한다(null=척추, 1=왼쪽, 2=오른쪽). 첫 분기 편집 시 모든 노드의 현재 유효 분기값을 override로 백필해
+   * 기존 분기 구성을 보존한 뒤 편집본으로 전환한다. 변경 후 현재 순서·분기 기준으로 선행관계를 재생성한다.
+   */
+  @Transactional
+  public void setNodeBranch(
+      Long userId, Long customRoadmapId, Long customNodeId, Integer branchGroup) {
+    if (branchGroup != null && branchGroup != 1 && branchGroup != 2) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "branchGroup must be null, 1, or 2.");
+    }
+
+    CustomRoadmapNode node = getOwnedNode(userId, customRoadmapId, customNodeId);
+    CustomRoadmap customRoadmap = node.getCustomRoadmap();
+
+    backfillBranchGroupsIfNeeded(customRoadmap);
+    node.setBranchGroupOverride(branchGroup);
+
+    prerequisiteSyncService.rebuildFromCurrentOrder(customRoadmap);
+    customRoadmap.markPrerequisitesCustomized();
+  }
+
+  // 분기 편집본 전환 전, 모든 노드의 현재 유효 분기값을 override 컬럼에 백필해 기존 분기 구성을 보존한다.
+  private void backfillBranchGroupsIfNeeded(CustomRoadmap customRoadmap) {
+    if (customRoadmap.isBranchesCustomized()) {
+      return;
+    }
+    List<CustomRoadmapNode> nodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
+    for (CustomRoadmapNode n : nodes) {
+      n.setBranchGroupOverride(n.effectiveBranchGroup()); // 플래그 false라 원본 유효값을 반환
+    }
+    customRoadmap.markBranchesCustomized();
+  }
+
   // 재배치된 리스트를 1..N으로 재번호 매기고 선행관계 그래프를 재생성한 뒤 편집본으로 고정한다.
   private void finalizeReorder(CustomRoadmap customRoadmap, List<CustomRoadmapNode> orderedNodes) {
     for (int i = 0; i < orderedNodes.size(); i += 1) {

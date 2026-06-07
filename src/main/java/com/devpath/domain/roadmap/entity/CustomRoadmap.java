@@ -55,6 +55,10 @@ public class CustomRoadmap {
   @Column(name = "prerequisites_customized", nullable = false, columnDefinition = "boolean default false")
   private boolean prerequisitesCustomized = false;
 
+  // 사용자가 분기 소속을 직접 편집한 로드맵 여부. true면 각 노드의 branch_group override를 분기 소속의 진실로 사용한다.
+  @Column(name = "branches_customized", nullable = false, columnDefinition = "boolean default false")
+  private boolean branchesCustomized = false;
+
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
@@ -93,5 +97,10 @@ public class CustomRoadmap {
   // 선행관계를 사용자 편집본으로 고정한다(공식 선행관계 자동 재적용 중단).
   public void markPrerequisitesCustomized() {
     this.prerequisitesCustomized = true;
+  }
+
+  // 분기 소속을 사용자 편집본으로 고정한다(각 노드 branch_group override를 진실로 사용).
+  public void markBranchesCustomized() {
+    this.branchesCustomized = true;
   }
 }

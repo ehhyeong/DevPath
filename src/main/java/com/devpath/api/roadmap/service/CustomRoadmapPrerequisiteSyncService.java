@@ -152,10 +152,7 @@ public class CustomRoadmapPrerequisiteSyncService {
   }
 
   private Integer unifiedBranchGroupOf(CustomRoadmapNode node) {
-    if (node.getOriginalNode() != null) {
-      return node.getOriginalNode().getBranchGroup();
-    }
-    return node.getBuilderBranchGroup();
+    return node.effectiveBranchGroup();
   }
 
   @Transactional

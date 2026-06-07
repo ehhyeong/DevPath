@@ -150,6 +150,20 @@ public class MyRoadmapDto {
 
   @Getter
   @NoArgsConstructor(access = AccessLevel.PROTECTED)
+  @Schema(name = "MyRoadmapNodeBranchRequest")
+  public static class BranchRequest {
+
+    @Schema(description = "분기 소속 (null=척추, 1=왼쪽, 2=오른쪽)", example = "1")
+    private Integer branchGroup;
+
+    @Builder
+    private BranchRequest(Integer branchGroup) {
+      this.branchGroup = branchGroup;
+    }
+  }
+
+  @Getter
+  @NoArgsConstructor(access = AccessLevel.PROTECTED)
   @Schema(name = "MyRoadmapDetailResponse")
   public static class DetailResponse {
 
@@ -401,7 +415,6 @@ public class MyRoadmapDto {
             node.getBuilderModule().getTopics() != null
                 ? node.getBuilderModule().getTopics()
                 : List.of();
-        branchGroup = node.getBuilderBranchGroup();
         content = null;
         originalNodeId = null;
       } else {
@@ -411,10 +424,11 @@ public class MyRoadmapDto {
             (raw != null && !raw.isBlank())
                 ? Arrays.stream(raw.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList()
                 : List.of();
-        branchGroup = node.getOriginalNode().getBranchGroup();
         content = node.getOriginalNode().getContent();
         originalNodeId = node.getOriginalNode().getNodeId();
       }
+      // 분기 소속은 사용자 편집 override를 반영한 유효값으로 해석한다.
+      branchGroup = node.effectiveBranchGroup();
 
       DisplayNodeStatus displayStatus;
       if (node.getStatus() == NodeStatus.COMPLETED) {

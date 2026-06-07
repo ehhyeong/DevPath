@@ -42,6 +42,11 @@ public class CustomRoadmapNode {
   @Column(name = "builder_branch_group")
   private Integer builderBranchGroup;
 
+  // 사용자가 직접 편집한 분기 소속 override (null=척추, 1=왼쪽, 2=오른쪽).
+  // 로드맵의 branchesCustomized=true일 때만 유효하며, 그 전에는 원본 노드의 branchGroup을 따른다.
+  @Column(name = "branch_group")
+  private Integer branchGroup;
+
   // 문자열(VARCHAR)로 DB에 저장하도록 지정
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -128,6 +133,25 @@ public class CustomRoadmapNode {
   // 커스텀 순서를 특정 값으로 설정한다(수동 순서변경 시 재번호 매기기에 사용).
   public void changeCustomSortOrder(Integer order) {
     this.customSortOrder = order;
+  }
+
+  // 분기 소속 override를 설정한다(null=척추, 1=왼쪽, 2=오른쪽).
+  public void setBranchGroupOverride(Integer branchGroup) {
+    this.branchGroup = branchGroup;
+  }
+
+  /**
+   * 유효 분기 그룹을 해석한다. 빌더 노드는 builderBranchGroup, 공식 노드는 로드맵이 분기 편집본이면 override(branchGroup),
+   * 아니면 원본 노드의 branchGroup을 따른다(레거시 안전).
+   */
+  public Integer effectiveBranchGroup() {
+    if (builderModule != null) {
+      return builderBranchGroup;
+    }
+    if (customRoadmap != null && customRoadmap.isBranchesCustomized()) {
+      return branchGroup;
+    }
+    return originalNode != null ? originalNode.getBranchGroup() : null;
   }
 
   // 학습 시작 상태로 변경하는 비즈니스 메서드

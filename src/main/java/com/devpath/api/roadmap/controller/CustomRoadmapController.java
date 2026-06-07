@@ -150,6 +150,20 @@ public class CustomRoadmapController {
     return ResponseEntity.ok(ApiResponse.success("노드 순서를 변경했습니다.", null));
   }
 
+  @Operation(
+      summary = "노드 분기 소속 변경",
+      description = "노드를 척추(null)·왼쪽 분기(1)·오른쪽 분기(2)로 이동하고 현재 구성 기준으로 선행관계를 재구성합니다.")
+  @PostMapping("/{customRoadmapId}/nodes/{customNodeId}/branch")
+  public ResponseEntity<ApiResponse<Void>> setNodeBranch(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Parameter(description = "커스텀 로드맵 ID", example = "10") @PathVariable Long customRoadmapId,
+      @Parameter(description = "커스텀 노드 ID", example = "101") @PathVariable Long customNodeId,
+      @RequestBody MyRoadmapDto.BranchRequest request) {
+    customRoadmapNodeCommandService.setNodeBranch(
+        userId, customRoadmapId, customNodeId, request.getBranchGroup());
+    return ResponseEntity.ok(ApiResponse.success("노드 분기를 변경했습니다.", null));
+  }
+
   // [TEMP] 추천 무료 강좌 조회 엔드포인트 — 임시 하드코딩, 추후 삭제 예정
   @Operation(
       summary = "추천 무료 강좌 courseId 조회 (임시)",

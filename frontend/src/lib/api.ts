@@ -424,6 +424,13 @@ export const roadmapApi = {
       { auth: true },
     )
   },
+  setNodeBranch(customRoadmapId: number, customNodeId: number, branchGroup: number | null) {
+    return request<void>(
+      `/api/my-roadmaps/${customRoadmapId}/nodes/${customNodeId}/branch`,
+      { method: 'POST', body: JSON.stringify({ branchGroup }) },
+      { auth: true },
+    )
+  },
 
   // [TEMP] 추천 무료 강좌 courseId 조회 — 임시 하드코딩, 추후 삭제 예정
   getRecommendedFreeCourse(customRoadmapId: number, customNodeId: number) {
