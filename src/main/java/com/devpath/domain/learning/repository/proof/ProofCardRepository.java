@@ -24,6 +24,9 @@ public interface ProofCardRepository extends JpaRepository<ProofCard, Long> {
   // 특정 학습자의 전체 Proof Card 목록을 조회한다.
   List<ProofCard> findAllByUserIdOrderByIssuedAtDesc(Long userId);
 
+  // 특정 학습자의 전체 Proof Card 개수를 조회한다.
+  long countByUserId(Long userId);
+
   // 특정 학습자의 특정 노드 Proof Card 존재 여부를 확인한다.
   boolean existsByUserIdAndNodeNodeId(Long userId, Long nodeId);
 
