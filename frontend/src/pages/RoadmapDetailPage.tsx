@@ -1046,11 +1046,12 @@ interface NodeDrawerProps {
   node: RoadmapNodeItem | null
   customRoadmapId: number
   originalRoadmapId: number | null
+  editMode: boolean
   onClose: () => void
   onCleared: () => void
 }
 
-function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onCleared }: NodeDrawerProps) {
+function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClose, onCleared }: NodeDrawerProps) {
   const [clearing, setClearing] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -1263,40 +1264,44 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, onClose, onClear
           >
             <i className="fas fa-list" /> 전체 강좌 목록 보기
           </button>
-          <div className="flex gap-3">
-            <button
-              onClick={() => handleMove(true)}
-              disabled={busy}
-              className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
-            >
-              <i className="fas fa-arrow-up" /> 위로 이동
-            </button>
-            <button
-              onClick={() => handleMove(false)}
-              disabled={busy}
-              className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
-            >
-              <i className="fas fa-arrow-down" /> 아래로 이동
-            </button>
-          </div>
-          <div className="flex gap-3">
-            {node.status !== 'COMPLETED' && (
-              <button
-                onClick={handleDefer}
-                disabled={busy}
-                className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
-              >
-                <i className="fas fa-pause-circle" /> {node.deferred ? '스킵 해제' : '스킵하기'}
-              </button>
-            )}
-            <button
-              onClick={handleDelete}
-              disabled={busy}
-              className="flex-1 bg-white border border-red-200 hover:bg-red-50 disabled:opacity-50 text-red-600 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
-            >
-              <i className="fas fa-trash-alt" /> 삭제
-            </button>
-          </div>
+          {editMode && (
+            <>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleMove(true)}
+                  disabled={busy}
+                  className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                >
+                  <i className="fas fa-arrow-up" /> 위로 이동
+                </button>
+                <button
+                  onClick={() => handleMove(false)}
+                  disabled={busy}
+                  className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                >
+                  <i className="fas fa-arrow-down" /> 아래로 이동
+                </button>
+              </div>
+              <div className="flex gap-3">
+                {node.status !== 'COMPLETED' && (
+                  <button
+                    onClick={handleDefer}
+                    disabled={busy}
+                    className="flex-1 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-gray-700 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                  >
+                    <i className="fas fa-pause-circle" /> {node.deferred ? '스킵 해제' : '스킵하기'}
+                  </button>
+                )}
+                <button
+                  onClick={handleDelete}
+                  disabled={busy}
+                  className="flex-1 bg-white border border-red-200 hover:bg-red-50 disabled:opacity-50 text-red-600 py-3 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                >
+                  <i className="fas fa-trash-alt" /> 삭제
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </aside>
     </>
@@ -1737,6 +1742,7 @@ export default function RoadmapDetailPage() {
   const [processing, setProcessing] = useState(false)
   const [drawerNode, setDrawerNode] = useState<RoadmapNodeItem | null>(null)
   const [myRoadmaps, setMyRoadmaps] = useState<MyRoadmapSummary[]>([])
+  const [editMode, setEditMode] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
   const resetRoadmapPageState = useCallback((options?: { keepRoadmap?: boolean }) => {
@@ -2211,11 +2217,26 @@ export default function RoadmapDetailPage() {
         </div>
       </header> : null}
 
+      {/* ── 편집모드 토글 ───────────────────────────────────────────────────── */}
+      <button
+        onClick={() => setEditMode((v) => !v)}
+        className={`fixed bottom-6 right-6 z-[60] flex items-center gap-2 px-4 py-3 rounded-full font-bold text-sm shadow-lg transition ${
+          editMode
+            ? 'bg-[#00c471] text-white hover:bg-green-600'
+            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+        }`}
+        title="노드 순서변경·스킵·삭제 편집"
+      >
+        <i className={`fas ${editMode ? 'fa-check' : 'fa-pen'}`} />
+        {editMode ? '편집 완료' : '편집'}
+      </button>
+
       {/* ── 노드 드로어 ──────────────────────────────────────────────────────── */}
       <NodeDrawer
         node={drawerNode}
         customRoadmapId={customRoadmapId}
         originalRoadmapId={roadmap.originalRoadmapId}
+        editMode={editMode}
         onClose={() => setDrawerNode(null)}
         onCleared={async () => {
           const updated = await roadmapApi.getMyRoadmapDetail(customRoadmapId)
