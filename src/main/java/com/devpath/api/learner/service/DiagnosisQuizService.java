@@ -56,6 +56,8 @@ public class DiagnosisQuizService {
   private static final int DELETE_CANDIDATE_LIMIT = 3;
   // 클리어 시 순서변경 제안 후보로 검토할 후속 노드 최대 개수
   private static final int REORDER_CANDIDATE_LIMIT = 5;
+  // 클리어 시 Gemini가 제안할 신규 노드 최대 개수
+  private static final int NEW_NODE_LIMIT = 2;
 
   private final DiagnosisQuizRepository diagnosisQuizRepository;
   private final DiagnosisResultRepository diagnosisResultRepository;
@@ -178,6 +180,9 @@ public class DiagnosisQuizService {
 
     // 점수와 무관하게, 학습 순서상 더 합리적인 후속 노드 순서변경 제안을 동시 생성한다.
     buildReorderSuggestions(user, clearedNode, roadmapId);
+
+    // 학습 수준 + 로드맵 전체 현황을 보고 추가하면 좋을 신규 노드를 Gemini가 적절한 위치에 삽입 제안한다.
+    buildNewNodeSuggestions(user, clearedNode, score, maxScore, roadmapId);
 
     return recommendedNodeIds.stream().map(String::valueOf).collect(Collectors.joining(","));
   }
@@ -626,6 +631,170 @@ public class DiagnosisQuizService {
       }
     } catch (Exception e) {
       log.warn("[DiagnosisQuizService] Gemini 순서변경 제안 추출 실패: {}", e.getMessage());
+    }
+    return result;
+  }
+
+  // ── 신규 노드 제안 생성 (Gemini가 학습수준+로드맵 현황 기반으로 생성·위치 결정) ──
+
+  private record NewNodeSuggestion(
+      String title, String content, String subTopics, Long afterCustomNodeId, String reason) {}
+
+  /**
+   * 클리어 시, 학습자의 수준과 커스텀 로드맵 전체 현황을 Gemini가 파악해 추가하면 좋을 신규 노드를 적절한 위치(앵커 뒤)에 삽입
+   * 제안(ADD, SUGGESTED)으로 생성한다. TASK-39의 명시적 타깃 삽입 경로(target_custom_roadmap_id + anchor)를
+   * 재사용하므로 수락 시 Gemini가 고른 위치에 삽입된다. 최대 {@link #NEW_NODE_LIMIT}개.
+   */
+  private void buildNewNodeSuggestions(
+      User user, RoadmapNode clearedNode, int score, int maxScore, Long roadmapId) {
+
+    CustomRoadmap customRoadmap =
+        customRoadmapRepository
+            .findByUserIdAndOriginalRoadmapRoadmapId(user.getId(), roadmapId)
+            .orElse(null);
+    if (customRoadmap == null) return;
+
+    List<CustomRoadmapNode> nodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
+    if (nodes.isEmpty()) return;
+
+    Map<Long, CustomRoadmapNode> nodeById =
+        nodes.stream()
+            .collect(
+                Collectors.toMap(CustomRoadmapNode::getId, n -> n, (a, b) -> a, LinkedHashMap::new));
+
+    long completedCount = nodes.stream().filter(n -> n.getStatus() == NodeStatus.COMPLETED).count();
+    long proofCount = proofCardRepository.countByUserId(user.getId());
+    List<String> userTags = userTechStackRepository.findTagNamesByUserId(user.getId());
+
+    // 중복 방지: 이미 대기 중인 추천 노드 제목 집합
+    Set<String> pendingTitles =
+        recommendationChangeRepository
+            .findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
+                user.getId(), RecommendationChangeStatus.SUGGESTED)
+            .stream()
+            .map(rc -> rc.getRoadmapNode().getTitle())
+            .collect(Collectors.toCollection(HashSet::new));
+
+    List<NewNodeSuggestion> suggestions =
+        getNewNodeSuggestionsFromGemini(
+            clearedNode, score, maxScore, completedCount, proofCount, userTags, nodeById);
+
+    for (NewNodeSuggestion suggestion : suggestions) {
+      if (suggestion.title() == null || suggestion.title().isBlank()) continue;
+      if (pendingTitles.contains(suggestion.title())) continue;
+
+      CustomRoadmapNode anchor =
+          suggestion.afterCustomNodeId() != null
+              ? nodeById.get(suggestion.afterCustomNodeId())
+              : null;
+
+      RoadmapNode created =
+          roadmapNodeRepository.save(
+              RoadmapNode.builder()
+                  .roadmap(systemDynamicRoadmapProvider.resolve())
+                  .title(suggestion.title())
+                  .content(suggestion.content())
+                  .nodeType("USER")
+                  .sortOrder(null)
+                  .subTopics(suggestion.subTopics())
+                  .branchGroup(null)
+                  .build());
+
+      recommendationChangeRepository.save(
+          RecommendationChange.builder()
+              .user(user)
+              .roadmapNode(created)
+              .branchFromNodeId(clearedNode.getNodeId()) // 변경 패널 표시 스코프용
+              .targetCustomRoadmapId(customRoadmap.getId())
+              .anchorCustomNodeId(anchor != null ? anchor.getId() : null)
+              .reason(
+                  suggestion.reason() != null && !suggestion.reason().isBlank()
+                      ? suggestion.reason()
+                      : "학습 수준과 로드맵 현황에 맞춰 추가하면 좋은 노드입니다.")
+              .nodeChangeType(NodeChangeType.ADD)
+              .build());
+
+      pendingTitles.add(suggestion.title());
+    }
+  }
+
+  /** Gemini가 학습자 맥락을 보고 추가할 신규 노드를 생성한다. {title, content, subTopics, afterCustomNodeId} 목록 반환. */
+  private List<NewNodeSuggestion> getNewNodeSuggestionsFromGemini(
+      RoadmapNode clearedNode,
+      int score,
+      int maxScore,
+      long completedCount,
+      long proofCount,
+      List<String> userTags,
+      Map<Long, CustomRoadmapNode> nodeById) {
+
+    StringBuilder nodeLines = new StringBuilder();
+    nodeById.forEach(
+        (id, node) -> {
+          String title =
+              node.getOriginalNode() != null
+                  ? node.getOriginalNode().getTitle()
+                  : (node.getBuilderModule() != null ? node.getBuilderModule().getTitle() : "노드");
+          nodeLines
+              .append("- customNodeId=")
+              .append(id)
+              .append(", 제목=\"")
+              .append(title)
+              .append("\", 완료=")
+              .append(node.getStatus() == NodeStatus.COMPLETED)
+              .append("\n");
+        });
+
+    String prompt =
+        String.format(
+            "학습자가 '%s' 노드를 %d/%d 점으로 클리어했습니다.\n"
+                + "학습자 현황: 완료 노드 %d개, 보유 인증(Proof) %d개, 보유 기술 태그 [%s].\n"
+                + "아래는 학습자의 현재 로드맵 노드 목록입니다:\n%s"
+                + "이 학습자의 수준과 로드맵 흐름을 고려해, 추가로 학습하면 좋을 신규 노드를 제안하라.\n"
+                + "각 노드는 afterCustomNodeId 노드 바로 뒤에 삽입된다(목록의 customNodeId 중 하나, 맨 앞이면 null).\n"
+                + "꼭 필요하지 않으면 빈 배열 []로 응답하라. 최대 %d개.\n"
+                + "반드시 아래 JSON 배열로만 응답하라:\n"
+                + "[{\"title\":\"제목\",\"content\":\"2~3문장 설명\",\"subTopics\":\"소주제1,소주제2\",\"afterCustomNodeId\":숫자또는null,\"reason\":\"간단한 사유\"}]",
+            clearedNode.getTitle(),
+            score,
+            maxScore,
+            completedCount,
+            proofCount,
+            String.join(", ", userTags),
+            nodeLines,
+            NEW_NODE_LIMIT);
+
+    List<NewNodeSuggestion> result = new java.util.ArrayList<>();
+    try {
+      String response = geminiProvider.generate(prompt);
+      if (response != null) {
+        int start = response.indexOf('[');
+        int end = response.lastIndexOf(']');
+        if (start >= 0 && end > start) {
+          JsonNode array = OBJECT_MAPPER.readTree(response.substring(start, end + 1));
+          if (array.isArray()) {
+            for (JsonNode item : array) {
+              if (result.size() >= NEW_NODE_LIMIT) break;
+              String title = item.path("title").asText(null);
+              if (title == null || title.isBlank()) continue;
+              Long afterId =
+                  item.hasNonNull("afterCustomNodeId")
+                      ? item.get("afterCustomNodeId").asLong()
+                      : null;
+              result.add(
+                  new NewNodeSuggestion(
+                      title,
+                      item.path("content").asText(null),
+                      item.path("subTopics").asText(null),
+                      afterId,
+                      item.path("reason").asText(null)));
+            }
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.warn("[DiagnosisQuizService] Gemini 신규 노드 제안 추출 실패: {}", e.getMessage());
     }
     return result;
   }
