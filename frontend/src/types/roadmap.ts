@@ -21,6 +21,7 @@ export interface RoadmapNodeItem {
   clearProgressPercent?: number
   deferred?: boolean
   requiredTags?: string[]
+  satisfiedTags?: string[]
   resources?: RoadmapNodeResourceItem[]
 }
 

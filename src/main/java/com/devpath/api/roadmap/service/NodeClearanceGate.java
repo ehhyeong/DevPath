@@ -34,17 +34,31 @@ public class NodeClearanceGate {
   /** 필수 태그 중 충족한 개수. (일반=전역 보유 태그 수, branch=재학습 태그 수) */
   public int satisfiedTagCount(
       CustomRoadmapNode node, Long userId, List<String> requiredTags, Collection<String> userTags) {
+    return satisfiedTagNames(node, userId, requiredTags, userTags).size();
+  }
+
+  /**
+   * 충족한 필수 태그의 '이름' 목록(원본 requiredTags의 부분집합). UI에서 충족/미충족 태그 구분 표시용. 단일 소스 유지를 위해
+   * satisfiedTagCount가 이 결과의 크기를 사용한다.
+   */
+  public List<String> satisfiedTagNames(
+      CustomRoadmapNode node, Long userId, List<String> requiredTags, Collection<String> userTags) {
     if (requiredTags == null || requiredTags.isEmpty() || node.getOriginalNode() == null) {
-      return 0;
+      return List.of();
     }
+    Set<String> satisfiedNormalized;
     if (node.isBranch()) {
       LocalDateTime since = node.getCreatedAt() != null ? node.getCreatedAt() : EPOCH;
-      return (int)
-          lessonProgressRepository.countRelearnedTagsForNode(
-              userId, node.getOriginalNode().getNodeId(), since);
+      satisfiedNormalized =
+          normalize(
+              lessonProgressRepository.findRelearnedTagNamesForNode(
+                  userId, node.getOriginalNode().getNodeId(), since));
+    } else {
+      satisfiedNormalized = normalize(userTags);
     }
-    Set<String> normalizedUserTags = normalize(userTags);
-    return (int) normalize(requiredTags).stream().filter(normalizedUserTags::contains).count();
+    return requiredTags.stream()
+        .filter(tag -> tag != null && satisfiedNormalized.contains(tag.trim().toLowerCase()))
+        .toList();
   }
 
   /** 모든 필수 태그를 충족했는지(=클리어 가능 태그 조건). */

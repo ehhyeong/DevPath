@@ -149,6 +149,7 @@ public class CustomRoadmapQueryService {
     // 노드별 클리어 진행도(충족 태그/전체) + 실제 클리어 가능 여부. 클리어 커맨드와 동일 게이트(NodeClearanceGate)로 단일 계산.
     Map<Long, Integer> clearProgressByCustomNodeId = new HashMap<>();
     Map<Long, Boolean> readyToClearByCustomNodeId = new HashMap<>();
+    Map<Long, List<String>> satisfiedTagsByCustomNodeId = new HashMap<>();
     for (CustomRoadmapNode node : customNodes) {
       List<String> reqTags =
           node.getOriginalNode() != null
@@ -161,10 +162,10 @@ public class CustomRoadmapQueryService {
         progress = 100;
         tagGateSatisfied = true;
       } else {
-        int satisfied =
-            Math.min(
-                nodeClearanceGate.satisfiedTagCount(node, userId, reqTags, userTags),
-                reqTags.size());
+        List<String> satisfiedTags =
+            nodeClearanceGate.satisfiedTagNames(node, userId, reqTags, userTags);
+        satisfiedTagsByCustomNodeId.put(node.getId(), satisfiedTags);
+        int satisfied = Math.min(satisfiedTags.size(), reqTags.size());
         progress = (int) Math.round(satisfied * 100.0 / reqTags.size());
         tagGateSatisfied = satisfied >= reqTags.size();
       }
@@ -192,6 +193,7 @@ public class CustomRoadmapQueryService {
         clearanceByNodeId,
         resourcesByNodeId,
         requiredTagsByNodeId,
+        satisfiedTagsByCustomNodeId,
         requiredTagsSatisfiedByNodeId,
         readyToClearByCustomNodeId,
         clearProgressByCustomNodeId);
