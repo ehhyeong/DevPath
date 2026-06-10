@@ -722,14 +722,21 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
       {node.content && <div className="node-desc">{node.content}</div>}
       {node.requiredTags && node.requiredTags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
-          {node.requiredTags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200"
-            >
-              {tag}
-            </span>
-          ))}
+          {node.requiredTags.map((tag) => {
+            const satisfied = (node.satisfiedTags ?? []).includes(tag)
+            return (
+              <span
+                key={tag}
+                className={
+                  satisfied
+                    ? 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300'
+                    : 'text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200'
+                }
+              >
+                {tag}
+              </span>
+            )
+          })}
         </div>
       )}
       {node.status !== 'COMPLETED' && node.status !== 'LOCKED'

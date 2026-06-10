@@ -226,6 +226,7 @@ public class MyRoadmapDto {
         Map<Long, NodeClearance> clearanceByNodeId,
         Map<Long, List<RoadmapNodeResource>> resourcesByNodeId,
         Map<Long, List<String>> requiredTagsByNodeId,
+        Map<Long, List<String>> satisfiedTagsByCustomNodeId,
         Map<Long, Boolean> requiredTagsSatisfiedByNodeId,
         Map<Long, Boolean> readyToClearByCustomNodeId,
         Map<Long, Integer> clearProgressByCustomNodeId) {
@@ -263,6 +264,7 @@ public class MyRoadmapDto {
                                   ? requiredTagsByNodeId.getOrDefault(
                                       node.getOriginalNode().getNodeId(), List.of())
                                   : List.of(),
+                              satisfiedTagsByCustomNodeId.getOrDefault(node.getId(), List.of()),
                               node.getOriginalNode() != null
                                   ? requiredTagsSatisfiedByNodeId.get(
                                       node.getOriginalNode().getNodeId())
@@ -335,6 +337,9 @@ public class MyRoadmapDto {
     @Schema(description = "필수 태그 이름 목록 (강좌 목록 필터용)")
     private List<String> requiredTags;
 
+    @Schema(description = "충족한 필수 태그 이름 목록 (requiredTags의 부분집합, UI 강조 표시용)")
+    private List<String> satisfiedTags;
+
     @Schema(description = "실제 클리어 가능 여부 (선행완료 + 태그/재학습 게이트). UI는 이 값을 신뢰")
     private boolean readyToClear;
 
@@ -364,6 +369,7 @@ public class MyRoadmapDto {
         Double lessonCompletionRate,
         boolean requiredTagsSatisfied,
         List<String> requiredTags,
+        List<String> satisfiedTags,
         boolean readyToClear,
         int clearProgressPercent,
         boolean deferred,
@@ -383,6 +389,7 @@ public class MyRoadmapDto {
       this.lessonCompletionRate = lessonCompletionRate;
       this.requiredTagsSatisfied = requiredTagsSatisfied;
       this.requiredTags = requiredTags;
+      this.satisfiedTags = satisfiedTags;
       this.readyToClear = readyToClear;
       this.clearProgressPercent = clearProgressPercent;
       this.deferred = deferred;
@@ -396,6 +403,7 @@ public class MyRoadmapDto {
         NodeClearance clearance,
         List<RoadmapNodeResource> resources,
         List<String> requiredTags,
+        List<String> satisfiedTags,
         Boolean requiredTagsSatisfied,
         boolean readyToClear,
         int clearProgressPercent,
@@ -474,6 +482,7 @@ public class MyRoadmapDto {
           .lessonCompletionRate(lessonRate)
           .requiredTagsSatisfied(tagsSatisfied)
           .requiredTags(requiredTags)
+          .satisfiedTags(isBuilderOrigin ? List.of() : satisfiedTags)
           .readyToClear(readyToClear)
           .clearProgressPercent(clearProgressPercent)
           .deferred(node.isDeferred())

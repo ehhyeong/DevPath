@@ -89,4 +89,21 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
       @Param("userId") Long userId,
       @Param("nodeId") Long nodeId,
       @Param("since") LocalDateTime since);
+
+  // branch 노드 재학습: 위 조건을 충족한 distinct 태그 '이름' 목록(충족 태그 강조 표시용).
+  @Query(
+      """
+      select distinct nrt.tag.name
+      from LessonProgress lp, CourseTagMap ctm, NodeRequiredTag nrt
+      where lp.user.id = :userId
+        and lp.isCompleted = true
+        and lp.lastWatchedAt > :since
+        and ctm.course.courseId = lp.lesson.section.course.courseId
+        and nrt.tag.tagId = ctm.tag.tagId
+        and nrt.node.nodeId = :nodeId
+      """)
+  List<String> findRelearnedTagNamesForNode(
+      @Param("userId") Long userId,
+      @Param("nodeId") Long nodeId,
+      @Param("since") LocalDateTime since);
 }
