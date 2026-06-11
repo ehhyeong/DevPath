@@ -6442,6 +6442,8 @@ body.squad-dashboard-body .app-viewport {
   overflow: hidden;
   border-radius: 12px;
   background: #020617;
+  touch-action: none;
+  user-select: none;
 }
 
 .squad-meeting-page .squad-meeting-screen-share-video {
@@ -6449,6 +6451,21 @@ body.squad-dashboard-body .app-viewport {
   height: 100%;
   object-fit: contain;
   background: #020617;
+  transform-origin: center center;
+  transition: transform 90ms ease-out;
+  will-change: transform;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-view.is-zoomed {
+  cursor: grab;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-view.is-dragging {
+  cursor: grabbing;
+}
+
+.squad-meeting-page .squad-meeting-screen-share-view.is-dragging .squad-meeting-screen-share-video {
+  transition: none;
 }
 
 .squad-meeting-page .squad-meeting-screen-share-fullscreen-button {

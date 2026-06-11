@@ -3033,6 +3033,10 @@ export default function SquadMeetingApp() {
       return
     }
 
+    if (event.target instanceof HTMLElement && event.target.closest('button, a, input, textarea, select')) {
+      return
+    }
+
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     screenShareDragRef.current = {
@@ -3071,12 +3075,31 @@ export default function SquadMeetingApp() {
   }
 
   function renderScreenShareView(screenShare: ScreenShareView) {
+    const videoStyle: CSSProperties = {
+      transform: `translate3d(${screenSharePan.x}px, ${screenSharePan.y}px, 0) scale(${screenShareZoom})`,
+    }
+    const viewClassName = [
+      'squad-meeting-screen-share-view',
+      screenShareZoom > SCREEN_SHARE_MIN_ZOOM ? 'is-zoomed' : '',
+      screenShareDragging ? 'is-dragging' : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+
     return (
-      <div className="squad-meeting-screen-share-view">
+      <div
+        className={viewClassName}
+        onWheel={handleScreenShareWheel}
+        onPointerDown={handleScreenSharePointerDown}
+        onPointerMove={handleScreenSharePointerMove}
+        onPointerUp={endScreenShareDrag}
+        onPointerCancel={endScreenShareDrag}
+      >
         <MediaStreamVideo
           stream={screenShare.stream}
           muted={screenShare.local}
           className="squad-meeting-screen-share-video"
+          style={videoStyle}
         />
         <button
           type="button"
