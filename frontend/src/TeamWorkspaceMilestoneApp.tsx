@@ -28,6 +28,8 @@ type WorkspaceDashboard = {
   type: WorkspaceType
   status: WorkspaceStatus
   ownerId: number
+  ownerName?: string | null
+  ownerProfileImage?: string | null
   members: WorkspaceMember[]
   unresolvedTaskCount: number
   activeMilestoneCount: number
@@ -99,6 +101,12 @@ type FeedbackEntry = {
   text: string
 }
 
+type ParsedMilestoneFeedbackEntry = {
+  speaker: 'mentor' | 'learner'
+  time: string
+  text: string
+}
+
 type TeamStatusView = {
   id: number
   name: string
@@ -110,6 +118,8 @@ type TeamStatusView = {
 }
 
 const WEEK_COUNT = 4
+const KANBAN_ROLE_MARKER = '\n\n---DEVPATH_KANBAN_ROLE---\n'
+const MILESTONE_FEEDBACK_MARKER = '\n\n---DEVPATH_MILESTONE_FEEDBACK---\n'
 
 const ROLE_META: Record<RoleKey, {
   label: string
@@ -273,8 +283,29 @@ function findSubmissionLink(description?: string | null) {
   return matched?.[0] ?? ''
 }
 
+function parseMilestoneTaskFeedbackDescription(description?: string | null) {
+  const [beforeFeedback, feedbackMeta] = (description ?? '').split(MILESTONE_FEEDBACK_MARKER)
+  const visibleDescription = beforeFeedback.split(KANBAN_ROLE_MARKER)[0].trim()
+  const feedback = (feedbackMeta ?? '')
+    .split('\n')
+    .map((line, index) => {
+      const [speakerRaw, , timeRaw, ...textParts] = line.split('|')
+      const text = textParts.join('|').trim()
+      if (!text) return null
+
+      return {
+        speaker: speakerRaw?.trim() === 'mentor' ? 'mentor' : 'learner',
+        time: timeRaw?.trim() || `${index + 1}번째 코멘트`,
+        text,
+      } satisfies ParsedMilestoneFeedbackEntry
+    })
+    .filter((entry): entry is ParsedMilestoneFeedbackEntry => Boolean(entry))
+
+  return { description: visibleDescription, feedback }
+}
+
 function buildSubmissionDescription(task: WorkspaceTask | null, link: string, comment: string) {
-  const base = task?.description?.trim()
+  const base = parseMilestoneTaskFeedbackDescription(task?.description).description
   const sections = base ? [base] : []
 
   sections.push(`[제출 링크]\n${link}`)
@@ -505,6 +536,8 @@ export default function TeamWorkspaceMilestoneApp() {
   const myRoleMeta = ROLE_META[myRoleKey]
   const mySubmissionStatus = submissionStatus(myTasks)
   const canResubmit = mySubmissionStatus !== 'pass'
+  const mentorDisplayName = dashboard?.ownerName ?? '멘토'
+  const mentorProfileImage = dashboard?.ownerProfileImage ?? null
 
   const guidelines = useMemo(() => {
     return weekTasks.slice(0, 6).map((task) => {
@@ -515,7 +548,7 @@ export default function TeamWorkspaceMilestoneApp() {
         id: task.taskId,
         roleKey,
         role: roleMeta.label,
-        text: task.description?.trim() || task.title,
+        text: parseMilestoneTaskFeedbackDescription(task.description).description || task.title,
       }
     })
   }, [weekTasks])
@@ -524,6 +557,27 @@ export default function TeamWorkspaceMilestoneApp() {
     const entries: FeedbackEntry[] = []
 
     if (myPrimaryTask?.description?.trim()) {
+      const parsed = parseMilestoneTaskFeedbackDescription(myPrimaryTask.description)
+      if (parsed.description) {
+        entries.push({
+          id: `task-${myPrimaryTask.taskId}`,
+          isMe: true,
+          time: formatShortDate(myPrimaryTask.updatedAt ?? myPrimaryTask.createdAt),
+          text: parsed.description,
+        })
+      }
+
+      parsed.feedback.forEach((item, index) => {
+        entries.push({
+          id: `feedback-${myPrimaryTask.taskId}-${index}`,
+          isMe: item.speaker === 'learner',
+          time: item.time,
+          text: item.text,
+        })
+      })
+    }
+
+    if (entries.length === 0 && myPrimaryTask?.description?.trim()) {
       entries.push({
         id: `task-${myPrimaryTask.taskId}`,
         isMe: true,
@@ -1045,19 +1099,17 @@ export default function TeamWorkspaceMilestoneApp() {
                               </div>
                             </div>
                           ) : (
-                            <div key={thread.id} className="flex gap-4">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-700 bg-gray-900 text-lg text-white shadow-sm">
-                                <i className="fas fa-user-tie"></i>
-                              </div>
-                              <div>
-                                <div className="mb-1 flex items-center gap-2">
+                            <div key={thread.id} className="flex justify-end gap-4">
+                              <div className="max-w-[75%] text-right">
+                                <div className="mb-1 flex items-center justify-end gap-2">
                                   <span className="flex items-center gap-1 text-sm font-bold text-gray-900">
-                                    프론트엔드 장인 <i className="fas fa-check-circle text-[10px] text-brand" title="공식 멘토"></i>
+                                    {mentorDisplayName} <i className="fas fa-check-circle text-[10px] text-brand" title="공식 멘토"></i>
                                   </span>
                                   <span className="text-[10px] text-gray-400">{thread.time}</span>
                                 </div>
-                                <div className="whitespace-pre-line rounded-2xl rounded-tl-none border border-gray-200 bg-gray-50 p-4 text-sm leading-relaxed text-gray-800">{thread.text}</div>
+                                <div className="whitespace-pre-line rounded-2xl rounded-tr-none border border-purple-100 bg-purple-50 p-4 text-left text-sm leading-relaxed text-gray-800">{thread.text}</div>
                               </div>
+                              <UserAvatar name={mentorDisplayName} imageUrl={mentorProfileImage} className="h-10 w-10 border border-purple-200 bg-white shadow-sm" iconClassName="text-sm" />
                             </div>
                           )
                         ))}

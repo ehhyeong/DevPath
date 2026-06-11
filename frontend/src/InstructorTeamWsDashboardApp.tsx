@@ -611,6 +611,14 @@ type MilestoneStudent = {
   status: 'pass' | 'wait' | 'fail' | 'none'
 }
 
+type MilestoneFeedbackEntry = {
+  id: string
+  speaker: 'mentor' | 'learner'
+  author: string
+  time: string
+  text: string
+}
+
 function MilestonePage({ data, workspaceId, reload }: { data: TeamData; workspaceId: number | null; reload: () => Promise<void> }) {
   const learners = membersOnly(data)
   const weeks = useMemo(() => buildMilestoneWeeks(data.milestones), [data.milestones])
@@ -623,6 +631,12 @@ function MilestonePage({ data, workspaceId, reload }: { data: TeamData; workspac
   const selectedWeek = weeks.find((week) => week.week === currentWeek) ?? weeks[0]
   const students = useMemo(() => buildMilestoneStudents(learners, data.tasks), [learners, data.tasks])
   const selectedStudent = students.find((student) => student.member.learnerId === selectedLearnerId) ?? null
+  const selectedFeedbackThread = useMemo(
+    () => parseMilestoneFeedbackEntries(selectedStudent?.task?.description, selectedStudent?.member.learnerName),
+    [selectedStudent?.task?.description, selectedStudent?.member.learnerName],
+  )
+  const mentorDisplayName = data.dashboard?.ownerName ?? '강사'
+  const mentorProfileImage = data.dashboard?.ownerProfileImage ?? avatarUrl(mentorDisplayName)
 
   function switchWeek(week: number) {
     setCurrentWeek(week)
@@ -773,11 +787,33 @@ function MilestonePage({ data, workspaceId, reload }: { data: TeamData; workspac
             </div>
           </div>
           <div className="custom-scrollbar flex-1 space-y-6 overflow-y-auto bg-gray-50/30 p-6">
-            <div className="flex h-full flex-col items-center justify-center text-gray-400">
-              <i className="far fa-comments mb-3 text-3xl text-gray-300" />
-              <p className="text-sm font-bold">주고받은 피드백 내역이 없습니다.</p>
-              <p className="mt-1 text-xs">하단 입력창을 통해 첫 피드백을 남겨보세요.</p>
-            </div>
+            {selectedFeedbackThread.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center text-gray-400">
+                <i className="far fa-comments mb-3 text-3xl text-gray-300" />
+                <p className="text-sm font-bold">주고받은 피드백 내역이 없습니다.</p>
+                <p className="mt-1 text-xs">하단 입력창을 통해 첫 피드백을 남겨보세요.</p>
+              </div>
+            ) : selectedFeedbackThread.map((entry) => {
+              const mentorEntry = entry.speaker === 'mentor'
+              const displayName = mentorEntry ? mentorDisplayName : entry.author
+              return (
+                <div key={entry.id} className={`flex gap-4 ${mentorEntry ? 'justify-end' : ''}`}>
+                  {!mentorEntry ? (
+                    <img src={selectedStudent?.member.profileImage ?? avatarUrl(displayName)} className="h-10 w-10 shrink-0 rounded-full border border-gray-200 bg-white shadow-sm" alt="" />
+                  ) : null}
+                  <div className={`max-w-[75%] ${mentorEntry ? 'text-right' : ''}`}>
+                    <div className={`mb-1 flex items-center gap-2 ${mentorEntry ? 'justify-end' : ''}`}>
+                      <span className="text-sm font-bold text-gray-900">{displayName}</span>
+                      <span className="text-[10px] text-gray-400">{entry.time}</span>
+                    </div>
+                    <div className={`whitespace-pre-line rounded-2xl border p-4 text-left text-sm leading-relaxed text-gray-800 ${mentorEntry ? 'rounded-tr-none border-purple-100 bg-purple-50' : 'rounded-tl-none border-blue-100 bg-blue-50'}`}>{entry.text}</div>
+                  </div>
+                  {mentorEntry ? (
+                    <img src={mentorProfileImage} className="h-10 w-10 shrink-0 rounded-full border border-purple-200 bg-white shadow-sm" alt="" />
+                  ) : null}
+                </div>
+              )
+            })}
           </div>
           <div className="shrink-0 border-t border-gray-100 bg-white p-4">
             <div className="flex gap-2 rounded-xl border border-gray-200 bg-gray-50 p-2 shadow-sm transition focus-within:border-[#7C3AED] focus-within:bg-white">
@@ -918,6 +954,31 @@ function normalizeMilestoneStatus(status: string) {
   if (status === 'COMPLETED') return 'DONE'
   if (status === 'ACTIVE' || status === 'OVERDUE') return 'IN_PROGRESS'
   return ['OPEN', 'IN_PROGRESS', 'DONE', 'CLOSED'].includes(status) ? status : 'OPEN'
+}
+
+const MILESTONE_FEEDBACK_MARKER = '\n\n---DEVPATH_MILESTONE_FEEDBACK---\n'
+
+function parseMilestoneFeedbackEntries(value?: string | null, learnerName?: string | null): MilestoneFeedbackEntry[] {
+  const [, meta] = (value ?? '').split(MILESTONE_FEEDBACK_MARKER)
+  if (!meta) return []
+
+  return meta
+    .split('\n')
+    .map((line, index) => {
+      const [speakerRaw, authorRaw, timeRaw, ...textParts] = line.split('|')
+      const text = textParts.join('|').trim()
+      if (!text) return null
+
+      const speaker = speakerRaw?.trim() === 'mentor' ? 'mentor' : 'learner'
+      return {
+        id: `milestone-feedback-${index}-${speaker}`,
+        speaker,
+        author: authorRaw?.trim() || (speaker === 'mentor' ? '멘토' : learnerName || '팀원'),
+        time: timeRaw?.trim() || '방금 전',
+        text,
+      } satisfies MilestoneFeedbackEntry
+    })
+    .filter((entry): entry is MilestoneFeedbackEntry => Boolean(entry))
 }
 
 function buildMilestoneStudents(members: WorkspaceMember[], tasks: WorkspaceTask[]): MilestoneStudent[] {
