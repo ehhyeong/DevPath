@@ -18,9 +18,9 @@ import com.devpath.domain.showcase.repository.ShowcaseLinkRepository;
 import com.devpath.domain.showcase.repository.ShowcaseRepository;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -171,11 +171,10 @@ public class ShowcaseService {
     if (userIds.isEmpty()) {
       return Map.of();
     }
-    return userProfileRepository.findAllByUserIdIn(userIds).stream()
-        .collect(
-            Collectors.toMap(
-                profile -> profile.getUser().getId(),
-                UserProfile::getDisplayProfileImage,
-                (left, right) -> left));
+    Map<Long, String> profileImages = new HashMap<>();
+    for (UserProfile profile : userProfileRepository.findAllByUserIdIn(userIds)) {
+      profileImages.putIfAbsent(profile.getUser().getId(), profile.getDisplayProfileImage());
+    }
+    return profileImages;
   }
 }
