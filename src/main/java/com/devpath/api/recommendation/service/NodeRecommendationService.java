@@ -2,6 +2,7 @@ package com.devpath.api.recommendation.service;
 
 import com.devpath.api.recommendation.dto.NodeRecommendationDto;
 import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
+import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.learning.entity.LessonProgress;
@@ -16,21 +17,17 @@ import com.devpath.domain.learning.repository.ocr.OcrResultRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
 import com.devpath.domain.learning.repository.recommendation.RiskWarningRepository;
 import com.devpath.domain.learning.repository.recommendation.SupplementRecommendationRepository;
-import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.NodeRecommendation;
 import com.devpath.domain.roadmap.entity.NodeStatus;
-import com.devpath.domain.roadmap.entity.Prerequisite;
 import com.devpath.domain.roadmap.entity.RecommendationStatus;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
-import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRecommendationRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
-import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.user.entity.User;
@@ -61,8 +58,7 @@ public class NodeRecommendationService {
   private final UserTechStackRepository userTechStackRepository;
   private final CustomRoadmapRepository customRoadmapRepository;
   private final CustomRoadmapNodeRepository customRoadmapNodeRepository;
-  private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
-  private final PrerequisiteRepository prerequisiteRepository;
+  private final CustomRoadmapPrerequisiteSyncService prerequisiteSyncService;
   private final CustomRoadmapCopyService customRoadmapCopyService;
   private final RecommendationHistoryRepository recommendationHistoryRepository;
   private final RiskWarningRepository riskWarningRepository;
@@ -646,38 +642,13 @@ public class NodeRecommendationService {
       return;
     }
 
-    CustomRoadmapNode customRoadmapNode =
-        customRoadmapNodeRepository.save(
-            CustomRoadmapNode.builder()
-                .customRoadmap(customRoadmap)
-                .originalNode(recommendedNode)
-                .build());
+    customRoadmapNodeRepository.save(
+        CustomRoadmapNode.builder()
+            .customRoadmap(customRoadmap)
+            .originalNode(recommendedNode)
+            .build());
 
-    List<CustomNodePrerequisite> prerequisitesToSave =
-        prerequisiteRepository.findAllByNode(recommendedNode).stream()
-            .map(
-                prerequisite ->
-                    toCustomPrerequisite(customRoadmap, customRoadmapNode, prerequisite))
-            .filter(java.util.Objects::nonNull)
-            .toList();
-
-    if (!prerequisitesToSave.isEmpty()) {
-      customNodePrerequisiteRepository.saveAll(prerequisitesToSave);
-    }
-  }
-
-  private CustomNodePrerequisite toCustomPrerequisite(
-      CustomRoadmap customRoadmap, CustomRoadmapNode customRoadmapNode, Prerequisite prerequisite) {
-    return customRoadmapNodeRepository
-        .findByCustomRoadmapAndOriginalNode(customRoadmap, prerequisite.getPreNode())
-        .map(
-            prerequisiteNode ->
-                CustomNodePrerequisite.builder()
-                    .customRoadmap(customRoadmap)
-                    .customNode(customRoadmapNode)
-                    .prerequisiteCustomNode(prerequisiteNode)
-                    .build())
-        .orElse(null);
+    prerequisiteSyncService.ensurePrerequisites(customRoadmap);
   }
 
   private void saveGeneratedArtifacts(

@@ -3,11 +3,8 @@ package com.devpath.api.roadmap.service;
 import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
-import com.devpath.domain.roadmap.entity.Prerequisite;
 import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
-import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -21,30 +18,50 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 커스텀 로드맵의 선행관계(prereq) 그래프를 만드는 단일 서비스. 모든 진입점(복사·조회·클리어·순서변경·분기편집)이 동일한 규칙으로 그래프를 전량
+ * 재생성하므로 경로별 불일치가 발생하지 않는다.
+ *
+ * <p>그래프 규칙:
+ *
+ * <ul>
+ *   <li>척추 노드(분기 아님): 선행 = customSortOrder상 직전 척추 노드 하나.
+ *   <li>추천 분기(branchFromNodeId != null): 선행 = 앵커(branchFromNodeId가 가리키는 커스텀 노드)에 직접. 각각 독립 선택지.
+ *   <li>위치기반 분기(effectiveBranchGroup != null, 빌더/공식 좌·우 분기): 같은 그룹을 customSortOrder순 체인, 첫 노드는 분기
+ *       시작 직전 척추가 앵커.
+ *   <li>합류(merge) 없음 — 분기는 본류(척추) 진행을 막지 않는 순수 선택지. 앵커만 완료하면 분기를 건너뛰고 다음 척추로 진행할 수 있다.
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomRoadmapPrerequisiteSyncService {
 
   private final CustomRoadmapNodeRepository customRoadmapNodeRepository;
   private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
-  private final PrerequisiteRepository prerequisiteRepository;
 
   @Transactional
   public void ensurePrerequisites(CustomRoadmap customRoadmap) {
-    List<CustomRoadmapNode> customNodes =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
-    ensurePrerequisites(customRoadmap, customNodes);
+    rebuild(
+        customRoadmap,
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap));
   }
 
-  /**
-   * 현재 {@code customSortOrder}(+분기 그룹) 순서를 기준으로 선행관계 그래프를 전부 재생성한다. 기존 엣지를 모두 삭제하고
-   * 척추 선형 + 분기 split/merge 구조로 다시 만든다. 사용자의 수동 순서변경 적용에 사용한다(공식 엣지 무시).
-   */
+  @Transactional
+  public void ensurePrerequisites(
+      CustomRoadmap customRoadmap, List<CustomRoadmapNode> customNodes) {
+    rebuild(customRoadmap, customNodes);
+  }
+
+  /** 현재 customSortOrder + 분기 구조 기준으로 선행관계 그래프를 전부 재생성한다. */
   @Transactional
   public void rebuildFromCurrentOrder(CustomRoadmap customRoadmap) {
-    List<CustomRoadmapNode> customNodes =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
+    rebuild(
+        customRoadmap,
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap));
+  }
 
+  // 기존 엣지를 모두 삭제하고 현재 노드 구성으로 그래프를 다시 만든다.
+  private void rebuild(CustomRoadmap customRoadmap, List<CustomRoadmapNode> customNodes) {
     customNodePrerequisiteRepository.deleteAllByCustomRoadmap(customRoadmap);
 
     if (customNodes.isEmpty()) {
@@ -56,10 +73,8 @@ public class CustomRoadmapPrerequisiteSyncService {
             .filter(node -> node.getId() != null)
             .collect(Collectors.toMap(CustomRoadmapNode::getId, Function.identity()));
 
-    Set<EdgeKey> desiredEdges = inferEdgesByCustomOrder(customNodes);
-
     List<CustomNodePrerequisite> edges =
-        desiredEdges.stream()
+        buildDesiredEdges(customNodes).stream()
             .map(edge -> buildPrerequisite(customRoadmap, customNodeById, edge))
             .filter(Objects::nonNull)
             .toList();
@@ -69,239 +84,73 @@ public class CustomRoadmapPrerequisiteSyncService {
     }
   }
 
-  // customSortOrder + 분기 그룹(공식/빌더 노드 공통) 기준으로 구조 엣지를 추론한다.
-  private Set<EdgeKey> inferEdgesByCustomOrder(List<CustomRoadmapNode> customNodes) {
-    Comparator<CustomRoadmapNode> byCustomOrder =
-        Comparator.comparing(this::customOrderOf, Comparator.nullsLast(Integer::compareTo))
+  // customSortOrder + 분기 구조에서 선행 엣지를 도출한다.
+  private Set<EdgeKey> buildDesiredEdges(List<CustomRoadmapNode> customNodes) {
+    Comparator<CustomRoadmapNode> byOrder =
+        Comparator.comparing(
+                CustomRoadmapNode::getCustomSortOrder, Comparator.nullsLast(Integer::compareTo))
             .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
-
-    List<CustomRoadmapNode> orderedNodes = customNodes.stream().sorted(byCustomOrder).toList();
+    List<CustomRoadmapNode> ordered = customNodes.stream().sorted(byOrder).toList();
 
     Set<EdgeKey> edges = new LinkedHashSet<>();
-    List<CustomRoadmapNode> branchNodes =
-        orderedNodes.stream().filter(node -> unifiedBranchGroupOf(node) != null).toList();
 
-    if (branchNodes.isEmpty()) {
-      addLinearEdges(edges, orderedNodes);
-      return edges;
-    }
+    // 1) 척추(분기 아님) 선형 연결
+    List<CustomRoadmapNode> spine = ordered.stream().filter(node -> !isBranch(node)).toList();
+    addLinearEdges(edges, spine);
 
-    int minBranchOrder =
-        branchNodes.stream()
-            .map(this::customOrderOf)
-            .filter(Objects::nonNull)
-            .min(Integer::compareTo)
-            .orElse(0);
-    int maxBranchOrder =
-        branchNodes.stream()
-            .map(this::customOrderOf)
-            .filter(Objects::nonNull)
-            .max(Integer::compareTo)
-            .orElse(0);
-
-    List<CustomRoadmapNode> spineNodes =
-        orderedNodes.stream().filter(node -> unifiedBranchGroupOf(node) == null).toList();
-    List<CustomRoadmapNode> preBranchSpineNodes =
-        spineNodes.stream()
-            .filter(node -> customOrderOf(node) != null && customOrderOf(node) < minBranchOrder)
-            .toList();
-    List<CustomRoadmapNode> postBranchSpineNodes =
-        spineNodes.stream()
-            .filter(node -> customOrderOf(node) != null && customOrderOf(node) > maxBranchOrder)
-            .toList();
-
-    addLinearEdges(edges, preBranchSpineNodes);
-
-    CustomRoadmapNode splitSource =
-        preBranchSpineNodes.isEmpty()
-            ? null
-            : preBranchSpineNodes.get(preBranchSpineNodes.size() - 1);
-    List<CustomRoadmapNode> branchEndNodes = new ArrayList<>();
-
-    Map<Integer, List<CustomRoadmapNode>> branchNodesByGroup =
-        branchNodes.stream()
+    // 2) 추천 분기: 앵커(branchFromNodeId가 가리키는 커스텀 노드)에 직접 연결(체인 없음)
+    Map<Long, CustomRoadmapNode> nodeByOriginalId =
+        customNodes.stream()
+            .filter(node -> node.getOriginalNode() != null)
             .collect(
-                Collectors.groupingBy(this::unifiedBranchGroupOf, TreeMap::new, Collectors.toList()));
-
-    for (List<CustomRoadmapNode> groupNodes : branchNodesByGroup.values()) {
-      List<CustomRoadmapNode> orderedGroupNodes =
-          groupNodes.stream().sorted(byCustomOrder).toList();
-
-      if (orderedGroupNodes.isEmpty()) {
+                Collectors.toMap(
+                    node -> node.getOriginalNode().getNodeId(), Function.identity(), (a, b) -> a));
+    for (CustomRoadmapNode branch : ordered) {
+      if (branch.getBranchFromNodeId() == null) {
         continue;
       }
-
-      addEdge(edges, orderedGroupNodes.get(0), splitSource);
-      addLinearEdges(edges, orderedGroupNodes);
-      branchEndNodes.add(orderedGroupNodes.get(orderedGroupNodes.size() - 1));
+      addEdge(edges, branch, nodeByOriginalId.get(branch.getBranchFromNodeId()));
     }
 
-    if (!postBranchSpineNodes.isEmpty()) {
-      CustomRoadmapNode firstPostBranchNode = postBranchSpineNodes.get(0);
-      for (CustomRoadmapNode branchEndNode : branchEndNodes) {
-        addEdge(edges, firstPostBranchNode, branchEndNode);
+    // 3) 위치기반 분기(빌더/공식 좌·우 분기): 같은 그룹 체인 + 그룹 시작 직전 척추가 앵커
+    Map<Integer, List<CustomRoadmapNode>> positionalGroups =
+        ordered.stream()
+            .filter(
+                node ->
+                    node.getBranchFromNodeId() == null && node.effectiveBranchGroup() != null)
+            .collect(
+                Collectors.groupingBy(
+                    CustomRoadmapNode::effectiveBranchGroup, TreeMap::new, Collectors.toList()));
+    for (List<CustomRoadmapNode> group : positionalGroups.values()) {
+      List<CustomRoadmapNode> groupNodes = group.stream().sorted(byOrder).toList();
+      if (groupNodes.isEmpty()) {
+        continue;
       }
-      addLinearEdges(edges, postBranchSpineNodes);
+      addEdge(edges, groupNodes.get(0), lastSpineNodeBefore(spine, groupNodes.get(0), byOrder));
+      addLinearEdges(edges, groupNodes);
     }
 
     return edges;
   }
 
-  private Integer customOrderOf(CustomRoadmapNode node) {
-    return node.getCustomSortOrder();
+  private boolean isBranch(CustomRoadmapNode node) {
+    return node.getBranchFromNodeId() != null || node.effectiveBranchGroup() != null;
   }
 
-  private Integer unifiedBranchGroupOf(CustomRoadmapNode node) {
-    return node.effectiveBranchGroup();
-  }
-
-  @Transactional
-  public void ensurePrerequisites(
-      CustomRoadmap customRoadmap, List<CustomRoadmapNode> customNodes) {
-    // 사용자가 순서/선행관계를 직접 편집한 로드맵은 공식 선행관계를 재적용하지 않는다(현재 엣지를 단일 진실로 사용).
-    if (customRoadmap.isPrerequisitesCustomized()) {
-      return;
-    }
-    if (customRoadmap.getOriginalRoadmap() == null || customNodes.isEmpty()) {
-      return;
-    }
-
-    Map<Long, CustomRoadmapNode> customNodeById =
-        customNodes.stream()
-            .filter(node -> node.getId() != null)
-            .collect(Collectors.toMap(CustomRoadmapNode::getId, Function.identity()));
-    Map<Long, CustomRoadmapNode> customNodeByOriginalId =
-        customNodes.stream()
-            .filter(node -> node.getOriginalNode() != null)
-            .collect(
-                Collectors.toMap(node -> node.getOriginalNode().getNodeId(), Function.identity()));
-
-    Set<EdgeKey> desiredEdges =
-        resolveDesiredEdges(customRoadmap, customNodes, customNodeByOriginalId);
-
-    if (desiredEdges.isEmpty()) {
-      return;
-    }
-
-    Set<EdgeKey> existingEdges =
-        customNodePrerequisiteRepository.findAllByCustomRoadmap(customRoadmap).stream()
-            .map(
-                prerequisite ->
-                    new EdgeKey(
-                        prerequisite.getCustomNode().getId(),
-                        prerequisite.getPrerequisiteCustomNode().getId()))
-            .collect(Collectors.toSet());
-
-    List<CustomNodePrerequisite> missingPrerequisites =
-        desiredEdges.stream()
-            .filter(edge -> !existingEdges.contains(edge))
-            .map(edge -> buildPrerequisite(customRoadmap, customNodeById, edge))
-            .filter(Objects::nonNull)
-            .toList();
-
-    if (!missingPrerequisites.isEmpty()) {
-      customNodePrerequisiteRepository.saveAll(missingPrerequisites);
-    }
-  }
-
-  private Set<EdgeKey> resolveDesiredEdges(
-      CustomRoadmap customRoadmap,
-      List<CustomRoadmapNode> customNodes,
-      Map<Long, CustomRoadmapNode> customNodeByOriginalId) {
-    Long roadmapId = customRoadmap.getOriginalRoadmap().getRoadmapId();
-    List<Prerequisite> officialPrerequisites =
-        prerequisiteRepository.findAllByNodeRoadmapRoadmapId(roadmapId);
-
-    if (!officialPrerequisites.isEmpty()) {
-      Set<EdgeKey> officialEdges = new LinkedHashSet<>();
-
-      for (Prerequisite prerequisite : officialPrerequisites) {
-        CustomRoadmapNode node = customNodeByOriginalId.get(prerequisite.getNode().getNodeId());
-        CustomRoadmapNode preNode =
-            customNodeByOriginalId.get(prerequisite.getPreNode().getNodeId());
-        addEdge(officialEdges, node, preNode);
+  // spine(이미 customSortOrder 정렬) 중 target보다 앞선 마지막 척추 노드(없으면 null = 앵커 없음).
+  private CustomRoadmapNode lastSpineNodeBefore(
+      List<CustomRoadmapNode> spine,
+      CustomRoadmapNode target,
+      Comparator<CustomRoadmapNode> byOrder) {
+    CustomRoadmapNode anchor = null;
+    for (CustomRoadmapNode node : spine) {
+      if (byOrder.compare(node, target) < 0) {
+        anchor = node;
+      } else {
+        break;
       }
-
-      return officialEdges;
     }
-
-    return inferStructuralEdges(customNodes);
-  }
-
-  private Set<EdgeKey> inferStructuralEdges(List<CustomRoadmapNode> customNodes) {
-    List<CustomRoadmapNode> orderedNodes =
-        customNodes.stream()
-            .filter(node -> node.getOriginalNode() != null)
-            .sorted(nodeComparator())
-            .toList();
-
-    Set<EdgeKey> edges = new LinkedHashSet<>();
-    List<CustomRoadmapNode> branchNodes =
-        orderedNodes.stream().filter(node -> branchGroupOf(node) != null).toList();
-
-    if (branchNodes.isEmpty()) {
-      addLinearEdges(edges, orderedNodes);
-      return edges;
-    }
-
-    int minBranchOrder =
-        branchNodes.stream()
-            .map(this::sortOrderOf)
-            .filter(Objects::nonNull)
-            .min(Integer::compareTo)
-            .orElse(0);
-    int maxBranchOrder =
-        branchNodes.stream()
-            .map(this::sortOrderOf)
-            .filter(Objects::nonNull)
-            .max(Integer::compareTo)
-            .orElse(0);
-
-    List<CustomRoadmapNode> spineNodes =
-        orderedNodes.stream().filter(node -> branchGroupOf(node) == null).toList();
-    List<CustomRoadmapNode> preBranchSpineNodes =
-        spineNodes.stream()
-            .filter(node -> sortOrderOf(node) != null && sortOrderOf(node) < minBranchOrder)
-            .toList();
-    List<CustomRoadmapNode> postBranchSpineNodes =
-        spineNodes.stream()
-            .filter(node -> sortOrderOf(node) != null && sortOrderOf(node) > maxBranchOrder)
-            .toList();
-
-    addLinearEdges(edges, preBranchSpineNodes);
-
-    CustomRoadmapNode splitSource =
-        preBranchSpineNodes.isEmpty()
-            ? null
-            : preBranchSpineNodes.get(preBranchSpineNodes.size() - 1);
-    List<CustomRoadmapNode> branchEndNodes = new ArrayList<>();
-
-    Map<Integer, List<CustomRoadmapNode>> branchNodesByGroup =
-        branchNodes.stream()
-            .collect(Collectors.groupingBy(this::branchGroupOf, TreeMap::new, Collectors.toList()));
-
-    for (List<CustomRoadmapNode> groupNodes : branchNodesByGroup.values()) {
-      List<CustomRoadmapNode> orderedGroupNodes =
-          groupNodes.stream().sorted(nodeComparator()).toList();
-
-      if (orderedGroupNodes.isEmpty()) {
-        continue;
-      }
-
-      addEdge(edges, orderedGroupNodes.get(0), splitSource);
-      addLinearEdges(edges, orderedGroupNodes);
-      branchEndNodes.add(orderedGroupNodes.get(orderedGroupNodes.size() - 1));
-    }
-
-    if (!postBranchSpineNodes.isEmpty()) {
-      CustomRoadmapNode firstPostBranchNode = postBranchSpineNodes.get(0);
-      for (CustomRoadmapNode branchEndNode : branchEndNodes) {
-        addEdge(edges, firstPostBranchNode, branchEndNode);
-      }
-      addLinearEdges(edges, postBranchSpineNodes);
-    }
-
-    return edges;
+    return anchor;
   }
 
   private void addLinearEdges(Set<EdgeKey> edges, List<CustomRoadmapNode> nodes) {
@@ -340,23 +189,6 @@ public class CustomRoadmapPrerequisiteSyncService {
         .customNode(node)
         .prerequisiteCustomNode(prerequisiteNode)
         .build();
-  }
-
-  private Comparator<CustomRoadmapNode> nodeComparator() {
-    return Comparator.comparing(this::sortOrderOf, Comparator.nullsLast(Integer::compareTo))
-        .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
-  }
-
-  private Integer sortOrderOf(CustomRoadmapNode node) {
-    if (node.getOriginalNode() != null && node.getOriginalNode().getSortOrder() != null) {
-      return node.getOriginalNode().getSortOrder();
-    }
-
-    return node.getCustomSortOrder();
-  }
-
-  private Integer branchGroupOf(CustomRoadmapNode node) {
-    return node.getOriginalNode() != null ? node.getOriginalNode().getBranchGroup() : null;
   }
 
   private record EdgeKey(Long nodeId, Long prerequisiteNodeId) {}

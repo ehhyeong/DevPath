@@ -6,6 +6,7 @@ import com.devpath.api.dashboard.dto.DashboardMentoringResponse;
 import com.devpath.api.dashboard.dto.DashboardStudyGroupResponse;
 import com.devpath.api.dashboard.dto.DashboardSummaryResponse;
 import com.devpath.api.dashboard.dto.HeatmapResponse;
+import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.api.roadmap.service.RoadmapProgressService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -27,16 +28,12 @@ import com.devpath.domain.project.entity.ProjectMember;
 import com.devpath.domain.project.repository.MentoringApplicationRepository;
 import com.devpath.domain.project.repository.ProjectMemberRepository;
 import com.devpath.domain.project.repository.ProjectRepository;
-import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
-import com.devpath.domain.roadmap.entity.Prerequisite;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
-import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
-import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.study.entity.StudyGroup;
 import com.devpath.domain.study.entity.StudyGroupJoinStatus;
@@ -84,8 +81,7 @@ public class LearnerDashboardService {
   private final NodeRequiredTagRepository nodeRequiredTagRepository;
   private final CustomRoadmapRepository customRoadmapRepository;
   private final CustomRoadmapNodeRepository customRoadmapNodeRepository;
-  private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
-  private final PrerequisiteRepository prerequisiteRepository;
+  private final CustomRoadmapPrerequisiteSyncService prerequisiteSyncService;
   private final RoadmapProgressService roadmapProgressService;
 
   public DashboardSummaryResponse getSummary(Long learnerId) {
@@ -360,7 +356,7 @@ public class LearnerDashboardService {
       }
 
       customNode = customRoadmapNodeRepository.save(customNode);
-      savePrerequisitesForAddedNode(customRoadmap, customNode, node);
+      prerequisiteSyncService.ensurePrerequisites(customRoadmap);
       roadmapProgressService.updateProgressRate(
           customRoadmap, customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap));
     }
@@ -551,33 +547,6 @@ public class LearnerDashboardService {
         .filter(tag -> tag != null && !tag.isBlank())
         .map(tag -> tag.trim().toLowerCase(Locale.ROOT))
         .collect(Collectors.toCollection(LinkedHashSet::new));
-  }
-
-  private void savePrerequisitesForAddedNode(
-      CustomRoadmap customRoadmap, CustomRoadmapNode customNode, RoadmapNode node) {
-    List<CustomNodePrerequisite> prerequisites =
-        prerequisiteRepository.findAllByNode(node).stream()
-            .map(prerequisite -> toCustomPrerequisite(customRoadmap, customNode, prerequisite))
-            .filter(Objects::nonNull)
-            .toList();
-
-    if (!prerequisites.isEmpty()) {
-      customNodePrerequisiteRepository.saveAll(prerequisites);
-    }
-  }
-
-  private CustomNodePrerequisite toCustomPrerequisite(
-      CustomRoadmap customRoadmap, CustomRoadmapNode customNode, Prerequisite prerequisite) {
-    return customRoadmapNodeRepository
-        .findByCustomRoadmapAndOriginalNode(customRoadmap, prerequisite.getPreNode())
-        .map(
-            prerequisiteNode ->
-                CustomNodePrerequisite.builder()
-                    .customRoadmap(customRoadmap)
-                    .customNode(customNode)
-                    .prerequisiteCustomNode(prerequisiteNode)
-                    .build())
-        .orElse(null);
   }
 
   private record DashboardNodeRecommendationCandidate(
