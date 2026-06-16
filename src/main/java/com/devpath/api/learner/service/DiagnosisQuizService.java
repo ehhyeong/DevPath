@@ -57,7 +57,7 @@ public class DiagnosisQuizService {
   // 클리어 시 순서변경 제안 후보로 검토할 후속 노드 최대 개수
   private static final int REORDER_CANDIDATE_LIMIT = 5;
   // 클리어 시 Gemini가 제안할 신규 노드 최대 개수
-  private static final int NEW_NODE_LIMIT = 2;
+  private static final int NEW_NODE_LIMIT = 1;
 
   private final DiagnosisQuizRepository diagnosisQuizRepository;
   private final DiagnosisResultRepository diagnosisResultRepository;
