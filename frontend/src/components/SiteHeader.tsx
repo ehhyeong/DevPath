@@ -17,7 +17,7 @@ export const siteHeaderLinks: HeaderLink[] = [
     href: '/roadmap-hub',
     label: '\uB85C\uB4DC\uB9F5',
     children: [
-      { href: '/survey', label: 'AI \uB85C\uB4DC\uB9F5 \uCD94\uCC9C' },
+      { href: '/survey', label: '\uB85C\uB4DC\uB9F5 \uCD94\uCC9C' },
       { href: '/roadmap-hub', label: '\uB85C\uB4DC\uB9F5 \uD0D0\uC0C9' },
       { href: '/my-roadmap-list', label: '\uB0B4 \uB85C\uB4DC\uB9F5' },
     ],
