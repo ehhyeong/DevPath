@@ -6,7 +6,13 @@ import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.application.entity.LoungeApplication;
+import com.devpath.domain.application.entity.LoungeApplicationType;
 import com.devpath.domain.application.repository.LoungeApplicationRepository;
+import com.devpath.domain.squad.entity.Squad;
+import com.devpath.domain.squad.entity.SquadMember;
+import com.devpath.domain.squad.entity.SquadRole;
+import com.devpath.domain.squad.repository.SquadMemberRepository;
+import com.devpath.domain.squad.repository.SquadRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
@@ -28,6 +34,8 @@ public class LoungeApplicationService {
   private final UserRepository userRepository;
   private final UserProfileRepository userProfileRepository;
   private final NotificationEventService notificationEventService;
+  private final SquadRepository squadRepository;
+  private final SquadMemberRepository squadMemberRepository;
 
   @Transactional
   public LoungeApplicationResponse.Detail create(
@@ -100,6 +108,7 @@ public class LoungeApplicationService {
     validatePending(application);
 
     application.approve();
+    addSenderToTargetSquad(application);
     notificationEventService.notifyApplicationApproved(
         application.getSender().getId(), application.getTitle());
 
@@ -150,9 +159,7 @@ public class LoungeApplicationService {
         applications.stream()
             .flatMap(
                 application ->
-                    List.of(
-                            application.getSender().getId(),
-                            application.getReceiver().getId())
+                    List.of(application.getSender().getId(), application.getReceiver().getId())
                         .stream())
             .collect(Collectors.toSet());
 
@@ -216,5 +223,25 @@ public class LoungeApplicationService {
     if (!application.isPending()) {
       throw new CustomException(ErrorCode.APPLICATION_ALREADY_PROCESSED);
     }
+  }
+
+  private void addSenderToTargetSquad(LoungeApplication application) {
+    if (application.getType() != LoungeApplicationType.SQUAD_APPLICATION
+        && application.getType() != LoungeApplicationType.SQUAD_PROPOSAL) {
+      return;
+    }
+
+    Squad squad =
+        squadRepository
+            .findByIdAndIsDeletedFalse(application.getTargetId())
+            .orElseThrow(() -> new CustomException(ErrorCode.SQUAD_NOT_FOUND));
+    User sender = application.getSender();
+
+    if (squadMemberRepository.existsBySquadAndUser(squad, sender)) {
+      return;
+    }
+
+    squadMemberRepository.save(
+        SquadMember.builder().squad(squad).user(sender).role(SquadRole.MEMBER).build());
   }
 }

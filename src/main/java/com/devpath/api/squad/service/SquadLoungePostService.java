@@ -16,7 +16,9 @@ import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;
+import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.entity.WorkspaceType;
+import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +37,7 @@ public class SquadLoungePostService {
   private final UserRepository userRepository;
   private final UserProfileRepository userProfileRepository;
   private final WorkspaceRepository workspaceRepository;
+  private final WorkspaceMemberRepository workspaceMemberRepository;
 
   public List<SquadLoungePostResponse> getPosts() {
     return squadRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc().stream()
@@ -103,6 +106,7 @@ public class SquadLoungePostService {
     }
 
     squad.linkWorkspace(workspace.getId());
+    syncWorkspaceMembers(squad, workspace);
     if (!Boolean.TRUE.equals(squad.getIsArchived())) {
       squad.archive();
     }
@@ -196,5 +200,17 @@ public class SquadLoungePostService {
     return userRepository
         .findById(userId)
         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+  }
+
+  private void syncWorkspaceMembers(Squad squad, Workspace workspace) {
+    for (SquadMember member : squadMemberRepository.findBySquadWithUser(squad)) {
+      Long learnerId = member.getUser().getId();
+      if (workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspace.getId(), learnerId)) {
+        continue;
+      }
+
+      workspaceMemberRepository.save(
+          WorkspaceMember.builder().workspaceId(workspace.getId()).learnerId(learnerId).build());
+    }
   }
 }
