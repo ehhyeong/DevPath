@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">DevPath logo icon</title>
+  <desc id="desc">A polished DevPath code branch icon in the brand green color.</desc>
+  <defs>
+    <linearGradient id="cardGradient" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827" />
+      <stop offset="0.54" stop-color="#0F172A" />
+      <stop offset="1" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="brandGradient" x1="144" y1="118" x2="368" y2="394" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#34F5A2" />
+      <stop offset="0.45" stop-color="#00C471" />
+      <stop offset="1" stop-color="#009F5B" />
+    </linearGradient>
+    <linearGradient id="rimGradient" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#54F5B0" stop-opacity="0.9" />
+      <stop offset="0.52" stop-color="#00C471" stop-opacity="0.35" />
+      <stop offset="1" stop-color="#005F3B" stop-opacity="0.65" />
+    </linearGradient>
+    <filter id="softShadow" x="36" y="36" width="440" height="456" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#001E12" flood-opacity="0.24" />
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#00C471" flood-opacity="0.18" />
+    </filter>
+    <filter id="iconGlow" x="104" y="76" width="304" height="360" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#00C471" flood-opacity="0.42" />
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="none" />
+  <g filter="url(#softShadow)">
+    <rect x="72" y="56" width="368" height="400" rx="92" fill="url(#cardGradient)" />
+    <rect x="78" y="62" width="356" height="388" rx="86" fill="none" stroke="url(#rimGradient)" stroke-width="12" />
+  </g>
+
+  <path d="M144 111C178 86 218 72 256 72c38 0 78 14 112 39" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="4" opacity="0.08" />
+  <path d="M104 322c62 74 126 98 218 74" fill="none" stroke="#00C471" stroke-linecap="round" stroke-width="5" opacity="0.16" />
+  <path d="M112 174c86-54 184-54 288 0" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="4" opacity="0.06" />
+
+  <g filter="url(#iconGlow)">
+    <path
+      d="M178 168v176"
+      fill="none"
+      stroke="url(#brandGradient)"
+      stroke-linecap="round"
+      stroke-width="38"
+    />
+    <path
+      d="M178 256h75c57 0 91-34 91-91"
+      fill="none"
+      stroke="url(#brandGradient)"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="38"
+    />
+    <circle cx="178" cy="138" r="44" fill="url(#brandGradient)" />
+    <circle cx="178" cy="374" r="44" fill="url(#brandGradient)" />
+    <circle cx="344" cy="138" r="44" fill="url(#brandGradient)" />
+  </g>
+
+  <circle cx="164" cy="124" r="12" fill="#FFFFFF" opacity="0.35" />
+  <circle cx="330" cy="124" r="12" fill="#FFFFFF" opacity="0.35" />
+  <circle cx="164" cy="360" r="12" fill="#FFFFFF" opacity="0.28" />
+</svg>
