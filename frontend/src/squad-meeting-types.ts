@@ -125,9 +125,22 @@ export type VoiceReactionPayload = {
 
 export type ScreenShareSignalPayload = {
   sharing?: boolean
+  streamId?: string
+}
+
+export type CameraSignalPayload = {
+  enabled?: boolean
+  streamId?: string
 }
 
 export type ScreenShareView = {
+  userId: number
+  userName: string
+  stream: MediaStream
+  local: boolean
+}
+
+export type CameraView = {
   userId: number
   userName: string
   stream: MediaStream
@@ -158,6 +171,8 @@ export type VoiceSignalingMessage = {
     | 'reaction'
     | 'speaking'
     | 'stop-speaking'
+    | 'camera-start'
+    | 'camera-stop'
     | 'screen-share-start'
     | 'screen-share-stop'
     | 'error'
@@ -171,6 +186,7 @@ export type VoiceSignalingMessage = {
     | RTCIceCandidateInit
     | VoiceReactionPayload
     | ScreenShareSignalPayload
+    | CameraSignalPayload
     | null
   detail?: string
 }

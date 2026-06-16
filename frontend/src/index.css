@@ -6731,6 +6731,34 @@ body.squad-dashboard-body .app-viewport {
   box-shadow: 0 0 0 2px rgba(0, 196, 113, 0.65), 0 0 26px rgba(0, 196, 113, 0.22);
 }
 
+.squad-meeting-page .squad-meeting-participant-tile.has-video {
+  background: #020617;
+}
+
+.squad-meeting-page .squad-meeting-participant-tile.has-video::after {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  height: 44%;
+  content: "";
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), transparent);
+  pointer-events: none;
+}
+
+.squad-meeting-page .squad-meeting-participant-video {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #020617;
+}
+
+.squad-meeting-page .squad-meeting-participant-video.is-local {
+  transform: scaleX(-1);
+}
+
 .squad-meeting-page .squad-meeting-participant-pulse {
   position: absolute;
   width: calc(var(--participant-avatar-size) + 28px);

@@ -36,6 +36,8 @@ import {
 import type {
   AudioDeviceOption,
   AudioProcessingStatus,
+  CameraSignalPayload,
+  CameraView,
   FloatingReaction,
   NavigatorWithNetworkInformation,
   NetworkStatus,
@@ -43,6 +45,7 @@ import type {
   RoomPanelTab,
   ScreenShareDragState,
   ScreenSharePan,
+  ScreenShareSignalPayload,
   ScreenShareView,
   SecurityStatus,
   SecurityTone,
@@ -441,6 +444,8 @@ export default function SquadMeetingApp() {
   const [voiceConnectionError, setVoiceConnectionError] = useState<string | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const [, setLocalSpeaking] = useState(false)
+  const [localCameraStream, setLocalCameraStream] = useState<MediaStream | null>(null)
+  const [remoteCameraStreams, setRemoteCameraStreams] = useState<Map<number, CameraView>>(() => new Map())
   const [localScreenShareStream, setLocalScreenShareStream] = useState<MediaStream | null>(null)
   const [remoteScreenShare, setRemoteScreenShare] = useState<ScreenShareView | null>(null)
   const [screenSharePlayerOpen, setScreenSharePlayerOpen] = useState(false)
@@ -451,7 +456,11 @@ export default function SquadMeetingApp() {
   const micStreamRef = useRef<MediaStream | null>(null)
   const localVoiceStreamRef = useRef<MediaStream | null>(null)
   const localVoiceRawStreamRef = useRef<MediaStream | null>(null)
+  const localCameraStreamRef = useRef<MediaStream | null>(null)
   const localScreenShareStreamRef = useRef<MediaStream | null>(null)
+  const remoteCameraStreamIdsRef = useRef<Map<number, string>>(new Map())
+  const remoteScreenShareStreamIdsRef = useRef<Map<number, string>>(new Map())
+  const remoteScreenSharePendingRef = useRef<Set<number>>(new Set())
   const screenShareDragRef = useRef<ScreenShareDragState | null>(null)
   const signalingSocketRef = useRef<WebSocket | null>(null)
   const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map())
@@ -1095,6 +1104,17 @@ export default function SquadMeetingApp() {
     setLocalScreenShareStream(null)
   }
 
+  function clearLocalCameraStream() {
+    const stream = localCameraStreamRef.current
+
+    stream?.getTracks().forEach((track) => {
+      track.onended = null
+      track.stop()
+    })
+    localCameraStreamRef.current = null
+    setLocalCameraStream(null)
+  }
+
   function stopVoiceNoiseGate() {
     if (voiceNoiseGateFrameRef.current != null) {
       window.cancelAnimationFrame(voiceNoiseGateFrameRef.current)
@@ -1231,6 +1251,10 @@ export default function SquadMeetingApp() {
     peerConnectionsRef.current.clear()
     pendingIceCandidatesRef.current.clear()
     stopRemoteAudioElements()
+    remoteCameraStreamIdsRef.current.clear()
+    remoteScreenShareStreamIdsRef.current.clear()
+    remoteScreenSharePendingRef.current.clear()
+    setRemoteCameraStreams(new Map())
     setRemoteScreenShare(null)
   }
 
@@ -1238,6 +1262,7 @@ export default function SquadMeetingApp() {
     closeSignalingSocket()
     closePeerConnections()
     stopMinutesSpeechRecognition()
+    clearLocalCameraStream()
     clearLocalScreenShareStream()
     stopLocalVoiceStream()
     setVoiceConnectionStatus('idle')
@@ -1266,6 +1291,17 @@ export default function SquadMeetingApp() {
         deviceId && deviceId !== 'default'
           ? { ...baseConstraints, deviceId: { exact: deviceId } }
           : baseConstraints,
+    }
+  }
+
+  function getCameraConstraints(): MediaStreamConstraints {
+    return {
+      audio: false,
+      video: {
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        facingMode: 'user',
+      },
     }
   }
 
@@ -1485,6 +1521,40 @@ export default function SquadMeetingApp() {
       ?? '참가자'
   }
 
+  function clearRemoteScreenShare(userId: number, stream?: MediaStream) {
+    const streamId = stream?.id
+
+    if (!streamId || remoteScreenShareStreamIdsRef.current.get(userId) === streamId) {
+      remoteScreenShareStreamIdsRef.current.delete(userId)
+    }
+
+    remoteScreenSharePendingRef.current.delete(userId)
+    setRemoteScreenShare((current) =>
+      current?.userId === userId && (!stream || current.stream === stream) ? null : current,
+    )
+  }
+
+  function clearRemoteCameraStream(userId: number, stream?: MediaStream) {
+    const streamId = stream?.id
+
+    if (!streamId || remoteCameraStreamIdsRef.current.get(userId) === streamId) {
+      remoteCameraStreamIdsRef.current.delete(userId)
+    }
+
+    setRemoteCameraStreams((current) => {
+      const currentView = current.get(userId)
+
+      if (!currentView || (stream && currentView.stream !== stream)) {
+        return current
+      }
+
+      const next = new Map(current)
+
+      next.delete(userId)
+      return next
+    })
+  }
+
   function attachRemoteScreenStream(userId: number, userName: string, stream: MediaStream, track: MediaStreamTrack) {
     const screenStream = stream.getVideoTracks().includes(track) ? stream : new MediaStream([track])
 
@@ -1496,16 +1566,60 @@ export default function SquadMeetingApp() {
     })
 
     track.onended = () => {
-      setRemoteScreenShare((current) => (current?.userId === userId ? null : current))
+      clearRemoteScreenShare(userId, screenStream)
     }
     track.onmute = () => {
-      setRemoteScreenShare((current) => (current?.userId === userId ? null : current))
+      clearRemoteScreenShare(userId, screenStream)
+    }
+  }
+
+  function attachRemoteCameraStream(userId: number, userName: string, stream: MediaStream, track: MediaStreamTrack) {
+    const cameraStream = stream.getVideoTracks().includes(track) ? stream : new MediaStream([track])
+
+    setRemoteCameraStreams((current) => {
+      const next = new Map(current)
+
+      next.set(userId, {
+        userId,
+        userName: getVoiceDisplayName(userId, userName),
+        stream: cameraStream,
+        local: false,
+      })
+      return next
+    })
+
+    track.onended = () => {
+      clearRemoteCameraStream(userId, cameraStream)
+    }
+    track.onmute = () => {
+      clearRemoteCameraStream(userId, cameraStream)
     }
   }
 
   function attachRemoteStream(userId: number, userName: string, stream: MediaStream, track: MediaStreamTrack) {
     if (track.kind === 'video') {
-      attachRemoteScreenStream(userId, userName, stream, track)
+      const streamId = stream.id
+      const screenShareStreamId = remoteScreenShareStreamIdsRef.current.get(userId)
+      const cameraStreamId = remoteCameraStreamIdsRef.current.get(userId)
+
+      if (screenShareStreamId && screenShareStreamId === streamId) {
+        attachRemoteScreenStream(userId, userName, stream, track)
+        return
+      }
+
+      if (cameraStreamId && cameraStreamId === streamId) {
+        attachRemoteCameraStream(userId, userName, stream, track)
+        return
+      }
+
+      if (remoteScreenSharePendingRef.current.has(userId)) {
+        remoteScreenSharePendingRef.current.delete(userId)
+        remoteScreenShareStreamIdsRef.current.set(userId, streamId)
+        attachRemoteScreenStream(userId, userName, stream, track)
+        return
+      }
+
+      attachRemoteCameraStream(userId, userName, stream, track)
       return
     }
 
@@ -1534,7 +1648,8 @@ export default function SquadMeetingApp() {
       remoteAudioElementsRef.current.delete(userId)
     }
 
-    setRemoteScreenShare((current) => (current?.userId === userId ? null : current))
+    clearRemoteCameraStream(userId)
+    clearRemoteScreenShare(userId)
   }
 
   function sendSignalingMessage(
@@ -1558,7 +1673,29 @@ export default function SquadMeetingApp() {
       return
     }
 
-    socket.send(JSON.stringify({ type, payload: { sharing: type === 'screen-share-start' } }))
+    socket.send(JSON.stringify({
+      type,
+      payload: {
+        sharing: type === 'screen-share-start',
+        streamId: localScreenShareStreamRef.current?.id,
+      },
+    }))
+  }
+
+  function broadcastCameraState(type: 'camera-start' | 'camera-stop') {
+    const socket = signalingSocketRef.current
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    socket.send(JSON.stringify({
+      type,
+      payload: {
+        enabled: type === 'camera-start',
+        streamId: localCameraStreamRef.current?.id,
+      },
+    }))
   }
 
   function broadcastSpeakingState(speaking: boolean) {
@@ -1593,6 +1730,47 @@ export default function SquadMeetingApp() {
     )
   }
 
+  async function addCameraTrackToPeers(stream: MediaStream) {
+    const [videoTrack] = stream.getVideoTracks()
+
+    if (!videoTrack) {
+      return
+    }
+
+    await Promise.all(
+      Array.from(peerConnectionsRef.current.values()).map(async (peerConnection) => {
+        const existingSender = peerConnection.getSenders().find((sender) => sender.track === videoTrack)
+
+        if (!existingSender) {
+          peerConnection.addTrack(videoTrack, stream)
+        }
+      }),
+    )
+    await renegotiateAllPeerConnections()
+  }
+
+  async function removeCameraTracksFromPeers() {
+    const cameraTracks = new Set(localCameraStreamRef.current?.getVideoTracks() ?? [])
+    let removed = false
+
+    if (cameraTracks.size === 0) {
+      return
+    }
+
+    peerConnectionsRef.current.forEach((peerConnection) => {
+      peerConnection.getSenders()
+        .filter((sender) => sender.track && cameraTracks.has(sender.track))
+        .forEach((sender) => {
+          peerConnection.removeTrack(sender)
+          removed = true
+        })
+    })
+
+    if (removed) {
+      await renegotiateAllPeerConnections()
+    }
+  }
+
   async function addScreenShareTrackToPeers(stream: MediaStream) {
     const [videoTrack] = stream.getVideoTracks()
 
@@ -1602,11 +1780,9 @@ export default function SquadMeetingApp() {
 
     await Promise.all(
       Array.from(peerConnectionsRef.current.values()).map(async (peerConnection) => {
-        const sender = peerConnection.getSenders().find((item) => item.track?.kind === 'video')
+        const existingSender = peerConnection.getSenders().find((sender) => sender.track === videoTrack)
 
-        if (sender) {
-          await sender.replaceTrack(videoTrack)
-        } else {
+        if (!existingSender) {
           peerConnection.addTrack(videoTrack, stream)
         }
       }),
@@ -1615,14 +1791,100 @@ export default function SquadMeetingApp() {
   }
 
   async function removeScreenShareTracksFromPeers() {
+    const screenShareTracks = new Set(localScreenShareStreamRef.current?.getVideoTracks() ?? [])
+    let removed = false
+
+    if (screenShareTracks.size === 0) {
+      return
+    }
+
     peerConnectionsRef.current.forEach((peerConnection) => {
       peerConnection.getSenders()
-        .filter((sender) => sender.track?.kind === 'video')
+        .filter((sender) => sender.track && screenShareTracks.has(sender.track))
         .forEach((sender) => {
           peerConnection.removeTrack(sender)
+          removed = true
         })
     })
-    await renegotiateAllPeerConnections()
+
+    if (removed) {
+      await renegotiateAllPeerConnections()
+    }
+  }
+
+  async function stopLocalCamera({
+    notify = true,
+    renegotiate = true,
+  }: {
+    notify?: boolean
+    renegotiate?: boolean
+  } = {}) {
+    if (!localCameraStreamRef.current) {
+      return
+    }
+
+    if (notify) {
+      broadcastCameraState('camera-stop')
+    }
+
+    if (renegotiate) {
+      await removeCameraTracksFromPeers()
+    }
+
+    clearLocalCameraStream()
+  }
+
+  async function startLocalCamera() {
+    if (!activeChannel || !isJoined) {
+      showAuthToast({ message: 'Join the meeting before turning on camera.', durationMs: 1800 })
+      return
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      showAuthToast({ message: 'Camera is not available in this browser.', durationMs: 2200 })
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(getCameraConstraints())
+      const [videoTrack] = stream.getVideoTracks()
+
+      if (!videoTrack) {
+        stream.getTracks().forEach((track) => track.stop())
+        showAuthToast({ message: 'No camera video track was found.', durationMs: 2200 })
+        return
+      }
+
+      await stopLocalCamera({ notify: false })
+      localCameraStreamRef.current = stream
+      setLocalCameraStream(stream)
+      videoTrack.onended = () => {
+        void stopLocalCamera()
+      }
+
+      broadcastCameraState('camera-start')
+      await addCameraTrackToPeers(stream)
+      showAuthToast({ message: 'Camera turned on.', durationMs: 1600 })
+    } catch (cameraError) {
+      clearLocalCameraStream()
+
+      if (cameraError instanceof DOMException && cameraError.name === 'NotAllowedError') {
+        showAuthToast({ message: 'Camera permission was denied.', durationMs: 1800 })
+        return
+      }
+
+      showAuthToast({ message: 'Could not turn on camera.', durationMs: 2200 })
+    }
+  }
+
+  async function toggleCamera() {
+    if (localCameraStreamRef.current) {
+      await stopLocalCamera()
+      showAuthToast({ message: 'Camera turned off.', durationMs: 1600 })
+      return
+    }
+
+    await startLocalCamera()
   }
 
   async function stopScreenShare({
@@ -1682,8 +1944,8 @@ export default function SquadMeetingApp() {
         void stopScreenShare()
       }
 
-      await addScreenShareTrackToPeers(stream)
       broadcastScreenShareState('screen-share-start')
+      await addScreenShareTrackToPeers(stream)
       void createSquadNotification(workspaceId, {
         pageKey: 'squad-meeting',
         message: `${squadActorName(session?.name)}님이 "${activeChannel.name}"에서 화면 공유를 시작했습니다.`,
@@ -1775,6 +2037,10 @@ export default function SquadMeetingApp() {
       peerConnection.addTransceiver('audio', { direction: 'recvonly' })
     }
 
+    localCameraStreamRef.current?.getVideoTracks().forEach((track) => {
+      peerConnection.addTrack(track, localCameraStreamRef.current as MediaStream)
+    })
+
     localScreenShareStreamRef.current?.getVideoTracks().forEach((track) => {
       peerConnection.addTrack(track, localScreenShareStreamRef.current as MediaStream)
     })
@@ -1823,6 +2089,14 @@ export default function SquadMeetingApp() {
     }
 
     getOrCreatePeerConnection(peer)
+
+    if (localCameraStreamRef.current) {
+      broadcastCameraState('camera-start')
+    }
+
+    if (localScreenShareStreamRef.current) {
+      broadcastScreenShareState('screen-share-start')
+    }
 
     if (session.userId < peer.userId) {
       await startVoiceOffer(peer)
@@ -1952,14 +2226,37 @@ export default function SquadMeetingApp() {
           )
         }
         break
-      case 'screen-share-start':
+      case 'camera-start': {
+        const payload = message.payload as CameraSignalPayload | null | undefined
+
+        if (message.fromUserId && payload?.streamId) {
+          remoteCameraStreamIdsRef.current.set(message.fromUserId, payload.streamId)
+        }
+        break
+      }
+      case 'camera-stop':
+        if (message.fromUserId) {
+          clearRemoteCameraStream(message.fromUserId)
+        }
+        break
+      case 'screen-share-start': {
+        const payload = message.payload as ScreenShareSignalPayload | null | undefined
+
+        if (message.fromUserId) {
+          if (payload?.streamId) {
+            remoteScreenShareStreamIdsRef.current.set(message.fromUserId, payload.streamId)
+          } else {
+            remoteScreenSharePendingRef.current.add(message.fromUserId)
+          }
+        }
         if (message.fromUserId && message.fromUserName) {
           showAuthToast({ message: `${message.fromUserName}님이 화면 공유를 시작했습니다.`, durationMs: 1600 })
         }
         break
+      }
       case 'screen-share-stop':
         if (message.fromUserId) {
-          setRemoteScreenShare((current) => (current?.userId === message.fromUserId ? null : current))
+          clearRemoteScreenShare(message.fromUserId)
         }
         break
       case 'error':
@@ -2983,24 +3280,46 @@ export default function SquadMeetingApp() {
     return 'squad-meeting-participant-grid-many'
   }
 
+  function getParticipantCameraView(participant: VoiceParticipant) {
+    if (participant.userId === session?.userId && localCameraStream) {
+      return {
+        userId: participant.userId,
+        userName: participant.userName,
+        stream: localCameraStream,
+        local: true,
+      } satisfies CameraView
+    }
+
+    return remoteCameraStreams.get(participant.userId) ?? null
+  }
+
   function renderMeetingGridTile(participant: VoiceParticipant) {
     const member = members.find((item) => item.learnerId === participant.userId)
     const speaking = Boolean(participant.speaking && !participant.muted)
+    const cameraView = getParticipantCameraView(participant)
 
     return (
       <div
         key={participant.participantId}
-        className={`squad-meeting-participant-tile ${speaking ? 'is-speaking' : ''}`}
+        className={`squad-meeting-participant-tile ${speaking ? 'is-speaking' : ''} ${cameraView ? 'has-video' : ''}`}
       >
         {speaking ? (
           <div className="squad-meeting-participant-pulse" aria-hidden="true"></div>
         ) : null}
-        <UserAvatar
-          name={member?.learnerName ?? participant.userName}
-          imageUrl={member?.profileImage}
-          className="squad-meeting-participant-avatar rounded-full border-4 border-gray-600 bg-gray-700 shadow-2xl"
-          iconClassName="squad-meeting-participant-avatar-icon text-gray-300"
-        />
+        {cameraView ? (
+          <MediaStreamVideo
+            stream={cameraView.stream}
+            muted={cameraView.local}
+            className={`squad-meeting-participant-video ${cameraView.local ? 'is-local' : ''}`}
+          />
+        ) : (
+          <UserAvatar
+            name={member?.learnerName ?? participant.userName}
+            imageUrl={member?.profileImage}
+            className="squad-meeting-participant-avatar rounded-full border-4 border-gray-600 bg-gray-700 shadow-2xl"
+            iconClassName="squad-meeting-participant-avatar-icon text-gray-300"
+          />
+        )}
         <div className="squad-meeting-participant-label">
           <p className="truncate text-xs font-bold text-white">
             {participant.userName}
@@ -3538,6 +3857,19 @@ export default function SquadMeetingApp() {
                   title={isMuted ? '마이크 켜기' : '마이크 끄기'}
                 >
                   <i className={`fas ${isMuted ? 'fa-microphone-slash' : 'fa-microphone'} text-xl`}></i>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void toggleCamera()}
+                  className={`squad-meeting-room-control-button w-14 h-14 rounded-full border flex items-center justify-center text-white transition shadow-sm ${
+                    localCameraStream
+                      ? 'bg-green-600 hover:bg-green-700 border-green-500'
+                      : 'bg-gray-700 hover:bg-gray-600 border-gray-600'
+                  }`}
+                  title={localCameraStream ? 'Turn camera off' : 'Turn camera on'}
+                >
+                  <i className={`fas ${localCameraStream ? 'fa-video' : 'fa-video-slash'} text-xl`}></i>
                 </button>
 
                 <div className="w-px h-8 bg-gray-600 mx-2"></div>

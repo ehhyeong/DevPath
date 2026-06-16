@@ -29,6 +29,8 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
   private static final String TYPE_REACTION = "reaction";
   private static final String TYPE_SPEAKING = "speaking";
   private static final String TYPE_STOP_SPEAKING = "stop-speaking";
+  private static final String TYPE_CAMERA_START = "camera-start";
+  private static final String TYPE_CAMERA_STOP = "camera-stop";
   private static final String TYPE_SCREEN_SHARE_START = "screen-share-start";
   private static final String TYPE_SCREEN_SHARE_STOP = "screen-share-stop";
   private static final String TYPE_ERROR = "error";
@@ -177,6 +179,8 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
     return TYPE_REACTION.equals(type)
         || TYPE_SPEAKING.equals(type)
         || TYPE_STOP_SPEAKING.equals(type)
+        || TYPE_CAMERA_START.equals(type)
+        || TYPE_CAMERA_STOP.equals(type)
         || TYPE_SCREEN_SHARE_START.equals(type)
         || TYPE_SCREEN_SHARE_STOP.equals(type);
   }
