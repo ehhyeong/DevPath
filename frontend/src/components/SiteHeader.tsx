@@ -115,9 +115,9 @@ export default function SiteHeader({
   const mobileMenuLinks = [...siteHeaderLinks, ...instructorHeaderLinks]
   const containerStyle: CSSProperties = {
     maxWidth: siteHeaderTuning.maxWidthPx == null ? 'none' : `${siteHeaderTuning.maxWidthPx}px`,
-    paddingLeft: `clamp(16px, 3vw, ${siteHeaderTuning.horizontalPaddingPx}px)`,
-    paddingRight: `clamp(16px, 3vw, ${siteHeaderTuning.horizontalPaddingPx}px)`,
-    gap: `clamp(12px, 2vw, ${siteHeaderTuning.containerGapPx}px)`,
+    paddingLeft: `clamp(12px, 3vw, ${siteHeaderTuning.horizontalPaddingPx}px)`,
+    paddingRight: `clamp(12px, 3vw, ${siteHeaderTuning.horizontalPaddingPx}px)`,
+    gap: `clamp(8px, 2vw, ${siteHeaderTuning.containerGapPx}px)`,
     ...getMoveStyle(siteHeaderTuning.headerGroup),
   }
   const brandSlotStyle: CSSProperties = {
@@ -143,10 +143,10 @@ export default function SiteHeader({
   const activeNavLinkClassName = 'site-header-nav-link site-header-nav-link--active'
   const showHeaderAlerts = Boolean(session && activeNavHref !== '/roadmap-hub')
   const brandLabel = (
-    <span className="inline-flex items-baseline gap-2 whitespace-nowrap">
-      <span className="inline-block">DevPath</span>
+    <span className="site-header-brand-label inline-flex items-baseline gap-2 whitespace-nowrap">
+      <span className="site-header-brand-name inline-block">DevPath</span>
       {brandSuffix ? (
-        <span className="text-sm font-semibold text-gray-400">{brandSuffix}</span>
+        <span className="site-header-brand-suffix text-sm font-semibold text-gray-400">{brandSuffix}</span>
       ) : null}
     </span>
   )
@@ -167,6 +167,17 @@ export default function SiteHeader({
               {brandLabel}
             </a>
           </div>
+
+          <button
+            type="button"
+            className="site-header-mobile-menu-button lg:hidden"
+            aria-label={mobileMenuOpen ? '\uBA54\uB274 \uB2EB\uAE30' : '\uBA54\uB274 \uC5F4\uAE30'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="site-header-mobile-menu"
+            onClick={() => setMobileMenuOpen((current) => !current)}
+          >
+            <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`} aria-hidden="true" />
+          </button>
 
           <div className="site-header-mobile-brand flex min-w-0 items-center lg:hidden">
             <a
@@ -282,17 +293,6 @@ export default function SiteHeader({
             </div>
 
             <div className="site-header-mobile-user flex min-w-0 items-center justify-end gap-2 lg:hidden">
-              <button
-                type="button"
-                className="site-header-mobile-menu-button"
-                aria-label={mobileMenuOpen ? '\uBA54\uB274 \uB2EB\uAE30' : '\uBA54\uB274 \uC5F4\uAE30'}
-                aria-expanded={mobileMenuOpen}
-                aria-controls="site-header-mobile-menu"
-                onClick={() => setMobileMenuOpen((current) => !current)}
-              >
-                <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`} aria-hidden="true" />
-              </button>
-
               {session ? (
                 <>
                   {showHeaderAlerts ? <HeaderAlerts session={session} /> : null}

@@ -15890,8 +15890,12 @@ aside::-webkit-scrollbar-track {
     min-width: 0;
   }
 
+  .site-header-mobile-brand {
+    flex: 1 1 auto;
+  }
+
   .site-header-mobile-brand a {
-    max-width: min(58vw, 260px);
+    max-width: 100%;
   }
 
   .site-header-mobile-brand span,
@@ -15899,6 +15903,50 @@ aside::-webkit-scrollbar-track {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .site-header-mobile-brand .site-header-brand-name {
+    flex: 0 0 auto;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .site-header-mobile-brand .site-header-brand-suffix {
+    display: none;
+  }
+
+  .site-header-mobile-user {
+    flex: 0 0 auto;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .site-header-mobile-user > .flex {
+    gap: 2px;
+  }
+
+  .site-header-mobile-user .w-px {
+    display: none;
+  }
+
+  .site-header-mobile-user > .relative > button {
+    gap: 0;
+    padding: 4px;
+  }
+
+  .site-header-mobile-user > .relative > button > span,
+  .site-header-mobile-user > .relative > button > i {
+    display: none;
+  }
+
+  .site-header-mobile-user > .flex > .relative > button {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+  }
+
+  .site-header-mobile-user > .flex > .relative > button i {
+    font-size: 17px;
   }
 
   .site-header-mobile-menu-button {
