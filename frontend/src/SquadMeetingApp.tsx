@@ -1376,6 +1376,18 @@ export default function SquadMeetingApp() {
     return stream
   }
 
+  async function startLocalVoiceStreamIfAvailable(muted: boolean) {
+    try {
+      await startLocalVoiceStream(muted)
+      return true
+    } catch (voiceError) {
+      stopLocalVoiceStream()
+      setAudioDeviceError(voiceError instanceof Error ? voiceError.message : '마이크를 사용할 수 없습니다.')
+      setWaitingMicMuted(true)
+      return false
+    }
+  }
+
   async function replaceLocalVoiceInput() {
     if (!localVoiceStreamRef.current || !navigator.mediaDevices?.getUserMedia) {
       return
@@ -1751,10 +1763,17 @@ export default function SquadMeetingApp() {
 
     const peerConnection = new RTCPeerConnection({ iceServers: getVoiceIceServers() })
     const localStream = localVoiceStreamRef.current
+    const localTracks = localStream?.getTracks() ?? []
 
-    localStream?.getTracks().forEach((track) => {
-      peerConnection.addTrack(track, localStream)
-    })
+    if (localStream) {
+      localTracks.forEach((track) => {
+        peerConnection.addTrack(track, localStream)
+      })
+    }
+
+    if (!localTracks.some((track) => track.kind === 'audio')) {
+      peerConnection.addTransceiver('audio', { direction: 'recvonly' })
+    }
 
     localScreenShareStreamRef.current?.getVideoTracks().forEach((track) => {
       peerConnection.addTrack(track, localScreenShareStreamRef.current as MediaStream)
@@ -2658,10 +2677,23 @@ export default function SquadMeetingApp() {
     setVoiceConnectionError(null)
 
     try {
-      await startLocalVoiceStream(isMuted)
+      let toastMessage = '진행 중인 음성 회의에 다시 연결했습니다.'
+      const localVoiceAvailable = await startLocalVoiceStreamIfAvailable(isMuted)
+
+      if (!localVoiceAvailable) {
+        try {
+          if (!isMuted) {
+            await createVoiceEvent('MUTE', '마이크 감지 실패로 재입장 시 음소거')
+          }
+          toastMessage = '마이크를 감지하지 못해 음소거 상태로 음성 회의에 다시 연결했습니다.'
+        } catch {
+          toastMessage = '다시 연결했지만 마이크 음소거 반영에 실패했습니다.'
+        }
+      }
+
       connectVoiceSignaling(activeChannel.channelId)
       await refreshVoiceRoomState(activeChannel.channelId)
-      showAuthToast({ message: '진행 중인 음성 회의에 다시 연결했습니다.', durationMs: 1800 })
+      showAuthToast({ message: toastMessage, durationMs: 1800 })
     } catch (restoreError) {
       disconnectVoiceSession()
       setVoiceConnectionStatus('error')
@@ -2689,12 +2721,18 @@ export default function SquadMeetingApp() {
 
       await joinSquadVoiceChannel(activeChannel.channelId)
 
-      await startLocalVoiceStream(waitingMicMuted)
+      const localVoiceAvailable = await startLocalVoiceStreamIfAvailable(waitingMicMuted)
+      const shouldMuteOnEntry = waitingMicMuted || !localVoiceAvailable
 
-      if (waitingMicMuted) {
+      if (shouldMuteOnEntry) {
         try {
-          await createVoiceEvent('MUTE', '대기실에서 마이크 음소거 후 입장')
-          toastMessage = '마이크를 끄고 음성 회의에 입장했습니다.'
+          await createVoiceEvent(
+            'MUTE',
+            localVoiceAvailable ? '대기실에서 마이크 음소거 후 입장' : '마이크 감지 실패로 음소거 후 입장',
+          )
+          toastMessage = localVoiceAvailable
+            ? '마이크를 끄고 음성 회의에 입장했습니다.'
+            : '마이크를 감지하지 못해 음소거 상태로 음성 회의에 입장했습니다.'
         } catch {
           toastMessage = '입장은 완료됐지만 마이크 음소거 반영에 실패했습니다.'
         }
@@ -2757,6 +2795,13 @@ export default function SquadMeetingApp() {
     }
 
     try {
+      if (type === 'UNMUTE' && !localVoiceStreamRef.current) {
+        setWaitingMicMuted(true)
+        setAudioDeviceError('사용 가능한 마이크를 감지하지 못했습니다.')
+        showAuthToast({ message: '사용 가능한 마이크를 감지하지 못해 음소거 상태를 유지합니다.', durationMs: 2200 })
+        return
+      }
+
       await createVoiceEvent(type, memo)
       if (type === 'MUTE' || type === 'UNMUTE') {
         setLocalVoiceMuted(type === 'MUTE')
