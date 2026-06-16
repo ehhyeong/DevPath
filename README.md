@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="frontend/src/assets/hero.png" width="200" alt="DevPath hero asset" />
+  <img src="frontend/src/assets/devpath-readme-icon.svg" width="220" alt="DevPath logo icon" />
 
   <h1>DevPath</h1>
   <p><strong>개발자의 학습, 프로젝트, 커리어 성장을 하나로 잇는 성장 플랫폼</strong></p>
