@@ -15866,3 +15866,188 @@ aside::-webkit-scrollbar-track {
 .devpath-icon-openclaw:before {
   content: "OC";
 }
+
+/* Device-width refinements. Desktop defaults stay above 1024px. */
+@media (max-width: 1023px) {
+  :root {
+    --app-page-gutter: clamp(16px, 4vw, 24px);
+    --app-content-gap: clamp(16px, 3vw, 24px);
+  }
+
+  .app-header {
+    left: 0;
+  }
+
+  .app-header-rail {
+    display: none;
+  }
+
+  .app-header > *,
+  .app-header a,
+  .app-header button,
+  .site-header-mobile-brand,
+  .site-header-mobile-user {
+    min-width: 0;
+  }
+
+  .site-header-mobile-brand a {
+    max-width: min(58vw, 260px);
+  }
+
+  .site-header-mobile-brand span,
+  .site-header-mobile-user span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .home-page-body-zoom,
+  .lecture-list-body-zoom,
+  .course-detail-body-zoom,
+  .instructor-channel-body-zoom,
+  .roadmap-hub-page .roadmap-hub-body-zoom {
+    width: 100%;
+    margin-left: 0;
+    zoom: 1;
+    transform: none;
+  }
+
+  .home-page-body-zoom .home-hero-section {
+    min-height: calc(100dvh - var(--app-header-height));
+  }
+
+  .app-main,
+  .home-page-main {
+    scrollbar-gutter: auto;
+  }
+
+  .app-responsive-container {
+    padding-inline: var(--app-page-gutter);
+  }
+
+  .app-responsive-row {
+    gap: var(--app-content-gap);
+  }
+
+  .roadmap-hub-page .roadmap-hub-section-tabs {
+    justify-content: flex-start;
+    overflow-x: auto;
+    margin-inline: calc(var(--app-page-gutter) * -1);
+    padding-inline: var(--app-page-gutter);
+    scrollbar-width: none;
+  }
+
+  .roadmap-hub-page .roadmap-hub-section-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .roadmap-hub-page .roadmap-hub-section-tab {
+    flex: 0 0 auto;
+    padding-inline: 24px;
+  }
+
+  .lecture-list-category-grid {
+    min-width: max-content;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .home-page-body-zoom .home-hero-title {
+    font-size: clamp(56px, 7vw, 64px);
+    line-height: 1.04;
+  }
+
+  .roadmap-hub-page .roadmap-hub-hero-title {
+    font-size: clamp(48px, 7vw, 56px);
+    line-height: 1.05;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --app-page-gutter: clamp(14px, 4.5vw, 18px);
+    --app-content-gap: 16px;
+  }
+
+  .home-hero-section {
+    padding-inline: var(--app-page-gutter);
+    padding-top: clamp(40px, 8vh, 64px);
+  }
+
+  .home-page-body-zoom .home-hero-eyebrow {
+    margin-bottom: 18px;
+    white-space: normal;
+  }
+
+  .home-page-body-zoom .home-hero-title {
+    margin-bottom: 20px;
+    font-size: clamp(36px, 11vw, 48px);
+    line-height: 1.08;
+  }
+
+  .home-hero-section .hero-primary-button,
+  .home-hero-section .hero-secondary-button,
+  .roadmap-hub-page .roadmap-hub-hero-button {
+    width: 100%;
+    min-height: 52px;
+    padding: 14px 18px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .roadmap-hub-page .roadmap-hub-hero-title {
+    font-size: clamp(32px, 10vw, 42px);
+    line-height: 1.08;
+  }
+
+  .roadmap-hub-page .roadmap-hub-hero-copy {
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .roadmap-hub-page .roadmap-hub-hero-button .text-lg {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .roadmap-hub-page .roadmap-hub-card {
+    min-height: auto;
+    padding: 14px 16px;
+  }
+
+  .roadmap-hub-page .skill-btn {
+    min-height: 48px;
+    padding-inline: 12px;
+  }
+
+  .lecture-filter-toolbar {
+    align-items: stretch;
+  }
+
+  .lecture-list-page .lecture-search-sort-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lecture-list-page .lecture-filter-select-shell,
+  .lecture-list-page .lecture-search-sort-row,
+  .lecture-list-page .lecture-search-input,
+  .lecture-list-page .lecture-sort-select {
+    min-width: 0;
+  }
+
+  .guide-modal-overlay {
+    padding: 16px;
+  }
+
+  .guide-modal-content {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - 32px);
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-inline: 16px;
+  }
+}
