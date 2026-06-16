@@ -162,18 +162,17 @@ export default function SiteHeader({
             </a>
           </div>
 
-          <div className="flex items-center lg:hidden">
+          <div className="site-header-mobile-brand flex min-w-0 items-center lg:hidden">
             <a
               href="/home"
-              className="group flex items-center gap-2 text-xl font-bold text-gray-900"
-              style={getMoveStyle(siteHeaderTuning.brandGroup)}
+              className="group flex min-w-0 items-center gap-2 text-xl font-bold text-gray-900"
             >
               <i className="fas fa-code-branch text-brand inline-block transition group-hover:rotate-12" />
               {brandLabel}
             </a>
           </div>
 
-          <div className="hidden flex-1 items-center justify-center text-sm font-bold text-gray-500 md:flex">
+          <div className="hidden flex-1 items-center justify-center text-sm font-bold text-gray-500 lg:flex">
             <div className="relative inline-flex items-center" style={navStyle}>
               {siteHeaderLinks.map((item) => {
                 const children = item.children ?? []
@@ -257,8 +256,8 @@ export default function SiteHeader({
             </div>
           </div>
 
-          <div className="ml-auto flex min-w-0 items-center justify-end gap-2 md:ml-0 md:w-60 md:flex-none">
-            <div className="hidden md:flex items-center justify-end gap-2" style={userStyle}>
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-2 lg:ml-0 lg:w-60 lg:flex-none">
+            <div className="hidden lg:flex items-center justify-end gap-2" style={userStyle}>
               {session ? (
                 <>
                   {showHeaderAlerts ? <HeaderAlerts session={session} /> : null}
@@ -276,7 +275,7 @@ export default function SiteHeader({
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 md:hidden" style={userStyle}>
+            <div className="site-header-mobile-user flex min-w-0 items-center justify-end gap-2 lg:hidden">
               {session ? (
                 <>
                   {showHeaderAlerts ? <HeaderAlerts session={session} /> : null}
@@ -311,4 +310,3 @@ export default function SiteHeader({
     </>
   )
 }
-
