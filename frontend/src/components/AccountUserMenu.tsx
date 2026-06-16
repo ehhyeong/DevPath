@@ -236,8 +236,8 @@ export default function AccountUserMenu({
           iconClassName="text-sm"
           alt={`${session.name} profile`}
         />
-        <span className="ml-1 max-w-[120px] truncate text-[14px] font-bold text-gray-800">{session.name}</span>
-        <i className={`fas fa-chevron-down text-[10px] text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <span className="account-user-menu-name ml-1 max-w-[120px] truncate text-[14px] font-bold text-gray-800">{session.name}</span>
+        <i className={`account-user-menu-chevron fas fa-chevron-down text-[10px] text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open ? (

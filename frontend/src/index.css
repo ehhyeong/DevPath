@@ -15930,12 +15930,20 @@ aside::-webkit-scrollbar-track {
   }
 
   .site-header-mobile-user > .relative > button {
-    gap: 0;
-    padding: 4px;
+    max-width: clamp(82px, 24vw, 112px);
+    gap: 4px;
+    padding: 4px 6px 4px 4px;
   }
 
-  .site-header-mobile-user > .relative > button > span,
-  .site-header-mobile-user > .relative > button > i {
+  .site-header-mobile-user .account-user-menu-name {
+    display: inline-block;
+    max-width: clamp(40px, 13vw, 70px);
+    margin-left: 0;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .site-header-mobile-user .account-user-menu-chevron {
     display: none;
   }
 
