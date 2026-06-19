@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -46,7 +45,6 @@ public class AiCodeReview {
   private String title;
 
   // 리뷰 대상 diff 원문이다.
-  @Lob
   @Column(name = "diff_text", nullable = false, columnDefinition = "TEXT")
   private String diffText;
 
