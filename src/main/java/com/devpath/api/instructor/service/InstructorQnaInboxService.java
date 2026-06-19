@@ -398,12 +398,14 @@ public class InstructorQnaInboxService {
     if (userIds.isEmpty()) {
       return Map.of();
     }
-    return userProfileRepository.findAllByUserIdIn(userIds).stream()
-        .collect(
-            Collectors.toMap(
-                profile -> profile.getUser().getId(),
-                UserProfile::getDisplayProfileImage,
-                (left, right) -> left));
+    Map<Long, String> profileImagesByUserId = new HashMap<>();
+    userProfileRepository.findAllByUserIdIn(userIds).stream()
+        .filter(profile -> profile.getUser() != null && profile.getUser().getId() != null)
+        .forEach(
+            profile ->
+                profileImagesByUserId.putIfAbsent(
+                    profile.getUser().getId(), profile.getDisplayProfileImage()));
+    return profileImagesByUserId;
   }
 
   private Map<Long, QnaStatus> resolveStatuses(List<Question> questions) {
