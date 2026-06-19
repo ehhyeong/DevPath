@@ -53,6 +53,1086 @@ BEGIN
     ALTER TABLE public.project ALTER COLUMN recruiting_status SET NOT NULL;
 END $$;
 ^^^ END OF SCRIPT ^^^
+DO $$
+DECLARE
+    v_password text := '$2a$10$FlAeREX4JzCux.2xcAUKz.t2hKwJ59T6boxZ0rdbVwpCQYxs3GHve';
+    v_demo_user_id bigint;
+    v_taehyung_id bigint;
+    v_juseung_id bigint;
+    v_common_mentor_id bigint;
+    v_team_mentor_id bigint;
+    v_squad_project_id bigint;
+    v_squad_workspace_id bigint;
+    v_common_workspace_id bigint;
+    v_team_workspace_id bigint;
+    v_common_post_id bigint;
+    v_team_post_id bigint;
+    v_frontend_company_id bigint;
+    v_frontend_job_id bigint;
+    v_review_id bigint;
+BEGIN
+    IF to_regclass('public.users') IS NULL THEN
+        RETURN;
+    END IF;
+
+    INSERT INTO public.users (
+        email,
+        password,
+        name,
+        role_name,
+        is_active,
+        account_status,
+        created_at,
+        updated_at
+    )
+    VALUES
+        ('kim.hakseup@devpath.com', v_password, '김학습', 'ROLE_LEARNER', true, 'ACTIVE', now(), now()),
+        ('kim.taehyung@devpath.com', v_password, '김태형', 'ROLE_LEARNER', true, 'ACTIVE', now(), now()),
+        ('park.juseung@devpath.com', v_password, '박주승', 'ROLE_LEARNER', true, 'ACTIVE', now(), now()),
+        ('mentor.frontend.common@devpath.com', v_password, '정다은', 'ROLE_INSTRUCTOR', true, 'ACTIVE', now(), now()),
+        ('mentor.frontend.team@devpath.com', v_password, '이민준', 'ROLE_INSTRUCTOR', true, 'ACTIVE', now(), now())
+    ON CONFLICT (email) DO UPDATE
+       SET password = EXCLUDED.password,
+           name = EXCLUDED.name,
+           role_name = EXCLUDED.role_name,
+           is_active = true,
+           account_status = 'ACTIVE',
+           updated_at = now();
+
+    SELECT user_id INTO v_demo_user_id FROM public.users WHERE email = 'kim.hakseup@devpath.com' LIMIT 1;
+    SELECT user_id INTO v_taehyung_id FROM public.users WHERE email = 'kim.taehyung@devpath.com' LIMIT 1;
+    SELECT user_id INTO v_juseung_id FROM public.users WHERE email = 'park.juseung@devpath.com' LIMIT 1;
+    SELECT user_id INTO v_common_mentor_id FROM public.users WHERE email = 'mentor.frontend.common@devpath.com' LIMIT 1;
+    SELECT user_id INTO v_team_mentor_id FROM public.users WHERE email = 'mentor.frontend.team@devpath.com' LIMIT 1;
+
+    IF to_regclass('public.user_profiles') IS NOT NULL THEN
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS profile_image varchar(500);
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS channel_name varchar(120);
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS bio text;
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS channel_description text;
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS github_url varchar(500);
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS blog_url varchar(500);
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true;
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS created_at timestamp;
+        ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS updated_at timestamp;
+
+        INSERT INTO public.user_profiles (
+            user_id,
+            profile_image,
+            channel_name,
+            bio,
+            channel_description,
+            github_url,
+            blog_url,
+            is_public,
+            created_at,
+            updated_at
+        )
+        SELECT seed.user_id,
+               seed.profile_image,
+               seed.channel_name,
+               seed.bio,
+               seed.bio,
+               seed.github_url,
+               NULL,
+               true,
+               now(),
+               now()
+        FROM (
+            VALUES
+                (v_demo_user_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=kim-hakseup', '김학습', '프론트엔드 프로젝트를 진행 중인 데모 학습자입니다.', 'https://github.com/devpath-demo/kim-hakseup'),
+                (v_taehyung_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=kim-taehyung', '김태형', 'React UI 구현을 맡은 팀원입니다.', 'https://github.com/devpath-demo/kim-taehyung'),
+                (v_juseung_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=park-juseung', '박주승', 'TypeScript 상태 모델과 QA를 맡은 팀원입니다.', 'https://github.com/devpath-demo/park-juseung'),
+                (v_common_mentor_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend-common-mentor', '정다은', '공통과제형 React 과제를 멘토링하는 프론트엔드 멘토입니다.', 'https://github.com/devpath-demo/frontend-common-mentor'),
+                (v_team_mentor_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend-team-mentor', '이민준', '팀프로젝트형 TypeScript 대시보드를 멘토링하는 프론트엔드 멘토입니다.', 'https://github.com/devpath-demo/frontend-team-mentor')
+        ) AS seed(user_id, profile_image, channel_name, bio, github_url)
+        WHERE seed.user_id IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1
+                FROM public.user_profiles profile
+               WHERE profile.user_id = seed.user_id
+          );
+
+        UPDATE public.user_profiles profile
+           SET profile_image = seed.profile_image,
+               channel_name = seed.channel_name,
+               bio = seed.bio,
+               channel_description = seed.bio,
+               github_url = seed.github_url,
+               is_public = true,
+               updated_at = now()
+          FROM (
+              VALUES
+                  (v_demo_user_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=kim-hakseup', '김학습', '프론트엔드 프로젝트를 진행 중인 데모 학습자입니다.', 'https://github.com/devpath-demo/kim-hakseup'),
+                  (v_taehyung_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=kim-taehyung', '김태형', 'React UI 구현을 맡은 팀원입니다.', 'https://github.com/devpath-demo/kim-taehyung'),
+                  (v_juseung_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=park-juseung', '박주승', 'TypeScript 상태 모델과 QA를 맡은 팀원입니다.', 'https://github.com/devpath-demo/park-juseung'),
+                  (v_common_mentor_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend-common-mentor', '정다은', '공통과제형 React 과제를 멘토링하는 프론트엔드 멘토입니다.', 'https://github.com/devpath-demo/frontend-common-mentor'),
+                  (v_team_mentor_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend-team-mentor', '이민준', '팀프로젝트형 TypeScript 대시보드를 멘토링하는 프론트엔드 멘토입니다.', 'https://github.com/devpath-demo/frontend-team-mentor')
+          ) AS seed(user_id, profile_image, channel_name, bio, github_url)
+         WHERE profile.user_id = seed.user_id;
+    END IF;
+
+    IF to_regclass('public.tags') IS NOT NULL THEN
+        INSERT INTO public.tags (name, category, is_official, is_deleted)
+        SELECT seed.name, 'Frontend', true, false
+        FROM (
+            VALUES
+                ('React'),
+                ('TypeScript'),
+                ('JavaScript'),
+                ('Next.js'),
+                ('Tailwind')
+        ) AS seed(name)
+        WHERE NOT EXISTS (
+            SELECT 1
+              FROM public.tags tag
+             WHERE tag.name = seed.name
+        );
+
+        IF to_regclass('public.user_tech_stacks') IS NOT NULL THEN
+            DELETE FROM public.user_tech_stacks stack
+             WHERE stack.user_id IN (v_demo_user_id, v_taehyung_id, v_juseung_id)
+               AND stack.tag_id IN (
+                   SELECT tag.tag_id
+                     FROM public.tags tag
+                    WHERE tag.name IN ('React', 'TypeScript', 'JavaScript', 'Next.js', 'Tailwind')
+               );
+        END IF;
+    END IF;
+
+    IF to_regclass('public.project') IS NOT NULL THEN
+        INSERT INTO public.project (
+            owner_id,
+            name,
+            description,
+            intro,
+            project_type,
+            status,
+            visibility,
+            recruiting_status,
+            is_deleted,
+            created_at,
+            updated_at
+        )
+        SELECT v_demo_user_id,
+               'React 커머스 UI 스쿼드',
+               'React, TypeScript, JavaScript, Tailwind 기반으로 상품 탐색과 장바구니 UI를 만드는 진행중 스쿼드 프로젝트입니다.',
+               '프론트엔드 주니어 포트폴리오를 위한 커머스 UI 스쿼드입니다.',
+               'SQUAD',
+               'IN_PROGRESS',
+               'PRIVATE',
+               'CLOSED',
+               false,
+               TIMESTAMP '2026-06-10 09:00:00',
+               TIMESTAMP '2026-06-18 18:00:00'
+        WHERE v_demo_user_id IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1
+                FROM public.project project_seed
+               WHERE project_seed.name = 'React 커머스 UI 스쿼드'
+                 AND project_seed.owner_id = v_demo_user_id
+                 AND COALESCE(project_seed.is_deleted, false) = false
+          );
+
+        UPDATE public.project
+           SET description = 'React, TypeScript, JavaScript, Tailwind 기반으로 상품 탐색과 장바구니 UI를 만드는 진행중 스쿼드 프로젝트입니다.',
+               intro = '프론트엔드 주니어 포트폴리오를 위한 커머스 UI 스쿼드입니다.',
+               project_type = 'SQUAD',
+               status = 'IN_PROGRESS',
+               visibility = 'PRIVATE',
+               recruiting_status = 'CLOSED',
+               is_deleted = false,
+               updated_at = TIMESTAMP '2026-06-18 18:00:00'
+         WHERE name = 'React 커머스 UI 스쿼드'
+           AND owner_id = v_demo_user_id;
+
+        SELECT id
+          INTO v_squad_project_id
+          FROM public.project
+         WHERE name = 'React 커머스 UI 스쿼드'
+           AND owner_id = v_demo_user_id
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        IF to_regclass('public.project_member') IS NOT NULL THEN
+            INSERT INTO public.project_member (project_id, learner_id, role_type, joined_at)
+            SELECT v_squad_project_id, member_seed.user_id, member_seed.role_type, member_seed.joined_at
+              FROM (
+                  VALUES
+                      (v_demo_user_id, 'LEADER', TIMESTAMP '2026-06-10 09:05:00'),
+                      (v_taehyung_id, 'FRONTEND', TIMESTAMP '2026-06-10 09:20:00'),
+                      (v_juseung_id, 'FRONTEND', TIMESTAMP '2026-06-10 09:30:00')
+              ) AS member_seed(user_id, role_type, joined_at)
+             WHERE v_squad_project_id IS NOT NULL
+               AND member_seed.user_id IS NOT NULL
+               AND NOT EXISTS (
+                   SELECT 1
+                     FROM public.project_member member_existing
+                    WHERE member_existing.project_id = v_squad_project_id
+                      AND member_existing.learner_id = member_seed.user_id
+               );
+        END IF;
+    END IF;
+
+    IF to_regclass('public.mentoring_posts') IS NOT NULL
+        AND v_common_mentor_id IS NOT NULL
+        AND v_team_mentor_id IS NOT NULL THEN
+        INSERT INTO public.mentoring_posts (
+            mentor_id,
+            title,
+            content,
+            required_stacks,
+            category,
+            mentoring_type,
+            duration_weeks,
+            curriculum,
+            deadline_at,
+            current_participants,
+            max_participants,
+            view_count,
+            status,
+            is_deleted,
+            created_at,
+            updated_at
+        )
+        SELECT seed.mentor_id,
+               seed.title,
+               seed.content,
+               seed.required_stacks,
+               'Frontend',
+               seed.mentoring_type,
+               4,
+               seed.curriculum,
+               CURRENT_DATE + 14,
+               seed.current_participants,
+               seed.max_participants,
+               0,
+               'OPEN',
+               false,
+               TIMESTAMP '2026-06-11 10:00:00',
+               TIMESTAMP '2026-06-18 18:00:00'
+          FROM (
+              VALUES
+                  (
+                      v_common_mentor_id,
+                      '프론트엔드 공통과제형 멘토링',
+                      'React와 JavaScript로 공통 UI 과제를 구현하고 코드리뷰를 받는 진행중 멘토링 프로젝트입니다.',
+                      'React,JavaScript,HTML,CSS,Tailwind',
+                      'study',
+                      E'1주차: HTML/CSS 접근성 점검\n2주차: JavaScript 이벤트 처리\n3주차: React 컴포넌트 분리\n4주차: Tailwind 반응형 리팩터링',
+                      3,
+                      8
+                  ),
+                  (
+                      v_team_mentor_id,
+                      'TypeScript 팀프로젝트형 멘토링',
+                      'React와 TypeScript로 팀 단위 대시보드 기능을 구현하는 진행중 멘토링 프로젝트입니다.',
+                      'React,TypeScript,Next.js,Tailwind',
+                      'team',
+                      E'1주차: 요구사항 정리와 컴포넌트 설계\n2주차: TypeScript API 타입 정의\n3주차: Next.js 라우팅과 상태 관리\n4주차: PR 리뷰와 배포 점검',
+                      3,
+                      5
+                  )
+          ) AS seed(mentor_id, title, content, required_stacks, mentoring_type, curriculum, current_participants, max_participants)
+         WHERE NOT EXISTS (
+             SELECT 1
+               FROM public.mentoring_posts post
+              WHERE post.title = seed.title
+                AND COALESCE(post.is_deleted, false) = false
+         );
+
+        UPDATE public.mentoring_posts post
+           SET mentor_id = seed.mentor_id,
+               content = seed.content,
+               required_stacks = seed.required_stacks,
+               category = 'Frontend',
+               mentoring_type = seed.mentoring_type,
+               duration_weeks = 4,
+               curriculum = seed.curriculum,
+               current_participants = seed.current_participants,
+               max_participants = seed.max_participants,
+               status = 'OPEN',
+               is_deleted = false,
+               updated_at = TIMESTAMP '2026-06-18 18:00:00'
+          FROM (
+              VALUES
+                  (
+                      v_common_mentor_id,
+                      '프론트엔드 공통과제형 멘토링',
+                      'React와 JavaScript로 공통 UI 과제를 구현하고 코드리뷰를 받는 진행중 멘토링 프로젝트입니다.',
+                      'React,JavaScript,HTML,CSS,Tailwind',
+                      'study',
+                      E'1주차: HTML/CSS 접근성 점검\n2주차: JavaScript 이벤트 처리\n3주차: React 컴포넌트 분리\n4주차: Tailwind 반응형 리팩터링',
+                      3,
+                      8
+                  ),
+                  (
+                      v_team_mentor_id,
+                      'TypeScript 팀프로젝트형 멘토링',
+                      'React와 TypeScript로 팀 단위 대시보드 기능을 구현하는 진행중 멘토링 프로젝트입니다.',
+                      'React,TypeScript,Next.js,Tailwind',
+                      'team',
+                      E'1주차: 요구사항 정리와 컴포넌트 설계\n2주차: TypeScript API 타입 정의\n3주차: Next.js 라우팅과 상태 관리\n4주차: PR 리뷰와 배포 점검',
+                      3,
+                      5
+                  )
+          ) AS seed(mentor_id, title, content, required_stacks, mentoring_type, curriculum, current_participants, max_participants)
+         WHERE post.title = seed.title;
+
+        SELECT mentoring_post_id
+          INTO v_common_post_id
+          FROM public.mentoring_posts
+         WHERE title = '프론트엔드 공통과제형 멘토링'
+           AND mentor_id = v_common_mentor_id
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        SELECT mentoring_post_id
+          INTO v_team_post_id
+          FROM public.mentoring_posts
+         WHERE title = 'TypeScript 팀프로젝트형 멘토링'
+           AND mentor_id = v_team_mentor_id
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        IF to_regclass('public.mentoring_applications') IS NOT NULL THEN
+            ALTER TABLE public.mentoring_applications ADD COLUMN IF NOT EXISTS desired_position varchar(80);
+
+            INSERT INTO public.mentoring_applications (
+                mentoring_post_id,
+                applicant_id,
+                message,
+                desired_position,
+                status,
+                reject_reason,
+                processed_at,
+                is_deleted,
+                created_at,
+                updated_at
+            )
+            SELECT post_seed.post_id,
+                   post_seed.applicant_id,
+                   post_seed.message,
+                   post_seed.desired_position,
+                   'APPROVED',
+                   NULL,
+                   TIMESTAMP '2026-06-11 11:00:00',
+                   false,
+                   TIMESTAMP '2026-06-11 10:30:00',
+                   TIMESTAMP '2026-06-11 11:00:00'
+              FROM (
+                  VALUES
+                      (v_common_post_id, v_demo_user_id, '공통과제형 React 과제를 진행하면서 컴포넌트 구조와 접근성 피드백을 받고 싶습니다.', 'Frontend'),
+                      (v_common_post_id, v_taehyung_id, 'React 컴포넌트 구현 피드백을 함께 받고 싶습니다.', 'React UI'),
+                      (v_common_post_id, v_juseung_id, 'TypeScript와 접근성 체크를 같이 보완하고 싶습니다.', 'TypeScript QA'),
+                      (v_team_post_id, v_demo_user_id, '팀프로젝트형 TypeScript 대시보드에서 API 타입과 PR 리뷰 흐름을 실습하고 싶습니다.', 'Frontend'),
+                      (v_team_post_id, v_taehyung_id, '대시보드 카드 UI와 상태 흐름 구현을 맡고 싶습니다.', 'React UI'),
+                      (v_team_post_id, v_juseung_id, 'TypeScript API 응답 타입과 QA 시나리오를 맡고 싶습니다.', 'TypeScript QA')
+              ) AS post_seed(post_id, applicant_id, message, desired_position)
+             WHERE post_seed.post_id IS NOT NULL
+               AND post_seed.applicant_id IS NOT NULL
+               AND NOT EXISTS (
+                   SELECT 1
+                     FROM public.mentoring_applications application
+                    WHERE application.mentoring_post_id = post_seed.post_id
+                      AND application.applicant_id = post_seed.applicant_id
+               );
+        END IF;
+
+        IF to_regclass('public.mentorings') IS NOT NULL THEN
+            INSERT INTO public.mentorings (
+                mentoring_post_id,
+                mentor_id,
+                mentee_id,
+                status,
+                started_at,
+                ended_at,
+                is_deleted,
+                created_at,
+                updated_at
+            )
+            SELECT post_seed.post_id,
+                   post_seed.mentor_id,
+                   post_seed.mentee_id,
+                   'ONGOING',
+                   TIMESTAMP '2026-06-11 11:30:00',
+                   NULL,
+                   false,
+                   TIMESTAMP '2026-06-11 11:30:00',
+                   TIMESTAMP '2026-06-18 18:00:00'
+              FROM (
+                  VALUES
+                      (v_common_post_id, v_common_mentor_id, v_demo_user_id),
+                      (v_common_post_id, v_common_mentor_id, v_taehyung_id),
+                      (v_common_post_id, v_common_mentor_id, v_juseung_id),
+                      (v_team_post_id, v_team_mentor_id, v_demo_user_id),
+                      (v_team_post_id, v_team_mentor_id, v_taehyung_id),
+                      (v_team_post_id, v_team_mentor_id, v_juseung_id)
+              ) AS post_seed(post_id, mentor_id, mentee_id)
+             WHERE post_seed.post_id IS NOT NULL
+               AND post_seed.mentor_id IS NOT NULL
+               AND post_seed.mentee_id IS NOT NULL
+               AND NOT EXISTS (
+                   SELECT 1
+                     FROM public.mentorings mentoring
+                    WHERE mentoring.mentoring_post_id = post_seed.post_id
+                      AND mentoring.mentee_id = post_seed.mentee_id
+                      AND COALESCE(mentoring.is_deleted, false) = false
+               );
+
+            UPDATE public.mentorings mentoring
+               SET mentor_id = post_seed.mentor_id,
+                   status = 'ONGOING',
+                   is_deleted = false,
+                   updated_at = TIMESTAMP '2026-06-18 18:00:00'
+              FROM (
+                  VALUES
+                      (v_common_post_id, v_common_mentor_id, v_demo_user_id),
+                      (v_common_post_id, v_common_mentor_id, v_taehyung_id),
+                      (v_common_post_id, v_common_mentor_id, v_juseung_id),
+                      (v_team_post_id, v_team_mentor_id, v_demo_user_id),
+                      (v_team_post_id, v_team_mentor_id, v_taehyung_id),
+                      (v_team_post_id, v_team_mentor_id, v_juseung_id)
+              ) AS post_seed(post_id, mentor_id, mentee_id)
+             WHERE mentoring.mentoring_post_id = post_seed.post_id
+               AND mentoring.mentee_id = post_seed.mentee_id;
+        END IF;
+    END IF;
+
+    IF to_regclass('public.workspace') IS NOT NULL
+        AND to_regclass('public.workspace_member') IS NOT NULL THEN
+        INSERT INTO public.workspace (
+            owner_id,
+            name,
+            description,
+            type,
+            status,
+            is_deleted,
+            created_at,
+            updated_at
+        )
+        SELECT workspace_seed.owner_id,
+               workspace_seed.name,
+               workspace_seed.description,
+               workspace_seed.type,
+               'ACTIVE',
+               false,
+               workspace_seed.created_at,
+               TIMESTAMP '2026-06-18 18:00:00'
+          FROM (
+              VALUES
+                  (
+                      v_demo_user_id,
+                      'React 커머스 UI 스쿼드',
+                      'React, TypeScript, JavaScript, Next.js, Tailwind로 상품 카드와 장바구니 플로우를 만드는 진행중 스쿼드 프로젝트입니다.',
+                      'SQUAD',
+                      TIMESTAMP '2026-06-18 18:30:00'
+                  ),
+                  (
+                      v_common_mentor_id,
+                      '프론트엔드 공통과제형 멘토링',
+                      'React, JavaScript, HTML, CSS, Tailwind 공통과제를 진행하며 UI 구현과 코드리뷰를 받는 프로젝트입니다.',
+                      'MENTORING',
+                      TIMESTAMP '2026-06-18 18:00:00'
+                  ),
+                  (
+                      v_team_mentor_id,
+                      'TypeScript 팀프로젝트형 멘토링',
+                      'React, TypeScript, Next.js, Tailwind 기반 팀 대시보드를 만드는 진행중 멘토링 프로젝트입니다.',
+                      'MENTORING',
+                      TIMESTAMP '2026-06-12 11:15:00'
+                  )
+          ) AS workspace_seed(owner_id, name, description, type, created_at)
+         WHERE workspace_seed.owner_id IS NOT NULL
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM public.workspace workspace_existing
+                WHERE workspace_existing.name = workspace_seed.name
+                  AND workspace_existing.type = workspace_seed.type
+                  AND COALESCE(workspace_existing.is_deleted, false) = false
+           );
+
+        UPDATE public.workspace workspace_existing
+           SET description = workspace_seed.description,
+               owner_id = workspace_seed.owner_id,
+               status = 'ACTIVE',
+               is_deleted = false,
+               created_at = workspace_seed.created_at,
+               updated_at = TIMESTAMP '2026-06-18 18:00:00'
+          FROM (
+              VALUES
+                  (v_demo_user_id, 'React 커머스 UI 스쿼드', 'SQUAD', 'React, TypeScript, JavaScript, Next.js, Tailwind로 상품 카드와 장바구니 플로우를 만드는 진행중 스쿼드 프로젝트입니다.', TIMESTAMP '2026-06-18 18:30:00'),
+                  (v_common_mentor_id, '프론트엔드 공통과제형 멘토링', 'MENTORING', 'React, JavaScript, HTML, CSS, Tailwind 공통과제를 진행하며 UI 구현과 코드리뷰를 받는 프로젝트입니다.', TIMESTAMP '2026-06-18 18:00:00'),
+                  (v_team_mentor_id, 'TypeScript 팀프로젝트형 멘토링', 'MENTORING', 'React, TypeScript, Next.js, Tailwind 기반 팀 대시보드를 만드는 진행중 멘토링 프로젝트입니다.', TIMESTAMP '2026-06-12 11:15:00')
+          ) AS workspace_seed(owner_id, name, type, description, created_at)
+         WHERE workspace_existing.name = workspace_seed.name
+           AND workspace_existing.type = workspace_seed.type;
+
+        SELECT id INTO v_squad_workspace_id
+          FROM public.workspace
+         WHERE name = 'React 커머스 UI 스쿼드'
+           AND type = 'SQUAD'
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        SELECT id INTO v_common_workspace_id
+          FROM public.workspace
+         WHERE name = '프론트엔드 공통과제형 멘토링'
+           AND type = 'MENTORING'
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        SELECT id INTO v_team_workspace_id
+          FROM public.workspace
+         WHERE name = 'TypeScript 팀프로젝트형 멘토링'
+           AND type = 'MENTORING'
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        INSERT INTO public.workspace_member (
+            workspace_id,
+            learner_id,
+            joined_at,
+            last_active_at,
+            position_label
+        )
+        SELECT member_seed.workspace_id,
+               member_seed.user_id,
+               member_seed.joined_at,
+               member_seed.last_active_at,
+               member_seed.position_label
+          FROM (
+              VALUES
+                  (v_squad_workspace_id, v_demo_user_id, TIMESTAMP '2026-06-10 09:05:00', TIMESTAMP '2026-06-18 17:40:00', 'Frontend Lead'),
+                  (v_squad_workspace_id, v_taehyung_id, TIMESTAMP '2026-06-10 09:20:00', TIMESTAMP '2026-06-18 17:20:00', 'React UI'),
+                  (v_squad_workspace_id, v_juseung_id, TIMESTAMP '2026-06-10 09:30:00', TIMESTAMP '2026-06-18 17:05:00', 'TypeScript QA'),
+                  (v_common_workspace_id, v_demo_user_id, TIMESTAMP '2026-06-11 11:30:00', TIMESTAMP '2026-06-18 16:30:00', 'Frontend'),
+                  (v_common_workspace_id, v_taehyung_id, TIMESTAMP '2026-06-11 11:40:00', TIMESTAMP '2026-06-18 16:20:00', 'React UI'),
+                  (v_common_workspace_id, v_juseung_id, TIMESTAMP '2026-06-11 11:45:00', TIMESTAMP '2026-06-18 16:10:00', 'TypeScript QA'),
+                  (v_team_workspace_id, v_demo_user_id, TIMESTAMP '2026-06-12 11:15:00', TIMESTAMP '2026-06-18 16:45:00', 'Frontend'),
+                  (v_team_workspace_id, v_taehyung_id, TIMESTAMP '2026-06-12 11:25:00', TIMESTAMP '2026-06-18 16:35:00', 'React UI'),
+                  (v_team_workspace_id, v_juseung_id, TIMESTAMP '2026-06-12 11:35:00', TIMESTAMP '2026-06-18 16:25:00', 'TypeScript QA')
+          ) AS member_seed(workspace_id, user_id, joined_at, last_active_at, position_label)
+         WHERE member_seed.workspace_id IS NOT NULL
+           AND member_seed.user_id IS NOT NULL
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM public.workspace_member member_existing
+                WHERE member_existing.workspace_id = member_seed.workspace_id
+                  AND member_existing.learner_id = member_seed.user_id
+           );
+
+        UPDATE public.workspace_member member_existing
+           SET position_label = member_seed.position_label,
+               last_active_at = member_seed.last_active_at
+          FROM (
+              VALUES
+                  (v_squad_workspace_id, v_demo_user_id, TIMESTAMP '2026-06-18 17:40:00', 'Frontend Lead'),
+                  (v_squad_workspace_id, v_taehyung_id, TIMESTAMP '2026-06-18 17:20:00', 'React UI'),
+                  (v_squad_workspace_id, v_juseung_id, TIMESTAMP '2026-06-18 17:05:00', 'TypeScript QA'),
+                  (v_common_workspace_id, v_demo_user_id, TIMESTAMP '2026-06-18 16:30:00', 'Frontend'),
+                  (v_common_workspace_id, v_taehyung_id, TIMESTAMP '2026-06-18 16:20:00', 'React UI'),
+                  (v_common_workspace_id, v_juseung_id, TIMESTAMP '2026-06-18 16:10:00', 'TypeScript QA'),
+                  (v_team_workspace_id, v_demo_user_id, TIMESTAMP '2026-06-18 16:45:00', 'Frontend'),
+                  (v_team_workspace_id, v_taehyung_id, TIMESTAMP '2026-06-18 16:35:00', 'React UI'),
+                  (v_team_workspace_id, v_juseung_id, TIMESTAMP '2026-06-18 16:25:00', 'TypeScript QA')
+          ) AS member_seed(workspace_id, user_id, last_active_at, position_label)
+         WHERE member_existing.workspace_id = member_seed.workspace_id
+           AND member_existing.learner_id = member_seed.user_id;
+
+        IF to_regclass('public.workspace_task') IS NOT NULL THEN
+            INSERT INTO public.workspace_task (
+                workspace_id,
+                title,
+                description,
+                status,
+                priority,
+                assignee_id,
+                due_date,
+                created_by_id,
+                is_deleted,
+                created_at,
+                updated_at
+            )
+            SELECT task_seed.workspace_id,
+                   task_seed.title,
+                   task_seed.description,
+                   task_seed.status,
+                   task_seed.priority,
+                   task_seed.assignee_id,
+                   task_seed.due_date,
+                   task_seed.created_by_id,
+                   false,
+                   task_seed.created_at,
+                   task_seed.updated_at
+              FROM (
+                  VALUES
+                      (v_squad_workspace_id, 'React 상품 카드 컴포넌트 구현', 'React와 TypeScript로 상품 카드 UI와 장바구니 CTA를 구현합니다.', 'DONE', 'HIGH', v_demo_user_id, CURRENT_DATE + 2, v_demo_user_id, TIMESTAMP '2026-06-10 10:00:00', TIMESTAMP '2026-06-13 18:00:00'),
+                      (v_squad_workspace_id, 'TypeScript 장바구니 상태 모델 정리', 'JavaScript 이벤트 흐름을 TypeScript 타입과 reducer 구조로 정리합니다.', 'IN_PROGRESS', 'HIGH', v_taehyung_id, CURRENT_DATE + 5, v_demo_user_id, TIMESTAMP '2026-06-11 10:00:00', TIMESTAMP '2026-06-18 15:30:00'),
+                      (v_squad_workspace_id, 'Tailwind 반응형 레이아웃 점검', 'Tailwind breakpoint로 모바일 상품 목록과 체크아웃 영역을 검수합니다.', 'IN_REVIEW', 'MEDIUM', v_juseung_id, CURRENT_DATE + 4, v_demo_user_id, TIMESTAMP '2026-06-12 10:00:00', TIMESTAMP '2026-06-18 15:45:00'),
+                      (v_common_workspace_id, 'JavaScript DOM 과제 제출 화면 구현', 'HTML, CSS, JavaScript로 공통과제 제출 화면을 완성합니다.', 'DONE', 'MEDIUM', v_demo_user_id, CURRENT_DATE + 1, v_common_mentor_id, TIMESTAMP '2026-06-11 12:00:00', TIMESTAMP '2026-06-14 17:00:00'),
+                      (v_common_workspace_id, 'React 폼 검증 리팩터링', 'React controlled form과 Tailwind 에러 상태 스타일을 정리합니다.', 'IN_PROGRESS', 'MEDIUM', v_taehyung_id, CURRENT_DATE + 3, v_common_mentor_id, TIMESTAMP '2026-06-13 12:00:00', TIMESTAMP '2026-06-18 16:00:00'),
+                      (v_common_workspace_id, 'Tailwind 접근성 QA 체크', '공통과제 화면의 키보드 포커스와 반응형 간격을 점검합니다.', 'TODO', 'MEDIUM', v_juseung_id, CURRENT_DATE + 4, v_common_mentor_id, TIMESTAMP '2026-06-14 12:00:00', TIMESTAMP '2026-06-18 16:05:00'),
+                      (v_team_workspace_id, 'Next.js 목록 페이지 라우팅 설계', 'Next.js App Router로 프로젝트 목록과 상세 페이지 이동 흐름을 설계합니다.', 'DONE', 'HIGH', v_demo_user_id, CURRENT_DATE + 2, v_team_mentor_id, TIMESTAMP '2026-06-12 12:00:00', TIMESTAMP '2026-06-15 17:30:00'),
+                      (v_team_workspace_id, 'React 대시보드 카드 컴포넌트 분리', '대시보드 카드 UI를 재사용 가능한 React 컴포넌트로 분리합니다.', 'IN_REVIEW', 'HIGH', v_taehyung_id, CURRENT_DATE + 5, v_team_mentor_id, TIMESTAMP '2026-06-13 12:00:00', TIMESTAMP '2026-06-18 16:05:00'),
+                      (v_team_workspace_id, 'TypeScript API 응답 타입 정리', 'TypeScript DTO와 React Query 응답 타입을 맞춥니다.', 'IN_PROGRESS', 'HIGH', v_juseung_id, CURRENT_DATE + 6, v_team_mentor_id, TIMESTAMP '2026-06-14 12:00:00', TIMESTAMP '2026-06-18 16:10:00')
+              ) AS task_seed(workspace_id, title, description, status, priority, assignee_id, due_date, created_by_id, created_at, updated_at)
+             WHERE task_seed.workspace_id IS NOT NULL
+               AND task_seed.assignee_id IS NOT NULL
+               AND task_seed.created_by_id IS NOT NULL
+               AND NOT EXISTS (
+                   SELECT 1
+                     FROM public.workspace_task task_existing
+                    WHERE task_existing.workspace_id = task_seed.workspace_id
+                      AND task_existing.title = task_seed.title
+                      AND COALESCE(task_existing.is_deleted, false) = false
+               );
+
+            UPDATE public.workspace_task task_existing
+               SET description = task_seed.description,
+                   status = task_seed.status,
+                   priority = task_seed.priority,
+                   assignee_id = task_seed.assignee_id,
+                   due_date = task_seed.due_date,
+                   created_by_id = task_seed.created_by_id,
+                   is_deleted = false,
+                   updated_at = task_seed.updated_at
+              FROM (
+                  VALUES
+                      (v_common_workspace_id, 'JavaScript DOM 과제 제출 화면 구현', 'HTML, CSS, JavaScript로 공통과제 제출 화면을 완성합니다.', 'DONE', 'MEDIUM', v_demo_user_id, CURRENT_DATE + 1, v_common_mentor_id, TIMESTAMP '2026-06-14 17:00:00'),
+                      (v_common_workspace_id, 'React 폼 검증 리팩터링', 'React controlled form과 Tailwind 에러 상태 스타일을 정리합니다.', 'IN_PROGRESS', 'MEDIUM', v_taehyung_id, CURRENT_DATE + 3, v_common_mentor_id, TIMESTAMP '2026-06-18 16:00:00'),
+                      (v_common_workspace_id, 'Tailwind 접근성 QA 체크', '공통과제 화면의 키보드 포커스와 반응형 간격을 점검합니다.', 'TODO', 'MEDIUM', v_juseung_id, CURRENT_DATE + 4, v_common_mentor_id, TIMESTAMP '2026-06-18 16:05:00'),
+                      (v_team_workspace_id, 'Next.js 목록 페이지 라우팅 설계', 'Next.js App Router로 프로젝트 목록과 상세 페이지 이동 흐름을 설계합니다.', 'DONE', 'HIGH', v_demo_user_id, CURRENT_DATE + 2, v_team_mentor_id, TIMESTAMP '2026-06-15 17:30:00'),
+                      (v_team_workspace_id, 'React 대시보드 카드 컴포넌트 분리', '대시보드 카드 UI를 재사용 가능한 React 컴포넌트로 분리합니다.', 'IN_REVIEW', 'HIGH', v_taehyung_id, CURRENT_DATE + 5, v_team_mentor_id, TIMESTAMP '2026-06-18 16:05:00'),
+                      (v_team_workspace_id, 'TypeScript API 응답 타입 정리', 'TypeScript DTO와 React Query 응답 타입을 맞춥니다.', 'IN_PROGRESS', 'HIGH', v_juseung_id, CURRENT_DATE + 6, v_team_mentor_id, TIMESTAMP '2026-06-18 16:10:00')
+              ) AS task_seed(workspace_id, title, description, status, priority, assignee_id, due_date, created_by_id, updated_at)
+             WHERE task_existing.workspace_id = task_seed.workspace_id
+               AND task_existing.title = task_seed.title;
+        END IF;
+    END IF;
+
+    CREATE TABLE IF NOT EXISTS public.workspace_code_reviews (
+        id bigserial PRIMARY KEY,
+        workspace_id bigint NOT NULL,
+        title varchar(180) NOT NULL,
+        description text,
+        pr_url varchar(1000),
+        file_path varchar(300) NOT NULL DEFAULT 'src/main/java/com/devpath/auth/AuthService.java',
+        diff_text text NOT NULL,
+        source_branch varchar(120) NOT NULL DEFAULT 'feature/manual-review',
+        target_branch varchar(120) NOT NULL DEFAULT 'main',
+        author_id bigint NOT NULL,
+        status varchar(20) NOT NULL DEFAULT 'OPEN',
+        additions integer NOT NULL DEFAULT 0,
+        deletions integer NOT NULL DEFAULT 0,
+        ai_code_review_id bigint,
+        external_provider varchar(50),
+        external_id varchar(220),
+        external_author_name varchar(120),
+        external_author_avatar_url varchar(1000),
+        external_updated_at timestamp,
+        is_deleted boolean NOT NULL DEFAULT false,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+    );
+
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS pr_url varchar(1000);
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS file_path varchar(300) DEFAULT 'src/main/java/com/devpath/auth/AuthService.java';
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS diff_text text DEFAULT '';
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS source_branch varchar(120) DEFAULT 'feature/manual-review';
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS target_branch varchar(120) DEFAULT 'main';
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS additions integer DEFAULT 0;
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS deletions integer DEFAULT 0;
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS external_provider varchar(50);
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS external_id varchar(220);
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS external_author_name varchar(120);
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS external_author_avatar_url varchar(1000);
+    ALTER TABLE public.workspace_code_reviews ADD COLUMN IF NOT EXISTS external_updated_at timestamp;
+
+    CREATE TABLE IF NOT EXISTS public.workspace_code_review_files (
+        id bigserial PRIMARY KEY,
+        review_id bigint NOT NULL,
+        workspace_id bigint NOT NULL,
+        file_path varchar(500) NOT NULL,
+        diff_text text NOT NULL,
+        additions integer NOT NULL DEFAULT 0,
+        deletions integer NOT NULL DEFAULT 0,
+        change_type varchar(50) NOT NULL DEFAULT 'modified',
+        display_order integer NOT NULL DEFAULT 0,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS public.workspace_code_review_comments (
+        id bigserial PRIMARY KEY,
+        review_id bigint NOT NULL,
+        workspace_id bigint NOT NULL,
+        author_id bigint NOT NULL,
+        file_path varchar(500),
+        body text NOT NULL,
+        status_label varchar(50) NOT NULL DEFAULT 'Commented',
+        is_deleted boolean NOT NULL DEFAULT false,
+        created_at timestamp NOT NULL DEFAULT now(),
+        updated_at timestamp NOT NULL DEFAULT now()
+    );
+
+    ALTER TABLE public.workspace_code_review_comments ADD COLUMN IF NOT EXISTS file_path varchar(500);
+
+    IF v_squad_workspace_id IS NOT NULL THEN
+        SELECT id
+          INTO v_review_id
+          FROM public.workspace_code_reviews
+         WHERE workspace_id = v_squad_workspace_id
+           AND external_provider = 'GITHUB'
+           AND external_id = 'devpath/frontend-commerce#17'
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        IF v_review_id IS NULL THEN
+            INSERT INTO public.workspace_code_reviews (
+                workspace_id,
+                title,
+                description,
+                pr_url,
+                file_path,
+                diff_text,
+                source_branch,
+                target_branch,
+                author_id,
+                status,
+                additions,
+                deletions,
+                ai_code_review_id,
+                external_provider,
+                external_id,
+                external_author_name,
+                external_author_avatar_url,
+                external_updated_at,
+                is_deleted,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                v_squad_workspace_id,
+                'feat: 상품 카드와 장바구니 CTA 연결',
+                'GitHub PR fallback 데이터입니다. 실제 토큰 없이도 코드리뷰 보드가 열리도록 시드합니다.',
+                'https://github.com/devpath-demo/frontend-commerce/pull/17',
+                'frontend/src/features/cart/ProductCard.tsx',
+                $demo_diff$diff --git a/frontend/src/features/cart/ProductCard.tsx b/frontend/src/features/cart/ProductCard.tsx
+@@
+-export function ProductCard({ product }) {
+-  return <button>담기</button>;
+-}
++type ProductCardProps = {
++  product: Product;
++  onAddToCart: (productId: string) => void;
++};
++
++export function ProductCard({ product, onAddToCart }: ProductCardProps) {
++  return (
++    <button
++      type="button"
++      className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
++      onClick={() => onAddToCart(product.id)}
++    >
++      장바구니 담기
++    </button>
++  );
++}
+$demo_diff$,
+                'feature/cart-product-card',
+                'main',
+                v_demo_user_id,
+                'OPEN',
+                14,
+                3,
+                NULL,
+                'GITHUB',
+                'devpath/frontend-commerce#17',
+                'kim-hakseup',
+                'https://api.dicebear.com/7.x/avataaars/svg?seed=kim-hakseup',
+                TIMESTAMP '2026-06-18 16:20:00',
+                false,
+                TIMESTAMP '2026-06-18 15:40:00',
+                TIMESTAMP '2026-06-18 16:20:00'
+            )
+            RETURNING id INTO v_review_id;
+        ELSE
+            UPDATE public.workspace_code_reviews
+               SET title = 'feat: 상품 카드와 장바구니 CTA 연결',
+                   description = 'GitHub PR fallback 데이터입니다. 실제 토큰 없이도 코드리뷰 보드가 열리도록 시드합니다.',
+                   pr_url = 'https://github.com/devpath-demo/frontend-commerce/pull/17',
+                   file_path = 'frontend/src/features/cart/ProductCard.tsx',
+                   diff_text = $demo_diff$diff --git a/frontend/src/features/cart/ProductCard.tsx b/frontend/src/features/cart/ProductCard.tsx
+@@
+-export function ProductCard({ product }) {
+-  return <button>담기</button>;
+-}
++type ProductCardProps = {
++  product: Product;
++  onAddToCart: (productId: string) => void;
++};
++
++export function ProductCard({ product, onAddToCart }: ProductCardProps) {
++  return (
++    <button
++      type="button"
++      className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
++      onClick={() => onAddToCart(product.id)}
++    >
++      장바구니 담기
++    </button>
++  );
++}
+$demo_diff$,
+                   source_branch = 'feature/cart-product-card',
+                   target_branch = 'main',
+                   author_id = v_demo_user_id,
+                   status = 'OPEN',
+                   additions = 14,
+                   deletions = 3,
+                   external_author_name = 'kim-hakseup',
+                   external_author_avatar_url = 'https://api.dicebear.com/7.x/avataaars/svg?seed=kim-hakseup',
+                   external_updated_at = TIMESTAMP '2026-06-18 16:20:00',
+                   is_deleted = false,
+                   updated_at = TIMESTAMP '2026-06-18 16:20:00'
+             WHERE id = v_review_id;
+        END IF;
+
+        INSERT INTO public.workspace_code_review_files (
+            review_id,
+            workspace_id,
+            file_path,
+            diff_text,
+            additions,
+            deletions,
+            change_type,
+            display_order,
+            created_at,
+            updated_at
+        )
+        SELECT v_review_id,
+               v_squad_workspace_id,
+               file_seed.file_path,
+               file_seed.diff_text,
+               file_seed.additions,
+               file_seed.deletions,
+               'modified',
+               file_seed.display_order,
+               TIMESTAMP '2026-06-18 15:45:00',
+               TIMESTAMP '2026-06-18 16:20:00'
+          FROM (
+              VALUES
+                  (
+                      'frontend/src/features/cart/ProductCard.tsx',
+                      $file_diff_one$diff --git a/frontend/src/features/cart/ProductCard.tsx b/frontend/src/features/cart/ProductCard.tsx
+@@
+-export function ProductCard({ product }) {
+-  return <button>담기</button>;
+-}
++type ProductCardProps = {
++  product: Product;
++  onAddToCart: (productId: string) => void;
++};
++
++export function ProductCard({ product, onAddToCart }: ProductCardProps) {
++  return (
++    <button type="button" onClick={() => onAddToCart(product.id)}>
++      장바구니 담기
++    </button>
++  );
++}
+$file_diff_one$,
+                      12,
+                      3,
+                      0
+                  ),
+                  (
+                      'frontend/src/features/cart/useCartStore.ts',
+                      $file_diff_two$diff --git a/frontend/src/features/cart/useCartStore.ts b/frontend/src/features/cart/useCartStore.ts
+@@
++export function addCartItem(items: CartItem[], productId: string) {
++  return items.some((item) => item.productId === productId)
++    ? items.map((item) =>
++        item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item
++      )
++    : [...items, { productId, quantity: 1 }];
++}
+$file_diff_two$,
+                      7,
+                      0,
+                      1
+                  )
+          ) AS file_seed(file_path, diff_text, additions, deletions, display_order)
+         WHERE v_review_id IS NOT NULL
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM public.workspace_code_review_files file_existing
+                WHERE file_existing.review_id = v_review_id
+                  AND file_existing.workspace_id = v_squad_workspace_id
+                  AND file_existing.file_path = file_seed.file_path
+           );
+
+        INSERT INTO public.workspace_code_review_comments (
+            review_id,
+            workspace_id,
+            author_id,
+            file_path,
+            body,
+            status_label,
+            is_deleted,
+            created_at,
+            updated_at
+        )
+        SELECT v_review_id,
+               v_squad_workspace_id,
+               comment_seed.author_id,
+               comment_seed.file_path,
+               comment_seed.body,
+               'Commented',
+               false,
+               comment_seed.created_at,
+               comment_seed.created_at
+          FROM (
+              VALUES
+                  (v_taehyung_id, 'frontend/src/features/cart/ProductCard.tsx', 'onAddToCart 타입이 명확해서 Storybook 케이스도 바로 붙일 수 있겠습니다.', TIMESTAMP '2026-06-18 16:05:00'),
+                  (v_juseung_id, 'frontend/src/features/cart/useCartStore.ts', '동일 상품 수량 증가 케이스에 대한 단위 테스트를 추가하면 좋겠습니다.', TIMESTAMP '2026-06-18 16:12:00')
+          ) AS comment_seed(author_id, file_path, body, created_at)
+         WHERE v_review_id IS NOT NULL
+           AND comment_seed.author_id IS NOT NULL
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM public.workspace_code_review_comments comment_existing
+                WHERE comment_existing.review_id = v_review_id
+                  AND comment_existing.author_id = comment_seed.author_id
+                  AND comment_existing.body = comment_seed.body
+           );
+    END IF;
+
+    IF to_regclass('public.companies') IS NOT NULL
+        AND to_regclass('public.job_postings') IS NOT NULL THEN
+        INSERT INTO public.companies (
+            name,
+            description,
+            website_url,
+            logo_url,
+            industry,
+            location,
+            verification_status,
+            is_deleted,
+            created_at,
+            updated_at
+        )
+        SELECT 'Frontend Demo Studio',
+               'Frontend product team for React commerce experiences',
+               'https://devpath.local/jobs/frontend-demo',
+               NULL,
+               'Frontend',
+               '서울 강남구',
+               'VERIFIED',
+               false,
+               now(),
+               now()
+        WHERE NOT EXISTS (
+            SELECT 1
+              FROM public.companies company
+             WHERE company.name = 'Frontend Demo Studio'
+               AND COALESCE(company.is_deleted, false) = false
+        );
+
+        SELECT company_id
+          INTO v_frontend_company_id
+          FROM public.companies
+         WHERE name = 'Frontend Demo Studio'
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        INSERT INTO public.job_postings (
+            company_id,
+            title,
+            job_role,
+            description,
+            required_skills,
+            region,
+            career_level,
+            source_url,
+            source,
+            status,
+            deadline,
+            external_job_id,
+            is_deleted,
+            created_at,
+            updated_at
+        )
+        SELECT v_frontend_company_id,
+               'React TypeScript 프론트엔드 주니어 채용',
+               'Frontend Developer',
+               'React, TypeScript, JavaScript, Tailwind 기반 커머스 UI와 대시보드 화면을 함께 개발할 주니어 프론트엔드 개발자를 찾습니다.',
+               'React, TypeScript, JavaScript, Next.js, Tailwind',
+               '서울 강남구',
+               'JUNIOR',
+               'https://devpath.local/jobs/frontend-junior',
+               'INTERNAL',
+               'OPEN',
+               CURRENT_DATE + 45,
+               'local-job-frontend-001',
+               false,
+               now(),
+               now()
+        WHERE v_frontend_company_id IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1
+                FROM public.job_postings posting
+               WHERE posting.external_job_id = 'local-job-frontend-001'
+                 AND COALESCE(posting.is_deleted, false) = false
+          );
+
+        SELECT job_posting_id
+          INTO v_frontend_job_id
+          FROM public.job_postings
+         WHERE external_job_id = 'local-job-frontend-001'
+           AND COALESCE(is_deleted, false) = false
+         LIMIT 1;
+
+        IF to_regclass('public.job_skill_tags') IS NOT NULL THEN
+            INSERT INTO public.job_skill_tags (
+                job_posting_id,
+                name,
+                source,
+                confidence_score,
+                matched_keyword,
+                is_deleted,
+                created_at,
+                updated_at
+            )
+            SELECT v_frontend_job_id,
+                   skill.name,
+                   'JD_RULE_BASED',
+                   skill.score,
+                   skill.name,
+                   false,
+                   now(),
+                   now()
+              FROM (
+                  VALUES
+                      ('React', 0.96),
+                      ('TypeScript', 0.94),
+                      ('JavaScript', 0.90),
+                      ('Next.js', 0.86),
+                      ('Tailwind', 0.84)
+              ) AS skill(name, score)
+             WHERE v_frontend_job_id IS NOT NULL
+               AND NOT EXISTS (
+                   SELECT 1
+                     FROM public.job_skill_tags tag
+                    WHERE tag.job_posting_id = v_frontend_job_id
+                      AND tag.name = skill.name
+                      AND COALESCE(tag.is_deleted, false) = false
+               );
+        END IF;
+    END IF;
+END $$;
+^^^ END OF SCRIPT ^^^
 
 -- 비백엔드 공식 로드맵 노드 제목과 주제 정리
 -- Backend 로드맵은 유지하고, 나머지 공식 로드맵만 백엔드처럼 짧은 주제형 제목으로 맞춘다.
