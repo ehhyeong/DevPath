@@ -58,6 +58,13 @@ public class DiagnosisQuizService {
   private static final int REORDER_CANDIDATE_LIMIT = 5;
   // 클리어 시 Gemini가 제안할 신규 노드 최대 개수
   private static final int NEW_NODE_LIMIT = 1;
+  private static final String FRONTEND_ROADMAP_DEMO_EMAIL = "kim.hakseup@devpath.com";
+  private static final int FRONTEND_ROADMAP_DEMO_SCORE = 85;
+  private static final long FRONTEND_ROADMAP_DEMO_FALLBACK_DELAY_MILLIS = 1800L;
+  private static final String FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE =
+      "[Advanced] Rendering Performance Debugging";
+  private static final String FRONTEND_ROADMAP_DEMO_REVIEW_TITLE =
+      "[Review] Rendering Flow Checkpoint";
 
   private final DiagnosisQuizRepository diagnosisQuizRepository;
   private final DiagnosisResultRepository diagnosisResultRepository;
@@ -167,6 +174,12 @@ public class DiagnosisQuizService {
     if (nodeTags.isEmpty()) return "";
 
     boolean isLowScore = (double) score / maxScore < REVIEW_THRESHOLD;
+
+    if (isFrontendRoadmapDemoFallback(user, clearedNode, nodeTags)) {
+      return buildFrontendRoadmapDemoFallback(user, clearedNode, roadmapId, isLowScore).stream()
+          .map(String::valueOf)
+          .collect(Collectors.joining(","));
+    }
 
     List<Long> recommendedNodeIds =
         isLowScore
@@ -777,8 +790,8 @@ public class DiagnosisQuizService {
   @Transactional
   public DiagnosisQuizDto.TestRunResponse testRunRecommend(
       Long userId, Long roadmapId, Long originalNodeId) {
-    int score = 60 + RANDOM.nextInt(41);
     int maxScore = 100;
+    int score = resolveTestRunScore(userId, originalNodeId, maxScore);
 
     String recommendedNodes =
         analyzeAndRecommend(userId, originalNodeId, score, maxScore, roadmapId);
@@ -800,6 +813,159 @@ public class DiagnosisQuizService {
       case INTERMEDIATE -> 7;
       case ADVANCED -> 10;
     };
+  }
+
+  private int resolveTestRunScore(Long userId, Long originalNodeId, int maxScore) {
+    User user = userId == null ? null : userRepository.findById(userId).orElse(null);
+    RoadmapNode node =
+        originalNodeId == null ? null : roadmapNodeRepository.findById(originalNodeId).orElse(null);
+    List<String> tags =
+        originalNodeId == null
+            ? List.of()
+            : nodeRequiredTagRepository.findTagNamesByNodeId(originalNodeId);
+
+    if (isFrontendRoadmapDemoFallback(user, node, tags)) {
+      return Math.min(maxScore, FRONTEND_ROADMAP_DEMO_SCORE);
+    }
+
+    return 60 + RANDOM.nextInt(41);
+  }
+
+  private boolean isFrontendRoadmapDemoFallback(
+      User user, RoadmapNode clearedNode, List<String> nodeTags) {
+    if (user == null || clearedNode == null || nodeTags == null) {
+      return false;
+    }
+    if (!FRONTEND_ROADMAP_DEMO_EMAIL.equalsIgnoreCase(user.getEmail())) {
+      return false;
+    }
+
+    String title = clearedNode.getTitle() == null ? "" : clearedNode.getTitle().toLowerCase();
+    return title.contains("html")
+        && title.contains("css")
+        && title.contains("javascript")
+        && hasTagIgnoreCase(nodeTags, "HTML")
+        && hasTagIgnoreCase(nodeTags, "CSS")
+        && hasTagIgnoreCase(nodeTags, "JavaScript")
+        && hasTagIgnoreCase(nodeTags, "Vite");
+  }
+
+  private boolean hasTagIgnoreCase(List<String> tags, String expected) {
+    return tags.stream().anyMatch(tag -> expected.equalsIgnoreCase(tag.trim()));
+  }
+
+  private List<Long> buildFrontendRoadmapDemoFallback(
+      User user, RoadmapNode clearedNode, Long roadmapId, boolean isLowScore) {
+    String title =
+        isLowScore ? FRONTEND_ROADMAP_DEMO_REVIEW_TITLE : FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE;
+
+    RecommendationChange existingChange =
+        findExistingFrontendRoadmapDemoChange(user.getId(), roadmapId, title);
+    if (existingChange != null) {
+      return List.of(existingChange.getRoadmapNode().getNodeId());
+    }
+
+    pauseFrontendRoadmapDemoFallback();
+
+    RoadmapNode generated =
+        roadmapNodeRepository.save(
+            RoadmapNode.builder()
+                .roadmap(systemDynamicRoadmapProvider.resolve())
+                .title(title)
+                .content(frontendRoadmapDemoContent(isLowScore))
+                .nodeType("BRANCH")
+                .sortOrder(null)
+                .subTopics(frontendRoadmapDemoSubTopics(isLowScore))
+                .branchGroup(null)
+                .build());
+
+    CustomRoadmap customRoadmap = findCustomRoadmap(user.getId(), roadmapId);
+    CustomRoadmapNode anchor = findAnchorCustomNode(customRoadmap, clearedNode.getNodeId());
+
+    recommendationChangeRepository.save(
+        RecommendationChange.builder()
+            .user(user)
+            .roadmapNode(generated)
+            .branchFromNodeId(clearedNode.getNodeId())
+            .targetCustomRoadmapId(customRoadmap == null ? null : customRoadmap.getId())
+            .anchorCustomNodeId(anchor == null ? null : anchor.getId())
+            .branchType(isLowScore ? "REVIEW" : "ADVANCED")
+            .reason(frontendRoadmapDemoReason(isLowScore))
+            .contextSummary("frontend-rendering-demo-fallback; score=" + FRONTEND_ROADMAP_DEMO_SCORE)
+            .nodeChangeType(NodeChangeType.ADD)
+            .build());
+
+    return List.of(generated.getNodeId());
+  }
+
+  private RecommendationChange findExistingFrontendRoadmapDemoChange(
+      Long userId, Long roadmapId, String title) {
+    List<RecommendationChange> changes =
+        roadmapId == null
+            ? recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
+                userId, RecommendationChangeStatus.SUGGESTED)
+            : recommendationChangeRepository
+                .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
+                    userId, roadmapId, RecommendationChangeStatus.SUGGESTED);
+
+    return changes.stream()
+        .filter(change -> change.getRoadmapNode() != null)
+        .filter(change -> title.equals(change.getRoadmapNode().getTitle()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private CustomRoadmap findCustomRoadmap(Long userId, Long roadmapId) {
+    if (roadmapId == null) {
+      return null;
+    }
+
+    return customRoadmapRepository
+        .findByUserIdAndOriginalRoadmapRoadmapId(userId, roadmapId)
+        .orElse(null);
+  }
+
+  private CustomRoadmapNode findAnchorCustomNode(CustomRoadmap customRoadmap, Long originalNodeId) {
+    if (customRoadmap == null || originalNodeId == null) {
+      return null;
+    }
+
+    return customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap).stream()
+        .filter(node -> node.getOriginalNode() != null)
+        .filter(node -> originalNodeId.equals(node.getOriginalNode().getNodeId()))
+        .findFirst()
+        .orElse(null);
+  }
+
+  private void pauseFrontendRoadmapDemoFallback() {
+    try {
+      Thread.sleep(FRONTEND_ROADMAP_DEMO_FALLBACK_DELAY_MILLIS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.warn("[DiagnosisQuizService] Frontend roadmap demo fallback delay interrupted.");
+    }
+  }
+
+  private String frontendRoadmapDemoContent(boolean isLowScore) {
+    if (isLowScore) {
+      return "Review how DOM, CSSOM, render tree, layout, and paint connect in the browser rendering pipeline. Rebuild the first Vite page with DevTools open and explain which JavaScript DOM changes trigger visual updates.";
+    }
+
+    return "Go deeper on rendering performance by connecting DOM updates, style recalculation, layout, and paint costs. Use DevTools to compare a small Vite interaction before and after reducing unnecessary DOM writes.";
+  }
+
+  private String frontendRoadmapDemoSubTopics(boolean isLowScore) {
+    return isLowScore
+        ? "DOM,CSSOM,Render Tree,Layout,Paint,Vite"
+        : "DOM,CSSOM,Render Tree,Layout,Paint,DevTools,Vite";
+  }
+
+  private String frontendRoadmapDemoReason(boolean isLowScore) {
+    if (isLowScore) {
+      return "Review recommendation generated from the first frontend rendering node demo fallback.";
+    }
+
+    return "Advanced recommendation generated from the first frontend rendering node demo fallback.";
   }
 
   private int calculateScore(Map<Integer, String> answers) {
