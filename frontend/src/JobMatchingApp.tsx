@@ -53,7 +53,7 @@ type ActivityProfile = {
   projectCount: number
   completedTaskCount: number
   proofCardCount: number
-  averageProofCardScore: number
+  averageProofCardScore: number | null
   skillSignals: string[]
 }
 
@@ -648,7 +648,7 @@ export default function JobMatchingApp() {
     () => jobs.filter((job) => !highMatchOnly || job.matchScore >= 70),
     [highMatchOnly, jobs],
   )
-  const averageProofCardScore = activityProfile?.averageProofCardScore ?? 0
+  const averageProofCardScore = activityProfile?.averageProofCardScore ?? null
   const displayedSkills = activityProfile?.skillSignals.length
     ? activityProfile.skillSignals.slice(0, 8)
     : role.skills
@@ -1013,7 +1013,8 @@ export default function JobMatchingApp() {
   const profileImage = profile?.profileImage
   const activityProjectLabel = activityProfile ? `${activityProfile.projectCount}개` : '-'
   const proofCardLabel = activityProfile ? `${activityProfile.proofCardCount}개` : '-'
-  const proofScoreLabel = activityProfile ? `${averageProofCardScore}점` : '-'
+  const proofScoreLabel =
+    activityProfile && averageProofCardScore != null ? `${averageProofCardScore}점` : '-'
 
   if (!session) return <LoginRequiredView />
 

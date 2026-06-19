@@ -1,11 +1,15 @@
 package com.devpath.api.job.service;
 
 import com.devpath.api.job.dto.JobActivityProfileResponse;
+import com.devpath.domain.learning.entity.SubmissionStatus;
 import com.devpath.domain.learning.entity.proof.ProofCard;
 import com.devpath.domain.learning.entity.proof.ProofCardStatus;
 import com.devpath.domain.learning.entity.proof.ProofCardTag;
+import com.devpath.domain.learning.repository.QuizAttemptRepository;
+import com.devpath.domain.learning.repository.SubmissionRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
+import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceTask;
@@ -15,9 +19,12 @@ import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +70,8 @@ public class JobActivityProfileService {
   private final WorkspaceTaskRepository workspaceTaskRepository;
   private final ProofCardRepository proofCardRepository;
   private final ProofCardTagRepository proofCardTagRepository;
+  private final QuizAttemptRepository quizAttemptRepository;
+  private final SubmissionRepository submissionRepository;
   private final UserRepository userRepository;
 
   public JobActivityProfileResponse.Summary getMyActivityProfile(Long userId) {
@@ -73,7 +82,7 @@ public class JobActivityProfileService {
         countProjects(activityData),
         activityData.completedTasks().size(),
         activityData.proofCards().size(),
-        calculateAverageProofCardScore(activityData.proofCards()),
+        calculateAverageGrade(activityData.proofCards(), userId),
         skillSignals.stream().toList());
   }
 
@@ -162,30 +171,86 @@ public class JobActivityProfileService {
     return activityData.workspaceProjects().size();
   }
 
-  private double calculateAverageProofCardScore(List<ProofCard> proofCards) {
-    List<BigDecimal> scores =
+  // 클리어한 노드들의 퀴즈/과제 채점 성적을 백분율로 정규화해 평균낸다. (성적이 없으면 null)
+  private Double calculateAverageGrade(List<ProofCard> proofCards, Long userId) {
+    List<Long> nodeIds =
         proofCards.stream()
-            .map(ProofCard::getNodeClearance)
+            .map(ProofCard::getNode)
             .filter(Objects::nonNull)
-            .map(nodeClearance -> nodeClearance.getLessonCompletionRate())
+            .map(RoadmapNode::getNodeId)
             .filter(Objects::nonNull)
-            .map(this::normalizeProofCardScore)
+            .distinct()
             .toList();
 
+    if (nodeIds.isEmpty()) {
+      return null;
+    }
+
+    List<BigDecimal> scores = new ArrayList<>();
+    scores.addAll(collectQuizScores(nodeIds, userId));
+    scores.addAll(collectAssignmentScores(nodeIds, userId));
+
     if (scores.isEmpty()) {
-      return 0.0;
+      return null;
     }
 
     BigDecimal total = scores.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
     return total.divide(BigDecimal.valueOf(scores.size()), 1, RoundingMode.HALF_UP).doubleValue();
   }
 
-  private BigDecimal normalizeProofCardScore(BigDecimal rawScore) {
-    BigDecimal score =
-        rawScore.compareTo(BigDecimal.ONE) <= 0
-            ? rawScore.multiply(BigDecimal.valueOf(100))
-            : rawScore;
-    return score.max(BigDecimal.ZERO).min(BigDecimal.valueOf(100));
+  // 노드별 퀴즈 최고 응시 성적을 백분율로 수집한다.
+  private List<BigDecimal> collectQuizScores(List<Long> nodeIds, Long userId) {
+    Map<Long, BigDecimal> bestByQuiz = new LinkedHashMap<>();
+
+    quizAttemptRepository
+        .findAllByQuizRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(nodeIds)
+        .forEach(
+            attempt -> {
+              if (!userId.equals(attempt.getLearner().getId())
+                  || attempt.getCompletedAt() == null
+                  || attempt.getMaxScore() == null
+                  || attempt.getMaxScore() <= 0) {
+                return;
+              }
+
+              BigDecimal percent = toPercent(attempt.getScore(), attempt.getMaxScore());
+              bestByQuiz.merge(attempt.getQuiz().getId(), percent, BigDecimal::max);
+            });
+
+    return new ArrayList<>(bestByQuiz.values());
+  }
+
+  // 노드별 과제 최신 채점 성적을 백분율로 수집한다.
+  private List<BigDecimal> collectAssignmentScores(List<Long> nodeIds, Long userId) {
+    Map<Long, BigDecimal> latestByAssignment = new LinkedHashMap<>();
+
+    submissionRepository
+        .findAllByAssignmentRoadmapNodeNodeIdInAndIsDeletedFalseOrderBySubmittedAtDesc(nodeIds)
+        .forEach(
+            submission -> {
+              if (!userId.equals(submission.getLearner().getId())
+                  || !SubmissionStatus.GRADED.equals(submission.getSubmissionStatus())
+                  || submission.getTotalScore() == null) {
+                return;
+              }
+
+              Integer maxScore = submission.getAssignment().getTotalScore();
+              if (maxScore == null || maxScore <= 0) {
+                return;
+              }
+
+              latestByAssignment.putIfAbsent(
+                  submission.getAssignment().getId(),
+                  toPercent(submission.getTotalScore(), maxScore));
+            });
+
+    return new ArrayList<>(latestByAssignment.values());
+  }
+
+  // 획득 점수를 만점 대비 0~100 백분율로 변환한다.
+  private BigDecimal toPercent(int score, int maxScore) {
+    BigDecimal percent = BigDecimal.valueOf((double) score * 100.0 / (double) maxScore);
+    return percent.max(BigDecimal.ZERO).min(BigDecimal.valueOf(100));
   }
 
   private void addKnownSkills(Set<String> skills, String text) {

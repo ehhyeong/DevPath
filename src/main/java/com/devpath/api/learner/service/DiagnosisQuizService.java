@@ -191,10 +191,7 @@ public class DiagnosisQuizService {
   private List<Long> buildReviewBranch(
       User user, RoadmapNode clearedNode, List<String> nodeTags, Long roadmapId) {
 
-    List<String> reviewTags = getTagsFromGemini(clearedNode.getTitle(), nodeTags, false);
-    if (reviewTags.isEmpty()) return List.of();
-
-    RoadmapNode generated = generateAndSaveNode(clearedNode, reviewTags, "REVIEW");
+    RoadmapNode generated = generateBranchNode(clearedNode, nodeTags, false);
     suggestBranchChange(user, generated, "진단 퀴즈 저득점 — 복습 학습 노드가 추천되었습니다.", clearedNode.getNodeId());
     return List.of(generated.getNodeId());
   }
@@ -216,77 +213,39 @@ public class DiagnosisQuizService {
 
     if (candidateTags.isEmpty()) return List.of();
 
-    // 필터된 태그 중 Gemini가 심화 학습에 적합한 태그 선택
-    List<String> advancedTags = getTagsFromGemini(clearedNode.getTitle(), candidateTags, true);
-    if (advancedTags.isEmpty()) return List.of();
-
-    RoadmapNode generated = generateAndSaveNode(clearedNode, advancedTags, "ADVANCED");
+    RoadmapNode generated = generateBranchNode(clearedNode, candidateTags, true);
     suggestBranchChange(user, generated, "진단 퀴즈 고득점 — 심화 학습 노드가 추천되었습니다.", clearedNode.getNodeId());
     return List.of(generated.getNodeId());
   }
 
-  // ── Gemini 호출 ────────────────────────────────────────────────────────────
+  // ── Gemini 호출 (분기 노드: 태그 선택 + 노드 생성 1콜) ────────────────────────
 
-  private List<String> getTagsFromGemini(String nodeTitle, List<String> tags, boolean isAdvanced) {
-    String tagList = String.join(", ", tags);
+  /** Gemini 1콜로 후보 태그 중 적합한 태그를 고르고 그 태그 기반 분기 노드를 생성·저장한다. */
+  private RoadmapNode generateBranchNode(
+      RoadmapNode baseNode, List<String> candidateTags, boolean isAdvanced) {
+    String tagList = String.join(", ", candidateTags);
     String prompt =
         isAdvanced
             ? String.format(
                 "학습자가 '%s' 노드를 높은 점수로 클리어했습니다.\n"
-                    + "이 노드의 핵심 태그: [%s]\n"
-                    + "다음 단계로 학습하면 좋을 심화 태그를 최대 3개 골라 JSON 배열로만 응답하라.\n"
-                    + "예시: [\"태그1\",\"태그2\"]",
-                nodeTitle, tagList)
-            : String.format(
-                "학습자가 '%s' 노드를 낮은 점수로 클리어했습니다.\n"
-                    + "이 노드의 핵심 태그: [%s]\n"
-                    + "복습이 필요한 태그를 최대 3개 골라 JSON 배열로만 응답하라.\n"
-                    + "예시: [\"태그1\",\"태그2\"]",
-                nodeTitle, tagList);
-
-    try {
-      String response = geminiProvider.generate(prompt);
-      if (response != null) {
-        List<String> parsed = parseJsonArray(response);
-        if (!parsed.isEmpty()) {
-          // Gemini 응답을 canonical 태그로 필터링 (case-insensitive)
-          Map<String, String> canonicalByLower =
-              tags.stream().collect(Collectors.toMap(String::toLowerCase, t -> t, (a, b) -> a));
-          List<String> validated =
-              parsed.stream()
-                  .map(t -> canonicalByLower.get(t.toLowerCase()))
-                  .filter(Objects::nonNull)
-                  .toList();
-          if (!validated.isEmpty()) return validated;
-        }
-      }
-    } catch (Exception e) {
-      log.warn("[DiagnosisQuizService] Gemini 태그 추출 실패: {}", e.getMessage());
-    }
-    return tags.stream().limit(3).toList();
-  }
-
-  /** Gemini를 이용해 태그 기반의 새 학습 노드를 생성하고 저장한다. */
-  private RoadmapNode generateAndSaveNode(
-      RoadmapNode baseNode, List<String> tags, String branchType) {
-    String tagList = String.join(", ", tags);
-    String prompt =
-        branchType.equals("ADVANCED")
-            ? String.format(
-                "학습자가 '%s' 노드를 높은 점수로 클리어했습니다.\n"
-                    + "다음 태그들을 바탕으로 심화 학습 노드를 생성하세요: [%s]\n"
+                    + "선택 가능한 태그: [%s]\n"
+                    + "위 태그 중 심화 학습에 가장 적합한 태그를 최대 3개 고르고, 그 태그로 심화 학습 노드를 생성하라.\n"
                     + "반드시 아래 JSON 형식으로만 응답하라:\n"
-                    + "{\"title\":\"노드 제목\",\"content\":\"노드 설명 (2~3문장)\",\"subTopics\":\"소주제1,소주제2\"}",
+                    + "{\"tags\":[\"태그1\",\"태그2\"],\"title\":\"노드 제목\",\"content\":\"노드 설명 (2~3문장)\"}",
                 baseNode.getTitle(), tagList)
             : String.format(
                 "학습자가 '%s' 노드를 낮은 점수로 클리어했습니다.\n"
-                    + "다음 태그들을 바탕으로 복습 노드를 생성하세요: [%s]\n"
+                    + "선택 가능한 태그: [%s]\n"
+                    + "위 태그 중 복습이 필요한 태그를 최대 3개 고르고, 그 태그로 복습 학습 노드를 생성하라.\n"
                     + "반드시 아래 JSON 형식으로만 응답하라:\n"
-                    + "{\"title\":\"노드 제목\",\"content\":\"노드 설명 (2~3문장)\",\"subTopics\":\"소주제1,소주제2\"}",
+                    + "{\"tags\":[\"태그1\",\"태그2\"],\"title\":\"노드 제목\",\"content\":\"노드 설명 (2~3문장)\"}",
                 baseNode.getTitle(), tagList);
 
+    Map<String, String> canonicalByLower =
+        candidateTags.stream().collect(Collectors.toMap(String::toLowerCase, t -> t, (a, b) -> a));
+
     try {
-      String response = geminiProvider.generate(prompt);
+      String response = geminiProvider.generateJson(prompt);
       if (response != null) {
         int start = response.indexOf('{');
         int end = response.lastIndexOf('}');
@@ -294,7 +253,22 @@ public class DiagnosisQuizService {
           JsonNode json = OBJECT_MAPPER.readTree(response.substring(start, end + 1));
           String title = json.path("title").asText(null);
           String content = json.path("content").asText(null);
-          if (title != null) {
+
+          if (title != null && !title.isBlank()) {
+            List<String> validatedTags = new java.util.ArrayList<>();
+            JsonNode tagsNode = json.path("tags");
+            if (tagsNode.isArray()) {
+              for (JsonNode tagNode : tagsNode) {
+                String canonical = canonicalByLower.get(tagNode.asText("").toLowerCase());
+                if (canonical != null && !validatedTags.contains(canonical)) {
+                  validatedTags.add(canonical);
+                }
+              }
+            }
+            if (validatedTags.isEmpty()) {
+              validatedTags = candidateTags.stream().limit(3).toList();
+            }
+
             return roadmapNodeRepository.save(
                 RoadmapNode.builder()
                     .roadmap(systemDynamicRoadmapProvider.resolve())
@@ -302,30 +276,28 @@ public class DiagnosisQuizService {
                     .content(content)
                     .nodeType("BRANCH")
                     .sortOrder(null)
-                    .subTopics(tagList) // 항상 canonical 태그 사용
+                    .subTopics(String.join(", ", validatedTags)) // 항상 canonical 태그 사용
                     .branchGroup(null)
                     .build());
           }
         }
       }
     } catch (Exception e) {
-      log.warn("[DiagnosisQuizService] Gemini 노드 생성 실패: {}", e.getMessage());
+      log.warn("[DiagnosisQuizService] Gemini 분기 노드 생성 실패: {}", e.getMessage());
     }
 
     // Fallback: 기본 제목으로 노드 생성
-    String fallbackTitle =
-        branchType.equals("ADVANCED")
-            ? "[심화] " + baseNode.getTitle()
-            : "[복습] " + baseNode.getTitle();
+    String fallbackTagList = String.join(", ", candidateTags.stream().limit(3).toList());
+    String fallbackTitle = (isAdvanced ? "[심화] " : "[복습] ") + baseNode.getTitle();
 
     return roadmapNodeRepository.save(
         RoadmapNode.builder()
             .roadmap(baseNode.getRoadmap())
             .title(fallbackTitle)
-            .content(tagList + " 관련 학습 내용입니다.")
+            .content(fallbackTagList + " 관련 학습 내용입니다.")
             .nodeType("BRANCH")
             .sortOrder(null)
-            .subTopics(tagList)
+            .subTopics(fallbackTagList)
             .branchGroup(null)
             .build());
   }
@@ -474,7 +446,7 @@ public class DiagnosisQuizService {
 
     Map<Long, String> result = new LinkedHashMap<>();
     try {
-      String response = geminiProvider.generate(prompt);
+      String response = geminiProvider.generateJson(prompt);
       if (response != null) {
         int start = response.indexOf('[');
         int end = response.lastIndexOf(']');
@@ -612,7 +584,7 @@ public class DiagnosisQuizService {
 
     List<ReorderSuggestion> result = new java.util.ArrayList<>();
     try {
-      String response = geminiProvider.generate(prompt);
+      String response = geminiProvider.generateJson(prompt);
       if (response != null) {
         int start = response.indexOf('[');
         int end = response.lastIndexOf(']');
@@ -767,7 +739,7 @@ public class DiagnosisQuizService {
 
     List<NewNodeSuggestion> result = new java.util.ArrayList<>();
     try {
-      String response = geminiProvider.generate(prompt);
+      String response = geminiProvider.generateJson(prompt);
       if (response != null) {
         int start = response.indexOf('[');
         int end = response.lastIndexOf(']');
@@ -835,18 +807,4 @@ public class DiagnosisQuizService {
     return 60 + RANDOM.nextInt(41);
   }
 
-  private List<String> parseJsonArray(String response) {
-    try {
-      int start = response.indexOf('[');
-      int end = response.lastIndexOf(']');
-      if (start >= 0 && end > start) {
-        String json = response.substring(start, end + 1);
-        return OBJECT_MAPPER.readValue(
-            json, OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, String.class));
-      }
-    } catch (Exception e) {
-      log.warn("[DiagnosisQuizService] JSON 파싱 실패: {}", e.getMessage());
-    }
-    return List.of();
-  }
 }

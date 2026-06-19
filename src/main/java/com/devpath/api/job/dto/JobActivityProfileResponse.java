@@ -16,8 +16,10 @@ public class JobActivityProfileResponse {
       @Schema(description = "Number of completed assigned kanban tasks", example = "7")
           int completedTaskCount,
       @Schema(description = "Number of issued proof cards", example = "5") int proofCardCount,
-      @Schema(description = "Average Proof Card score", example = "92.5")
-          double averageProofCardScore,
+      @Schema(
+              description = "Average quiz/assignment grade of cleared nodes (null if no graded data)",
+              example = "92.5")
+          Double averageProofCardScore,
       @Schema(description = "Skill signals extracted from internal DevPath activity")
           List<String> skillSignals) {}
 }

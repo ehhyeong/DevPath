@@ -1,7 +1,6 @@
 package com.devpath.api.learner.controller;
 
-import com.devpath.api.learner.dto.DiagnosisQuizDto;
-import com.devpath.api.learner.service.DiagnosisQuizService;
+import com.devpath.api.learner.service.DiagnosisRecommendationAsyncRunner;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,17 +22,18 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "진단 퀴즈 테스트", description = "local/test 프로필 전용 진단 퀴즈 테스트 API")
 public class DiagnosisQuizTestController {
 
-  private final DiagnosisQuizService diagnosisQuizService;
+  private final DiagnosisRecommendationAsyncRunner diagnosisRecommendationAsyncRunner;
 
   @PostMapping("/{roadmapId}/diagnosis/test-run")
-  @Operation(summary = "[TEST] 즉시 분기 추천 생성", description = "local/test 프로필 전용 테스트 API입니다")
-  public ResponseEntity<ApiResponse<DiagnosisQuizDto.TestRunResponse>> testRunDiagnosis(
+  @Operation(
+      summary = "[TEST] 즉시 분기 추천 생성(비동기)",
+      description = "local/test 프로필 전용 테스트 API입니다")
+  public ResponseEntity<ApiResponse<Void>> testRunDiagnosis(
       @PathVariable Long roadmapId,
       @RequestParam Long originalNodeId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
 
-    DiagnosisQuizDto.TestRunResponse response =
-        diagnosisQuizService.testRunRecommend(userId, roadmapId, originalNodeId);
-    return ResponseEntity.ok(ApiResponse.ok(response));
+    diagnosisRecommendationAsyncRunner.runAsync(userId, roadmapId, originalNodeId);
+    return ResponseEntity.accepted().body(ApiResponse.ok());
   }
 }

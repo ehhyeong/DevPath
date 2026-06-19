@@ -1135,14 +1135,13 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
     try {
       await roadmapApi.clearNode(customRoadmapId, node.customNodeId)
 
-      // ── [TEST] 노드 완료 시 랜덤 점수로 즉시 분기 추천 생성 ─────────────────
+      // ── [TEST] 노드 완료 시 동적 추천 생성을 백그라운드로 트리거 ─────────────
       // 실 서비스에서는 진단 퀴즈 제출(submitQuizAnswer) 흐름으로 대체 예정
       if (originalRoadmapId != null && node.originalNodeId != null) {
         try {
-          const rec = await roadmapApi.testRunDiagnosis(originalRoadmapId, node.originalNodeId)
-          console.log(`[TEST] 진단 추천 결과 — 점수: ${rec.score}/${rec.maxScore}, 분기: ${rec.branchType}, 추천노드: ${rec.recommendedNodes}`)
+          await roadmapApi.testRunDiagnosis(originalRoadmapId, node.originalNodeId)
         } catch (recErr) {
-          console.warn('[TEST] 진단 추천 생성 실패 (무시):', (recErr as Error).message)
+          console.warn('[TEST] 진단 추천 트리거 실패 (무시):', (recErr as Error).message)
         }
       }
       // ────────────────────────────────────────────────────────────────────────
@@ -2285,14 +2284,26 @@ export default function RoadmapDetailPage() {
         onClose={() => setDrawerNode(null)}
         onCleared={async () => {
           const updated = await roadmapApi.getMyRoadmapDetail(customRoadmapId)
-          const changesData = updated.originalRoadmapId == null
-            ? []
-            : await roadmapApi.getPendingChanges(updated.originalRoadmapId)
-          setRoadmap(updated)
-          setChanges(changesData)
-          if (changesData.length > 0) {
-            setTimeout(() => setPanelOpen(true), 300)
+          setRoadmap(updated)                       // 클리어 상태 즉시 반영
+          if (updated.originalRoadmapId == null) return
+          const origId = updated.originalRoadmapId
+
+          // 추천은 백그라운드 생성되므로, 기존 대기 추천 수를 기준으로 신규분을 폴링한다.
+          const baseline = changes.length
+          let attempts = 0
+          const poll = async () => {
+            attempts += 1
+            try {
+              const changesData = await roadmapApi.getPendingChanges(origId)
+              setChanges(changesData)
+              if (changesData.length > baseline) {
+                setPanelOpen(true)
+                return
+              }
+            } catch { /* 무시하고 재시도 */ }
+            if (attempts < 5) setTimeout(poll, 2000)
           }
+          poll()
         }}
       />
 

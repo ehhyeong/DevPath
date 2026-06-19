@@ -453,9 +453,9 @@ export const roadmapApi = {
     return request<void>(`/api/my-roadmaps/${customRoadmapId}`, { method: 'DELETE' }, { auth: true })
   },
 
-  // [TEST] 노드 완료 즉시 분기 추천 테스트용 — 실 서비스 전 삭제 대상
+  // [TEST] 노드 완료 시 동적 추천 생성을 백그라운드로 트리거 — 실 서비스 전 삭제 대상
   testRunDiagnosis(originalRoadmapId: number, originalNodeId: number) {
-    return request<{ score: number; maxScore: number; branchType: string; recommendedNodes: string }>(
+    return request<void>(
       `/api/me/roadmaps/${originalRoadmapId}/diagnosis/test-run?originalNodeId=${originalNodeId}`,
       { method: 'POST' },
       { auth: true },
