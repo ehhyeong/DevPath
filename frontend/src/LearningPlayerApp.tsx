@@ -2249,13 +2249,13 @@ export default function LearningPlayerApp() {
     setSelectDrag(null)
     setNotice(region ? '선택한 영역의 글자를 읽는 중...' : '화면의 글자를 읽는 중...')
     try {
-      const { text, confidence, source } = await captureAndOcr(video, region, (msg) => setNotice(msg))
+      const { text, source } = await captureAndOcr(video, region, (msg) => setNotice(msg))
       if (!text.trim()) {
         setNotice(`${formatOcrSourceLabel(source)} · 인식한 글자가 없습니다.`)
         return
       }
       await navigator.clipboard.writeText(text)
-      setNotice(`인식한 글자를 복사했습니다. ${formatOcrSourceLabel(source)} · 인식률 ${confidence.toFixed(0)}%`)
+      setNotice('클립보드에 복사가 완료되었습니다.')
     } catch (err) {
       setNotice(`글자를 읽지 못했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
     } finally {
