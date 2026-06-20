@@ -359,27 +359,6 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
            AND title = ANY (ARRAY['Vite로 렌더링 흐름 확인하기', '역할 정의와 학습 목표 설계'])
          LIMIT 1;
 
-        IF v_section2_id IS NULL THEN
-          INSERT INTO course_sections (
-            course_id, title, description, sort_order, is_published
-          )
-          VALUES (
-            v_course_id,
-            'Vite로 렌더링 흐름 확인하기',
-            'Vite 개발 서버와 DevTools를 사용해 DOM, 스타일, 스크립트 변경 결과를 확인합니다.',
-            1,
-            TRUE
-          )
-          RETURNING section_id INTO v_section2_id;
-        ELSE
-          UPDATE course_sections
-             SET title = 'Vite로 렌더링 흐름 확인하기',
-                 description = 'Vite 개발 서버와 DevTools를 사용해 DOM, 스타일, 스크립트 변경 결과를 확인합니다.',
-                 sort_order = 1,
-                 is_published = TRUE
-           WHERE section_id = v_section2_id;
-        END IF;
-
         UPDATE lessons
            SET title = '브라우저 렌더링 흐름과 HTML 구조'
          WHERE section_id = v_section1_id
@@ -488,53 +467,31 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
            WHERE lesson_id = v_quiz_lesson_id;
         END IF;
 
-        IF NOT EXISTS (
-          SELECT 1 FROM lessons
-           WHERE section_id = v_section2_id
-             AND title = 'Vite 개발 서버에서 DOM과 스타일 변경 관찰'
-        ) THEN
-          INSERT INTO lessons (
-            section_id, title, description, lesson_type, video_url,
-            video_asset_key, video_provider, thumbnail_url, duration_seconds,
-            is_preview, is_published, sort_order, quiz_node_id, assignment_node_id
-          )
-          VALUES (
-            v_section2_id,
-            'Vite 개발 서버에서 DOM과 스타일 변경 관찰',
-            'Vite로 실행한 페이지에서 HTML, CSS, JavaScript 변경이 화면에 반영되는 과정을 DevTools로 확인합니다.',
-            'VIDEO',
-            v_demo_video_url,
-            v_demo_video_asset_key,
-            v_demo_video_provider,
-            NULL,
-            v_demo_video_duration_seconds,
-            FALSE,
-            TRUE,
-            0,
-            NULL,
-            NULL
-          );
-        ELSE
-          UPDATE lessons
-             SET description = 'Vite로 실행한 페이지에서 HTML, CSS, JavaScript 변경이 화면에 반영되는 과정을 DevTools로 확인합니다.',
-                 lesson_type = 'VIDEO',
-                 video_url = v_demo_video_url,
-                 video_asset_key = v_demo_video_asset_key,
-                 video_provider = v_demo_video_provider,
-                 thumbnail_url = NULL,
-                 duration_seconds = v_demo_video_duration_seconds,
-                 is_preview = FALSE,
-                 is_published = TRUE,
-                 sort_order = 0
-           WHERE section_id = v_section2_id
-             AND title = 'Vite 개발 서버에서 DOM과 스타일 변경 관찰';
+        IF v_section2_id IS NOT NULL THEN
+          DELETE FROM lessons l
+           WHERE l.section_id = v_section2_id
+             AND l.title = 'Vite 개발 서버에서 DOM과 스타일 변경 관찰'
+             AND NOT EXISTS (SELECT 1 FROM course_materials cm WHERE cm.lesson_id = l.lesson_id)
+             AND NOT EXISTS (
+               SELECT 1 FROM lesson_prerequisites lp
+                WHERE lp.lesson_id = l.lesson_id
+                   OR lp.prerequisite_lesson_id = l.lesson_id
+             )
+             AND NOT EXISTS (SELECT 1 FROM lesson_progress lp WHERE lp.lesson_id = l.lesson_id)
+             AND NOT EXISTS (SELECT 1 FROM ocr_results ocr WHERE ocr.lesson_id = l.lesson_id)
+             AND NOT EXISTS (SELECT 1 FROM til_drafts td WHERE td.lesson_id = l.lesson_id)
+             AND NOT EXISTS (SELECT 1 FROM timestamp_notes tn WHERE tn.lesson_id = l.lesson_id);
         END IF;
 
         SELECT lesson_id
           INTO v_assignment_lesson_id
           FROM lessons
-         WHERE section_id = v_section2_id
-           AND title = '과제: 렌더링 흐름 미니 페이지 만들기'
+         WHERE title = '과제: 렌더링 흐름 미니 페이지 만들기'
+           AND (
+             section_id = v_section1_id
+             OR (v_section2_id IS NOT NULL AND section_id = v_section2_id)
+           )
+         ORDER BY CASE WHEN section_id = v_section1_id THEN 0 ELSE 1 END, lesson_id
          LIMIT 1;
 
         IF v_assignment_lesson_id IS NULL THEN
@@ -544,7 +501,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
             is_preview, is_published, sort_order, quiz_node_id, assignment_node_id
           )
           VALUES (
-            v_section2_id,
+            v_section1_id,
             '과제: 렌더링 흐름 미니 페이지 만들기',
             'HTML, CSS, JavaScript, Vite를 사용해 렌더링 변화를 관찰할 수 있는 미니 페이지를 만듭니다.',
             'CODING',
@@ -555,14 +512,15 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
             NULL,
             FALSE,
             TRUE,
-            1,
+            2,
             NULL,
             NULL
           )
           RETURNING lesson_id INTO v_assignment_lesson_id;
         ELSE
           UPDATE lessons
-             SET description = 'HTML, CSS, JavaScript, Vite를 사용해 렌더링 변화를 관찰할 수 있는 미니 페이지를 만듭니다.',
+             SET section_id = v_section1_id,
+                 description = 'HTML, CSS, JavaScript, Vite를 사용해 렌더링 변화를 관찰할 수 있는 미니 페이지를 만듭니다.',
                  lesson_type = 'CODING',
                  video_url = NULL,
                  video_asset_key = NULL,
@@ -571,8 +529,14 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
                  duration_seconds = NULL,
                  is_preview = FALSE,
                  is_published = TRUE,
-                 sort_order = 1
+                 sort_order = 2
            WHERE lesson_id = v_assignment_lesson_id;
+        END IF;
+
+        IF v_section2_id IS NOT NULL THEN
+          DELETE FROM course_sections cs
+           WHERE cs.section_id = v_section2_id
+             AND NOT EXISTS (SELECT 1 FROM lessons l WHERE l.section_id = cs.section_id);
         END IF;
 
         SELECT roadmap_id
@@ -822,7 +786,7 @@ index.html 파일 하나만 업로드하세요. 외부 링크나 텍스트 직�
             'index.html 파일 하나로 제출하세요. 파일 안에는 HTML 구조, CSS 레이아웃과 상태 스타일, JavaScript DOM 변경 코드, DOM/CSSOM/렌더 트리/레이아웃/페인트 설명 주석, DevTools 확인 기록을 포함하세요.',
             100,
             80,
-            FALSE,
+            TRUE,
             TRUE,
             FALSE,
             TRUE,
@@ -860,7 +824,7 @@ index.html 파일 하나만 업로드하세요. 외부 링크나 텍스트 직�
                  submission_rule_description = 'index.html 파일 하나로 제출하세요. 파일 안에는 HTML 구조, CSS 레이아웃과 상태 스타일, JavaScript DOM 변경 코드, DOM/CSSOM/렌더 트리/레이아웃/페인트 설명 주석, DevTools 확인 기록을 포함하세요.',
                  total_score = 100,
                  pass_score = 80,
-                 is_published = FALSE,
+                 is_published = TRUE,
                  is_active = TRUE,
                  allow_late_submission = FALSE,
                  ai_review_enabled = TRUE,
