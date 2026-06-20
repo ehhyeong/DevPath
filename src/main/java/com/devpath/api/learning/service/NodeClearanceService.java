@@ -3,15 +3,12 @@ package com.devpath.api.learning.service;
 import com.devpath.api.learning.component.NodeClearanceEvaluator;
 import com.devpath.api.learning.dto.NodeClearanceRequest;
 import com.devpath.api.learning.dto.NodeClearanceResponse;
-import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.proof.service.ProofCardService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
-import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.entity.clearance.NodeClearanceReason;
-import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceReasonRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
@@ -44,8 +41,6 @@ public class NodeClearanceService {
 
   // Proof Card 서비스
   private final ProofCardService proofCardService;
-  private final NotificationEventService notificationEventService;
-  private final LearningAutomationRuleRepository learningAutomationRuleRepository;
 
   // 유저 저장소
   private final UserRepository userRepository;
@@ -231,11 +226,6 @@ public class NodeClearanceService {
                         .build())
             .toList());
 
-    if (evaluationResult.isProofEligible() && isRuleEnabled("PROOF_CARD_AUTO_ISSUE", true)) {
-      proofCardService.issueIfEligible(userId, nodeId);
-      notificationEventService.notifySystem(userId, "노드 클리어를 완료하여 Proof Card가 발급되었습니다.");
-    }
-
     return toDetail(savedNodeClearance);
   }
 
@@ -285,13 +275,5 @@ public class NodeClearanceService {
         .satisfied(nodeClearanceReason.getSatisfied())
         .detailMessage(nodeClearanceReason.getDetailMessage())
         .build();
-  }
-
-  // 룰 활성 여부를 조회한다.
-  private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
-    return learningAutomationRuleRepository
-        .findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
-        .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
-        .orElse(defaultValue);
   }
 }

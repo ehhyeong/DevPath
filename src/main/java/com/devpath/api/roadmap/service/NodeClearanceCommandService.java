@@ -1,6 +1,5 @@
 package com.devpath.api.roadmap.service;
 
-import com.devpath.api.proof.service.ProofCardService;
 import com.devpath.api.roadmap.dto.NodeClearResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -37,7 +36,6 @@ public class NodeClearanceCommandService {
   private final NodeClearanceRepository nodeClearanceRepository;
   private final RoadmapProgressService roadmapProgressService;
   private final CustomRoadmapPrerequisiteSyncService prerequisiteSyncService;
-  private final ProofCardService proofCardService;
 
   @Transactional
   public NodeClearResponse clearNode(Long userId, Long customRoadmapId, Long customNodeId) {
@@ -110,8 +108,6 @@ public class NodeClearanceCommandService {
       clearance.recalculate(
           ClearanceStatus.CLEARED, BigDecimal.ONE, true, 0, true, true, true, true);
       nodeClearanceRepository.save(clearance);
-
-      proofCardService.issueIfEligible(userId, originalNodeId);
     }
 
     // 진행률을 재계산한다.

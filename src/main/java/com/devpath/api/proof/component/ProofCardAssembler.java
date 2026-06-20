@@ -1,17 +1,10 @@
 package com.devpath.api.proof.component;
 
 import com.devpath.domain.course.entity.Course;
-import com.devpath.domain.learning.entity.clearance.NodeClearance;
+import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.learning.entity.proof.SkillEvidenceType;
-import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.user.entity.Tag;
-import com.devpath.domain.user.repository.TagRepository;
-import com.devpath.domain.user.repository.UserTechStackRepository;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -26,93 +19,24 @@ public class ProofCardAssembler {
   private static final int DESCRIPTION_NODE_MAX_LENGTH = 36;
   private static final int DESCRIPTION_MAX_LENGTH = 96;
 
-  // 노드 필수 태그 저장소다.
-  private final NodeRequiredTagRepository nodeRequiredTagRepository;
-
-  // 유저 기술 스택 저장소다.
-  private final UserTechStackRepository userTechStackRepository;
-
-  // 태그 저장소다.
-  private final TagRepository tagRepository;
-
-  // Proof Card 발급용 데이터를 조립한다.
-  public AssembledProofCard assemble(NodeClearance nodeClearance) {
-    List<String> requiredTagNames =
-        nodeRequiredTagRepository.findTagNamesByNodeId(nodeClearance.getNode().getNodeId());
-    List<String> userTagNames =
-        userTechStackRepository.findTagNamesByUserId(nodeClearance.getUser().getId());
-
-    String title = buildTitle(nodeClearance.getNode().getTitle());
-    String description = buildDescription(nodeClearance.getNode().getTitle());
-
-    List<AssembledTag> tags = new ArrayList<>();
-    Set<String> requiredTagSet = normalizeSet(requiredTagNames);
-    Set<String> userTagSet = normalizeSet(userTagNames);
-
-    for (String requiredTagName : requiredTagNames) {
-      if (userTagSet.contains(normalize(requiredTagName))) {
-        tagRepository
-            .findByName(requiredTagName)
-            .ifPresent(
-                tag ->
-                    tags.add(
-                        AssembledTag.builder()
-                            .tag(tag)
-                            .evidenceType(SkillEvidenceType.VERIFIED)
-                            .build()));
-      }
-    }
-
-    int heldTagLimit = 5;
-
-    for (String userTagName : userTagNames) {
-      if (tags.stream().filter(tag -> SkillEvidenceType.HELD.equals(tag.getEvidenceType())).count()
-          >= heldTagLimit) {
-        break;
-      }
-
-      if (requiredTagSet.contains(normalize(userTagName))) {
-        continue;
-      }
-
-      tagRepository
-          .findByName(userTagName)
-          .ifPresent(
-              tag ->
-                  tags.add(
-                      AssembledTag.builder()
-                          .tag(tag)
-                          .evidenceType(SkillEvidenceType.HELD)
-                          .build()));
-    }
-
-    return AssembledProofCard.builder().title(title).description(description).tags(tags).build();
-  }
+  // 강의-태그 매핑 저장소다.
+  private final CourseTagMapRepository courseTagMapRepository;
 
   // 강좌 기반 Proof Card 발급용 데이터를 조립한다.
-  public AssembledProofCard assembleFromCourse(Course course, Long userId) {
+  public AssembledProofCard assembleFromCourse(Course course) {
     String courseTitle = course.getTitle() != null ? course.getTitle() : "강좌";
     String title = buildTitle(courseTitle);
     String description = buildDescriptionFromCourse(courseTitle);
 
-    List<AssembledTag> tags = new ArrayList<>();
-    List<String> userTagNames = userTechStackRepository.findTagNamesByUserId(userId);
-
-    int heldTagLimit = 5;
-    for (String userTagName : userTagNames) {
-      if (tags.size() >= heldTagLimit) {
-        break;
-      }
-      tagRepository
-          .findByName(userTagName)
-          .ifPresent(
-              tag ->
-                  tags.add(
-                      AssembledTag.builder()
-                          .tag(tag)
-                          .evidenceType(SkillEvidenceType.HELD)
-                          .build()));
-    }
+    List<AssembledTag> tags =
+        courseTagMapRepository.findAllByCourseCourseId(course.getCourseId()).stream()
+            .map(
+                courseTagMap ->
+                    AssembledTag.builder()
+                        .tag(courseTagMap.getTag())
+                        .evidenceType(SkillEvidenceType.VERIFIED)
+                        .build())
+            .toList();
 
     return AssembledProofCard.builder().title(title).description(description).tags(tags).build();
   }
@@ -128,16 +52,6 @@ public class ProofCardAssembler {
   // 카드 제목을 만든다.
   private String buildTitle(String nodeTitle) {
     return buildConciseTitle(nodeTitle) + " Proof Card";
-  }
-
-  // 카드 설명을 만든다.
-  private String buildDescription(String nodeTitle) {
-    String limitedNodeTitle =
-        limitText(buildConciseTitle(nodeTitle), DESCRIPTION_NODE_MAX_LENGTH, "학습 완료");
-    return limitText(
-        limitedNodeTitle + " 학습 완료와 검증 조건 충족을 증명합니다.",
-        DESCRIPTION_MAX_LENGTH,
-        "학습 완료와 검증 조건 충족을 증명합니다.");
   }
 
   private String buildConciseTitle(String nodeTitle) {
@@ -226,22 +140,6 @@ public class ProofCardAssembler {
 
   private String normalizeDisplayText(String value) {
     return value == null ? "" : value.trim().replaceAll("\\s+", " ");
-  }
-
-  // 문자열 목록을 정규화된 Set으로 변환한다.
-  private Set<String> normalizeSet(List<String> values) {
-    Set<String> normalizedSet = new LinkedHashSet<>();
-
-    for (String value : values) {
-      normalizedSet.add(normalize(value));
-    }
-
-    return normalizedSet;
-  }
-
-  // 문자열을 비교 가능한 형태로 정규화한다.
-  private String normalize(String value) {
-    return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
   }
 
   // 조립된 Proof Card 데이터다.
