@@ -86,6 +86,10 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
         v_quiz_id bigint;
         v_assignment_id bigint;
         v_tag_name text;
+        v_demo_video_url text := '/uploads/courses/127/lesson-video/321.mp4';
+        v_demo_video_asset_key text := 'courses/127/lesson-video/321.mp4';
+        v_demo_video_provider text := 'LOCAL';
+        v_demo_video_duration_seconds integer := 180;
         v_previous_course_title text := 'Frontend Fundamentals: 로드맵으로 이해하는 프론트엔드 첫걸음';
         v_course_title text := 'HTML CSS JavaScript 렌더링 입문';
       BEGIN
@@ -170,9 +174,9 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
                  difficulty_level = 'BEGINNER',
                  language = 'ko',
                  has_certificate = FALSE,
-                 status = 'DRAFT',
+                 status = CASE WHEN status = 'PUBLISHED' THEN 'PUBLISHED' ELSE 'DRAFT' END,
                  updated_at = NOW(),
-                 published_at = NULL,
+                 published_at = CASE WHEN status = 'PUBLISHED' THEN COALESCE(published_at, NOW()) ELSE published_at END,
                  thumbnail_url = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80',
                  intro_video_url = NULL,
                  video_asset_key = NULL,
@@ -336,7 +340,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
             'HTML/CSS/JavaScript 렌더링 이해',
             'HTML 문서, CSS 스타일, JavaScript 실행이 브라우저 화면으로 이어지는 흐름을 정리합니다.',
             0,
-            FALSE
+            TRUE
           )
           RETURNING section_id INTO v_section1_id;
         ELSE
@@ -344,7 +348,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
              SET title = 'HTML/CSS/JavaScript 렌더링 이해',
                  description = 'HTML 문서, CSS 스타일, JavaScript 실행이 브라우저 화면으로 이어지는 흐름을 정리합니다.',
                  sort_order = 0,
-                 is_published = FALSE
+                 is_published = TRUE
            WHERE section_id = v_section1_id;
         END IF;
 
@@ -364,7 +368,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
             'Vite로 렌더링 흐름 확인하기',
             'Vite 개발 서버와 DevTools를 사용해 DOM, 스타일, 스크립트 변경 결과를 확인합니다.',
             1,
-            FALSE
+            TRUE
           )
           RETURNING section_id INTO v_section2_id;
         ELSE
@@ -372,7 +376,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
              SET title = 'Vite로 렌더링 흐름 확인하기',
                  description = 'Vite 개발 서버와 DevTools를 사용해 DOM, 스타일, 스크립트 변경 결과를 확인합니다.',
                  sort_order = 1,
-                 is_published = FALSE
+                 is_published = TRUE
            WHERE section_id = v_section2_id;
         END IF;
 
@@ -411,13 +415,13 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
             '브라우저 렌더링 흐름과 HTML 구조',
             'HTML 파싱, DOM 생성, CSSOM 결합, 렌더 트리 구성까지 브라우저가 화면을 준비하는 흐름을 정리합니다.',
             'VIDEO',
+            v_demo_video_url,
+            v_demo_video_asset_key,
+            v_demo_video_provider,
             NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
+            v_demo_video_duration_seconds,
             FALSE,
-            FALSE,
+            TRUE,
             0,
             NULL,
             NULL
@@ -426,13 +430,13 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
           UPDATE lessons
              SET description = 'HTML 파싱, DOM 생성, CSSOM 결합, 렌더 트리 구성까지 브라우저가 화면을 준비하는 흐름을 정리합니다.',
                  lesson_type = 'VIDEO',
-                 video_url = NULL,
-                 video_asset_key = NULL,
-                 video_provider = NULL,
+                 video_url = v_demo_video_url,
+                 video_asset_key = v_demo_video_asset_key,
+                 video_provider = v_demo_video_provider,
                  thumbnail_url = NULL,
-                 duration_seconds = NULL,
+                 duration_seconds = v_demo_video_duration_seconds,
                  is_preview = FALSE,
-                 is_published = FALSE,
+                 is_published = TRUE,
                  sort_order = 0
            WHERE section_id = v_section1_id
              AND title = '브라우저 렌더링 흐름과 HTML 구조';
@@ -462,7 +466,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
             NULL,
             NULL,
             FALSE,
-            FALSE,
+            TRUE,
             1,
             NULL,
             NULL
@@ -478,7 +482,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
                  thumbnail_url = NULL,
                  duration_seconds = NULL,
                  is_preview = FALSE,
-                 is_published = FALSE,
+                 is_published = TRUE,
                  sort_order = 1,
                  quiz_node_id = NULL
            WHERE lesson_id = v_quiz_lesson_id;
@@ -499,13 +503,13 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
             'Vite 개발 서버에서 DOM과 스타일 변경 관찰',
             'Vite로 실행한 페이지에서 HTML, CSS, JavaScript 변경이 화면에 반영되는 과정을 DevTools로 확인합니다.',
             'VIDEO',
+            v_demo_video_url,
+            v_demo_video_asset_key,
+            v_demo_video_provider,
             NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
+            v_demo_video_duration_seconds,
             FALSE,
-            FALSE,
+            TRUE,
             0,
             NULL,
             NULL
@@ -514,13 +518,13 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
           UPDATE lessons
              SET description = 'Vite로 실행한 페이지에서 HTML, CSS, JavaScript 변경이 화면에 반영되는 과정을 DevTools로 확인합니다.',
                  lesson_type = 'VIDEO',
-                 video_url = NULL,
-                 video_asset_key = NULL,
-                 video_provider = NULL,
+                 video_url = v_demo_video_url,
+                 video_asset_key = v_demo_video_asset_key,
+                 video_provider = v_demo_video_provider,
                  thumbnail_url = NULL,
-                 duration_seconds = NULL,
+                 duration_seconds = v_demo_video_duration_seconds,
                  is_preview = FALSE,
-                 is_published = FALSE,
+                 is_published = TRUE,
                  sort_order = 0
            WHERE section_id = v_section2_id
              AND title = 'Vite 개발 서버에서 DOM과 스타일 변경 관찰';
@@ -550,7 +554,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
             NULL,
             NULL,
             FALSE,
-            FALSE,
+            TRUE,
             1,
             NULL,
             NULL
@@ -566,7 +570,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
                  thumbnail_url = NULL,
                  duration_seconds = NULL,
                  is_preview = FALSE,
-                 is_published = FALSE,
+                 is_published = TRUE,
                  sort_order = 1
            WHERE lesson_id = v_assignment_lesson_id;
         END IF;
