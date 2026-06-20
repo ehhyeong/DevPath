@@ -1679,16 +1679,13 @@ export default function LearningPlayerApp() {
       return
     }
 
-    if (!session || !course?.courseId) return
+    if (!session?.accessToken || !course?.courseId) return
     let cancelled = false
     const courseId = course.courseId
 
     async function loadQna() {
       setLoadingQna(true)
       setQnaError(null)
-      setQnaQuestions([])
-      setQnaDetails({})
-      setOpenQuestionId(null)
       setQuestionForm(createQuestionFormState())
 
       const [questionsResult, templatesResult] = await Promise.allSettled([
@@ -1700,6 +1697,7 @@ export default function LearningPlayerApp() {
 
       if (questionsResult.status === 'fulfilled') {
         setQnaQuestions(questionsResult.value)
+        setQnaError(null)
       } else {
         setQnaQuestions([])
         setQnaError('Q&A 데이터를 불러오지 못했습니다.')
@@ -1720,7 +1718,7 @@ export default function LearningPlayerApp() {
 
     void loadQna()
     return () => { cancelled = true }
-  }, [course?.courseId, isStudentPreview, session, sessionUserId])
+  }, [course?.courseId, isStudentPreview, session?.accessToken, sessionUserId])
 
   useEffect(() => {
     if (isStudentPreview || !course?.courseId || !session?.accessToken) return

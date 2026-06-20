@@ -89,7 +89,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
         v_demo_video_url text := '/uploads/courses/127/lesson-video/321.mp4';
         v_demo_video_asset_key text := 'courses/127/lesson-video/321.mp4';
         v_demo_video_provider text := 'LOCAL';
-        v_demo_video_duration_seconds integer := 180;
+        v_demo_video_duration_seconds integer := 34;
         v_previous_course_title text := 'Frontend Fundamentals: 로드맵으로 이해하는 프론트엔드 첫걸음';
         v_course_title text := 'HTML CSS JavaScript 렌더링 입문';
       BEGIN

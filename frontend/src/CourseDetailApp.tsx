@@ -513,7 +513,7 @@ export default function CourseDetailApp() {
   }, [course, courseId, loadingCourse])
 
   useEffect(() => {
-    if (!session || !course?.courseId) {
+    if (!session?.accessToken || !course?.courseId) {
       setQnaQuestions([])
       setQnaDetails({})
       setLoadingQuestions(false)
@@ -533,6 +533,7 @@ export default function CourseDetailApp() {
         if (cancelled) return
         setQnaQuestions(response)
         setQnaDetails({})
+        setQnaError(null)
       } catch (error) {
         if (cancelled) return
         setQnaQuestions([])
@@ -549,7 +550,7 @@ export default function CourseDetailApp() {
       cancelled = true
       controller.abort()
     }
-  }, [course?.courseId, session])
+  }, [course?.courseId, session?.accessToken])
 
   useEffect(() => {
     if (!session) {
