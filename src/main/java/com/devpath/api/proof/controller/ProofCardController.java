@@ -1,21 +1,17 @@
 package com.devpath.api.proof.controller;
 
-import com.devpath.api.proof.dto.ProofCardRequest;
 import com.devpath.api.proof.dto.ProofCardResponse;
 import com.devpath.api.proof.service.ProofCardService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,15 +24,6 @@ public class ProofCardController {
 
   // Proof Card 서비스다.
   private final ProofCardService proofCardService;
-
-  // Proof Card를 발급한다.
-  @Operation(summary = "Proof Card 발급", description = "특정 노드 기준으로 Proof Card를 발급합니다.")
-  @PostMapping("/issue")
-  public ResponseEntity<ApiResponse<ProofCardResponse.Detail>> issue(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @Valid @RequestBody ProofCardRequest.Issue request) {
-    return ResponseEntity.ok(ApiResponse.ok(proofCardService.issue(userId, request)));
-  }
 
   // Proof Card 목록을 조회한다.
   @Operation(summary = "Proof Card 목록 조회", description = "내 Proof Card 목록을 조회합니다.")

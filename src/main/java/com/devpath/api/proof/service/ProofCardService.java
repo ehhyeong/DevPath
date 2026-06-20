@@ -1,21 +1,16 @@
 package com.devpath.api.proof.service;
 
 import com.devpath.api.proof.component.ProofCardAssembler;
-import com.devpath.api.proof.dto.ProofCardRequest;
 import com.devpath.api.proof.dto.ProofCardResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.LessonRepository;
-import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
-import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.entity.proof.ProofCard;
 import com.devpath.domain.learning.entity.proof.ProofCardStatus;
 import com.devpath.domain.learning.entity.proof.ProofCardTag;
 import com.devpath.domain.learning.repository.LessonProgressRepository;
-import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
-import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
 import com.devpath.domain.user.entity.User;
@@ -38,10 +33,6 @@ public class ProofCardService {
   // Proof Card Tag 저장소다.
   private final ProofCardTagRepository proofCardTagRepository;
 
-  // Node Clearance 저장소다.
-  private final NodeClearanceRepository nodeClearanceRepository;
-  private final LearningAutomationRuleRepository learningAutomationRuleRepository;
-
   // Proof Card 조립기다.
   private final ProofCardAssembler proofCardAssembler;
 
@@ -50,34 +41,6 @@ public class ProofCardService {
   private final LessonRepository lessonRepository;
   private final LessonProgressRepository lessonProgressRepository;
   private final UserRepository userRepository;
-
-  // Proof Card를 발급한다.
-  @Transactional
-  public ProofCardResponse.Detail issue(Long userId, ProofCardRequest.Issue request) {
-    if (!isRuleEnabled("PROOF_CARD_MANUAL_ISSUE", true)) {
-      throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
-    }
-
-    return issueIfEligible(userId, request.getNodeId());
-  }
-
-  // 조건을 만족하면 Proof Card를 발급한다.
-  @Transactional
-  public ProofCardResponse.Detail issueIfEligible(Long userId, Long nodeId) {
-    NodeClearance nodeClearance =
-        nodeClearanceRepository
-            .findByUserIdAndNodeNodeId(userId, nodeId)
-            .orElseThrow(() -> new CustomException(ErrorCode.PROOF_CONDITION_NOT_MET));
-
-    if (!Boolean.TRUE.equals(nodeClearance.getProofEligible())) {
-      throw new CustomException(ErrorCode.PROOF_CONDITION_NOT_MET);
-    }
-
-    return proofCardRepository
-        .findByNodeClearanceId(nodeClearance.getId())
-        .map(this::toDetail)
-        .orElseGet(() -> createProofCard(nodeClearance));
-  }
 
   // 강좌 수강 완료 시 Proof Card를 발급한다.
   @Transactional
@@ -109,7 +72,7 @@ public class ProofCardService {
     }
 
     ProofCardAssembler.AssembledProofCard assembled =
-        proofCardAssembler.assembleFromCourse(course, userId);
+        proofCardAssembler.assembleFromCourse(course);
 
     ProofCard savedProofCard =
         proofCardRepository.save(
@@ -189,35 +152,6 @@ public class ProofCardService {
     return getGallery(userId);
   }
 
-  // Proof Card를 생성하고 태그를 저장한다.
-  private ProofCardResponse.Detail createProofCard(NodeClearance nodeClearance) {
-    ProofCardAssembler.AssembledProofCard assembledProofCard =
-        proofCardAssembler.assemble(nodeClearance);
-
-    ProofCard savedProofCard =
-        proofCardRepository.save(
-            ProofCard.builder()
-                .user(nodeClearance.getUser())
-                .node(nodeClearance.getNode())
-                .nodeClearance(nodeClearance)
-                .title(assembledProofCard.getTitle())
-                .description(assembledProofCard.getDescription())
-                .build());
-
-    proofCardTagRepository.saveAll(
-        assembledProofCard.getTags().stream()
-            .map(
-                tag ->
-                    ProofCardTag.builder()
-                        .proofCard(savedProofCard)
-                        .tag(tag.getTag())
-                        .evidenceType(tag.getEvidenceType())
-                        .build())
-            .toList());
-
-    return toDetail(savedProofCard);
-  }
-
   // Proof Card 목록 응답으로 변환한다.
   private ProofCardResponse.Summary toSummary(ProofCard proofCard) {
     return ProofCardResponse.Summary.builder()
@@ -280,13 +214,5 @@ public class ProofCardService {
     }
 
     return tagItemMap;
-  }
-
-  // 룰 활성 여부를 조회한다.
-  private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
-    return learningAutomationRuleRepository
-        .findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
-        .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
-        .orElse(defaultValue);
   }
 }
