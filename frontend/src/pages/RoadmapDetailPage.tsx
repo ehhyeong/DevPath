@@ -10,7 +10,6 @@ import {
   getPostLoginRedirect,
   readStoredAuthSession,
 } from '../lib/auth-session'
-import { showAuthToast } from '../lib/auth-toast'
 import { useInternalPageScroll } from '../lib/useInternalPageScroll'
 import type { ProofCardSummary } from '../types/learner'
 import type {
@@ -652,14 +651,6 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
   }
 
   function handleClick() {
-    if (node.status === 'LOCKED') {
-      showAuthToast({
-        message: '이전 노드를 먼저 완료해야 합니다.',
-        variant: 'error',
-        durationMs: 1000,
-      })
-      return
-    }
     onNodeClick?.(node)
   }
 
@@ -1243,47 +1234,58 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
           </section>
         </div>
         <div className="p-6 border-t border-gray-100 bg-white space-y-3 shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-          {node.status !== 'COMPLETED' && (
-            canClear
-              ? (
-                <button
-                  onClick={handleClear}
-                  disabled={clearing}
-                  className="w-full bg-[#00c471] hover:bg-green-600 disabled:opacity-50 text-white py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
-                >
-                  {clearing
-                    ? <><i className="fas fa-spinner fa-spin" /> 처리 중...</>
-                    : <><i className="fas fa-check-circle" /> 이 노드 완료하기</>
-                  }
-                </button>
-              ) : (
-                // [TEMP] 추천 무료 강좌 이동 — 임시 하드코딩, 추후 삭제 예정
-                <button
-                  onClick={async () => {
-                    try {
-                      const courseId = await roadmapApi.getRecommendedFreeCourse(customRoadmapId, node.customNodeId)
-                      if (courseId) {
-                        window.location.href = buildCourseDetailUrl(courseId, roadmapReturnHref, originalRoadmapId, node.originalNodeId)
-                      } else {
-                        window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
+          {node.status === 'LOCKED' ? (
+            <button
+              disabled
+              className="w-full bg-gray-100 text-gray-400 py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 cursor-not-allowed"
+            >
+              <i className="fas fa-lock" /> 이전 노드를 완료해야 수강할 수 있습니다
+            </button>
+          ) : (
+            <>
+              {node.status !== 'COMPLETED' && (
+                canClear
+                  ? (
+                    <button
+                      onClick={handleClear}
+                      disabled={clearing}
+                      className="w-full bg-[#00c471] hover:bg-green-600 disabled:opacity-50 text-white py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                    >
+                      {clearing
+                        ? <><i className="fas fa-spinner fa-spin" /> 처리 중...</>
+                        : <><i className="fas fa-check-circle" /> 이 노드 완료하기</>
                       }
-                    } catch {
-                      window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
-                    }
-                  }}
-                  className="w-full bg-[#00c471] hover:bg-green-600 text-white py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
-                >
-                  <i className="fas fa-play-circle" /> 추천 무료 강좌 보기
-                </button>
-                // [/TEMP]
-              )
+                    </button>
+                  ) : (
+                    // [TEMP] 추천 무료 강좌 이동 — 임시 하드코딩, 추후 삭제 예정
+                    <button
+                      onClick={async () => {
+                        try {
+                          const courseId = await roadmapApi.getRecommendedFreeCourse(customRoadmapId, node.customNodeId)
+                          if (courseId) {
+                            window.location.href = buildCourseDetailUrl(courseId, roadmapReturnHref, originalRoadmapId, node.originalNodeId)
+                          } else {
+                            window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
+                          }
+                        } catch {
+                          window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
+                        }
+                      }}
+                      className="w-full bg-[#00c471] hover:bg-green-600 text-white py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+                    >
+                      <i className="fas fa-play-circle" /> 추천 무료 강좌 보기
+                    </button>
+                    // [/TEMP]
+                  )
+              )}
+              <button
+                onClick={() => { window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref) }}
+                className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
+              >
+                <i className="fas fa-list" /> 전체 강좌 목록 보기
+              </button>
+            </>
           )}
-          <button
-            onClick={() => { window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref) }}
-            className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
-          >
-            <i className="fas fa-list" /> 전체 강좌 목록 보기
-          </button>
           {editMode && (
             <>
               <div className="flex gap-3">
