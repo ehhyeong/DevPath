@@ -1013,7 +1013,7 @@ export default function LearningPlayerApp() {
   const [course, setCourse] = useState<LearningCourseDetail | null>(null)
   const [courseError, setCourseError] = useState<string | null>(null)
   const [selectedLessonId, setSelectedLessonId] = useState<number | null>(initialLessonId)
-  const [activeTab, setActiveTab] = useState<TabKey>('qna')
+  const [activeTab, setActiveTab] = useState<TabKey>('curriculum')
   const [openSectionIds, setOpenSectionIds] = useState<Set<number>>(() => new Set())
   const [notice, setNotice] = useState<string | null>(null)
   const [loadingCourse, setLoadingCourse] = useState(true)
