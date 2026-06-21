@@ -121,11 +121,15 @@ public class RecommendationChangeService {
 
   @Transactional(readOnly = true)
   public List<RecommendationChangeResponse.Detail> getRecommendationChanges(
-      Long userId, Long roadmapId) {
+      Long userId, Long roadmapId, Long customRoadmapId) {
     validateUser(userId);
 
     List<RecommendationChange> changes =
-        roadmapId == null
+        customRoadmapId != null
+            ? recommendationChangeRepository
+                .findAllByUserIdAndTargetCustomRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
+                    userId, customRoadmapId, RecommendationChangeStatus.SUGGESTED)
+            : roadmapId == null
             ? recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
                 userId, RecommendationChangeStatus.SUGGESTED)
             : recommendationChangeRepository
@@ -207,7 +211,8 @@ public class RecommendationChangeService {
   }
 
   @Transactional(readOnly = true)
-  public List<RecommendationChangeResponse.HistoryItem> getHistories(Long userId, Long roadmapId) {
+  public List<RecommendationChangeResponse.HistoryItem> getHistories(
+      Long userId, Long roadmapId, Long customRoadmapId) {
     validateUser(userId);
 
     Set<RecommendationChangeStatus> processedStatuses =
@@ -217,7 +222,11 @@ public class RecommendationChangeService {
             RecommendationChangeStatus.RECALCULATED);
 
     List<RecommendationChange> histories =
-        roadmapId == null
+        customRoadmapId != null
+            ? recommendationChangeRepository
+                .findAllByUserIdAndTargetCustomRoadmapIdAndChangeStatusInOrderByUpdatedAtDesc(
+                    userId, customRoadmapId, processedStatuses)
+            : roadmapId == null
             ? recommendationChangeRepository.findAllByUserIdAndChangeStatusInOrderByUpdatedAtDesc(
                 userId, processedStatuses)
             : recommendationChangeRepository

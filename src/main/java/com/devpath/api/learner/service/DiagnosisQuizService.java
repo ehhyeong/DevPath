@@ -135,7 +135,7 @@ public class DiagnosisQuizService {
 
     String recommendedNodes =
         analyzeAndRecommend(
-            userId, clearedNodeId, score, quiz.getRoadmap().getRoadmapId(), courseScores);
+            userId, clearedNodeId, score, quiz.getRoadmap().getRoadmapId(), null, courseScores);
 
     DiagnosisResult result =
         DiagnosisResult.builder()
@@ -179,6 +179,7 @@ public class DiagnosisQuizService {
       Long clearedNodeId,
       int score,
       Long roadmapId,
+      Long customRoadmapId,
       CourseScoreAnalyzer.CourseScores courseScores) {
 
     if (clearedNodeId == null) return "";
@@ -196,7 +197,7 @@ public class DiagnosisQuizService {
 
     // 프론트 시연 계정은 Gemini 호출을 건너뛰고 고정 데모 추천으로 대체한다.
     if (isFrontendRoadmapDemoFallback(user, clearedNode, nodeTags)) {
-      return buildFrontendRoadmapDemoFallback(user, clearedNode, roadmapId, isLowScore).stream()
+      return buildFrontendRoadmapDemoFallback(user, clearedNode, roadmapId, customRoadmapId, isLowScore).stream()
           .map(String::valueOf)
           .collect(Collectors.joining(","));
     }
@@ -699,12 +700,18 @@ public class DiagnosisQuizService {
   @Transactional
   public DiagnosisQuizDto.TestRunResponse testRunRecommend(
       Long userId, Long roadmapId, Long originalNodeId) {
+    return testRunRecommend(userId, roadmapId, originalNodeId, null);
+  }
+
+  @Transactional
+  public DiagnosisQuizDto.TestRunResponse testRunRecommend(
+      Long userId, Long roadmapId, Long originalNodeId, Long customRoadmapId) {
     CourseScoreAnalyzer.CourseScores courseScores =
         courseScoreAnalyzer.analyze(userId, originalNodeId);
     int score = resolveTestRunScore(userId, originalNodeId, courseScores);
 
     String recommendedNodes =
-        analyzeAndRecommend(userId, originalNodeId, score, roadmapId, courseScores);
+        analyzeAndRecommend(userId, originalNodeId, score, roadmapId, customRoadmapId, courseScores);
 
     boolean isLowScore = (double) score / 100 < REVIEW_THRESHOLD;
     return DiagnosisQuizDto.TestRunResponse.builder()
@@ -775,7 +782,11 @@ public class DiagnosisQuizService {
   }
 
   private List<Long> buildFrontendRoadmapDemoFallback(
-      User user, RoadmapNode clearedNode, Long roadmapId, boolean isLowScore) {
+      User user,
+      RoadmapNode clearedNode,
+      Long roadmapId,
+      Long customRoadmapId,
+      boolean isLowScore) {
     String title =
         isLowScore ? FRONTEND_ROADMAP_DEMO_REVIEW_TITLE : FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE;
     String legacyTitle =
@@ -783,8 +794,12 @@ public class DiagnosisQuizService {
             ? FRONTEND_ROADMAP_DEMO_LEGACY_REVIEW_TITLE
             : FRONTEND_ROADMAP_DEMO_LEGACY_ADVANCED_TITLE;
 
+    CustomRoadmap customRoadmap = findCustomRoadmap(user.getId(), roadmapId, customRoadmapId);
+    Long targetCustomRoadmapId = customRoadmap == null ? null : customRoadmap.getId();
+
     RecommendationChange existingChange =
-        findExistingFrontendRoadmapDemoChange(user.getId(), title, legacyTitle);
+        findExistingFrontendRoadmapDemoChange(
+            user.getId(), title, legacyTitle, targetCustomRoadmapId);
     if (existingChange != null) {
       refreshFrontendRoadmapDemoChange(existingChange, isLowScore);
       return List.of(existingChange.getRoadmapNode().getNodeId());
@@ -804,7 +819,6 @@ public class DiagnosisQuizService {
                 .branchGroup(null)
                 .build());
 
-    CustomRoadmap customRoadmap = findCustomRoadmap(user.getId(), roadmapId);
     CustomRoadmapNode anchor = findAnchorCustomNode(customRoadmap, clearedNode.getNodeId());
 
     recommendationChangeRepository.save(
@@ -812,7 +826,7 @@ public class DiagnosisQuizService {
             .user(user)
             .roadmapNode(generated)
             .branchFromNodeId(clearedNode.getNodeId())
-            .targetCustomRoadmapId(customRoadmap == null ? null : customRoadmap.getId())
+            .targetCustomRoadmapId(targetCustomRoadmapId)
             .anchorCustomNodeId(anchor == null ? null : anchor.getId())
             .branchType(isLowScore ? "REVIEW" : "ADVANCED")
             .reason(frontendRoadmapDemoReason(isLowScore))
@@ -824,13 +838,14 @@ public class DiagnosisQuizService {
   }
 
   private RecommendationChange findExistingFrontendRoadmapDemoChange(
-      Long userId, String title, String legacyTitle) {
+      Long userId, String title, String legacyTitle, Long targetCustomRoadmapId) {
     List<RecommendationChange> changes =
         recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
             userId, RecommendationChangeStatus.SUGGESTED);
 
     return changes.stream()
         .filter(change -> change.getRoadmapNode() != null)
+        .filter(change -> Objects.equals(change.getTargetCustomRoadmapId(), targetCustomRoadmapId))
         .filter(
             change ->
                 title.equals(change.getRoadmapNode().getTitle())
@@ -854,7 +869,15 @@ public class DiagnosisQuizService {
     change.updateSuggestionText(frontendRoadmapDemoReason(isLowScore), frontendRoadmapDemoContextSummary());
   }
 
-  private CustomRoadmap findCustomRoadmap(Long userId, Long roadmapId) {
+  private CustomRoadmap findCustomRoadmap(Long userId, Long roadmapId, Long customRoadmapId) {
+    if (customRoadmapId != null) {
+      CustomRoadmap directCustomRoadmap =
+          customRoadmapRepository.findById(customRoadmapId).orElse(null);
+      if (directCustomRoadmap != null && directCustomRoadmap.getUser().getId().equals(userId)) {
+        return directCustomRoadmap;
+      }
+    }
+
     if (roadmapId == null) {
       return null;
     }

@@ -35,9 +35,10 @@ public class DiagnosisQuizTestController {
   public ResponseEntity<ApiResponse<Void>> testRunDiagnosis(
       @PathVariable Long roadmapId,
       @RequestParam Long originalNodeId,
+      @RequestParam(required = false) Long customRoadmapId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
 
-    diagnosisRecommendationAsyncRunner.runAsync(userId, roadmapId, originalNodeId);
+    diagnosisRecommendationAsyncRunner.runAsync(userId, roadmapId, originalNodeId, customRoadmapId);
     return ResponseEntity.accepted().body(ApiResponse.ok());
   }
 

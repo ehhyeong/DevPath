@@ -42,9 +42,12 @@ public class RecommendationChangeController {
   public ResponseEntity<ApiResponse<List<RecommendationChangeResponse.Detail>>>
       getRecommendationChanges(
           @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-          @RequestParam(required = false) Long roadmapId) {
+          @RequestParam(required = false) Long roadmapId,
+          @RequestParam(required = false) Long customRoadmapId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(recommendationChangeService.getRecommendationChanges(userId, roadmapId)));
+        ApiResponse.ok(
+            recommendationChangeService.getRecommendationChanges(
+                userId, roadmapId, customRoadmapId)));
   }
 
   @Operation(summary = "추천 변경 적용", description = "추천 변경 제안을 적용합니다.")
@@ -67,9 +70,11 @@ public class RecommendationChangeController {
   @GetMapping("/histories")
   public ResponseEntity<ApiResponse<List<RecommendationChangeResponse.HistoryItem>>> getHistories(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-      @RequestParam(required = false) Long roadmapId) {
+      @RequestParam(required = false) Long roadmapId,
+      @RequestParam(required = false) Long customRoadmapId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(recommendationChangeService.getHistories(userId, roadmapId)));
+        ApiResponse.ok(
+            recommendationChangeService.getHistories(userId, roadmapId, customRoadmapId)));
   }
 
   @Operation(summary = "다음 추천 변경 재계산", description = "현재 제안을 재계산 처리하고 추천 변경 제안을 다시 생성합니다.")

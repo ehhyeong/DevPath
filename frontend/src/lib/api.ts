@@ -360,16 +360,16 @@ export const roadmapApi = {
   copyRoadmap(originalRoadmapId: number) {
     return request<{ customRoadmapId: number }>(`/api/my-roadmaps/${originalRoadmapId}`, { method: 'POST' }, { auth: true })
   },
-  getPendingChanges(roadmapId?: number | null, signal?: AbortSignal) {
+  getPendingChanges(roadmapId?: number | null, signal?: AbortSignal, customRoadmapId?: number | null) {
     return request<RecommendationChange[]>(
-      `/api/me/recommendation-changes${buildQueryString({ roadmapId })}`,
+      `/api/me/recommendation-changes${buildQueryString({ roadmapId, customRoadmapId })}`,
       { method: 'GET', signal },
       { auth: true },
     )
   },
-  getChangeHistories(roadmapId?: number | null, signal?: AbortSignal) {
+  getChangeHistories(roadmapId?: number | null, signal?: AbortSignal, customRoadmapId?: number | null) {
     return request<RecommendationChangeHistory[]>(
-      `/api/me/recommendation-changes/histories${buildQueryString({ roadmapId })}`,
+      `/api/me/recommendation-changes/histories${buildQueryString({ roadmapId, customRoadmapId })}`,
       { method: 'GET', signal },
       { auth: true },
     )
@@ -455,9 +455,12 @@ export const roadmapApi = {
   },
 
   // [TEST] 노드 완료 시 동적 추천 생성을 백그라운드로 트리거 — 실 서비스 전 삭제 대상
-  testRunDiagnosis(originalRoadmapId: number, originalNodeId: number) {
+  testRunDiagnosis(originalRoadmapId: number, originalNodeId: number, customRoadmapId?: number | null) {
     return request<void>(
-      `/api/me/roadmaps/${originalRoadmapId}/diagnosis/test-run?originalNodeId=${originalNodeId}`,
+      `/api/me/roadmaps/${originalRoadmapId}/diagnosis/test-run${buildQueryString({
+        originalNodeId,
+        customRoadmapId,
+      })}`,
       { method: 'POST' },
       { auth: true },
     )
