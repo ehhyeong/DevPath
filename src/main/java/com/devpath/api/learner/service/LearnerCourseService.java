@@ -27,9 +27,13 @@ import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.CourseTargetAudienceRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.learning.entity.Assignment;
+import com.devpath.domain.learning.entity.Quiz;
+import com.devpath.domain.learning.entity.QuizQuestion;
+import com.devpath.domain.learning.entity.QuizQuestionOption;
 import com.devpath.domain.learning.entity.Rubric;
 import com.devpath.domain.learning.entity.SubmissionType;
 import com.devpath.domain.learning.repository.AssignmentRepository;
+import com.devpath.domain.learning.repository.QuizRepository;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.user.entity.UserProfile;
@@ -71,6 +75,7 @@ public class LearnerCourseService {
   private final CourseTargetAudienceRepository courseTargetAudienceRepository;
   private final CourseAnnouncementRepository courseAnnouncementRepository;
   private final AssignmentRepository assignmentRepository;
+  private final QuizRepository quizRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
   private final UserProfileRepository userProfileRepository;
   private final UserTechStackRepository userTechStackRepository;
@@ -157,6 +162,7 @@ public class LearnerCourseService {
         materials.stream()
             .collect(Collectors.groupingBy(material -> material.getLesson().getLessonId()));
     AssignmentMapping assignmentMapping = loadAssignmentMapping(lessons);
+    Map<Long, Quiz> quizzesByNodeId = loadQuizMapping(lessons);
     UserProfile userProfile =
         userProfileRepository.findByUserId(course.getInstructorId()).orElse(null);
     List<String> specialties =
@@ -195,7 +201,9 @@ public class LearnerCourseService {
         .isBookmarked(isBookmarked)
         .isEnrolled(isEnrolled)
         .instructor(mapInstructor(course, userProfile, specialties))
-        .sections(mapSections(sections, lessonsBySectionId, materialsByLessonId, assignmentMapping))
+        .sections(
+            mapSections(
+                sections, lessonsBySectionId, materialsByLessonId, assignmentMapping, quizzesByNodeId))
         .news(mapNews(courseId, news))
         .build();
   }
@@ -358,7 +366,8 @@ public class LearnerCourseService {
       List<CourseSection> sections,
       Map<Long, List<Lesson>> lessonsBySectionId,
       Map<Long, List<CourseMaterial>> materialsByLessonId,
-      AssignmentMapping assignmentMapping) {
+      AssignmentMapping assignmentMapping,
+      Map<Long, Quiz> quizzesByNodeId) {
     return sections.stream()
         .filter(section -> Boolean.TRUE.equals(section.getIsPublished()))
         .map(
@@ -372,7 +381,8 @@ public class LearnerCourseService {
                   .description(section.getDescription())
                   .sortOrder(section.getOrderIndex())
                   .isPublished(section.getIsPublished())
-                  .lessons(mapLessons(lessons, materialsByLessonId, assignmentMapping))
+                  .lessons(
+                      mapLessons(lessons, materialsByLessonId, assignmentMapping, quizzesByNodeId))
                   .build();
             })
         .toList();
@@ -381,7 +391,8 @@ public class LearnerCourseService {
   private List<CourseDetailResponse.LessonItem> mapLessons(
       List<Lesson> lessons,
       Map<Long, List<CourseMaterial>> materialsByLessonId,
-      AssignmentMapping assignmentMapping) {
+      AssignmentMapping assignmentMapping,
+      Map<Long, Quiz> quizzesByNodeId) {
     return lessons.stream()
         .filter(lesson -> Boolean.TRUE.equals(lesson.getIsPublished()))
         .map(
@@ -389,6 +400,7 @@ public class LearnerCourseService {
               List<CourseMaterial> materials =
                   materialsByLessonId.getOrDefault(lesson.getLessonId(), List.of());
               Assignment assignment = resolveAssignmentForLesson(lesson, assignmentMapping);
+              Quiz quiz = resolveQuizForLesson(lesson, quizzesByNodeId);
 
               return CourseDetailResponse.LessonItem.builder()
                   .lessonId(lesson.getLessonId())
@@ -404,6 +416,7 @@ public class LearnerCourseService {
                   .sortOrder(lesson.getOrderIndex())
                   .materials(mapMaterials(materials))
                   .assignment(mapAssignment(assignment))
+                  .quiz(mapQuiz(quiz))
                   .build();
             })
         .toList();
@@ -422,6 +435,109 @@ public class LearnerCourseService {
                     .sortOrder(material.getDisplayOrder())
                     .build())
         .toList();
+  }
+
+  private Map<Long, Quiz> loadQuizMapping(List<Lesson> lessons) {
+    List<Long> quizNodeIds =
+        lessons.stream()
+            .map(Lesson::getQuizRoadmapNode)
+            .filter(Objects::nonNull)
+            .map(RoadmapNode::getNodeId)
+            .distinct()
+            .toList();
+    if (quizNodeIds.isEmpty()) {
+      return Map.of();
+    }
+
+    Map<Long, Quiz> quizzesByNodeId = new LinkedHashMap<>();
+    quizRepository
+        .findAllByRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(quizNodeIds)
+        .forEach(
+            quiz -> {
+              if (!Boolean.TRUE.equals(quiz.getIsPublished())
+                  || !Boolean.TRUE.equals(quiz.getIsActive())) {
+                return;
+              }
+
+              quizzesByNodeId.putIfAbsent(quiz.getRoadmapNode().getNodeId(), quiz);
+            });
+    return quizzesByNodeId;
+  }
+
+  private Quiz resolveQuizForLesson(Lesson lesson, Map<Long, Quiz> quizzesByNodeId) {
+    if (lesson.getQuizRoadmapNode() == null) {
+      return null;
+    }
+
+    return quizzesByNodeId.get(lesson.getQuizRoadmapNode().getNodeId());
+  }
+
+  private CourseDetailResponse.QuizItem mapQuiz(Quiz quiz) {
+    if (quiz == null) {
+      return null;
+    }
+
+    boolean exposeAnswer = Boolean.TRUE.equals(quiz.getExposeAnswer());
+    boolean exposeExplanation = Boolean.TRUE.equals(quiz.getExposeExplanation());
+    List<CourseDetailResponse.QuizQuestionItem> questions =
+        quiz.getQuestions().stream()
+            .filter(question -> !Boolean.TRUE.equals(question.getIsDeleted()))
+            .sorted(
+                Comparator.comparing(
+                    QuizQuestion::getDisplayOrder, Comparator.nullsLast(Comparator.naturalOrder())))
+            .map(question -> mapQuizQuestion(question, exposeAnswer, exposeExplanation))
+            .toList();
+
+    return CourseDetailResponse.QuizItem.builder()
+        .quizId(quiz.getId())
+        .roadmapNodeId(quiz.getRoadmapNode().getNodeId())
+        .title(quiz.getTitle())
+        .description(quiz.getDescription())
+        .passScore(quiz.getPassScore())
+        .exposeAnswer(exposeAnswer)
+        .exposeExplanation(exposeExplanation)
+        .questions(questions)
+        .build();
+  }
+
+  private CourseDetailResponse.QuizQuestionItem mapQuizQuestion(
+      QuizQuestion question, boolean exposeAnswer, boolean exposeExplanation) {
+    List<QuizQuestionOption> options =
+        question.getOptions().stream()
+            .filter(option -> !Boolean.TRUE.equals(option.getIsDeleted()))
+            .sorted(
+                Comparator.comparing(
+                    QuizQuestionOption::getDisplayOrder,
+                    Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+    Long correctOptionId =
+        exposeAnswer
+            ? options.stream()
+                .filter(option -> Boolean.TRUE.equals(option.getIsCorrect()))
+                .map(QuizQuestionOption::getId)
+                .findFirst()
+                .orElse(null)
+            : null;
+
+    return CourseDetailResponse.QuizQuestionItem.builder()
+        .questionId(question.getId())
+        .questionType(question.getQuestionType() == null ? null : question.getQuestionType().name())
+        .questionText(question.getQuestionText())
+        .explanation(exposeExplanation ? question.getExplanation() : null)
+        .points(question.getPoints())
+        .displayOrder(question.getDisplayOrder())
+        .options(
+            options.stream()
+                .map(
+                    option ->
+                        CourseDetailResponse.QuizOptionItem.builder()
+                            .optionId(option.getId())
+                            .optionText(option.getOptionText())
+                            .displayOrder(option.getDisplayOrder())
+                            .build())
+                .toList())
+        .correctOptionId(correctOptionId)
+        .build();
   }
 
   private AssignmentMapping loadAssignmentMapping(List<Lesson> lessons) {

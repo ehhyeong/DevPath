@@ -112,6 +112,7 @@ export interface LearningLesson {
   sortOrder: number | null
   materials: LearningMaterial[]
   assignment?: LearningLessonAssignment | null
+  quiz?: LearningQuizDraft | null
 }
 
 export interface LearningSection {
@@ -305,20 +306,23 @@ export interface LearningQuizOption {
 
 export interface LearningQuizQuestion {
   questionId: number
-  questionType: 'MULTIPLE_CHOICE' | 'SHORT_ANSWER'
+  questionType: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER'
   questionText: string
-  explanation: string
+  explanation: string | null
   points: number
   options: LearningQuizOption[]
-  correctOptionId?: number
+  correctOptionId?: number | null
   correctAnswerText?: string
 }
 
 export interface LearningQuizDraft {
   quizId: number | null
+  roadmapNodeId?: number | null
   title: string
   description: string
   passScore: number
+  exposeAnswer?: boolean | null
+  exposeExplanation?: boolean | null
   questions: LearningQuizQuestion[]
 }
 

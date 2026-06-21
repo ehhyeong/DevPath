@@ -253,6 +253,87 @@ public class CourseDetailResponse {
 
     @Schema(description = "Assignment summary")
     private AssignmentItem assignment;
+
+    @Schema(description = "Quiz summary")
+    private QuizItem quiz;
+  }
+
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  @Schema(description = "Quiz item")
+  public static class QuizItem {
+
+    @Schema(description = "Quiz ID", example = "30")
+    private Long quizId;
+
+    @Schema(description = "Roadmap node ID", example = "301")
+    private Long roadmapNodeId;
+
+    @Schema(description = "Quiz title")
+    private String title;
+
+    @Schema(description = "Quiz description")
+    private String description;
+
+    @Schema(description = "Pass score", example = "60")
+    private Integer passScore;
+
+    @Schema(description = "Expose answer after attempt", example = "true")
+    private Boolean exposeAnswer;
+
+    @Schema(description = "Expose explanation after attempt", example = "true")
+    private Boolean exposeExplanation;
+
+    @Schema(description = "Quiz questions")
+    private List<QuizQuestionItem> questions;
+  }
+
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  @Schema(description = "Quiz question item")
+  public static class QuizQuestionItem {
+
+    @Schema(description = "Question ID", example = "100")
+    private Long questionId;
+
+    @Schema(description = "Question type", example = "MULTIPLE_CHOICE")
+    private String questionType;
+
+    @Schema(description = "Question text")
+    private String questionText;
+
+    @Schema(description = "Question explanation")
+    private String explanation;
+
+    @Schema(description = "Question points", example = "10")
+    private Integer points;
+
+    @Schema(description = "Question display order", example = "0")
+    private Integer displayOrder;
+
+    @Schema(description = "Question options")
+    private List<QuizOptionItem> options;
+
+    @Schema(description = "Correct option ID when answer exposure is enabled", example = "1000")
+    private Long correctOptionId;
+  }
+
+  @Getter
+  @Builder
+  @AllArgsConstructor
+  @Schema(description = "Quiz option item")
+  public static class QuizOptionItem {
+
+    @Schema(description = "Option ID", example = "1000")
+    private Long optionId;
+
+    @Schema(description = "Option text")
+    private String optionText;
+
+    @Schema(description = "Option display order", example = "0")
+    private Integer displayOrder;
   }
 
   @Getter

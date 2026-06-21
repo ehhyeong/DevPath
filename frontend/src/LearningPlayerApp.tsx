@@ -684,9 +684,14 @@ const PROOF_CARD_TEXT_LIMITS = {
   skill: 30,
   titleTopic: 28,
 } as const
+const COURSE_127_DEMO_COURSE_ID = 127
 
 function normalizeProofCardText(value: string | null | undefined) {
   return value?.replace(/\s+/g, ' ').trim() ?? ''
+}
+
+function isCourse127DemoCourse(course: LearningCourseDetail | null | undefined) {
+  return course?.courseId === COURSE_127_DEMO_COURSE_ID
 }
 
 function limitProofCardText(value: string | null | undefined, maxLength: number, fallback = '') {
@@ -883,46 +888,67 @@ function buildCelebrationParticles(seed: number): CelebrationParticle[] {
   }))
 }
 
-function buildQuizModalQuestions(course: LearningCourseDetail, lesson: LearningLesson): QuizModalQuestion[] {
-  const lessonTopic = lesson.title.replace(/^섹션\s*마무리\s*퀴즈:\s*/i, '').trim() || lesson.title
-  const courseTitle = course.title
+function buildQuizModalQuestions(lesson: LearningLesson): QuizModalQuestion[] {
+  const configuredQuestions = (lesson.quiz?.questions ?? [])
+    .map((question, index) => {
+      const options = (question.options ?? []).filter((option) => option.optionText.trim())
+      const correctOptionIndex =
+        question.correctOptionId == null
+          ? -1
+          : options.findIndex((option) => option.optionId === question.correctOptionId)
+      const supportedQuestionType = question.questionType === 'MULTIPLE_CHOICE' || question.questionType === 'TRUE_FALSE'
+      if (!supportedQuestionType || options.length < 2 || correctOptionIndex < 0) {
+        return null
+      }
+
+      return {
+        label: `문항 ${index + 1}`,
+        questionText: question.questionText,
+        options: options.map((option) => option.optionText),
+        correctOptionIndex,
+        explanation: question.explanation?.trim() || '강의 내용을 바탕으로 정답 근거를 다시 확인해 보세요.',
+      }
+    })
+    .filter((question): question is QuizModalQuestion => question !== null)
+
+  if (configuredQuestions.length > 0) {
+    return configuredQuestions
+  }
 
   return [
     {
-      label: '개념 확인',
-      questionText: `${lessonTopic}를 마무리할 때 가장 먼저 확인해야 하는 것은 무엇인가요?`,
+      label: '렌더링 흐름',
+      questionText: '브라우저가 HTML과 CSS를 해석해 화면을 그리기 전까지의 흐름으로 가장 적절한 것은 무엇인가요?',
       options: [
-        '섹션 핵심 개념과 실습 요구사항이 서로 맞는지 확인한다.',
-        '도구 이름만 외우고 동작 흐름은 확인하지 않는다.',
-        '다음 섹션으로 넘어가기 전에 모든 코드를 새로 작성한다.',
-        '영상 길이만 확인하고 학습 내용을 생략한다.',
+        'HTML 파싱, DOM 생성, CSSOM 생성, 렌더 트리 구성, 레이아웃과 페인트 순서로 이어진다.',
+        'CSSOM을 먼저 만들고 HTML은 화면에 그린 뒤 나중에 DOM으로 바꾼다.',
+        'JavaScript가 실행되면 DOM과 CSSOM 없이 바로 픽셀이 그려진다.',
+        'Vite가 브라우저의 렌더링 엔진을 대신 실행한다.',
       ],
       correctOptionIndex: 0,
-      explanation: '섹션 퀴즈는 암기보다 핵심 개념과 실제 적용 흐름을 함께 확인하는 용도입니다.',
+      explanation: 'DOM과 CSSOM이 결합되어 렌더 트리가 만들어진 뒤 레이아웃과 페인트가 진행됩니다.',
     },
     {
-      label: '적용 판단',
-      questionText: `${courseTitle} 학습 중 막혔을 때 가장 좋은 복습 방식은 무엇인가요?`,
+      label: 'DOM 변경',
+      questionText: 'JavaScript가 버튼 클릭 이벤트에서 DOM의 텍스트와 클래스를 바꾸면 어떤 일이 일어날 수 있나요?',
       options: [
-        '오류 메시지, 입력값, 기대 결과를 나눠서 원인을 좁힌다.',
-        '작동하지 않는 코드를 그대로 두고 다음 주제로 넘어간다.',
-        '정답 코드만 복사해서 결과만 맞춘다.',
-        '관련 없는 라이브러리를 먼저 추가해 본다.',
+        '변경된 DOM과 스타일을 기준으로 스타일 재계산, 레이아웃 또는 페인트가 다시 일어날 수 있다.',
+        'JavaScript는 렌더링 이후에는 화면에 아무 영향도 줄 수 없다.',
+        'DOM 변경은 항상 서버를 다시 시작해야만 화면에 반영된다.',
+        '클래스 변경은 HTML 구조와 스타일 계산에 영향을 주지 않는다.',
       ],
       correctOptionIndex: 0,
-      explanation: '문제를 작게 나누어 확인하면 원인을 빠르게 찾고 다음 실습으로 이어갈 수 있습니다.',
+      explanation: 'DOM이나 클래스 변경은 스타일 재계산과 레이아웃 또는 페인트를 다시 유발할 수 있습니다.',
     },
     {
-      label: '다음 단계',
-      questionText: '다음 강의로 넘어가기 전에 정리하면 가장 도움이 되는 것은 무엇인가요?',
+      label: 'Vite 역할',
+      questionText: 'Vite는 브라우저 렌더링 엔진을 바꾸는 도구다.',
       options: [
-        '이번 섹션에서 배운 핵심 개념, 실습 결과, 헷갈린 지점을 짧게 기록한다.',
-        '모든 내용을 완벽히 외울 때까지 다음 강의를 열지 않는다.',
-        '퀴즈 결과와 상관없이 학습 기록을 남기지 않는다.',
-        '영상 재생 여부만 확인하고 실습 내용은 건너뛴다.',
+        '참',
+        '거짓',
       ],
-      correctOptionIndex: 0,
-      explanation: '짧은 복습 기록은 다음 섹션에서 필요한 전제 지식을 빠르게 되살리는 데 도움이 됩니다.',
+      correctOptionIndex: 1,
+      explanation: 'Vite는 개발 서버와 번들링 도구이며 브라우저의 렌더링 엔진 자체를 바꾸지는 않습니다.',
     },
   ]
 }
@@ -1167,7 +1193,7 @@ export default function LearningPlayerApp() {
   const selectedLessonIsQuiz = isQuizLesson(lesson)
   const quizModalLesson = quizModalLessonId ? lessons.find((item) => item.lessonId === quizModalLessonId) ?? null : null
   const quizModalQuestions = useMemo(
-    () => (course && quizModalLesson ? buildQuizModalQuestions(course, quizModalLesson) : []),
+    () => (course && quizModalLesson ? buildQuizModalQuestions(quizModalLesson) : []),
     [course, quizModalLesson],
   )
   const activeQuizQuestion = quizModalQuestions[quizQuestionIndex] ?? quizModalQuestions[0] ?? null
@@ -1392,6 +1418,12 @@ export default function LearningPlayerApp() {
     }
 
     const assignmentScoreValues = [...assignmentScores.values()]
+    if (isCourse127DemoCourse(course) && assignmentScoreValues.length) {
+      return clampPercent(
+        assignmentScoreValues.reduce((sum, item) => sum + item, 0) / assignmentScoreValues.length,
+      )
+    }
+
     const evaluationAverages = [
       quizScores.length ? quizScores.reduce((sum, item) => sum + item, 0) / quizScores.length : null,
       assignmentScoreValues.length
@@ -1401,7 +1433,7 @@ export default function LearningPlayerApp() {
 
     if (!evaluationAverages.length) return 0
     return clampPercent(evaluationAverages.reduce((sum, item) => sum + item, 0) / evaluationAverages.length)
-  }, [assignmentHistoryByAssignmentId, lessons])
+  }, [assignmentHistoryByAssignmentId, course, lessons])
 
   const openCourseCompletionOverlay = useCallback((
     progressByLessonId: Record<number, LearningLessonProgress>,
@@ -4502,7 +4534,7 @@ export default function LearningPlayerApp() {
               <div className="space-y-3">
                 {activeQuizQuestion.options.map((option, optionIndex) => {
                   const selected = quizSelectedOptionIndex === optionIndex
-                  const showCorrect = quizFeedback === 'correct' && optionIndex === activeQuizQuestion.correctOptionIndex
+                  const showCorrect = quizFeedback !== null && optionIndex === activeQuizQuestion.correctOptionIndex
                   const showWrong = quizFeedback === 'wrong' && selected
 
                   return (
@@ -4539,10 +4571,20 @@ export default function LearningPlayerApp() {
                 <div className={`mt-6 rounded-lg p-4 text-sm font-medium leading-6 ${
                   quizFeedback === 'correct' ? 'bg-green-50 text-green-700' : 'bg-rose-50 text-rose-700'
                 }`}>
-                  <i className={`fas ${quizFeedback === 'correct' ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2`} />
-                  {quizFeedback === 'correct'
-                    ? `정답입니다. ${activeQuizQuestion.explanation}`
-                    : '정답이 아닙니다. 다시 한번 선택해 주세요.'}
+                  <div className="flex items-center gap-2 font-bold">
+                    <i className={`fas ${quizFeedback === 'correct' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`} />
+                    <span>{quizFeedback === 'correct' ? '정답입니다.' : '정답이 아닙니다.'}</span>
+                  </div>
+                  {quizFeedback === 'wrong' ? (
+                    <p className="mt-2">
+                      정답: {activeQuizQuestion.correctOptionIndex + 1}.{' '}
+                      {activeQuizQuestion.options[activeQuizQuestion.correctOptionIndex]}
+                    </p>
+                  ) : null}
+                  <div className="mt-3 rounded-md bg-white/70 px-3 py-2">
+                    <p className="text-xs font-bold text-gray-500">해설</p>
+                    <p className="mt-1">{activeQuizQuestion.explanation}</p>
+                  </div>
                 </div>
               ) : null}
             </div>

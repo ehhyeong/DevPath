@@ -75,6 +75,15 @@ export function normalizeCourseDetail(course: LearningCourseDetail): LearningCou
               rubrics: lesson.assignment.rubrics ?? [],
             }
           : null,
+        quiz: lesson.quiz
+          ? {
+              ...lesson.quiz,
+              questions: (lesson.quiz.questions ?? []).map((question) => ({
+                ...question,
+                options: question.options ?? [],
+              })),
+            }
+          : null,
       })),
     })),
     news: course.news ?? [],
