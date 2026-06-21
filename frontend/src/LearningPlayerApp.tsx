@@ -684,9 +684,14 @@ const PROOF_CARD_TEXT_LIMITS = {
   skill: 30,
   titleTopic: 28,
 } as const
+const COURSE_127_DEMO_COURSE_ID = 127
 
 function normalizeProofCardText(value: string | null | undefined) {
   return value?.replace(/\s+/g, ' ').trim() ?? ''
+}
+
+function isCourse127DemoCourse(course: LearningCourseDetail | null | undefined) {
+  return course?.courseId === COURSE_127_DEMO_COURSE_ID
 }
 
 function limitProofCardText(value: string | null | undefined, maxLength: number, fallback = '') {
@@ -1413,6 +1418,12 @@ export default function LearningPlayerApp() {
     }
 
     const assignmentScoreValues = [...assignmentScores.values()]
+    if (isCourse127DemoCourse(course) && assignmentScoreValues.length) {
+      return clampPercent(
+        assignmentScoreValues.reduce((sum, item) => sum + item, 0) / assignmentScoreValues.length,
+      )
+    }
+
     const evaluationAverages = [
       quizScores.length ? quizScores.reduce((sum, item) => sum + item, 0) / quizScores.length : null,
       assignmentScoreValues.length
@@ -1422,7 +1433,7 @@ export default function LearningPlayerApp() {
 
     if (!evaluationAverages.length) return 0
     return clampPercent(evaluationAverages.reduce((sum, item) => sum + item, 0) / evaluationAverages.length)
-  }, [assignmentHistoryByAssignmentId, lessons])
+  }, [assignmentHistoryByAssignmentId, course, lessons])
 
   const openCourseCompletionOverlay = useCallback((
     progressByLessonId: Record<number, LearningLessonProgress>,
