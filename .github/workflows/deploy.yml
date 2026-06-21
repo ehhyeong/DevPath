@@ -7,91 +7,59 @@ on:
 
 jobs:
   # ─────────────────────────────────────────────
-  # Job 1. 백엔드 빌드 → JAR을 오라클 서버로 전송 후 재시작
+  # Job 1. 오라클 서버에서 직접 pull·빌드 후 재시작
+  #   (러너→서버 SCP push 경로가 ~15KB/s로 무너져, 서버가 GitHub에서 직접 pull·빌드하는 방식으로 전환)
   # ─────────────────────────────────────────────
   deploy-backend:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 소스코드 체크아웃
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      # 2. Java 17 설치
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      # 3. Gradle 캐시 (빌드 속도 향상)
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
-
-      # 4. gradlew 실행 권한 부여
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      # 5. Spotless 포맷 자동 교정 (커밋 없이 워크스페이스에서만 수정)
-      - name: Auto-fix code formatting
-        run: ./gradlew spotlessApply
-
-      # 6. Gradle 빌드 (테스트 스킵)
-      - name: Build with Gradle
-        run: ./gradlew build -x test
-
-      # 7. 빌드된 JAR을 오라클 서버로 전송 (SCP)
-      - name: Upload JAR to Oracle Cloud
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.ORACLE_HOST }}
-          username: ${{ secrets.ORACLE_USER }}
-          key: ${{ secrets.ORACLE_SSH_KEY }}
-          port: 22
-          source: "build/libs/DevPath-0.0.1-SNAPSHOT.jar"
-          target: ${{ secrets.PROJECT_PATH }}
-          strip_components: 2   # build/libs/ 경로 제거 → JAR만 전송
-
-      # 8. systemd로 백엔드 서비스 재시작
-      - name: Restart backend process
+      # 서버 접속 → 최신 master pull → 빌드 → systemd 실행 경로로 복사 → 재시작
+      - name: Build & restart backend on server
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.ORACLE_HOST }}
           username: ${{ secrets.ORACLE_USER }}
           key: ${{ secrets.ORACLE_SSH_KEY }}
           port: 22
+          command_timeout: 20m   # 빌드 + 기동 시간 여유
           script: |
             set -e
+            cd ${{ secrets.PROJECT_PATH }}
 
-            # 1) systemd 서비스 정지
+            # 1) 최신 master 동기화 (작은 git delta만 전송 → 서버→GitHub은 빠름)
+            git fetch origin master
+            git reset --hard origin/master
+
+            # 2) 빌드 (테스트/스팟리스 제외, gradle 데몬 미상주).
+            #    stop 이전에 빌드 → 실패 시 기존 인스턴스가 계속 서비스(fail-safe).
+            chmod +x gradlew
+            ./gradlew clean build -x test -x spotlessCheck --no-daemon
+
+            # 3) 빌드 산출물을 systemd ExecStart 경로(루트 JAR)로 복사
+            cp build/libs/DevPath-0.0.1-SNAPSHOT.jar ./DevPath-0.0.1-SNAPSHOT.jar
+
+            # 4) systemd 서비스 정지
             sudo systemctl stop devpath || true
 
-            # 2) systemd 외부에서 수동으로 띄워진 백엔드 좀비(build/libs 등 다른 경로 JAR 포함)를
-            #    JAR 이름으로 찾되 'java 실행 프로세스만' 종료한다.
-            #    pkill -f 'DevPath-...jar' 는 스크립트 텍스트에 같은 문자열이 있어 배포 셸 자신까지
-            #    매칭 → 스스로 SIGTERM(143)으로 죽는 문제가 있으므로, comm=java 필터로 셸을 제외한다.
+            # 5) systemd 외부 좀비(다른 경로 JAR 포함)를 JAR 이름으로 찾되 'java 프로세스만' 종료.
+            #    pkill -f 'DevPath-...jar' 는 배포 셸 자신까지 매칭해 자살하므로 comm=java 필터 사용.
             for pid in $(pgrep -f 'DevPath-0.0.1-SNAPSHOT' 2>/dev/null || true); do
               if [ "$(ps -p "$pid" -o comm= 2>/dev/null)" = "java" ]; then
                 sudo kill "$pid" 2>/dev/null || true
               fi
             done
 
-            # 3) 그래도 8083을 쥔 잔존 프로세스가 있으면 포트 기준으로 마저 정리
+            # 6) 8083을 쥔 잔존 프로세스가 있으면 포트 기준으로 마저 정리
             sudo fuser -k 8083/tcp 2>/dev/null || true
             sleep 3
 
-            # 4) systemd로 단독 기동 (ExecStart = 방금 SCP된 루트 JAR)
+            # 7) systemd로 단독 기동 (ExecStart = 방금 복사된 루트 JAR)
             sudo systemctl start devpath
 
-            # 5) 헬스체크: 8083이 응답하는지 최대 90초 폴링. (인증 유무와 무관하게 HTTP 코드가
+            # 8) 헬스체크: 8083이 응답하는지 최대 120초 폴링. (인증 유무와 무관하게 HTTP 코드가
             #    잡히면 새 프로세스가 포트를 잡은 것으로 본다. 000=무응답 → 실패 처리)
-            for i in $(seq 1 18); do
+            for i in $(seq 1 24); do
               code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8083/actuator/health || echo 000)
               if [ "$code" != "000" ]; then
                 echo "Backend up on 8083 (HTTP $code, attempt $i)"
