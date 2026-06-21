@@ -1,5 +1,6 @@
 package com.devpath.api.learner.service;
 
+import com.devpath.api.learner.component.CourseScoreAnalyzer;
 import com.devpath.api.learner.dto.DiagnosisQuizDto;
 import com.devpath.api.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.common.exception.CustomException;
@@ -30,6 +31,8 @@ import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.MissingNode;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,13 +61,14 @@ public class DiagnosisQuizService {
   private static final int REORDER_CANDIDATE_LIMIT = 5;
   // 클리어 시 Gemini가 제안할 신규 노드 최대 개수
   private static final int NEW_NODE_LIMIT = 1;
+  // 통합 추천 응답 토큰 한도 (4종 제안을 한 번에 받으므로 넉넉히 둔다)
+  private static final int UNIFIED_MAX_OUTPUT_TOKENS = 8192;
+  // 프론트 시연 계정 전용 고정 데모 추천 폴백 (Gemini 호출 지연 회피용)
   private static final String FRONTEND_ROADMAP_DEMO_EMAIL = "kim.hakseup@devpath.com";
   private static final int FRONTEND_ROADMAP_DEMO_SCORE = 85;
   private static final long FRONTEND_ROADMAP_DEMO_FALLBACK_DELAY_MILLIS = 1800L;
-  private static final String FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE =
-      "[심화] 렌더링 성능 디버깅";
-  private static final String FRONTEND_ROADMAP_DEMO_REVIEW_TITLE =
-      "[복습] 렌더링 흐름 체크포인트";
+  private static final String FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE = "[심화] 렌더링 성능 디버깅";
+  private static final String FRONTEND_ROADMAP_DEMO_REVIEW_TITLE = "[복습] 렌더링 흐름 체크포인트";
   private static final String FRONTEND_ROADMAP_DEMO_LEGACY_ADVANCED_TITLE =
       "[Advanced] Rendering Performance Debugging";
   private static final String FRONTEND_ROADMAP_DEMO_LEGACY_REVIEW_TITLE =
@@ -83,6 +87,7 @@ public class DiagnosisQuizService {
   private final CustomRoadmapNodeRepository customRoadmapNodeRepository;
   private final UserTechStackRepository userTechStackRepository;
   private final ProofCardRepository proofCardRepository;
+  private final CourseScoreAnalyzer courseScoreAnalyzer;
 
   /** 진단 퀴즈 생성 */
   @Transactional
@@ -123,12 +128,14 @@ public class DiagnosisQuizService {
     }
     quiz.submit();
 
-    int score = calculateScore(answers);
-    int maxScore = quiz.getQuestionCount() * 10;
+    CourseScoreAnalyzer.CourseScores courseScores =
+        courseScoreAnalyzer.analyze(userId, clearedNodeId);
+    int score = resolveScore(courseScores);
+    int maxScore = 100;
 
     String recommendedNodes =
         analyzeAndRecommend(
-            userId, clearedNodeId, score, maxScore, quiz.getRoadmap().getRoadmapId());
+            userId, clearedNodeId, score, quiz.getRoadmap().getRoadmapId(), courseScores);
 
     DiagnosisResult result =
         DiagnosisResult.builder()
@@ -161,10 +168,18 @@ public class DiagnosisQuizService {
     return DiagnosisQuizDto.QuizResultResponse.from(result);
   }
 
-  // ── 핵심 분기 로직 ─────────────────────────────────────────────────────────
+  // ── 핵심 분기 로직 (단일 통합 Gemini 호출) ──────────────────────────────────
 
+  /**
+   * 클리어 시 분기/삭제/순서변경/신규 노드 제안을 Gemini 단일 호출로 생성한다. 컨텍스트를 한 번에 수집해 통합 프롬프트로 요청하고, 응답은 섹션별로 독립
+   * 파싱·저장하여 일부 섹션이 깨져도 나머지는 반영한다. 반환값은 생성된 분기 노드 ID 목록(콤마 구분)으로 진단 결과 저장에 사용된다.
+   */
   private String analyzeAndRecommend(
-      Long userId, Long clearedNodeId, int score, int maxScore, Long roadmapId) {
+      Long userId,
+      Long clearedNodeId,
+      int score,
+      Long roadmapId,
+      CourseScoreAnalyzer.CourseScores courseScores) {
 
     if (clearedNodeId == null) return "";
 
@@ -177,149 +192,366 @@ public class DiagnosisQuizService {
     List<String> nodeTags = nodeRequiredTagRepository.findTagNamesByNodeId(clearedNodeId);
     if (nodeTags.isEmpty()) return "";
 
-    boolean isLowScore = (double) score / maxScore < REVIEW_THRESHOLD;
+    boolean isLowScore = (double) score / 100 < REVIEW_THRESHOLD;
 
+    // 프론트 시연 계정은 Gemini 호출을 건너뛰고 고정 데모 추천으로 대체한다.
     if (isFrontendRoadmapDemoFallback(user, clearedNode, nodeTags)) {
       return buildFrontendRoadmapDemoFallback(user, clearedNode, roadmapId, isLowScore).stream()
           .map(String::valueOf)
           .collect(Collectors.joining(","));
     }
 
-    List<Long> recommendedNodeIds =
-        isLowScore
-            ? buildReviewBranch(user, clearedNode, nodeTags, roadmapId)
-            : buildAdvancedBranch(user, clearedNode, nodeTags, roadmapId);
-
-    // 고득점일 때만, 이미 숙지한 것으로 보이는 후속 노드 삭제 제안을 동시 생성한다.
-    if (!isLowScore) {
-      buildDeleteSuggestions(user, clearedNode, score, maxScore, roadmapId);
+    // 분기 후보 태그: 복습=노드 태그 전체, 심화=이후 로드맵에서 다루지 않는 태그만
+    List<String> branchCandidateTags;
+    if (isLowScore) {
+      branchCandidateTags = nodeTags;
+    } else {
+      int minSortOrder = clearedNode.getSortOrder() != null ? clearedNode.getSortOrder() : 0;
+      Set<String> futureTagSet =
+          new HashSet<>(
+              nodeRequiredTagRepository.findFutureTagNamesByUserAndRoadmap(
+                  user.getId(), roadmapId, minSortOrder));
+      branchCandidateTags = nodeTags.stream().filter(tag -> !futureTagSet.contains(tag)).toList();
     }
 
-    // 점수와 무관하게, 학습 순서상 더 합리적인 후속 노드 순서변경 제안을 동시 생성한다.
-    buildReorderSuggestions(user, clearedNode, roadmapId);
+    // 커스텀 로드맵 컨텍스트 (삭제/순서변경/신규 제안용)
+    CustomRoadmap customRoadmap =
+        customRoadmapRepository
+            .findByUserIdAndOriginalRoadmapRoadmapId(user.getId(), roadmapId)
+            .orElse(null);
 
-    // 학습 수준 + 로드맵 전체 현황을 보고 추가하면 좋을 신규 노드를 Gemini가 적절한 위치에 삽입 제안한다.
-    buildNewNodeSuggestions(user, clearedNode, score, maxScore, roadmapId);
+    List<CustomRoadmapNode> ordered =
+        customRoadmap != null
+            ? customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(
+                customRoadmap)
+            : List.of();
 
-    return recommendedNodeIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+    Integer clearedOrder =
+        ordered.stream()
+            .filter(
+                n ->
+                    n.getOriginalNode() != null
+                        && n.getOriginalNode().getNodeId().equals(clearedNode.getNodeId()))
+            .map(CustomRoadmapNode::getCustomSortOrder)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .orElse(null);
+
+    long completedCount =
+        ordered.stream().filter(n -> n.getStatus() == NodeStatus.COMPLETED).count();
+    long proofCount = proofCardRepository.countByUserId(user.getId());
+    List<String> userTags = userTechStackRepository.findTagNamesByUserId(user.getId());
+
+    // 삭제 후보(고득점 전용): 클리어 이후의 미완료 템플릿(비분기) 노드
+    Map<Long, CustomRoadmapNode> deleteCandidates =
+        (!isLowScore && clearedOrder != null)
+            ? ordered.stream()
+                .filter(n -> n.getOriginalNode() != null)
+                .filter(n -> !n.isBranch())
+                .filter(n -> n.getStatus() != NodeStatus.COMPLETED)
+                .filter(
+                    n -> n.getCustomSortOrder() != null && n.getCustomSortOrder() > clearedOrder)
+                .limit(DELETE_CANDIDATE_LIMIT)
+                .collect(
+                    Collectors.toMap(
+                        n -> n.getOriginalNode().getNodeId(),
+                        n -> n,
+                        (a, b) -> a,
+                        LinkedHashMap::new))
+            : new LinkedHashMap<>();
+
+    // 순서변경 후보: 클리어 이후의 미완료 노드
+    Map<Long, CustomRoadmapNode> reorderCandidates =
+        (clearedOrder != null)
+            ? ordered.stream()
+                .filter(n -> n.getOriginalNode() != null)
+                .filter(n -> n.getStatus() != NodeStatus.COMPLETED)
+                .filter(
+                    n -> n.getCustomSortOrder() != null && n.getCustomSortOrder() > clearedOrder)
+                .limit(REORDER_CANDIDATE_LIMIT)
+                .collect(
+                    Collectors.toMap(
+                        n -> n.getOriginalNode().getNodeId(),
+                        n -> n,
+                        (a, b) -> a,
+                        LinkedHashMap::new))
+            : new LinkedHashMap<>();
+
+    // 신규 노드 컨텍스트: 전체 노드 (customNodeId 기준)
+    Map<Long, CustomRoadmapNode> newNodeById =
+        ordered.stream()
+            .collect(
+                Collectors.toMap(
+                    CustomRoadmapNode::getId, n -> n, (a, b) -> a, LinkedHashMap::new));
+
+    String prompt =
+        buildUnifiedPrompt(
+            clearedNode,
+            score,
+            isLowScore,
+            courseScores,
+            branchCandidateTags,
+            deleteCandidates,
+            reorderCandidates,
+            newNodeById,
+            completedCount,
+            proofCount,
+            userTags);
+
+    JsonNode root = callUnifiedGemini(prompt);
+
+    // 섹션별 독립 적용 (한 섹션이 깨져도 나머지는 저장)
+    List<Long> branchIds =
+        applyBranch(user, clearedNode, branchCandidateTags, isLowScore, section(root, "branch"));
+    if (!isLowScore) {
+      applyDeletes(user, deleteCandidates, section(root, "deletes"));
+    }
+    applyReorders(user, clearedNode, reorderCandidates, section(root, "reorders"));
+    applyNewNodes(user, clearedNode, customRoadmap, newNodeById, section(root, "newNodes"));
+
+    return branchIds.stream().map(String::valueOf).collect(Collectors.joining(","));
   }
 
-  /** 복습 브랜치: 낮은 점수 → Gemini가 복습 태그 선택 후 새 복습 노드 생성 */
-  private List<Long> buildReviewBranch(
-      User user, RoadmapNode clearedNode, List<String> nodeTags, Long roadmapId) {
+  // ── 통합 프롬프트 / 단일 호출 / 스키마 ──────────────────────────────────────
 
-    RoadmapNode generated = generateBranchNode(clearedNode, nodeTags, false);
-    suggestBranchChange(user, generated, "진단 퀴즈 저득점 — 복습 학습 노드가 추천되었습니다.", clearedNode.getNodeId());
-    return List.of(generated.getNodeId());
+  private String buildUnifiedPrompt(
+      RoadmapNode clearedNode,
+      int score,
+      boolean isLowScore,
+      CourseScoreAnalyzer.CourseScores courseScores,
+      List<String> branchCandidateTags,
+      Map<Long, CustomRoadmapNode> deleteCandidates,
+      Map<Long, CustomRoadmapNode> reorderCandidates,
+      Map<Long, CustomRoadmapNode> newNodeById,
+      long completedCount,
+      long proofCount,
+      List<String> userTags) {
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(
+        String.format(
+            "학습자가 '%s'(id=%d) 노드를 %d/100점으로 클리어했습니다.%n",
+            clearedNode.getTitle(), clearedNode.getNodeId(), score));
+    sb.append(
+        String.format(
+            "학습자 현황: 완료 노드 %d개, 보유 인증(Proof) %d개, 보유 기술 태그 [%s].%n%n",
+            completedCount, proofCount, String.join(", ", userTags)));
+
+    // 강의별 성취도: 같은 노드라도 어느 강의를 통해 학습했는지에 따라 강약이 다를 수 있어 함께 제공한다.
+    if (courseScores.hasData()) {
+      sb.append("[강의별 성취도]\n");
+      courseScores
+          .perCourse()
+          .forEach(cs -> sb.append(String.format("- %s: %d점%n", cs.courseName(), cs.percent())));
+      sb.append("강의별로 강약이 다르면 점수가 낮은 강의 영역은 복습을, 높은 영역은 심화를 우선 고려해 추천하라.\n\n");
+    }
+
+    // 1) 분기 노드
+    sb.append("[분기 노드]\n");
+    sb.append(String.format("선택 가능한 태그: [%s]%n", String.join(", ", branchCandidateTags)));
+    sb.append(
+        isLowScore
+            ? "위 태그 중 복습이 필요한 태그를 최대 3개 골라 복습 학습 노드를 생성하라.\n\n"
+            : "위 태그 중 심화 학습에 가장 적합한 태그를 최대 3개 골라 심화 학습 노드를 생성하라.\n\n");
+
+    // 2) 삭제 제안 (고득점 + 후보 존재 시에만 요청)
+    if (!isLowScore && !deleteCandidates.isEmpty()) {
+      sb.append("[삭제 제안]\n후속 노드 후보:\n");
+      appendCandidateTagLines(sb, deleteCandidates);
+      sb.append("이 중 학습자가 이미 충분히 숙지하여 건너뛰어도 되는 노드만 골라 삭제를 제안하라. 확신이 없으면 포함하지 말 것.\n\n");
+    }
+
+    // 3) 순서변경 제안 (후보 2개 이상일 때만)
+    if (reorderCandidates.size() >= 2) {
+      sb.append("[순서변경 제안]\n현재 순서대로 나열된 후속 노드:\n");
+      appendCandidateTagLines(sb, reorderCandidates);
+      sb.append(
+          String.format(
+              "학습 흐름상 순서를 바꾸는 게 더 합리적인 노드가 있으면 제안하라. moveNodeId를 afterNodeId"
+                  + "(위 후보 id 또는 클리어한 노드 id=%d, 맨 앞으로 보내려면 null) 바로 뒤로 이동하는 의미다.%n%n",
+              clearedNode.getNodeId()));
+    }
+
+    // 4) 신규 노드 제안
+    if (!newNodeById.isEmpty()) {
+      sb.append("[신규 노드 제안]\n현재 로드맵 노드 목록:\n");
+      newNodeById.forEach(
+          (id, node) -> {
+            String title =
+                node.getOriginalNode() != null
+                    ? node.getOriginalNode().getTitle()
+                    : (node.getBuilderModule() != null ? node.getBuilderModule().getTitle() : "노드");
+            sb.append(
+                String.format(
+                    "- customNodeId=%d, 제목=\"%s\", 완료=%b%n",
+                    id, title, node.getStatus() == NodeStatus.COMPLETED));
+          });
+      sb.append(
+          String.format(
+              "학습자 수준과 로드맵 흐름을 고려해 추가하면 좋을 신규 노드를 최대 %d개, afterCustomNodeId"
+                  + "(위 목록 중 하나, 맨 앞이면 null) 위치에 제안하라. 꼭 필요하지 않으면 비워라.%n%n",
+              NEW_NODE_LIMIT));
+    }
+
+    sb.append("아래 JSON 스키마로만 응답하라. 제안할 내용이 없는 섹션은 빈 배열 또는 빈 값으로 두라.\n");
+    sb.append(
+        "{\"branch\":{\"tags\":[\"태그\"],\"title\":\"제목\",\"content\":\"2~3문장 설명\"},"
+            + "\"deletes\":[{\"nodeId\":숫자,\"reason\":\"사유\"}],"
+            + "\"reorders\":[{\"moveNodeId\":숫자,\"afterNodeId\":숫자또는null,\"reason\":\"사유\"}],"
+            + "\"newNodes\":[{\"title\":\"제목\",\"content\":\"설명\",\"subTopics\":\"소주제1,소주제2\","
+            + "\"afterCustomNodeId\":숫자또는null,\"reason\":\"사유\"}]}");
+    return sb.toString();
   }
 
-  /** 심화 브랜치: 높은 점수 → 이후 로드맵에서 다루지 않는 태그만 남겨 Gemini가 새 심화 노드 생성 */
-  private List<Long> buildAdvancedBranch(
-      User user, RoadmapNode clearedNode, List<String> nodeTags, Long roadmapId) {
+  private void appendCandidateTagLines(
+      StringBuilder sb, Map<Long, CustomRoadmapNode> candidateById) {
+    candidateById.forEach(
+        (nodeId, node) -> {
+          List<String> tags = nodeRequiredTagRepository.findTagNamesByNodeId(nodeId);
+          sb.append(
+              String.format(
+                  "- id=%d, 제목=\"%s\", 태그=[%s]%n",
+                  nodeId, node.getOriginalNode().getTitle(), String.join(", ", tags)));
+        });
+  }
 
-    int minSortOrder = clearedNode.getSortOrder() != null ? clearedNode.getSortOrder() : 0;
+  /** 통합 프롬프트로 단일 호출하고 응답 JSON 객체를 반환한다. 실패 시 null. */
+  private JsonNode callUnifiedGemini(String prompt) {
+    try {
+      String response =
+          geminiProvider.generateJson(prompt, unifiedSchema(), UNIFIED_MAX_OUTPUT_TOKENS);
+      if (response == null) return null;
+      int start = response.indexOf('{');
+      int end = response.lastIndexOf('}');
+      if (start < 0 || end <= start) return null;
+      return OBJECT_MAPPER.readTree(response.substring(start, end + 1));
+    } catch (Exception e) {
+      log.warn("[DiagnosisQuizService] 통합 추천 응답 파싱 실패: {}", e.getMessage());
+      return null;
+    }
+  }
 
-    Set<String> futureTagSet =
-        new HashSet<>(
-            nodeRequiredTagRepository.findFutureTagNamesByUserAndRoadmap(
-                user.getId(), roadmapId, minSortOrder));
+  /** 통합 응답에서 한 섹션을 안전하게 꺼낸다(루트가 없으면 Missing). */
+  private JsonNode section(JsonNode root, String key) {
+    return root == null ? MissingNode.getInstance() : root.path(key);
+  }
 
-    // 이후 로드맵에서 이미 다루는 태그 제외
-    List<String> candidateTags =
-        nodeTags.stream().filter(tag -> !futureTagSet.contains(tag)).toList();
+  private Map<String, Object> unifiedSchema() {
+    Map<String, Object> strType = Map.of("type", "string");
+    Map<String, Object> intType = Map.of("type", "integer");
+    Map<String, Object> nullableInt = Map.of("type", "integer", "nullable", true);
+
+    Map<String, Object> branch =
+        Map.of(
+            "type",
+            "object",
+            "properties",
+            Map.of(
+                "tags", Map.of("type", "array", "items", strType),
+                "title", strType,
+                "content", strType));
+
+    Map<String, Object> deleteItem =
+        Map.of("type", "object", "properties", Map.of("nodeId", intType, "reason", strType));
+
+    Map<String, Object> reorderItem =
+        Map.of(
+            "type",
+            "object",
+            "properties",
+            Map.of("moveNodeId", intType, "afterNodeId", nullableInt, "reason", strType));
+
+    Map<String, Object> newNodeItem =
+        Map.of(
+            "type",
+            "object",
+            "properties",
+            Map.of(
+                "title", strType,
+                "content", strType,
+                "subTopics", strType,
+                "afterCustomNodeId", nullableInt,
+                "reason", strType));
+
+    return Map.of(
+        "type",
+        "object",
+        "properties",
+        Map.of(
+            "branch", branch,
+            "deletes", Map.of("type", "array", "items", deleteItem),
+            "reorders", Map.of("type", "array", "items", reorderItem),
+            "newNodes", Map.of("type", "array", "items", newNodeItem)));
+  }
+
+  // ── 섹션별 적용 (검증 + 저장) ───────────────────────────────────────────────
+
+  /** 분기 노드 제안을 적용한다. 응답이 없거나 비면 폴백 제목으로 생성한다. 생성된 분기 노드 ID를 반환한다. */
+  private List<Long> applyBranch(
+      User user,
+      RoadmapNode clearedNode,
+      List<String> candidateTags,
+      boolean isLowScore,
+      JsonNode branchNode) {
 
     if (candidateTags.isEmpty()) return List.of();
-
-    RoadmapNode generated = generateBranchNode(clearedNode, candidateTags, true);
-    suggestBranchChange(user, generated, "진단 퀴즈 고득점 — 심화 학습 노드가 추천되었습니다.", clearedNode.getNodeId());
-    return List.of(generated.getNodeId());
-  }
-
-  // ── Gemini 호출 (분기 노드: 태그 선택 + 노드 생성 1콜) ────────────────────────
-
-  /** Gemini 1콜로 후보 태그 중 적합한 태그를 고르고 그 태그 기반 분기 노드를 생성·저장한다. */
-  private RoadmapNode generateBranchNode(
-      RoadmapNode baseNode, List<String> candidateTags, boolean isAdvanced) {
-    String tagList = String.join(", ", candidateTags);
-    String prompt =
-        isAdvanced
-            ? String.format(
-                "학습자가 '%s' 노드를 높은 점수로 클리어했습니다.\n"
-                    + "선택 가능한 태그: [%s]\n"
-                    + "위 태그 중 심화 학습에 가장 적합한 태그를 최대 3개 고르고, 그 태그로 심화 학습 노드를 생성하라.\n"
-                    + "반드시 아래 JSON 형식으로만 응답하라:\n"
-                    + "{\"tags\":[\"태그1\",\"태그2\"],\"title\":\"노드 제목\",\"content\":\"노드 설명 (2~3문장)\"}",
-                baseNode.getTitle(), tagList)
-            : String.format(
-                "학습자가 '%s' 노드를 낮은 점수로 클리어했습니다.\n"
-                    + "선택 가능한 태그: [%s]\n"
-                    + "위 태그 중 복습이 필요한 태그를 최대 3개 고르고, 그 태그로 복습 학습 노드를 생성하라.\n"
-                    + "반드시 아래 JSON 형식으로만 응답하라:\n"
-                    + "{\"tags\":[\"태그1\",\"태그2\"],\"title\":\"노드 제목\",\"content\":\"노드 설명 (2~3문장)\"}",
-                baseNode.getTitle(), tagList);
 
     Map<String, String> canonicalByLower =
         candidateTags.stream().collect(Collectors.toMap(String::toLowerCase, t -> t, (a, b) -> a));
 
-    try {
-      String response = geminiProvider.generateJson(prompt);
-      if (response != null) {
-        int start = response.indexOf('{');
-        int end = response.lastIndexOf('}');
-        if (start >= 0 && end > start) {
-          JsonNode json = OBJECT_MAPPER.readTree(response.substring(start, end + 1));
-          String title = json.path("title").asText(null);
-          String content = json.path("content").asText(null);
+    String title = branchNode.path("title").asText(null);
+    String content = branchNode.path("content").asText(null);
 
-          if (title != null && !title.isBlank()) {
-            List<String> validatedTags = new java.util.ArrayList<>();
-            JsonNode tagsNode = json.path("tags");
-            if (tagsNode.isArray()) {
-              for (JsonNode tagNode : tagsNode) {
-                String canonical = canonicalByLower.get(tagNode.asText("").toLowerCase());
-                if (canonical != null && !validatedTags.contains(canonical)) {
-                  validatedTags.add(canonical);
-                }
-              }
-            }
-            if (validatedTags.isEmpty()) {
-              validatedTags = candidateTags.stream().limit(3).toList();
-            }
-
-            return roadmapNodeRepository.save(
-                RoadmapNode.builder()
-                    .roadmap(systemDynamicRoadmapProvider.resolve())
-                    .title(title)
-                    .content(content)
-                    .nodeType("BRANCH")
-                    .sortOrder(null)
-                    .subTopics(String.join(", ", validatedTags)) // 항상 canonical 태그 사용
-                    .branchGroup(null)
-                    .build());
-          }
+    List<String> validatedTags = new ArrayList<>();
+    JsonNode tagsNode = branchNode.path("tags");
+    if (tagsNode.isArray()) {
+      for (JsonNode tagNode : tagsNode) {
+        String canonical = canonicalByLower.get(tagNode.asText("").toLowerCase());
+        if (canonical != null && !validatedTags.contains(canonical)) {
+          validatedTags.add(canonical);
         }
       }
-    } catch (Exception e) {
-      log.warn("[DiagnosisQuizService] Gemini 분기 노드 생성 실패: {}", e.getMessage());
+    }
+    if (validatedTags.isEmpty()) {
+      validatedTags = candidateTags.stream().limit(3).toList();
     }
 
-    // Fallback: 기본 제목으로 노드 생성
-    String fallbackTagList = String.join(", ", candidateTags.stream().limit(3).toList());
-    String fallbackTitle = (isAdvanced ? "[심화] " : "[복습] ") + baseNode.getTitle();
+    RoadmapNode generated;
+    if (title != null && !title.isBlank()) {
+      generated =
+          roadmapNodeRepository.save(
+              RoadmapNode.builder()
+                  .roadmap(systemDynamicRoadmapProvider.resolve())
+                  .title(title)
+                  .content(content)
+                  .nodeType("BRANCH")
+                  .sortOrder(null)
+                  .subTopics(String.join(", ", validatedTags))
+                  .branchGroup(null)
+                  .build());
+    } else {
+      // Fallback: 기본 제목으로 노드 생성
+      String fallbackTagList = String.join(", ", candidateTags.stream().limit(3).toList());
+      generated =
+          roadmapNodeRepository.save(
+              RoadmapNode.builder()
+                  .roadmap(clearedNode.getRoadmap())
+                  .title((isLowScore ? "[복습] " : "[심화] ") + clearedNode.getTitle())
+                  .content(fallbackTagList + " 관련 학습 내용입니다.")
+                  .nodeType("BRANCH")
+                  .sortOrder(null)
+                  .subTopics(fallbackTagList)
+                  .branchGroup(null)
+                  .build());
+    }
 
-    return roadmapNodeRepository.save(
-        RoadmapNode.builder()
-            .roadmap(baseNode.getRoadmap())
-            .title(fallbackTitle)
-            .content(fallbackTagList + " 관련 학습 내용입니다.")
-            .nodeType("BRANCH")
-            .sortOrder(null)
-            .subTopics(fallbackTagList)
-            .branchGroup(null)
-            .build());
+    suggestBranchChange(
+        user,
+        generated,
+        isLowScore ? "진단 퀴즈 저득점 — 복습 학습 노드가 추천되었습니다." : "진단 퀴즈 고득점 — 심화 학습 노드가 추천되었습니다.",
+        clearedNode.getNodeId());
+    return List.of(generated.getNodeId());
   }
-
-  // ── 추천 변경 제안 생성 (SUGGESTED) ────────────────────────────────────────
 
   private void suggestBranchChange(
       User user, RoadmapNode generatedNode, String reason, Long branchFromNodeId) {
@@ -333,213 +565,52 @@ public class DiagnosisQuizService {
             .build());
   }
 
-  // ── 후속 노드 삭제 제안 생성 (고득점 전용) ──────────────────────────────────
+  /** 삭제 제안을 적용한다(고득점 전용). 후보 밖 지목·중복은 무시한다. */
+  private void applyDeletes(
+      User user, Map<Long, CustomRoadmapNode> candidateById, JsonNode deletesNode) {
+    if (!deletesNode.isArray() || candidateById.isEmpty()) return;
 
-  /**
-   * 고득점 클리어 시, 학습자가 이미 숙지한 것으로 보이는 후속 노드를 Gemini가 판단해 DELETE 제안(SUGGESTED)으로 생성한다. 후보는
-   * 클리어 노드 이후의 미완료 템플릿 노드 최대 {@link #DELETE_CANDIDATE_LIMIT}개로 한정하며, Gemini가 후보 밖 노드를 지목하면
-   * 무시한다. 호출 실패/후보 없음/지목 없음이면 아무 제안도 만들지 않는다(과삭제 방지).
-   */
-  private void buildDeleteSuggestions(
-      User user, RoadmapNode clearedNode, int score, int maxScore, Long roadmapId) {
+    for (JsonNode item : deletesNode) {
+      if (!item.hasNonNull("nodeId")) continue;
+      Long nodeId = item.get("nodeId").asLong();
+      CustomRoadmapNode target = candidateById.get(nodeId);
+      if (target == null) continue; // 후보 밖 지목 무시
 
-    CustomRoadmap customRoadmap =
-        customRoadmapRepository
-            .findByUserIdAndOriginalRoadmapRoadmapId(user.getId(), roadmapId)
-            .orElse(null);
-    if (customRoadmap == null) return;
+      boolean alreadySuggested =
+          recommendationChangeRepository
+              .findTopByUserIdAndRoadmapNodeNodeIdAndChangeStatusOrderByCreatedAtDesc(
+                  user.getId(), nodeId, RecommendationChangeStatus.SUGGESTED)
+              .isPresent();
+      if (alreadySuggested) continue;
 
-    List<CustomRoadmapNode> ordered =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
-
-    Integer clearedOrder =
-        ordered.stream()
-            .filter(
-                n ->
-                    n.getOriginalNode() != null
-                        && n.getOriginalNode().getNodeId().equals(clearedNode.getNodeId()))
-            .map(CustomRoadmapNode::getCustomSortOrder)
-            .filter(Objects::nonNull)
-            .findFirst()
-            .orElse(null);
-    if (clearedOrder == null) return;
-
-    // originalNodeId → 후보 노드 (삽입 순서 유지)
-    Map<Long, CustomRoadmapNode> candidateById =
-        ordered.stream()
-            .filter(n -> n.getOriginalNode() != null)
-            .filter(n -> !n.isBranch())
-            .filter(n -> n.getStatus() != NodeStatus.COMPLETED)
-            .filter(n -> n.getCustomSortOrder() != null && n.getCustomSortOrder() > clearedOrder)
-            .limit(DELETE_CANDIDATE_LIMIT)
-            .collect(
-                Collectors.toMap(
-                    n -> n.getOriginalNode().getNodeId(),
-                    n -> n,
-                    (a, b) -> a,
-                    LinkedHashMap::new));
-    if (candidateById.isEmpty()) return;
-
-    long completedCount =
-        ordered.stream().filter(n -> n.getStatus() == NodeStatus.COMPLETED).count();
-    long proofCount = proofCardRepository.countByUserId(user.getId());
-    List<String> userTags = userTechStackRepository.findTagNamesByUserId(user.getId());
-
-    Map<Long, String> reasonByNodeId =
-        getDeleteSuggestionsFromGemini(
-            clearedNode.getTitle(),
-            score,
-            maxScore,
-            completedCount,
-            proofCount,
-            userTags,
-            candidateById);
-
-    reasonByNodeId.forEach(
-        (nodeId, reason) -> {
-          CustomRoadmapNode target = candidateById.get(nodeId);
-          if (target == null) return;
-
-          boolean alreadySuggested =
-              recommendationChangeRepository
-                  .findTopByUserIdAndRoadmapNodeNodeIdAndChangeStatusOrderByCreatedAtDesc(
-                      user.getId(), nodeId, RecommendationChangeStatus.SUGGESTED)
-                  .isPresent();
-          if (alreadySuggested) return;
-
-          recommendationChangeRepository.save(
-              RecommendationChange.builder()
-                  .user(user)
-                  .roadmapNode(target.getOriginalNode())
-                  .reason(
-                      reason != null && !reason.isBlank()
-                          ? reason
-                          : "진단 퀴즈 고득점 — 이미 숙지한 것으로 보여 건너뛰어도 좋은 노드입니다.")
-                  .nodeChangeType(NodeChangeType.DELETE)
-                  .build());
-        });
-  }
-
-  /** Gemini가 삭제를 제안할 후보 노드(originalNodeId)와 사유를 반환한다. 후보 집합 밖의 id는 모두 제외한다. */
-  private Map<Long, String> getDeleteSuggestionsFromGemini(
-      String clearedNodeTitle,
-      int score,
-      int maxScore,
-      long completedCount,
-      long proofCount,
-      List<String> userTags,
-      Map<Long, CustomRoadmapNode> candidateById) {
-
-    StringBuilder candidateLines = new StringBuilder();
-    candidateById.forEach(
-        (nodeId, node) -> {
-          List<String> tags = nodeRequiredTagRepository.findTagNamesByNodeId(nodeId);
-          candidateLines
-              .append("- id=")
-              .append(nodeId)
-              .append(", 제목=\"")
-              .append(node.getOriginalNode().getTitle())
-              .append("\", 태그=[")
-              .append(String.join(", ", tags))
-              .append("]\n");
-        });
-
-    String prompt =
-        String.format(
-            "학습자가 '%s' 노드를 %d/%d 점으로 클리어했습니다.\n"
-                + "학습자 현황: 완료 노드 %d개, 보유 인증(Proof) %d개, 보유 기술 태그 [%s].\n"
-                + "아래는 앞으로 학습할 후속 노드 후보입니다:\n%s"
-                + "이 중 학습자가 이미 충분히 숙지하여 건너뛰어도 되는 노드만 골라 삭제를 제안하라.\n"
-                + "확신이 없으면 포함하지 말 것. 없으면 빈 배열 []로 응답하라.\n"
-                + "반드시 아래 JSON 배열로만 응답하라:\n"
-                + "[{\"nodeId\":숫자,\"reason\":\"간단한 사유\"}]",
-            clearedNodeTitle,
-            score,
-            maxScore,
-            completedCount,
-            proofCount,
-            String.join(", ", userTags),
-            candidateLines);
-
-    Map<Long, String> result = new LinkedHashMap<>();
-    try {
-      String response = geminiProvider.generateJson(prompt);
-      if (response != null) {
-        int start = response.indexOf('[');
-        int end = response.lastIndexOf(']');
-        if (start >= 0 && end > start) {
-          JsonNode array = OBJECT_MAPPER.readTree(response.substring(start, end + 1));
-          if (array.isArray()) {
-            for (JsonNode item : array) {
-              if (!item.hasNonNull("nodeId")) continue;
-              Long nodeId = item.get("nodeId").asLong();
-              if (!candidateById.containsKey(nodeId)) continue; // 후보 밖 지목 무시
-              result.put(nodeId, item.path("reason").asText(null));
-            }
-          }
-        }
-      }
-    } catch (Exception e) {
-      log.warn("[DiagnosisQuizService] Gemini 삭제 제안 추출 실패: {}", e.getMessage());
+      String reason = item.path("reason").asText(null);
+      recommendationChangeRepository.save(
+          RecommendationChange.builder()
+              .user(user)
+              .roadmapNode(target.getOriginalNode())
+              .reason(
+                  reason != null && !reason.isBlank()
+                      ? reason
+                      : "진단 퀴즈 고득점 — 이미 숙지한 것으로 보여 건너뛰어도 좋은 노드입니다.")
+              .nodeChangeType(NodeChangeType.DELETE)
+              .build());
     }
-    return result;
   }
 
-  // ── 후속 노드 순서변경 제안 생성 ────────────────────────────────────────────
+  /** 순서변경 제안을 적용한다. 후보 밖/자기참조/중복은 폐기한다. */
+  private void applyReorders(
+      User user,
+      RoadmapNode clearedNode,
+      Map<Long, CustomRoadmapNode> candidateById,
+      JsonNode reordersNode) {
+    if (!reordersNode.isArray() || candidateById.size() < 2) return;
 
-  private record ReorderSuggestion(Long moveNodeId, Long afterNodeId, String reason) {}
+    for (JsonNode item : reordersNode) {
+      if (!item.hasNonNull("moveNodeId")) continue;
+      Long moveId = item.get("moveNodeId").asLong();
+      Long afterId = item.hasNonNull("afterNodeId") ? item.get("afterNodeId").asLong() : null;
 
-  /**
-   * 클리어 시, 후속 노드들의 학습 순서를 Gemini가 더 합리적으로 재배치하도록 제안(REORDER, SUGGESTED)으로 생성한다. 후보는
-   * 클리어 노드 이후의 미완료 노드 최대 {@link #REORDER_CANDIDATE_LIMIT}개. Gemini가 후보 밖/자기참조/되돌리기 불가한
-   * 노드를 지목하면 폐기한다.
-   */
-  private void buildReorderSuggestions(User user, RoadmapNode clearedNode, Long roadmapId) {
-    CustomRoadmap customRoadmap =
-        customRoadmapRepository
-            .findByUserIdAndOriginalRoadmapRoadmapId(user.getId(), roadmapId)
-            .orElse(null);
-    if (customRoadmap == null) return;
-
-    List<CustomRoadmapNode> ordered =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
-
-    Integer clearedOrder =
-        ordered.stream()
-            .filter(
-                n ->
-                    n.getOriginalNode() != null
-                        && n.getOriginalNode().getNodeId().equals(clearedNode.getNodeId()))
-            .map(CustomRoadmapNode::getCustomSortOrder)
-            .filter(Objects::nonNull)
-            .findFirst()
-            .orElse(null);
-    if (clearedOrder == null) return;
-
-    // originalNodeId → 후보 노드 (현재 순서 유지). 척추/분기 구분 없이 후속 미완료 노드.
-    Map<Long, CustomRoadmapNode> candidateById =
-        ordered.stream()
-            .filter(n -> n.getOriginalNode() != null)
-            .filter(n -> n.getStatus() != NodeStatus.COMPLETED)
-            .filter(n -> n.getCustomSortOrder() != null && n.getCustomSortOrder() > clearedOrder)
-            .limit(REORDER_CANDIDATE_LIMIT)
-            .collect(
-                Collectors.toMap(
-                    n -> n.getOriginalNode().getNodeId(),
-                    n -> n,
-                    (a, b) -> a,
-                    LinkedHashMap::new));
-    if (candidateById.size() < 2) return; // 2개 미만이면 순서변경 의미 없음
-
-    List<ReorderSuggestion> suggestions =
-        getReorderSuggestionsFromGemini(clearedNode, candidateById);
-
-    for (ReorderSuggestion suggestion : suggestions) {
-      Long moveId = suggestion.moveNodeId();
-      Long afterId = suggestion.afterNodeId();
-
-      // 검증: 이동 노드는 후보 내, 앵커는 후보 내·클리어 노드·null, 자기참조 금지
-      if (moveId == null || !candidateById.containsKey(moveId)) continue;
+      if (!candidateById.containsKey(moveId)) continue;
       if (afterId != null
           && !candidateById.containsKey(afterId)
           && !afterId.equals(clearedNode.getNodeId())) continue;
@@ -552,111 +623,27 @@ public class DiagnosisQuizService {
               .isPresent();
       if (alreadySuggested) continue;
 
+      String reason = item.path("reason").asText(null);
       recommendationChangeRepository.save(
           RecommendationChange.builder()
               .user(user)
               .roadmapNode(candidateById.get(moveId).getOriginalNode())
               .reorderAfterNodeId(afterId)
-              .reason(
-                  suggestion.reason() != null && !suggestion.reason().isBlank()
-                      ? suggestion.reason()
-                      : "학습 순서상 더 적합한 위치로 이동을 제안합니다.")
+              .reason(reason != null && !reason.isBlank() ? reason : "학습 순서상 더 적합한 위치로 이동을 제안합니다.")
               .nodeChangeType(NodeChangeType.REORDER)
               .build());
     }
   }
 
-  /** Gemini가 후속 노드의 순서변경을 제안한다. {moveNodeId, afterNodeId, reason} 목록을 반환한다. */
-  private List<ReorderSuggestion> getReorderSuggestionsFromGemini(
-      RoadmapNode clearedNode, Map<Long, CustomRoadmapNode> candidateById) {
+  /** 신규 노드 제안을 적용한다. 제목 중복은 건너뛴다. */
+  private void applyNewNodes(
+      User user,
+      RoadmapNode clearedNode,
+      CustomRoadmap customRoadmap,
+      Map<Long, CustomRoadmapNode> nodeById,
+      JsonNode newNodesNode) {
+    if (customRoadmap == null || !newNodesNode.isArray() || nodeById.isEmpty()) return;
 
-    StringBuilder candidateLines = new StringBuilder();
-    candidateById.forEach(
-        (nodeId, node) -> {
-          List<String> tags = nodeRequiredTagRepository.findTagNamesByNodeId(nodeId);
-          candidateLines
-              .append("- id=")
-              .append(nodeId)
-              .append(", 제목=\"")
-              .append(node.getOriginalNode().getTitle())
-              .append("\", 태그=[")
-              .append(String.join(", ", tags))
-              .append("]\n");
-        });
-
-    String prompt =
-        String.format(
-            "학습자가 '%s'(id=%d) 노드를 클리어했습니다.\n"
-                + "아래는 현재 순서대로 나열된 후속 학습 노드입니다:\n%s"
-                + "학습 흐름상 순서를 바꾸는 게 더 합리적인 노드가 있으면 제안하라.\n"
-                + "각 항목은 '이 노드(moveNodeId)를 afterNodeId 노드 바로 뒤로 이동'을 의미한다.\n"
-                + "afterNodeId는 위 후보 id 또는 클리어한 노드 id(%d), 맨 앞으로 보내려면 null.\n"
-                + "바꿀 필요가 없으면 빈 배열 []로 응답하라.\n"
-                + "반드시 아래 JSON 배열로만 응답하라:\n"
-                + "[{\"moveNodeId\":숫자,\"afterNodeId\":숫자또는null,\"reason\":\"간단한 사유\"}]",
-            clearedNode.getTitle(),
-            clearedNode.getNodeId(),
-            candidateLines,
-            clearedNode.getNodeId());
-
-    List<ReorderSuggestion> result = new java.util.ArrayList<>();
-    try {
-      String response = geminiProvider.generateJson(prompt);
-      if (response != null) {
-        int start = response.indexOf('[');
-        int end = response.lastIndexOf(']');
-        if (start >= 0 && end > start) {
-          JsonNode array = OBJECT_MAPPER.readTree(response.substring(start, end + 1));
-          if (array.isArray()) {
-            for (JsonNode item : array) {
-              if (!item.hasNonNull("moveNodeId")) continue;
-              Long moveId = item.get("moveNodeId").asLong();
-              Long afterId =
-                  item.hasNonNull("afterNodeId") ? item.get("afterNodeId").asLong() : null;
-              result.add(new ReorderSuggestion(moveId, afterId, item.path("reason").asText(null)));
-            }
-          }
-        }
-      }
-    } catch (Exception e) {
-      log.warn("[DiagnosisQuizService] Gemini 순서변경 제안 추출 실패: {}", e.getMessage());
-    }
-    return result;
-  }
-
-  // ── 신규 노드 제안 생성 (Gemini가 학습수준+로드맵 현황 기반으로 생성·위치 결정) ──
-
-  private record NewNodeSuggestion(
-      String title, String content, String subTopics, Long afterCustomNodeId, String reason) {}
-
-  /**
-   * 클리어 시, 학습자의 수준과 커스텀 로드맵 전체 현황을 Gemini가 파악해 추가하면 좋을 신규 노드를 적절한 위치(앵커 뒤)에 삽입
-   * 제안(ADD, SUGGESTED)으로 생성한다. TASK-39의 명시적 타깃 삽입 경로(target_custom_roadmap_id + anchor)를
-   * 재사용하므로 수락 시 Gemini가 고른 위치에 삽입된다. 최대 {@link #NEW_NODE_LIMIT}개.
-   */
-  private void buildNewNodeSuggestions(
-      User user, RoadmapNode clearedNode, int score, int maxScore, Long roadmapId) {
-
-    CustomRoadmap customRoadmap =
-        customRoadmapRepository
-            .findByUserIdAndOriginalRoadmapRoadmapId(user.getId(), roadmapId)
-            .orElse(null);
-    if (customRoadmap == null) return;
-
-    List<CustomRoadmapNode> nodes =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
-    if (nodes.isEmpty()) return;
-
-    Map<Long, CustomRoadmapNode> nodeById =
-        nodes.stream()
-            .collect(
-                Collectors.toMap(CustomRoadmapNode::getId, n -> n, (a, b) -> a, LinkedHashMap::new));
-
-    long completedCount = nodes.stream().filter(n -> n.getStatus() == NodeStatus.COMPLETED).count();
-    long proofCount = proofCardRepository.countByUserId(user.getId());
-    List<String> userTags = userTechStackRepository.findTagNamesByUserId(user.getId());
-
-    // 중복 방지: 이미 대기 중인 추천 노드 제목 집합
     Set<String> pendingTitles =
         recommendationChangeRepository
             .findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
@@ -665,31 +652,30 @@ public class DiagnosisQuizService {
             .map(rc -> rc.getRoadmapNode().getTitle())
             .collect(Collectors.toCollection(HashSet::new));
 
-    List<NewNodeSuggestion> suggestions =
-        getNewNodeSuggestionsFromGemini(
-            clearedNode, score, maxScore, completedCount, proofCount, userTags, nodeById);
+    int count = 0;
+    for (JsonNode item : newNodesNode) {
+      if (count >= NEW_NODE_LIMIT) break;
+      String title = item.path("title").asText(null);
+      if (title == null || title.isBlank()) continue;
+      if (pendingTitles.contains(title)) continue;
 
-    for (NewNodeSuggestion suggestion : suggestions) {
-      if (suggestion.title() == null || suggestion.title().isBlank()) continue;
-      if (pendingTitles.contains(suggestion.title())) continue;
-
-      CustomRoadmapNode anchor =
-          suggestion.afterCustomNodeId() != null
-              ? nodeById.get(suggestion.afterCustomNodeId())
-              : null;
+      Long afterId =
+          item.hasNonNull("afterCustomNodeId") ? item.get("afterCustomNodeId").asLong() : null;
+      CustomRoadmapNode anchor = afterId != null ? nodeById.get(afterId) : null;
 
       RoadmapNode created =
           roadmapNodeRepository.save(
               RoadmapNode.builder()
                   .roadmap(systemDynamicRoadmapProvider.resolve())
-                  .title(suggestion.title())
-                  .content(suggestion.content())
+                  .title(title)
+                  .content(item.path("content").asText(null))
                   .nodeType("USER")
                   .sortOrder(null)
-                  .subTopics(suggestion.subTopics())
+                  .subTopics(item.path("subTopics").asText(null))
                   .branchGroup(null)
                   .build());
 
+      String reason = item.path("reason").asText(null);
       recommendationChangeRepository.save(
           RecommendationChange.builder()
               .user(user)
@@ -698,112 +684,32 @@ public class DiagnosisQuizService {
               .targetCustomRoadmapId(customRoadmap.getId())
               .anchorCustomNodeId(anchor != null ? anchor.getId() : null)
               .reason(
-                  suggestion.reason() != null && !suggestion.reason().isBlank()
-                      ? suggestion.reason()
-                      : "학습 수준과 로드맵 현황에 맞춰 추가하면 좋은 노드입니다.")
+                  reason != null && !reason.isBlank() ? reason : "학습 수준과 로드맵 현황에 맞춰 추가하면 좋은 노드입니다.")
               .nodeChangeType(NodeChangeType.ADD)
               .build());
 
-      pendingTitles.add(suggestion.title());
+      pendingTitles.add(title);
+      count++;
     }
-  }
-
-  /** Gemini가 학습자 맥락을 보고 추가할 신규 노드를 생성한다. {title, content, subTopics, afterCustomNodeId} 목록 반환. */
-  private List<NewNodeSuggestion> getNewNodeSuggestionsFromGemini(
-      RoadmapNode clearedNode,
-      int score,
-      int maxScore,
-      long completedCount,
-      long proofCount,
-      List<String> userTags,
-      Map<Long, CustomRoadmapNode> nodeById) {
-
-    StringBuilder nodeLines = new StringBuilder();
-    nodeById.forEach(
-        (id, node) -> {
-          String title =
-              node.getOriginalNode() != null
-                  ? node.getOriginalNode().getTitle()
-                  : (node.getBuilderModule() != null ? node.getBuilderModule().getTitle() : "노드");
-          nodeLines
-              .append("- customNodeId=")
-              .append(id)
-              .append(", 제목=\"")
-              .append(title)
-              .append("\", 완료=")
-              .append(node.getStatus() == NodeStatus.COMPLETED)
-              .append("\n");
-        });
-
-    String prompt =
-        String.format(
-            "학습자가 '%s' 노드를 %d/%d 점으로 클리어했습니다.\n"
-                + "학습자 현황: 완료 노드 %d개, 보유 인증(Proof) %d개, 보유 기술 태그 [%s].\n"
-                + "아래는 학습자의 현재 로드맵 노드 목록입니다:\n%s"
-                + "이 학습자의 수준과 로드맵 흐름을 고려해, 추가로 학습하면 좋을 신규 노드를 제안하라.\n"
-                + "각 노드는 afterCustomNodeId 노드 바로 뒤에 삽입된다(목록의 customNodeId 중 하나, 맨 앞이면 null).\n"
-                + "꼭 필요하지 않으면 빈 배열 []로 응답하라. 최대 %d개.\n"
-                + "반드시 아래 JSON 배열로만 응답하라:\n"
-                + "[{\"title\":\"제목\",\"content\":\"2~3문장 설명\",\"subTopics\":\"소주제1,소주제2\",\"afterCustomNodeId\":숫자또는null,\"reason\":\"간단한 사유\"}]",
-            clearedNode.getTitle(),
-            score,
-            maxScore,
-            completedCount,
-            proofCount,
-            String.join(", ", userTags),
-            nodeLines,
-            NEW_NODE_LIMIT);
-
-    List<NewNodeSuggestion> result = new java.util.ArrayList<>();
-    try {
-      String response = geminiProvider.generateJson(prompt);
-      if (response != null) {
-        int start = response.indexOf('[');
-        int end = response.lastIndexOf(']');
-        if (start >= 0 && end > start) {
-          JsonNode array = OBJECT_MAPPER.readTree(response.substring(start, end + 1));
-          if (array.isArray()) {
-            for (JsonNode item : array) {
-              if (result.size() >= NEW_NODE_LIMIT) break;
-              String title = item.path("title").asText(null);
-              if (title == null || title.isBlank()) continue;
-              Long afterId =
-                  item.hasNonNull("afterCustomNodeId")
-                      ? item.get("afterCustomNodeId").asLong()
-                      : null;
-              result.add(
-                  new NewNodeSuggestion(
-                      title,
-                      item.path("content").asText(null),
-                      item.path("subTopics").asText(null),
-                      afterId,
-                      item.path("reason").asText(null)));
-            }
-          }
-        }
-      }
-    } catch (Exception e) {
-      log.warn("[DiagnosisQuizService] Gemini 신규 노드 제안 추출 실패: {}", e.getMessage());
-    }
-    return result;
   }
 
   // ── [TEST] 노드 완료 즉시 추천 테스트 ── 실 서비스 전 삭제 대상 ────────────
 
-  /** [TEST] 진단 퀴즈 없이 랜덤 점수로 즉시 분기 추천을 생성한다. 노드 완료 시 추천 동작을 확인하기 위한 테스트 전용 메서드. */
+  /** [TEST] 진단 퀴즈 없이 강의 성취도(없으면 랜덤) 기반으로 즉시 분기 추천을 생성한다. 노드 완료 시 추천 동작 확인용 테스트 전용 메서드. */
   @Transactional
   public DiagnosisQuizDto.TestRunResponse testRunRecommend(
       Long userId, Long roadmapId, Long originalNodeId) {
-    int maxScore = 100;
-    int score = resolveTestRunScore(userId, originalNodeId, maxScore);
+    CourseScoreAnalyzer.CourseScores courseScores =
+        courseScoreAnalyzer.analyze(userId, originalNodeId);
+    int score = resolveTestRunScore(userId, originalNodeId, courseScores);
 
     String recommendedNodes =
-        analyzeAndRecommend(userId, originalNodeId, score, maxScore, roadmapId);
+        analyzeAndRecommend(userId, originalNodeId, score, roadmapId, courseScores);
 
-    boolean isLowScore = (double) score / maxScore < REVIEW_THRESHOLD;
+    boolean isLowScore = (double) score / 100 < REVIEW_THRESHOLD;
     return DiagnosisQuizDto.TestRunResponse.builder()
         .score(score)
-        .maxScore(maxScore)
+        .maxScore(100)
         .branchType(isLowScore ? "REVIEW" : "ADVANCED")
         .recommendedNodes(recommendedNodes)
         .build();
@@ -819,7 +725,17 @@ public class DiagnosisQuizService {
     };
   }
 
-  private int resolveTestRunScore(Long userId, Long originalNodeId, int maxScore) {
+  // 강의 성취도 평균을 분기 점수(0~100)로 사용한다. 강의 점수 근거가 없으면 임시로 랜덤(60~100) 폴백한다.
+  private int resolveScore(CourseScoreAnalyzer.CourseScores courseScores) {
+    if (courseScores.hasData()) {
+      return (int) Math.round(courseScores.average());
+    }
+    return 60 + RANDOM.nextInt(41);
+  }
+
+  // 테스트 트리거 점수: 프론트 시연 계정은 고정 점수, 그 외는 강의 성취도 기반.
+  private int resolveTestRunScore(
+      Long userId, Long originalNodeId, CourseScoreAnalyzer.CourseScores courseScores) {
     User user = userId == null ? null : userRepository.findById(userId).orElse(null);
     RoadmapNode node =
         originalNodeId == null ? null : roadmapNodeRepository.findById(originalNodeId).orElse(null);
@@ -829,10 +745,10 @@ public class DiagnosisQuizService {
             : nodeRequiredTagRepository.findTagNamesByNodeId(originalNodeId);
 
     if (isFrontendRoadmapDemoFallback(user, node, tags)) {
-      return Math.min(maxScore, FRONTEND_ROADMAP_DEMO_SCORE);
+      return Math.min(100, FRONTEND_ROADMAP_DEMO_SCORE);
     }
 
-    return 60 + RANDOM.nextInt(41);
+    return resolveScore(courseScores);
   }
 
   private boolean isFrontendRoadmapDemoFallback(
@@ -994,10 +910,4 @@ public class DiagnosisQuizService {
   private String frontendRoadmapDemoContextSummary() {
     return "프론트엔드 렌더링 시연 fallback; 점수=" + FRONTEND_ROADMAP_DEMO_SCORE;
   }
-
-  private int calculateScore(Map<Integer, String> answers) {
-    // 퀴즈 문항 저장 구조가 없어 임시 점수 사용 (추후 실제 채점 로직으로 교체 예정)
-    return 60 + RANDOM.nextInt(41);
-  }
-
 }

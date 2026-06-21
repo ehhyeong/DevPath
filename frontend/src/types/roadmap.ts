@@ -83,6 +83,12 @@ export interface RecommendationChange {
   ignoredAt: string | null
 }
 
+export interface RecommendStatus {
+  status: 'RUNNING' | 'DONE' | 'FAILED' | 'IDLE'
+  nodeId: number | null
+  count: number
+}
+
 export interface RecommendationChangeHistory {
   changeId: number
   nodeId: number

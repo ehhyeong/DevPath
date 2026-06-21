@@ -50,9 +50,7 @@ public class GeminiProvider {
     return execute(body);
   }
 
-  /**
-   * 순수 텍스트 분석(채용공고 채점 등) 전용. thinking 모델의 추론 단계를 끄고 JSON 응답을 강제해 응답 지연과 출력 잘림을 방지한다.
-   */
+  /** 순수 텍스트 분석(채용공고 채점 등) 전용. thinking 모델의 추론 단계를 끄고 JSON 응답을 강제해 응답 지연과 출력 잘림을 방지한다. */
   public String generateJson(String prompt) {
     return generateJson(prompt, null, null, 4096);
   }
@@ -75,14 +73,38 @@ public class GeminiProvider {
 
     Map<String, Object> generationConfig =
         Map.of(
-            "responseMimeType", "application/json",
-            "thinkingConfig", Map.of("thinkingBudget", 0),
-            "maxOutputTokens", maxOutputTokens);
+            "responseMimeType",
+            "application/json",
+            "thinkingConfig",
+            Map.of("thinkingBudget", 0),
+            "maxOutputTokens",
+            maxOutputTokens);
+
+    Map<String, Object> body =
+        Map.of("contents", List.of(Map.of("parts", parts)), "generationConfig", generationConfig);
+    return execute(body);
+  }
+
+  /**
+   * responseSchema로 출력 구조를 강제하는 JSON 생성. 여러 종류의 결과를 한 번의 호출로 받아 호출 횟수와 응답 편차를 줄일 때 사용한다. thinking은
+   * 비활성화한다.
+   */
+  public String generateJson(
+      String prompt, Map<String, Object> responseSchema, int maxOutputTokens) {
+    Map<String, Object> generationConfig = new java.util.HashMap<>();
+    generationConfig.put("responseMimeType", "application/json");
+    generationConfig.put("thinkingConfig", Map.of("thinkingBudget", 0));
+    generationConfig.put("maxOutputTokens", maxOutputTokens);
+    if (responseSchema != null) {
+      generationConfig.put("responseSchema", responseSchema);
+    }
 
     Map<String, Object> body =
         Map.of(
-            "contents", List.of(Map.of("parts", parts)),
-            "generationConfig", generationConfig);
+            "contents",
+            List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
+            "generationConfig",
+            generationConfig);
     return execute(body);
   }
 

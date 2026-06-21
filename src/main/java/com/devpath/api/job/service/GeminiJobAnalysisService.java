@@ -136,7 +136,7 @@ public class GeminiJobAnalysisService {
       sb.append("- 보유 기술: ").append(String.join(", ", profile.skillSignals())).append("\n");
       sb.append("- 프로젝트 수: ").append(profile.projectCount()).append("개\n");
       sb.append("- Proof Card: ").append(profile.proofCardCount()).append("개");
-      if (profile.averageProofCardScore() > 0) {
+      if (profile.averageProofCardScore() != null && profile.averageProofCardScore() > 0) {
         sb.append(" (평균 점수: ").append(profile.averageProofCardScore()).append("점)");
       }
       sb.append("\n");

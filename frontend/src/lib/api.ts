@@ -85,6 +85,7 @@ import type {
   MyRoadmapSummary,
   RecommendationChange,
   RecommendationChangeHistory,
+  RecommendStatus,
 } from '../types/roadmap'
 import type {
   GenerateInstructorQuizRequest,
@@ -458,6 +459,15 @@ export const roadmapApi = {
     return request<void>(
       `/api/me/roadmaps/${originalRoadmapId}/diagnosis/test-run?originalNodeId=${originalNodeId}`,
       { method: 'POST' },
+      { auth: true },
+    )
+  },
+
+  // 비동기 추천 생성의 진행 상태 조회 (RUNNING/DONE/FAILED/IDLE)
+  getRecommendStatus(originalRoadmapId: number) {
+    return request<RecommendStatus>(
+      `/api/me/roadmaps/${originalRoadmapId}/diagnosis/recommend-status`,
+      { method: 'GET' },
       { auth: true },
     )
   },
