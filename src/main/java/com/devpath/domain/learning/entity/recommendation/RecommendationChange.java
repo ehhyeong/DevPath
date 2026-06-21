@@ -144,4 +144,9 @@ public class RecommendationChange {
   public void markRecalculated() {
     this.changeStatus = RecommendationChangeStatus.RECALCULATED;
   }
+
+  public void updateSuggestionText(String reason, String contextSummary) {
+    this.reason = reason;
+    this.contextSummary = contextSummary;
+  }
 }
