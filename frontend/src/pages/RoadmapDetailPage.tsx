@@ -17,6 +17,7 @@ import type {
   RoadmapNodeItem,
   RecommendationChange,
   RecommendationChangeHistory,
+  RecommendStatus,
   NodeStatus,
   ChangeType,
   MyRoadmapSummary,
@@ -1789,6 +1790,8 @@ export default function RoadmapDetailPage() {
   const [drawerNode, setDrawerNode] = useState<RoadmapNodeItem | null>(null)
   const [myRoadmaps, setMyRoadmaps] = useState<MyRoadmapSummary[]>([])
   const [editMode, setEditMode] = useState(false)
+  const [recommendPolling, setRecommendPolling] = useState(false)
+  const [recommendStatus, setRecommendStatus] = useState<RecommendStatus | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const resetRoadmapPageState = useCallback((options?: { keepRoadmap?: boolean }) => {
@@ -1804,7 +1807,80 @@ export default function RoadmapDetailPage() {
     setInfoOpen(false)
     setProcessing(false)
     setDrawerNode(null)
+    setRecommendPolling(false)
+    setRecommendStatus(null)
   }, [])
+
+  // 노드 클리어 후 백그라운드 추천 생성의 진행 상태를 폴링한다.
+  // 시간 상한(매직넘버) 없이, DONE/FAILED 또는 RUNNING 후 IDLE(=TTL 만료=작업 종료)일 때만 종료한다.
+  // 페이지에 머무는 동안은 생성이 얼마가 걸리든 완료되면 자동 반영된다(언마운트 시 정리).
+  useEffect(() => {
+    if (!recommendPolling) return
+    const origId = roadmap?.originalRoadmapId
+    if (origId == null) {
+      setRecommendPolling(false)
+      return
+    }
+
+    let cancelled = false
+    let sawRunning = false
+    let idleCount = 0
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    const reflectChanges = async () => {
+      try {
+        const changesData = await roadmapApi.getPendingChanges(origId)
+        if (!cancelled) setChanges(changesData)
+      } catch { /* 무시 */ }
+    }
+
+    const poll = async () => {
+      try {
+        const status = await roadmapApi.getRecommendStatus(origId)
+        if (cancelled) return
+        if (status.status === 'RUNNING') {
+          sawRunning = true
+          idleCount = 0
+          setRecommendStatus(status)
+        } else if (status.status === 'DONE') {
+          setRecommendStatus(status)
+          await reflectChanges()
+          setRecommendPolling(false)
+          return
+        } else if (status.status === 'FAILED') {
+          setRecommendStatus(status)
+          setRecommendPolling(false)
+          return
+        } else {
+          // IDLE: RUNNING을 본 적 있으면 TTL 만료(=작업 종료)로 간주해 마지막 반영 후 종료.
+          // 아직 RUNNING을 못 봤으면 트리거가 늦는 경우이므로 잠시만 재시도한다.
+          idleCount += 1
+          if (sawRunning || idleCount > 5) {
+            await reflectChanges()
+            if (!cancelled) setRecommendStatus(null)
+            setRecommendPolling(false)
+            return
+          }
+        }
+      } catch { /* 무시하고 재시도 */ }
+      if (!cancelled) timer = setTimeout(poll, 3000)
+    }
+
+    poll()
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    }
+  }, [recommendPolling, roadmap?.originalRoadmapId])
+
+  // 결과 없음/실패 상태 칩은 잠시 후 자동으로 사라진다.
+  useEffect(() => {
+    if (!recommendStatus) return
+    const isEmptyDone = recommendStatus.status === 'DONE' && recommendStatus.count === 0
+    if (!isEmptyDone && recommendStatus.status !== 'FAILED') return
+    const timer = setTimeout(() => setRecommendStatus(null), 4000)
+    return () => clearTimeout(timer)
+  }, [recommendStatus])
 
   useEffect(() => {
     const syncSession = () => {
@@ -2263,6 +2339,49 @@ export default function RoadmapDetailPage() {
         </div>
       </header> : null}
 
+      {/* ── 추천 생성 상태 칩 ──────────────────────────────────────────────── */}
+      {recommendStatus && recommendStatus.status !== 'IDLE' && (
+        <div className="fixed bottom-20 right-6 z-[60]">
+          {recommendStatus.status === 'RUNNING' && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-full font-bold text-sm shadow-lg bg-white text-gray-700 border border-gray-300">
+              <i className="fas fa-spinner fa-spin text-[#00c471]" />
+              AI 추천 분석 중…
+            </div>
+          )}
+          {recommendStatus.status === 'DONE' && recommendStatus.count > 0 && (
+            <button
+              onClick={() => { setPanelOpen(true); setRecommendStatus(null) }}
+              className="flex items-center gap-2 px-4 py-3 rounded-full font-bold text-sm shadow-lg bg-[#00c471] text-white hover:bg-green-600 transition"
+            >
+              <i className="fas fa-wand-magic-sparkles" />
+              추천 {recommendStatus.count}개 — 보기
+            </button>
+          )}
+          {recommendStatus.status === 'DONE' && recommendStatus.count === 0 && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-full font-bold text-sm shadow-lg bg-white text-gray-500 border border-gray-300">
+              <i className="fas fa-circle-check text-gray-400" />
+              추가 추천 없음
+            </div>
+          )}
+          {recommendStatus.status === 'FAILED' && (
+            <button
+              onClick={async () => {
+                const origId = roadmap?.originalRoadmapId
+                const nodeId = recommendStatus.nodeId
+                if (origId == null || nodeId == null) { setRecommendStatus(null); return }
+                try { await roadmapApi.testRunDiagnosis(origId, nodeId) } catch { /* 무시 */ }
+                setRecommendStatus({ status: 'RUNNING', nodeId, count: 0 })
+                setRecommendPolling(true)
+              }}
+              className="flex items-center gap-2 px-4 py-3 rounded-full font-bold text-sm shadow-lg bg-white text-red-600 border border-red-300 hover:bg-red-50 transition"
+            >
+              <i className="fas fa-triangle-exclamation" />
+              추천 생성 실패 — 다시 시도
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ── 편집모드 토글 ───────────────────────────────────────────────────── */}
       <button
         onClick={() => setEditMode((v) => !v)}
@@ -2288,24 +2407,11 @@ export default function RoadmapDetailPage() {
           const updated = await roadmapApi.getMyRoadmapDetail(customRoadmapId)
           setRoadmap(updated)                       // 클리어 상태 즉시 반영
           if (updated.originalRoadmapId == null) return
-          const origId = updated.originalRoadmapId
 
-          // 추천은 백그라운드 생성되므로, 기존 대기 추천 수를 기준으로 신규분을 폴링한다.
-          const baseline = changes.length
-          let attempts = 0
-          const poll = async () => {
-            attempts += 1
-            try {
-              const changesData = await roadmapApi.getPendingChanges(origId)
-              setChanges(changesData)
-              if (changesData.length > baseline) {
-                setPanelOpen(true)
-                return
-              }
-            } catch { /* 무시하고 재시도 */ }
-            if (attempts < 5) setTimeout(poll, 2000)
-          }
-          poll()
+          // 추천은 백그라운드 생성되므로 진행 상태를 폴링한다(드로어/패널을 닫고
+          // 다른 작업을 해도 완료되면 자동 표시). 실제 폴링은 아래 useEffect가 담당.
+          setRecommendStatus({ status: 'RUNNING', nodeId: null, count: 0 })
+          setRecommendPolling(true)
         }}
       />
 
