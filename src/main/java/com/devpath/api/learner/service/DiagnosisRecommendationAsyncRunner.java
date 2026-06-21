@@ -3,6 +3,8 @@ package com.devpath.api.learner.service;
 import com.devpath.api.recommendation.service.RecommendationStatusService;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChangeStatus;
 import com.devpath.domain.learning.repository.recommendation.RecommendationChangeRepository;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -19,12 +21,12 @@ public class DiagnosisRecommendationAsyncRunner {
   private final RecommendationChangeRepository recommendationChangeRepository;
 
   @Async
-  public void runAsync(Long userId, Long roadmapId, Long originalNodeId) {
+  public void runAsync(Long userId, Long roadmapId, Long originalNodeId, Long customRoadmapId) {
     recommendationStatusService.markRunning(userId, originalNodeId);
     try {
-      int before = countSuggested(userId, roadmapId);
-      diagnosisQuizService.testRunRecommend(userId, roadmapId, originalNodeId);
-      int after = countSuggested(userId, roadmapId);
+      int before = countSuggested(userId, roadmapId, customRoadmapId);
+      diagnosisQuizService.testRunRecommend(userId, roadmapId, originalNodeId, customRoadmapId);
+      int after = countSuggested(userId, roadmapId, customRoadmapId);
       recommendationStatusService.markDone(userId, originalNodeId, Math.max(0, after - before));
     } catch (Exception e) {
       recommendationStatusService.markFailed(userId, originalNodeId);
@@ -33,10 +35,18 @@ public class DiagnosisRecommendationAsyncRunner {
   }
 
   // 해당 로드맵의 대기(SUGGESTED) 추천 수를 센다.
-  private int countSuggested(Long userId, Long roadmapId) {
-    return recommendationChangeRepository
+  private int countSuggested(Long userId, Long roadmapId, Long customRoadmapId) {
+    Set<Long> changeIds = new HashSet<>();
+    recommendationChangeRepository
         .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
             userId, roadmapId, RecommendationChangeStatus.SUGGESTED)
-        .size();
+        .forEach(change -> changeIds.add(change.getId()));
+    if (customRoadmapId != null) {
+      recommendationChangeRepository
+          .findAllByUserIdAndTargetCustomRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
+              userId, customRoadmapId, RecommendationChangeStatus.SUGGESTED)
+          .forEach(change -> changeIds.add(change.getId()));
+    }
+    return changeIds.size();
   }
 }

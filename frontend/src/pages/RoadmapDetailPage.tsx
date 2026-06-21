@@ -1129,9 +1129,15 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
 
       // ── [TEST] 노드 완료 시 동적 추천 생성을 백그라운드로 트리거 ─────────────
       // 실 서비스에서는 진단 퀴즈 제출(submitQuizAnswer) 흐름으로 대체 예정
-      if (originalRoadmapId != null && node.originalNodeId != null) {
+      const recommendationRoadmapId = originalRoadmapId ?? customRoadmapId
+      const recommendationCustomRoadmapId = originalRoadmapId == null ? customRoadmapId : null
+      if (node.originalNodeId != null) {
         try {
-          await roadmapApi.testRunDiagnosis(originalRoadmapId, node.originalNodeId)
+          await roadmapApi.testRunDiagnosis(
+            recommendationRoadmapId,
+            node.originalNodeId,
+            recommendationCustomRoadmapId,
+          )
         } catch (recErr) {
           console.warn('[TEST] 진단 추천 트리거 실패 (무시):', (recErr as Error).message)
         }
@@ -1816,8 +1822,9 @@ export default function RoadmapDetailPage() {
   // 페이지에 머무는 동안은 생성이 얼마가 걸리든 완료되면 자동 반영된다(언마운트 시 정리).
   useEffect(() => {
     if (!recommendPolling) return
-    const origId = roadmap?.originalRoadmapId
-    if (origId == null) {
+    const recommendationRoadmapId = roadmap?.originalRoadmapId ?? customRoadmapId
+    const recommendationCustomRoadmapId = roadmap?.originalRoadmapId == null ? customRoadmapId : null
+    if (recommendationRoadmapId == null) {
       setRecommendPolling(false)
       return
     }
@@ -1829,14 +1836,18 @@ export default function RoadmapDetailPage() {
 
     const reflectChanges = async () => {
       try {
-        const changesData = await roadmapApi.getPendingChanges(origId)
+        const changesData = await roadmapApi.getPendingChanges(
+          roadmap?.originalRoadmapId ?? null,
+          undefined,
+          recommendationCustomRoadmapId,
+        )
         if (!cancelled) setChanges(changesData)
       } catch { /* 무시 */ }
     }
 
     const poll = async () => {
       try {
-        const status = await roadmapApi.getRecommendStatus(origId)
+        const status = await roadmapApi.getRecommendStatus(recommendationRoadmapId)
         if (cancelled) return
         if (status.status === 'RUNNING') {
           sawRunning = true
@@ -1871,7 +1882,7 @@ export default function RoadmapDetailPage() {
       cancelled = true
       if (timer) clearTimeout(timer)
     }
-  }, [recommendPolling, roadmap?.originalRoadmapId])
+  }, [customRoadmapId, recommendPolling, roadmap?.originalRoadmapId])
 
   // 결과 없음/실패 상태 칩은 잠시 후 자동으로 사라진다.
   useEffect(() => {
@@ -1986,13 +1997,10 @@ export default function RoadmapDetailPage() {
     roadmapApi.getMyRoadmapDetail(customRoadmapId, signal)
       .then(async (roadmapData) => {
         const scopedRoadmapId = roadmapData.originalRoadmapId
+        const scopedCustomRoadmapId = scopedRoadmapId == null ? customRoadmapId : null
         const [changesData, historiesData, proofCardsData, roadmapsData] = await Promise.all([
-          scopedRoadmapId == null
-            ? Promise.resolve([] as RecommendationChange[])
-            : roadmapApi.getPendingChanges(scopedRoadmapId, signal),
-          scopedRoadmapId == null
-            ? Promise.resolve([] as RecommendationChangeHistory[])
-            : roadmapApi.getChangeHistories(scopedRoadmapId, signal),
+          roadmapApi.getPendingChanges(scopedRoadmapId, signal, scopedCustomRoadmapId),
+          roadmapApi.getChangeHistories(scopedRoadmapId, signal, scopedCustomRoadmapId),
           roadmapApi.getProofCards(signal),
           roadmapApi.getMyRoadmaps(signal),
         ])
@@ -2366,10 +2374,18 @@ export default function RoadmapDetailPage() {
           {recommendStatus.status === 'FAILED' && (
             <button
               onClick={async () => {
-                const origId = roadmap?.originalRoadmapId
+                const recommendationRoadmapId = roadmap?.originalRoadmapId ?? customRoadmapId
+                const recommendationCustomRoadmapId =
+                  roadmap?.originalRoadmapId == null ? customRoadmapId : null
                 const nodeId = recommendStatus.nodeId
-                if (origId == null || nodeId == null) { setRecommendStatus(null); return }
-                try { await roadmapApi.testRunDiagnosis(origId, nodeId) } catch { /* 무시 */ }
+                if (recommendationRoadmapId == null || nodeId == null) { setRecommendStatus(null); return }
+                try {
+                  await roadmapApi.testRunDiagnosis(
+                    recommendationRoadmapId,
+                    nodeId,
+                    recommendationCustomRoadmapId,
+                  )
+                } catch { /* 무시 */ }
                 setRecommendStatus({ status: 'RUNNING', nodeId, count: 0 })
                 setRecommendPolling(true)
               }}
@@ -2406,7 +2422,6 @@ export default function RoadmapDetailPage() {
         onCleared={async () => {
           const updated = await roadmapApi.getMyRoadmapDetail(customRoadmapId)
           setRoadmap(updated)                       // 클리어 상태 즉시 반영
-          if (updated.originalRoadmapId == null) return
 
           // 추천은 백그라운드 생성되므로 진행 상태를 폴링한다(드로어/패널을 닫고
           // 다른 작업을 해도 완료되면 자동 표시). 실제 폴링은 아래 useEffect가 담당.
