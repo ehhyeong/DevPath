@@ -223,10 +223,13 @@ public class SubmissionGradingService {
   }
 
   private boolean isFrontendRenderingDemoFile(SubmissionFile file) {
-    if (file == null
-        || file.getFileName() == null
-        || !"frontend-rendering-flow.html"
-            .equalsIgnoreCase(file.getFileName().trim())) {
+    if (file == null || file.getFileName() == null) {
+      return false;
+    }
+
+    String fileName = file.getFileName().trim();
+    if (!"index.html".equalsIgnoreCase(fileName)
+        && !"frontend-rendering-flow.html".equalsIgnoreCase(fileName)) {
       return false;
     }
 
