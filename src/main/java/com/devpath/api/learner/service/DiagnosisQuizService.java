@@ -62,8 +62,12 @@ public class DiagnosisQuizService {
   private static final int FRONTEND_ROADMAP_DEMO_SCORE = 85;
   private static final long FRONTEND_ROADMAP_DEMO_FALLBACK_DELAY_MILLIS = 1800L;
   private static final String FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE =
-      "[Advanced] Rendering Performance Debugging";
+      "[심화] 렌더링 성능 디버깅";
   private static final String FRONTEND_ROADMAP_DEMO_REVIEW_TITLE =
+      "[복습] 렌더링 흐름 체크포인트";
+  private static final String FRONTEND_ROADMAP_DEMO_LEGACY_ADVANCED_TITLE =
+      "[Advanced] Rendering Performance Debugging";
+  private static final String FRONTEND_ROADMAP_DEMO_LEGACY_REVIEW_TITLE =
       "[Review] Rendering Flow Checkpoint";
 
   private final DiagnosisQuizRepository diagnosisQuizRepository;
@@ -858,10 +862,15 @@ public class DiagnosisQuizService {
       User user, RoadmapNode clearedNode, Long roadmapId, boolean isLowScore) {
     String title =
         isLowScore ? FRONTEND_ROADMAP_DEMO_REVIEW_TITLE : FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE;
+    String legacyTitle =
+        isLowScore
+            ? FRONTEND_ROADMAP_DEMO_LEGACY_REVIEW_TITLE
+            : FRONTEND_ROADMAP_DEMO_LEGACY_ADVANCED_TITLE;
 
     RecommendationChange existingChange =
-        findExistingFrontendRoadmapDemoChange(user.getId(), roadmapId, title);
+        findExistingFrontendRoadmapDemoChange(user.getId(), title, legacyTitle);
     if (existingChange != null) {
+      refreshFrontendRoadmapDemoChange(existingChange, isLowScore);
       return List.of(existingChange.getRoadmapNode().getNodeId());
     }
 
@@ -891,7 +900,7 @@ public class DiagnosisQuizService {
             .anchorCustomNodeId(anchor == null ? null : anchor.getId())
             .branchType(isLowScore ? "REVIEW" : "ADVANCED")
             .reason(frontendRoadmapDemoReason(isLowScore))
-            .contextSummary("frontend-rendering-demo-fallback; score=" + FRONTEND_ROADMAP_DEMO_SCORE)
+            .contextSummary(frontendRoadmapDemoContextSummary())
             .nodeChangeType(NodeChangeType.ADD)
             .build());
 
@@ -899,20 +908,34 @@ public class DiagnosisQuizService {
   }
 
   private RecommendationChange findExistingFrontendRoadmapDemoChange(
-      Long userId, Long roadmapId, String title) {
+      Long userId, String title, String legacyTitle) {
     List<RecommendationChange> changes =
-        roadmapId == null
-            ? recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
-                userId, RecommendationChangeStatus.SUGGESTED)
-            : recommendationChangeRepository
-                .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
-                    userId, roadmapId, RecommendationChangeStatus.SUGGESTED);
+        recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
+            userId, RecommendationChangeStatus.SUGGESTED);
 
     return changes.stream()
         .filter(change -> change.getRoadmapNode() != null)
-        .filter(change -> title.equals(change.getRoadmapNode().getTitle()))
+        .filter(
+            change ->
+                title.equals(change.getRoadmapNode().getTitle())
+                    || legacyTitle.equals(change.getRoadmapNode().getTitle()))
         .findFirst()
         .orElse(null);
+  }
+
+  private void refreshFrontendRoadmapDemoChange(
+      RecommendationChange change, boolean isLowScore) {
+    RoadmapNode node = change.getRoadmapNode();
+    if (node != null) {
+      node.updateAdminInfo(
+          isLowScore ? FRONTEND_ROADMAP_DEMO_REVIEW_TITLE : FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE,
+          frontendRoadmapDemoContent(isLowScore),
+          "BRANCH",
+          null,
+          frontendRoadmapDemoSubTopics(isLowScore),
+          null);
+    }
+    change.updateSuggestionText(frontendRoadmapDemoReason(isLowScore), frontendRoadmapDemoContextSummary());
   }
 
   private CustomRoadmap findCustomRoadmap(Long userId, Long roadmapId) {
@@ -948,24 +971,28 @@ public class DiagnosisQuizService {
 
   private String frontendRoadmapDemoContent(boolean isLowScore) {
     if (isLowScore) {
-      return "Review how DOM, CSSOM, render tree, layout, and paint connect in the browser rendering pipeline. Rebuild the first Vite page with DevTools open and explain which JavaScript DOM changes trigger visual updates.";
+      return "브라우저 렌더링 흐름에서 DOM, CSSOM, 렌더 트리, 레이아웃, 페인트가 어떻게 이어지는지 다시 점검합니다. 첫 Vite 페이지를 DevTools와 함께 다시 구현하면서 JavaScript DOM 변경이 어떤 화면 갱신을 만드는지 설명해 봅니다.";
     }
 
-    return "Go deeper on rendering performance by connecting DOM updates, style recalculation, layout, and paint costs. Use DevTools to compare a small Vite interaction before and after reducing unnecessary DOM writes.";
+    return "DOM 업데이트, 스타일 재계산, 레이아웃, 페인트 비용을 연결해서 렌더링 성능을 더 깊게 다룹니다. 작은 Vite 인터랙션을 기준으로 불필요한 DOM 쓰기를 줄이기 전후를 DevTools로 비교합니다.";
   }
 
   private String frontendRoadmapDemoSubTopics(boolean isLowScore) {
     return isLowScore
-        ? "DOM,CSSOM,Render Tree,Layout,Paint,Vite"
-        : "DOM,CSSOM,Render Tree,Layout,Paint,DevTools,Vite";
+        ? "DOM,CSSOM,렌더 트리,레이아웃,페인트,Vite"
+        : "DOM,CSSOM,렌더 트리,레이아웃,페인트,DevTools,Vite";
   }
 
   private String frontendRoadmapDemoReason(boolean isLowScore) {
     if (isLowScore) {
-      return "Review recommendation generated from the first frontend rendering node demo fallback.";
+      return "첫 프론트엔드 렌더링 노드에서 보완이 필요한 흐름을 다시 확인하도록 생성된 복습 추천입니다.";
     }
 
-    return "Advanced recommendation generated from the first frontend rendering node demo fallback.";
+    return "첫 프론트엔드 렌더링 노드를 안정적으로 완료했기 때문에 렌더링 성능까지 확장하도록 생성된 심화 추천입니다.";
+  }
+
+  private String frontendRoadmapDemoContextSummary() {
+    return "프론트엔드 렌더링 시연 fallback; 점수=" + FRONTEND_ROADMAP_DEMO_SCORE;
   }
 
   private int calculateScore(Map<Integer, String> answers) {
