@@ -133,6 +133,11 @@ export type CameraSignalPayload = {
   streamId?: string
 }
 
+export type VoiceMeetingSyncPayload = {
+  chatMessage?: VoiceChatMessage
+  minutes?: VoiceMeetingMinutes
+}
+
 export type ScreenShareView = {
   userId: number
   userName: string
@@ -175,6 +180,8 @@ export type VoiceSignalingMessage = {
     | 'camera-stop'
     | 'screen-share-start'
     | 'screen-share-stop'
+    | 'chat-message'
+    | 'minutes-updated'
     | 'error'
   channelId?: number
   peers?: VoiceSignalingPeer[]
@@ -187,6 +194,7 @@ export type VoiceSignalingMessage = {
     | VoiceReactionPayload
     | ScreenShareSignalPayload
     | CameraSignalPayload
+    | VoiceMeetingSyncPayload
     | null
   detail?: string
 }

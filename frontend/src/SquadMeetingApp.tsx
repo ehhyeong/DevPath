@@ -51,6 +51,7 @@ import type {
   SecurityTone,
   SinkAudioElement,
   SpeechRecognitionLike,
+  VoiceMeetingSyncPayload,
   VoiceChannel,
   VoiceChatMessage,
   VoiceConnectionStatus,
@@ -467,6 +468,7 @@ export default function SquadMeetingApp() {
   const remoteAudioElementsRef = useRef<Map<number, SinkAudioElement>>(new Map())
   const remoteAudioContainerRef = useRef<HTMLDivElement | null>(null)
   const controlBoxRef = useRef<HTMLDivElement | null>(null)
+  const joiningRef = useRef(false)
   const reactionTimerIdsRef = useRef<number[]>([])
   const pendingIceCandidatesRef = useRef<Map<number, RTCIceCandidateInit[]>>(new Map())
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -1682,6 +1684,16 @@ export default function SquadMeetingApp() {
     }))
   }
 
+  function broadcastMeetingSync(type: 'chat-message' | 'minutes-updated', payload: VoiceMeetingSyncPayload) {
+    const socket = signalingSocketRef.current
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    socket.send(JSON.stringify({ type, payload }))
+  }
+
   function broadcastCameraState(type: 'camera-start' | 'camera-stop') {
     const socket = signalingSocketRef.current
 
@@ -2212,6 +2224,26 @@ export default function SquadMeetingApp() {
         }
         break
       }
+      case 'chat-message': {
+        const payload = message.payload as VoiceMeetingSyncPayload | null | undefined
+
+        if (payload?.chatMessage) {
+          appendVoiceChatMessage(payload.chatMessage)
+        } else if (activeChannel) {
+          void refreshVoiceMeetingPanel(activeChannel.channelId).catch(() => undefined)
+        }
+        break
+      }
+      case 'minutes-updated': {
+        const payload = message.payload as VoiceMeetingSyncPayload | null | undefined
+
+        if (payload?.minutes) {
+          applyVoiceMinutes(payload.minutes)
+        } else if (activeChannel) {
+          void refreshVoiceMeetingPanel(activeChannel.channelId).catch(() => undefined)
+        }
+        break
+      }
       case 'speaking':
       case 'stop-speaking':
         if (message.fromUserId) {
@@ -2494,6 +2526,24 @@ export default function SquadMeetingApp() {
     return fetchSquadVoiceMinutes(channelId)
   }
 
+  function appendVoiceChatMessage(message: VoiceChatMessage) {
+    setVoiceChatMessages((current) => {
+      if (current.some((item) => item.messageId === message.messageId)) {
+        return current
+      }
+
+      return [...current, message]
+    })
+  }
+
+  function applyVoiceMinutes(minutes: VoiceMeetingMinutes, syncDraft = false) {
+    setVoiceMinutes(minutes)
+
+    if (syncDraft || shouldSyncMinutesDraftFromServer()) {
+      setMinutesDraft(minutes.transcript ?? '')
+    }
+  }
+
   async function refreshVoiceMeetingPanel(channelId = activeChannel?.channelId, syncDraft = false) {
     if (!channelId) {
       return
@@ -2505,11 +2555,7 @@ export default function SquadMeetingApp() {
     ])
 
     setVoiceChatMessages(messages)
-    setVoiceMinutes(minutes)
-
-    if (syncDraft) {
-      setMinutesDraft(minutes.transcript ?? '')
-    }
+    applyVoiceMinutes(minutes, syncDraft)
   }
 
   async function refreshVoiceRoomState(channelId = activeChannel?.channelId) {
@@ -2619,11 +2665,8 @@ export default function SquadMeetingApp() {
       const minutes = await appendSquadVoiceMinutesTranscriptLine(activeChannel.channelId, text)
 
       minutesAppendErrorShownRef.current = false
-      setVoiceMinutes(minutes)
-
-      if (shouldSyncMinutesDraftFromServer()) {
-        setMinutesDraft(minutes.transcript ?? '')
-      }
+      applyVoiceMinutes(minutes)
+      broadcastMeetingSync('minutes-updated', { minutes })
     } catch {
       if (!minutesAppendErrorShownRef.current) {
         minutesAppendErrorShownRef.current = true
@@ -2732,7 +2775,8 @@ export default function SquadMeetingApp() {
       const message = await sendSquadVoiceChatMessage(activeChannel.channelId, content)
 
       setVoiceChatInput('')
-      setVoiceChatMessages((current) => [...current, message])
+      appendVoiceChatMessage(message)
+      broadcastMeetingSync('chat-message', { chatMessage: message })
       void refreshVoiceMeetingPanel(activeChannel.channelId).catch(() => undefined)
       void createSquadNotification(workspaceId, {
         pageKey: 'squad-meeting',
@@ -2788,11 +2832,8 @@ export default function SquadMeetingApp() {
     try {
       const minutes = await updateSquadVoiceMinutes(activeChannel.channelId, payload)
 
-      setVoiceMinutes(minutes)
-
-      if (syncDraft) {
-        setMinutesDraft(minutes.transcript ?? '')
-      }
+      applyVoiceMinutes(minutes, syncDraft)
+      broadcastMeetingSync('minutes-updated', { minutes })
 
       return true
     } catch (minutesError) {
@@ -2875,8 +2916,8 @@ export default function SquadMeetingApp() {
         throw new Error('회의 요약 응답을 읽지 못했습니다.')
       }
 
-      setVoiceMinutes(minutes)
-      setMinutesDraft(minutes.transcript ?? '')
+      applyVoiceMinutes(minutes, true)
+      broadcastMeetingSync('minutes-updated', { minutes })
       setMinutesActionItems(actionItems)
       setSelectedMinutesActionItems(actionItems.map((_, index) => index))
       setMinutesSummaryReportOpen(true)
@@ -2989,7 +3030,10 @@ export default function SquadMeetingApp() {
       }
 
       connectVoiceSignaling(activeChannel.channelId)
-      await refreshVoiceRoomState(activeChannel.channelId)
+      await Promise.all([
+        refreshVoiceRoomState(activeChannel.channelId),
+        refreshVoiceMeetingPanel(activeChannel.channelId, true).catch(() => undefined),
+      ])
       showAuthToast({ message: toastMessage, durationMs: 1800 })
     } catch (restoreError) {
       disconnectVoiceSession()
@@ -3005,10 +3049,11 @@ export default function SquadMeetingApp() {
   }
 
   async function joinChannel() {
-    if (!activeChannel) {
+    if (!activeChannel || joiningRef.current) {
       return
     }
 
+    joiningRef.current = true
     setJoining(true)
     setVoiceConnectionStatus('connecting')
     setVoiceConnectionError(null)
@@ -3035,8 +3080,11 @@ export default function SquadMeetingApp() {
         }
       }
 
-      await refreshVoiceRoomState(activeChannel.channelId)
       connectVoiceSignaling(activeChannel.channelId)
+      await Promise.all([
+        refreshVoiceRoomState(activeChannel.channelId),
+        refreshVoiceMeetingPanel(activeChannel.channelId, true).catch(() => undefined),
+      ])
       void createSquadNotification(workspaceId, {
         pageKey: 'squad-meeting',
         message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 음성 회의에 참여했습니다.`,
@@ -3052,8 +3100,17 @@ export default function SquadMeetingApp() {
         durationMs: 2200,
       })
     } finally {
+      joiningRef.current = false
       setJoining(false)
     }
+  }
+
+  function handleJoinPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0 || joining || !activeChannel) {
+      return
+    }
+
+    void joinChannel()
   }
 
   async function leaveChannel() {
@@ -4119,6 +4176,7 @@ export default function SquadMeetingApp() {
                     ) : (
                       <button
                         type="button"
+                        onPointerDown={handleJoinPointerDown}
                         onClick={() => void joinChannel()}
                         disabled={joining || !activeChannel}
                         className="squad-meeting-lobby-action-button h-12 rounded-xl bg-brand text-white text-sm font-extrabold hover:bg-green-600 transition flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-green-100"

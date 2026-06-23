@@ -33,6 +33,8 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
   private static final String TYPE_CAMERA_STOP = "camera-stop";
   private static final String TYPE_SCREEN_SHARE_START = "screen-share-start";
   private static final String TYPE_SCREEN_SHARE_STOP = "screen-share-stop";
+  private static final String TYPE_CHAT_MESSAGE = "chat-message";
+  private static final String TYPE_MINUTES_UPDATED = "minutes-updated";
   private static final String TYPE_ERROR = "error";
 
   private final ObjectMapper objectMapper;
@@ -182,7 +184,9 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
         || TYPE_CAMERA_START.equals(type)
         || TYPE_CAMERA_STOP.equals(type)
         || TYPE_SCREEN_SHARE_START.equals(type)
-        || TYPE_SCREEN_SHARE_STOP.equals(type);
+        || TYPE_SCREEN_SHARE_STOP.equals(type)
+        || TYPE_CHAT_MESSAGE.equals(type)
+        || TYPE_MINUTES_UPDATED.equals(type);
   }
 
   private void sendPeerList(
