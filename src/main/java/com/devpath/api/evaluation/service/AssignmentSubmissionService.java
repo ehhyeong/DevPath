@@ -6,6 +6,7 @@ import com.devpath.api.evaluation.dto.response.SubmissionHistoryResponse;
 import com.devpath.api.evaluation.dto.response.SubmissionResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.learning.entity.Assignment;
 import com.devpath.domain.learning.entity.Submission;
 import com.devpath.domain.learning.entity.SubmissionFile;
@@ -31,10 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AssignmentSubmissionService {
 
+  private static final Long FRONTEND_DEMO_COURSE_ID = 127L;
+
   private final UserRepository userRepository;
   private final AssignmentRepository assignmentRepository;
   private final SubmissionRepository submissionRepository;
   private final SubmissionGradingService submissionGradingService;
+  private final CourseNodeMappingRepository courseNodeMappingRepository;
 
   // 학습자가 실제 과제를 제출하고 제출 이력을 생성한다.
   public SubmissionResponse createSubmission(
@@ -148,6 +152,10 @@ public class AssignmentSubmissionService {
   // 허용 파일 형식 규칙을 검증한다.
   private boolean validateFileFormats(
       Assignment assignment, List<CreateSubmissionFileRequest> files) {
+    if (isFrontendDemoCourseAssignment(assignment)) {
+      return true;
+    }
+
     SubmissionType submissionType = assignment.getSubmissionType();
 
     // TEXT나 URL 전용 과제는 파일이 없어도 통과 처리한다.
@@ -170,6 +178,7 @@ public class AssignmentSubmissionService {
         Arrays.stream(assignment.getAllowedFileFormats().split(","))
             .map(String::trim)
             .map(value -> value.toLowerCase(Locale.ROOT))
+            .map(this::normalizeFileFormat)
             .filter(value -> !value.isBlank())
             .collect(Collectors.toSet());
 
@@ -183,19 +192,29 @@ public class AssignmentSubmissionService {
 
   // 파일명이나 fileType에서 확장자를 추출해 소문자로 반환한다.
   private String extractExtension(String fileName, String fileType) {
-    if (fileType != null && !fileType.isBlank()) {
-      return fileType.trim().toLowerCase(Locale.ROOT).replace(".", "");
+    if (fileName != null && fileName.contains(".")) {
+      return normalizeFileFormat(fileName.substring(fileName.lastIndexOf('.') + 1));
     }
 
-    if (fileName == null || !fileName.contains(".")) {
+    if (fileType == null || fileType.isBlank()) {
       return "";
     }
 
-    return fileName.substring(fileName.lastIndexOf('.') + 1).trim().toLowerCase(Locale.ROOT);
+    return normalizeFileFormat(fileType);
+  }
+
+  private String normalizeFileFormat(String value) {
+    String normalized = value.trim().toLowerCase(Locale.ROOT).replace(".", "");
+    int slashIndex = normalized.lastIndexOf('/');
+    return slashIndex >= 0 ? normalized.substring(slashIndex + 1) : normalized;
   }
 
   // README, 테스트, 린트, 파일 형식 각각 25점씩 부여하는 단순 품질 점수 계산식이다.
   private SubmissionMethods resolveSubmissionMethods(Assignment assignment) {
+    if (isFrontendDemoCourseAssignment(assignment)) {
+      return new SubmissionMethods(false, true, false);
+    }
+
     SubmissionType submissionType = assignment.getSubmissionType();
     boolean allowText =
         assignment.getAllowTextSubmission() == null
@@ -251,6 +270,18 @@ public class AssignmentSubmissionService {
       return null;
     }
     return value.trim();
+  }
+
+  private boolean isFrontendDemoCourseAssignment(Assignment assignment) {
+    if (assignment == null
+        || assignment.getRoadmapNode() == null
+        || assignment.getRoadmapNode().getNodeId() == null) {
+      return false;
+    }
+
+    return courseNodeMappingRepository
+        .findCourseIdsByNodeId(assignment.getRoadmapNode().getNodeId())
+        .contains(FRONTEND_DEMO_COURSE_ID);
   }
 
   private static class SubmissionMethods {
