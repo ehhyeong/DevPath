@@ -461,6 +461,7 @@ export default function SquadMeetingApp() {
   const localScreenShareStreamRef = useRef<MediaStream | null>(null)
   const remoteCameraStreamIdsRef = useRef<Map<number, string>>(new Map())
   const remoteScreenShareStreamIdsRef = useRef<Map<number, string>>(new Map())
+  const remoteScreenShareTrackIdsRef = useRef<Map<number, string>>(new Map())
   const remoteScreenSharePendingRef = useRef<Set<number>>(new Set())
   const screenShareDragRef = useRef<ScreenShareDragState | null>(null)
   const signalingSocketRef = useRef<WebSocket | null>(null)
@@ -471,6 +472,7 @@ export default function SquadMeetingApp() {
   const joiningRef = useRef(false)
   const reactionTimerIdsRef = useRef<number[]>([])
   const pendingIceCandidatesRef = useRef<Map<number, RTCIceCandidateInit[]>>(new Map())
+  const pendingRenegotiationPeerIdsRef = useRef<Set<number>>(new Set())
   const audioContextRef = useRef<AudioContext | null>(null)
   const micLoopbackAudioRef = useRef<SinkAudioElement | null>(null)
   const soundTestAudioRef = useRef<SinkAudioElement | null>(null)
@@ -1248,13 +1250,16 @@ export default function SquadMeetingApp() {
       peerConnection.ontrack = null
       peerConnection.onicecandidate = null
       peerConnection.onconnectionstatechange = null
+      peerConnection.onsignalingstatechange = null
       peerConnection.close()
     })
     peerConnectionsRef.current.clear()
     pendingIceCandidatesRef.current.clear()
+    pendingRenegotiationPeerIdsRef.current.clear()
     stopRemoteAudioElements()
     remoteCameraStreamIdsRef.current.clear()
     remoteScreenShareStreamIdsRef.current.clear()
+    remoteScreenShareTrackIdsRef.current.clear()
     remoteScreenSharePendingRef.current.clear()
     setRemoteCameraStreams(new Map())
     setRemoteScreenShare(null)
@@ -1530,6 +1535,7 @@ export default function SquadMeetingApp() {
       remoteScreenShareStreamIdsRef.current.delete(userId)
     }
 
+    remoteScreenShareTrackIdsRef.current.delete(userId)
     remoteScreenSharePendingRef.current.delete(userId)
     setRemoteScreenShare((current) =>
       current?.userId === userId && (!stream || current.stream === stream) ? null : current,
@@ -1560,6 +1566,9 @@ export default function SquadMeetingApp() {
   function attachRemoteScreenStream(userId: number, userName: string, stream: MediaStream, track: MediaStreamTrack) {
     const screenStream = stream.getVideoTracks().includes(track) ? stream : new MediaStream([track])
 
+    remoteScreenShareStreamIdsRef.current.set(userId, stream.id)
+    remoteScreenShareTrackIdsRef.current.set(userId, track.id)
+    remoteScreenSharePendingRef.current.delete(userId)
     setRemoteScreenShare({
       userId,
       userName: getVoiceDisplayName(userId, userName),
@@ -1602,7 +1611,13 @@ export default function SquadMeetingApp() {
     if (track.kind === 'video') {
       const streamId = stream.id
       const screenShareStreamId = remoteScreenShareStreamIdsRef.current.get(userId)
+      const screenShareTrackId = remoteScreenShareTrackIdsRef.current.get(userId)
       const cameraStreamId = remoteCameraStreamIdsRef.current.get(userId)
+
+      if (screenShareTrackId && screenShareTrackId === track.id) {
+        attachRemoteScreenStream(userId, userName, stream, track)
+        return
+      }
 
       if (screenShareStreamId && screenShareStreamId === streamId) {
         attachRemoteScreenStream(userId, userName, stream, track)
@@ -1640,6 +1655,7 @@ export default function SquadMeetingApp() {
     }
 
     pendingIceCandidatesRef.current.delete(userId)
+    pendingRenegotiationPeerIdsRef.current.delete(userId)
 
     const audio = remoteAudioElementsRef.current.get(userId)
 
@@ -1680,6 +1696,7 @@ export default function SquadMeetingApp() {
       payload: {
         sharing: type === 'screen-share-start',
         streamId: localScreenShareStreamRef.current?.id,
+        trackId: localScreenShareStreamRef.current?.getVideoTracks()[0]?.id,
       },
     }))
   }
@@ -1722,9 +1739,11 @@ export default function SquadMeetingApp() {
 
   async function renegotiatePeerConnection(userId: number, peerConnection: RTCPeerConnection) {
     if (peerConnection.signalingState !== 'stable') {
+      pendingRenegotiationPeerIdsRef.current.add(userId)
       return
     }
 
+    pendingRenegotiationPeerIdsRef.current.delete(userId)
     const offer = await peerConnection.createOffer()
 
     await peerConnection.setLocalDescription(offer)
@@ -2074,6 +2093,15 @@ export default function SquadMeetingApp() {
       }
     }
 
+    peerConnection.onsignalingstatechange = () => {
+      if (
+        peerConnection.signalingState === 'stable'
+        && pendingRenegotiationPeerIdsRef.current.has(peer.userId)
+      ) {
+        void renegotiatePeerConnection(peer.userId, peerConnection).catch(() => undefined)
+      }
+    }
+
     peerConnectionsRef.current.set(peer.userId, peerConnection)
 
     return peerConnection
@@ -2277,9 +2305,11 @@ export default function SquadMeetingApp() {
         if (message.fromUserId) {
           if (payload?.streamId) {
             remoteScreenShareStreamIdsRef.current.set(message.fromUserId, payload.streamId)
-          } else {
-            remoteScreenSharePendingRef.current.add(message.fromUserId)
           }
+          if (payload?.trackId) {
+            remoteScreenShareTrackIdsRef.current.set(message.fromUserId, payload.trackId)
+          }
+          remoteScreenSharePendingRef.current.add(message.fromUserId)
         }
         if (message.fromUserId && message.fromUserName) {
           showAuthToast({ message: `${message.fromUserName}님이 화면 공유를 시작했습니다.`, durationMs: 1600 })

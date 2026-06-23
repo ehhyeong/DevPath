@@ -126,6 +126,7 @@ export type VoiceReactionPayload = {
 export type ScreenShareSignalPayload = {
   sharing?: boolean
   streamId?: string
+  trackId?: string
 }
 
 export type CameraSignalPayload = {
