@@ -776,7 +776,7 @@ export default function SquadMeetingApp() {
   }, [isJoined])
 
   useEffect(() => {
-    if (!isJoined || !voiceMinutes?.recording) {
+    if (!isJoined || !voiceMinutes?.recording || isMuted) {
       stopMinutesSpeechRecognition()
       return
     }
@@ -784,7 +784,7 @@ export default function SquadMeetingApp() {
     if (!speechRecognitionRef.current) {
       startMinutesSpeechRecognition()
     }
-  }, [activeChannel?.channelId, isJoined, voiceMinutes?.recording])
+  }, [activeChannel?.channelId, isJoined, isMuted, voiceMinutes?.recording])
 
   useEffect(() => {
     if (!session?.accessToken || !activeChannel?.channelId) {
@@ -1282,6 +1282,7 @@ export default function SquadMeetingApp() {
     })
 
     if (muted) {
+      stopMinutesSpeechRecognition()
       publishLocalSpeaking(false)
     }
   }
@@ -2706,6 +2707,11 @@ export default function SquadMeetingApp() {
   }
 
   function startMinutesSpeechRecognition() {
+    if (isMuted) {
+      stopMinutesSpeechRecognition()
+      return false
+    }
+
     const SpeechRecognition = getSpeechRecognitionConstructor()
 
     if (!SpeechRecognition) {
