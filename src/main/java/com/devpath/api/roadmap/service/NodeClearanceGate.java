@@ -47,7 +47,7 @@ public class NodeClearanceGate {
       return List.of();
     }
     Set<String> satisfiedNormalized;
-    if (node.isBranch()) {
+    if (node.isRelearnGated()) {
       LocalDateTime since = node.getCreatedAt() != null ? node.getCreatedAt() : EPOCH;
       satisfiedNormalized =
           normalize(

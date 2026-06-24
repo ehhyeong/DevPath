@@ -6,6 +6,7 @@ import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -84,8 +85,48 @@ public class CustomRoadmapPrerequisiteSyncService {
     }
   }
 
-  // customSortOrder + 분기 구조에서 선행 엣지를 도출한다.
+  // 로드맵 단위로 모델을 판별해 그래프 도출 방식을 분기한다(TASK-56 듀얼리드).
+  // 노드 중 branchKind가 하나라도 설정돼 있으면 레인 모델(P3+ writer는 SPINE 포함 전 노드에 branchKind 채움).
   private Set<EdgeKey> buildDesiredEdges(List<CustomRoadmapNode> customNodes) {
+    boolean laneModeled = customNodes.stream().anyMatch(node -> node.getBranchKind() != null);
+    return laneModeled ? buildLaneEdges(customNodes) : buildLegacyEdges(customNodes);
+  }
+
+  // 레인 모델: 레인=(anchorNodeId, laneKey) 체인. 첫 노드 선행=앵커 커스텀 노드, 나머지=레인 내 직전 노드. 합류 없음.
+  private Set<EdgeKey> buildLaneEdges(List<CustomRoadmapNode> customNodes) {
+    Map<Long, CustomRoadmapNode> customNodeById =
+        customNodes.stream()
+            .filter(node -> node.getId() != null)
+            .collect(Collectors.toMap(CustomRoadmapNode::getId, Function.identity()));
+
+    Comparator<CustomRoadmapNode> byLaneOrder =
+        Comparator.comparing(
+                CustomRoadmapNode::getOrderInLane, Comparator.nullsLast(Integer::compareTo))
+            .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
+
+    Map<LaneKey, List<CustomRoadmapNode>> lanes =
+        customNodes.stream()
+            .collect(
+                Collectors.groupingBy(
+                    node -> new LaneKey(node.getAnchorNodeId(), node.getLaneKey()),
+                    LinkedHashMap::new,
+                    Collectors.toList()));
+
+    Set<EdgeKey> edges = new LinkedHashSet<>();
+    for (Map.Entry<LaneKey, List<CustomRoadmapNode>> entry : lanes.entrySet()) {
+      List<CustomRoadmapNode> laneNodes = entry.getValue().stream().sorted(byLaneOrder).toList();
+      if (laneNodes.isEmpty()) {
+        continue;
+      }
+      CustomRoadmapNode anchor = customNodeById.get(entry.getKey().anchorNodeId());
+      addEdge(edges, laneNodes.get(0), anchor); // 루트척추는 anchor=null → 선행 없음
+      addLinearEdges(edges, laneNodes);
+    }
+    return edges;
+  }
+
+  // 레거시 모델: customSortOrder + 옛 분기 구조에서 선행 엣지를 도출한다.
+  private Set<EdgeKey> buildLegacyEdges(List<CustomRoadmapNode> customNodes) {
     Comparator<CustomRoadmapNode> byOrder =
         Comparator.comparing(
                 CustomRoadmapNode::getCustomSortOrder, Comparator.nullsLast(Integer::compareTo))
@@ -192,4 +233,7 @@ public class CustomRoadmapPrerequisiteSyncService {
   }
 
   private record EdgeKey(Long nodeId, Long prerequisiteNodeId) {}
+
+  // 레인 식별자: (앵커 커스텀 노드 id, 형제 레인 구분키). 루트척추는 (null, null).
+  private record LaneKey(Long anchorNodeId, Integer laneKey) {}
 }

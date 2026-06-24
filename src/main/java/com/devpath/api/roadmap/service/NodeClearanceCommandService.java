@@ -86,7 +86,9 @@ public class NodeClearanceCommandService {
               requiredTags,
               userTechStackRepository.findTagNamesByUserId(userId))) {
         throw new CustomException(
-            customNode.isBranch() ? ErrorCode.NODE_RELEARN_REQUIRED : ErrorCode.INSUFFICIENT_TAGS);
+            customNode.isRelearnGated()
+                ? ErrorCode.NODE_RELEARN_REQUIRED
+                : ErrorCode.INSUFFICIENT_TAGS);
       }
     }
 
