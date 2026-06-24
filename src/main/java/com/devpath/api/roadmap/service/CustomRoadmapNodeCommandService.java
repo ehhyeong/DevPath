@@ -2,6 +2,7 @@ package com.devpath.api.roadmap.service;
 
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.NodeStatus;
@@ -9,7 +10,10 @@ import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,14 +45,35 @@ public class CustomRoadmapNodeCommandService {
     }
   }
 
-  /** 노드 삭제. 선행관계 간선을 함께 정리하고 진행률을 재계산한다. */
+  /**
+   * 노드 삭제. 이 노드에 매달린 복습/심화(REVIEW/ADVANCED) 자식은 함께 삭제(cascade)하고, 구조 분기 자식은 relayout이 직전 척추로
+   * 재앵커한다. 선행관계 간선을 함께 정리하고 진행률을 재계산한다.
+   */
   @Transactional
   public void deleteNode(Long userId, Long customRoadmapId, Long customNodeId) {
     CustomRoadmapNode customNode = getOwnedNode(userId, customRoadmapId, customNodeId);
     CustomRoadmap customRoadmap = customNode.getCustomRoadmap();
 
+    // cascade: 이 노드를 앵커로 매달린 복습/심화 자식 노드를 함께 삭제한다(부모 없으면 의미가 사라짐).
+    List<CustomRoadmapNode> reviewChildren =
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap)
+            .stream()
+            .filter(
+                n ->
+                    Objects.equals(n.getAnchorNodeId(), customNode.getId())
+                        && (n.getBranchKind() == BranchKind.REVIEW
+                            || n.getBranchKind() == BranchKind.ADVANCED))
+            .collect(Collectors.toList());
+    for (CustomRoadmapNode child : reviewChildren) {
+      customNodePrerequisiteRepository.deleteAllByCustomNodeOrPrerequisiteCustomNode(child);
+      customRoadmapNodeRepository.delete(child);
+    }
+
     customNodePrerequisiteRepository.deleteAllByCustomNodeOrPrerequisiteCustomNode(customNode);
     customRoadmapNodeRepository.delete(customNode);
+
+    // 삭제 후 남은 노드 기준으로 레인/선행관계를 재구성한다(앵커가 사라진 분기 재배치 포함).
+    prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
 
     long total = customRoadmapNodeRepository.countByCustomRoadmap(customRoadmap);
     long completed =
@@ -58,35 +83,161 @@ public class CustomRoadmapNodeCommandService {
   }
 
   /**
-   * 노드를 한 칸 위/아래로 이동한다(customSortOrder 재배치). 이동 후 현재 순서 기준으로 선행관계 그래프를 재생성하고, 해당
-   * 로드맵을 편집본으로 고정(공식 선행관계 자동 재적용 중단)한다. 진행상태는 보존된다.
+   * 노드를 한 칸 위/아래로 이동한다. 레인 모델 로드맵은 레인 규칙으로 이동한다: 같은 레인(분기 체인) 내에서는 순서변경, 레인 경계에서 더 밀면 그
+   * 층(layer)의 분기가 척추로 이탈한다. 레거시 로드맵은 기존 customSortOrder 스왑. 진행상태는 보존된다.
    */
   @Transactional
   public void moveNode(Long userId, Long customRoadmapId, Long customNodeId, boolean up) {
     CustomRoadmapNode node = getOwnedNode(userId, customRoadmapId, customNodeId);
     CustomRoadmap customRoadmap = node.getCustomRoadmap();
 
-    List<CustomRoadmapNode> ordered =
+    List<CustomRoadmapNode> all =
         new ArrayList<>(
             customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(
                 customRoadmap));
 
-    int index = -1;
-    for (int i = 0; i < ordered.size(); i += 1) {
-      if (ordered.get(i).getId().equals(node.getId())) {
-        index = i;
-        break;
-      }
+    if (all.stream().noneMatch(CustomRoadmapNode::isLaneModeled)) {
+      moveLegacy(customRoadmap, node, up);
+      return;
     }
+    if (!moveLaneNode(all, node, up)) {
+      return; // 경계 등 변경 없음
+    }
+    prerequisiteSyncService.recomputeOrderAndRebuild(customRoadmap);
+    customRoadmap.markPrerequisitesCustomized();
+  }
+
+  // 레거시 로드맵: 기존 customSortOrder 리스트 스왑 방식.
+  private void moveLegacy(CustomRoadmap customRoadmap, CustomRoadmapNode node, boolean up) {
+    List<CustomRoadmapNode> ordered =
+        new ArrayList<>(
+            customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(
+                customRoadmap));
+    int index = indexOfId(ordered, node.getId());
     int neighborIndex = up ? index - 1 : index + 1;
     if (index < 0 || neighborIndex < 0 || neighborIndex >= ordered.size()) {
-      return; // 경계(맨 위/아래) — 변경 없음
+      return;
     }
-
-    // 리스트에서 한 칸 이동 후 재번호+선행관계 재생성+편집본 고정
     ordered.remove(index);
     ordered.add(neighborIndex, node);
     finalizeReorder(customRoadmap, ordered);
+  }
+
+  // 레인 모델 이동. 변경이 있으면 true. 레인 필드를 직접 조작하며, 호출 측이 recomputeOrderAndRebuild로 순서·그래프를 재생성한다.
+  private boolean moveLaneNode(List<CustomRoadmapNode> all, CustomRoadmapNode node, boolean up) {
+    BranchKind kind = node.getBranchKind();
+    if (kind == BranchKind.REVIEW || kind == BranchKind.ADVANCED) {
+      return false; // 추천 분기는 이동 대상 아님(앵커 고정)
+    }
+    if (kind == BranchKind.SPINE) {
+      List<CustomRoadmapNode> spine = sortByOrderInLane(filterByKind(all, BranchKind.SPINE));
+      int i = indexOfId(spine, node.getId());
+      int j = up ? i - 1 : i + 1;
+      if (j < 0 || j >= spine.size()) {
+        return false; // 경계
+      }
+      swapOrderInLane(node, spine.get(j));
+      return true;
+    }
+    // 구조 분기(BRANCH)
+    List<CustomRoadmapNode> lane =
+        sortByOrderInLane(
+            all.stream()
+                .filter(
+                    n ->
+                        n.getBranchKind() == BranchKind.BRANCH
+                            && Objects.equals(n.getAnchorNodeId(), node.getAnchorNodeId())
+                            && Objects.equals(n.getLaneKey(), node.getLaneKey()))
+                .collect(Collectors.toList()));
+    int pos = indexOfId(lane, node.getId());
+    int nbr = up ? pos - 1 : pos + 1;
+    if (nbr >= 0 && nbr < lane.size()) {
+      swapOrderInLane(node, lane.get(nbr)); // 레인 내 순서변경(분기 유지)
+      return true;
+    }
+    exitLayer(all, node, up); // 레인 경계 → 층 이탈(척추로 전환)
+    return true;
+  }
+
+  // 분기 노드가 레인 경계에서 이탈할 때: 같은 앵커의 같은 층(orderInLane) 노드들을 척추로 전환해 앵커 바로 뒤에 끼우고,
+  // 더 깊은 층은 마지막 이탈 노드로 재앵커한다(이동 방향대로 형제 위/아래 배치).
+  private void exitLayer(List<CustomRoadmapNode> all, CustomRoadmapNode node, boolean up) {
+    Long anchorId = node.getAnchorNodeId();
+    int k = node.getOrderInLane() != null ? node.getOrderInLane() : 0;
+
+    List<CustomRoadmapNode> exitOrdered =
+        all.stream()
+            .filter(
+                n ->
+                    n.getBranchKind() == BranchKind.BRANCH
+                        && Objects.equals(n.getAnchorNodeId(), anchorId)
+                        && n.getOrderInLane() != null
+                        && n.getOrderInLane() == k)
+            .sorted(
+                Comparator.comparing(
+                    CustomRoadmapNode::getLaneKey, Comparator.nullsLast(Integer::compareTo)))
+            .collect(Collectors.toCollection(ArrayList::new));
+    exitOrdered.remove(node);
+    if (up) {
+      exitOrdered.add(0, node);
+    } else {
+      exitOrdered.add(node);
+    }
+
+    List<CustomRoadmapNode> below =
+        all.stream()
+            .filter(
+                n ->
+                    n.getBranchKind() == BranchKind.BRANCH
+                        && Objects.equals(n.getAnchorNodeId(), anchorId)
+                        && n.getOrderInLane() != null
+                        && n.getOrderInLane() > k)
+            .collect(Collectors.toList());
+
+    // 새 척추 시퀀스: 앵커 바로 뒤에 이탈 노드들을 삽입하고 0..N으로 재번호(이탈 노드는 SPINE 전환).
+    List<CustomRoadmapNode> spine = sortByOrderInLane(filterByKind(all, BranchKind.SPINE));
+    int ai = indexOfId(spine, anchorId);
+    if (ai < 0) {
+      ai = spine.size() - 1;
+    }
+    spine.addAll(ai + 1, exitOrdered);
+    for (int i = 0; i < spine.size(); i += 1) {
+      spine.get(i).assignLane(BranchKind.SPINE, null, null, i);
+    }
+
+    // 더 깊은 층은 마지막 이탈 노드로 재앵커하고 층 번호를 0부터로 당긴다.
+    CustomRoadmapNode newAnchor = exitOrdered.get(exitOrdered.size() - 1);
+    for (CustomRoadmapNode b : below) {
+      b.assignLane(BranchKind.BRANCH, newAnchor.getId(), b.getLaneKey(), b.getOrderInLane() - (k + 1));
+    }
+  }
+
+  private List<CustomRoadmapNode> filterByKind(List<CustomRoadmapNode> all, BranchKind kind) {
+    return all.stream().filter(n -> n.getBranchKind() == kind).collect(Collectors.toList());
+  }
+
+  private List<CustomRoadmapNode> sortByOrderInLane(List<CustomRoadmapNode> nodes) {
+    nodes.sort(
+        Comparator.comparing(
+                CustomRoadmapNode::getOrderInLane, Comparator.nullsLast(Integer::compareTo))
+            .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo)));
+    return nodes;
+  }
+
+  private int indexOfId(List<CustomRoadmapNode> list, Long id) {
+    for (int i = 0; i < list.size(); i += 1) {
+      if (id.equals(list.get(i).getId())) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  private void swapOrderInLane(CustomRoadmapNode a, CustomRoadmapNode b) {
+    Integer oa = a.getOrderInLane();
+    Integer ob = b.getOrderInLane();
+    a.assignLane(a.getBranchKind(), a.getAnchorNodeId(), a.getLaneKey(), ob);
+    b.assignLane(b.getBranchKind(), b.getAnchorNodeId(), b.getLaneKey(), oa);
   }
 
   /**
@@ -130,10 +281,25 @@ public class CustomRoadmapNodeCommandService {
     CustomRoadmapNode node = getOwnedNode(userId, customRoadmapId, customNodeId);
     CustomRoadmap customRoadmap = node.getCustomRoadmap();
 
-    backfillBranchGroupsIfNeeded(customRoadmap);
-    node.setBranchGroupOverride(branchGroup);
+    List<CustomRoadmapNode> nodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
+    boolean laneModeled = nodes.stream().anyMatch(CustomRoadmapNode::isLaneModeled);
 
-    prerequisiteSyncService.rebuildFromCurrentOrder(customRoadmap);
+    if (laneModeled) {
+      // 레인 로드맵: 편집 노드의 구조그룹만 세팅하고 relayout이 앵커/순서를 재도출한다.
+      if (branchGroup == null) {
+        node.assignLane(BranchKind.SPINE, null, null, node.getOrderInLane());
+      } else {
+        node.assignLane(
+            BranchKind.BRANCH, node.getAnchorNodeId(), branchGroup, node.getOrderInLane());
+      }
+      prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
+    } else {
+      // 레거시 로드맵: 기존 override 백필 경로 유지.
+      backfillBranchGroupsIfNeeded(customRoadmap);
+      node.setBranchGroupOverride(branchGroup);
+      prerequisiteSyncService.rebuildFromCurrentOrder(customRoadmap);
+    }
     customRoadmap.markPrerequisitesCustomized();
   }
 
@@ -155,7 +321,7 @@ public class CustomRoadmapNodeCommandService {
     for (int i = 0; i < orderedNodes.size(); i += 1) {
       orderedNodes.get(i).changeCustomSortOrder(i + 1);
     }
-    prerequisiteSyncService.rebuildFromCurrentOrder(customRoadmap);
+    prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
     customRoadmap.markPrerequisitesCustomized();
   }
 

@@ -1,11 +1,13 @@
 package com.devpath.api.roadmap.service;
 
+import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,14 +25,15 @@ import org.springframework.transaction.annotation.Transactional;
  * 커스텀 로드맵의 선행관계(prereq) 그래프를 만드는 단일 서비스. 모든 진입점(복사·조회·클리어·순서변경·분기편집)이 동일한 규칙으로 그래프를 전량
  * 재생성하므로 경로별 불일치가 발생하지 않는다.
  *
- * <p>그래프 규칙:
+ * <p>로드맵 단위로 두 모델을 듀얼리드한다(TASK-56):
  *
  * <ul>
- *   <li>척추 노드(분기 아님): 선행 = customSortOrder상 직전 척추 노드 하나.
- *   <li>추천 분기(branchFromNodeId != null): 선행 = 앵커(branchFromNodeId가 가리키는 커스텀 노드)에 직접. 각각 독립 선택지.
- *   <li>위치기반 분기(effectiveBranchGroup != null, 빌더/공식 좌·우 분기): 같은 그룹을 customSortOrder순 체인, 첫 노드는 분기
- *       시작 직전 척추가 앵커.
- *   <li>합류(merge) 없음 — 분기는 본류(척추) 진행을 막지 않는 순수 선택지. 앵커만 완료하면 분기를 건너뛰고 다음 척추로 진행할 수 있다.
+ *   <li><b>레인 모델</b>(노드에 branchKind 존재): 레인=(anchorNodeId, laneKey) 체인. 첫 노드 선행=앵커 커스텀 노드, 나머지=레인 내
+ *       직전 노드. 위치 노드(SPINE/BRANCH)의 레인 필드는 수동편집 후 {@code relayoutLanes}가 customSortOrder+구조그룹에서 재도출하고,
+ *       앵커 분기(REVIEW/ADVANCED)는 anchorNodeId 원본값을 보존한다.
+ *   <li><b>레거시 모델</b>(branchKind 전무): 옛 필드 기반. 척추=직전 척추, 추천 분기=branchFromNodeId 앵커, 위치 분기=effectiveBranchGroup.
+ *       복사 로드맵이 레인화(P4)되기 전까지만 사용한다.
+ *   <li>두 모델 공통: <b>합류(merge) 없음</b> — 분기는 본류(척추) 진행을 막지 않는 순수 선택지. 앵커만 완료하면 다음 척추로 진행할 수 있다.
  * </ul>
  */
 @Service
@@ -61,6 +64,107 @@ public class CustomRoadmapPrerequisiteSyncService {
         customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap));
   }
 
+  /**
+   * 수동편집(이동·분기재배치·삭제) 후 호출한다. 레인 모델 로드맵은 flat(customSortOrder + 구조그룹)에서 레인 필드를 재도출한 뒤
+   * 그래프를 재생성하고, 레거시 로드맵은 기존대로 customSortOrder 기준으로만 재생성한다(TASK-56 P6).
+   */
+  @Transactional
+  public void relayoutAndRebuild(CustomRoadmap customRoadmap) {
+    List<CustomRoadmapNode> nodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
+    if (nodes.stream().anyMatch(CustomRoadmapNode::isLaneModeled)) {
+      relayoutLanes(nodes);
+    }
+    rebuild(customRoadmap, nodes);
+  }
+
+  // 위치 노드(SPINE/구조 BRANCH)의 레인 필드를 customSortOrder + 구조그룹에서 재도출한다.
+  // REVIEW/ADVANCED 앵커 분기는 anchorNodeId로 매달리므로 제외(보존)한다.
+  private void relayoutLanes(List<CustomRoadmapNode> nodes) {
+    Comparator<CustomRoadmapNode> byOrder =
+        Comparator.comparing(
+                CustomRoadmapNode::getCustomSortOrder, Comparator.nullsLast(Integer::compareTo))
+            .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
+    List<CustomRoadmapNode> positional =
+        nodes.stream().filter(this::isPositional).sorted(byOrder).toList();
+    // 각 노드는 그룹을 읽은 직후 한 번만 갱신하므로 스냅샷 없이 laneKey를 바로 읽어도 안전하다.
+    assignPositionalLanes(
+        positional, node -> node.getBranchKind() == BranchKind.BRANCH ? node.getLaneKey() : null);
+  }
+
+  private boolean isPositional(CustomRoadmapNode node) {
+    BranchKind kind = node.getBranchKind();
+    return kind == BranchKind.SPINE || kind == BranchKind.BRANCH;
+  }
+
+  /**
+   * 레인 필드를 권위값으로 삼아 전역 표시순서(customSortOrder)를 레인 트리 DFS preorder로 재부여한 뒤 그래프를 재생성한다.
+   * 레인을 직접 조작하는 편집(lane-aware moveNode)이 호출한다. (relayout과 반대 방향: 레인→순서)
+   */
+  @Transactional
+  public void recomputeOrderAndRebuild(CustomRoadmap customRoadmap) {
+    List<CustomRoadmapNode> nodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
+    if (nodes.stream().anyMatch(CustomRoadmapNode::isLaneModeled)) {
+      Map<Long, List<CustomRoadmapNode>> childrenByAnchor =
+          nodes.stream()
+              .filter(node -> node.getAnchorNodeId() != null)
+              .collect(Collectors.groupingBy(CustomRoadmapNode::getAnchorNodeId));
+      Comparator<CustomRoadmapNode> childOrder =
+          Comparator.comparing(
+                  CustomRoadmapNode::getOrderInLane, Comparator.nullsLast(Integer::compareTo))
+              .thenComparing(CustomRoadmapNode::getLaneKey, Comparator.nullsLast(Integer::compareTo))
+              .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
+      int[] counter = {1};
+      nodes.stream()
+          .filter(node -> node.getAnchorNodeId() == null)
+          .sorted(
+              Comparator.comparing(
+                      CustomRoadmapNode::getOrderInLane, Comparator.nullsLast(Integer::compareTo))
+                  .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo)))
+          .forEach(root -> dfsAssignOrder(root, childrenByAnchor, childOrder, counter));
+    }
+    rebuild(customRoadmap, nodes);
+  }
+
+  // 노드에 순번을 부여하고 자식(앵커가 이 노드인 노드들)을 재귀로 잇는다(DFS preorder).
+  private void dfsAssignOrder(
+      CustomRoadmapNode node,
+      Map<Long, List<CustomRoadmapNode>> childrenByAnchor,
+      Comparator<CustomRoadmapNode> childOrder,
+      int[] counter) {
+    node.changeCustomSortOrder(counter[0]);
+    counter[0] += 1;
+    childrenByAnchor.getOrDefault(node.getId(), List.of()).stream()
+        .sorted(childOrder)
+        .forEach(child -> dfsAssignOrder(child, childrenByAnchor, childOrder, counter));
+  }
+
+  /**
+   * 위치 노드(SPINE/구조 BRANCH)에 레인 필드를 일괄 배치한다. {@code orderedPositional}은 표시 순서(customSortOrder)대로 정렬된
+   * 위치 노드들이고, {@code groupOf}는 각 노드의 구조 분기 그룹(null=척추, 1/2=좌·우)을 돌려준다. 척추=직전 척추 앵커, 분기=그룹 시작
+   * 직전 척추 앵커로 잇는다. 빌더 저장과 수동편집 재배치가 공유하는 단일 도출 로직이다(순수 함수).
+   */
+  public static void assignPositionalLanes(
+      List<CustomRoadmapNode> orderedPositional,
+      Function<CustomRoadmapNode, Integer> groupOf) {
+    CustomRoadmapNode lastSpine = null;
+    int spineOrder = 0;
+    Map<String, Integer> laneOrderCounters = new HashMap<>();
+    for (CustomRoadmapNode node : orderedPositional) {
+      Integer group = groupOf.apply(node);
+      if (group == null) {
+        node.assignLane(BranchKind.SPINE, null, null, spineOrder);
+        spineOrder += 1;
+        lastSpine = node;
+      } else {
+        Long anchorId = lastSpine != null ? lastSpine.getId() : null;
+        int orderInLane = laneOrderCounters.merge(anchorId + ":" + group, 1, Integer::sum) - 1;
+        node.assignLane(BranchKind.BRANCH, anchorId, group, orderInLane);
+      }
+    }
+  }
+
   // 기존 엣지를 모두 삭제하고 현재 노드 구성으로 그래프를 다시 만든다.
   private void rebuild(CustomRoadmap customRoadmap, List<CustomRoadmapNode> customNodes) {
     customNodePrerequisiteRepository.deleteAllByCustomRoadmap(customRoadmap);
@@ -86,9 +190,9 @@ public class CustomRoadmapPrerequisiteSyncService {
   }
 
   // 로드맵 단위로 모델을 판별해 그래프 도출 방식을 분기한다(TASK-56 듀얼리드).
-  // 노드 중 branchKind가 하나라도 설정돼 있으면 레인 모델(P3+ writer는 SPINE 포함 전 노드에 branchKind 채움).
+  // 노드 중 하나라도 레인 모델이면 레인 경로(P3+ writer는 SPINE 포함 전 노드에 branchKind 채움).
   private Set<EdgeKey> buildDesiredEdges(List<CustomRoadmapNode> customNodes) {
-    boolean laneModeled = customNodes.stream().anyMatch(node -> node.getBranchKind() != null);
+    boolean laneModeled = customNodes.stream().anyMatch(CustomRoadmapNode::isLaneModeled);
     return laneModeled ? buildLaneEdges(customNodes) : buildLegacyEdges(customNodes);
   }
 

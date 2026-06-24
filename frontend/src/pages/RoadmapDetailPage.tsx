@@ -1045,12 +1045,13 @@ interface NodeDrawerProps {
   node: RoadmapNodeItem | null
   customRoadmapId: number
   originalRoadmapId: number | null
+  allNodes: RoadmapNodeItem[]
   editMode: boolean
   onClose: () => void
   onCleared: () => void
 }
 
-function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClose, onCleared }: NodeDrawerProps) {
+function NodeDrawer({ node, customRoadmapId, originalRoadmapId, allNodes, editMode, onClose, onCleared }: NodeDrawerProps) {
   const [clearing, setClearing] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -1078,7 +1079,16 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
 
   async function handleDelete() {
     if (!node) return
-    if (!confirm(`"${node.title}" 노드를 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return
+    // cascade 고지: 이 노드를 앵커로 매달린 복습/심화 노드는 함께 삭제된다.
+    const cascadeChildren =
+      node.originalNodeId != null
+        ? allNodes.filter((n) => n.isBranch && n.branchFromNodeId === node.originalNodeId)
+        : []
+    const cascadeNotice =
+      cascadeChildren.length > 0
+        ? `\n\n다음 추천 노드도 함께 삭제됩니다:\n- ${cascadeChildren.map((n) => n.title).join('\n- ')}`
+        : ''
+    if (!confirm(`"${node.title}" 노드를 삭제하시겠습니까? 되돌릴 수 없습니다.${cascadeNotice}`)) return
     setBusy(true)
     try {
       await roadmapApi.deleteNode(customRoadmapId, node.customNodeId)
@@ -2417,6 +2427,7 @@ export default function RoadmapDetailPage() {
         node={drawerNode}
         customRoadmapId={customRoadmapId}
         originalRoadmapId={roadmap.originalRoadmapId}
+        allNodes={roadmap.nodes}
         editMode={editMode}
         onClose={() => setDrawerNode(null)}
         onCleared={async () => {
