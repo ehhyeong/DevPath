@@ -20,6 +20,7 @@ import com.devpath.domain.learning.entity.recommendation.SupplementRecommendatio
 import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationChangeRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
+import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
@@ -485,15 +486,28 @@ public class RecommendationChangeService {
             ? anchor.getOriginalNode().getNodeId()
             : null;
 
-    customRoadmapNodeRepository.save(
-        CustomRoadmapNode.builder()
-            .customRoadmap(customRoadmap)
-            .originalNode(recommendationChange.getRoadmapNode())
-            .customSortOrder(insertAt)
-            .isBranch(true)
-            .branchFromNodeId(branchFromNodeId)
-            .branchType(recommendationChange.getBranchType())
-            .build());
+    CustomRoadmapNode newNode =
+        customRoadmapNodeRepository.save(
+            CustomRoadmapNode.builder()
+                .customRoadmap(customRoadmap)
+                .originalNode(recommendationChange.getRoadmapNode())
+                .customSortOrder(insertAt)
+                .isBranch(true)
+                .branchFromNodeId(branchFromNodeId)
+                .branchType(recommendationChange.getBranchType())
+                .build());
+
+    // 타깃이 이미 레인 모델이면(빌더 기원 등) 새 분기 노드도 레인 필드를 세팅한다(TASK-56 P5).
+    // 레거시 로드맵에 섞으면 판별이 뒤집혀 기존 노드가 평탄화되므로 조건부로만 적용한다.
+    boolean targetIsLane = allNodes.stream().anyMatch(n -> n.getBranchKind() != null);
+    if (targetIsLane) {
+      BranchKind kind =
+          "ADVANCED".equalsIgnoreCase(recommendationChange.getBranchType())
+              ? BranchKind.ADVANCED
+              : BranchKind.REVIEW;
+      Long anchorNodeId = anchor != null ? anchor.getId() : null;
+      newNode.assignLane(kind, anchorNodeId, nextLaneKeyAt(allNodes, anchorNodeId), 0);
+    }
 
     List<CustomRoadmapNode> refreshed =
         customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap);
@@ -553,6 +567,17 @@ public class RecommendationChangeService {
     }
 
     customRoadmapNodeCommandService.reorderAfter(customRoadmap, moved, anchor);
+  }
+
+  // 같은 앵커에 매달린 형제 레인과 겹치지 않는 새 laneKey(기존 최대+1, 없으면 1)를 반환한다.
+  private int nextLaneKeyAt(List<CustomRoadmapNode> nodes, Long anchorNodeId) {
+    return nodes.stream()
+            .filter(n -> java.util.Objects.equals(n.getAnchorNodeId(), anchorNodeId))
+            .map(CustomRoadmapNode::getLaneKey)
+            .filter(java.util.Objects::nonNull)
+            .max(Integer::compareTo)
+            .orElse(0)
+        + 1;
   }
 
   // 양의 정수 문자열을 파싱한다.

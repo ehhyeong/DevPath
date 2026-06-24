@@ -215,11 +215,8 @@ public class DiagnosisQuizService {
       branchCandidateTags = nodeTags.stream().filter(tag -> !futureTagSet.contains(tag)).toList();
     }
 
-    // 커스텀 로드맵 컨텍스트 (삭제/순서변경/신규 제안용)
-    CustomRoadmap customRoadmap =
-        customRoadmapRepository
-            .findByUserIdAndOriginalRoadmapRoadmapId(user.getId(), roadmapId)
-            .orElse(null);
+    // 커스텀 로드맵 컨텍스트 (삭제/순서변경/신규 제안용). 빌더/공식복사 모두 지원(customRoadmapId 우선).
+    CustomRoadmap customRoadmap = findCustomRoadmap(user.getId(), roadmapId, customRoadmapId);
 
     List<CustomRoadmapNode> ordered =
         customRoadmap != null
@@ -248,7 +245,7 @@ public class DiagnosisQuizService {
         (!isLowScore && clearedOrder != null)
             ? ordered.stream()
                 .filter(n -> n.getOriginalNode() != null)
-                .filter(n -> !n.isBranch())
+                .filter(n -> !n.isRelearnGated())
                 .filter(n -> n.getStatus() != NodeStatus.COMPLETED)
                 .filter(
                     n -> n.getCustomSortOrder() != null && n.getCustomSortOrder() > clearedOrder)
@@ -303,7 +300,13 @@ public class DiagnosisQuizService {
 
     // 섹션별 독립 적용 (한 섹션이 깨져도 나머지는 저장)
     List<Long> branchIds =
-        applyBranch(user, clearedNode, branchCandidateTags, isLowScore, section(root, "branch"));
+        applyBranch(
+            user,
+            clearedNode,
+            customRoadmap,
+            branchCandidateTags,
+            isLowScore,
+            section(root, "branch"));
     if (!isLowScore) {
       applyDeletes(user, deleteCandidates, section(root, "deletes"));
     }
@@ -491,6 +494,7 @@ public class DiagnosisQuizService {
   private List<Long> applyBranch(
       User user,
       RoadmapNode clearedNode,
+      CustomRoadmap customRoadmap,
       List<String> candidateTags,
       boolean isLowScore,
       JsonNode branchNode) {
@@ -500,7 +504,7 @@ public class DiagnosisQuizService {
     Map<String, String> canonicalByLower =
         candidateTags.stream().collect(Collectors.toMap(String::toLowerCase, t -> t, (a, b) -> a));
 
-    String title = branchNode.path("title").asText(null);
+    String title = clampNodeTitle(branchNode.path("title").asText(null));
     String content = branchNode.path("content").asText(null);
 
     List<String> validatedTags = new ArrayList<>();
@@ -537,7 +541,7 @@ public class DiagnosisQuizService {
           roadmapNodeRepository.save(
               RoadmapNode.builder()
                   .roadmap(clearedNode.getRoadmap())
-                  .title((isLowScore ? "[복습] " : "[심화] ") + clearedNode.getTitle())
+                  .title(clampNodeTitle((isLowScore ? "[복습] " : "[심화] ") + clearedNode.getTitle()))
                   .content(fallbackTagList + " 관련 학습 내용입니다.")
                   .nodeType("BRANCH")
                   .sortOrder(null)
@@ -549,20 +553,32 @@ public class DiagnosisQuizService {
     suggestBranchChange(
         user,
         generated,
+        customRoadmap,
+        clearedNode,
         isLowScore ? "진단 퀴즈 저득점 — 복습 학습 노드가 추천되었습니다." : "진단 퀴즈 고득점 — 심화 학습 노드가 추천되었습니다.",
-        clearedNode.getNodeId());
+        isLowScore);
     return List.of(generated.getNodeId());
   }
 
+  // 분기 제안을 저장한다. 빌더/공식복사 모두 적용되도록 명시적 타깃(targetCustomRoadmapId + anchorCustomNodeId)을 채운다.
   private void suggestBranchChange(
-      User user, RoadmapNode generatedNode, String reason, Long branchFromNodeId) {
+      User user,
+      RoadmapNode generatedNode,
+      CustomRoadmap customRoadmap,
+      RoadmapNode clearedNode,
+      String reason,
+      boolean isLowScore) {
+    CustomRoadmapNode anchor = findAnchorCustomNode(customRoadmap, clearedNode.getNodeId());
     recommendationChangeRepository.save(
         RecommendationChange.builder()
             .user(user)
             .roadmapNode(generatedNode)
             .reason(reason)
             .nodeChangeType(NodeChangeType.ADD)
-            .branchFromNodeId(branchFromNodeId)
+            .branchFromNodeId(clearedNode.getNodeId())
+            .targetCustomRoadmapId(customRoadmap == null ? null : customRoadmap.getId())
+            .anchorCustomNodeId(anchor == null ? null : anchor.getId())
+            .branchType(isLowScore ? "REVIEW" : "ADVANCED")
             .build());
   }
 
@@ -656,7 +672,7 @@ public class DiagnosisQuizService {
     int count = 0;
     for (JsonNode item : newNodesNode) {
       if (count >= NEW_NODE_LIMIT) break;
-      String title = item.path("title").asText(null);
+      String title = clampNodeTitle(item.path("title").asText(null));
       if (title == null || title.isBlank()) continue;
       if (pendingTitles.contains(title)) continue;
 
@@ -867,6 +883,15 @@ public class DiagnosisQuizService {
           null);
     }
     change.updateSuggestionText(frontendRoadmapDemoReason(isLowScore), frontendRoadmapDemoContextSummary());
+  }
+
+  // roadmap_nodes.title은 varchar(255). Gemini가 긴 제목을 반환해도 insert가 깨지지 않도록 안전하게 자른다.
+  private static String clampNodeTitle(String title) {
+    if (title == null) {
+      return null;
+    }
+    String trimmed = title.trim();
+    return trimmed.length() > 255 ? trimmed.substring(0, 255) : trimmed;
   }
 
   private CustomRoadmap findCustomRoadmap(Long userId, Long roadmapId, Long customRoadmapId) {
