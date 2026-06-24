@@ -1,6 +1,7 @@
 package com.devpath.api.roadmap.dto;
 
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
+import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.DisplayNodeStatus;
@@ -435,8 +436,11 @@ public class MyRoadmapDto {
         content = node.getOriginalNode().getContent();
         originalNodeId = node.getOriginalNode().getNodeId();
       }
-      // 분기 소속은 사용자 편집 override를 반영한 유효값으로 해석한다.
-      branchGroup = node.effectiveBranchGroup();
+      // 분기 소속: 레인 모델은 구조분기(BRANCH)의 laneKey, 레거시는 override 반영 유효값.
+      branchGroup =
+          node.getBranchKind() != null
+              ? (node.getBranchKind() == BranchKind.BRANCH ? node.getLaneKey() : null)
+              : node.effectiveBranchGroup();
 
       DisplayNodeStatus displayStatus;
       if (node.getStatus() == NodeStatus.COMPLETED) {

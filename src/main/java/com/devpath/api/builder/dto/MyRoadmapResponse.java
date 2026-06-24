@@ -3,6 +3,7 @@ package com.devpath.api.builder.dto;
 import com.devpath.domain.builder.entity.BuilderModule;
 import com.devpath.domain.builder.entity.MyRoadmap;
 import com.devpath.domain.builder.entity.MyRoadmapModule;
+import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import java.time.LocalDateTime;
@@ -100,7 +101,7 @@ public class MyRoadmapResponse {
             .bgColor(bm.getBgColor())
             .topics(bm.getTopics())
             .sortOrder(n.getCustomSortOrder() != null ? n.getCustomSortOrder() : 0)
-            .branchGroup(n.getBuilderBranchGroup())
+            .branchGroup(resolveBranchGroup(n, n.getBuilderBranchGroup()))
             .build();
       }
       RoadmapNode rn = n.getOriginalNode();
@@ -116,8 +117,16 @@ public class MyRoadmapResponse {
           .bgColor("bg-green-50")
           .topics(splitSubTopics(rn.getSubTopics()))
           .sortOrder(n.getCustomSortOrder() != null ? n.getCustomSortOrder() : 0)
-          .branchGroup(rn.getBranchGroup())
+          .branchGroup(resolveBranchGroup(n, rn.getBranchGroup()))
           .build();
+    }
+
+    // 분기 소속: 레인 모델은 구조분기(BRANCH)의 laneKey, 레거시는 옛 필드 폴백.
+    private static Integer resolveBranchGroup(CustomRoadmapNode n, Integer legacyFallback) {
+      if (n.getBranchKind() != null) {
+        return n.getBranchKind() == BranchKind.BRANCH ? n.getLaneKey() : null;
+      }
+      return legacyFallback;
     }
 
     private static List<String> splitSubTopics(String value) {

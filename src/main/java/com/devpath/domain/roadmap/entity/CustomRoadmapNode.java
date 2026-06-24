@@ -68,6 +68,24 @@ public class CustomRoadmapNode {
   @Column(name = "branch_type", length = 20)
   private String branchType;
 
+  // ── 레인 트리 모델(TASK-56). P1: 옛 분기필드와 병존하며 점진 이행. ──
+  // 이 레인이 갈라져 나온 부모 커스텀 노드 id (null = 루트 척추 레인)
+  @Column(name = "anchor_node_id")
+  private Long anchorNodeId;
+
+  // 같은 앵커의 형제 레인 구분(좌/우/복습/심화 등). 루트 척추 레인은 단일.
+  @Column(name = "lane_key")
+  private Integer laneKey;
+
+  // 레인 종류: SPINE/BRANCH/REVIEW/ADVANCED
+  @Enumerated(EnumType.STRING)
+  @Column(name = "branch_kind", length = 20)
+  private BranchKind branchKind;
+
+  // 레인 내 순서(단일 소스). 전역 순서는 트리 순회로 파생.
+  @Column(name = "order_in_lane")
+  private Integer orderInLane;
+
   @Column(name = "started_at")
   private LocalDateTime startedAt;
 
@@ -140,6 +158,15 @@ public class CustomRoadmapNode {
     this.branchGroup = branchGroup;
   }
 
+  // 레인 필드를 일괄 배치한다(TASK-56). 앵커는 저장 후 부여되는 커스텀노드 id라 2-pass에서 호출.
+  public void assignLane(
+      BranchKind branchKind, Long anchorNodeId, Integer laneKey, Integer orderInLane) {
+    this.branchKind = branchKind;
+    this.anchorNodeId = anchorNodeId;
+    this.laneKey = laneKey;
+    this.orderInLane = orderInLane;
+  }
+
   /**
    * 유효 분기 그룹을 해석한다. 빌더 노드는 builderBranchGroup, 공식 노드는 로드맵이 분기 편집본이면 override(branchGroup),
    * 아니면 원본 노드의 branchGroup을 따른다(레거시 안전).
@@ -152,6 +179,26 @@ public class CustomRoadmapNode {
       return branchGroup;
     }
     return originalNode != null ? originalNode.getBranchGroup() : null;
+  }
+
+  /** 유효 분기 종류. 신 모델(레인)은 branchKind 직접, 레거시는 옛 필드에서 파생한다(TASK-56 듀얼리드). */
+  public BranchKind effectiveBranchKind() {
+    if (branchKind != null) {
+      return branchKind;
+    }
+    if (isBranch) { // 레거시 추천 분기
+      return "ADVANCED".equalsIgnoreCase(branchType) ? BranchKind.ADVANCED : BranchKind.REVIEW;
+    }
+    if (effectiveBranchGroup() != null) {
+      return BranchKind.BRANCH;
+    }
+    return BranchKind.SPINE;
+  }
+
+  /** 재학습 게이트 대상(복습/심화)인가. 레거시에서는 기존 isBranch와 동치. */
+  public boolean isRelearnGated() {
+    BranchKind kind = effectiveBranchKind();
+    return kind == BranchKind.REVIEW || kind == BranchKind.ADVANCED;
   }
 
   // 학습 시작 상태로 변경하는 비즈니스 메서드
