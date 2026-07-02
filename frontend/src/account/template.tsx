@@ -64,10 +64,8 @@ export function MyMenuSidebar({
   spacerClassName?: string
   wrapperStyle?: CSSProperties
 }) {
-  const mergedWrapperClassName = ['account-menu-sidebar', wrapperClassName].filter(Boolean).join(' ')
-
   return (
-    <div className={mergedWrapperClassName} style={wrapperStyle}>
+    <div className={wrapperClassName} style={wrapperStyle}>
       {spacerClassName ? <div className={spacerClassName} /> : null}
       <aside className={asideClassName}>
         {accountMenuSections.map((section, sectionIndex) => (
@@ -77,12 +75,27 @@ export function MyMenuSidebar({
               <h2 className="text-[11px] font-bold tracking-widest text-gray-400 uppercase">{section.title}</h2>
             </div>
 
-            {section.items.map((item) => (
-              <a key={item.key} href={item.href} className={`nav-item ${currentPageKey === item.key ? 'active' : ''}`}>
-                <i className={item.icon} />
-                <span className="sidebar-text">{item.label}</span>
-              </a>
-            ))}
+            {section.items.map((item) => {
+              const isActive = currentPageKey === item.key
+              return (
+                <a
+                  key={item.key}
+                  href={item.href}
+                  className={`group flex items-center mb-1 py-3.5 px-4 rounded-xl transition-colors duration-200 ${
+                    isActive
+                      ? 'bg-[#E6F9F1] text-brand font-bold'
+                      : 'text-gray-500 font-medium hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <i
+                    className={`${item.icon} w-6 mr-3.5 text-center text-lg transition-colors duration-200 ${
+                      isActive ? 'text-brand' : 'text-gray-400 group-hover:text-gray-600'
+                    }`}
+                  />
+                  <span className="text-[0.95rem] whitespace-nowrap">{item.label}</span>
+                </a>
+              )
+            })}
           </div>
         ))}
       </aside>
