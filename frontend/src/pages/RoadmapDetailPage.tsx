@@ -424,9 +424,14 @@ function buildLaneTreeLayout(
       .sort((a, b) => (a.orderInLane ?? 0) - (b.orderInLane ?? 0) || a.customNodeId - b.customNodeId)
   }
 
-  function layoutBranchesOf(parent: RoadmapNodeItem, parentSlotId: string, depth: number) {
+  // 반환: 이 부모에 매달린 구조 분기(BRANCH) 레인들의 끝 slotId(합류 소스). 유형 A(복습/심화)는 합류 없으므로 제외.
+  function layoutBranchesOf(
+    parent: RoadmapNodeItem,
+    parentSlotId: string,
+    depth: number,
+  ): string[] {
     const children = byAnchor.get(parent.customNodeId)
-    if (!children || children.length === 0) return
+    if (!children || children.length === 0) return []
     const layers = new Map<number, RoadmapNodeItem[]>()
     children.forEach((c) => {
       const k = c.orderInLane ?? 0
@@ -435,6 +440,7 @@ function buildLaneTreeLayout(
       layers.set(k, arr)
     })
     const prevByLane = new Map<number, string>()
+    const structuralEndByLane = new Map<number, string>()
     const childSlots: { node: RoadmapNodeItem; slotId: string }[] = []
     Array.from(layers.keys())
       .sort((a, b) => a - b)
@@ -467,15 +473,18 @@ function buildLaneTreeLayout(
                   : 'default'
             pushEdge(prevId ?? parentSlotId, slot.id, prevId ? 'branch' : 'split', theme)
             prevByLane.set(laneId, slot.id)
+            if (structural) structuralEndByLane.set(laneId, slot.id)
             placed.push({ node: child, slotId: slot.id, column })
             childSlots.push({ node: child, slotId: slot.id })
           })
       })
     childSlots.forEach(({ node, slotId }) => layoutBranchesOf(node, slotId, depth + 1))
+    return Array.from(structuralEndByLane.values())
   }
 
   const spine = sortByOrderInLane(nodes.filter((n) => n.branchKind === 'SPINE'))
   let prevSpineId: string | null = null
+  let pendingMergeEnds: string[] = []
   spine.forEach((sp) => {
     const slot = pushSlot({
       id: `node-${sp.customNodeId}`,
@@ -484,10 +493,15 @@ function buildLaneTreeLayout(
       row: nextRow++,
       node: sp,
     })
-    pushEdge(prevSpineId, slot.id, 'spine')
+    // 직전 척추가 갈림길(BRANCH fork)이면 직결 spine 대신 각 갈래 끝에서 이 노드로 합류(merge)한다.
+    if (pendingMergeEnds.length > 0) {
+      pendingMergeEnds.forEach((end) => pushEdge(end, slot.id, 'merge'))
+    } else {
+      pushEdge(prevSpineId, slot.id, 'spine')
+    }
     prevSpineId = slot.id
     placed.push({ node: sp, slotId: slot.id, column: 'center' })
-    layoutBranchesOf(sp, slot.id, 1)
+    pendingMergeEnds = layoutBranchesOf(sp, slot.id, 1)
   })
 
   // 미적용(pending) 추천 노드는 출발 노드 옆 side 컬럼에 제안 슬롯으로 표시한다.
