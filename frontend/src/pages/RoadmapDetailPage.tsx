@@ -371,7 +371,151 @@ function getOfficialBranchLane(groupIndex: number): RoadmapLane {
 const OFFICIAL_BRANCH_OFFSET_Y = 40
 const POST_BRANCH_SPINE_OFFSET_Y = 88
 
+// 레인 트리 레이아웃: anchorNodeId(부모 커스텀노드)로 트리를 만들어 척추=center, 분기=left/right,
+// 중첩·다구역은 side-left/side-right로 배치한다(다층 체인은 같은 레인 행 누적). 레인 모델 로드맵 전용.
+function buildLaneTreeLayout(
+  nodes: RoadmapNodeItem[],
+  changes: RecommendationChange[],
+): RoadmapLayout {
+  const slots: LayoutSlot[] = []
+  const edges: LayoutEdge[] = []
+  let rowCount = 1
+  let nextRow = 1
+  const placed: { node: RoadmapNodeItem; slotId: string; column: RoadmapLane }[] = []
+
+  const byAnchor = new Map<number, RoadmapNodeItem[]>()
+  nodes.forEach((n) => {
+    if (n.anchorNodeId == null) return
+    const arr = byAnchor.get(n.anchorNodeId) ?? []
+    arr.push(n)
+    byAnchor.set(n.anchorNodeId, arr)
+  })
+  const pendingBySource = new Map<number, RecommendationChange[]>()
+  changes
+    .filter((c) => c.nodeChangeType === 'ADD' && c.branchFromNodeId != null)
+    .forEach((c) => {
+      const key = c.branchFromNodeId as number
+      const arr = pendingBySource.get(key) ?? []
+      arr.push(c)
+      pendingBySource.set(key, arr)
+    })
+
+  function pushSlot(slot: LayoutSlot) {
+    slots.push(slot)
+    rowCount = Math.max(rowCount, slot.row)
+    return slot
+  }
+  function pushEdge(from: string | null, to: string, kind: LayoutEdgeKind, theme: EdgeTheme = 'default') {
+    if (!from) return
+    edges.push({ id: `${kind}-${from}-${to}-${edges.length}`, from, to, kind, theme })
+  }
+  function columnFor(depth: number, child: RoadmapNodeItem): RoadmapLane {
+    const structural = child.branchKind === 'BRANCH'
+    if (depth === 1) {
+      if (structural) return child.laneKey === 1 ? 'left' : 'right'
+      return child.branchType === 'REVIEW' ? 'side-left' : 'side-right'
+    }
+    if (structural) return child.laneKey === 1 ? 'side-left' : 'side-right'
+    return child.branchType === 'REVIEW' ? 'side-left' : 'side-right'
+  }
+  function sortByOrderInLane(list: RoadmapNodeItem[]) {
+    return list
+      .slice()
+      .sort((a, b) => (a.orderInLane ?? 0) - (b.orderInLane ?? 0) || a.customNodeId - b.customNodeId)
+  }
+
+  function layoutBranchesOf(parent: RoadmapNodeItem, parentSlotId: string, depth: number) {
+    const children = byAnchor.get(parent.customNodeId)
+    if (!children || children.length === 0) return
+    const layers = new Map<number, RoadmapNodeItem[]>()
+    children.forEach((c) => {
+      const k = c.orderInLane ?? 0
+      const arr = layers.get(k) ?? []
+      arr.push(c)
+      layers.set(k, arr)
+    })
+    const prevByLane = new Map<number, string>()
+    const childSlots: { node: RoadmapNodeItem; slotId: string }[] = []
+    Array.from(layers.keys())
+      .sort((a, b) => a - b)
+      .forEach((layerKey) => {
+        const layerRow = nextRow++
+        ;(layers.get(layerKey) as RoadmapNodeItem[])
+          .slice()
+          .sort((a, b) => (a.laneKey ?? 0) - (b.laneKey ?? 0))
+          .forEach((child) => {
+            const structural = child.branchKind === 'BRANCH'
+            const column = columnFor(depth, child)
+            const slot = pushSlot({
+              id: `node-${child.customNodeId}`,
+              kind: structural ? 'official-branch' : 'applied-branch',
+              lane: column,
+              row: layerRow,
+              stackOffset: OFFICIAL_BRANCH_OFFSET_Y,
+              node: child,
+              badge: structural
+                ? getOfficialBranchBadgeMeta(child.laneKey ?? 1)
+                : getBranchBadgeMeta(child.branchType),
+            })
+            const laneId = child.laneKey ?? 0
+            const prevId = prevByLane.get(laneId)
+            const theme: EdgeTheme =
+              child.branchType === 'REVIEW'
+                ? 'review'
+                : child.branchType === 'ADVANCED'
+                  ? 'advanced'
+                  : 'default'
+            pushEdge(prevId ?? parentSlotId, slot.id, prevId ? 'branch' : 'split', theme)
+            prevByLane.set(laneId, slot.id)
+            placed.push({ node: child, slotId: slot.id, column })
+            childSlots.push({ node: child, slotId: slot.id })
+          })
+      })
+    childSlots.forEach(({ node, slotId }) => layoutBranchesOf(node, slotId, depth + 1))
+  }
+
+  const spine = sortByOrderInLane(nodes.filter((n) => n.branchKind === 'SPINE'))
+  let prevSpineId: string | null = null
+  spine.forEach((sp) => {
+    const slot = pushSlot({
+      id: `node-${sp.customNodeId}`,
+      kind: 'main-spine',
+      lane: 'center',
+      row: nextRow++,
+      node: sp,
+    })
+    pushEdge(prevSpineId, slot.id, 'spine')
+    prevSpineId = slot.id
+    placed.push({ node: sp, slotId: slot.id, column: 'center' })
+    layoutBranchesOf(sp, slot.id, 1)
+  })
+
+  // 미적용(pending) 추천 노드는 출발 노드 옆 side 컬럼에 제안 슬롯으로 표시한다.
+  placed.forEach(({ node, slotId, column }) => {
+    if (node.originalNodeId == null) return
+    const pending = pendingBySource.get(node.originalNodeId)
+    if (!pending) return
+    pending.forEach((change) => {
+      const slot = pushSlot({
+        id: `suggested-add-${change.changeId}`,
+        kind: 'suggested-branch',
+        lane: column === 'left' || column === 'side-left' ? 'side-left' : 'side-right',
+        row: nextRow++,
+        change,
+        badge: getSuggestionBadgeMeta(change),
+      })
+      pushEdge(slotId, slot.id, 'suggestion', 'suggestion')
+    })
+  })
+
+  return { slots, edges, rowCount }
+}
+
 function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationChange[]): RoadmapLayout {
+  // 레인 모델(노드에 branchKind 존재) → 트리 레이아웃. 레거시는 기존 단일구역 레이아웃 유지.
+  if (nodes.some((node) => node.branchKind != null)) {
+    return buildLaneTreeLayout(nodes, changes)
+  }
   const slots: LayoutSlot[] = []
   const edges: LayoutEdge[] = []
   const sortedNodes = sortRoadmapNodes(nodes)
