@@ -10,6 +10,7 @@ import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
+import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.NodeStatus;
@@ -23,6 +24,7 @@ import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -90,14 +92,19 @@ public class CustomRoadmapQueryService {
     List<CustomRoadmapNode> customNodes =
         customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
     prerequisiteSyncService.ensurePrerequisites(customRoadmap, customNodes);
-    Map<Long, List<Long>> prerequisiteIdsByNodeId =
+    // 노드별 선행 조건을 OR 그룹 단위로 조립한다(node → 그룹들 → 각 그룹의 선행 노드 id). CNF 판정용.
+    Map<Long, List<List<Long>>> prereqGroupsByNodeId =
         customNodePrerequisiteRepository.findAllByCustomRoadmap(customRoadmap).stream()
             .collect(
                 Collectors.groupingBy(
                     prerequisite -> prerequisite.getCustomNode().getId(),
-                    Collectors.mapping(
-                        prerequisite -> prerequisite.getPrerequisiteCustomNode().getId(),
-                        Collectors.toList())));
+                    Collectors.collectingAndThen(
+                        Collectors.groupingBy(
+                            prerequisite -> prerequisite.getPrereqGroup(),
+                            Collectors.mapping(
+                                prerequisite -> prerequisite.getPrerequisiteCustomNode().getId(),
+                                Collectors.toList())),
+                        groupMap -> new ArrayList<List<Long>>(groupMap.values()))));
 
     Map<Long, NodeStatus> statusByNodeId =
         customNodes.stream()
@@ -171,12 +178,12 @@ public class CustomRoadmapQueryService {
       }
 
       boolean prerequisitesDone =
-          prerequisiteIdsByNodeId.getOrDefault(node.getId(), List.of()).stream()
-              .allMatch(
-                  prereqId ->
-                      statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
-                              == NodeStatus.COMPLETED
-                          || deferredCustomNodeIds.contains(prereqId));
+          CustomNodePrerequisite.prerequisitesMet(
+              prereqGroupsByNodeId.getOrDefault(node.getId(), List.of()),
+              prereqId ->
+                  statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
+                          == NodeStatus.COMPLETED
+                      || deferredCustomNodeIds.contains(prereqId));
       boolean ready =
           node.getStatus() != NodeStatus.COMPLETED && prerequisitesDone && tagGateSatisfied;
 
@@ -188,7 +195,7 @@ public class CustomRoadmapQueryService {
         customRoadmap,
         roadmapProgressService.calculateProgressRate(customNodes),
         customNodes,
-        prerequisiteIdsByNodeId,
+        prereqGroupsByNodeId,
         statusByNodeId,
         clearanceByNodeId,
         resourcesByNodeId,

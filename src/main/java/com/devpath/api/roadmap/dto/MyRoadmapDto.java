@@ -2,6 +2,7 @@ package com.devpath.api.roadmap.dto;
 
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.roadmap.entity.BranchKind;
+import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.DisplayNodeStatus;
@@ -222,7 +223,7 @@ public class MyRoadmapDto {
         CustomRoadmap customRoadmap,
         Integer progressRate,
         List<CustomRoadmapNode> nodes,
-        Map<Long, List<Long>> prerequisiteIdsByNodeId,
+        Map<Long, List<List<Long>>> prerequisiteGroupsByNodeId,
         Map<Long, NodeStatus> statusByNodeId,
         Map<Long, NodeClearance> clearanceByNodeId,
         Map<Long, List<RoadmapNodeResource>> resourcesByNodeId,
@@ -252,7 +253,7 @@ public class MyRoadmapDto {
                       node ->
                           NodeItem.from(
                               node,
-                              prerequisiteIdsByNodeId.getOrDefault(node.getId(), List.of()),
+                              prerequisiteGroupsByNodeId.getOrDefault(node.getId(), List.of()),
                               statusByNodeId,
                               node.getOriginalNode() != null
                                   ? clearanceByNodeId.get(node.getOriginalNode().getNodeId())
@@ -419,7 +420,7 @@ public class MyRoadmapDto {
 
     public static NodeItem from(
         CustomRoadmapNode node,
-        List<Long> prerequisiteCustomNodeIds,
+        List<List<Long>> prerequisiteGroups,
         Map<Long, NodeStatus> statusByNodeId,
         NodeClearance clearance,
         List<RoadmapNodeResource> resources,
@@ -468,15 +469,15 @@ public class MyRoadmapDto {
       } else if (node.getStatus() == NodeStatus.IN_PROGRESS) {
         displayStatus = DisplayNodeStatus.IN_PROGRESS;
       } else {
-        boolean isLocked =
-            !prerequisiteCustomNodeIds.isEmpty()
-                && prerequisiteCustomNodeIds.stream()
-                    .anyMatch(
-                        prereqId ->
-                            statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
-                                    != NodeStatus.COMPLETED
-                                && !deferredCustomNodeIds.contains(prereqId));
-        displayStatus = isLocked ? DisplayNodeStatus.LOCKED : DisplayNodeStatus.PENDING;
+        // CNF 잠금: 선행 판정(공유 규칙)이 통과하지 못하면 잠금. 그룹 없으면 선행 없음→해제.
+        boolean unlocked =
+            CustomNodePrerequisite.prerequisitesMet(
+                prerequisiteGroups,
+                prereqId ->
+                    statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
+                            == NodeStatus.COMPLETED
+                        || deferredCustomNodeIds.contains(prereqId));
+        displayStatus = unlocked ? DisplayNodeStatus.PENDING : DisplayNodeStatus.LOCKED;
       }
 
       double lessonRate =
@@ -489,6 +490,9 @@ public class MyRoadmapDto {
               || (requiredTagsSatisfied != null
                   ? requiredTagsSatisfied
                   : clearance != null && Boolean.TRUE.equals(clearance.getRequiredTagsSatisfied()));
+
+      List<Long> prerequisiteCustomNodeIds =
+          prerequisiteGroups.stream().flatMap(List::stream).distinct().toList();
 
       return NodeItem.builder()
           .customNodeId(node.getId())

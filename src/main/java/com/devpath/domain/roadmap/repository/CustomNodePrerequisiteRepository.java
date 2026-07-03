@@ -3,7 +3,6 @@ package com.devpath.domain.roadmap.repository;
 import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
-import com.devpath.domain.roadmap.entity.NodeStatus;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -15,14 +14,6 @@ public interface CustomNodePrerequisiteRepository
   List<CustomNodePrerequisite> findAllByCustomRoadmap(CustomRoadmap customRoadmap);
 
   List<CustomNodePrerequisite> findAllByCustomNode(CustomRoadmapNode customNode);
-
-  @Query(
-      "SELECT COUNT(p) FROM CustomNodePrerequisite p "
-          + "WHERE p.customNode = :node "
-          + "AND p.prerequisiteCustomNode.status <> :status "
-          + "AND p.prerequisiteCustomNode.deferred = false")
-  long countByCustomNodeAndPrerequisiteNotCompleted(
-      @Param("node") CustomRoadmapNode node, @Param("status") NodeStatus status);
 
   void deleteAllByCustomRoadmap(CustomRoadmap customRoadmap);
 

@@ -32,9 +32,18 @@ import org.springframework.transaction.annotation.Transactional;
  *       직전 노드. 위치 노드(SPINE/BRANCH)의 레인 필드는 수동편집 후 {@code relayoutLanes}가 customSortOrder+구조그룹에서 재도출하고,
  *       앵커 분기(REVIEW/ADVANCED)는 anchorNodeId 원본값을 보존한다.
  *   <li><b>레거시 모델</b>(branchKind 전무): 옛 필드 기반. 척추=직전 척추, 추천 분기=branchFromNodeId 앵커, 위치 분기=effectiveBranchGroup.
- *       복사 로드맵이 레인화(P4)되기 전까지만 사용한다.
- *   <li>두 모델 공통: <b>합류(merge) 없음</b> — 분기는 본류(척추) 진행을 막지 않는 순수 선택지. 앵커만 완료하면 다음 척추로 진행할 수 있다.
+ *       복사 로드맵이 레인화(P4)되기 전까지만 사용한다(합류 미지원, AND).
  * </ul>
+ *
+ * <p>분기 두 종류(레인 모델):
+ *
+ * <ul>
+ *   <li><b>유형 A 곁가지</b>(REVIEW/ADVANCED): 앵커 옆 선택 노드. 선행=앵커, 아무도 이 노드를 선행으로 두지 않음(합류 없음).
+ *   <li><b>유형 B 갈림길</b>(BRANCH): 앵커에서 병렬 레인 ≥1로 갈라져 <b>다음 척추에서 OR 합류</b>. 다음 척추의 선행 = 각 갈래 끝들의 한 그룹(OR)
+ *       → 한 갈래만 완료해도 진행 가능. 앵커→다음척추 직결 엣지는 만들지 않는다.
+ * </ul>
+ *
+ * <p>선행 판정은 CNF: prereqGroup이 같은 엣지끼리 OR, 다른 그룹끼리 AND. 일반 선형 엣지는 각자 단독 그룹이라 AND와 같다.
  */
 @Service
 @RequiredArgsConstructor
@@ -196,7 +205,8 @@ public class CustomRoadmapPrerequisiteSyncService {
     return laneModeled ? buildLaneEdges(customNodes) : buildLegacyEdges(customNodes);
   }
 
-  // 레인 모델: 레인=(anchorNodeId, laneKey) 체인. 첫 노드 선행=앵커 커스텀 노드, 나머지=레인 내 직전 노드. 합류 없음.
+  // 레인 모델: 레인=(anchorNodeId, laneKey) 체인. 첫 노드 선행=앵커, 나머지=레인 내 직전 노드.
+  // 유형 A(REVIEW/ADVANCED)=무합류. 유형 B(BRANCH)=다음 척추에서 OR 합류(척추 X→Y 직결 대신 갈래 끝들 한 그룹).
   private Set<EdgeKey> buildLaneEdges(List<CustomRoadmapNode> customNodes) {
     Map<Long, CustomRoadmapNode> customNodeById =
         customNodes.stream()
@@ -208,6 +218,7 @@ public class CustomRoadmapPrerequisiteSyncService {
                 CustomRoadmapNode::getOrderInLane, Comparator.nullsLast(Integer::compareTo))
             .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
 
+    // 앵커 레인((anchorNodeId, laneKey))별로 묶는다. 척추 레인(anchorNodeId=null)은 별도로 합류까지 처리한다.
     Map<LaneKey, List<CustomRoadmapNode>> lanes =
         customNodes.stream()
             .collect(
@@ -216,15 +227,48 @@ public class CustomRoadmapPrerequisiteSyncService {
                     LinkedHashMap::new,
                     Collectors.toList()));
 
+    int[] groupSeq = {0};
     Set<EdgeKey> edges = new LinkedHashSet<>();
+    // 앵커 X별 BRANCH 갈래 끝 노드들(합류 소스). 척추 다음 노드가 OR로 매달린다.
+    Map<Long, List<CustomRoadmapNode>> branchLaneEndsByAnchor = new LinkedHashMap<>();
+
     for (Map.Entry<LaneKey, List<CustomRoadmapNode>> entry : lanes.entrySet()) {
+      if (entry.getKey().anchorNodeId() == null) {
+        continue; // 척추 레인은 아래에서 합류와 함께 처리
+      }
       List<CustomRoadmapNode> laneNodes = entry.getValue().stream().sorted(byLaneOrder).toList();
       if (laneNodes.isEmpty()) {
         continue;
       }
       CustomRoadmapNode anchor = customNodeById.get(entry.getKey().anchorNodeId());
-      addEdge(edges, laneNodes.get(0), anchor); // 루트척추는 anchor=null → 선행 없음
-      addLinearEdges(edges, laneNodes);
+      addEdge(edges, laneNodes.get(0), anchor, groupSeq[0]++);
+      addLinearEdges(edges, laneNodes, groupSeq);
+      if (laneNodes.get(0).getBranchKind() == BranchKind.BRANCH) {
+        branchLaneEndsByAnchor
+            .computeIfAbsent(entry.getKey().anchorNodeId(), key -> new java.util.ArrayList<>())
+            .add(laneNodes.get(laneNodes.size() - 1));
+      }
+    }
+
+    // 척추 연속쌍 (X,Y): X에 BRANCH 갈래가 있으면 Y 선행 = 갈래 끝들의 OR 그룹(X→Y 직결 없음),
+    // 없으면 Y 선행 = X(단독 그룹). 첫 척추는 선행 없음.
+    List<CustomRoadmapNode> spine =
+        customNodes.stream()
+            .filter(node -> node.getBranchKind() == BranchKind.SPINE)
+            .sorted(byLaneOrder)
+            .toList();
+    for (int index = 1; index < spine.size(); index += 1) {
+      CustomRoadmapNode y = spine.get(index);
+      CustomRoadmapNode x = spine.get(index - 1);
+      List<CustomRoadmapNode> ends = branchLaneEndsByAnchor.get(x.getId());
+      if (ends != null && !ends.isEmpty()) {
+        int mergeGroup = groupSeq[0]++;
+        for (CustomRoadmapNode end : ends) {
+          addEdge(edges, y, end, mergeGroup);
+        }
+      } else {
+        addEdge(edges, y, x, groupSeq[0]++);
+      }
     }
     return edges;
   }
@@ -238,10 +282,11 @@ public class CustomRoadmapPrerequisiteSyncService {
     List<CustomRoadmapNode> ordered = customNodes.stream().sorted(byOrder).toList();
 
     Set<EdgeKey> edges = new LinkedHashSet<>();
+    int[] groupSeq = {0}; // 레거시는 합류 없음 — 엣지마다 단독 그룹(AND) 부여.
 
     // 1) 척추(분기 아님) 선형 연결
     List<CustomRoadmapNode> spine = ordered.stream().filter(node -> !isBranch(node)).toList();
-    addLinearEdges(edges, spine);
+    addLinearEdges(edges, spine, groupSeq);
 
     // 2) 추천 분기: 앵커(branchFromNodeId가 가리키는 커스텀 노드)에 직접 연결(체인 없음)
     Map<Long, CustomRoadmapNode> nodeByOriginalId =
@@ -254,7 +299,7 @@ public class CustomRoadmapPrerequisiteSyncService {
       if (branch.getBranchFromNodeId() == null) {
         continue;
       }
-      addEdge(edges, branch, nodeByOriginalId.get(branch.getBranchFromNodeId()));
+      addEdge(edges, branch, nodeByOriginalId.get(branch.getBranchFromNodeId()), groupSeq[0]++);
     }
 
     // 3) 위치기반 분기(빌더/공식 좌·우 분기): 같은 그룹 체인 + 그룹 시작 직전 척추가 앵커
@@ -271,8 +316,12 @@ public class CustomRoadmapPrerequisiteSyncService {
       if (groupNodes.isEmpty()) {
         continue;
       }
-      addEdge(edges, groupNodes.get(0), lastSpineNodeBefore(spine, groupNodes.get(0), byOrder));
-      addLinearEdges(edges, groupNodes);
+      addEdge(
+          edges,
+          groupNodes.get(0),
+          lastSpineNodeBefore(spine, groupNodes.get(0), byOrder),
+          groupSeq[0]++);
+      addLinearEdges(edges, groupNodes, groupSeq);
     }
 
     return edges;
@@ -298,14 +347,15 @@ public class CustomRoadmapPrerequisiteSyncService {
     return anchor;
   }
 
-  private void addLinearEdges(Set<EdgeKey> edges, List<CustomRoadmapNode> nodes) {
+  // 선형 체인. 각 엣지는 단독 그룹(AND). 합류는 호출 측이 별도 OR 그룹으로 만든다.
+  private void addLinearEdges(Set<EdgeKey> edges, List<CustomRoadmapNode> nodes, int[] groupSeq) {
     for (int index = 1; index < nodes.size(); index += 1) {
-      addEdge(edges, nodes.get(index), nodes.get(index - 1));
+      addEdge(edges, nodes.get(index), nodes.get(index - 1), groupSeq[0]++);
     }
   }
 
   private void addEdge(
-      Set<EdgeKey> edges, CustomRoadmapNode node, CustomRoadmapNode prerequisiteNode) {
+      Set<EdgeKey> edges, CustomRoadmapNode node, CustomRoadmapNode prerequisiteNode, int group) {
     if (node == null || prerequisiteNode == null) {
       return;
     }
@@ -317,7 +367,7 @@ public class CustomRoadmapPrerequisiteSyncService {
       return;
     }
 
-    edges.add(new EdgeKey(nodeId, prerequisiteNodeId));
+    edges.add(new EdgeKey(nodeId, prerequisiteNodeId, group));
   }
 
   private CustomNodePrerequisite buildPrerequisite(
@@ -333,10 +383,11 @@ public class CustomRoadmapPrerequisiteSyncService {
         .customRoadmap(customRoadmap)
         .customNode(node)
         .prerequisiteCustomNode(prerequisiteNode)
+        .prereqGroup(edge.group())
         .build();
   }
 
-  private record EdgeKey(Long nodeId, Long prerequisiteNodeId) {}
+  private record EdgeKey(Long nodeId, Long prerequisiteNodeId, int group) {}
 
   // 레인 식별자: (앵커 커스텀 노드 id, 형제 레인 구분키). 루트척추는 (null, null).
   private record LaneKey(Long anchorNodeId, Integer laneKey) {}
