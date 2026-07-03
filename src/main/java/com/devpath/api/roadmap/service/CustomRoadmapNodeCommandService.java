@@ -75,11 +75,9 @@ public class CustomRoadmapNodeCommandService {
     // 삭제 후 남은 노드 기준으로 레인/선행관계를 재구성한다(앵커가 사라진 분기 재배치 포함).
     prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
 
-    long total = customRoadmapNodeRepository.countByCustomRoadmap(customRoadmap);
-    long completed =
-        customRoadmapNodeRepository.countByCustomRoadmapAndStatus(
-            customRoadmap, NodeStatus.COMPLETED);
-    roadmapProgressService.updateProgressRate(customRoadmap, total, completed);
+    roadmapProgressService.updateProgressRate(
+        customRoadmap,
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap));
   }
 
   /**
