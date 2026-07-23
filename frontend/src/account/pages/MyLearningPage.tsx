@@ -281,8 +281,7 @@ export default function MyLearningPage() {
       <LearnerContentRow>
         <MyMenuSidebar
           currentPageKey="my-learning"
-          wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0"
-          wrapperStyle={{ transform: 'translateX(-7.5px)' }}
+          wrapperClassName="w-60 shrink-0 hidden -translate-x-[7.5px] lg:block -ml-0"
         />
 
         <section className="min-w-0 flex-1">
@@ -293,7 +292,11 @@ export default function MyLearningPage() {
               <button
                 key={tabKey}
                 type="button"
-                className={`tab-btn ${tab === tabKey ? 'active' : ''}`}
+                className={`mr-[24px] border-b-2 py-[12px] transition-all duration-200 ${
+                  tab === tabKey
+                    ? 'border-[#00C471] font-bold text-[#00C471]'
+                    : 'border-transparent font-semibold text-[#9CA3AF]'
+                }`}
                 onClick={() => setTab(tabKey)}
               >
                 {tabLabels[tabKey]} ({tabCounts[tabKey]})

@@ -32,17 +32,15 @@ function ToggleSwitch({
         id={id}
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="absolute block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-300"
-        style={{
-          right: checked ? 0 : '50%',
-          zIndex: 1,
-          borderColor: checked ? '#00C471' : '#E5E7EB',
-        }}
+        className={`absolute z-[1] block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-300 ${
+          checked ? 'right-0 border-[#00C471]' : 'right-1/2 border-[#E5E7EB]'
+        }`}
       />
       <label
         htmlFor={id}
-        className="block h-5 cursor-pointer overflow-hidden rounded-full transition-all duration-300"
-        style={{ backgroundColor: checked ? '#00C471' : '#D1D5DB' }}
+        className={`block h-5 cursor-pointer overflow-hidden rounded-full transition-all duration-300 ${
+          checked ? 'bg-[#00C471]' : 'bg-[#D1D5DB]'
+        }`}
       />
     </div>
   )
