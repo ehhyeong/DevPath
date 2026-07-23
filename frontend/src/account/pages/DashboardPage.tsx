@@ -372,7 +372,7 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
             <p className="mb-4 text-xs text-gray-400">나에게 맞는 첫 강의를 찾아 학습을 시작해보세요!</p>
             <button
               type="button"
-              className="rounded-xl bg-brand px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-[#00b365]"
+              className="rounded-xl bg-brand h-[38px] px-5 text-xs font-bold text-white shadow-sm transition hover:bg-[#00b365]"
               onClick={() => navigateTo('/lecture-list')}
             >
               강의 둘러보기
@@ -401,7 +401,7 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="dashboard-empty-small-card flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="dashboard-empty-small-card flex h-full min-h-[196px] flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
                 <i className="fas fa-rocket text-gray-400" /> 진행 중인 프로젝트
@@ -416,13 +416,13 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
                 <br />
                 프로젝트가 없습니다.
               </p>
-              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
+              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 h-[26px] px-3 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
                 팀 찾기
               </button>
             </div>
           </div>
 
-          <div className="dashboard-empty-small-card flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="dashboard-empty-small-card flex h-full min-h-[196px] flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
                 <i className="fas fa-chalkboard-teacher text-gray-400" /> 멘토링
@@ -437,13 +437,13 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
                 <br />
                 멘토링이 없습니다.
               </p>
-              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
+              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 h-[26px] px-3 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
                 멘토 찾기
               </button>
             </div>
           </div>
 
-          <div className="dashboard-empty-small-card flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="dashboard-empty-small-card flex h-full min-h-[196px] flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-bold text-gray-800">
                 <i className="fas fa-comment-dots text-gray-400" /> 라운지 / 커뮤니티
@@ -458,7 +458,7 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
                 <br />
                 없습니다.
               </p>
-              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
+              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 h-[26px] px-3 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
                 글 작성하기
               </button>
             </div>
@@ -470,7 +470,7 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-sm font-bold text-gray-900">보유 스킬 (Proof)</h3>
             </div>
-            <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 py-4">
+            <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 py-4 min-h-[136px]">
               <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-300 shadow-sm">
                 <i className="fas fa-certificate" />
               </div>
@@ -489,7 +489,7 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
             </div>
 
             <div className="flex h-full flex-col gap-4 md:flex-row">
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-gray-100 bg-gray-50 p-6 text-center">
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-gray-100 bg-gray-50 p-6 text-center min-h-[136px]">
                 <i className="fas fa-robot mb-1 text-2xl text-gray-300" />
                 <p className="text-sm font-bold text-gray-500">학습 데이터가 부족합니다</p>
                 <p className="text-[11px] leading-relaxed text-gray-400">
@@ -503,8 +503,12 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
         </div>
       </section>
 
-      <aside className="dashboard-empty-reference-roadmap hidden w-80 shrink-0 xl:block">
-        <div className="dashboard-empty-roadmap-card sticky-roadmap mt-[80px] flex h-[600px] flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <aside className="dashboard-empty-reference-roadmap hidden w-80 shrink-0 space-y-6 xl:block">
+        <div aria-hidden className="mb-2 invisible">
+          <h1 className="text-2xl font-bold">.</h1>
+          <p className="mt-1 text-sm">.</p>
+        </div>
+        <div className="dashboard-empty-roadmap-card sticky-roadmap flex h-[600px] flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="dashboard-empty-roadmap-title flex items-center gap-2 font-bold text-gray-900">
               <i className="fas fa-map text-gray-400" /> 나의 학습 로드맵
@@ -525,7 +529,7 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
             </p>
             <button
               type="button"
-              className="dashboard-empty-roadmap-button flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#00b365]"
+              className="dashboard-empty-roadmap-button flex w-full items-center justify-center gap-2 rounded-xl bg-brand h-[49px] text-sm font-bold text-white shadow-sm transition hover:bg-[#00b365]"
               onClick={() => navigateTo('/roadmap-hub')}
             >
               <i className="fas fa-search text-xs" /> 맞춤 로드맵 탐색하기
@@ -1191,7 +1195,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                       </div>
                       <button
                         type="button"
-                        className="dashboard-ai-add-button mt-2 w-full rounded-lg border border-purple-200 bg-white py-2 text-[11px] font-bold text-purple-600 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="dashboard-ai-add-button mt-2 w-full rounded-lg border border-purple-200 bg-white h-[33px] px-3 text-[11px] leading-4 font-bold text-purple-600 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={addingGrowthNodeId === mainGrowthItem.nodeId}
                         onClick={() => void handleAddGrowthNode(mainGrowthItem)}
                       >
@@ -1199,7 +1203,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                       </button>
                     </div>
 
-                    <div className="dashboard-ai-analysis-panel flex min-w-0 flex-1 flex-col justify-center rounded-xl bg-slate-900 p-4 text-white">
+                    <div className="dashboard-ai-analysis-panel flex min-w-0 flex-1 flex-col justify-center rounded-xl bg-slate-900 p-4 text-white min-h-[136px]">
                       <div className="mb-2 flex items-center gap-2">
                         <span className="text-lg text-yellow-400">
                           <i className="fas fa-robot" />
@@ -1225,8 +1229,12 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
           </div>
         </section>
 
-        <aside className="hidden w-80 shrink-0 xl:block">
-          <div className="sticky-roadmap dashboard-populated-roadmap-card mt-[80px] space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <aside className="hidden w-80 shrink-0 space-y-6 xl:block">
+          <div aria-hidden className="mb-2 invisible">
+            <h1 className="text-2xl font-bold">.</h1>
+            <p className="mt-1 text-sm">.</p>
+          </div>
+          <div className="sticky-roadmap dashboard-populated-roadmap-card space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             {roadmapTitle ? (
               <>
                 <div className="flex items-center justify-between">
@@ -1280,14 +1288,14 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                 <div className="space-y-2 pt-2">
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-sm font-bold text-white shadow-sm transition hover:bg-green-600"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand h-[44px] text-sm font-bold text-white shadow-sm transition hover:bg-green-600"
                     onClick={() => navigateTo(roadmapHref)}
                   >
                     <i className="fas fa-play" /> 이어서 학습하기
                   </button>
                   <button
                     type="button"
-                    className="w-full rounded-xl border border-gray-200 bg-white py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50"
+                    className="w-full rounded-xl border border-gray-200 bg-white h-[44px] text-sm font-bold text-gray-700 transition hover:bg-gray-50"
                     onClick={() => navigateTo('/my-roadmap-list')}
                   >
                     내 로드맵 관리
@@ -1313,7 +1321,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                   </p>
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#00b365]"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand h-[44px] text-sm font-bold text-white shadow-sm transition hover:bg-[#00b365]"
                     onClick={() => navigateTo('/roadmap-hub')}
                   >
                     <i className="fas fa-search text-xs" /> 맞춤 로드맵 탐색하기
