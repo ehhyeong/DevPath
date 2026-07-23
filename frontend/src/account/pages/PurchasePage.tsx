@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { enrollmentApi, proofCardApi, wishlistApi } from '../../lib/api'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { Enrollment, ProofCardGalleryItem, WishlistCourse } from '../../types/learner'
@@ -9,29 +9,6 @@ type ReceiptItem = {
   title: string
   date: string
   price: string
-}
-
-const tabButtonBaseStyle: CSSProperties = {
-  position: 'relative',
-  margin: 0,
-  padding: '12px 8px',
-  border: 0,
-  backgroundColor: 'transparent',
-  color: '#6B7280',
-  cursor: 'pointer',
-  fontFamily: 'Pretendard, sans-serif',
-  fontSize: '0.95rem',
-  fontWeight: 500,
-  lineHeight: '1.5',
-  transition: 'all 0.2s',
-}
-
-function tabButtonStyle(active: boolean): CSSProperties {
-  return {
-    ...tabButtonBaseStyle,
-    color: active ? '#00C471' : '#6B7280',
-    fontWeight: active ? 700 : 500,
-  }
 }
 
 function formatShortDate(value: string | null | undefined) {
@@ -122,16 +99,28 @@ export default function PurchasePage() {
         />
 
         <section className="min-w-0 flex-1">
-          <h2 className="mb-6 text-2xl leading-none font-bold text-gray-900" style={{ paddingTop: 5 }}>
+          <h2 className="mb-6 pt-[5px] text-2xl leading-none font-bold text-gray-900">
             구매 / 보관함
           </h2>
 
           <div className="mb-6 flex gap-6 border-b border-gray-200">
-            <button type="button" style={tabButtonStyle(tab === 'history')} onClick={() => setTab('history')}>
+            <button
+              type="button"
+              className={`relative m-0 cursor-pointer border-0 bg-transparent px-[8px] py-[12px] font-['Pretendard',sans-serif] text-[0.95rem]! leading-[1.5]! transition-all duration-200 ${
+                tab === 'history' ? 'font-bold text-[#00C471]' : 'font-medium text-[#6B7280]'
+              }`}
+              onClick={() => setTab('history')}
+            >
               결제 내역
               {tab === 'history' ? <span className="absolute right-0 bottom-0 left-0 h-0.5 bg-brand" /> : null}
             </button>
-            <button type="button" style={tabButtonStyle(tab === 'vault')} onClick={() => setTab('vault')}>
+            <button
+              type="button"
+              className={`relative m-0 cursor-pointer border-0 bg-transparent px-[8px] py-[12px] font-['Pretendard',sans-serif] text-[0.95rem]! leading-[1.5]! transition-all duration-200 ${
+                tab === 'vault' ? 'font-bold text-[#00C471]' : 'font-medium text-[#6B7280]'
+              }`}
+              onClick={() => setTab('vault')}
+            >
               보관함 (스크랩)
               {tab === 'vault' ? <span className="absolute right-0 bottom-0 left-0 h-0.5 bg-brand" /> : null}
             </button>

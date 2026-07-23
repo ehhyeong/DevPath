@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { communityApi } from '../../lib/api'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { AuthSession } from '../../types/auth'
@@ -14,72 +14,6 @@ type PostViewItem = CommunityPost & {
 }
 
 const filterCategories: FilterCategory[] = ['all', 'qna', 'tech', 'career', 'free', 'project']
-
-const filterBarStyle: CSSProperties = {
-  backgroundColor: '#FFFFFF',
-  border: '1px solid #E5E7EB',
-  borderRadius: '12px',
-  marginBottom: '24px',
-  paddingLeft: '8px',
-  paddingRight: '8px',
-  boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-}
-
-function filterTabStyle(isActive: boolean): CSSProperties {
-  return {
-    boxSizing: 'border-box',
-    height: '43px',
-    margin: 0,
-    padding: '10px 16px',
-    border: 0,
-    borderBottom: `2px solid ${isActive ? '#1F2937' : 'transparent'}`,
-    backgroundColor: 'transparent',
-    color: isActive ? '#1F2937' : '#6B7280',
-    cursor: 'pointer',
-    fontFamily: 'Pretendard, sans-serif',
-    fontSize: '14px',
-    fontWeight: isActive ? 700 : 500,
-    lineHeight: '21px',
-    letterSpacing: '0',
-    outline: 'none',
-    transition: 'all 0.2s',
-    whiteSpace: 'nowrap',
-  }
-}
-
-const searchInputStyle: CSSProperties = {
-  boxSizing: 'border-box',
-  width: '100%',
-  height: '34px',
-  padding: '6px 12px 6px 32px',
-  border: '1px solid #E5E7EB',
-  borderRadius: '8px',
-  backgroundColor: '#F9FAFB',
-  color: '#111827',
-  fontFamily: 'Pretendard, sans-serif',
-  fontSize: '14px',
-  lineHeight: '20px',
-  letterSpacing: '0',
-  outline: 'none',
-  transition: 'all 0.2s',
-}
-
-const sortSelectStyle: CSSProperties = {
-  boxSizing: 'border-box',
-  height: '30px',
-  margin: 0,
-  padding: '6px 8px',
-  border: '1px solid #E5E7EB',
-  borderRadius: '8px',
-  backgroundColor: '#FFFFFF',
-  color: '#4B5563',
-  cursor: 'pointer',
-  fontFamily: 'Pretendard, sans-serif',
-  fontSize: '12px',
-  lineHeight: '16px',
-  letterSpacing: '0',
-  outline: 'none',
-}
 
 function mapCategory(category: string): FilterCategory {
   switch (category) {
@@ -281,7 +215,7 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
 
         <section className="min-w-0 flex-1">
           {selectedPost ? (
-            <div className="fade-in">
+            <div className="animate-[fadeIn_0.5s_ease-in-out]">
               <div className="mb-4 flex items-center justify-between">
                 <button
                   type="button"
@@ -293,16 +227,16 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
               </div>
 
               <article className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
-                <div className="prose max-w-none text-gray-800">
-                  <h3>{selectedPost.title}</h3>
+                <div className="max-w-none text-gray-800">
+                  <h3 className="mt-[1.5rem] mb-[0.5rem] text-[1.1rem] font-bold text-[#111827]">{selectedPost.title}</h3>
                   {selectedPostParagraphs.map((paragraph, index) => (
-                    <p key={`${selectedPost.id}-${index}`}>{paragraph}</p>
+                    <p key={`${selectedPost.id}-${index}`} className="mb-[0.5rem] leading-[1.6] text-[#374151]">{paragraph}</p>
                   ))}
                 </div>
               </article>
             </div>
           ) : (
-            <div className="fade-in">
+            <div className="animate-[fadeIn_0.5s_ease-in-out]">
               <div className="mb-6 flex items-end justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">작성한 게시글</h2>
                 <div className="text-sm text-gray-500">
@@ -310,13 +244,17 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-between md:flex-row" style={filterBarStyle}>
-                <div className="hide-scroll flex w-full overflow-x-auto md:w-auto">
+              <div className="mb-[24px] flex flex-col items-center justify-between rounded-[12px] border border-[#E5E7EB] bg-white px-[8px] shadow-[0_1px_2px_0_rgb(0_0_0_/_0.05)] md:flex-row">
+                <div className="flex w-full overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:w-auto">
                   {filterCategories.map((item) => (
                     <button
                       key={item}
                       type="button"
-                      style={filterTabStyle(category === item)}
+                      className={`m-0 h-[43px] cursor-pointer whitespace-nowrap border-x-0 border-t-0 border-b-2 bg-transparent px-[16px] py-[10px] font-['Pretendard',sans-serif] text-[14px]! leading-[21px]! tracking-[0] outline-none transition-all duration-200 ${
+                        category === item
+                          ? 'border-[#1F2937] font-bold text-[#1F2937]'
+                          : 'border-transparent font-medium text-[#6B7280]'
+                      }`}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => setCategory(item)}
                     >
@@ -333,8 +271,7 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
                       onChange={(event) => setKeyword(event.target.value)}
                       placeholder="내 글 검색"
                       disabled={isLoading || !posts.length}
-                      className="disabled:opacity-50"
-                      style={searchInputStyle}
+                      className="h-[34px] w-full rounded-[8px] border border-[#E5E7EB] bg-[#F9FAFB] py-[6px] pr-[12px] pl-[32px] font-['Pretendard',sans-serif] text-[14px]! leading-[20px]! tracking-[0] text-[#111827] outline-none transition-all duration-200 disabled:opacity-50"
                     />
                     <i className="fas fa-search absolute top-1/2 left-2.5 -translate-y-1/2 text-xs text-gray-400" />
                   </div>
@@ -342,8 +279,7 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
                     value={sort}
                     onChange={(event) => setSort(event.target.value as SortType)}
                     disabled={isLoading || !posts.length}
-                    className="disabled:opacity-50"
-                    style={sortSelectStyle}
+                    className="m-0 h-[30px] cursor-pointer rounded-[8px] border border-[#E5E7EB] bg-white px-[8px] py-[6px] font-['Pretendard',sans-serif] text-[12px]! leading-[16px]! tracking-[0] text-[#4B5563] outline-none disabled:opacity-50"
                   >
                     <option value="latest">최신순</option>
                     <option value="popular">인기순</option>
@@ -352,7 +288,7 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
                 </div>
               </div>
 
-              <div id="postListContainer" className="space-y-4">
+              <div id="postListContainer" className="min-h-[var(--postListMinH,0px)] space-y-4">
                 {isLoading ? (
                   <div className="py-10 text-center text-gray-500">
                     <i className="fas fa-spinner mb-3 text-4xl text-gray-300" />
@@ -397,7 +333,7 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
                           {post.tags.length ? (
                             <div className="mb-3 flex flex-wrap gap-2">
                               {post.tags.map((tag) => (
-                                <span key={`${post.id}-${tag}`} className="tech-tag">
+                                <span key={`${post.id}-${tag}`} className="rounded-[4px] bg-[#F1F3F5] px-[8px] py-[2px] text-[11px] font-semibold text-[#495057]">
                                   {tag}
                                 </span>
                               ))}

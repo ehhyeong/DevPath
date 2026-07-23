@@ -75,27 +75,26 @@ export function MyMenuSidebar({
               <h2 className="text-[11px] font-bold tracking-widest text-gray-400 uppercase">{section.title}</h2>
             </div>
 
-            {section.items.map((item) => {
-              const isActive = currentPageKey === item.key
-              return (
-                <a
-                  key={item.key}
-                  href={item.href}
-                  className={`group flex items-center mb-1 py-3.5 px-4 rounded-xl transition-colors duration-200 ${
-                    isActive
-                      ? 'bg-[#E6F9F1] text-brand font-bold'
-                      : 'text-gray-500 font-medium hover:bg-gray-100 hover:text-gray-900'
+            {section.items.map((item) => (
+              <a
+                key={item.key}
+                href={item.href}
+                className={`group mb-1 flex cursor-pointer items-center rounded-[0.75rem] px-4 py-[0.875rem] [transition:background-color_0.2s_ease,color_0.2s_ease] ${
+                  currentPageKey === item.key
+                    ? 'bg-[#E6F9F1] font-bold text-[#00C471]'
+                    : 'font-medium text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]'
+                }`}
+              >
+                <i
+                  className={`${item.icon} mr-[0.875rem] w-6 text-center text-[1.125rem] [transition:color_0.2s_ease] ${
+                    currentPageKey === item.key
+                      ? 'text-[#00C471] group-hover:text-[#00C471]'
+                      : 'text-[#9CA3AF] group-hover:text-[#4B5563]'
                   }`}
-                >
-                  <i
-                    className={`${item.icon} w-6 mr-3.5 text-center text-lg transition-colors duration-200 ${
-                      isActive ? 'text-brand' : 'text-gray-400 group-hover:text-gray-600'
-                    }`}
-                  />
-                  <span className="text-[0.95rem] whitespace-nowrap">{item.label}</span>
-                </a>
-              )
-            })}
+                />
+                <span className="ml-0 w-auto overflow-visible text-[0.95rem] whitespace-nowrap opacity-100">{item.label}</span>
+              </a>
+            ))}
           </div>
         ))}
       </aside>
