@@ -59,6 +59,342 @@ import type {
   WorkspaceTask,
 } from './mentoring-common-workspace-types'
 
+const MENTORING_COMMON_PAGE_LOCK_CLASS_NAME = [
+  'bg-[#F3F4F6]!',
+  'text-[#1F2937]!',
+  "font-['Pretendard',sans-serif]!",
+  'text-[16px]!',
+  'leading-[24px]!',
+  "[&_button]:font-['Pretendard',sans-serif]!",
+  "[&_input]:font-['Pretendard',sans-serif]!",
+  "[&_select]:font-['Pretendard',sans-serif]!",
+  "[&_textarea]:font-['Pretendard',sans-serif]!",
+  '[&_.text-2xl]:text-[24px]!',
+  '[&_.text-2xl]:leading-[32px]!',
+  '[&_.text-xl]:text-[20px]!',
+  '[&_.text-xl]:leading-[28px]!',
+  '[&_.text-lg]:text-[18px]!',
+  '[&_.text-lg]:leading-[28px]!',
+  '[&_.text-sm]:text-[14px]!',
+  '[&_.text-sm]:leading-[20px]!',
+  '[&_button]:text-[14px]!',
+  '[&_button]:leading-[20px]!',
+  '[&_input]:text-[14px]!',
+  '[&_input]:leading-[20px]!',
+  '[&_textarea]:text-[14px]!',
+  '[&_textarea]:leading-[20px]!',
+  '[&_.text-xs]:text-[12px]!',
+  '[&_.text-xs]:leading-[16px]!',
+  String.raw`[&_.text-\[11px\]]:text-[11px]!`,
+  String.raw`[&_.text-\[11px\]]:leading-[16px]!`,
+  String.raw`[&_.text-\[10px\]]:text-[10px]!`,
+  String.raw`[&_.text-\[10px\]]:leading-[14px]!`,
+  String.raw`[&_.text-\[9px\]]:text-[9px]!`,
+  String.raw`[&_.text-\[9px\]]:leading-[12px]!`,
+  '[&_.text-brand]:text-[#00C471]!',
+  '[&_.bg-brand]:bg-[#00C471]!',
+  '[&_.text-mentor]:text-[#7C3AED]!',
+  '[&_.bg-mentor]:bg-[#7C3AED]!',
+  '[&_.mentoring-common-sidebar.pinned]:w-[256px]!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-text]:ml-[0.75rem]!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-text]:w-auto!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-text]:opacity-100!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-section]:mt-[1.5rem]!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-section]:mb-[0.5rem]!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-section]:h-auto!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-section]:opacity-100!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-pin]:ml-[0.5rem]!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-pin]:w-[28px]!',
+  '[&_.mentoring-common-sidebar.pinned_.mentoring-sidebar-pin]:opacity-100!',
+  '[&_.mentoring-common-scroll]:bg-[#F8F9FA]!',
+  '[&_.mentoring-common-scroll]:p-[32px]!',
+  '[&_.mentoring-common-container]:max-w-[1152px]!',
+  '[&_.mentoring-common-container]:gap-y-[24px]!',
+  '[&.mentoring-common-workspace-page_.mentoring-common-container]:h-full!',
+  '[&.mentoring-common-workspace-page_.mentoring-common-container]:w-full!',
+  '[&.mentoring-common-workspace-page_.mentoring-common-container]:max-w-none!',
+  '[&.mentoring-common-erd-page_.mentoring-common-scroll]:overflow-hidden!',
+  '[&.mentoring-common-erd-page_.mentoring-common-scroll]:p-0!',
+  '[&.mentoring-common-erd-page_.mentoring-common-container]:h-full!',
+  '[&.mentoring-common-erd-page_.mentoring-common-container]:w-full!',
+  '[&.mentoring-common-erd-page_.mentoring-common-container]:max-w-none!',
+  '[&.mentoring-common-erd-page_.mentoring-common-container]:gap-y-0!',
+  '[&.mentoring-common-erd-page_.erd-column-name-input]:text-[12px]!',
+  '[&.mentoring-common-erd-page_.erd-column-name-input]:leading-[16px]!',
+  '[&.mentoring-common-erd-page_.erd-column-type-select]:text-[10px]!',
+  '[&.mentoring-common-erd-page_.erd-column-type-select]:leading-[14px]!',
+  '[&.mentoring-common-erd-page_.erd-column-flag-label]:text-[9px]!',
+  '[&.mentoring-common-erd-page_.erd-column-flag-label]:leading-[18px]!',
+  '[&.mentoring-common-erd-page_.erd-column-flag-label]:font-extrabold!',
+  '[&.mentoring-common-erd-page_.erd-column-delete-button]:leading-[1]!',
+  '[&_.mentoring-common-page-heading]:hidden!',
+  '[&_.mentoring-dashboard-hero]:gap-[32px]!',
+  '[&_.mentoring-dashboard-hero]:rounded-[24px]!',
+  '[&_.mentoring-dashboard-hero]:border-[1px]!',
+  '[&_.mentoring-dashboard-hero]:border-[#F3F4F6]!',
+  '[&_.mentoring-dashboard-hero]:bg-white!',
+  '[&_.mentoring-dashboard-hero]:p-[32px]!',
+  '[&_.mentoring-dashboard-hero]:[box-shadow:0_1px_2px_0_rgb(0_0_0_/_0.05)]!',
+  '[&_.mentoring-dashboard-hero_.h-20.w-20]:h-[80px]!',
+  '[&_.mentoring-dashboard-hero_.h-20.w-20]:w-[80px]!',
+  '[&_.mentoring-dashboard-hero_.h-20.w-20]:border-[4px]!',
+  '[&_.mentoring-dashboard-hero_h2]:text-[24px]!',
+  '[&_.mentoring-dashboard-hero_h2]:leading-[32px]!',
+  '[&_.mentoring-dashboard-hero_h2]:font-extrabold!',
+  '[&_.mentoring-dashboard-hero_h2]:text-[#111827]!',
+  '[&_.mentoring-dashboard-hero_p]:text-[#6B7280]!',
+  '[&_.mentoring-dashboard-dm-button]:h-[34px]!',
+  '[&_.mentoring-dashboard-dm-button]:min-h-[34px]!',
+  '[&_.mentoring-dashboard-dm-button]:w-auto!',
+  '[&_.mentoring-dashboard-dm-button]:rounded-[8px]!',
+  '[&_.mentoring-dashboard-dm-button]:border-[1px]!',
+  '[&_.mentoring-dashboard-dm-button]:border-[#E5E7EB]!',
+  '[&_.mentoring-dashboard-dm-button]:bg-white!',
+  '[&_.mentoring-dashboard-dm-button]:px-[16px]!',
+  '[&_.mentoring-dashboard-dm-button]:py-0!',
+  '[&_.mentoring-dashboard-dm-button]:text-[12px]!',
+  '[&_.mentoring-dashboard-dm-button]:leading-[16px]!',
+  '[&_.mentoring-dashboard-dm-button]:font-bold!',
+  '[&_.mentoring-dashboard-dm-button]:text-[#4B5563]!',
+  '[&_.mentoring-dashboard-dm-button]:[box-shadow:0_1px_2px_0_rgb(0_0_0_/_0.05)]!',
+  '[&_.mentoring-dashboard-progress-card]:w-[288px]!',
+  '[&_.mentoring-dashboard-progress-card]:rounded-[16px]!',
+  '[&_.mentoring-dashboard-progress-card]:border-[1px]!',
+  '[&_.mentoring-dashboard-progress-card]:border-[#F3F4F6]!',
+  '[&_.mentoring-dashboard-progress-card]:bg-[#F9FAFB]!',
+  '[&_.mentoring-dashboard-progress-card]:p-[20px]!',
+  '[&_.mentoring-dashboard-grid]:items-stretch!',
+  '[&_.mentoring-dashboard-grid]:gap-[24px]!',
+  '[&_.mentoring-dashboard-main-col>*]:my-0!',
+  '[&_.mentoring-dashboard-side-col>*]:my-0!',
+  '[&_.mentoring-dashboard-card]:rounded-[16px]!',
+  '[&_.mentoring-dashboard-card]:border-[1px]!',
+  '[&_.mentoring-dashboard-card]:border-[#F3F4F6]!',
+  '[&_.mentoring-dashboard-card]:bg-white!',
+  '[&_.mentoring-dashboard-card]:p-[24px]!',
+  '[&_.mentoring-dashboard-card]:[box-shadow:0_1px_2px_0_rgb(0_0_0_/_0.05)]!',
+  '[&_.mentoring-dashboard-mission-card]:rounded-[16px]!',
+  '[&_.mentoring-dashboard-mission-card]:border-[1px]!',
+  '[&_.mentoring-dashboard-mission-card]:border-[#F3F4F6]!',
+  '[&_.mentoring-dashboard-mission-card]:bg-white!',
+  '[&_.mentoring-dashboard-mission-card]:p-[24px]!',
+  '[&_.mentoring-dashboard-mission-card]:[box-shadow:0_1px_2px_0_rgb(0_0_0_/_0.05)]!',
+  '[&_.mentoring-dashboard-card>div:first-child]:mb-[20px]!',
+  '[&_.mentoring-dashboard-card>div:first-child]:border-b-[1px]!',
+  '[&_.mentoring-dashboard-card>div:first-child]:border-b-[#F9FAFB]!',
+  '[&_.mentoring-dashboard-card>div:first-child]:pb-[12px]!',
+  '[&_.mentoring-dashboard-card>div:first-child_h3]:text-[14px]!',
+  '[&_.mentoring-dashboard-card>div:first-child_h3]:leading-[20px]!',
+  '[&_.mentoring-dashboard-card>div:first-child_h3]:font-extrabold!',
+  '[&_.mentoring-dashboard-card>div:first-child_h3]:text-[#111827]!',
+  '[&_.mentoring-dashboard-notice-card>div:first-child_h3]:text-[16px]!',
+  '[&_.mentoring-dashboard-notice-card>div:first-child_h3]:leading-[24px]!',
+  '[&_.mentoring-dashboard-files-card>div:first-child_h3]:text-[16px]!',
+  '[&_.mentoring-dashboard-files-card>div:first-child_h3]:leading-[24px]!',
+  '[&_.mentoring-dashboard-card-link]:inline-flex!',
+  '[&_.mentoring-dashboard-card-link]:items-center!',
+  '[&_.mentoring-dashboard-card-link]:gap-[2px]!',
+  '[&_.mentoring-dashboard-card-link]:rounded-[4px]!',
+  '[&_.mentoring-dashboard-card-link]:px-[8px]!',
+  '[&_.mentoring-dashboard-card-link]:py-[4px]!',
+  '[&_.mentoring-dashboard-card-link]:text-[12px]!',
+  '[&_.mentoring-dashboard-card-link]:leading-[16px]!',
+  '[&_.mentoring-dashboard-card-link]:font-bold!',
+  '[&_.mentoring-dashboard-card-link]:text-[#9CA3AF]!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:inline-flex!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:items-center!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:gap-[2px]!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:rounded-[4px]!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:px-[8px]!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:py-[4px]!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:text-[12px]!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:leading-[16px]!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:font-bold!',
+  '[&_.mentoring-dashboard-files-card_a.text-xs]:text-[#9CA3AF]!',
+  '[&_.mentoring-dashboard-card-link_i]:ml-[2px]!',
+  '[&_.mentoring-dashboard-card-link_i]:text-[10px]!',
+  '[&_.mentoring-dashboard-mission-card]:border-l-[4px]!',
+  '[&_.mentoring-dashboard-mission-card]:border-l-[#7C3AED]!',
+  '[&_.mentoring-dashboard-mission-card_.rounded-xl.bg-gray-50]:rounded-[12px]!',
+  '[&_.mentoring-dashboard-mission-card_.rounded-xl.bg-gray-50]:bg-[#F9FAFB]!',
+  '[&_.mentoring-dashboard-mission-card_.rounded-xl.bg-gray-50]:p-[20px]!',
+  '[&_.mentoring-dashboard-mission-card_h3]:text-[20px]!',
+  '[&_.mentoring-dashboard-mission-card_h3]:leading-[28px]!',
+  '[&_.mentoring-dashboard-mission-card_h3]:font-extrabold!',
+  '[&_.mentoring-dashboard-mission-card_h3]:text-[#111827]!',
+  '[&_.mentoring-dashboard-mission-footer]:mt-[20px]!',
+  '[&_.mentoring-dashboard-mission-footer]:pt-[20px]!',
+  '[&_.mentoring-dashboard-submit-button]:inline-flex!',
+  '[&_.mentoring-dashboard-submit-button]:h-[40px]!',
+  '[&_.mentoring-dashboard-submit-button]:min-w-[132px]!',
+  '[&_.mentoring-dashboard-submit-button]:items-center!',
+  '[&_.mentoring-dashboard-submit-button]:justify-center!',
+  '[&_.mentoring-dashboard-submit-button]:gap-[8px]!',
+  '[&_.mentoring-dashboard-submit-button]:rounded-[12px]!',
+  '[&_.mentoring-dashboard-submit-button]:bg-[#00C471]!',
+  '[&_.mentoring-dashboard-submit-button]:px-[24px]!',
+  '[&_.mentoring-dashboard-submit-button]:py-0!',
+  '[&_.mentoring-dashboard-submit-button]:text-[14px]!',
+  '[&_.mentoring-dashboard-submit-button]:leading-[20px]!',
+  '[&_.mentoring-dashboard-submit-button]:font-bold!',
+  '[&_.mentoring-dashboard-submit-button]:text-white!',
+  '[&_.mentoring-dashboard-submit-button]:[box-shadow:0_4px_6px_-1px_rgb(0_0_0_/_0.1),0_2px_4px_-2px_rgb(0_0_0_/_0.1)]!',
+  '[&_.mentoring-dashboard-inline-empty]:flex!',
+  '[&_.mentoring-dashboard-inline-empty]:min-h-[136px]!',
+  '[&_.mentoring-dashboard-inline-empty]:flex-col!',
+  '[&_.mentoring-dashboard-inline-empty]:items-center!',
+  '[&_.mentoring-dashboard-inline-empty]:justify-center!',
+  '[&_.mentoring-dashboard-inline-empty]:px-[16px]!',
+  '[&_.mentoring-dashboard-inline-empty]:py-[24px]!',
+  '[&_.mentoring-dashboard-inline-empty]:text-center!',
+  '[&_.mentoring-dashboard-inline-empty]:opacity-80!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:mb-[12px]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:flex!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:h-[48px]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:w-[48px]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:items-center!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:justify-center!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:rounded-[9999px]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:border-[1px]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:border-[#F3F4F6]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:bg-[#F9FAFB]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:text-[20px]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:leading-[28px]!',
+  '[&_.mentoring-dashboard-inline-empty-icon]:text-[#D1D5DB]!',
+  '[&_.mentoring-dashboard-inline-empty-title]:m-0!',
+  '[&_.mentoring-dashboard-inline-empty-title]:text-[14px]!',
+  '[&_.mentoring-dashboard-inline-empty-title]:leading-[20px]!',
+  '[&_.mentoring-dashboard-inline-empty-title]:font-bold!',
+  '[&_.mentoring-dashboard-inline-empty-title]:text-[#6B7280]!',
+  '[&_.mentoring-dashboard-inline-empty-copy]:mt-[4px]!',
+  '[&_.mentoring-dashboard-inline-empty-copy]:mr-0!',
+  '[&_.mentoring-dashboard-inline-empty-copy]:mb-0!',
+  '[&_.mentoring-dashboard-inline-empty-copy]:ml-0!',
+  '[&_.mentoring-dashboard-inline-empty-copy]:max-w-[280px]!',
+  '[&_.mentoring-dashboard-inline-empty-copy]:text-[12px]!',
+  '[&_.mentoring-dashboard-inline-empty-copy]:leading-[16px]!',
+  '[&_.mentoring-dashboard-inline-empty-copy]:text-[#9CA3AF]!',
+  '[&_.mentoring-dashboard-files-empty_.mentoring-dashboard-inline-empty-copy]:w-max!',
+  '[&_.mentoring-dashboard-files-empty_.mentoring-dashboard-inline-empty-copy]:max-w-none!',
+  '[&_.mentoring-dashboard-files-empty_.mentoring-dashboard-inline-empty-copy]:whitespace-nowrap!',
+  '[&_.mentoring-dashboard-inline-empty-action]:mt-[16px]!',
+  '[&_.mentoring-dashboard-outline-button]:inline-flex!',
+  '[&_.mentoring-dashboard-outline-button]:h-[38px]!',
+  '[&_.mentoring-dashboard-outline-button]:items-center!',
+  '[&_.mentoring-dashboard-outline-button]:justify-center!',
+  '[&_.mentoring-dashboard-outline-button]:rounded-[12px]!',
+  '[&_.mentoring-dashboard-outline-button]:border-[1px]!',
+  '[&_.mentoring-dashboard-outline-button]:border-[#E5E7EB]!',
+  '[&_.mentoring-dashboard-outline-button]:bg-white!',
+  '[&_.mentoring-dashboard-outline-button]:px-[16px]!',
+  '[&_.mentoring-dashboard-outline-button]:py-0!',
+  '[&_.mentoring-dashboard-outline-button]:text-[12px]!',
+  '[&_.mentoring-dashboard-outline-button]:leading-[16px]!',
+  '[&_.mentoring-dashboard-outline-button]:font-bold!',
+  '[&_.mentoring-dashboard-outline-button]:text-[#4B5563]!',
+  '[&_.mentoring-dashboard-outline-button]:[box-shadow:0_1px_2px_0_rgb(0_0_0_/_0.05)]!',
+  '[&_.mentoring-dashboard-wide-button]:inline-flex!',
+  '[&_.mentoring-dashboard-wide-button]:mt-[16px]!',
+  '[&_.mentoring-dashboard-wide-button]:h-[38px]!',
+  '[&_.mentoring-dashboard-wide-button]:w-full!',
+  '[&_.mentoring-dashboard-wide-button]:items-center!',
+  '[&_.mentoring-dashboard-wide-button]:justify-center!',
+  '[&_.mentoring-dashboard-wide-button]:rounded-[12px]!',
+  '[&_.mentoring-dashboard-wide-button]:border-[1px]!',
+  '[&_.mentoring-dashboard-wide-button]:border-[#E5E7EB]!',
+  '[&_.mentoring-dashboard-wide-button]:bg-[#F9FAFB]!',
+  '[&_.mentoring-dashboard-wide-button]:px-[16px]!',
+  '[&_.mentoring-dashboard-wide-button]:py-0!',
+  '[&_.mentoring-dashboard-wide-button]:text-[12px]!',
+  '[&_.mentoring-dashboard-wide-button]:leading-[16px]!',
+  '[&_.mentoring-dashboard-wide-button]:font-bold!',
+  '[&_.mentoring-dashboard-wide-button]:text-[#4B5563]!',
+  '[&_.mentoring-dashboard-wide-button]:[box-shadow:0_1px_2px_0_rgb(0_0_0_/_0.05)]!',
+  '[&_.mentoring-dashboard-wide-button.white]:bg-white!',
+  '[&_.mentoring-dashboard-feedback-item]:block!',
+  '[&_.mentoring-dashboard-feedback-item]:rounded-[12px]!',
+  '[&_.mentoring-dashboard-feedback-item]:border-[1px]!',
+  '[&_.mentoring-dashboard-feedback-item]:border-[#00C471]!',
+  '[&_.mentoring-dashboard-feedback-item]:bg-[#EBFDF5]!',
+  '[&_.mentoring-dashboard-feedback-item]:p-[16px]!',
+  '[&_.mentoring-dashboard-task-item]:block!',
+  '[&_.mentoring-dashboard-task-item]:rounded-[12px]!',
+  '[&_.mentoring-dashboard-task-item]:border-[1px]!',
+  '[&_.mentoring-dashboard-task-item]:border-[#E5E7EB]!',
+  '[&_.mentoring-dashboard-task-item]:bg-[#F9FAFB]!',
+  '[&_.mentoring-dashboard-task-item]:p-[16px]!',
+  '[&_.mentoring-dashboard-qna-item]:block!',
+  '[&_.mentoring-dashboard-qna-item]:rounded-[12px]!',
+  '[&_.mentoring-dashboard-qna-item]:border-[1px]!',
+  '[&_.mentoring-dashboard-qna-item]:border-[#E5E7EB]!',
+  '[&_.mentoring-dashboard-qna-item]:bg-[#F9FAFB]!',
+  '[&_.mentoring-dashboard-qna-item]:p-[16px]!',
+  '[&_.mentoring-dashboard-feedback-badge]:inline-flex!',
+  '[&_.mentoring-dashboard-feedback-badge]:rounded-[4px]!',
+  '[&_.mentoring-dashboard-feedback-badge]:border-[1px]!',
+  '[&_.mentoring-dashboard-feedback-badge]:border-[#D1FAE5]!',
+  '[&_.mentoring-dashboard-feedback-badge]:bg-white!',
+  '[&_.mentoring-dashboard-feedback-badge]:px-[8px]!',
+  '[&_.mentoring-dashboard-feedback-badge]:py-[2px]!',
+  '[&_.mentoring-dashboard-feedback-badge]:text-[10px]!',
+  '[&_.mentoring-dashboard-feedback-badge]:leading-[14px]!',
+  '[&_.mentoring-dashboard-feedback-badge]:font-extrabold!',
+  '[&_.mentoring-dashboard-feedback-badge]:text-[#00C471]!',
+  '[&_.mentoring-dashboard-count-badge]:inline-flex!',
+  '[&_.mentoring-dashboard-count-badge]:h-[22px]!',
+  '[&_.mentoring-dashboard-count-badge]:items-center!',
+  '[&_.mentoring-dashboard-count-badge]:rounded-[9999px]!',
+  '[&_.mentoring-dashboard-count-badge]:bg-[#F3F4F6]!',
+  '[&_.mentoring-dashboard-count-badge]:px-[8px]!',
+  '[&_.mentoring-dashboard-count-badge]:py-0!',
+  '[&_.mentoring-dashboard-count-badge]:text-[10px]!',
+  '[&_.mentoring-dashboard-count-badge]:leading-[14px]!',
+  '[&_.mentoring-dashboard-count-badge]:font-extrabold!',
+  '[&_.mentoring-dashboard-count-badge]:text-[#6B7280]!',
+  '[&_.mentoring-dashboard-count-badge.active]:bg-[#DCFCE7]!',
+  '[&_.mentoring-dashboard-count-badge.active]:text-[#00C471]!',
+  '[&_.mentoring-dashboard-task-source]:inline-flex!',
+  '[&_.mentoring-dashboard-task-source]:items-center!',
+  '[&_.mentoring-dashboard-task-source]:rounded-[4px]!',
+  '[&_.mentoring-dashboard-task-source]:border-[1px]!',
+  '[&_.mentoring-dashboard-task-source]:border-[#EDE9FE]!',
+  '[&_.mentoring-dashboard-task-source]:bg-[#F5F3FF]!',
+  '[&_.mentoring-dashboard-task-source]:px-[6px]!',
+  '[&_.mentoring-dashboard-task-source]:py-[2px]!',
+  '[&_.mentoring-dashboard-task-source]:text-[9px]!',
+  '[&_.mentoring-dashboard-task-source]:leading-[12px]!',
+  '[&_.mentoring-dashboard-task-source]:font-extrabold!',
+  '[&_.mentoring-dashboard-task-source]:text-[#7C3AED]!',
+  '[&_.mentoring-dashboard-priority-badge]:inline-flex!',
+  '[&_.mentoring-dashboard-priority-badge]:items-center!',
+  '[&_.mentoring-dashboard-priority-badge]:rounded-[4px]!',
+  '[&_.mentoring-dashboard-priority-badge]:border-[1px]!',
+  '[&_.mentoring-dashboard-priority-badge]:border-[#E5E7EB]!',
+  '[&_.mentoring-dashboard-priority-badge]:bg-[#F3F4F6]!',
+  '[&_.mentoring-dashboard-priority-badge]:px-[6px]!',
+  '[&_.mentoring-dashboard-priority-badge]:py-[2px]!',
+  '[&_.mentoring-dashboard-priority-badge]:text-[9px]!',
+  '[&_.mentoring-dashboard-priority-badge]:leading-[12px]!',
+  '[&_.mentoring-dashboard-priority-badge]:font-extrabold!',
+  '[&_.mentoring-dashboard-priority-badge]:text-[#6B7280]!',
+  '[&_.mentoring-dashboard-priority-badge.high]:border-[#FECACA]!',
+  '[&_.mentoring-dashboard-priority-badge.high]:bg-[#FEE2E2]!',
+  '[&_.mentoring-dashboard-priority-badge.high]:text-[#DC2626]!',
+  '[&_.mentoring-dashboard-qna-badge]:inline-flex!',
+  '[&_.mentoring-dashboard-qna-badge]:shrink-0!',
+  '[&_.mentoring-dashboard-qna-badge]:items-center!',
+  '[&_.mentoring-dashboard-qna-badge]:rounded-[4px]!',
+  '[&_.mentoring-dashboard-qna-badge]:bg-[#E5E7EB]!',
+  '[&_.mentoring-dashboard-qna-badge]:px-[6px]!',
+  '[&_.mentoring-dashboard-qna-badge]:py-[2px]!',
+  '[&_.mentoring-dashboard-qna-badge]:text-[9px]!',
+  '[&_.mentoring-dashboard-qna-badge]:leading-[12px]!',
+  '[&_.mentoring-dashboard-qna-badge]:font-extrabold!',
+  '[&_.mentoring-dashboard-qna-badge]:text-[#6B7280]!',
+  '[&_.mentoring-dashboard-qna-badge.answered]:bg-[#3B82F6]!',
+  '[&_.mentoring-dashboard-qna-badge.answered]:text-white!',
+].join(' ')
+
 const PAGE_CONFIG: Record<MentoringCommonPage, PageConfig> = {
   dashboard: {
     path: '/mentoring-dashboard',
@@ -832,7 +1168,7 @@ function MentoringShell({
   }
 
   return (
-    <div className={`mentoring-common-page mentoring-common-${page}-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800`}>
+    <div className={`${MENTORING_COMMON_PAGE_LOCK_CLASS_NAME} mentoring-common-page mentoring-common-${page}-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800`}>
       <aside className={`${sidebarPinned ? 'pinned ' : ''}mentoring-common-sidebar group z-50 flex w-20 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl transition-all duration-300 ease-in-out hover:w-64`}>
         <div className="flex h-20 shrink-0 cursor-pointer items-center border-b border-gray-100 px-5 transition hover:bg-gray-50">
           <a href="/workspace-hub" className="flex min-w-0 flex-1 items-center">
@@ -1450,7 +1786,7 @@ function WorkspacePage({
   }
 
   return (
-    <div className="mentoring-source-workspace flex min-h-[calc(100vh-160px)] flex-col overflow-hidden">
+    <div className="mentoring-source-workspace flex min-h-[calc(100vh-160px)] flex-col gap-0! overflow-hidden [&_input::placeholder]:text-[#9CA3AF]! [&_input::placeholder]:opacity-100!">
       <div className="mb-6 flex shrink-0 flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900">
@@ -1505,7 +1841,7 @@ function WorkspacePage({
           const columnTasks = filteredTasks.filter((task) => task.status === column.status)
 
           return (
-            <section key={column.status} className="mentoring-source-kanban-col flex min-w-[320px] flex-1 flex-col rounded-2xl border border-gray-200/70 bg-gray-100/70 p-4">
+            <section key={column.status} className="mentoring-source-kanban-col flex min-w-[320px]! flex-1 flex-col rounded-[16px]! border-[1px]! border-[rgba(229,231,235,0.8)]! bg-[rgba(243,244,246,0.7)]! p-4">
               <div className="mb-4 flex items-center justify-between px-1">
                 <h3 className={`text-sm font-extrabold ${column.tone}`}>
                   {column.label}
@@ -1523,7 +1859,7 @@ function WorkspacePage({
                     <article
                       key={task.taskId}
                       onDoubleClick={() => void onUpdateTaskStatus(task, nextStatus)}
-                      className={`rounded-xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#00C471] hover:shadow-md ${
+                      className={`rounded-[12px]! border bg-white p-[16px]! shadow-sm transition hover:-translate-y-0.5 hover:border-[#00C471] hover:shadow-md ${
                         done ? 'border-gray-200 bg-gray-50 opacity-75' : task.priority === 'HIGH' ? 'border-red-200' : 'border-gray-200'
                       }`}
                       title="더블클릭하면 다음 상태로 이동합니다."
@@ -1822,7 +2158,7 @@ function CurriculumPage({
         </div>
 
         <div className="relative pl-8">
-          <div className="timeline-pulse absolute -left-[17px] top-1 flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-mentor text-white">
+          <div className="timeline-pulse absolute -left-[17px] top-1 flex h-8 w-8 animate-[mentoringTimelinePulse_1.8s_infinite] items-center justify-center rounded-full border-4 border-white bg-mentor text-white">
             <i className="fas fa-spinner fa-spin text-[10px]"></i>
           </div>
           <div className="relative overflow-hidden rounded-2xl border-2 border-mentor bg-white p-6 shadow-md">
@@ -1966,7 +2302,7 @@ function QnaPage({
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-4 text-sm outline-none transition focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-4 text-sm outline-none transition placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471]"
             placeholder="질문 내용 검색..."
           />
         </div>
@@ -2003,7 +2339,7 @@ function QnaPage({
             const answered = question.qnaStatus === 'ANSWERED' || question.qnaStatus === 'CLOSED'
 
             return (
-              <article key={question.id} className="qna-card overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:border-gray-300">
+              <article key={question.id} className="qna-card overflow-hidden rounded-[16px]! border border-gray-200 bg-white shadow-sm transition hover:border-gray-300">
                 <button
                   type="button"
                   onClick={() => onToggleQuestion(question.id)}
@@ -2106,7 +2442,7 @@ function QnaPage({
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             required
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-brand focus:ring-1 focus:ring-brand"
+            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-brand focus:ring-1 focus:ring-brand"
             placeholder="무엇이 궁금하신가요? 핵심을 요약해주세요."
           />
         </div>
@@ -2239,7 +2575,7 @@ function SchedulePage({
               const dayEvents = eventsByDay.get(day) ?? []
 
               return (
-                <div key={day} className={`mentoring-source-calendar-day min-h-[100px] p-2 ${day === 19 ? 'bg-green-50/40' : 'bg-white'}`}>
+                <div key={day} className={`mentoring-source-calendar-day min-h-[100px] p-2 [&:nth-child(7n)]:border-r-0! [&:nth-last-child(-n+7)]:border-b-0! ${day === 19 ? 'bg-green-50/40' : 'bg-white'}`}>
                   <div className="mb-1 flex items-center justify-between">
                     <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${day === 19 ? 'bg-brand text-white' : 'text-gray-500'}`}>{day}</span>
                   </div>
@@ -2521,7 +2857,7 @@ function FilesPage({
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="h-[42px] w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm outline-none transition focus:border-brand focus:ring-1 focus:ring-brand"
+            className="h-[42px] w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm outline-none transition placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-brand focus:ring-1 focus:ring-brand"
             placeholder="파일명 또는 작성자 검색..."
           />
         </div>
@@ -2553,12 +2889,12 @@ function FilesPage({
             const title = file.displayName ?? file.originalFileName ?? '자료'
 
             return (
-              <article key={file.fileId} className="file-card group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-md">
+              <article key={file.fileId} className="file-card group relative min-h-[260px]! overflow-hidden rounded-[16px]! border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-md">
                 <i className={`${file.itemType === 'LINK' ? 'fas fa-link' : file.itemType === 'FOLDER' ? 'fas fa-folder' : 'fas fa-file-alt'} absolute right-4 top-4 text-4xl text-gray-100 transition group-hover:text-green-50`}></i>
                 <span className={`relative z-10 mb-4 inline-flex rounded border px-1.5 py-0.5 text-[9px] font-extrabold ${badge.className}`}>
                   {badge.label}
                 </span>
-                <h3 className="relative z-10 mb-2 line-clamp-2 min-h-[40px] text-sm font-extrabold leading-tight text-gray-900">{title}</h3>
+                <h3 className="relative z-10 mb-2 line-clamp-2 min-h-[40px] text-sm leading-[20px]! font-extrabold text-gray-900">{title}</h3>
                 <p className="relative z-10 mb-6 line-clamp-3 min-h-[48px] text-xs leading-relaxed text-gray-500">
                   {file.contentType ? `${file.contentType} 형식의 학습 자료입니다.` : file.itemType === 'LINK' ? '외부 참고 링크를 통해 내용을 확인할 수 있습니다.' : '멘토링 진행에 필요한 참고 자료입니다.'}
                 </p>
@@ -2656,7 +2992,7 @@ function FilesPage({
                 value={uploadUrl}
                 onChange={(event) => setUploadUrl(event.target.value)}
                 required={uploadMode === 'link'}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-brand focus:ring-1 focus:ring-brand"
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-brand focus:ring-1 focus:ring-brand"
                 placeholder="https://"
               />
             </div>
@@ -2671,7 +3007,7 @@ function FilesPage({
             value={uploadTitle}
             onChange={(event) => setUploadTitle(event.target.value)}
             required
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-brand focus:ring-1 focus:ring-brand"
+            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-brand focus:ring-1 focus:ring-brand"
             placeholder="자료의 핵심 내용을 요약해주세요."
           />
         </div>
@@ -3213,7 +3549,11 @@ function ErdPage({
                 <path
                   key={relationshipId}
                   d={geometry.path}
-                  className={`connection-line pointer-events-auto ${selected ? 'selected' : ''}`}
+                  className={`connection-line pointer-events-auto cursor-pointer! fill-none! [transition:filter_0.2s_ease,stroke_0.2s_ease,stroke-width_0.2s_ease]! ${
+                    selected
+                      ? 'selected stroke-[#00C471]! [stroke-width:3.5]! [filter:drop-shadow(0_0_5px_rgba(0,196,113,0.28))]! hover:stroke-[#00C471]! hover:[stroke-width:3.5]!'
+                      : 'stroke-[#9CA3AF]! [stroke-width:2.5]! [filter:drop-shadow(0_1px_1px_rgba(15,23,42,0.08))]! hover:stroke-[#00C471]! hover:[stroke-width:3]!'
+                  }`}
                   onClick={(event) => {
                     event.stopPropagation()
                     selectRelationship(relationship)
@@ -3237,24 +3577,60 @@ function ErdPage({
 
               return (
                 <div key={`overlay-${relationshipId}`}>
-                  <span className={`erd-anchor-dot ${selected ? 'selected' : ''}`} style={{ left: geometry.startX, top: geometry.startY }} />
-                  <span className={`erd-anchor-dot ${selected ? 'selected' : ''}`} style={{ left: geometry.endX, top: geometry.endY }} />
                   <span
-                    className={`erd-cardinality-badge ${cardinality.source === 'N' ? 'many' : 'one'} ${selected ? 'selected' : ''}`}
+                    className={`erd-anchor-dot pointer-events-none! absolute! h-[10px]! w-[10px]! rounded-full! border-[2px]! bg-white! [transform:translate(-50%,-50%)]! ${
+                      selected
+                        ? 'selected border-[#00C471]! shadow-[0_0_0_4px_rgba(0,196,113,0.14)]!'
+                        : 'border-[#9CA3AF]! shadow-[0_1px_3px_rgba(15,23,42,0.14)]!'
+                    }`}
+                    style={{ left: geometry.startX, top: geometry.startY }}
+                  />
+                  <span
+                    className={`erd-anchor-dot pointer-events-none! absolute! h-[10px]! w-[10px]! rounded-full! border-[2px]! bg-white! [transform:translate(-50%,-50%)]! ${
+                      selected
+                        ? 'selected border-[#00C471]! shadow-[0_0_0_4px_rgba(0,196,113,0.14)]!'
+                        : 'border-[#9CA3AF]! shadow-[0_1px_3px_rgba(15,23,42,0.14)]!'
+                    }`}
+                    style={{ left: geometry.endX, top: geometry.endY }}
+                  />
+                  <span
+                    className={`erd-cardinality-badge pointer-events-none! absolute! flex! h-[24px]! w-[24px]! items-center! justify-center! rounded-full! border-[1px]! font-['Pretendard',Inter,system-ui,sans-serif]! text-[10px]! leading-[1]! font-black! [transform:translate(-50%,-50%)]! ${
+                      selected
+                        ? `selected border-[#00C471]! shadow-[0_0_0_4px_rgba(0,196,113,0.16),0_4px_10px_rgba(15,23,42,0.14)]! ${
+                            cardinality.source === 'N'
+                              ? 'many bg-[#00C471]! text-white!'
+                              : 'one bg-white! text-[#374151]!'
+                          }`
+                        : cardinality.source === 'N'
+                          ? 'many border-[#111827]! bg-[#111827]! text-white! shadow-[0_4px_10px_rgba(15,23,42,0.14)]!'
+                          : 'one border-[#D1D5DB]! bg-white! text-[#374151]! shadow-[0_4px_10px_rgba(15,23,42,0.14)]!'
+                    }`}
                     style={{ left: geometry.sourceBadgeX, top: geometry.sourceBadgeY }}
                   >
                     {cardinality.source}
                   </span>
                   <span
-                    className={`erd-cardinality-badge ${cardinality.target === 'N' ? 'many' : 'one'} ${selected ? 'selected' : ''}`}
+                    className={`erd-cardinality-badge pointer-events-none! absolute! flex! h-[24px]! w-[24px]! items-center! justify-center! rounded-full! border-[1px]! font-['Pretendard',Inter,system-ui,sans-serif]! text-[10px]! leading-[1]! font-black! [transform:translate(-50%,-50%)]! ${
+                      selected
+                        ? `selected border-[#00C471]! shadow-[0_0_0_4px_rgba(0,196,113,0.16),0_4px_10px_rgba(15,23,42,0.14)]! ${
+                            cardinality.target === 'N'
+                              ? 'many bg-[#00C471]! text-white!'
+                              : 'one bg-white! text-[#374151]!'
+                          }`
+                        : cardinality.target === 'N'
+                          ? 'many border-[#111827]! bg-[#111827]! text-white! shadow-[0_4px_10px_rgba(15,23,42,0.14)]!'
+                          : 'one border-[#D1D5DB]! bg-white! text-[#374151]! shadow-[0_4px_10px_rgba(15,23,42,0.14)]!'
+                    }`}
                     style={{ left: geometry.targetBadgeX, top: geometry.targetBadgeY }}
                   >
                     {cardinality.target}
                   </span>
                   <button
                     type="button"
-                    className={`erd-relation-label pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-extrabold text-gray-500 shadow-sm transition hover:border-[#00C471] hover:bg-green-50 hover:text-[#00C471] ${
-                      selected ? 'selected' : ''
+                    className={`erd-relation-label pointer-events-auto absolute inline-flex! h-[22px]! min-w-[42px]! items-center! justify-center! rounded-full border border-gray-200 bg-white px-2 py-0.5 text-[11px] font-extrabold text-gray-500 shadow-sm transition box-border! [transform:translate(-50%,-50%)]! hover:border-[#00C471] hover:bg-green-50 hover:text-[#00C471] ${
+                      selected
+                        ? 'selected border-[#00C471]! bg-[#ECFDF5]! text-[#059669]! shadow-[0_0_0_4px_rgba(0,196,113,0.13),0_4px_10px_rgba(15,23,42,0.1)]!'
+                        : ''
                     }`}
                     style={{ left: geometry.labelX, top: geometry.labelY }}
                     onClick={(event) => {
@@ -3308,12 +3684,12 @@ function ErdPage({
                   onPointerMove={(event) => moveTableDrag(event, tableId)}
                   onPointerUp={endTableDrag}
                   onPointerCancel={endTableDrag}
-                  className={`erd-visual-table absolute flex w-[240px] flex-col overflow-hidden rounded-lg border-2 bg-white text-left shadow-xl transition ${
+                  className={`erd-visual-table absolute flex w-[240px] flex-col overflow-hidden rounded-lg border-2 bg-white text-left shadow-xl transition select-none! ${
                     active
-                      ? 'selected border-[#00C471] ring-4 ring-[#00C471]/15'
+                      ? 'selected z-50! border-[#00C471] ring-4 ring-[#00C471]/15'
                       : connectSource
-                        ? 'connect-source border-blue-500'
-                        : 'border-gray-200 hover:border-[#00C471]/70'
+                        ? 'connect-source z-50! border-[#3B82F6]! shadow-[0_0_0_4px_rgba(59,130,246,0.16),0_20px_25px_-5px_rgba(15,23,42,0.12)]!'
+                        : 'z-10! border-gray-200 hover:border-[#00C471]/70'
                   }`}
                   style={{ left: table.x ?? 0, top: table.y ?? 0 }}
                 >
@@ -3392,7 +3768,7 @@ function ErdPage({
                       + 컬럼 추가
                     </button>
                   </div>
-                  <div className="erd-column-list space-y-3">
+                  <div className="erd-column-list gap-[4px]! space-y-[4px]!">
                     {selectedColumns.length > 0 ? (
                       selectedColumns.map((column, index) => {
                         const key = column.key?.toUpperCase()
@@ -3402,22 +3778,22 @@ function ErdPage({
                         return (
                           <div
                             key={`${selectedTablePanelId}-panel-${column.name}-${index}`}
-                            className="erd-column-editor grid items-start gap-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm"
+                            className="erd-column-editor grid! w-full! max-w-full! grid-cols-[14px_minmax(0,1fr)_22px]! items-start gap-[8px]! overflow-hidden! rounded-[10px]! border border-gray-200 bg-white p-[8px]! shadow-sm box-border!"
                           >
                             <i className="fas fa-grip-lines mt-2 cursor-move text-xs text-gray-300"></i>
-                            <div className="erd-column-main flex min-w-0 flex-col gap-2">
-                              <div className="erd-column-row grid min-w-0 gap-2">
+                            <div className="erd-column-main flex min-w-0! max-w-full! flex-col gap-2">
+                              <div className="erd-column-row grid! w-full! min-w-0! max-w-full! grid-cols-[minmax(0,1fr)_86px]! items-center! gap-[8px]!">
                                 <input
                                   type="text"
                                   value={column.name}
                                   onChange={(event) => updateColumn(selectedTablePanelId, index, { name: event.target.value })}
-                                  className="erd-column-name-input min-w-0 flex-1 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs font-bold outline-none transition focus:border-[#00C471] focus:bg-white"
+                                  className="erd-column-name-input h-[26px]! w-full! min-w-0! max-w-full! flex-[1_1_0]! rounded-[4px]! border border-gray-200 bg-gray-50 px-[6px]! py-[4px]! font-bold outline-none transition box-border! focus:border-[#00C471] focus:bg-white"
                                   style={{ height: 26 }}
                                 />
                                 <select
                                   value={column.type ?? 'VARCHAR'}
                                   onChange={(event) => updateColumn(selectedTablePanelId, index, { type: event.target.value })}
-                                  className="erd-column-type-select w-24 rounded-lg border border-gray-200 bg-gray-50 px-1 py-1.5 font-mono text-[10px] outline-none transition focus:border-[#00C471]"
+                                  className="erd-column-type-select h-[26px]! w-[86px]! min-w-0! max-w-[86px]! flex-[0_0_86px]! appearance-none! rounded-[4px]! border border-gray-200 bg-gray-50 bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2024%2024%27%20stroke=%27%236B7280%27%3E%3Cpath%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%272%27%20d=%27M19%209l-7%207-7-7%27%3E%3C/path%3E%3C/svg%3E')]! bg-[position:right_5px_center]! bg-[length:12px_12px]! bg-no-repeat! py-[4px]! pr-[18px]! pl-[6px]! font-mono outline-none transition box-border! focus:border-[#00C471]"
                                   style={{ width: 86, height: 26 }}
                                 >
                                   <option>BIGINT</option>
@@ -3426,28 +3802,28 @@ function ErdPage({
                                   <option>DATETIME</option>
                                 </select>
                               </div>
-                              <div className="erd-column-flags flex items-center gap-4 pl-1">
+                              <div className="erd-column-flags flex items-center gap-[4px]! pl-0!">
                                 <label
-                                  className={`erd-column-flag-label flex cursor-pointer items-center gap-1 text-[10px] font-bold ${
+                                  className={`erd-column-flag-label flex h-[22px]! min-w-[28px]! cursor-pointer items-center gap-[4px]! rounded-[6px]! border-[1px]! border-[#E5E7EB]! bg-white! px-[6px]! py-0! box-border! ${
                                     primary ? 'text-yellow-600' : 'text-gray-400'
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
-                                    className="accent-yellow-500"
+                                    className="m-0! h-[12px]! w-[12px]! accent-yellow-500"
                                     checked={primary}
                                     onChange={(event) => toggleColumnKey(selectedTablePanelId, index, 'PK', event.target.checked)}
                                   />
                                   PK
                                 </label>
                                 <label
-                                  className={`erd-column-flag-label flex cursor-pointer items-center gap-1 text-[10px] font-bold ${
+                                  className={`erd-column-flag-label flex h-[22px]! min-w-[28px]! cursor-pointer items-center gap-[4px]! rounded-[6px]! border-[1px]! border-[#E5E7EB]! bg-white! px-[6px]! py-0! box-border! ${
                                     foreign ? 'text-blue-600' : 'text-gray-400'
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
-                                    className="accent-blue-500"
+                                    className="m-0! h-[12px]! w-[12px]! accent-blue-500"
                                     checked={foreign}
                                     onChange={(event) => toggleColumnKey(selectedTablePanelId, index, 'FK', event.target.checked)}
                                   />
@@ -3457,7 +3833,7 @@ function ErdPage({
                             </div>
                             <button
                               type="button"
-                              className="erd-column-delete-button mt-0.5 p-1 text-gray-300 transition hover:text-red-500"
+                              className="erd-column-delete-button mt-[2px]! h-[22px]! w-[22px]! min-w-[22px]! rounded-[6px]! p-0! text-gray-300 transition hover:text-red-500"
                               onClick={() => removeColumn(selectedTablePanelId, index)}
                               aria-label="컬럼 삭제"
                             >

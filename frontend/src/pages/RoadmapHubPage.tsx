@@ -64,11 +64,11 @@ function RoadmapHubCategoryGroup({
 }) {
   const headingClassName =
     variant === 'card'
-      ? 'roadmap-hub-category-title roadmap-hub-category-title--card text-lg font-bold text-gray-700'
-      : 'roadmap-hub-category-title roadmap-hub-category-title--chip text-base font-bold text-gray-700'
+      ? 'roadmap-hub-category-title mt-[32px] mb-[16px] pb-[8px] text-[18px] leading-[28px] font-bold tracking-[0] text-[#374151] [border-bottom:1px_solid_#e5e7eb]'
+      : 'roadmap-hub-category-title mt-[32px] mb-[12px] text-[16px] leading-[24px] font-bold tracking-[0] text-[#374151]'
 
   return (
-    <div className="roadmap-hub-category-group">
+    <div className="roadmap-hub-category-group min-w-0">
       <h3 className={headingClassName}>{category}</h3>
       {children}
     </div>
@@ -85,7 +85,7 @@ function RoadmapHubSectionTabs({
   onSelect: (sectionKey: string) => void
 }) {
   return (
-    <div className="roadmap-hub-section-tabs mb-12 flex justify-center border-b border-gray-200">
+    <div className="mb-12 flex min-h-[64px] justify-center border-b border-gray-200 max-[1023px]:mx-[calc(var(--app-page-gutter)*-1)] max-[1023px]:justify-start max-[1023px]:overflow-x-auto max-[1023px]:px-[var(--app-page-gutter)] max-[1023px]:[scrollbar-width:none] max-[1023px]:[&::-webkit-scrollbar]:hidden">
       {sections.map((section) => (
         <button
           key={section.sectionKey}
@@ -93,8 +93,8 @@ function RoadmapHubSectionTabs({
           onClick={() => onSelect(section.sectionKey)}
           className={
             activeSectionKey === section.sectionKey
-              ? 'roadmap-hub-section-tab roadmap-hub-section-tab--active'
-              : 'roadmap-hub-section-tab'
+              ? 'min-h-[64px] shrink-0 border-b-[4px] border-[#00c471] px-[32px] py-[16px] text-[18px]! leading-[28px]! font-bold tracking-[0] text-[#00c471] [transition:border-color_0.18s_ease,color_0.18s_ease] max-[1023px]:px-[24px]'
+              : 'min-h-[64px] shrink-0 px-[32px] py-[16px] text-[18px]! leading-[28px]! font-bold tracking-[0] text-[#9ca3af] [border-bottom:4px_solid_transparent] [transition:border-color_0.18s_ease,color_0.18s_ease] hover:text-[#374151] max-[1023px]:px-[24px]'
           }
         >
           {section.title}
@@ -115,7 +115,7 @@ function RoadmapHubSectionContent({ section }: { section: RoadmapHubSection }) {
 
   if (groups.length > 0) {
     return (
-      <div className="roadmap-hub-tab-panel space-y-10">
+      <div className="roadmap-hub-tab-panel space-y-10 [&_.roadmap-hub-category-group:first-child_.roadmap-hub-category-title]:mt-0">
         {groups.map((group) => (
           <RoadmapHubCategoryGroup key={group.category} category={group.category} variant={variant}>
             <div className={gridClassName}>{group.items.map(renderItem)}</div>
@@ -151,16 +151,16 @@ function renderRoleCard(item: RoadmapHubItem) {
   const iconClass = getRoadmapHubIconClass(item, 'fas fa-map')
   const iconStyle = getIconStyle(item.iconColor)
   const cardClassName = item.featured
-    ? 'roadmap-hub-card relative overflow-hidden rounded-lg border-2 border-brand bg-green-50/30 p-5 shadow-md'
-    : 'roadmap-hub-card rounded-lg border border-gray-200 p-5 shadow-sm'
+    ? 'roadmap-hub-card relative min-h-[60px] overflow-hidden rounded-lg border-2 border-brand bg-green-50/30 px-[20px] py-[16px] shadow-md max-[767px]:min-h-0 max-[767px]:px-[16px] max-[767px]:py-[14px]'
+    : 'roadmap-hub-card min-h-[60px] rounded-lg border border-gray-200 px-[20px] py-[16px] shadow-sm max-[767px]:min-h-0 max-[767px]:px-[16px] max-[767px]:py-[14px]'
 
   const content = (
     <>
       <div className={item.featured ? 'relative mb-2 flex justify-between' : 'mb-2 flex justify-between'}>
-        <h3 className={item.featured ? 'font-bold text-brand' : 'font-bold text-gray-900'}>{item.title}</h3>
+        <h3 className={item.featured ? 'text-[16px] leading-[24px] font-bold text-brand' : 'text-[16px] leading-[24px] font-bold text-gray-900'}>{item.title}</h3>
         <i className={`${iconClass} ${item.featured ? 'text-brand' : 'text-gray-400'}`} style={iconStyle} />
       </div>
-      <p className={item.featured ? 'relative text-xs text-gray-500' : 'text-xs text-gray-500'}>
+      <p className={item.featured ? 'relative text-[12px] leading-[16px] text-gray-500' : 'text-[12px] leading-[16px] text-gray-500'}>
         {item.subtitle || '공식 로드맵'}
         {item.featured ? (
           <span className="ml-1 font-bold text-brand">(추천)</span>
@@ -190,10 +190,10 @@ function renderSkillChip(item: RoadmapHubItem) {
   const chipKey = `${item.title}-${item.sortOrder}`
   const iconClass = getRoadmapHubIconClass(item, 'fas fa-code')
   const iconStyle = getIconStyle(item.iconColor)
-  const className = 'skill-btn rounded border border-gray-200 px-4 py-2 text-left text-sm text-gray-700 shadow-sm'
+  const className = 'skill-btn min-h-[56px] rounded border border-gray-200 px-[16px] py-[8px] text-left text-[14px]! leading-[20px]! text-gray-700 shadow-sm max-[767px]:min-h-[48px] max-[767px]:px-[12px]'
   const content = (
     <span className="flex min-w-0 items-center gap-2">
-      <i className={`${iconClass} w-5 shrink-0 text-center text-base opacity-80`} style={iconStyle} aria-hidden="true" />
+      <i className={`${iconClass} w-[20px] shrink-0 text-center text-[16px] leading-[20px]! opacity-80`} style={iconStyle} aria-hidden="true" />
       <span className="min-w-0 leading-snug">{item.title}</span>
     </span>
   )
@@ -220,7 +220,7 @@ function renderLinkListItem(item: RoadmapHubItem) {
   if (!href) {
     return (
       <li key={itemKey}>
-        <div className="roadmap-hub-link-row flex justify-between rounded border border-gray-200 bg-white p-3 shadow-sm">
+        <div className="flex min-h-[48px] justify-between rounded border border-gray-200 bg-white p-[12px] text-[16px] leading-[24px] shadow-sm">
           <span>{item.title}</span>
           <i className="fas fa-chevron-right mt-1.5 text-xs text-gray-300" />
         </div>
@@ -232,7 +232,7 @@ function renderLinkListItem(item: RoadmapHubItem) {
     <li key={itemKey}>
       <a
         href={href}
-        className="roadmap-hub-link-row flex justify-between rounded border border-gray-200 bg-white p-3 shadow-sm transition hover:bg-gray-50"
+        className="flex min-h-[48px] justify-between rounded border border-gray-200 bg-white p-[12px] text-[16px] leading-[24px] shadow-sm transition hover:bg-gray-50"
       >
         <span>{item.title}</span>
         <i className="fas fa-chevron-right mt-1.5 text-xs text-gray-400" />
@@ -308,7 +308,7 @@ function RoadmapHubSections({
         <button
           type="button"
           onClick={onRetry}
-          className="roadmap-hub-retry-button mt-4 rounded-full border border-rose-200 bg-white px-5 py-2 text-sm font-bold text-rose-600 transition hover:bg-rose-50"
+          className="mt-4 min-h-[40px] rounded-full border border-rose-200 bg-white px-[20px] py-[8px] text-[14px]! leading-[20px]! font-bold text-rose-600 transition hover:bg-rose-50"
         >
           다시 불러오기
         </button>
@@ -502,7 +502,7 @@ function RoadmapHubPage() {
   }
 
   return (
-    <div className="roadmap-hub-page flex h-screen min-h-0 flex-col overflow-hidden bg-gray-50 text-gray-900">
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-gray-50 text-[16px] leading-[1.5] text-gray-900 [font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,'Helvetica_Neue','Segoe_UI','Apple_SD_Gothic_Neo','Noto_Sans_KR','Malgun_Gothic',sans-serif] [&_a]:[font-family:inherit] [&_button]:[font-family:inherit]">
       <SiteHeader
         session={session}
         profileImage={profileImage}
@@ -512,14 +512,14 @@ function RoadmapHubPage() {
       />
 
       <main className="app-main flex-1">
-        <div className="roadmap-hub-body-zoom">
+        <div className="ml-[calc((100%-(100%/var(--roadmap-hub-body-zoom)))/2)] w-[calc(100%/var(--roadmap-hub-body-zoom))] origin-top-left [--roadmap-hub-body-zoom:0.9] [zoom:var(--roadmap-hub-body-zoom)] max-[1023px]:ml-0 max-[1023px]:w-full max-[1023px]:transform-none max-[1023px]:[zoom:1]">
           <header className="border-b border-gray-100 bg-gradient-to-b from-white to-gray-50 px-4 py-20 text-center">
-          <h1 className="roadmap-hub-hero-title mb-6 text-4xl font-bold text-gray-900 md:text-6xl">
+          <h1 className="mb-6 text-[36px] leading-[40px] font-bold tracking-[0] text-gray-900 md:text-[60px] md:leading-[1] min-[768px]:max-[1023px]:text-[clamp(48px,7vw,56px)] min-[768px]:max-[1023px]:leading-[1.05] max-[767px]:text-[clamp(32px,10vw,42px)] max-[767px]:leading-[1.08]">
             <span className="bg-gradient-to-r from-purple-600 to-green-500 bg-clip-text text-transparent">
               개발자 로드맵
             </span>
           </h1>
-          <p className="roadmap-hub-hero-copy mx-auto mb-10 max-w-3xl text-lg leading-relaxed text-gray-500">
+          <p className="mx-auto mb-10 max-w-3xl text-[18px] leading-[29px] text-gray-500 max-[767px]:text-[16px] max-[767px]:leading-[1.65]">
             <span className="font-bold text-brand">DevPath</span>는 개발자들의 학습 방향을 잡을 수 있도록 정리합니다.
             <br />
             역할과 기술별로 정리된 로드맵을 확인하고 성장 흐름을 바로 시작해 보세요.
@@ -535,10 +535,10 @@ function RoadmapHubPage() {
                   }
                   window.location.href = '/my-roadmap-list'
                 }}
-                className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full bg-brand px-8 py-4 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-600 hover:shadow-xl"
+                className="bg-brand group relative flex min-h-[60px] items-center justify-center gap-3 rounded-[9999px] px-[32px] py-[16px] text-[18px]! leading-[28px]! font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-600 hover:shadow-xl max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px]! max-[767px]:leading-[24px]!"
               >
                 <i className="fas fa-list-ul" />
-                <span className="text-lg">내 로드맵 관리</span>
+                <span className="text-[18px] leading-[28px] max-[767px]:text-[16px] max-[767px]:leading-[24px]">내 로드맵 관리</span>
               </button>
               <button
                 type="button"
@@ -557,9 +557,9 @@ function RoadmapHubPage() {
                     showAuthToast('로드맵 정보를 불러오는 데 실패했습니다. 다시 시도해주세요.')
                   })
                 }}
-                className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full bg-gray-800 px-8 py-4 font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gray-900 hover:shadow-xl"
+                className="group relative flex min-h-[60px] items-center justify-center gap-3 rounded-[9999px] bg-gray-800 px-[32px] py-[16px] text-[18px]! leading-[28px]! font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gray-900 hover:shadow-xl max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px]! max-[767px]:leading-[24px]!"
               >
-                <span className="text-lg">최근 학습한 로드맵 이어가기</span>
+                <span className="text-[18px] leading-[28px] max-[767px]:text-[16px] max-[767px]:leading-[24px]">최근 학습한 로드맵 이어가기</span>
                 <i className="fas fa-arrow-right transition-transform group-hover:translate-x-1" />
               </button>
             </div>
@@ -568,10 +568,10 @@ function RoadmapHubPage() {
               onClick={() => {
                 window.location.href = '/my-roadmap'
               }}
-              className="roadmap-hub-hero-button group relative flex items-center justify-center gap-3 rounded-full border-2 border-brand bg-white px-8 py-4 font-bold text-brand shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-green-50 hover:shadow-md"
+              className="border-brand text-brand group relative flex min-h-[60px] items-center justify-center gap-3 rounded-[9999px] border-2 bg-white px-[32px] py-[16px] text-[18px]! leading-[28px]! font-bold shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-green-50 hover:shadow-md max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px]! max-[767px]:leading-[24px]!"
             >
               <div className="h-2 w-2 animate-pulse rounded-full bg-brand" />
-              <span className="text-lg">나만의 로드맵 만들기</span>
+              <span className="text-[18px] leading-[28px] max-[767px]:text-[16px] max-[767px]:leading-[24px]">나만의 로드맵 만들기</span>
               <i className="fas fa-pen-ruler ml-1 transition-transform group-hover:rotate-12" />
             </button>
           </div>

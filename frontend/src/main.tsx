@@ -2,6 +2,33 @@ import { Suspense, lazy, type ReactElement } from 'react'
 import { renderPage } from './render-page'
 import { installWorkspacePresenceHeartbeat } from './lib/workspace-presence'
 
+document.documentElement.classList.add(
+  '[&::-webkit-scrollbar]:h-[5px]!',
+  '[&::-webkit-scrollbar]:w-[5px]!',
+  '[&_*::-webkit-scrollbar]:h-[5px]!',
+  '[&_*::-webkit-scrollbar]:w-[5px]!',
+  '[&::-webkit-scrollbar-button]:hidden!',
+  '[&::-webkit-scrollbar-button]:h-0!',
+  '[&::-webkit-scrollbar-button]:w-0!',
+  '[&::-webkit-scrollbar-button]:[background:transparent]!',
+  '[&_*::-webkit-scrollbar-button]:hidden!',
+  '[&_*::-webkit-scrollbar-button]:h-0!',
+  '[&_*::-webkit-scrollbar-button]:w-0!',
+  '[&_*::-webkit-scrollbar-button]:[background:transparent]!',
+  '[&::-webkit-scrollbar-track]:[background:transparent]!',
+  '[&_*::-webkit-scrollbar-track]:[background:transparent]!',
+  '[&::-webkit-scrollbar-thumb]:[background:#D1D5DB]!',
+  '[&::-webkit-scrollbar-thumb]:[border:0]!',
+  '[&::-webkit-scrollbar-thumb]:rounded-[5px]!',
+  '[&_*::-webkit-scrollbar-thumb]:[background:#D1D5DB]!',
+  '[&_*::-webkit-scrollbar-thumb]:[border:0]!',
+  '[&_*::-webkit-scrollbar-thumb]:rounded-[5px]!',
+  '[&::-webkit-scrollbar-thumb:hover]:[background:#D1D5DB]!',
+  '[&_*::-webkit-scrollbar-thumb:hover]:[background:#D1D5DB]!',
+  '[&::-webkit-scrollbar-corner]:[background:transparent]!',
+  '[&_*::-webkit-scrollbar-corner]:[background:transparent]!',
+)
+
 const App = lazy(() => import('./App.tsx'))
 const ContentAssignmentEditorApp = lazy(() => import('./ContentAssignmentEditorApp'))
 const CourseDetailApp = lazy(() => import('./CourseDetailApp'))

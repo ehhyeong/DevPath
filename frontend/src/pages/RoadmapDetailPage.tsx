@@ -86,10 +86,18 @@ function isNodeReadyToClear(node: RoadmapNodeItem) {
 
 function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): string {
   if (change) {
-    if (change.nodeChangeType === 'ADD')    return 'node-box node-change-add'
-    if (change.nodeChangeType === 'MODIFY') return 'node-box node-change-modify'
-    if (change.nodeChangeType === 'DELETE') return 'node-box node-change-delete'
-    if (change.nodeChangeType === 'REORDER') return 'node-box node-change-reorder'
+    if (change.nodeChangeType === 'ADD') {
+      return 'node-box node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]'
+    }
+    if (change.nodeChangeType === 'MODIFY') {
+      return 'node-box node-change-modify border-[3px]! border-dashed! border-[#f59e0b]! bg-[#fef3c7]! [animation:pulse-orange_2s_infinite]'
+    }
+    if (change.nodeChangeType === 'DELETE') {
+      return 'node-box node-change-delete border-[3px]! border-dashed! border-[#ef4444]! bg-[#fee2e2]! opacity-[0.6] [animation:pulse-red_2s_infinite]'
+    }
+    if (change.nodeChangeType === 'REORDER') {
+      return 'node-box node-change-reorder border-[3px]! border-dashed! border-[#6366f1]! bg-[#eef2ff]! [animation:pulse-indigo_2s_infinite]'
+    }
   }
   if (node.status === 'COMPLETED') return 'node-box status-done'
   if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return 'node-box status-active'
@@ -763,7 +771,10 @@ function GhostAddCard({ change, processing, badge, onApply, onIgnore }: GhostAdd
   const visibleBadge = badge ?? getBranchBadgeMeta(null)
 
   return (
-    <div className="node-box node-change-add" style={{ color: '#1e40af' }}>
+    <div
+      className="node-box node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]"
+      style={{ color: '#1e40af' }}
+    >
       <ChangeLabel change={change} />
       <div
         className="rule-badge"
@@ -998,7 +1009,11 @@ function RoadmapGraph({
           <div
             key={slot.id}
             ref={registerSlot(slot.id)}
-            className={`roadmap-slot roadmap-slot-${slot.kind} roadmap-lane-${slot.lane}`}
+            className={`roadmap-slot roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
+              slot.kind === 'suggested-branch'
+                ? '[&_.node-box]:border-[3px]! [&_.node-box]:border-dashed! [&_.node-box]:border-[#3b82f6]! [&_.node-box]:bg-[#eff6ff]! [&_.node-box]:text-[#1e40af] [&_.node-box]:[animation:pulse-blue_2s_infinite]'
+                : ''
+            }`}
             style={{
               gridColumn: ROADMAP_LANE_COLUMN[slot.lane],
               gridRow: slot.row,

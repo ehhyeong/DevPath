@@ -220,12 +220,18 @@ export default function SquadWorkspaceApp() {
     const html = document.documentElement
     const body = document.body
 
-    html.classList.add('squad-dashboard-document')
-    body.classList.add('squad-dashboard-body')
+    const root = document.getElementById('root')
+    const appViewport = document.querySelector<HTMLElement>('.app-viewport')
+    html.classList.add('h-full!', 'overflow-hidden!')
+    body.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    root?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    appViewport?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
 
     return () => {
-      html.classList.remove('squad-dashboard-document')
-      body.classList.remove('squad-dashboard-body')
+      html.classList.remove('h-full!', 'overflow-hidden!')
+      body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      root?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      appViewport?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
     }
   }, [])
 
@@ -466,7 +472,7 @@ export default function SquadWorkspaceApp() {
         onDragStart={() => setDraggingTaskId(task.taskId)}
         onDragEnd={() => setDraggingTaskId(null)}
         onClick={() => openEditModal(task)}
-        className={`kanban-card bg-white p-4 rounded-xl shadow-sm border-l-4 ${statusAccent(task.status)}`}
+        className={`kanban-card cursor-grab bg-white p-4 rounded-xl shadow-sm border-l-4 [transition:all_0.2s_cubic-bezier(0.4,0,0.2,1)] active:cursor-grabbing active:[transform:scale(0.98)] hover:[transform:translateY(-3px)] hover:[box-shadow:0_10px_20px_-5px_rgba(0,0,0,0.08)] hover:border-[#00C471]! ${statusAccent(task.status)}`}
       >
         <div className="flex justify-between items-start mb-2">
           <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded border ${tag.className}`}>{tag.label}</span>
@@ -512,7 +518,7 @@ export default function SquadWorkspaceApp() {
 
   if (loading) {
     return (
-      <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
+      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
       </div>
     )
@@ -520,7 +526,7 @@ export default function SquadWorkspaceApp() {
 
   if (error) {
     return (
-      <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
+      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <i className="fas fa-circle-exclamation text-3xl text-red-400 mb-3"></i>
           <p className="font-extrabold text-gray-900">{error}</p>
@@ -533,7 +539,7 @@ export default function SquadWorkspaceApp() {
   }
 
   return (
-    <div className="squad-dashboard-page squad-workspace-page flex h-screen overflow-hidden text-gray-800">
+    <div className="squad-dashboard-page squad-workspace-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
       <SquadWorkspaceAside
         activePage="workspace"
         workspaceId={workspaceId}
@@ -562,17 +568,17 @@ export default function SquadWorkspaceApp() {
 
             <div className="flex items-center gap-3">
               <div className="flex bg-gray-50 border border-gray-200 rounded-xl p-1 shadow-inner">
-                <button className={filter === 'all' ? 'filter-tab active px-4 py-1.5 rounded-lg text-xs font-bold' : 'filter-tab px-4 py-1.5 rounded-lg text-xs font-bold text-gray-500'} onClick={() => setFilter('all')}>
+                <button className={filter === 'all' ? 'squad-workspace-filter-tab h-[30px] whitespace-nowrap border-b-[2px] border-[#111827] bg-[#111827] px-[16px] py-[6px] text-[12px]! leading-[16px]! font-bold text-white rounded-[8px] [transition:all_0.2s] focus:outline-none hover:text-white' : 'squad-workspace-filter-tab h-[30px] whitespace-nowrap border-[#6b7280] border-b-[2px] border-b-transparent px-[16px] py-[6px] text-[12px]! leading-[16px]! font-bold text-[#6b7280] rounded-[8px] [transition:all_0.2s] focus:outline-none hover:bg-[#F9FAFB] hover:text-[#00c471]'} onClick={() => setFilter('all')}>
                   전체 보기
                 </button>
-                <button className={filter === 'me' ? 'filter-tab active px-4 py-1.5 rounded-lg text-xs font-bold' : 'filter-tab px-4 py-1.5 rounded-lg text-xs font-bold text-gray-500'} onClick={() => setFilter('me')}>
+                <button className={filter === 'me' ? 'squad-workspace-filter-tab h-[30px] whitespace-nowrap border-b-[2px] border-[#111827] bg-[#111827] px-[16px] py-[6px] text-[12px]! leading-[16px]! font-bold text-white rounded-[8px] [transition:all_0.2s] focus:outline-none hover:text-white' : 'squad-workspace-filter-tab h-[30px] whitespace-nowrap border-[#6b7280] border-b-[2px] border-b-transparent px-[16px] py-[6px] text-[12px]! leading-[16px]! font-bold text-[#6b7280] rounded-[8px] [transition:all_0.2s] focus:outline-none hover:bg-[#F9FAFB] hover:text-[#00c471]'} onClick={() => setFilter('me')}>
                   내 작업만
                 </button>
-                <button className={filter === 'urgent' ? 'filter-tab active px-4 py-1.5 rounded-lg text-xs font-bold' : 'filter-tab px-4 py-1.5 rounded-lg text-xs font-bold text-gray-500'} onClick={() => setFilter('urgent')}>
+                <button className={filter === 'urgent' ? 'squad-workspace-filter-tab h-[30px] whitespace-nowrap border-b-[2px] border-[#111827] bg-[#111827] px-[16px] py-[6px] text-[12px]! leading-[16px]! font-bold text-white rounded-[8px] [transition:all_0.2s] focus:outline-none hover:text-white' : 'squad-workspace-filter-tab h-[30px] whitespace-nowrap border-[#6b7280] border-b-[2px] border-b-transparent px-[16px] py-[6px] text-[12px]! leading-[16px]! font-bold text-[#6b7280] rounded-[8px] [transition:all_0.2s] focus:outline-none hover:bg-[#F9FAFB] hover:text-[#00c471]'} onClick={() => setFilter('urgent')}>
                   <i className="fas fa-fire text-red-500 mr-1"></i>긴급
                 </button>
               </div>
-              <button onClick={() => openCreateModal()} className="squad-workspace-add-task-button px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl text-sm hover:bg-black transition shadow-lg flex items-center gap-2">
+              <button onClick={() => openCreateModal()} className="squad-workspace-add-task-button h-[42px] px-[20px] py-0 bg-gray-900 text-white font-bold rounded-[12px] text-[14px]! leading-[20px]! hover:bg-black transition shadow-lg flex items-center gap-2">
                 <i className="fas fa-plus"></i> 작업 추가
               </button>
             </div>
@@ -595,7 +601,7 @@ export default function SquadWorkspaceApp() {
                     </div>
                     <div
                       id={`col-${column.id === 'TODO' ? 'todo' : column.id === 'IN_PROGRESS' ? 'progress' : column.id === 'IN_REVIEW' ? 'review' : 'done'}`}
-                      className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 kanban-col"
+                      className={`kanban-col relative min-h-[150px] flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 empty:after:absolute empty:after:inset-[12px] empty:after:flex empty:after:items-center empty:after:justify-center empty:after:border-[2px] empty:after:border-dashed empty:after:border-[#E5E7EB] empty:after:rounded-[0.75rem] empty:after:text-[12px] empty:after:font-bold empty:after:text-[#9CA3AF] empty:after:pointer-events-none empty:after:content-[attr(data-empty)] ${column.id === 'TODO' ? 'empty:after:bg-[rgba(249,250,251,0.5)]' : ''}`}
                       data-empty={column.id === 'TODO' ? '첫 작업을 추가해보세요!' : '여기로 드래그하여 이동'}
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={(event) => {
@@ -617,13 +623,13 @@ export default function SquadWorkspaceApp() {
       </div>
 
       {modalOpen ? (
-        <div className="modal active squad-workspace-task-modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-          <form onSubmit={saveTask} className="squad-workspace-task-modal-content bg-white w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden flex flex-col">
+        <div className="squad-workspace-task-modal fixed inset-0 z-[1050] flex visible items-center justify-center bg-gray-900/60 p-4 opacity-100 backdrop-blur-sm [transition:opacity_0.2s,visibility_0.2s] [&_input]:text-[14px]! [&_input:not([type=radio])]:leading-[20px]! [&_select]:text-[14px]! [&_select]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]! [&_button]:text-[14px]! [&_button]:leading-[20px]!">
+          <form onSubmit={saveTask} className="squad-workspace-task-modal-content relative flex w-full max-w-[448px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
               <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
                 <i className="fas fa-ticket-alt text-brand"></i> {editingTask ? '작업 수정' : '새 작업 추가'}
               </h3>
-              <button type="button" onClick={closeModal} className="text-gray-400 hover:text-gray-900 bg-white border border-gray-200 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm">
+              <button type="button" onClick={closeModal} className="text-[14px] leading-[20px] text-gray-400 hover:text-gray-900 bg-white border border-gray-200 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm">
                 <i className="fas fa-times"></i>
               </button>
             </div>
@@ -660,10 +666,10 @@ export default function SquadWorkspaceApp() {
                   <label className="block text-xs font-bold text-gray-700 mb-2">우선순위</label>
                   <div className="flex gap-4 items-center bg-gray-50 p-3.5 rounded-xl border border-gray-100">
                     <label className="flex items-center gap-2 text-sm font-bold text-gray-700 cursor-pointer">
-                      <input type="radio" name="urgency" value="false" checked={form.priority !== 'HIGH'} onChange={() => setForm((current) => ({ ...current, priority: 'MEDIUM' }))} className="accent-brand w-4 h-4" /> 보통
+                      <input type="radio" name="urgency" value="false" checked={form.priority !== 'HIGH'} onChange={() => setForm((current) => ({ ...current, priority: 'MEDIUM' }))} className="accent-brand h-[16px] w-[16px] p-0 [line-height:normal]!" /> 보통
                     </label>
                     <label className="flex items-center gap-2 text-sm font-bold text-red-500 cursor-pointer">
-                      <input type="radio" name="urgency" value="true" checked={form.priority === 'HIGH'} onChange={() => setForm((current) => ({ ...current, priority: 'HIGH' }))} className="accent-red-500 w-4 h-4" /> 🔥 긴급
+                      <input type="radio" name="urgency" value="true" checked={form.priority === 'HIGH'} onChange={() => setForm((current) => ({ ...current, priority: 'HIGH' }))} className="accent-red-500 h-[16px] w-[16px] p-0 [line-height:normal]!" /> 🔥 긴급
                     </label>
                   </div>
                 </div>
@@ -675,12 +681,12 @@ export default function SquadWorkspaceApp() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-2">상세 설명 <span className="text-gray-400 font-normal">(선택)</span></label>
-                <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className="w-full border border-gray-200 rounded-xl p-4 text-sm h-24 resize-none outline-none focus:border-brand transition shadow-sm leading-relaxed" placeholder="작업에 필요한 세부 사항이나 참고 링크를 남겨주세요." />
+                <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className="w-full border border-gray-200 rounded-xl p-4 text-[14px] leading-[20px] h-24 resize-none outline-none focus:border-brand transition shadow-sm" placeholder="작업에 필요한 세부 사항이나 참고 링크를 남겨주세요." />
               </div>
             </div>
 
             <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
-              <button type="button" className="hidden px-4 py-2.5 text-xs font-bold text-red-500 bg-white border border-red-200 rounded-xl hover:bg-red-50 transition shadow-sm">
+              <button type="button" className="hidden px-4 py-2.5 text-[14px] leading-[20px] font-bold text-red-500 bg-white border border-red-200 rounded-xl hover:bg-red-50 transition shadow-sm">
                 <i className="fas fa-trash-alt mr-1"></i> 삭제
               </button>
               <div className="flex gap-2 ml-auto">

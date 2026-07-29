@@ -1029,7 +1029,7 @@ export default function JobMatchingApp() {
       />
 
       <main className="app-main min-h-screen bg-gray-50 text-gray-800">
-        <div className="job-matching-page max-w-7xl mx-auto px-6 py-10">
+        <div className="job-matching-page max-w-7xl mx-auto px-6 py-10 font-['Pretendard',sans-serif] text-[16px] leading-[24px] [&_.text-sm]:text-[14px] [&_.text-sm]:leading-[20px] [&_.text-xs]:text-[12px] [&_.text-xs]:leading-[16px] [&_button]:font-['Pretendard',sans-serif]! [&_button]:text-[14px]! [&_button]:leading-[20px]! [&_input]:font-['Pretendard',sans-serif]! [&_input]:text-[14px]! [&_input]:leading-[20px]! [&_select]:font-['Pretendard',sans-serif]! [&_select]:text-[14px]! [&_select]:leading-[1.2]! [&_textarea]:font-['Pretendard',sans-serif]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]!">
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">학습 기반 자동 매칭</h1>
             <p className="text-sm text-gray-500 mt-1">DevPath에서 증명한 스킬과 채용공고 데이터를 분석하여 가장 적합한 기업을 찾아줍니다.</p>
@@ -1040,7 +1040,7 @@ export default function JobMatchingApp() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative overflow-hidden">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="font-bold text-lg">내 분석 프로필</h2>
-                  <span className="text-[10px] bg-green-100 text-primary px-2 py-1 rounded font-bold">실시간 데이터</span>
+                  <span className="text-[10px] leading-[14px] bg-green-100 text-primary px-2 py-1 rounded font-bold">실시간 데이터</span>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100">
@@ -1087,7 +1087,7 @@ export default function JobMatchingApp() {
                     <select
                       value={roleFilter}
                       onChange={(event) => setRoleFilter(event.target.value as RoleFilter)}
-                      className="w-full border border-gray-300 rounded text-sm bg-white focus:outline-none focus:border-primary"
+                      className="w-full appearance-none border border-gray-300 rounded text-sm bg-white bg-no-repeat [background-image:url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2024%2024%27%20stroke=%27%239CA3AF%27%3E%3Cpath%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%272%27%20d=%27M19%209l-7%207-7-7%27%3E%3C/path%3E%3C/svg%3E')] [background-position:right_12px_center] [background-size:14px] pt-[8px]! pr-[36px]! pb-[8px]! pl-[12px]! leading-[1.2]! focus:outline-none focus:border-primary"
                     >
                       {roleOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -1099,7 +1099,7 @@ export default function JobMatchingApp() {
                     <select
                       value={regionFilter}
                       onChange={(event) => setRegionFilter(event.target.value as RegionFilter)}
-                      className="w-full border border-gray-300 rounded text-sm bg-white focus:outline-none focus:border-primary"
+                      className="w-full appearance-none border border-gray-300 rounded text-sm bg-white bg-no-repeat [background-image:url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2024%2024%27%20stroke=%27%239CA3AF%27%3E%3Cpath%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%272%27%20d=%27M19%209l-7%207-7-7%27%3E%3C/path%3E%3C/svg%3E')] [background-position:right_12px_center] [background-size:14px] pt-[8px]! pr-[36px]! pb-[8px]! pl-[12px]! leading-[1.2]! focus:outline-none focus:border-primary"
                     >
                       {regionOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -1111,7 +1111,7 @@ export default function JobMatchingApp() {
                     <select
                       value={careerFilter}
                       onChange={(event) => setCareerFilter(event.target.value as CareerFilter)}
-                      className="w-full border border-gray-300 rounded text-sm bg-white focus:outline-none focus:border-primary"
+                      className="w-full appearance-none border border-gray-300 rounded text-sm bg-white bg-no-repeat [background-image:url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2024%2024%27%20stroke=%27%239CA3AF%27%3E%3Cpath%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%272%27%20d=%27M19%209l-7%207-7-7%27%3E%3C/path%3E%3C/svg%3E')] [background-position:right_12px_center] [background-size:14px] pt-[8px]! pr-[36px]! pb-[8px]! pl-[12px]! leading-[1.2]! focus:outline-none focus:border-primary"
                     >
                       {careerOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -1219,9 +1219,9 @@ export default function JobMatchingApp() {
                           </p>
                           <div className="space-y-2">
                             {job.matchedReasons.map((reason) => (
-                              <div key={reason} className="job-matching-reason-row flex justify-between items-center text-xs">
-                                <span className="min-w-0 text-gray-700"><i className="fas fa-check text-primary mr-1"></i> {reason}</span>
-                                <span className="text-primary font-bold">검증 완료</span>
+                              <div key={reason} className="job-matching-reason-row flex justify-between items-center text-left text-xs">
+                                <span className="min-w-0 [flex:1_1_auto] pr-[12px] text-gray-700"><i className="fas fa-check text-primary mr-1"></i> {reason}</span>
+                                <span className="ml-auto shrink-0 whitespace-nowrap text-right text-primary font-bold">검증 완료</span>
                               </div>
                             ))}
                             {job.missingSkills.map((skill) => (
@@ -1231,17 +1231,17 @@ export default function JobMatchingApp() {
                                   event.stopPropagation()
                                   void handleMissingSkill(skill, job.title)
                                 }}
-                                className="job-matching-missing-skill group/add flex justify-between items-center text-xs opacity-50 hover:opacity-100 cursor-pointer hover:bg-red-50 p-2 -mx-2 rounded-lg transition-all border border-transparent hover:border-red-100"
+                                className="job-matching-missing-skill group/add flex min-h-[32px] justify-between items-center text-left text-[12px] leading-[16px] opacity-50 hover:opacity-100 cursor-pointer hover:bg-red-50 p-[8px]! mx-[-8px]! rounded-lg transition-all border border-transparent hover:border-red-100 [&_i]:text-[12px] [&_i]:leading-none"
                               >
-                                <span className="text-gray-500 group-hover/add:text-red-600 transition"><i className="fas fa-exclamation-circle mr-1"></i> {skill} 경험 부족</span>
-                                <span className="font-bold text-red-400 group-hover/add:hidden">미충족</span>
-                                <span className="font-bold text-red-600 hidden group-hover/add:inline-block">관련 로드맵 추가하기 <i className="fas fa-plus ml-1"></i></span>
+                                <span className="min-w-0 [flex:1_1_auto] pr-[12px] text-gray-500 group-hover/add:text-red-600 transition"><i className="fas fa-exclamation-circle mr-1"></i> {skill} 경험 부족</span>
+                                <span className="ml-auto shrink-0 whitespace-nowrap text-right font-bold text-red-400 group-hover/add:hidden">미충족</span>
+                                <span className="ml-auto shrink-0 whitespace-nowrap text-right font-bold text-red-600 hidden group-hover/add:inline-block">관련 로드맵 추가하기 <i className="fas fa-plus ml-1"></i></span>
                               </div>
                             ))}
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 text-[10px] text-gray-500">
+                        <div className="flex flex-wrap gap-2 text-[10px] leading-[14px] text-gray-500">
                           <span className="border px-2 py-1 rounded">{job.source === 'jobkorea' ? '잡코리아' : 'DevPath DB'}</span>
                           <span className="border px-2 py-1 rounded">{job.careerLabel}</span>
                           <span className="border px-2 py-1 rounded">마감 {toDisplayDate(job.deadline)}</span>
@@ -1313,7 +1313,7 @@ export default function JobMatchingApp() {
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap gap-2 text-[10px] text-gray-500">
+                            <div className="flex flex-wrap gap-2 text-[10px] leading-[14px] text-gray-500">
                               <span className="border px-2 py-1 rounded">{job.source === 'jobkorea' ? '잡코리아' : 'DevPath DB'}</span>
                               <span className="border px-2 py-1 rounded">{job.careerLabel}</span>
                               <span className="border px-2 py-1 rounded">마감 {toDisplayDate(job.deadline)}</span>
@@ -1328,7 +1328,7 @@ export default function JobMatchingApp() {
                   )}
 
                   {jobkoreaAttribution ? (
-                    <p className="text-[11px] text-gray-400 leading-relaxed pt-2">
+                    <p className="text-[11px] leading-[16px] text-gray-400 pt-2">
                       <a
                         href={jobkoreaAttribution.url ?? 'https://www.jobkorea.co.kr'}
                         target="_blank"
@@ -1347,11 +1347,11 @@ export default function JobMatchingApp() {
         </div>
       </main>
 
-      <div className={`job-matching-loader ${loading ? 'active' : ''}`}>
-        <div className="smooth-spinner"></div>
+      <div className={`job-matching-loader fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[rgba(30,41,59,0.4)] font-['Pretendard',sans-serif] text-[16px] leading-[24px] backdrop-blur-[10px] transition-[opacity,visibility] duration-[400ms] ease-[ease] ${loading ? 'active visible pointer-events-auto opacity-100' : 'invisible pointer-events-none opacity-0'}`}>
+        <div className="smooth-spinner mb-[24px] h-[50px] w-[50px] rounded-[50%] border-[3px] border-[rgba(0,196,113,0.15)] border-t-[#00C471] [box-shadow:0_0_15px_rgba(0,196,113,0.2)] [animation:spin_1s_cubic-bezier(0.4,0,0.2,1)_infinite]"></div>
         <div className="text-center">
           <h2 className="text-white text-lg font-bold mb-2 drop-shadow-md tracking-wide">DevPath AI</h2>
-          <p className="text-green-400 text-sm font-bold h-5 drop-shadow-md pulse-text">{currentLoadingMessage}</p>
+          <p className="text-green-400 text-sm font-bold h-5 drop-shadow-md pulse-text [animation:pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]">{currentLoadingMessage}</p>
         </div>
         <div className="absolute bottom-8 left-8 text-[11px] text-green-400/40 font-mono space-y-1">
           <p>&gt; applying preference filters...</p>

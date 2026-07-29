@@ -172,12 +172,18 @@ export default function SquadReviewApp() {
     const html = document.documentElement
     const body = document.body
 
-    html.classList.add('squad-dashboard-document')
-    body.classList.add('squad-dashboard-body')
+    const root = document.getElementById('root')
+    const appViewport = document.querySelector<HTMLElement>('.app-viewport')
+    html.classList.add('h-full!', 'overflow-hidden!')
+    body.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    root?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    appViewport?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
 
     return () => {
-      html.classList.remove('squad-dashboard-document')
-      body.classList.remove('squad-dashboard-body')
+      html.classList.remove('h-full!', 'overflow-hidden!')
+      body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      root?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      appViewport?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
     }
   }, [])
 
@@ -560,7 +566,7 @@ export default function SquadReviewApp() {
           setSelectedFilePath(null)
           void loadDetail(review.reviewId)
         }}
-        className={`pr-card w-full text-left p-4 rounded-xl cursor-pointer transition ${
+        className={`pr-card min-h-[110px] w-full text-left p-4 rounded-xl cursor-pointer transition ${
           active
             ? 'bg-blue-50 border border-blue-200 shadow-sm'
             : closed
@@ -701,7 +707,7 @@ export default function SquadReviewApp() {
               <i className="fas fa-magic"></i>
             </div>
             <div>
-              <h3 className="font-extrabold text-lg ai-gradient-text tracking-tight">AI 시니어 멘토의 자동 리뷰</h3>
+              <h3 className="ai-gradient-text bg-[linear-gradient(90deg,#4F46E5,#9333EA)] bg-clip-text [-webkit-background-clip:text] text-transparent font-extrabold text-lg tracking-tight">AI 시니어 멘토의 자동 리뷰</h3>
               <p className="text-xs text-indigo-800 font-medium">
                 {aiReview ? aiReview.summary : 'Gemini가 머지 전 잠재적인 문제와 해결책을 분석합니다.'}
               </p>
@@ -835,12 +841,16 @@ export default function SquadReviewApp() {
 
               <div className="relative overflow-x-auto">
                 {lines.map((line, index) => {
-                  const lineClass = line.startsWith('+') ? 'line-add' : line.startsWith('-') ? 'line-remove' : 'text-gray-500 hover:bg-gray-50'
+                  const lineClass = line.startsWith('+')
+                    ? 'line-add bg-[#ECFDF5] text-[#047857] [&_.code-num]:bg-[#D1FAE5] [&_.code-num]:text-[#059669]'
+                    : line.startsWith('-')
+                      ? 'line-remove bg-[#FEF2F2] text-[#B91C1C] [&_.code-num]:bg-[#FEE2E2] [&_.code-num]:text-[#DC2626]'
+                      : 'text-gray-500 hover:bg-gray-50'
 
                   return (
-                    <div key={`${activeFile.filePath}-${index}-${line}`} className={`code-line group ${lineClass}`}>
-                      <div className="code-num">{index + 1}</div>
-                      <div className="whitespace-pre">{line || ' '}</div>
+                    <div key={`${activeFile.filePath}-${index}-${line}`} className={`code-line group relative grid min-h-[28px] grid-cols-[48px_minmax(0,1fr)] font-['JetBrains_Mono','Consolas',monospace] text-[13px] leading-[28px] ${lineClass}`}>
+                      <div className="code-num select-none border-r border-r-[#F3F4F6] bg-[rgba(249,250,251,0.72)] pr-[12px] text-right text-[#9CA3AF]">{index + 1}</div>
+                      <div className="px-[16px] whitespace-pre">{line || ' '}</div>
                     </div>
                   )
                 })}
@@ -881,7 +891,7 @@ export default function SquadReviewApp() {
 
   if (loading) {
     return (
-      <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
+      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
       </div>
     )
@@ -889,7 +899,7 @@ export default function SquadReviewApp() {
 
   if (error && !board) {
     return (
-      <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
+      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <i className="fas fa-circle-exclamation text-3xl text-red-400 mb-3"></i>
           <p className="font-extrabold text-gray-900">{error}</p>
@@ -905,7 +915,7 @@ export default function SquadReviewApp() {
   }
 
   return (
-    <div className="squad-dashboard-page squad-review-page flex h-screen overflow-hidden text-gray-800">
+    <div className="squad-dashboard-page squad-review-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
       <SquadWorkspaceAside
         activePage="review"
         workspaceId={workspaceId}
@@ -934,21 +944,21 @@ export default function SquadReviewApp() {
                   </h2>
                   <p className="text-xs text-gray-500 mt-1">GitHub PR 또는 수동 코드 리뷰 요청</p>
                 </div>
-                <button onClick={openCreateModal} className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-black transition shadow-md" title="새 리뷰 요청">
-                  <i className="fas fa-plus"></i>
+                <button onClick={openCreateModal} className="squad-review-add-button flex h-[32px]! min-h-[32px]! max-h-[32px]! w-[32px]! min-w-[32px]! max-w-[32px]! flex-[0_0_32px]! items-center justify-center rounded-[8px]! bg-gray-900 p-0! text-[14px]! leading-none! text-white shadow-md transition hover:bg-black box-border!" title="새 리뷰 요청">
+                  <i className="fas fa-plus text-[14px]! leading-none!"></i>
                 </button>
               </div>
 
-              <div className="flex bg-gray-100 p-1 rounded-xl">
+              <div className="squad-review-tab-group flex gap-[8px]! rounded-[12px]! border-[1px]! border-[#F3F4F6]! bg-[#F9FAFB]! p-[4px]! box-border!">
                 <button
                   onClick={() => setActiveTab('open')}
-                  className={activeTab === 'open' ? 'flex-1 py-1.5 bg-white text-gray-900 shadow-sm text-xs font-bold rounded-lg transition border border-gray-200' : 'flex-1 py-1.5 text-gray-500 hover:text-gray-900 text-xs font-bold rounded-lg transition'}
+                  className={activeTab === 'open' ? 'squad-review-tab-button h-[28px]! min-h-[28px]! flex-1 whitespace-nowrap rounded-[8px]! border border-gray-200 bg-white px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold! text-gray-900 shadow-sm transition box-border!' : 'squad-review-tab-button h-[28px]! min-h-[28px]! flex-1 whitespace-nowrap rounded-[8px]! px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold! text-gray-500 transition hover:text-gray-900 box-border!'}
                 >
                   {hasAnyReviews ? `열림 (${openReviews.length})` : `Open (${openReviews.length})`}
                 </button>
                 <button
                   onClick={() => setActiveTab('closed')}
-                  className={activeTab === 'closed' ? 'flex-1 py-1.5 bg-white text-gray-900 shadow-sm text-xs font-bold rounded-lg transition border border-gray-200' : 'flex-1 py-1.5 text-gray-500 hover:text-gray-900 text-xs font-bold rounded-lg transition'}
+                  className={activeTab === 'closed' ? 'squad-review-tab-button h-[28px]! min-h-[28px]! flex-1 whitespace-nowrap rounded-[8px]! border border-gray-200 bg-white px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold! text-gray-900 shadow-sm transition box-border!' : 'squad-review-tab-button h-[28px]! min-h-[28px]! flex-1 whitespace-nowrap rounded-[8px]! px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold! text-gray-500 transition hover:text-gray-900 box-border!'}
                 >
                   {hasAnyReviews ? `닫힘 (${closedReviews.length})` : `Closed (${closedReviews.length})`}
                 </button>
@@ -1145,7 +1155,7 @@ export default function SquadReviewApp() {
 
       {modalOpen ? (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[1050]">
-          <form onSubmit={submitCreate} className="squad-review-create-modal bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 relative">
+          <form onSubmit={submitCreate} className="squad-review-create-modal relative w-full max-w-[512px]! rounded-3xl bg-white p-6 shadow-2xl [&_input]:text-[14px]! [&_input]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]! [&_button]:text-[14px]! [&_button]:leading-[20px]!">
             <div className="flex justify-between items-center border-b border-gray-100 pb-4 mb-4">
               <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
                 <i className={`fas fa-plus-circle ${hasAnyReviews ? 'text-blue-500' : 'text-gray-400'}`}></i>

@@ -297,12 +297,18 @@ export default function SquadFilesApp() {
     const html = document.documentElement
     const body = document.body
 
-    html.classList.add('squad-dashboard-document')
-    body.classList.add('squad-dashboard-body')
+    const root = document.getElementById('root')
+    const appViewport = document.querySelector<HTMLElement>('.app-viewport')
+    html.classList.add('h-full!', 'overflow-hidden!')
+    body.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    root?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    appViewport?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
 
     return () => {
-      html.classList.remove('squad-dashboard-document')
-      body.classList.remove('squad-dashboard-body')
+      html.classList.remove('h-full!', 'overflow-hidden!')
+      body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      root?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      appViewport?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
     }
   }, [])
 
@@ -819,13 +825,13 @@ export default function SquadFilesApp() {
             }
           }
         }}
-        className="file-row squad-files-row grid grid-cols-12 gap-4 p-4 border-b border-gray-50 items-center cursor-pointer fade-in"
+        className="file-row squad-files-row group/file-row grid min-h-[56px] grid-cols-12 items-center gap-[16px]! border-b border-gray-50 p-[16px]! cursor-pointer fade-in [transition:background-color_0.15s_ease] hover:bg-[#F9FAFB]"
       >
         <div className="col-span-6 flex items-center gap-3 pl-2 min-w-0">
-          <i className={`${iconClass(item)} text-xl w-6 text-center shrink-0`}></i>
-          <span className="font-bold text-gray-900 text-sm hover:text-brand transition truncate">{displayName(item)}</span>
+          <i className={`${iconClass(item)} text-xl w-[24px]! shrink-0 text-center text-[20px]! leading-[28px]!`}></i>
+          <span className="text-sm truncate text-[14px]! leading-[20px]! font-bold text-gray-900 transition hover:text-brand">{displayName(item)}</span>
         </div>
-        <div className="col-span-2 text-center text-xs font-bold text-gray-500 bg-gray-50 rounded py-1 mx-4">
+        <div className="text-xs col-span-2 mx-4 rounded bg-gray-50 py-1 text-center text-[12px]! leading-[16px]! font-bold text-gray-500">
           {isFolder ? '-' : formatBytes(item.fileSize)}
         </div>
         <div className="col-span-2 flex justify-center items-center gap-1.5 min-w-0">
@@ -835,12 +841,12 @@ export default function SquadFilesApp() {
             className="w-5 h-5 rounded-full border border-gray-200 bg-gray-100 shrink-0"
             iconClassName="text-[8px]"
           />
-          <span className="text-[10px] font-bold text-gray-600 truncate">{item.uploadedByName ?? '팀원'}</span>
+          <span className="truncate text-[10px]! leading-[16px]! font-bold text-gray-600">{item.uploadedByName ?? '팀원'}</span>
         </div>
-        <div className="col-span-2 text-right text-xs font-medium text-gray-500 pr-2 flex justify-end items-center gap-4">
+        <div className="text-xs col-span-2 flex items-center justify-end gap-4 pr-2 text-right text-[12px]! leading-[16px]! font-medium text-gray-500">
           <span>{formatRelativeDate(item.updatedAt ?? item.createdAt)}</span>
           <div
-            className={`file-action-btn relative flex gap-2${actionMenu?.fileId === item.fileId ? ' is-open' : ''}`}
+            className={`file-action-btn relative flex gap-2 opacity-0 [transition:opacity_0.1s_ease] group-hover/file-row:opacity-100 group-focus-within/file-row:opacity-100${actionMenu?.fileId === item.fileId ? ' is-open opacity-100!' : ''}`}
             onMouseDown={(event) => {
               event.stopPropagation()
             }}
@@ -900,7 +906,7 @@ export default function SquadFilesApp() {
 
   if (loading) {
     return (
-      <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
+      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
         {renderAuthModal()}
       </div>
@@ -909,7 +915,7 @@ export default function SquadFilesApp() {
 
   if (error) {
     return (
-      <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
+      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <i className="fas fa-circle-exclamation text-3xl text-red-400 mb-3"></i>
           <p className="font-extrabold text-gray-900">{error}</p>
@@ -923,7 +929,7 @@ export default function SquadFilesApp() {
   }
 
   return (
-    <div className="squad-dashboard-page squad-files-page flex h-screen overflow-hidden text-gray-800">
+    <div className="squad-dashboard-page squad-files-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[16px] text-gray-800 [&_.fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
       <SquadWorkspaceAside activePage="files" workspaceId={workspaceId} projectName={projectName} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
@@ -937,10 +943,10 @@ export default function SquadFilesApp() {
         />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
-          <div className="squad-files-toolbar px-8 py-6 shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 z-10 shadow-sm">
+          <div className="squad-files-toolbar z-10 flex min-h-[129px] shrink-0 flex-col justify-between gap-[16px]! border-b border-gray-100 bg-white px-[32px]! py-[24px]! shadow-sm md:flex-row md:items-center [@media(max-width:768px)]:px-[20px]!">
             <div>
-              <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2 mb-2">
-                <i className="fas fa-folder-open text-brand"></i> 팀 자료실
+              <h1 className="mb-[8px]! flex items-center gap-[8px]! text-[24px]! leading-[32px]! font-extrabold text-gray-900">
+                <i className="fas fa-folder-open text-[24px]! leading-[32px]! text-brand"></i> 팀 자료실
               </h1>
               <div className="flex items-center gap-3">
                 <div className="w-48 bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner">
@@ -957,7 +963,7 @@ export default function SquadFilesApp() {
                 <i className="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
                 <input
                   type="text"
-                  className="squad-files-search-input pl-8 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-brand focus:bg-white transition w-64"
+                  className="squad-files-search-input h-[38px]! w-[256px]! rounded-[12px]! border border-gray-200 bg-gray-50 py-0! pr-[16px]! pl-[32px]! text-[12px]! leading-[16px]! outline-none transition focus:border-brand focus:bg-white [@media(max-width:768px)]:w-[min(256px,calc(100vw-72px))]!"
                   placeholder="파일 및 폴더 이름 검색"
                   value={searchText}
                   onChange={(event) => setSearchText(event.target.value)}
@@ -967,29 +973,29 @@ export default function SquadFilesApp() {
               <button
                 type="button"
                 onClick={() => setFolderModalOpen(true)}
-                className="squad-files-new-folder-button px-4 py-2.5 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl text-sm hover:bg-gray-50 transition shadow-sm flex items-center gap-2"
+                className="squad-files-new-folder-button flex h-[42px]! items-center gap-2 rounded-[12px]! border border-gray-200 bg-white px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50"
               >
                 <i className="fas fa-folder-plus text-yellow-500"></i> 새 폴더
               </button>
               <button
                 type="button"
                 onClick={() => setUploadModalOpen(true)}
-                className="squad-files-upload-button px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl text-sm hover:bg-black transition shadow-lg flex items-center gap-2"
+                className="squad-files-upload-button flex h-[42px]! items-center gap-2 rounded-[12px]! bg-gray-900 px-[20px]! py-0! text-[14px]! leading-[20px]! font-bold text-white shadow-lg transition hover:bg-black"
               >
                 <i className="fas fa-cloud-upload-alt"></i> 업로드
               </button>
             </div>
           </div>
 
-          <div className="squad-files-content flex-1 overflow-y-auto custom-scrollbar p-8 bg-[#F3F4F6]">
-            <div className="squad-files-inner max-w-6xl mx-auto">
+          <div className="squad-files-content custom-scrollbar flex-1 overflow-y-auto bg-[#F3F4F6] p-[32px]! [@media(max-width:768px)]:px-[20px]!">
+            <div className="squad-files-inner mx-auto max-w-[1152px]!">
               <div className="flex justify-between items-center mb-4 px-2 gap-4">
                 <div className="flex items-center gap-3 min-w-0">
                   {folderStack.length ? (
                     <button
                       type="button"
                       onClick={goToParentFolder}
-                      className="squad-files-parent-button inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-extrabold text-gray-700 shadow-sm transition hover:border-brand hover:text-brand"
+                      className="squad-files-parent-button inline-flex h-[32px]! shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-extrabold text-gray-700 shadow-sm transition hover:border-brand hover:text-brand"
                     >
                       <i className="fas fa-arrow-left text-[10px]"></i>
                       뒤로가기
@@ -1019,7 +1025,7 @@ export default function SquadFilesApp() {
                 </div>
 
                 <div className="flex items-center gap-4 shrink-0">
-                  <div className="squad-files-filter-bar flex gap-1 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+                  <div className="squad-files-filter-bar flex gap-[4px]! rounded-[8px]! border border-gray-200 bg-white p-[4px]! shadow-sm">
                     {([
                       ['all', '전체', 'fas fa-layer-group text-gray-500'],
                       ['folder', '폴더', 'fas fa-folder text-yellow-500'],
@@ -1031,7 +1037,7 @@ export default function SquadFilesApp() {
                         key={value}
                         type="button"
                         onClick={() => setFilter(value)}
-                        className={`filter-btn px-3 py-1 text-xs font-bold rounded-md transition ${
+                        className={`filter-btn h-[24px]! rounded-[6px]! px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold transition ${
                           filter === value ? 'active bg-gray-900 text-white border-gray-900' : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
@@ -1045,7 +1051,7 @@ export default function SquadFilesApp() {
                     <select
                       value={sortMode}
                       onChange={(event) => setSortMode(event.target.value as SortMode)}
-                      className="squad-files-sort-select appearance-none bg-white border border-gray-200 text-xs font-bold text-gray-700 py-1.5 pl-3 pr-8 rounded-lg shadow-sm outline-none focus:border-brand cursor-pointer"
+                      className="squad-files-sort-select h-[30px]! cursor-pointer appearance-none rounded-[8px]! border border-gray-200 bg-white py-0! pr-[32px]! pl-[12px]! text-[12px]! leading-[16px]! font-bold text-gray-700 shadow-sm outline-none focus:border-brand"
                     >
                       <option value="date-desc">최신 등록순</option>
                       <option value="date-asc">오래된 등록순</option>
@@ -1057,8 +1063,8 @@ export default function SquadFilesApp() {
                 </div>
               </div>
 
-              <div className="squad-files-table bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="squad-files-table-header grid grid-cols-12 gap-4 p-4 border-b border-gray-100 bg-gray-50/50 text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">
+              <div className="squad-files-table overflow-hidden rounded-[16px]! border border-gray-100 bg-white shadow-sm">
+                <div className="squad-files-table-header grid min-h-[49px] grid-cols-12 gap-[16px]! border-b border-gray-100 bg-gray-50/50 p-[16px]! text-[11px]! leading-[16px]! font-extrabold tracking-wider text-gray-500 uppercase">
                   <div className="col-span-6 pl-2">이름</div>
                   <div className="col-span-2 text-center">크기</div>
                   <div className="col-span-2 text-center">업로드</div>
@@ -1108,17 +1114,17 @@ export default function SquadFilesApp() {
       ) : null}
 
       {previewItem ? (
-        <div className="modal active squad-files-preview-modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-md z-[1200]">
-          <div className="squad-files-preview-panel bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl relative overflow-hidden flex flex-col fade-in">
-            <div className="squad-files-preview-header px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
+        <div className="modal active squad-files-preview-modal fixed inset-0 z-[1200] flex items-center justify-center bg-gray-900/80 p-[16px]! backdrop-blur-md">
+          <div className="squad-files-preview-panel relative flex h-[85vh]! max-h-[85vh]! w-[min(1024px,calc(100vw-32px))]! max-w-[1024px]! flex-col overflow-hidden rounded-[16px]! bg-white shadow-2xl fade-in">
+            <div className="squad-files-preview-header flex min-h-[65px] shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 px-[24px]! py-[16px]!">
               <div className="flex items-center gap-3 min-w-0">
                 <i className={`${iconClass(previewItem)} text-xl w-6 text-center shrink-0`}></i>
-                <h3 className="text-lg font-extrabold text-gray-900 truncate max-w-xl">{displayName(previewItem)}</h3>
+                <h3 className="max-w-[576px]! truncate text-[18px]! leading-[28px]! font-extrabold text-gray-900">{displayName(previewItem)}</h3>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  className="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-black transition flex items-center gap-2 shadow-sm"
+                  className="box-border flex h-[32px]! items-center gap-2 rounded-[8px]! bg-gray-900 px-[16px]! py-0! text-[12px]! leading-[16px]! font-bold text-white shadow-sm transition hover:bg-black"
                   onClick={() => void downloadItem(previewItem)}
                 >
                   <i className="fas fa-download"></i> 다운로드
@@ -1126,13 +1132,13 @@ export default function SquadFilesApp() {
                 <button
                   type="button"
                   onClick={() => setPreviewItem(null)}
-                  className="text-gray-400 hover:text-gray-900 transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200"
+                  className="flex h-[32px]! w-[32px]! box-border items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-200 hover:text-gray-900"
                 >
                   <i className="fas fa-times text-xl"></i>
                 </button>
               </div>
             </div>
-            <div className="squad-files-preview-body flex-1 bg-gray-200 flex items-center justify-center p-6 overflow-auto">
+            <div className="squad-files-preview-body flex flex-1 items-center justify-center overflow-auto bg-gray-200 p-[24px]!">
               {previewLoading ? (
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-100 border-t-brand"></div>
               ) : previewError ? (
@@ -1260,19 +1266,19 @@ export default function SquadFilesApp() {
       ) : null}
 
       {uploadModalOpen ? (
-        <div className="modal active squad-files-upload-modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm z-[1050]">
-          <form onSubmit={uploadFile} className="squad-files-upload-panel bg-white w-full max-w-lg rounded-3xl shadow-2xl relative overflow-hidden flex flex-col p-8 fade-in">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+        <div className="modal active squad-files-upload-modal fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-[16px]! backdrop-blur-sm">
+          <form onSubmit={uploadFile} className="squad-files-upload-panel relative flex w-[min(512px,calc(100vw-32px))]! max-w-[512px]! flex-col overflow-hidden rounded-[24px]! bg-white p-[32px]! shadow-2xl fade-in">
+            <div className="mb-[24px]! flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-[20px]! leading-[28px]! font-extrabold text-gray-900">
                 <i className="fas fa-cloud-upload-alt text-brand"></i> 현재 폴더에 업로드
               </h3>
-              <button type="button" onClick={() => setUploadModalOpen(false)} className="text-gray-400 hover:text-gray-900 transition">
+              <button type="button" onClick={() => setUploadModalOpen(false)} className="h-[42px]! box-border py-0! text-[14px]! leading-[20px]! text-gray-400 transition hover:text-gray-900">
                 <i className="fas fa-times text-xl"></i>
               </button>
             </div>
             <div
-              className={`dropzone squad-files-upload-dropzone border-2 border-dashed rounded-2xl flex flex-col items-center justify-center py-12 px-4 cursor-pointer transition ${
-                dragOver ? 'dragover bg-green-50 border-brand' : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
+              className={`dropzone squad-files-upload-dropzone flex min-h-[196px] cursor-pointer flex-col items-center justify-center rounded-[16px]! border-2 border-dashed px-[16px]! py-[48px]! [transition:background-color_0.2s_ease,border-color_0.2s_ease] ${
+                dragOver ? 'dragover border-[#00C471]! bg-[#EBFDF5]!' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
               }`}
               onClick={() => document.getElementById('squadFileInput')?.click()}
               onDragOver={(event) => {
@@ -1285,13 +1291,13 @@ export default function SquadFilesApp() {
               }}
               onDrop={handleDrop}
             >
-              <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center text-brand text-2xl mb-4 border border-gray-100">
+              <div className="mb-[16px]! flex h-[64px]! w-[64px]! items-center justify-center rounded-full border border-gray-100 bg-white text-[24px]! leading-[32px]! text-brand shadow-sm">
                 <i className="fas fa-file-upload"></i>
               </div>
-              <h4 className="text-sm font-bold text-gray-800 mb-1">
+              <h4 className="mb-[4px]! text-[14px]! leading-[20px]! font-bold text-gray-800">
                 {selectedFile ? selectedFile.name : '여기로 파일을 드래그하거나 클릭하세요.'}
               </h4>
-              <p className="text-xs text-gray-500 font-medium">선택한 파일은 실제 저장소에 업로드됩니다.</p>
+              <p className="text-[12px]! leading-[16px]! font-medium text-gray-500">선택한 파일은 실제 저장소에 업로드됩니다.</p>
               <input
                 id="squadFileInput"
                 type="file"
@@ -1309,14 +1315,14 @@ export default function SquadFilesApp() {
               <button
                 type="button"
                 onClick={() => setUploadModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition shadow-sm"
+                className="h-[42px]! box-border rounded-xl border border-gray-200 bg-white px-5 py-0! text-[14px]! leading-[20px]! font-bold text-gray-600 shadow-sm transition hover:bg-gray-50"
               >
                 취소
               </button>
               <button
                 type="submit"
                 disabled={!selectedFile || submitting}
-                className="px-5 py-2.5 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-black transition shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                className="h-[42px]! box-border rounded-xl bg-gray-900 px-5 py-0! text-[14px]! leading-[20px]! font-bold text-white shadow-md transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {submitting ? '업로드 중' : '업로드'}
               </button>
@@ -1326,14 +1332,14 @@ export default function SquadFilesApp() {
       ) : null}
 
       {folderModalOpen ? (
-        <div className="modal active squad-files-folder-modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm z-[1050]">
-          <form onSubmit={createFolder} className="squad-files-folder-panel bg-white w-full max-w-sm rounded-3xl shadow-2xl relative overflow-hidden flex flex-col p-6 fade-in">
-            <h3 className="text-lg font-extrabold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="modal active squad-files-folder-modal fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-[16px]! backdrop-blur-sm">
+          <form onSubmit={createFolder} className="squad-files-folder-panel relative flex w-[min(384px,calc(100vw-32px))]! max-w-[384px]! flex-col overflow-hidden rounded-[24px]! bg-white p-[24px]! shadow-2xl fade-in">
+            <h3 className="mb-[16px]! flex items-center gap-2 text-[18px]! leading-[28px]! font-extrabold text-gray-900">
               <i className="fas fa-folder-plus text-yellow-500"></i> 새 폴더 만들기
             </h3>
             <input
               type="text"
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm mb-6 font-bold"
+              className="mb-[24px]! h-[46px]! w-full rounded-[12px]! border border-gray-200 px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold shadow-sm outline-none transition focus:border-brand"
               placeholder="폴더 이름을 입력하세요."
               value={folderName}
               onChange={(event) => setFolderName(event.target.value)}
@@ -1343,14 +1349,14 @@ export default function SquadFilesApp() {
               <button
                 type="button"
                 onClick={() => setFolderModalOpen(false)}
-                className="px-4 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition"
+                className="h-[38px]! box-border rounded-[12px]! border border-gray-200 bg-white px-4 py-0! text-[14px]! leading-[20px]! font-bold text-gray-600 transition hover:bg-gray-50"
               >
                 취소
               </button>
               <button
                 type="submit"
                 disabled={!folderName.trim() || submitting}
-                className="px-5 py-2 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-black transition shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
+                className="h-[38px]! box-border rounded-[12px]! bg-gray-900 px-5 py-0! text-[14px]! leading-[20px]! font-bold text-white shadow-md transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 생성하기
               </button>
