@@ -4,6 +4,7 @@ import TeamWorkspaceHeader from './components/TeamWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
 import { projectApiRequest } from './project-api'
+import { TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME } from './team-workspace-constants'
 
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
@@ -337,7 +338,7 @@ function sortedTasks(tasks: WorkspaceTask[]) {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800">
+    <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800`}>
       <div className="team-ws-card w-[420px] border border-gray-100 bg-white p-8 text-center shadow-sm">
         <i className="fas fa-circle-exclamation mb-3 text-3xl text-red-400"></i>
         <h1 className="text-xl font-black text-gray-900">팀 마일스톤을 열 수 없습니다</h1>
@@ -378,15 +379,18 @@ export default function TeamWorkspaceMilestoneApp() {
   useEffect(() => {
     const html = document.documentElement
     const body = document.body
+    const root = document.getElementById('root')
     const previousTitle = document.title
 
-    html.classList.add('team-ws-dashboard-document')
-    body.classList.add('team-ws-dashboard-body')
+    html.classList.add('team-ws-dashboard-document', 'h-full!', 'overflow-hidden!')
+    body.classList.add('team-ws-dashboard-body', 'h-full!', 'overflow-hidden!', 'bg-[#F3F4F6]!')
+    root?.classList.add('h-screen!')
     document.title = 'DevPath - 팀 마일스톤 및 역할별 과제'
 
     return () => {
-      html.classList.remove('team-ws-dashboard-document')
-      body.classList.remove('team-ws-dashboard-body')
+      html.classList.remove('team-ws-dashboard-document', 'h-full!', 'overflow-hidden!')
+      body.classList.remove('team-ws-dashboard-body', 'h-full!', 'overflow-hidden!', 'bg-[#F3F4F6]!')
+      root?.classList.remove('h-screen!')
       document.title = previousTitle
     }
   }, [])
@@ -721,7 +725,7 @@ export default function TeamWorkspaceMilestoneApp() {
 
   if (loading) {
     return (
-      <div className="team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800">
+      <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800`}>
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-team"></div>
           <p className="text-sm font-bold text-gray-500">팀 마일스톤을 불러오는 중입니다.</p>
@@ -735,7 +739,7 @@ export default function TeamWorkspaceMilestoneApp() {
   }
 
   return (
-    <div className="team-ws-dashboard-page team-ws-milestone-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800">
+    <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page team-ws-milestone-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800`}>
       <aside className={`${sidebarPinned ? 'pinned ' : ''}team-ws-sidebar group z-50 flex w-20 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl transition-all duration-300 ease-in-out hover:w-64`}>
         <div className="flex h-20 shrink-0 cursor-pointer items-center border-b border-gray-100 px-5 transition hover:bg-gray-50">
           <a
@@ -976,8 +980,8 @@ export default function TeamWorkspaceMilestoneApp() {
                   onClick={() => setSelectedWeekId(week.id)}
                   className={
                     week.id === selectedWeekId
-                      ? 'week-tab active relative flex items-center gap-2 rounded-xl border border-gray-900 px-5 py-2.5 text-sm'
-                      : `week-tab rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-bold ${week.isCurrent ? 'bg-white text-gray-600' : 'bg-gray-50 text-gray-400'}`
+                      ? 'week-tab active relative flex cursor-pointer items-center gap-2 rounded-xl border border-[#111827]! bg-[#111827]! px-5 py-2.5 text-sm font-bold! text-white! [transition:all_0.2s_ease]'
+                      : `week-tab cursor-pointer rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-bold [transition:all_0.2s_ease] hover:bg-[#F3F4F6]! ${week.isCurrent ? 'bg-white text-gray-600' : 'bg-gray-50 text-gray-400'}`
                   }
                 >
                   {week.tabLabel}

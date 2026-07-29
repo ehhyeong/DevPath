@@ -15,6 +15,7 @@ import {
   QUESTION_STATUS_FILTERS,
   QUESTION_TAGS,
   ROLE_FILTERS,
+  TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME,
 } from './team-workspace-constants'
 import {
   adoptTeamWorkspaceAnswer,
@@ -554,7 +555,7 @@ function PageFrame({
   const hasPageAction = Boolean(action)
 
   return (
-    <div className="team-ws-dashboard-page team-ws-suite-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800">
+    <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page team-ws-suite-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800`}>
       <Sidebar activePage={activePage} dashboard={data.dashboard} tasks={data.tasks} workspaceId={workspaceId} />
       <div className="team-ws-main flex h-screen min-w-0 flex-1 flex-col overflow-hidden bg-[#F8F9FA]">
         <TeamWorkspaceHeader
@@ -630,7 +631,7 @@ function Modal({
   return (
     <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
       <button type="button" aria-label="닫기" className="absolute inset-0" onClick={onClose}></button>
-      <div className={`modal-content team-ws-modal-panel relative z-10 overflow-hidden rounded-3xl bg-white shadow-2xl ${panelClassName}`}>
+      <div className={`modal-content team-ws-modal-panel relative z-10 overflow-hidden rounded-3xl bg-white shadow-2xl [&>div:first-child]:min-h-[74px] [&_label]:mb-[8px] [&_label]:block [&_label]:text-[12px] [&_label]:font-bold [&_label]:text-[#1F2937] [&_input]:rounded-[12px]! [&_input]:border-[#E5E7EB]! [&_input]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)] [&_select]:rounded-[12px]! [&_select]:border-[#E5E7EB]! [&_select]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)] [&_textarea]:rounded-[12px]! [&_textarea]:border-[#E5E7EB]! [&_textarea]:leading-[1.6] [&_textarea]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)] ${panelClassName}`}>
         <div className={`flex justify-between border-b border-gray-100 bg-gray-50 p-6 ${headerClassName}`}>
           <div>
             <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
@@ -651,7 +652,7 @@ function Modal({
 
 function LoadingView() {
   return (
-    <div className="team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800">
+    <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800`}>
       <div className="text-center">
         <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-team"></div>
         <p className="text-sm font-bold text-gray-500">팀 워크스페이스를 불러오는 중입니다.</p>
@@ -662,7 +663,7 @@ function LoadingView() {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800">
+    <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800`}>
       <div className="team-ws-card w-[420px] border border-gray-100 bg-white p-8 text-center shadow-sm">
         <i className="fas fa-circle-exclamation mb-3 text-3xl text-red-400"></i>
         <h1 className="text-xl font-black text-gray-900">팀 워크스페이스를 열 수 없습니다.</h1>
@@ -959,28 +960,28 @@ function KanbanPage({
       </PageFrame>
 
       {taskModalOpen ? (
-        <Modal title={modalTask ? '작업 수정' : '새 작업 추가'} iconClassName={modalTask ? 'fa-edit' : 'fa-ticket-alt'} panelClassName="team-ws-kanban-task-modal flex max-h-[95vh] w-full max-w-lg flex-col" onClose={closeTaskModal}>
-          <form onSubmit={saveTask} className="team-ws-kanban-task-form flex min-h-0 flex-1 flex-col">
-            <div className="team-ws-kanban-task-body custom-scrollbar flex-1 space-y-5 overflow-y-auto p-6">
+        <Modal title={modalTask ? '작업 수정' : '새 작업 추가'} iconClassName={modalTask ? 'fa-edit' : 'fa-ticket-alt'} panelClassName="team-ws-kanban-task-modal box-border! flex! max-h-[95vh]! w-full! max-w-[512px]! flex-col! overflow-hidden! rounded-[24px]! bg-white! font-[Pretendard,sans-serif]! [box-shadow:0_25px_50px_-12px_rgba(0,0,0,0.25)]! [&>div:first-child]:min-h-[81px]! [&>div:first-child]:shrink-0! [&>div:first-child]:items-center! [&>div:first-child]:justify-between! [&>div:first-child]:border-b! [&>div:first-child]:border-b-[#F3F4F6]! [&>div:first-child]:bg-[#F9FAFB]! [&>div:first-child]:p-[24px]! [&>div:first-child_h3]:m-0! [&>div:first-child_h3]:flex! [&>div:first-child_h3]:items-center! [&>div:first-child_h3]:gap-[8px]! [&>div:first-child_h3]:text-[18px]! [&>div:first-child_h3]:leading-[28px]! [&>div:first-child_h3]:font-extrabold! [&>div:first-child_h3]:tracking-[0]! [&>div:first-child_h3]:text-[#111827]! [&>div:first-child_h3_i]:text-[18px]! [&>div:first-child_h3_i]:leading-[28px]! [&>div:first-child_h3_i]:text-[#4F46E5]! [&>div:first-child>button]:flex! [&>div:first-child>button]:h-[32px]! [&>div:first-child>button]:min-h-[32px]! [&>div:first-child>button]:w-[32px]! [&>div:first-child>button]:min-w-[32px]! [&>div:first-child>button]:items-center! [&>div:first-child>button]:justify-center! [&>div:first-child>button]:rounded-full! [&>div:first-child>button]:border! [&>div:first-child>button]:border-[#E5E7EB]! [&>div:first-child>button]:bg-white! [&>div:first-child>button]:p-0! [&>div:first-child>button]:text-[16px]! [&>div:first-child>button]:leading-[24px]! [&>div:first-child>button]:text-[#9CA3AF]! [&>div:first-child>button]:[box-shadow:0_1px_2px_rgba(15,23,42,0.05)]!" onClose={closeTaskModal}>
+          <form onSubmit={saveTask} className="team-ws-kanban-task-form flex! min-h-0! flex-[1_1_auto]! flex-col!">
+            <div className="team-ws-kanban-task-body custom-scrollbar flex-[1_1_auto]! min-h-0! overflow-y-auto! p-[24px]! [&>*+*]:mt-[20px]! [&>*:not(:last-child)]:mb-[20px]!">
               <div>
-                <label className="mb-2 block text-xs font-bold text-gray-800">
+                <label className="m-0! mb-[8px]! block! text-[12px]! leading-[16px]! font-bold! tracking-[0]! text-[#1F2937]!">
                   작업 제목 <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={form.title}
                   onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
                   placeholder="어떤 작업을 해야 하나요?"
-                  className="team-ws-kanban-task-title-input w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-bold shadow-sm outline-none transition focus:border-team focus:ring-1 focus:ring-team"
+                  className="team-ws-kanban-task-title-input box-border! h-[46px]! w-full! rounded-[12px]! border! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! leading-[20px]! font-bold! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.05)]! outline-none! transition focus:border-team focus:ring-1 focus:ring-team placeholder:text-[#9CA3AF]! placeholder:opacity-100!"
                 />
               </div>
 
-              <div className="team-ws-kanban-task-grid grid grid-cols-2 gap-4">
+              <div className="team-ws-kanban-task-grid grid! grid-cols-[minmax(0,1fr)_minmax(0,1fr)]! gap-[16px]!">
                 <div>
-                  <label className="mb-2 block text-xs font-bold text-gray-800">담당 직군 (Role)</label>
+                  <label className="m-0! mb-[8px]! block! text-[12px]! leading-[16px]! font-bold! tracking-[0]! text-[#1F2937]!">담당 직군 (Role)</label>
                   <select
                     value={form.role}
                     onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
-                    className="team-ws-kanban-task-role-select w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 shadow-sm outline-none transition focus:border-team"
+                    className="team-ws-kanban-task-role-select box-border! h-[46px]! w-full! cursor-pointer rounded-[12px]! border! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! leading-[20px]! font-bold! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.05)]! outline-none! transition focus:border-team"
                   >
                     <option value="Frontend">Frontend (파란색)</option>
                     <option value="Backend">Backend (보라색)</option>
@@ -989,11 +990,11 @@ function KanbanPage({
                   </select>
                 </div>
                 <div>
-                  <label className="mb-2 block text-xs font-bold text-gray-800">담당자 배정</label>
+                  <label className="m-0! mb-[8px]! block! text-[12px]! leading-[16px]! font-bold! tracking-[0]! text-[#1F2937]!">담당자 배정</label>
                   <select
                     value={form.assigneeId}
                     onChange={(event) => setForm((current) => ({ ...current, assigneeId: event.target.value }))}
-                    className="team-ws-kanban-task-assignee-select w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm outline-none transition focus:border-team"
+                    className="team-ws-kanban-task-assignee-select box-border! h-[46px]! w-full! cursor-pointer rounded-[12px]! border! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! leading-[20px]! font-medium! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.05)]! outline-none! transition focus:border-team"
                   >
                     <option value="">담당자 미지정</option>
                     {(data.dashboard?.members ?? []).map((member) => (
@@ -1005,13 +1006,13 @@ function KanbanPage({
                 </div>
               </div>
 
-              <div className="team-ws-kanban-task-grid grid grid-cols-2 gap-4">
+              <div className="team-ws-kanban-task-grid grid! grid-cols-[minmax(0,1fr)_minmax(0,1fr)]! gap-[16px]!">
                 <div>
-                  <label className="mb-2 block text-xs font-bold text-gray-800">우선순위</label>
+                  <label className="m-0! mb-[8px]! block! text-[12px]! leading-[16px]! font-bold! tracking-[0]! text-[#1F2937]!">우선순위</label>
                   <select
                     value={form.priority}
                     onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as TaskPriority }))}
-                    className="team-ws-kanban-task-priority-select w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm outline-none transition focus:border-team"
+                    className="team-ws-kanban-task-priority-select box-border! h-[46px]! w-full! cursor-pointer rounded-[12px]! border! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! leading-[20px]! font-medium! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.05)]! outline-none! transition focus:border-team"
                   >
                     <option value="HIGH">긴급 (High)</option>
                     <option value="MEDIUM">보통 (Medium)</option>
@@ -1019,39 +1020,39 @@ function KanbanPage({
                   </select>
                 </div>
                 <div>
-                  <label className="mb-2 block text-xs font-bold text-gray-800">마감일 (기한)</label>
+                  <label className="m-0! mb-[8px]! block! text-[12px]! leading-[16px]! font-bold! tracking-[0]! text-[#1F2937]!">마감일 (기한)</label>
                   <input
                     type="date"
                     value={form.dueDate}
                     onChange={(event) => setForm((current) => ({ ...current, dueDate: event.target.value }))}
-                    className="team-ws-kanban-task-date-input w-full cursor-pointer rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-700 shadow-sm outline-none transition focus:border-team"
+                    className="team-ws-kanban-task-date-input box-border! h-[46px]! w-full! cursor-pointer rounded-[12px]! border! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! leading-[20px]! font-medium! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.05)]! outline-none! transition focus:border-team"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-bold text-gray-800">상세 설명</label>
+                <label className="m-0! mb-[8px]! block! text-[12px]! leading-[16px]! font-bold! tracking-[0]! text-[#1F2937]!">상세 설명</label>
                 <textarea
                   value={form.description}
                   onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                   placeholder="작업의 구체적인 내용이나 이슈 링크 등을 기록하세요."
-                  className="team-ws-kanban-task-desc h-32 w-full resize-none rounded-xl border border-gray-200 p-4 text-sm leading-relaxed shadow-sm outline-none transition focus:border-team focus:ring-1 focus:ring-team"
+                  className="team-ws-kanban-task-desc box-border! h-[128px]! min-h-[128px]! w-full! resize-none! rounded-[12px]! border! border-[#E5E7EB]! bg-white! p-[16px]! text-[14px]! leading-[22.75px]! font-normal! text-[#111827]! [box-shadow:0_1px_2px_rgba(15,23,42,0.05)]! outline-none! transition focus:border-team focus:ring-1 focus:ring-team placeholder:text-[#9CA3AF]! placeholder:opacity-100!"
                 ></textarea>
               </div>
               {error ? <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-bold text-red-500">{error}</p> : null}
             </div>
 
-            <div className="team-ws-kanban-task-footer flex shrink-0 items-center justify-between border-t border-gray-100 bg-gray-50 p-5">
+            <div className="team-ws-kanban-task-footer flex shrink-0! items-center! justify-between! border-t! border-gray-100 border-t-[#F3F4F6]! bg-[#F9FAFB]! p-[20px]!">
               {modalTask ? (
-                <button type="button" onClick={() => void deleteTask()} disabled={submitting} className="team-ws-kanban-task-delete flex items-center gap-1 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-red-500 shadow-sm transition hover:bg-red-50 disabled:opacity-60">
+                <button type="button" onClick={() => void deleteTask()} disabled={submitting} className="team-ws-kanban-task-delete flex h-[38px]! items-center gap-[4px]! rounded-[12px]! border! border-[#FECACA]! bg-white! px-[16px]! py-[10px]! text-[12px]! leading-[16px]! font-bold! text-[#EF4444]! [box-shadow:0_1px_2px_rgba(15,23,42,0.05)]! transition hover:bg-red-50 disabled:opacity-60">
                   <i className="fas fa-trash-alt"></i>
                   삭제
                 </button>
               ) : <span></span>}
               <div className="ml-auto flex gap-2">
-                <button type="button" onClick={closeTaskModal} className="team-ws-kanban-task-cancel rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-100">취소</button>
-                <button type="submit" disabled={submitting} className="team-ws-kanban-task-save flex items-center gap-2 rounded-xl bg-gray-900 px-8 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-black disabled:opacity-60">
-                  <i className="fas fa-save"></i>
+                <button type="button" onClick={closeTaskModal} className="team-ws-kanban-task-cancel h-[42px]! rounded-[12px]! border! border-[#E5E7EB]! bg-white! px-[24px]! py-[10px]! text-[14px]! leading-[20px]! font-bold! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.05)]! transition hover:bg-gray-100">취소</button>
+                <button type="submit" disabled={submitting} className="team-ws-kanban-task-save flex! h-[42px]! items-center! gap-[8px]! rounded-[12px]! [border:0_none]! bg-[#111827]! px-[32px]! py-[10px]! text-[14px]! leading-[20px]! font-bold! text-white! [box-shadow:0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1)]! transition hover:bg-black disabled:opacity-60">
+                  <i className="fas fa-save text-[14px]! leading-[20px]!"></i>
                   저장하기
                 </button>
               </div>
@@ -1315,26 +1316,26 @@ function FilesPage({
 
       {uploadOpen ? (
         <div id="uploadModal" className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-          <form onSubmit={executeUpload} className="modal-content team-ws-files-upload-modal relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="team-ws-files-upload-modal-header flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
+          <form onSubmit={executeUpload} className="modal-content team-ws-files-upload-modal relative w-full max-w-[512px]! overflow-hidden rounded-[24px]! bg-white shadow-2xl [&_.text-team]:text-[#4F46E5]! [&_.border-team]:border-[#4F46E5]! [&_.team-ws-files-upload-zone.dragover]:border-[#4F46E5]! [&_.team-ws-files-upload-zone.dragover]:bg-[#EEF2FF]!">
+            <div className="team-ws-files-upload-modal-header flex items-center justify-between border-b border-gray-100 bg-gray-50 p-[24px]!">
               <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
                 <i className="fas fa-cloud-upload-alt text-team"></i>
                 자료 업로드
               </h3>
-              <button type="button" onClick={closeUploadModal} className="team-ws-files-upload-close flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
+              <button type="button" onClick={closeUploadModal} className="team-ws-files-upload-close flex h-[32px]! w-[32px]! items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
                 <i className="fas fa-times"></i>
               </button>
             </div>
 
-            <div className="team-ws-files-upload-modal-body space-y-5 p-6">
+            <div className="team-ws-files-upload-modal-body space-y-5 p-[24px]!">
               <div className="flex border-b border-gray-200">
-                <button type="button" onClick={() => setUploadMode('file')} className={`team-ws-files-upload-tab flex-1 border-b-2 pb-2 text-sm font-bold ${uploadMode === 'file' ? 'border-team text-team' : 'border-transparent text-gray-400 transition hover:text-gray-600'}`}>파일 업로드</button>
-                <button type="button" onClick={() => setUploadMode('link')} className={`team-ws-files-upload-tab flex-1 border-b-2 pb-2 text-sm font-bold ${uploadMode === 'link' ? 'border-team text-team' : 'border-transparent text-gray-400 transition hover:text-gray-600'}`}>외부 링크 공유</button>
+                <button type="button" onClick={() => setUploadMode('file')} className={`team-ws-files-upload-tab flex-1 border-b-2 pb-[8px]! text-[14px]! leading-[20px]! font-bold! ${uploadMode === 'file' ? 'border-team text-team' : 'border-transparent text-gray-400 transition hover:text-gray-600'}`}>파일 업로드</button>
+                <button type="button" onClick={() => setUploadMode('link')} className={`team-ws-files-upload-tab flex-1 border-b-2 pb-[8px]! text-[14px]! leading-[20px]! font-bold! ${uploadMode === 'link' ? 'border-team text-team' : 'border-transparent text-gray-400 transition hover:text-gray-600'}`}>외부 링크 공유</button>
               </div>
 
               {uploadMode === 'file' ? (
                 <div id="area-file" className="space-y-5">
-                  <label id="dropZone" className="upload-zone team-ws-files-upload-zone relative flex cursor-pointer flex-col items-center justify-center rounded-2xl bg-gray-50 p-8 text-center">
+                  <label id="dropZone" className="upload-zone team-ws-files-upload-zone relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border-[2px]! border-dashed! border-[#D1D5DB]! bg-[#F9FAFB]! p-8 text-center [transition:all_0.2s_ease]! hover:border-[#D1D5DB]! hover:bg-[#F9FAFB]!">
                     <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-team shadow-sm">
                       <i className="fas fa-file-upload text-xl"></i>
                     </div>
@@ -1347,23 +1348,23 @@ function FilesPage({
                 <div id="area-link" className="space-y-5">
                   <div>
                     <label className="mb-2 block text-xs font-bold text-gray-600">URL 링크 <span className="text-red-500">*</span></label>
-                    <input type="url" value={linkForm.url} onChange={(event) => setLinkForm((current) => ({ ...current, url: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold shadow-sm outline-none transition focus:border-team" placeholder="https://" />
+                    <input type="url" value={linkForm.url} onChange={(event) => setLinkForm((current) => ({ ...current, url: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold shadow-sm outline-none transition focus:border-[#4F46E5]!" placeholder="https://" />
                   </div>
                 </div>
               )}
 
               <div>
                 <label className="mb-2 block text-xs font-bold text-gray-600">자료 제목 <span className="text-red-500">*</span></label>
-                <input type="text" id="uploadTitle" value={uploadTitle} onChange={(event) => setUploadTitle(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold shadow-sm outline-none transition focus:border-team" placeholder="어떤 자료인지 짧고 명확하게 적어주세요" />
+                <input type="text" id="uploadTitle" value={uploadTitle} onChange={(event) => setUploadTitle(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold shadow-sm outline-none transition focus:border-[#4F46E5]!" placeholder="어떤 자료인지 짧고 명확하게 적어주세요" />
               </div>
 
               <div>
                 <label className="mb-2 block text-xs font-bold text-gray-600">설명 (선택)</label>
-                <textarea id="uploadDesc" value={uploadDescription} onChange={(event) => setUploadDescription(event.target.value)} className="h-20 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-team" placeholder="자료에 대한 부가 설명을 적어주세요"></textarea>
+                <textarea id="uploadDesc" value={uploadDescription} onChange={(event) => setUploadDescription(event.target.value)} className="h-20 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm outline-none transition focus:border-[#4F46E5]!" placeholder="자료에 대한 부가 설명을 적어주세요"></textarea>
               </div>
 
               <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
-                <input type="checkbox" id="notifyMembers" checked={notifyMembers} onChange={(event) => setNotifyMembers(event.target.checked)} className="h-4 w-4 cursor-pointer rounded border-blue-300 text-team accent-team focus:ring-team" />
+                <input type="checkbox" id="notifyMembers" checked={notifyMembers} onChange={(event) => setNotifyMembers(event.target.checked)} className="h-4 w-4 cursor-pointer rounded border-blue-300 text-team accent-team accent-[#4F46E5]! focus:ring-team" />
                 <label htmlFor="notifyMembers" className="cursor-pointer select-none text-xs font-bold text-team">
                   업로드 완료 후 팀원들에게 알림 보내기
                 </label>
@@ -1372,7 +1373,7 @@ function FilesPage({
               {uploadError ? <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-500">{uploadError}</p> : null}
             </div>
 
-            <div className="team-ws-files-upload-modal-footer flex justify-end gap-2 border-t border-gray-100 bg-gray-50 p-5">
+            <div className="team-ws-files-upload-modal-footer flex justify-end gap-2 border-t border-gray-100 bg-gray-50 p-[20px]! [&_button]:min-h-[40px]! [&_button]:rounded-[12px]! [&_button]:text-[14px]! [&_button]:leading-[20px]!">
               <button type="button" onClick={closeUploadModal} className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">취소</button>
               <button type="submit" disabled={uploading} className="flex items-center gap-2 rounded-xl bg-gray-900 px-8 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-black disabled:opacity-60">
                 <i className="fas fa-check"></i>
@@ -1690,17 +1691,17 @@ function QnaPage({
           title="새 질문 작성"
           iconClassName="fa-pen"
           description="에러 코드나 관련 파일을 첨부하면 멘토님이 더 빠르게 답변할 수 있습니다."
-          panelClassName="team-ws-qna-ask-modal flex max-h-[90vh] w-full max-w-2xl flex-col"
+          panelClassName="team-ws-qna-ask-modal flex max-h-[90vh]! w-full! max-w-[672px]! flex-col overflow-hidden! rounded-[24px]! bg-white! [--team-ws-primary:#4F46E5] [--team-ws-primary-dark:#4338CA] [&_.text-team]:text-[#4F46E5]! [&>div:first-child]:shrink-0! [&>div:first-child]:items-center! [&>div:first-child]:justify-between! [&>div:first-child]:border-b-[1px]! [&>div:first-child]:border-b-[#F3F4F6]! [&>div:first-child]:bg-[#F9FAFB]! [&>div:first-child]:p-[24px]! [&>div:first-child_h3]:m-0! [&>div:first-child_h3]:gap-[8px]! [&>div:first-child_h3]:text-[18px]! [&>div:first-child_h3]:leading-[28px]! [&>div:first-child_h3]:font-extrabold! [&>div:first-child_h3]:text-[#111827]! [&>div:first-child_h3_i]:text-[#4F46E5]! [&>div:first-child_p]:mt-[4px]! [&>div:first-child_p]:text-[12px]! [&>div:first-child_p]:leading-[16px]! [&>div:first-child_p]:font-normal! [&>div:first-child_p]:text-[#6B7280]! [&>div:first-child_button]:h-[32px]! [&>div:first-child_button]:min-h-[32px]! [&>div:first-child_button]:w-[32px]! [&>div:first-child_button]:min-w-[32px]! [&>div:first-child_button]:rounded-[9999px]! [&>div:first-child_button]:border-[1px]! [&>div:first-child_button]:border-[#E5E7EB]! [&>div:first-child_button]:bg-white! [&>div:first-child_button]:text-[#9CA3AF]! [&>div:first-child_button]:[box-shadow:0_1px_2px_rgba(15,23,42,0.05)]!"
           onClose={closeQuestionCreateModal}
         >
-          <form onSubmit={createQuestion} className="team-ws-qna-ask-form flex min-h-0 flex-1 flex-col">
-            <div className="team-ws-qna-ask-body custom-scrollbar flex-1 space-y-6 overflow-y-auto p-6">
+          <form onSubmit={createQuestion} className="team-ws-qna-ask-form flex min-h-0! flex-1 flex-col">
+            <div className="team-ws-qna-ask-body custom-scrollbar min-h-0! flex-1 overflow-y-auto p-[24px]! [&>*+*]:mt-[24px]!">
               <div>
-                <label className="team-ws-qna-ask-label mb-2 block text-xs font-bold text-gray-800">질문 카테고리 태그</label>
-                <div className="team-ws-qna-ask-tag-list flex gap-2">
+                <label className="team-ws-qna-ask-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">질문 카테고리 태그</label>
+                <div className="team-ws-qna-ask-tag-list flex flex-wrap! gap-[8px]!">
                   {QUESTION_ASK_TAGS.map((item) => (
-                    <label key={item} className="team-ws-qna-ask-tag flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-bold transition hover:bg-gray-50">
-                      <input type="checkbox" checked={selectedQuestionTags.includes(item)} onChange={() => toggleAskTag(item)} className="accent-team" />
+                    <label key={item} className="team-ws-qna-ask-tag inline-flex! min-h-[30px]! cursor-pointer items-center justify-center! gap-[6px]! rounded-[8px]! border-[1px]! border-[#E5E7EB]! px-[12px]! py-[6px]! text-[12px]! leading-[16px]! font-bold! text-[#111827]! transition hover:bg-gray-50">
+                      <input type="checkbox" checked={selectedQuestionTags.includes(item)} onChange={() => toggleAskTag(item)} className="m-[0_6px_0_0]! h-[13px]! min-h-auto! w-[13px]! min-w-auto! flex-[0_0_auto]! accent-[#4F46E5]!" />
                       {item}
                     </label>
                   ))}
@@ -1708,17 +1709,17 @@ function QnaPage({
               </div>
 
               <div>
-                <label className="team-ws-qna-ask-label mb-2 block text-xs font-bold text-gray-800">관련 컨텍스트 연동 (옵션)</label>
-                <div className="team-ws-qna-context-list flex gap-3">
-                  <button type="button" onClick={() => setContextPicker('task')} className="team-ws-qna-context-button flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-gray-50 py-3 text-xs font-bold text-gray-500 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600">
+                <label className="team-ws-qna-ask-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">관련 컨텍스트 연동 (옵션)</label>
+                <div className="team-ws-qna-context-list flex gap-[12px]!">
+                  <button type="button" onClick={() => setContextPicker('task')} className="team-ws-qna-context-button flex min-h-[42px]! flex-1 items-center justify-center gap-2 rounded-[12px]! border border-dashed border-gray-300 bg-gray-50 px-[8px]! py-[12px]! text-[12px]! leading-[16px]! font-bold! text-gray-500 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600">
                     <i className="fas fa-columns"></i>
                     칸반 티켓 선택
                   </button>
-                  <button type="button" onClick={() => setContextPicker('file')} className="team-ws-qna-context-button flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-gray-50 py-3 text-xs font-bold text-gray-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600">
+                  <button type="button" onClick={() => setContextPicker('file')} className="team-ws-qna-context-button flex min-h-[42px]! flex-1 items-center justify-center gap-2 rounded-[12px]! border border-dashed border-gray-300 bg-gray-50 px-[8px]! py-[12px]! text-[12px]! leading-[16px]! font-bold! text-gray-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600">
                     <i className="fas fa-file-alt"></i>
                     자료실 파일 첨부
                   </button>
-                  <button type="button" onClick={() => setContextPicker('api')} className="team-ws-qna-context-button flex flex-1 items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-gray-50 py-3 text-xs font-bold text-gray-500 transition hover:border-purple-200 hover:bg-purple-50 hover:text-purple-600">
+                  <button type="button" onClick={() => setContextPicker('api')} className="team-ws-qna-context-button flex min-h-[42px]! flex-1 items-center justify-center gap-2 rounded-[12px]! border border-dashed border-gray-300 bg-gray-50 px-[8px]! py-[12px]! text-[12px]! leading-[16px]! font-bold! text-gray-500 transition hover:border-purple-200 hover:bg-purple-50 hover:text-purple-600">
                     <i className="fas fa-network-wired"></i>
                     API 명세 연동
                   </button>
@@ -1739,27 +1740,27 @@ function QnaPage({
               </div>
 
               <div>
-                <label className="team-ws-qna-ask-label mb-2 block text-xs font-bold text-gray-800">제목</label>
-                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="질문의 요지를 명확하게 작성해주세요." className="team-ws-qna-title-input w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium outline-none transition focus:border-team focus:ring-1 focus:ring-team" />
+                <label className="team-ws-qna-ask-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">제목</label>
+                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="질문의 요지를 명확하게 작성해주세요." className="team-ws-qna-title-input h-[46px]! w-full rounded-[12px]! border-[1px]! border-[#E5E7EB]! px-[16px]! py-[12px]! text-[14px]! leading-[20px]! font-medium! text-[#111827]! outline-none transition focus:border-team focus:ring-1 focus:ring-team" />
               </div>
 
               <div>
                 <div className="mb-2 flex items-end justify-between">
-                  <label className="team-ws-qna-ask-label block text-xs font-bold text-gray-800">본문 (마크다운 지원)</label>
-                  <span className="team-ws-qna-markdown-hint rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-400"><i className="fab fa-markdown"></i> 마크다운 및 코드 스니펫(```) 지원</span>
+                  <label className="team-ws-qna-ask-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">본문 (마크다운 지원)</label>
+                  <span className="team-ws-qna-markdown-hint rounded-[4px]! bg-gray-100 px-[8px]! py-[4px]! text-[10px]! leading-[15px]! font-normal! text-gray-400"><i className="fab fa-markdown"></i> 마크다운 및 코드 스니펫(```) 지원</span>
                 </div>
                 <textarea
                   value={form.content}
                   onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))}
                   placeholder={'```javascript\n// 여기에 코드를 붙여넣으세요\n```\n\n발생한 문제 상황과 시도해본 해결 방법을 상세히 적어주세요.'}
-                  className="team-ws-qna-content-textarea custom-scrollbar min-h-[200px] w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-4 font-mono text-sm font-medium outline-none transition focus:border-team focus:bg-white focus:ring-1 focus:ring-team"
+                  className="team-ws-qna-content-textarea custom-scrollbar h-[200px]! min-h-[200px]! w-full resize-none rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-[#F9FAFB]! p-[16px]! font-mono text-[14px]! leading-[22px]! font-medium! text-[#111827]! outline-none transition focus:border-team focus:bg-white focus:ring-1 focus:ring-team"
                 ></textarea>
               </div>
               {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-500">{error}</p> : null}
             </div>
-            <div className="team-ws-qna-ask-footer flex shrink-0 justify-end gap-3 border-t border-gray-100 bg-white p-4">
-              <button type="button" onClick={closeQuestionCreateModal} className="team-ws-qna-cancel-button rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-50">취소</button>
-              <button type="submit" disabled={submitting} className="team-ws-qna-submit-button flex items-center gap-2 rounded-xl bg-team px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-indigo-700 disabled:opacity-60">
+            <div className="team-ws-qna-ask-footer flex shrink-0 justify-end gap-[12px]! border-t-[1px]! border-gray-100 border-t-[#F3F4F6]! bg-white! p-[16px]!">
+              <button type="button" onClick={closeQuestionCreateModal} className="team-ws-qna-cancel-button inline-flex min-h-[42px]! items-center! justify-center! rounded-[12px]! border border-gray-200 bg-white px-[24px]! py-[10px]! text-[14px]! leading-[20px]! font-bold! text-gray-600 transition hover:bg-gray-50">취소</button>
+              <button type="submit" disabled={submitting} className="team-ws-qna-submit-button inline-flex min-h-[42px]! items-center justify-center! gap-[8px]! rounded-[12px]! border-[1px]! border-[#4F46E5]! bg-[#4F46E5]! px-[24px]! py-[10px]! text-[14px]! leading-[20px]! font-bold! text-white! [box-shadow:0_4px_6px_-1px_rgba(79,70,229,0.25),0_2px_4px_-2px_rgba(79,70,229,0.25)]! transition hover:border-[#4338CA]! hover:bg-[#4338CA]! disabled:border-[#4F46E5]! disabled:bg-[#4F46E5]! disabled:text-white! disabled:opacity-60! [&_i]:text-white! [&_span]:text-white!">
                 <i className="fas fa-paper-plane"></i>
                 질문 등록하기
               </button>
@@ -2233,34 +2234,34 @@ function SchedulePage({
         return (
           <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
             <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setSelectedEvent(null)}></button>
-            <div className="modal-content team-ws-modal-panel team-ws-event-detail-modal relative z-10 w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl">
-              <div className="team-ws-event-detail-header flex justify-between border-b border-gray-100 bg-gray-50">
-                <div className="min-w-0">
-                  <span className={`team-ws-event-detail-badge text-white ${meta.badge}`}>{isOfficial ? '멘토 공식 일정' : '우리 팀 자체 일정'}</span>
-                  <h3 className="team-ws-event-detail-title truncate text-gray-900" title={tooltip}>{selectedEvent.title}</h3>
-                  <p className="team-ws-event-detail-time font-bold text-gray-500" title={tooltip}>
+            <div className="modal-content team-ws-modal-panel team-ws-event-detail-modal relative z-10 w-full! max-w-[384px]! overflow-hidden rounded-[24px]! bg-white shadow-2xl">
+              <div className="team-ws-event-detail-header flex items-start justify-between gap-[16px] border-b border-gray-100 bg-gray-50 p-[24px]!">
+                <div className="min-h-0! min-w-0">
+                  <span className={`team-ws-event-detail-badge mb-[8px] inline-block rounded-[4px] px-[8px] py-[2px] text-[10px] leading-[16px] font-bold text-white [box-shadow:0_1px_2px_rgba(15,23,42,0.08)] ${meta.badge}`}>{isOfficial ? '멘토 공식 일정' : '우리 팀 자체 일정'}</span>
+                  <h3 className="team-ws-event-detail-title max-w-[280px] truncate text-[18px] leading-[22px] font-extrabold text-gray-900" title={tooltip}>{selectedEvent.title}</h3>
+                  <p className="team-ws-event-detail-time mt-[4px] text-[12px] leading-[16px] font-bold text-gray-500" title={tooltip}>
                     <i className="far fa-clock"></i> {formatDate(selectedEvent.startAt)} {formatTime(selectedEvent.startAt)}
                   </p>
                 </div>
-                <button type="button" onClick={() => setSelectedEvent(null)} className="team-ws-event-detail-close flex shrink-0 items-center justify-center border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
+                <button type="button" onClick={() => setSelectedEvent(null)} className="team-ws-event-detail-close flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[9999px] border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
                   <i className="fas fa-times"></i>
                 </button>
               </div>
 
-              <div className="team-ws-event-detail-body">
-                <p className="team-ws-event-detail-label font-bold text-gray-400">상세 안내</p>
-                <div className="team-ws-event-detail-desc border border-gray-100 bg-gray-50 font-medium leading-relaxed text-gray-700">
+              <div className="team-ws-event-detail-body p-[24px]">
+                <p className="team-ws-event-detail-label mb-[4px] text-[10px] leading-[14px] font-bold text-gray-400">상세 안내</p>
+                <div className="team-ws-event-detail-desc min-h-[80px] whitespace-pre-line rounded-[12px] border border-gray-100 bg-gray-50 p-[16px] text-[14px] leading-[22px] font-medium text-gray-700">
                   {description || '상세 설명이 없습니다.'}
                 </div>
               </div>
 
-              <div className="team-ws-event-detail-footer flex items-center justify-between border-t border-gray-100 bg-white">
+              <div className="team-ws-event-detail-footer flex items-center justify-between border-t border-gray-100 bg-white p-[20px]">
                 {isOfficial ? <div></div> : (
-                  <button type="button" onClick={() => { setDeleteError(null); setDeleteTarget(selectedEvent) }} className="team-ws-event-detail-delete border border-red-100 bg-red-50 font-bold text-red-500 transition hover:bg-red-100">
-                    <i className="fas fa-trash-alt"></i> 일정 삭제
+                  <button type="button" onClick={() => { setDeleteError(null); setDeleteTarget(selectedEvent) }} className="team-ws-event-detail-delete h-[34px] rounded-[12px] border border-red-100 bg-red-50 px-[16px] py-0 text-[12px]! leading-[16px]! font-bold text-red-500 transition hover:bg-red-100">
+                    <i className="fas fa-trash-alt mr-[4px]"></i> 일정 삭제
                   </button>
                 )}
-                <button type="button" onClick={() => setSelectedEvent(null)} className="team-ws-event-detail-confirm bg-gray-900 font-bold text-white shadow-md transition hover:bg-black">확인</button>
+                <button type="button" onClick={() => setSelectedEvent(null)} className="team-ws-event-detail-confirm h-[40px] rounded-[12px] bg-gray-900 px-[24px] py-0 text-[14px]! leading-[20px]! font-bold text-white shadow-md transition hover:bg-black">확인</button>
               </div>
             </div>
           </div>
@@ -2270,7 +2271,7 @@ function SchedulePage({
       {deleteTarget ? (
         <div id="deleteEventModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center p-4">
           <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setDeleteTarget(null); setDeleteError(null) }}></button>
-          <div className="modal-content team-ws-schedule-delete-modal relative z-10 w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl">
+          <div className="modal-content team-ws-schedule-delete-modal relative z-10 w-full max-w-[384px]! rounded-[24px]! bg-white p-[32px]! text-center shadow-2xl">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-500 shadow-sm">
               <i className="fas fa-trash-alt text-2xl"></i>
             </div>
@@ -2292,9 +2293,9 @@ function SchedulePage({
       {scheduleNotice ? (
         <div id="successModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center p-4">
           <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setScheduleNotice(null)}></button>
-          <div className="modal-content team-ws-schedule-success-modal relative z-10 w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl">
-            <div className="team-ws-schedule-success-icon mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-indigo-100 bg-team-light shadow-sm">
-              <i className="fas fa-check text-3xl text-team"></i>
+          <div className="modal-content team-ws-schedule-success-modal relative z-10 w-full max-w-[384px]! rounded-[24px]! bg-white p-[32px]! text-center shadow-2xl">
+            <div className="team-ws-schedule-success-icon mx-auto mb-4 flex h-[64px]! w-[64px]! items-center justify-center rounded-full border border-indigo-100 bg-[#EEF2FF]! shadow-sm">
+              <i className="fas fa-check text-3xl text-[#4F46E5]!"></i>
             </div>
             <h3 className="mb-2 text-xl font-extrabold text-gray-900">{scheduleNotice.title}</h3>
             <p className="mb-6 text-sm font-medium leading-relaxed text-gray-500">
@@ -2641,73 +2642,73 @@ function ArchitecturePage({
           title={form.mode === 'api' ? (form.editingApiId ? 'API 수정' : '새 API 추가') : form.mode === 'erd' ? 'ERD 외부 링크 연동' : '구조도 외부 링크 연동'}
           iconClassName={form.mode === 'api' ? (form.editingApiId ? 'fa-pen' : 'fa-plus') : 'fa-link'}
           description={form.mode === 'api' ? '프론트와 백엔드가 함께 확인할 REST API 명세를 정리하세요.' : '팀원이 바로 열어볼 수 있는 외부 문서 링크와 설명을 연결하세요.'}
-          panelClassName="team-ws-architecture-doc-modal flex max-h-[90vh] w-full max-w-2xl flex-col"
+          panelClassName="team-ws-architecture-doc-modal flex max-h-[90vh]! w-full! max-w-[672px]! flex-col overflow-hidden! rounded-[24px]! bg-white! [--team-ws-primary:#4F46E5] [--team-ws-primary-dark:#4338CA] [&_.text-team]:text-[#4F46E5]! [&>div:first-child]:shrink-0! [&>div:first-child]:items-center! [&>div:first-child]:justify-between! [&>div:first-child]:border-b-[1px]! [&>div:first-child]:border-b-[#F3F4F6]! [&>div:first-child]:bg-[#F9FAFB]! [&>div:first-child]:p-[24px]! [&>div:first-child_h3]:m-0! [&>div:first-child_h3]:gap-[8px]! [&>div:first-child_h3]:text-[18px]! [&>div:first-child_h3]:leading-[28px]! [&>div:first-child_h3]:font-extrabold! [&>div:first-child_h3]:text-[#111827]! [&>div:first-child_h3_i]:text-[#4F46E5]! [&>div:first-child_p]:mt-[4px]! [&>div:first-child_p]:text-[12px]! [&>div:first-child_p]:leading-[16px]! [&>div:first-child_p]:font-normal! [&>div:first-child_p]:text-[#6B7280]! [&>div:first-child_button]:h-[32px]! [&>div:first-child_button]:min-h-[32px]! [&>div:first-child_button]:w-[32px]! [&>div:first-child_button]:min-w-[32px]! [&>div:first-child_button]:rounded-[9999px]! [&>div:first-child_button]:border-[1px]! [&>div:first-child_button]:border-[#E5E7EB]! [&>div:first-child_button]:bg-white! [&>div:first-child_button]:text-[#9CA3AF]! [&>div:first-child_button]:[box-shadow:0_1px_2px_rgba(15,23,42,0.05)]!"
           onClose={() => setModalOpen(false)}
         >
-          <form onSubmit={saveDoc} className="team-ws-architecture-doc-form flex min-h-0 flex-1 flex-col">
-            <div className="team-ws-architecture-doc-body custom-scrollbar flex-1 space-y-6 overflow-y-auto p-6">
+          <form onSubmit={saveDoc} className="team-ws-architecture-doc-form flex min-h-0! flex-1 flex-col">
+            <div className="team-ws-architecture-doc-body custom-scrollbar min-h-0! flex-1 overflow-y-auto p-[24px]! [&>*+*]:mt-[24px]!">
               {form.mode === 'api' ? (
                 <>
                   <div className="grid gap-4 md:grid-cols-[140px_1fr]">
                     <div>
-                      <label className="team-ws-architecture-doc-label mb-2 block text-xs font-bold text-gray-800">Method</label>
-                      <select value={form.method} onChange={(event) => setForm((current) => ({ ...current, method: event.target.value }))} className="team-ws-architecture-doc-select h-11 w-full rounded-xl border border-gray-200 px-3 text-sm font-bold outline-none focus:border-team">
+                      <label className="team-ws-architecture-doc-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">Method</label>
+                      <select value={form.method} onChange={(event) => setForm((current) => ({ ...current, method: event.target.value }))} className="team-ws-architecture-doc-select h-[46px]! w-full cursor-pointer! rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! font-bold! text-[#111827]! outline-none focus:border-team">
                         {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((method) => (
                           <option key={method} value={method}>{method}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="team-ws-architecture-doc-label mb-2 block text-xs font-bold text-gray-800">Endpoint</label>
-                      <input value={form.endpoint} onChange={(event) => setForm((current) => ({ ...current, endpoint: event.target.value }))} placeholder="/api/workspaces/{workspaceId}/..." className="team-ws-architecture-doc-input h-11 w-full rounded-xl border border-gray-200 px-4 font-mono text-sm font-semibold outline-none focus:border-team" />
+                      <label className="team-ws-architecture-doc-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">Endpoint</label>
+                      <input value={form.endpoint} onChange={(event) => setForm((current) => ({ ...current, endpoint: event.target.value }))} placeholder="/api/workspaces/{workspaceId}/..." className="team-ws-architecture-doc-input h-[46px]! w-full rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! font-mono text-[14px]! leading-[20px]! font-semibold! text-[#111827]! outline-none placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-team" />
                     </div>
                   </div>
                   <div>
-                    <label className="team-ws-architecture-doc-label mb-2 block text-xs font-bold text-gray-800">설명</label>
-                    <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="이 API를 어떤 화면과 동작에 사용하는지 적어주세요." className="team-ws-architecture-doc-textarea h-24 w-full resize-none rounded-xl border border-gray-200 p-4 text-sm font-medium outline-none focus:border-team"></textarea>
+                    <label className="team-ws-architecture-doc-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">설명</label>
+                    <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="이 API를 어떤 화면과 동작에 사용하는지 적어주세요." className="team-ws-architecture-doc-textarea h-24 min-h-[128px]! w-full resize-none rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-[#F9FAFB]! p-[16px]! text-[14px]! leading-[22px]! font-medium! text-[#111827]! outline-none placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-team"></textarea>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <label className="team-ws-architecture-doc-label mb-2 block text-xs font-bold text-gray-800">상태</label>
-                      <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className="team-ws-architecture-doc-select h-11 w-full rounded-xl border border-gray-200 px-3 text-sm font-bold outline-none focus:border-team">
+                      <label className="team-ws-architecture-doc-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">상태</label>
+                      <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className="team-ws-architecture-doc-select h-[46px]! w-full cursor-pointer! rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! font-bold! text-[#111827]! outline-none focus:border-team">
                         {['설계 중', '프론트 연동 중', '개발 완료'].map((statusOption) => (
                           <option key={statusOption} value={statusOption}>{statusOption}</option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="team-ws-architecture-doc-label mb-2 block text-xs font-bold text-gray-800">담당</label>
-                      <input value={form.owner} onChange={(event) => setForm((current) => ({ ...current, owner: event.target.value }))} placeholder="담당자 이름" className="team-ws-architecture-doc-input h-11 w-full rounded-xl border border-gray-200 px-4 text-sm font-semibold outline-none focus:border-team" />
+                      <label className="team-ws-architecture-doc-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">담당</label>
+                      <input value={form.owner} onChange={(event) => setForm((current) => ({ ...current, owner: event.target.value }))} placeholder="담당자 이름" className="team-ws-architecture-doc-input h-[46px]! w-full rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! leading-[20px]! font-semibold! text-[#111827]! outline-none placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-team" />
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <label className="team-ws-architecture-code-label mb-2 block text-[10px] font-bold uppercase text-gray-400">Request 예시</label>
-                      <textarea value={form.request} onChange={(event) => setForm((current) => ({ ...current, request: event.target.value }))} placeholder='{"keyword":"react"}' className="team-ws-architecture-code-textarea h-28 w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 font-mono text-xs outline-none focus:border-team"></textarea>
+                      <label className="team-ws-architecture-code-label mb-[8px]! block text-[10px]! leading-[15px]! font-bold! tracking-[0]! text-[#9CA3AF]! uppercase">Request 예시</label>
+                      <textarea value={form.request} onChange={(event) => setForm((current) => ({ ...current, request: event.target.value }))} placeholder='{"keyword":"react"}' className="team-ws-architecture-code-textarea h-[112px]! w-full resize-none rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-[#F9FAFB]! p-[12px]! font-mono text-[12px]! leading-[18px]! font-medium! text-[#111827]! outline-none placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-team"></textarea>
                     </div>
                     <div>
-                      <label className="team-ws-architecture-code-label mb-2 block text-[10px] font-bold uppercase text-gray-400">Response 예시</label>
-                      <textarea value={form.response} onChange={(event) => setForm((current) => ({ ...current, response: event.target.value }))} placeholder='{"status":200,"data":{}}' className="team-ws-architecture-code-textarea h-28 w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-3 font-mono text-xs outline-none focus:border-team"></textarea>
+                      <label className="team-ws-architecture-code-label mb-[8px]! block text-[10px]! leading-[15px]! font-bold! tracking-[0]! text-[#9CA3AF]! uppercase">Response 예시</label>
+                      <textarea value={form.response} onChange={(event) => setForm((current) => ({ ...current, response: event.target.value }))} placeholder='{"status":200,"data":{}}' className="team-ws-architecture-code-textarea h-[112px]! w-full resize-none rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-[#F9FAFB]! p-[12px]! font-mono text-[12px]! leading-[18px]! font-medium! text-[#111827]! outline-none placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-team"></textarea>
                     </div>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <label className="team-ws-architecture-doc-label mb-2 block text-xs font-bold text-gray-800">문서 제목</label>
-                    <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder={form.mode === 'erd' ? '데이터베이스 ERD' : '인프라 구조도'} className="team-ws-architecture-doc-input h-11 w-full rounded-xl border border-gray-200 px-4 text-sm font-semibold outline-none focus:border-team" />
+                    <label className="team-ws-architecture-doc-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">문서 제목</label>
+                    <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder={form.mode === 'erd' ? '데이터베이스 ERD' : '인프라 구조도'} className="team-ws-architecture-doc-input h-[46px]! w-full rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-white! px-[16px]! py-[12px]! text-[14px]! leading-[20px]! font-semibold! text-[#111827]! outline-none placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-team" />
                   </div>
                   <div>
-                    <label className="team-ws-architecture-doc-label mb-2 block text-xs font-bold text-gray-800">외부 서비스 URL 또는 설명</label>
-                    <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="https://... 또는 팀원이 참고할 설명을 입력하세요." className="team-ws-architecture-doc-textarea h-28 w-full resize-none rounded-xl border border-gray-200 p-4 text-sm font-medium outline-none focus:border-team"></textarea>
+                    <label className="team-ws-architecture-doc-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold! text-[#1F2937]!">외부 서비스 URL 또는 설명</label>
+                    <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="https://... 또는 팀원이 참고할 설명을 입력하세요." className="team-ws-architecture-doc-textarea h-28 min-h-[128px]! w-full resize-none rounded-[12px]! border-[1px]! border-[#E5E7EB]! bg-[#F9FAFB]! p-[16px]! text-[14px]! leading-[22px]! font-medium! text-[#111827]! outline-none placeholder:text-[#9CA3AF]! placeholder:opacity-100! focus:border-team"></textarea>
                   </div>
                 </>
               )}
               {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-500">{error}</p> : null}
             </div>
-            <div className="team-ws-architecture-doc-footer flex shrink-0 justify-end gap-3 border-t border-gray-100 bg-white p-4">
-              <button type="button" onClick={() => setModalOpen(false)} className="team-ws-architecture-cancel-button rounded-xl border border-gray-200 bg-white px-6 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-50">취소</button>
-              <button type="submit" disabled={submitting} className="team-ws-architecture-submit-button flex items-center gap-2 rounded-xl bg-team px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-indigo-700 disabled:opacity-60">
+            <div className="team-ws-architecture-doc-footer flex shrink-0 justify-end gap-[12px]! border-t-[1px]! border-gray-100 border-t-[#F3F4F6]! bg-white! p-[16px]!">
+              <button type="button" onClick={() => setModalOpen(false)} className="team-ws-architecture-cancel-button inline-flex min-h-[42px]! items-center! justify-center! rounded-[12px]! border border-gray-200 bg-white px-[24px]! py-[10px]! text-[14px]! leading-[20px]! font-bold! text-gray-600 transition hover:bg-gray-50">취소</button>
+              <button type="submit" disabled={submitting} className="team-ws-architecture-submit-button inline-flex min-h-[42px]! items-center justify-center! gap-[8px]! rounded-[12px]! border-[1px]! border-[#4F46E5]! bg-[#4F46E5]! px-[24px]! py-[10px]! text-[14px]! leading-[20px]! font-bold! text-white! [box-shadow:0_4px_6px_-1px_rgba(79,70,229,0.25),0_2px_4px_-2px_rgba(79,70,229,0.25)]! transition hover:border-[#4338CA]! hover:bg-[#4338CA]! disabled:border-[#4F46E5]! disabled:bg-[#4F46E5]! disabled:text-white! disabled:opacity-60! [&_i]:text-white! [&_span]:text-white!">
                 <i className="fas fa-save"></i>
                 저장
               </button>
@@ -3048,35 +3049,35 @@ function MeetingPage({
       {modalOpen ? (
         <div id="teamNoteModal" className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
           <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setModalOpen(false)}></button>
-          <form onSubmit={saveNote} className="modal-content team-ws-meeting-note-modal relative z-10 flex w-full max-w-2xl flex-col rounded-3xl bg-white shadow-2xl">
-            <div className="team-ws-meeting-note-modal-header flex shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
+          <form onSubmit={saveNote} className="modal-content team-ws-meeting-note-modal relative z-10 flex w-full max-w-[672px]! flex-col rounded-[24px]! bg-white shadow-2xl [&_.bg-mentor-light]:bg-[#EDE9FE]! [&_.bg-team-light]:bg-[#EEF2FF]! [&_.text-mentor]:text-[#7C3AED]! [&_.text-team]:text-[#4F46E5]!">
+            <div className="team-ws-meeting-note-modal-header flex shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 p-[24px]!">
               <div>
-                <h3 className="team-ws-meeting-note-modal-title flex items-center gap-2 text-lg font-extrabold text-gray-900">
+                <h3 className="team-ws-meeting-note-modal-title flex items-center gap-2 text-[18px]! leading-[28px]! font-extrabold text-gray-900">
                   <i className={`fas ${form.noteId ? 'fa-edit' : 'fa-pen-nib'} text-team`}></i>
                   {form.noteId ? '팀 회의록 수정' : '팀 회의록 작성'}
                 </h3>
-                <p className="team-ws-meeting-note-modal-desc mt-1 text-xs text-gray-500">회의에서 결정된 사항들을 기록해두면 훌륭한 프로젝트 산출물이 됩니다.</p>
+                <p className="team-ws-meeting-note-modal-desc mt-[4px]! text-[12px]! leading-[16px]! text-gray-500">회의에서 결정된 사항들을 기록해두면 훌륭한 프로젝트 산출물이 됩니다.</p>
               </div>
-              <button type="button" onClick={() => setModalOpen(false)} className="team-ws-meeting-note-modal-close flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
+              <button type="button" onClick={() => setModalOpen(false)} className="team-ws-meeting-note-modal-close flex h-[32px]! w-[32px]! items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
                 <i className="fas fa-times"></i>
               </button>
             </div>
 
-            <div className="team-ws-meeting-note-modal-body space-y-4 p-6">
+            <div className="team-ws-meeting-note-modal-body p-[24px]! [&>*+*]:mt-[16px]!">
               <div>
-                <label className="team-ws-meeting-note-modal-label mb-2 block text-xs font-bold text-gray-800">회의 주제 및 제목</label>
-                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="예: 프론트엔드/백엔드 API 연동 모의 회의" className="team-ws-meeting-note-modal-input w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium outline-none transition focus:border-team focus:ring-1 focus:ring-team" />
+                <label className="team-ws-meeting-note-modal-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold text-gray-800">회의 주제 및 제목</label>
+                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="예: 프론트엔드/백엔드 API 연동 모의 회의" className="team-ws-meeting-note-modal-input h-[46px]! w-full rounded-[12px]! border border-gray-200 px-[16px]! py-0! text-[14px]! leading-[20px]! font-medium outline-none transition focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5]" />
               </div>
               <div>
-                <label className="team-ws-meeting-note-modal-label mb-2 block text-xs font-bold text-gray-800">회의록 내용 (마크다운 지원)</label>
-                <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="결정된 사항, 문제점, 향후 계획 등을 자유롭게 작성해주세요." className="team-ws-meeting-note-modal-textarea custom-scrollbar h-48 w-full resize-none rounded-xl border border-gray-200 p-4 text-sm font-medium outline-none transition focus:border-team focus:ring-1 focus:ring-team"></textarea>
+                <label className="team-ws-meeting-note-modal-label mb-[8px]! block text-[12px]! leading-[16px]! font-bold text-gray-800">회의록 내용 (마크다운 지원)</label>
+                <textarea value={form.content} onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))} placeholder="결정된 사항, 문제점, 향후 계획 등을 자유롭게 작성해주세요." className="team-ws-meeting-note-modal-textarea custom-scrollbar h-[192px]! w-full resize-none rounded-[12px]! border border-gray-200 p-[16px]! text-[14px]! leading-[20px]! font-medium outline-none transition focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5]"></textarea>
               </div>
               {error ? <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] font-bold text-red-500">{error}</p> : null}
             </div>
 
-            <div className="team-ws-meeting-note-modal-footer flex shrink-0 gap-3 border-t border-gray-100 bg-white p-4">
-              <button type="button" onClick={() => setModalOpen(false)} className="team-ws-meeting-note-cancel flex-1 rounded-xl bg-gray-100 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-200">취소</button>
-              <button type="submit" disabled={submitting} className="team-ws-meeting-note-save flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-900 py-3 text-sm font-bold text-white shadow-md transition hover:bg-black disabled:opacity-60">
+            <div className="team-ws-meeting-note-modal-footer flex shrink-0 gap-[12px]! border-t border-gray-100 bg-white p-[16px]!">
+              <button type="button" onClick={() => setModalOpen(false)} className="team-ws-meeting-note-cancel min-h-[44px]! flex-1 rounded-[12px]! bg-gray-100 px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold text-gray-600 transition hover:bg-gray-200">취소</button>
+              <button type="submit" disabled={submitting} className="team-ws-meeting-note-save flex min-h-[44px]! flex-1 items-center justify-center gap-2 rounded-[12px]! bg-gray-900 px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold text-white shadow-md transition hover:bg-black disabled:opacity-60">
                 <i className="fas fa-check"></i>
                 {form.noteId ? '수정 완료' : '작성 완료'}
               </button>
@@ -3090,42 +3091,42 @@ function MeetingPage({
         return (
           <div id="noteDetailModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
             <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setSelectedNote(null)}></button>
-            <div className="modal-content team-ws-meeting-note-detail-modal relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-              <div className="team-ws-meeting-note-detail-header flex shrink-0 items-start justify-between border-b border-gray-100 bg-gray-50 p-6">
+            <div className="modal-content team-ws-meeting-note-detail-modal relative z-10 flex max-h-[85vh] w-full max-w-[672px]! flex-col overflow-hidden rounded-[24px]! bg-white shadow-2xl [&_.bg-mentor-light]:bg-[#EDE9FE]! [&_.bg-team-light]:bg-[#EEF2FF]! [&_.text-mentor]:text-[#7C3AED]! [&_.text-team]:text-[#4F46E5]!">
+              <div className="team-ws-meeting-note-detail-header flex shrink-0 items-start justify-between border-b border-gray-100 bg-gray-50 p-[24px]!">
                 <div className="min-w-0 pr-8">
                   {noteKind === 'mentor' ? (
-                    <span className="team-ws-meeting-detail-badge mb-2 inline-flex items-center gap-1 rounded border border-purple-200 bg-mentor-light px-2 py-0.5 text-[10px] font-extrabold text-mentor"><i className="fas fa-check-circle"></i> 멘토 공식</span>
+                    <span className="team-ws-meeting-detail-badge mb-[8px]! inline-flex min-h-[21px] items-center gap-1 rounded-[4px]! border border-purple-200 bg-mentor-light px-[8px]! py-[2px]! text-[10px]! leading-[16px]! font-extrabold text-mentor"><i className="fas fa-check-circle"></i> 멘토 공식</span>
                   ) : (
-                    <span className="team-ws-meeting-detail-badge mb-2 inline-flex items-center gap-1 rounded border border-indigo-200 bg-team-light px-2 py-0.5 text-[10px] font-extrabold text-team"><i className="fas fa-users"></i> 팀 회의록</span>
+                    <span className="team-ws-meeting-detail-badge mb-[8px]! inline-flex min-h-[21px] items-center gap-1 rounded-[4px]! border border-indigo-200 bg-team-light px-[8px]! py-[2px]! text-[10px]! leading-[16px]! font-extrabold text-team"><i className="fas fa-users"></i> 팀 회의록</span>
                   )}
-                  <h3 className="team-ws-meeting-note-detail-title text-xl font-extrabold leading-tight text-gray-900">{selectedNote.title}</h3>
-                  <p className="team-ws-meeting-note-detail-date mt-2 text-xs font-bold text-gray-400">{formatMeetingNoteDate(selectedNote.createdAt)}</p>
+                  <h3 className="team-ws-meeting-note-detail-title text-[20px]! leading-[28px]! font-extrabold text-gray-900">{selectedNote.title}</h3>
+                  <p className="team-ws-meeting-note-detail-date mt-[8px]! text-[12px]! leading-[16px]! font-bold text-gray-400">{formatMeetingNoteDate(selectedNote.createdAt)}</p>
                 </div>
-                <button type="button" onClick={() => setSelectedNote(null)} className="team-ws-meeting-note-detail-close flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
+                <button type="button" onClick={() => setSelectedNote(null)} className="team-ws-meeting-note-detail-close flex h-[32px]! w-[32px]! shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition hover:text-gray-900">
                   <i className="fas fa-times"></i>
                 </button>
               </div>
 
-              <div className="team-ws-meeting-note-detail-body custom-scrollbar flex-1 overflow-y-auto p-6">
-                <div className="team-ws-meeting-note-detail-content whitespace-pre-line text-sm font-medium leading-relaxed text-gray-700">
+              <div className="team-ws-meeting-note-detail-body custom-scrollbar flex-1 overflow-y-auto p-[24px]!">
+                <div className="team-ws-meeting-note-detail-content whitespace-pre-line text-[14px]! leading-[24px]! font-medium text-gray-700">
                   {selectedNote.content || '회의록 내용이 없습니다.'}
                 </div>
               </div>
 
-              <div className="team-ws-meeting-note-detail-footer flex shrink-0 items-center justify-between border-t border-gray-100 bg-gray-50 p-4">
+              <div className="team-ws-meeting-note-detail-footer flex shrink-0 items-center justify-between border-t border-gray-100 bg-gray-50 p-[16px]!">
                 {noteKind === 'team' ? (
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => void deleteNote(selectedNote.noteId)} className="team-ws-meeting-note-detail-action flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-500 transition hover:bg-red-50">
+                    <button type="button" onClick={() => void deleteNote(selectedNote.noteId)} className="team-ws-meeting-note-detail-action flex min-h-[36px]! items-center gap-1.5 rounded-[12px]! border border-red-200 bg-white px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold text-red-500 transition hover:bg-red-50">
                       <i className="fas fa-trash-alt"></i>
                       삭제
                     </button>
-                    <button type="button" onClick={() => openNoteModal(selectedNote)} className="team-ws-meeting-note-detail-action flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-50">
+                    <button type="button" onClick={() => openNoteModal(selectedNote)} className="team-ws-meeting-note-detail-action flex min-h-[36px]! items-center gap-1.5 rounded-[12px]! border border-gray-200 bg-white px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold text-gray-700 transition hover:bg-gray-50">
                       <i className="fas fa-edit"></i>
                       수정
                     </button>
                   </div>
                 ) : <div></div>}
-                <button type="button" onClick={() => setSelectedNote(null)} className="team-ws-meeting-note-detail-close-action rounded-xl bg-gray-900 px-6 py-2 text-sm font-bold text-white shadow-md transition hover:bg-black">닫기</button>
+                <button type="button" onClick={() => setSelectedNote(null)} className="team-ws-meeting-note-detail-close-action min-h-[36px]! rounded-[12px]! bg-gray-900 px-[24px]! py-0! text-[14px]! leading-[20px]! font-bold text-white shadow-md transition hover:bg-black">닫기</button>
               </div>
             </div>
           </div>
@@ -3580,7 +3581,7 @@ function RealtimePage({
     const renderedVoiceMembers = voiceMembers.length > 0 ? voiceMembers : [null]
 
     return (
-      <div className="team-ws-dashboard-page team-ws-realtime-page flex h-screen flex-col overflow-hidden bg-[#0B0F19] text-white">
+      <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page team-ws-realtime-page flex h-screen flex-col overflow-hidden bg-[#0B0F19] text-white`}>
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-800 bg-[#111827] px-6">
           <div className="flex min-w-0 items-center gap-4">
             <button type="button" onClick={leaveVoiceChannel} className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-gray-400 transition hover:bg-gray-700 hover:text-white" title="회의장으로 돌아가기">
@@ -3782,7 +3783,7 @@ function RealtimePage({
   }
 
   return (
-    <div className="team-ws-dashboard-page team-ws-realtime-page flex h-screen overflow-hidden bg-[#0F172A] text-white">
+    <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page team-ws-realtime-page flex h-screen overflow-hidden bg-[#0F172A] text-white`}>
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-[68px] shrink-0 items-center justify-between border-b border-white/10 bg-[#111827] px-6">
           <div className="flex min-w-0 items-center gap-3">
@@ -3924,15 +3925,18 @@ export default function TeamWorkspaceSuiteApp({ page }: { page?: TeamWorkspacePa
   useEffect(() => {
     const html = document.documentElement
     const body = document.body
+    const root = document.getElementById('root')
     const previousTitle = document.title
 
-    html.classList.add('team-ws-dashboard-document')
-    body.classList.add('team-ws-dashboard-body')
+    html.classList.add('team-ws-dashboard-document', 'h-full!', 'overflow-hidden!')
+    body.classList.add('team-ws-dashboard-body', 'h-full!', 'overflow-hidden!', 'bg-[#F3F4F6]!')
+    root?.classList.add('h-screen!')
     document.title = `DevPath - ${PAGE_META[activePage].title}`
 
     return () => {
-      html.classList.remove('team-ws-dashboard-document')
-      body.classList.remove('team-ws-dashboard-body')
+      html.classList.remove('team-ws-dashboard-document', 'h-full!', 'overflow-hidden!')
+      body.classList.remove('team-ws-dashboard-body', 'h-full!', 'overflow-hidden!', 'bg-[#F3F4F6]!')
+      root?.classList.remove('h-screen!')
       document.title = previousTitle
     }
   }, [activePage])

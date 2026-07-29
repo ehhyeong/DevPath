@@ -146,12 +146,19 @@ function App() {
   }, [])
 
   useEffect(() => {
-    document.documentElement.classList.add('home-page-document')
-    document.body.classList.add('home-page-body')
+    const documentClasses = ['h-full', 'overflow-hidden']
+    const bodyClasses = ['h-[100dvh]!', 'min-h-0!', 'overflow-hidden!']
+    const rootClasses = ['h-[100dvh]!', 'min-h-0!']
+    const root = document.getElementById('root')
+
+    document.documentElement.classList.add(...documentClasses)
+    document.body.classList.add(...bodyClasses)
+    root?.classList.add(...rootClasses)
 
     return () => {
-      document.documentElement.classList.remove('home-page-document')
-      document.body.classList.remove('home-page-body')
+      document.documentElement.classList.remove(...documentClasses)
+      document.body.classList.remove(...bodyClasses)
+      root?.classList.remove(...rootClasses)
     }
   }, [])
 
@@ -236,7 +243,7 @@ function App() {
   }
 
   return (
-    <div className="home-page-shell text-gray-800">
+    <div className="h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden text-gray-800">
       <SiteHeader
         session={session}
         profileImage={profileImage}
@@ -323,17 +330,17 @@ function App() {
         </div>
       </nav> : null}
 
-      <main className="home-page-main">
-      <div className="home-page-body-zoom">
-      <section className="home-hero-section relative overflow-hidden px-6 pt-16 pb-8">
+      <main className="mt-[var(--app-header-height)] h-[calc(100dvh-var(--app-header-height))] min-h-0 w-full min-w-0 overflow-x-hidden overflow-y-auto pr-[calc(var(--devpath-scrollbar-size)*0.9)] overscroll-y-contain scroll-smooth [scrollbar-gutter:stable] max-[1023px]:pr-0 max-[1023px]:[scrollbar-gutter:auto]">
+      <div className="ml-[calc((100%-(100%/var(--home-page-body-zoom)))/2)] w-[calc(100%/var(--home-page-body-zoom))] origin-top-left [--home-page-body-zoom:0.9] [zoom:var(--home-page-body-zoom)] max-[1023px]:ml-0 max-[1023px]:w-full max-[1023px]:transform-none max-[1023px]:[zoom:1]">
+      <section className="relative min-h-[calc(111.111111dvh-71.111111px)] overflow-hidden px-6 pt-16 pb-8 max-[1023px]:min-h-[calc(100dvh-var(--app-header-height))] max-[767px]:px-[var(--app-page-gutter)] max-[767px]:pt-[clamp(40px,8vh,64px)]">
         <div className="relative z-10 mx-auto max-w-6xl text-center" data-aos="fade-up">
-          <span className="home-hero-eyebrow text-brand inline-block rounded-full border border-green-200 bg-white shadow-sm">
+          <span className="text-brand mb-[24px] inline-block rounded-full border border-green-200 bg-white px-[12px] py-[4px] text-[12px] leading-[16px] [font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,'Helvetica_Neue','Segoe_UI','Apple_SD_Gothic_Neo','Noto_Sans_KR','Malgun_Gothic',sans-serif] [font-weight:700] [letter-spacing:0] shadow-sm max-[767px]:mb-[18px] max-[767px]:whitespace-normal">
             🚀 개발자 커리어 가속화 플랫폼
           </span>
-          <h1 className="home-hero-title font-extrabold text-gray-900">
+          <h1 className="mb-[24px] text-[48px] leading-[50px] font-extrabold tracking-[-1.2px] text-gray-900 [font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,'Helvetica_Neue','Segoe_UI','Apple_SD_Gothic_Neo','Noto_Sans_KR','Malgun_Gothic',sans-serif] md:text-[72px] md:leading-[74px] md:tracking-[-1.8px] min-[768px]:max-[1023px]:text-[clamp(56px,7vw,64px)] min-[768px]:max-[1023px]:leading-[1.04] max-[767px]:mb-[20px] max-[767px]:text-[clamp(36px,11vw,48px)] max-[767px]:leading-[1.08]">
             성장의 길을 찾다,
             <br />
-            <span className="home-hero-brand bg-gradient-to-r from-green-500 to-teal-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-green-500 to-teal-500 bg-clip-text tracking-[-1.2px] text-transparent md:tracking-[-1.8px]">
               DevPath
             </span>
           </h1>
@@ -346,14 +353,14 @@ function App() {
             <button
               type="button"
                 onClick={() => go('/survey')}
-              className="hero-primary-button px-8 py-4 bg-brand hover:bg-green-600 text-white font-bold rounded-xl transition shadow-xl shadow-green-500/30 flex items-center justify-center gap-2 text-lg"
+              className="bg-brand flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-bold text-white shadow-xl shadow-green-500/30 [transition:background-color_0.2s_ease,box-shadow_0.2s_ease,transform_0.2s_ease] hover:bg-green-600 max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px] max-[767px]:leading-[24px]"
             >
               <i className="fas fa-magic" /> 로드맵 추천받기
             </button>
             <button
               type="button"
               onClick={() => go('/roadmap-hub')}
-              className="hero-secondary-button flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-4 text-lg font-bold text-gray-700 transition hover:border-gray-400"
+              className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-4 text-lg font-bold text-gray-700 [transition:border-color_0.2s_ease,box-shadow_0.2s_ease,transform_0.2s_ease] hover:border-gray-400 max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px] max-[767px]:leading-[24px]"
             >
               <i className="fas fa-map" /> 로드맵 둘러보기
             </button>

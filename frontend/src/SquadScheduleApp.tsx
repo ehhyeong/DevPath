@@ -335,12 +335,18 @@ export default function SquadScheduleApp() {
     const html = document.documentElement
     const body = document.body
 
-    html.classList.add('squad-dashboard-document')
-    body.classList.add('squad-dashboard-body')
+    const root = document.getElementById('root')
+    const appViewport = document.querySelector<HTMLElement>('.app-viewport')
+    html.classList.add('h-full!', 'overflow-hidden!')
+    body.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    root?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    appViewport?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
 
     return () => {
-      html.classList.remove('squad-dashboard-document')
-      body.classList.remove('squad-dashboard-body')
+      html.classList.remove('h-full!', 'overflow-hidden!')
+      body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      root?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      appViewport?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
     }
   }, [])
 
@@ -579,21 +585,21 @@ export default function SquadScheduleApp() {
           clickEvent.stopPropagation()
           openEditModal(event)
         }}
-        className={`event-pill w-full text-left rounded-lg border font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${config.className} ${isDeadline ? 'deadline-event-pill' : ''} ${
+        className={`event-pill relative z-[1] w-full cursor-pointer text-left box-border border font-bold shadow-sm transition hover:-translate-y-[1px] hover:shadow-md ${config.className} ${isDeadline ? 'deadline-event-pill border-[#fecaca]! [box-shadow:inset_3px_0_0_#ef4444,0_1px_2px_rgba(185,28,28,0.08)]!' : ''} ${
           mode === 'week'
             ? 'week-event-pill px-2.5 py-2 text-xs mb-2 flex flex-col gap-1 bg-white'
-            : 'month-event-pill px-1.5 py-1 text-[10px] mb-1 flex items-center gap-1 bg-white truncate'
+            : 'month-event-pill mb-[4px]! flex min-h-[24px] items-center gap-[4px]! truncate rounded-[4px]! bg-white px-[6px]! py-[4px]! text-[10px]! leading-[12px]!'
         }`}
         title={event.title}
       >
         <span className={`flex items-center min-w-0 ${mode === 'week' ? 'gap-1.5' : 'gap-1'}`}>
-          <i className={`${config.iconClass} shrink-0 ${mode === 'week' ? 'text-[11px]' : 'text-[10px]'}`}></i>
-          <span className={mode === 'week' ? 'leading-snug break-words whitespace-normal' : 'truncate'}>{event.title}</span>
+          <i className={`${config.iconClass} shrink-0 ${mode === 'week' ? 'text-[11px]' : 'text-[10px]! leading-[12px]!'}`}></i>
+          <span className={mode === 'week' ? 'leading-snug break-words whitespace-normal' : 'truncate text-[10px]! leading-[12px]!' }>{event.title}</span>
         </span>
         {mode === 'week' ? (
           <span className="text-[10px] opacity-75 font-extrabold flex items-center gap-1">
             <span>{`${formatTime(event.startAt)}-${formatTime(event.endAt)}`}</span>
-            {isDeadline ? <span className="deadline-event-dday">{getDday(event.startAt)}</span> : null}
+            {isDeadline ? <span className="deadline-event-dday h-[16px] rounded-[999px] bg-[#fee2e2] px-[5px] text-[9px]! leading-[16px]! text-[#dc2626]">{getDday(event.startAt)}</span> : null}
           </span>
         ) : null}
       </button>
@@ -613,7 +619,7 @@ export default function SquadScheduleApp() {
 
   if (loading) {
     return (
-      <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
+      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
         {renderAuthModal()}
       </div>
@@ -622,7 +628,7 @@ export default function SquadScheduleApp() {
 
   if (error) {
     return (
-      <div className="squad-dashboard-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F9FAFB]">
+      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
           <i className="fas fa-circle-exclamation text-3xl text-red-400 mb-3"></i>
           <p className="font-extrabold text-gray-900">{error}</p>
@@ -636,7 +642,7 @@ export default function SquadScheduleApp() {
   }
 
   return (
-    <div className="squad-dashboard-page squad-schedule-page flex h-screen overflow-hidden text-gray-800">
+    <div className="squad-dashboard-page squad-schedule-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
       <SquadWorkspaceAside activePage="schedule" workspaceId={workspaceId} projectName={projectName} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
@@ -650,26 +656,26 @@ export default function SquadScheduleApp() {
         />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
-          <div className="schedule-page-toolbar px-8 py-6 shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 z-10">
+          <div className="schedule-page-toolbar z-10 flex min-h-[97px] shrink-0 flex-col justify-between gap-4 border-b border-gray-100 bg-white px-[32px]! py-[24px]! md:flex-row md:items-center">
             <div className="flex items-center gap-4">
-              <h1 className="schedule-page-title text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+              <h1 className="schedule-page-title m-0 flex items-center gap-2 text-[24px]! leading-[32px]! font-extrabold text-gray-900">
                 <i className="fas fa-calendar-alt text-brand"></i> 프로젝트 캘린더
               </h1>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="schedule-view-group flex bg-gray-50 border border-gray-200 rounded-xl p-1 shadow-inner mr-0 md:mr-2">
+              <div className="schedule-view-group mr-[8px]! flex h-[40px] rounded-[12px] border border-gray-200 bg-gray-50 p-[4px]! shadow-inner">
                 <button
                   type="button"
                   onClick={() => setView('month')}
-                  className={`schedule-view-tab px-4 py-1.5 rounded-lg text-xs font-bold transition ${view === 'month' ? 'active' : 'text-gray-500 hover:text-gray-800'}`}
+                  className={`schedule-view-tab inline-flex h-[30px] min-w-[98px] items-center justify-center whitespace-nowrap rounded-[8px] border border-transparent px-[16px]! py-0! text-[12px]! leading-[16px]! font-[700]! transition box-border ${view === 'month' ? 'active border-[#E5E7EB] bg-white text-[#111827] [box-shadow:0_1px_2px_rgba(15,23,42,0.08)]' : 'text-gray-500 hover:text-gray-800'}`}
                 >
                   월간 (Month)
                 </button>
                 <button
                   type="button"
                   onClick={() => setView('week')}
-                  className={`schedule-view-tab px-4 py-1.5 rounded-lg text-xs font-bold transition ${view === 'week' ? 'active' : 'text-gray-500 hover:text-gray-800'}`}
+                  className={`schedule-view-tab inline-flex h-[30px] min-w-[98px] items-center justify-center whitespace-nowrap rounded-[8px] border border-transparent px-[16px]! py-0! text-[12px]! leading-[16px]! font-[700]! transition box-border ${view === 'week' ? 'active border-[#E5E7EB] bg-white text-[#111827] [box-shadow:0_1px_2px_rgba(15,23,42,0.08)]' : 'text-gray-500 hover:text-gray-800'}`}
                 >
                   주간 (Week)
                 </button>
@@ -677,38 +683,38 @@ export default function SquadScheduleApp() {
               <button
                 type="button"
                 onClick={() => openCreateModal()}
-                className="schedule-add-button px-5 py-2.5 bg-gray-900 text-white font-bold rounded-xl text-sm hover:bg-black transition shadow-lg flex items-center gap-2"
+                className="schedule-add-button flex h-[42px] items-center gap-[8px] whitespace-nowrap rounded-[12px] bg-gray-900 px-[20px]! py-0! text-[14px]! leading-[20px]! font-bold text-white shadow-lg transition hover:bg-black"
               >
                 <i className="fas fa-plus"></i> 일정 추가
               </button>
             </div>
           </div>
 
-          <div className="schedule-content-wrap flex-1 flex overflow-hidden bg-[#F3F4F6] p-6 gap-6">
+          <div className="schedule-content-wrap flex flex-1 gap-[24px]! overflow-hidden bg-[#F3F4F6] p-[24px]!">
               <section className="schedule-calendar-panel flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-w-0">
-                <div className="schedule-calendar-header p-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
-                  <h2 className="schedule-current-date text-xl font-extrabold text-gray-900 flex items-center gap-2">
+                <div className="schedule-calendar-header flex min-h-[69px] shrink-0 items-center justify-between border-b border-gray-100 bg-white p-[20px]!">
+                  <h2 className="schedule-current-date m-0 flex items-center gap-2 text-[20px]! leading-[28px]! font-extrabold text-gray-900">
                     <span>{displayLabel}</span>
                   </h2>
                   <div className="flex gap-1">
                     <button
                       type="button"
                       onClick={() => navigateDate(-1)}
-                      className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 flex items-center justify-center transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-[12px]! leading-[16px]! text-gray-600 transition hover:bg-gray-50"
                     >
                       <i className="fas fa-chevron-left text-xs"></i>
                     </button>
                     <button
                       type="button"
                       onClick={() => setCurrentDate(new Date())}
-                      className="px-3 h-8 rounded-lg border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition"
+                      className="h-8 rounded-lg border border-gray-200 px-3 text-[12px]! leading-[16px]! font-bold text-gray-700 transition hover:bg-gray-50"
                     >
                       오늘
                     </button>
                     <button
                       type="button"
                       onClick={() => navigateDate(1)}
-                      className="w-8 h-8 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 flex items-center justify-center transition"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-[12px]! leading-[16px]! text-gray-600 transition hover:bg-gray-50"
                     >
                       <i className="fas fa-chevron-right text-xs"></i>
                     </button>
@@ -717,14 +723,14 @@ export default function SquadScheduleApp() {
 
                 <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50 shrink-0">
                   {WEEKDAY_LABELS.map((label, index) => (
-                    <div key={label} className={`schedule-weekday py-3 text-center text-xs font-extrabold ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'}`}>
+                    <div key={label} className={`schedule-weekday py-[12px]! text-center text-[12px]! leading-[16px]! font-extrabold ${index === 0 ? 'text-red-500' : index === 6 ? 'text-blue-500' : 'text-gray-600'}`}>
                       {label}
                     </div>
                   ))}
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-gray-100">
-                  <div className={`grid grid-cols-7 gap-px min-h-full ${view === 'month' ? 'schedule-month-grid' : 'schedule-week-grid'}`}>
+                  <div className={`grid min-h-full grid-cols-7 gap-px ${view === 'month' ? 'schedule-month-grid h-full min-h-0! [grid-template-rows:repeat(6,minmax(0,1fr))] [grid-auto-rows:minmax(0,1fr)]' : 'schedule-week-grid [grid-template-rows:minmax(0,1fr)]'}`}>
                     {visibleDates.map((date) => {
                       const key = formatDateKey(date)
                       const dayEvents = eventsByDate.get(key) ?? []
@@ -743,16 +749,16 @@ export default function SquadScheduleApp() {
                               openCreateModal(key)
                             }
                           }}
-                          className={`calendar-cell group relative text-left flex flex-col border-r border-b border-gray-100 min-w-0 ${
+                          className={`calendar-cell group relative flex min-w-0 cursor-pointer flex-col border-r border-b border-gray-100 text-left [transition:background-color_0.2s] ${
                             view === 'month' && !isCurrentMonth ? 'bg-gray-50/70' : 'bg-white'
-                          } ${view === 'month' ? 'month-calendar-cell p-2' : 'week-calendar-cell p-3'}`}
+                          } ${view === 'month' ? 'month-calendar-cell min-h-0 overflow-hidden p-[8px]!' : 'week-calendar-cell min-h-full p-3'}`}
                         >
-                          <div className={`text-center ${view === 'month' ? 'month-date-wrap mb-1.5' : 'mb-4 pb-2 border-b border-gray-100'}`}>
+                          <div className={`text-center ${view === 'month' ? 'month-date-wrap mb-[6px]!' : 'mb-4 pb-2 border-b border-gray-100'}`}>
                             <span
                               className={
                                 isToday
-                                  ? `${view === 'month' ? 'month-date-badge w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} bg-brand text-white rounded-full inline-flex items-center justify-center font-black shadow-md`
-                                  : `${view === 'month' ? 'month-date-badge w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} text-gray-700 inline-flex items-center justify-center font-bold`
+                                  ? `${view === 'month' ? 'month-date-badge h-[24px]! w-[24px]! text-[12px]! leading-[16px]!' : 'w-8 h-8 text-sm'} bg-brand text-white rounded-full inline-flex items-center justify-center font-black shadow-md`
+                                  : `${view === 'month' ? 'month-date-badge h-[24px]! w-[24px]! text-[12px]! leading-[16px]!' : 'w-8 h-8 text-sm'} text-gray-700 inline-flex items-center justify-center font-bold`
                               }
                             >
                               {date.getDate()}
@@ -773,8 +779,8 @@ export default function SquadScheduleApp() {
 
               <aside className="w-80 flex flex-col gap-4 shrink-0">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col h-full overflow-hidden">
-                  <div className="schedule-upcoming-header p-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-gradient-to-r from-gray-50 to-white">
-                    <h3 className="schedule-upcoming-title font-extrabold text-gray-900 flex items-center gap-2">
+                  <div className="schedule-upcoming-header flex min-h-[65px] shrink-0 items-center justify-between border-b border-gray-100 bg-[linear-gradient(to_right,#F9FAFB,#fff)] p-[20px]!">
+                    <h3 className="schedule-upcoming-title m-0 flex items-center gap-2 text-[16px]! leading-[24px]! font-extrabold text-gray-900">
                       <i className="fas fa-flag-checkered text-brand"></i> 다가오는 일정
                     </h3>
                     <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-bold">{upcomingEvents.length}</span>
@@ -793,14 +799,14 @@ export default function SquadScheduleApp() {
                             key={event.eventId}
                             type="button"
                             onClick={() => openEditModal(event)}
-                            className={`w-full text-left p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition ${isDeadline ? 'deadline-upcoming-card' : ''}`}
+                            className={`w-full rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition hover:shadow-md ${isDeadline ? 'deadline-upcoming-card border-[#fecaca]! [box-shadow:inset_3px_0_0_#ef4444,0_1px_3px_rgba(185,28,28,0.08)]!' : ''}`}
                           >
                             <div className="flex justify-between items-start mb-2 gap-2">
                               <span className={`${config.className} text-[9px] px-1.5 py-0.5 rounded font-extrabold flex items-center gap-1 border`}>
                                 <i className={`${config.iconClass} text-[10px]`}></i> {config.shortLabel}
                               </span>
                               {dday ? (
-                                <span className={`${isDeadline ? 'deadline-upcoming-badge' : dday === 'D-Day' ? 'bg-red-500 text-white animate-pulse' : 'bg-red-100 text-red-600 border border-red-200'} text-[10px] font-extrabold px-2 py-0.5 rounded shadow-sm`}>
+                                <span className={`${isDeadline ? 'deadline-upcoming-badge border border-[#ef4444]! bg-[#ef4444]! text-white!' : dday === 'D-Day' ? 'bg-red-500 text-white animate-pulse' : 'bg-red-100 text-red-600 border border-red-200'} text-[10px] font-extrabold px-2 py-0.5 rounded shadow-sm`}>
                                   {dday}
                                 </span>
                               ) : null}
@@ -823,31 +829,31 @@ export default function SquadScheduleApp() {
       </div>
 
       {modalOpen ? (
-        <div className="modal active squad-schedule-modal fixed inset-0 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-          <form onSubmit={saveSchedule} className="squad-schedule-modal-content bg-white w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden flex flex-col">
-            <div className="squad-schedule-modal-header p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
-              <h3 className="squad-schedule-modal-title text-lg font-extrabold text-gray-900 flex items-center gap-2">
+        <div className="modal active squad-schedule-modal fixed inset-0 z-[1050]! flex items-center justify-center bg-gray-900/60 p-4 opacity-100 visible [transition:opacity_0.2s,visibility_0.2s] backdrop-blur-sm">
+          <form onSubmit={saveSchedule} className="squad-schedule-modal-content relative flex max-h-[calc(100vh-32px)] w-[448px]! max-w-[calc(100vw-32px)]! flex-col overflow-hidden rounded-[16px] bg-white shadow-2xl">
+            <div className="squad-schedule-modal-header flex min-h-[72px] shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 px-[24px]! py-[20px]!">
+              <h3 className="squad-schedule-modal-title m-0 flex items-center gap-2 text-[18px]! leading-[28px]! font-extrabold text-gray-900">
                 <i className="fas fa-calendar-plus text-brand"></i> {editingEvent ? '일정 수정' : '새 일정 등록'}
               </h3>
-              <button type="button" onClick={closeModal} className="squad-schedule-modal-close text-gray-400 hover:text-gray-900 bg-white border border-gray-200 w-8 h-8 rounded-full flex items-center justify-center transition shadow-sm">
+              <button type="button" onClick={closeModal} className="squad-schedule-modal-close flex h-[32px]! w-[32px]! items-center justify-center rounded-full border border-gray-200 bg-white p-0! text-gray-400 shadow-sm transition box-border hover:text-gray-900">
                 <i className="fas fa-times"></i>
               </button>
             </div>
 
-            <div className="squad-schedule-modal-body p-6 space-y-5 overflow-y-auto custom-scrollbar">
+            <div className="squad-schedule-modal-body custom-scrollbar space-y-5 overflow-y-auto px-[24px]! py-[18px]!">
               <div>
-                <label className="squad-schedule-modal-label block text-xs font-bold text-gray-700 mb-2">일정 제목 <span className="text-red-500">*</span></label>
+                <label className="squad-schedule-modal-label mb-[6px]! block text-[11px]! leading-[16px]! font-bold text-gray-700">일정 제목 <span className="text-red-500">*</span></label>
                 <input
                   value={form.title}
                   onChange={(changeEvent) => setForm((current) => ({ ...current, title: changeEvent.target.value }))}
-                  className="squad-schedule-modal-control w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm font-bold"
+                  className="squad-schedule-modal-control h-[38px]! w-full rounded-[12px] border border-gray-200 px-[14px]! py-0! text-[13px]! leading-[18px]! font-bold shadow-sm transition box-border outline-none focus:border-brand"
                   placeholder="예. 결제 모듈 API 구현"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="mt-[14px]! grid grid-cols-2 gap-[12px]!">
                 <div>
-                  <label className="squad-schedule-modal-label block text-xs font-bold text-gray-700 mb-2">일정 분류</label>
+                  <label className="squad-schedule-modal-label mb-[6px]! block text-[11px]! leading-[16px]! font-bold text-gray-700">일정 분류</label>
                   <select
                     value={form.category}
                     onChange={(changeEvent) => {
@@ -856,7 +862,7 @@ export default function SquadScheduleApp() {
                         setForm((current) => ({ ...current, category: value }))
                       }
                     }}
-                    className="squad-schedule-modal-control w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand font-medium shadow-sm bg-white cursor-pointer"
+                    className="squad-schedule-modal-control h-[38px]! w-full cursor-pointer rounded-[12px] border border-gray-200 bg-white px-[14px]! py-0! text-[13px]! leading-[18px]! font-medium shadow-sm box-border outline-none focus:border-brand"
                   >
                     {SCHEDULE_CATEGORIES.map((category) => (
                       <option key={category} value={category}>
@@ -866,87 +872,87 @@ export default function SquadScheduleApp() {
                   </select>
                 </div>
                 <div>
-                  <label className="squad-schedule-modal-label block text-xs font-bold text-gray-700 mb-2">날짜</label>
+                  <label className="squad-schedule-modal-label mb-[6px]! block text-[11px]! leading-[16px]! font-bold text-gray-700">날짜</label>
                   <input
                     type="date"
                     value={form.date}
                     onChange={(changeEvent) => setForm((current) => ({ ...current, date: changeEvent.target.value }))}
-                    className="squad-schedule-modal-control w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm font-bold text-gray-700 cursor-pointer bg-white"
+                    className="squad-schedule-modal-control h-[38px]! w-full cursor-pointer rounded-[12px] border border-gray-200 bg-white px-[14px]! py-0! text-[13px]! leading-[18px]! font-bold text-gray-700 shadow-sm transition box-border outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="mt-[14px]! grid grid-cols-2 gap-[12px]!">
                 <div>
-                  <label className="squad-schedule-modal-label block text-xs font-bold text-gray-700 mb-2">시작 시간</label>
+                  <label className="squad-schedule-modal-label mb-[6px]! block text-[11px]! leading-[16px]! font-bold text-gray-700">시작 시간</label>
                   <input
                     type="time"
                     value={form.startTime}
                     onChange={(changeEvent) => setForm((current) => ({ ...current, startTime: changeEvent.target.value }))}
-                    className="squad-schedule-modal-control w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm font-bold text-gray-700 cursor-pointer bg-white"
+                    className="squad-schedule-modal-control h-[38px]! w-full cursor-pointer rounded-[12px] border border-gray-200 bg-white px-[14px]! py-0! text-[13px]! leading-[18px]! font-bold text-gray-700 shadow-sm transition box-border outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="squad-schedule-modal-label block text-xs font-bold text-gray-700 mb-2">종료 시간</label>
+                  <label className="squad-schedule-modal-label mb-[6px]! block text-[11px]! leading-[16px]! font-bold text-gray-700">종료 시간</label>
                   <input
                     type="time"
                     value={form.endTime}
                     onChange={(changeEvent) => setForm((current) => ({ ...current, endTime: changeEvent.target.value }))}
-                    className="squad-schedule-modal-control w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm font-bold text-gray-700 cursor-pointer bg-white"
+                    className="squad-schedule-modal-control h-[38px]! w-full cursor-pointer rounded-[12px] border border-gray-200 bg-white px-[14px]! py-0! text-[13px]! leading-[18px]! font-bold text-gray-700 shadow-sm transition box-border outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
-              <label className="squad-schedule-deadline-toggle flex items-center justify-between gap-3 border border-gray-200 rounded-xl bg-gray-50 px-3 py-2 cursor-pointer">
+              <label className="squad-schedule-deadline-toggle mt-[14px]! flex min-h-[42px] cursor-pointer items-center justify-between gap-3 rounded-[12px] border border-gray-200 bg-gray-50 px-[12px]! py-[8px]!">
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="squad-schedule-deadline-icon flex items-center justify-center rounded-lg bg-white text-red-500 border border-red-100">
+                  <span className="squad-schedule-deadline-icon flex h-[26px] w-[26px] items-center justify-center rounded-lg border border-red-100 bg-white text-[11px]! leading-[26px]! text-red-500">
                     <i className="fas fa-hourglass-half"></i>
                   </span>
                   <span className="min-w-0">
-                    <span className="squad-schedule-deadline-title block font-extrabold text-gray-800">마감 일정</span>
-                    <span className="squad-schedule-deadline-copy block font-bold text-gray-400">D-Day</span>
+                    <span className="squad-schedule-deadline-title block text-[12px]! leading-[16px]! font-extrabold text-gray-800">마감 일정</span>
+                    <span className="squad-schedule-deadline-copy block text-[10px]! leading-[12px]! font-bold text-gray-400">D-Day</span>
                   </span>
                 </span>
                 <input
                   type="checkbox"
                   checked={form.isDeadline}
                   onChange={(changeEvent) => setForm((current) => ({ ...current, isDeadline: changeEvent.target.checked }))}
-                  className="squad-schedule-deadline-input accent-brand cursor-pointer"
+                  className="squad-schedule-deadline-input h-[16px]! w-[16px]! cursor-pointer accent-brand box-border"
                 />
               </label>
 
-              <div>
-                <label className="squad-schedule-modal-label block text-xs font-bold text-gray-700 mb-2">메모 <span className="text-gray-400 font-normal">선택</span></label>
+              <div className="mt-[14px]!">
+                <label className="squad-schedule-modal-label mb-[6px]! block text-[11px]! leading-[16px]! font-bold text-gray-700">메모 <span className="text-gray-400 font-normal">선택</span></label>
                 <textarea
                   value={form.description}
                   onChange={(changeEvent) => setForm((current) => ({ ...current, description: changeEvent.target.value }))}
-                  className="squad-schedule-modal-textarea w-full h-24 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm resize-none"
+                  className="squad-schedule-modal-textarea h-[68px]! w-full resize-none rounded-[12px] border border-gray-200 px-[14px]! py-[10px]! text-[13px]! leading-[18px]! shadow-sm transition box-border outline-none focus:border-brand"
                   placeholder="일정 설명이나 준비물을 적어두세요."
                 />
               </div>
             </div>
 
-            <div className="squad-schedule-modal-footer p-5 border-t border-gray-100 bg-gray-50 flex justify-between gap-2 shrink-0">
+            <div className="squad-schedule-modal-footer flex min-h-[66px] shrink-0 justify-between gap-2 border-t border-gray-100 bg-gray-50 px-[20px]! py-[14px]!">
               <div>
                 {editingEvent ? (
                   <button
                     type="button"
                     onClick={deleteSchedule}
                     disabled={saving}
-                    className="squad-schedule-modal-action px-4 py-2.5 text-sm font-bold text-red-500 bg-white border border-red-100 rounded-xl hover:bg-red-50 transition shadow-sm disabled:opacity-60"
+                    className="squad-schedule-modal-action h-[38px] rounded-[12px] border border-red-100 bg-white px-4 py-0! text-[13px]! leading-[18px]! font-bold text-red-500 shadow-sm transition box-border hover:bg-red-50 disabled:opacity-60"
                   >
                     삭제
                   </button>
                 ) : null}
               </div>
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={closeModal} className="squad-schedule-modal-action px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition shadow-sm">
+                <button type="button" onClick={closeModal} className="squad-schedule-modal-action h-[38px] rounded-[12px] border border-gray-200 bg-white px-5 py-0! text-[13px]! leading-[18px]! font-bold text-gray-600 shadow-sm transition box-border hover:bg-gray-50">
                   취소
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="squad-schedule-modal-action squad-schedule-modal-save px-6 py-2.5 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-black transition shadow-md flex items-center gap-1.5 disabled:opacity-60"
+                  className="squad-schedule-modal-action squad-schedule-modal-save flex h-[38px] items-center gap-1.5 rounded-[12px] bg-gray-900 px-6 py-0! text-[13px]! leading-[18px]! font-bold text-white shadow-md transition box-border hover:bg-black disabled:opacity-60"
                 >
                   <i className="fas fa-save"></i> {editingEvent ? '수정하기' : '추가하기'}
                 </button>

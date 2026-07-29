@@ -141,12 +141,18 @@ export default function SquadSettingsApp() {
     document.title = 'DevPath - 스쿼드 설정'
     const html = document.documentElement
     const body = document.body
-    html.classList.add('squad-dashboard-document')
-    body.classList.add('squad-dashboard-body')
+    const root = document.getElementById('root')
+    const appViewport = document.querySelector<HTMLElement>('.app-viewport')
+    html.classList.add('h-full!', 'overflow-hidden!')
+    body.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    root?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    appViewport?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
 
     return () => {
-      html.classList.remove('squad-dashboard-document')
-      body.classList.remove('squad-dashboard-body')
+      html.classList.remove('h-full!', 'overflow-hidden!')
+      body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      root?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      appViewport?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
     }
   }, [])
 
@@ -457,7 +463,7 @@ export default function SquadSettingsApp() {
   const projectName = settings?.name ?? '스쿼드 설정'
 
   return (
-    <div className="squad-dashboard-page squad-settings-page flex h-screen overflow-hidden text-gray-800">
+    <div className="squad-dashboard-page squad-settings-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
       <SquadWorkspaceAside activePage="settings" workspaceId={workspaceId} projectName={projectName} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
@@ -501,7 +507,7 @@ export default function SquadSettingsApp() {
           </div>
         </header>
 
-        <main className="squad-settings-main flex-1 flex overflow-hidden relative">
+        <main className="squad-settings-main relative flex flex-1 overflow-hidden font-['Pretendard',sans-serif] [&_button]:[font-family:inherit] [&_input]:[font-family:inherit] [&_select]:[font-family:inherit] [&_textarea]:[font-family:inherit]">
           <div className="squad-settings-menu w-64 bg-white border-r border-gray-100 flex flex-col shrink-0 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
             <div className="p-6 pb-4 border-b border-gray-50">
               <h2 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
@@ -514,14 +520,14 @@ export default function SquadSettingsApp() {
                 const danger = tab.id === 'danger'
                 const active = activeTab === tab.id
                 const className = [
-                  'squad-settings-tab-button',
-                  active ? 'is-active' : '',
-                  danger ? 'is-danger' : '',
+                  'squad-settings-tab-button flex w-full min-h-[44px] cursor-pointer items-center gap-[0.75rem] whitespace-nowrap rounded-[0.75rem] border-0 bg-transparent px-[1rem] py-0 text-left text-[14px]! leading-[20px]! font-bold text-[#4B5563] box-border [transition:background-color_0.2s_ease,color_0.2s_ease] hover:bg-[#F9FAFB]',
+                  active && !danger ? 'is-active bg-[#F3F4F6]! text-[#00C471]!' : '',
+                  danger ? `is-danger text-[#EF4444]! hover:bg-[#FEF2F2]! hover:text-[#DC2626]! ${active ? 'is-active bg-[#FEF2F2]! text-[#DC2626]!' : ''}` : '',
                 ].filter(Boolean).join(' ')
 
                 return (
                   <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} className={className}>
-                    <i className={`${tab.icon} w-4 text-center`} />
+                    <i className={`${tab.icon} w-[16px] flex-[0_0_16px] text-center leading-[20px]!`} />
                     {tab.label}
                   </button>
                 )
@@ -529,7 +535,7 @@ export default function SquadSettingsApp() {
             </div>
           </div>
 
-          <div className="squad-settings-content flex-1 overflow-y-auto custom-scrollbar p-8 lg:p-12 bg-[#F9FAFB]">
+          <div className="squad-settings-content custom-scrollbar flex-1 overflow-y-auto bg-[#F9FAFB] p-8 lg:p-12">
             <div className="max-w-4xl mx-auto pb-20">
               {loading ? (
                 <StateCard icon="fas fa-spinner fa-spin" message="스쿼드 설정을 불러오는 중입니다." />
@@ -608,7 +614,7 @@ export default function SquadSettingsApp() {
 
 function StateCard({ icon, message }: { icon: string; message: string }) {
   return (
-    <div className="squad-settings-card bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+    <div className="squad-settings-card rounded-[1rem] border border-[#F3F4F6] bg-white p-10 text-center [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]">
       <i className={`${icon} text-2xl mb-4`} />
       <p className="text-sm font-bold text-gray-600">{message}</p>
     </div>
@@ -644,14 +650,14 @@ function GeneralPanel({
       ) : null}
 
       <form onSubmit={onSave} className="space-y-6">
-        <div className="squad-settings-card bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-6">
+        <div className="squad-settings-card space-y-6 rounded-[1rem] border border-[#F3F4F6] bg-white p-8 [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">
               스쿼드 이름 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              className="squad-settings-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-brand transition shadow-sm disabled:bg-gray-50 disabled:text-gray-400"
+              className="squad-settings-input h-[46px]! w-full rounded-[12px]! border border-gray-200 px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold box-border shadow-sm outline-none transition focus:border-brand disabled:bg-gray-50 disabled:text-gray-400"
               value={form.name}
               disabled={!canManage || saving}
               onChange={(event) => onFormChange({ ...form, name: event.target.value })}
@@ -661,7 +667,7 @@ function GeneralPanel({
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">상세 설명</label>
             <textarea
-              className="squad-settings-textarea w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm h-24 custom-scrollbar resize-none disabled:bg-gray-50 disabled:text-gray-400"
+              className="squad-settings-textarea custom-scrollbar h-[96px]! min-h-[96px]! w-full resize-none rounded-[12px]! border border-gray-200 px-[16px]! py-[12px]! text-[14px]! leading-[20px]! box-border shadow-sm outline-none transition focus:border-brand disabled:bg-gray-50 disabled:text-gray-400"
               value={form.description}
               disabled={!canManage || saving}
               onChange={(event) => onFormChange({ ...form, description: event.target.value })}
@@ -679,9 +685,9 @@ function GeneralPanel({
           <button
             type="submit"
             disabled={!canManage || saving}
-            className="squad-settings-primary-action px-8 py-3 bg-gray-900 text-white font-bold rounded-xl text-sm hover:bg-black transition shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="squad-settings-primary-action flex h-[44px]! min-w-[138px] items-center justify-center gap-2 whitespace-nowrap rounded-[12px]! bg-gray-900 px-[32px]! py-0! text-[14px]! leading-[20px]! font-bold text-white box-border shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'} />
+            <i className={`${saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'} text-[14px]! leading-[20px]!`} />
             변경사항 저장
           </button>
         </div>
@@ -692,7 +698,7 @@ function GeneralPanel({
 
 function InfoTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="squad-settings-info-tile bg-gray-50 rounded-xl px-4 py-3">
+    <div className="squad-settings-info-tile min-h-[68px] rounded-xl bg-gray-50 px-4 py-3 box-border">
       <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">{label}</p>
       <p className="text-sm font-extrabold text-gray-900">{value}</p>
     </div>
@@ -715,7 +721,7 @@ function MembersPanel({
         </div>
       </div>
 
-      <div className="squad-settings-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="squad-settings-card overflow-hidden rounded-[1rem] border border-[#F3F4F6] bg-white [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 bg-gray-50/50 text-xs font-extrabold text-gray-500 uppercase tracking-wider items-center">
           <div className="col-span-5 pl-4">이름</div>
           <div className="col-span-3">역할</div>
@@ -807,7 +813,7 @@ function IntegrationsPanel({
             github && githubRepositoryUrl.trim() !== (integration?.repositoryUrl ?? '')
 
           return (
-            <div key={provider} className="squad-settings-card bg-white rounded-2xl shadow-sm border border-gray-100 p-6 relative overflow-hidden group hover:border-gray-300 transition">
+            <div key={provider} className="squad-settings-card group relative overflow-hidden rounded-[1rem] border border-[#F3F4F6] bg-white p-6 [box-shadow:0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-gray-300">
               <div className={`absolute top-0 left-0 w-1 h-full ${meta.accent}`} />
               <div className="flex justify-between items-start mb-4 pl-2">
                 <div className="flex items-center gap-3">
@@ -878,7 +884,7 @@ function IntegrationsPanel({
                       type="button"
                       disabled={!canManage || busy || syncingGithub}
                       onClick={() => onToggle(provider, active ? true : undefined)}
-                      className={`squad-settings-integration-action py-2 text-xs font-bold rounded-lg transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : meta.button}`}
+                      className={`squad-settings-integration-action h-[32px]! justify-center whitespace-nowrap rounded-[8px]! px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold box-border shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : meta.button}`}
                     >
                       {busy ? '연결 중' : active ? (githubRepositoryChanged ? '저장/동기화' : '다시 연결') : '연동하기'}
                     </button>
@@ -886,7 +892,7 @@ function IntegrationsPanel({
                       type="button"
                       disabled={!canManage || !active || busy || syncingGithub}
                       onClick={() => onToggle(provider, false)}
-                      className="squad-settings-integration-action rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="squad-settings-integration-action h-[32px]! justify-center whitespace-nowrap rounded-[8px]! border border-gray-200 bg-white px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold text-gray-700 box-border shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       연동 끄기
                     </button>
@@ -896,7 +902,7 @@ function IntegrationsPanel({
                     type="button"
                     disabled={!canManage || !active || busy || syncingGithub}
                     onClick={onSyncGithub}
-                    className="squad-settings-integration-action w-full rounded-lg border border-gray-200 bg-white py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="squad-settings-integration-action h-[32px]! w-full justify-center whitespace-nowrap rounded-[8px]! border border-gray-200 bg-white px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold text-gray-700 box-border shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {syncingGithub ? '동기화 중' : 'GitHub PR만 다시 동기화'}
                   </button>
@@ -906,7 +912,7 @@ function IntegrationsPanel({
                   type="button"
                   disabled={!canManage || busy}
                   onClick={() => onToggle(provider)}
-                  className={`squad-settings-integration-action w-full py-2 text-xs font-bold rounded-lg transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : meta.button}`}
+                  className={`squad-settings-integration-action h-[32px]! w-full justify-center whitespace-nowrap rounded-[8px]! px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold box-border shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${active ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : meta.button}`}
                 >
                   {busy ? '변경 중' : active ? '연동 끄기' : '연동 켜기'}
                 </button>
@@ -949,7 +955,7 @@ function DangerPanel({
               팀원들은 더 이상 칸반이나 코드를 수정할 수 없습니다.
             </p>
           </div>
-          <button type="button" disabled={!canManage || saving} onClick={onArchiveToggle} className="squad-settings-danger-action px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-50 transition shadow-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" disabled={!canManage || saving} onClick={onArchiveToggle} className="squad-settings-danger-action h-[40px]! min-w-[132px] shrink-0 justify-center whitespace-nowrap rounded-[12px]! border border-gray-300 bg-white px-[20px]! py-0! text-[14px]! leading-[20px]! font-bold text-gray-700 box-border shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">
             {settings.status === 'ARCHIVED' ? '스쿼드 보관 해제' : '스쿼드 보관하기'}
           </button>
         </div>
@@ -961,7 +967,7 @@ function DangerPanel({
               모든 데이터, 파일, 디스코드 기록, 칸반 보드 내역이 즉시 삭제되며 절대 복구할 수 없습니다.
             </p>
           </div>
-          <button type="button" disabled={!canManage || saving} onClick={onDeleteOpen} className="squad-settings-danger-action px-5 py-2.5 bg-red-600 text-white text-sm font-bold rounded-xl hover:bg-red-700 transition shadow-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" disabled={!canManage || saving} onClick={onDeleteOpen} className="squad-settings-danger-action h-[40px]! min-w-[132px] shrink-0 justify-center whitespace-nowrap rounded-[12px]! bg-red-600 px-[20px]! py-0! text-[14px]! leading-[20px]! font-bold text-white box-border shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50">
             스쿼드 삭제하기
           </button>
         </div>

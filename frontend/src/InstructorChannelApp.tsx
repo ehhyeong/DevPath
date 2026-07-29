@@ -445,7 +445,7 @@ export default function InstructorChannelApp() {
       />
 
       <main className="instructor-channel-page app-main pb-20">
-        <div className="instructor-channel-body-zoom">
+        <div className="instructor-channel-body-zoom [--instructor-channel-body-zoom:0.9] w-[calc(100%_/_var(--instructor-channel-body-zoom))] ml-[calc((100%_-_(100%_/_var(--instructor-channel-body-zoom)))_/_2)] [zoom:var(--instructor-channel-body-zoom)] origin-top-left [@media(max-width:1023px)]:w-full [@media(max-width:1023px)]:ml-0 [@media(max-width:1023px)]:[zoom:1] [@media(max-width:1023px)]:transform-none">
           {channelNotice ? (
             <div className="border-b border-amber-100 bg-amber-50 px-6 py-3 text-center text-sm font-semibold text-amber-700">
               {channelNotice}

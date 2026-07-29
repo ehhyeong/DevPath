@@ -95,9 +95,9 @@ function syncAuthViewInLocation(view: AuthView | null) {
 }
 
 function buildQuestionFilterClass(active: boolean) {
-  return `qna-filter-btn rounded-xl border px-3 py-2 text-xs font-black transition ${
+  return `qna-filter-btn inline-flex! h-[36px]! items-center! justify-center! rounded-[12px]! border px-[14px]! py-0! text-[13px]! leading-[18px]! font-extrabold! transition ${
     active
-      ? 'active border-gray-900 bg-gray-900 text-white'
+      ? 'border-[#111827] bg-[#111827] text-white'
       : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
   }`
 }
@@ -782,8 +782,8 @@ export default function CourseDetailApp() {
         offsetTopPx={headerOffsetTop}
       />
 
-      <div className="course-detail-page app-main bg-white" style={appMainStyle}>
-        <div className="course-detail-body-zoom">
+      <div className="course-detail-page app-main bg-white!" style={appMainStyle}>
+        <div className="course-detail-body-zoom ml-[calc((100%-(100%/var(--course-detail-body-zoom)))/2)] min-h-full w-[calc(100%/var(--course-detail-body-zoom))] origin-top-left bg-white [--course-detail-body-zoom:0.9] [zoom:var(--course-detail-body-zoom)] max-[1023px]:ml-0 max-[1023px]:w-full max-[1023px]:transform-none max-[1023px]:[zoom:1]">
         {courseNotice ? (
           <div className="border-b border-amber-100 bg-amber-50 px-6 py-3 text-center text-sm font-semibold text-amber-700">
             {courseNotice}
@@ -793,10 +793,10 @@ export default function CourseDetailApp() {
         <section className="bg-gray-900 py-12 text-white">
           <div className="container mx-auto flex flex-col items-center gap-10 px-6 lg:px-20 md:flex-row">
             <div className="flex-1 space-y-4">
-              <div className="course-detail-hero-tags mb-2 flex flex-wrap gap-2">
-                <span className="course-detail-hero-badge rounded bg-primary px-2 py-1 text-xs font-bold text-white">Best Seller</span>
+              <div className="course-detail-hero-tags mb-2 flex flex-wrap items-center! gap-2">
+                <span className="course-detail-hero-badge inline-flex! min-h-[26px]! box-border items-center! justify-center! rounded bg-primary px-2 py-1 text-xs leading-[16px]! font-bold text-white">Best Seller</span>
                 {heroTags.map((tag) => (
-                  <span key={tag} className="job-tag">
+                  <span key={tag} className="job-tag inline-flex! min-h-[26px]! box-border items-center! justify-center! leading-[16px]!">
                     {tag}
                   </span>
                 ))}
@@ -870,32 +870,32 @@ export default function CourseDetailApp() {
 
         <section className="container mx-auto flex flex-col gap-12 px-6 py-12 lg:px-20 md:flex-row">
           <div className="flex-1">
-            <div className="course-detail-tab-bar mb-8 flex border-b border-gray-200 bg-white">
+            <div className="course-detail-tab-bar static! top-auto! z-auto mb-8 flex border-b border-gray-200 bg-white">
               <button
                 type="button"
                 onClick={() => startTransition(() => setActiveTab('info'))}
-                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'info' ? 'active text-primary' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'info' ? 'border-b-[2px] border-[#00c471] font-bold! text-primary' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 강의 정보
               </button>
               <button
                 type="button"
                 onClick={() => startTransition(() => setActiveTab('news'))}
-                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'news' ? 'active text-primary' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'news' ? 'border-b-[2px] border-[#00c471] font-bold! text-primary' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 새소식
               </button>
               <button
                 type="button"
                 onClick={() => startTransition(() => setActiveTab('reviews'))}
-                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'reviews' ? 'active text-primary' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'reviews' ? 'border-b-[2px] border-[#00c471] font-bold! text-primary' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 수강평 <span className="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs">{reviewStats.count}</span>
               </button>
               <button
                 type="button"
                 onClick={() => startTransition(() => setActiveTab('qna'))}
-                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'qna' ? 'active text-primary' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'qna' ? 'border-b-[2px] border-[#00c471] font-bold! text-primary' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 질문 게시판
               </button>
@@ -955,11 +955,11 @@ export default function CourseDetailApp() {
                     {displayCourse.sections.map((section) => {
                       const opened = openSectionIds.includes(section.sectionId)
                       return (
-                        <div key={section.sectionId} className="course-detail-section-card overflow-hidden rounded-xl border border-gray-200">
+                        <div key={section.sectionId} className="course-detail-section-card overflow-hidden rounded-xl border border-gray-200 bg-[#fafafa]">
                           <button
                             type="button"
                             onClick={() => toggleSection(section.sectionId)}
-                            className="accordion-header flex w-full cursor-pointer items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4 transition"
+                            className="accordion-header flex w-full cursor-pointer items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-4 transition hover:bg-[#f9fafb]"
                           >
                             <span className="font-bold text-gray-800">{section.title}</span>
                             <span className="text-xs text-gray-500">
@@ -1124,16 +1124,16 @@ export default function CourseDetailApp() {
                         setQuestionErrors(null)
                         setAskModalOpen(true)
                       }}
-                      className="course-detail-qna-new-button shrink-0 whitespace-nowrap rounded-xl bg-brand px-4 py-2 font-bold text-white transition hover:bg-green-600"
+                      className="course-detail-qna-new-button inline-flex! h-[40px]! shrink-0 items-center! gap-[6px]! whitespace-nowrap rounded-[14px]! bg-brand px-[18px]! py-0! text-[14px]! leading-[18px]! font-extrabold! text-white transition hover:bg-green-600"
                     >
-                      <i className="fas fa-plus mr-1" /> 새 질문
+                      <i className="fas fa-plus mr-0! text-[14px]!" /> 새 질문
                     </button>
                   </div>
                 </div>
 
-                <div className="course-detail-qna-toolbar qna-card mb-6 p-5">
+                <div className="course-detail-qna-toolbar qna-card mb-6 p-[16px]!">
                   <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
-                    <div className="course-detail-qna-filter-group flex items-center gap-2">
+                    <div className="course-detail-qna-filter-group flex items-center gap-[8px]!">
                       <button type="button" onClick={() => setQnaFilter('all')} className={buildQuestionFilterClass(qnaFilter === 'all')}>전체</button>
                       <button type="button" onClick={() => setQnaFilter('pending')} className={buildQuestionFilterClass(qnaFilter === 'pending')}>답변 대기</button>
                       <button type="button" onClick={() => setQnaFilter('answered')} className={buildQuestionFilterClass(qnaFilter === 'answered')}>답변 완료</button>
@@ -1141,12 +1141,12 @@ export default function CourseDetailApp() {
 
                     <div className="flex flex-1 items-center gap-2">
                       <div className="relative w-full">
-                        <i className="course-detail-qna-search-icon fas fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" />
+                        <i className="course-detail-qna-search-icon fas fa-magnifying-glass pointer-events-none absolute top-1/2 left-[14px]! z-[1] w-[14px] -translate-y-1/2 text-center text-[13px]! text-gray-400" />
                         <input
                           id="qnaSearch"
                           value={qnaSearch}
                           onChange={(event) => setQnaSearch(event.target.value)}
-                          className="course-detail-qna-search-input qna-input qna-focus w-full bg-white py-2 pl-9 pr-3 text-sm font-semibold text-gray-700 placeholder:text-gray-400"
+                          className="course-detail-qna-search-input qna-input qna-focus h-[36px]! w-full bg-white py-0! pr-[44px]! pl-[38px]! text-[13px]! leading-[18px]! font-bold! text-gray-700 placeholder:text-[13px]! placeholder:font-bold placeholder:text-[#9ca3af]"
                           placeholder="제목/내용/작성자 키워드 검색"
                         />
                       </div>

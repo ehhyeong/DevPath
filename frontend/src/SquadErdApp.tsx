@@ -721,12 +721,18 @@ export default function SquadErdApp() {
     const html = document.documentElement
     const body = document.body
 
-    html.classList.add('squad-dashboard-document')
-    body.classList.add('squad-dashboard-body')
+    const root = document.getElementById('root')
+    const appViewport = document.querySelector<HTMLElement>('.app-viewport')
+    html.classList.add('h-full!', 'overflow-hidden!')
+    body.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    root?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    appViewport?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
 
     return () => {
-      html.classList.remove('squad-dashboard-document')
-      body.classList.remove('squad-dashboard-body')
+      html.classList.remove('h-full!', 'overflow-hidden!')
+      body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      root?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      appViewport?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
     }
   }, [])
 
@@ -1454,18 +1460,18 @@ export default function SquadErdApp() {
 
   if (loading) {
     return (
-      <div className="squad-dashboard-page squad-erd-page flex h-screen overflow-hidden text-gray-800 items-center justify-center bg-[#F3F4F6]">
+      <div className="squad-dashboard-page squad-erd-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[#374151]">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
       </div>
     )
   }
 
   return (
-    <div className="squad-dashboard-page squad-erd-page flex h-screen w-screen overflow-hidden text-gray-800">
+    <div className="squad-dashboard-page squad-erd-page flex h-screen w-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[#374151] [&_.fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards] [&_.modal-enter]:[animation:modalScaleIn_0.2s_ease-out_forwards]">
       <SquadWorkspaceAside activePage="erd" workspaceId={workspaceId} projectName={projectName} />
 
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
-        <div className="erd-topbar h-16 bg-white border-b border-gray-200 flex justify-between items-center px-6 shrink-0 z-20">
+        <div className="erd-topbar h-[64px]! bg-white border-b border-gray-200 flex justify-between items-center px-[24px]! shrink-0 z-20">
           <div className="flex items-center gap-3">
             <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2">
               <i className="fas fa-project-diagram text-brand"></i> ERD Architect Pro
@@ -1474,30 +1480,30 @@ export default function SquadErdApp() {
               v{schema.tables.length + schema.relationships.length}
             </span>
           </div>
-          <div className="erd-toolbar flex items-center gap-2">
-            <button onClick={() => setHelpOpen(true)} className="erd-toolbar-help w-8 h-8 rounded-full text-gray-400 hover:text-brand hover:bg-green-50 transition flex items-center justify-center" title="도움말">
-              <i className="fas fa-question-circle text-lg"></i>
+          <div className="erd-toolbar flex items-center gap-[8px]!">
+            <button onClick={() => setHelpOpen(true)} className="erd-toolbar-help flex h-[32px]! w-[32px]! items-center justify-center rounded-[9999px]! p-0! text-gray-400 transition hover:bg-green-50 hover:text-brand" title="도움말">
+              <i className="fas fa-question-circle text-[18px]! leading-[28px]!"></i>
             </button>
             <div className="w-px h-8 bg-gray-200 mx-1"></div>
-            <button onClick={restoreHistory} className="erd-toolbar-button erd-toolbar-restore px-4 py-2 rounded-lg text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 transition border border-orange-100">
-              <i className="fas fa-history mr-1"></i> 이전 버전 복구
+            <button onClick={restoreHistory} className="erd-toolbar-button erd-toolbar-restore inline-flex h-[34px]! items-center justify-center whitespace-nowrap rounded-[8px]! border border-orange-100 bg-orange-50 px-[16px]! py-0! text-[12px]! leading-[16px]! font-[700]! text-orange-600 transition hover:bg-orange-100">
+              <i className="fas fa-history mr-1 text-[12px]! leading-[16px]!"></i> 이전 버전 복구
             </button>
-            <button onClick={resetSchema} className="erd-toolbar-button erd-toolbar-reset px-4 py-2 rounded-lg text-xs font-bold text-gray-500 border border-gray-200 hover:bg-gray-50 transition">
-              <i className="fas fa-trash-alt mr-1"></i> 초기화
+            <button onClick={resetSchema} className="erd-toolbar-button erd-toolbar-reset inline-flex h-[34px]! items-center justify-center whitespace-nowrap rounded-[8px]! border border-gray-200 px-[16px]! py-0! text-[12px]! leading-[16px]! font-[700]! text-gray-500 transition hover:bg-gray-50">
+              <i className="fas fa-trash-alt mr-1 text-[12px]! leading-[16px]!"></i> 초기화
             </button>
-            <button onClick={() => void saveDocument()} disabled={saving} className="erd-toolbar-button erd-toolbar-save px-4 py-2 rounded-lg text-xs font-bold text-brand bg-green-50 hover:bg-green-100 transition border border-green-100 disabled:opacity-50">
-              <i className="fas fa-save mr-1"></i> {saving ? '저장 중' : '저장'}
+            <button onClick={() => void saveDocument()} disabled={saving} className="erd-toolbar-button erd-toolbar-save inline-flex h-[34px]! items-center justify-center whitespace-nowrap rounded-[8px]! border border-green-100 bg-green-50 px-[16px]! py-0! text-[12px]! leading-[16px]! font-[700]! text-brand transition hover:bg-green-100 disabled:opacity-50">
+              <i className="fas fa-save mr-1 text-[12px]! leading-[16px]!"></i> {saving ? '저장 중' : '저장'}
             </button>
-            <button onClick={() => setVersionOpen(true)} className="erd-toolbar-button erd-toolbar-versions px-4 py-2 rounded-lg text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 transition border border-purple-100">
-              <i className="fas fa-code-compare mr-1"></i> 버전 기록
+            <button onClick={() => setVersionOpen(true)} className="erd-toolbar-button erd-toolbar-versions inline-flex h-[34px]! items-center justify-center whitespace-nowrap rounded-[8px]! border border-purple-100 bg-purple-50 px-[16px]! py-0! text-[12px]! leading-[16px]! font-[700]! text-purple-600 transition hover:bg-purple-100">
+              <i className="fas fa-code-compare mr-1 text-[12px]! leading-[16px]!"></i> 버전 기록
             </button>
-            <button onClick={() => setSqlImportOpen(true)} className="erd-toolbar-button erd-toolbar-import px-4 py-2 rounded-lg text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition border border-blue-100">
-              <i className="fas fa-file-import mr-1"></i> SQL 가져오기
+            <button onClick={() => setSqlImportOpen(true)} className="erd-toolbar-button erd-toolbar-import inline-flex h-[34px]! items-center justify-center whitespace-nowrap rounded-[8px]! border border-blue-100 bg-blue-50 px-[16px]! py-0! text-[12px]! leading-[16px]! font-[700]! text-blue-600 transition hover:bg-blue-100">
+              <i className="fas fa-file-import mr-1 text-[12px]! leading-[16px]!"></i> SQL 가져오기
             </button>
-            <button onClick={() => exportSql(schema)} className="erd-toolbar-button erd-toolbar-export bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition shadow-lg flex items-center gap-2">
-              <i className="fas fa-file-code"></i> SQL 내보내기
+            <button onClick={() => exportSql(schema)} className="erd-toolbar-button erd-toolbar-export inline-flex h-[34px]! items-center justify-center gap-[8px]! whitespace-nowrap rounded-[8px]! bg-blue-600 px-[20px]! py-0! text-[12px]! leading-[16px]! font-[700]! text-white shadow-lg transition hover:bg-blue-700">
+              <i className="fas fa-file-code text-[12px]! leading-[16px]!"></i> SQL 내보내기
             </button>
-            <button onClick={() => setChatOpen(true)} className="erd-toolbar-chat w-9 h-9 rounded-lg bg-blue-50 text-blue-600 border border-blue-200 flex items-center justify-center hover:bg-blue-100 transition shadow-sm ml-1 relative" title="설계 토론방">
+            <button onClick={() => setChatOpen(true)} className="erd-toolbar-chat relative ml-[4px]! flex h-[36px]! w-[36px]! items-center justify-center rounded-[8px]! border border-blue-200 bg-blue-50 p-0! text-[16px]! leading-[20px]! text-blue-600 shadow-sm transition hover:bg-blue-100" title="설계 토론방">
               <i className="fas fa-comments"></i>
               {messages.length > 0 ? <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-white"></span> : null}
             </button>
@@ -1508,31 +1514,31 @@ export default function SquadErdApp() {
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          <div className="erd-schema-panel w-96 bg-white border-r border-gray-200 flex flex-col shadow-[4px_0_20px_rgba(0,0,0,0.02)] z-10">
-            <div className="erd-schema-tabs flex border-b border-gray-200 bg-gray-50 shrink-0">
-              <button className="erd-schema-tab flex-1 py-3 text-xs font-bold text-brand border-b-2 border-brand bg-white">테이블 관리</button>
+          <div className="erd-schema-panel z-10 flex w-[384px]! flex-[0_0_384px]! flex-col border-r border-gray-200 bg-white shadow-[4px_0_20px_rgba(0,0,0,0.02)]">
+            <div className="erd-schema-tabs flex h-[41px]! shrink-0 border-b border-gray-200 bg-gray-50">
+              <button className="erd-schema-tab h-[40px]! flex-1 border-b-[2px]! border-brand bg-white p-0! text-[12px]! leading-[16px]! font-[700]! text-brand">테이블 관리</button>
             </div>
 
             <div className="flex-1 flex flex-col overflow-hidden bg-white">
-              <div className="erd-schema-action-wrap p-4 border-b border-gray-100 bg-white shrink-0">
-                <div className="erd-schema-actions grid grid-cols-2 gap-2">
-                  <button onClick={addTable} className="erd-schema-action-button flex items-center justify-center gap-1.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition border border-gray-200 group">
-                    <i className="fas fa-plus text-brand"></i> 테이블 추가
+              <div className="erd-schema-action-wrap shrink-0 border-b border-gray-100 bg-white p-[16px]!">
+                <div className="erd-schema-actions grid grid-cols-2 gap-[8px]!">
+                  <button onClick={addTable} className="erd-schema-action-button group flex h-[38px]! items-center justify-center gap-[6px]! rounded-[8px]! border border-gray-200 bg-gray-100 p-0! text-[12px]! leading-[16px]! font-[700]! text-gray-700 transition hover:bg-gray-200">
+                    <i className="fas fa-plus text-[12px]! leading-[16px]! text-brand"></i> 테이블 추가
                   </button>
-                  <button onClick={openRelationModal} className="erd-schema-action-button flex items-center justify-center gap-1.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition border border-gray-200 group">
-                    <i className="fas fa-link text-blue-500"></i> 관계 연결
+                  <button onClick={openRelationModal} className="erd-schema-action-button group flex h-[38px]! items-center justify-center gap-[6px]! rounded-[8px]! border border-gray-200 bg-gray-100 p-0! text-[12px]! leading-[16px]! font-[700]! text-gray-700 transition hover:bg-gray-200">
+                    <i className="fas fa-link text-[12px]! leading-[16px]! text-blue-500"></i> 관계 연결
                   </button>
                 </div>
               </div>
 
-              <div className="erd-schema-list-container flex-1 overflow-y-auto p-4 space-y-4 bg-white">
-                <div className="erd-schema-list-heading flex items-center gap-2 mb-2">
-                  <span className="erd-schema-list-title text-[10px] font-bold text-gray-400 uppercase">Schema List</span>
+              <div className="erd-schema-list-container flex-1 space-y-4 overflow-y-auto bg-white p-[16px]!">
+                <div className="erd-schema-list-heading mb-[8px]! flex min-h-[16px] items-center gap-[8px]!">
+                  <span className="erd-schema-list-title text-[10px]! leading-[16px]! font-[700]! text-gray-400 uppercase">Schema List</span>
                   <div className="h-px bg-gray-100 flex-1"></div>
                 </div>
 
                 {validationIssues.length > 0 ? (
-                  <div className="erd-validation-box rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <div className="erd-validation-box mb-[12px]! rounded-xl border border-amber-200 bg-amber-50 p-3">
                     <div className="flex items-center gap-2 text-[10px] font-extrabold text-amber-700 mb-2">
                       <i className="fas fa-triangle-exclamation"></i>
                       설계 검증 {validationIssues.length}개
@@ -1546,29 +1552,29 @@ export default function SquadErdApp() {
                     </ul>
                   </div>
                 ) : (
-                  <div className="erd-validation-box rounded-xl border border-green-100 bg-green-50 p-3 text-[10px] font-bold text-green-700">
+                  <div className="erd-validation-box mb-[12px]! rounded-xl border border-green-100 bg-green-50 p-3 text-[10px] font-bold text-green-700">
                     <i className="fas fa-circle-check mr-1"></i> 기본 관계 검증 통과
                   </div>
                 )}
 
                 <div className="erd-schema-list space-y-4">
                   {schema.tables.length === 0 ? (
-                    <div className="erd-schema-empty rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
+                    <div className="erd-schema-empty rounded-[12px]! border border-dashed border-gray-200 bg-gray-50 p-[24px]! text-center [&_button]:text-[12px]! [&_button]:leading-[16px]! [&_p]:text-[12px]! [&_p]:leading-[16px]!">
                       <i className="fas fa-table text-2xl text-gray-300 mb-2"></i>
                       <p className="text-xs font-bold text-gray-500">아직 테이블이 없습니다.</p>
                       <button onClick={addTable} className="mt-3 text-xs font-bold text-brand">첫 테이블 추가</button>
                     </div>
                   ) : (
                     schema.tables.map((table, tableIndex) => (
-                      <div key={table.id} className="erd-table-card bg-white border border-gray-200 rounded-xl overflow-hidden fade-in shadow-sm">
-                        <div className="erd-table-card-header p-3 bg-gray-50 border-b border-gray-100 flex justify-between items-center group">
+                      <div key={table.id} className={`erd-table-card fade-in overflow-hidden rounded-[12px]! border border-gray-200 bg-white shadow-sm ${tableIndex > 0 ? 'mt-[16px]!' : ''}`}>
+                        <div className="erd-table-card-header group flex min-h-[41px] items-center justify-between border-b border-gray-100 bg-gray-50 p-[12px]!">
                           <input
                             type="text"
                             value={table.name}
                             onChange={(event) => updateTableName(tableIndex, event.target.value)}
-                            className="erd-table-name-input bg-transparent font-bold text-gray-700 text-xs w-32 outline-none border-b border-transparent focus:border-brand transition"
+                            className="erd-table-name-input w-[128px]! border-b border-transparent bg-transparent text-[12px]! leading-[16px]! font-[700]! text-gray-700 outline-none transition focus:border-brand"
                           />
-                          <div className="erd-table-card-actions flex gap-1">
+                          <div className="erd-table-card-actions flex gap-[4px]!">
                             <button
                               onClick={() =>
                                 openCommentTarget({
@@ -1577,7 +1583,7 @@ export default function SquadErdApp() {
                                   targetLabel: table.name,
                                 })
                               }
-                              className="erd-table-icon-button text-gray-400 hover:text-blue-500 px-1 transition"
+                              className="erd-table-icon-button inline-flex h-[22px]! w-[22px]! items-center justify-center p-0! text-[12px]! leading-[16px]! text-gray-400 transition hover:text-blue-500"
                               title="테이블 코멘트"
                             >
                               <i className="fas fa-comment"></i>
@@ -1585,55 +1591,55 @@ export default function SquadErdApp() {
                                 <span className="ml-0.5 text-[9px]">{commentCount('TABLE', table.name)}</span>
                               ) : null}
                             </button>
-                            <button onClick={() => addColumn(tableIndex)} className="erd-table-icon-button text-gray-400 hover:text-brand px-1 transition" title="컬럼 추가">
+                            <button onClick={() => addColumn(tableIndex)} className="erd-table-icon-button inline-flex h-[22px]! w-[22px]! items-center justify-center p-0! text-[12px]! leading-[16px]! text-gray-400 transition hover:text-brand" title="컬럼 추가">
                               <i className="fas fa-plus"></i>
                             </button>
-                            <button onClick={() => deleteTable(tableIndex)} className="erd-table-icon-button text-gray-400 hover:text-red-500 px-1 transition" title="테이블 삭제">
+                            <button onClick={() => deleteTable(tableIndex)} className="erd-table-icon-button inline-flex h-[22px]! w-[22px]! items-center justify-center p-0! text-[12px]! leading-[16px]! text-gray-400 transition hover:text-red-500" title="테이블 삭제">
                               <i className="fas fa-trash"></i>
                             </button>
                           </div>
                         </div>
 
-                        <div className="erd-column-list p-2 space-y-1 bg-white">
+                        <div className="erd-column-list space-y-1 bg-white p-[8px]!">
                           {table.columns.map((column, columnIndex) => (
-                            <div key={`${table.id}-${columnIndex}`} className="erd-column-editor rounded-lg border border-gray-100 bg-gray-50 p-2">
-                              <div className="erd-column-row flex items-center gap-2 text-xs">
+                            <div key={`${table.id}-${columnIndex}`} className={`erd-column-editor rounded-lg border border-gray-100 bg-gray-50 p-[8px]! ${columnIndex > 0 ? 'mt-[4px]!' : ''}`}>
+                              <div className="erd-column-row flex min-h-[26px] items-center gap-[8px]! text-[12px]! leading-[16px]!">
                                 <input
                                   type="text"
                                   value={column.name}
                                   onChange={(event) => updateColumn(tableIndex, columnIndex, { name: event.target.value })}
-                                  className="erd-column-name-input bg-white text-gray-700 w-20 px-1.5 py-1 rounded border border-transparent focus:border-brand outline-none transition"
+                                  className="erd-column-name-input h-[26px]! w-[80px]! rounded-[4px]! border border-transparent bg-white px-[6px]! py-[4px]! text-[12px]! leading-[16px]! text-gray-700 outline-none transition focus:border-brand"
                                 />
                                 <select
                                   value={column.type}
                                   onChange={(event) => updateColumn(tableIndex, columnIndex, { type: event.target.value })}
-                                  className="erd-column-type-select bg-white text-blue-600 w-20 px-1 py-1 rounded border border-gray-200 outline-none cursor-pointer text-[10px]"
+                                  className="erd-column-type-select h-[26px]! w-[80px]! cursor-pointer rounded-[4px]! border border-gray-200 bg-white p-[4px]! text-[10px]! leading-[16px]! text-blue-600 outline-none"
                                 >
                                   {SQL_TYPE_OPTIONS.map((type) => (
                                     <option key={type} value={type}>{type.replace('(255)', '')}</option>
                                   ))}
                                 </select>
-                                <button onClick={() => deleteColumn(tableIndex, columnIndex)} className="erd-column-delete-button text-gray-300 hover:text-red-500 ml-auto px-1">
+                                <button onClick={() => deleteColumn(tableIndex, columnIndex)} className="erd-column-delete-button ml-auto h-[22px] min-w-[22px] px-[4px]! text-[12px]! leading-[16px]! text-gray-300 hover:text-red-500">
                                   &times;
                                 </button>
                               </div>
-                              <div className="erd-column-flags flex flex-wrap gap-1 mt-2">
-                                <button onClick={() => togglePrimaryKey(tableIndex, columnIndex)} className={`erd-column-flag-button px-1 ${column.pk ? 'text-yellow-600 bg-yellow-50 border-yellow-200' : 'text-gray-400 bg-white border-gray-200'}`}>
+                              <div className="erd-column-flags mt-2 flex flex-wrap gap-[4px]!">
+                                <button onClick={() => togglePrimaryKey(tableIndex, columnIndex)} className={`erd-column-flag-button h-[22px] min-w-[22px] rounded-[6px] border px-[4px]! text-[9px]! leading-[18px]! font-[800] ${column.pk ? 'text-yellow-600 bg-yellow-50 border-yellow-200' : 'text-gray-400 bg-white border-gray-200'}`}>
                                   PK
                                 </button>
-                                <button onClick={() => updateColumn(tableIndex, columnIndex, { fk: !column.fk })} className={`erd-column-flag-button px-1 ${column.fk ? 'text-purple-600 bg-purple-50 border-purple-200' : 'text-gray-400 bg-white border-gray-200'}`}>
+                                <button onClick={() => updateColumn(tableIndex, columnIndex, { fk: !column.fk })} className={`erd-column-flag-button h-[22px] min-w-[22px] rounded-[6px] border px-[4px]! text-[9px]! leading-[18px]! font-[800] ${column.fk ? 'text-purple-600 bg-purple-50 border-purple-200' : 'text-gray-400 bg-white border-gray-200'}`}>
                                   FK
                                 </button>
-                                <button onClick={() => updateColumn(tableIndex, columnIndex, { notNull: !column.notNull })} className={`erd-column-flag-button px-1 ${column.notNull ? 'text-red-600 bg-red-50 border-red-200' : 'text-gray-400 bg-white border-gray-200'}`}>
+                                <button onClick={() => updateColumn(tableIndex, columnIndex, { notNull: !column.notNull })} className={`erd-column-flag-button h-[22px] min-w-[22px] rounded-[6px] border px-[4px]! text-[9px]! leading-[18px]! font-[800] ${column.notNull ? 'text-red-600 bg-red-50 border-red-200' : 'text-gray-400 bg-white border-gray-200'}`}>
                                   NN
                                 </button>
-                                <button onClick={() => updateColumn(tableIndex, columnIndex, { unique: !column.unique })} className={`erd-column-flag-button px-1 ${column.unique ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-400 bg-white border-gray-200'}`}>
+                                <button onClick={() => updateColumn(tableIndex, columnIndex, { unique: !column.unique })} className={`erd-column-flag-button h-[22px] min-w-[22px] rounded-[6px] border px-[4px]! text-[9px]! leading-[18px]! font-[800] ${column.unique ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-400 bg-white border-gray-200'}`}>
                                   UQ
                                 </button>
-                                <button onClick={() => updateColumn(tableIndex, columnIndex, { indexed: !column.indexed })} className={`erd-column-flag-button px-1 ${column.indexed ? 'text-green-600 bg-green-50 border-green-200' : 'text-gray-400 bg-white border-gray-200'}`}>
+                                <button onClick={() => updateColumn(tableIndex, columnIndex, { indexed: !column.indexed })} className={`erd-column-flag-button h-[22px] min-w-[22px] rounded-[6px] border px-[4px]! text-[9px]! leading-[18px]! font-[800] ${column.indexed ? 'text-green-600 bg-green-50 border-green-200' : 'text-gray-400 bg-white border-gray-200'}`}>
                                   IX
                                 </button>
-                                <button onClick={() => updateColumn(tableIndex, columnIndex, { autoIncrement: !column.autoIncrement })} className={`erd-column-flag-button px-1 ${column.autoIncrement ? 'text-orange-600 bg-orange-50 border-orange-200' : 'text-gray-400 bg-white border-gray-200'}`}>
+                                <button onClick={() => updateColumn(tableIndex, columnIndex, { autoIncrement: !column.autoIncrement })} className={`erd-column-flag-button h-[22px] min-w-[22px] rounded-[6px] border px-[4px]! text-[9px]! leading-[18px]! font-[800] ${column.autoIncrement ? 'text-orange-600 bg-orange-50 border-orange-200' : 'text-gray-400 bg-white border-gray-200'}`}>
                                   AI
                                 </button>
                                 <button
@@ -1644,25 +1650,25 @@ export default function SquadErdApp() {
                                       targetLabel: `${table.name}.${column.name}`,
                                     })
                                   }
-                                  className="erd-column-flag-button px-1 text-blue-500 bg-white border-blue-100"
+                                  className="erd-column-flag-button h-[22px] min-w-[22px] rounded-[6px] border border-blue-100 bg-white px-[4px]! text-[9px]! leading-[18px]! font-[800] text-blue-500"
                                 >
                                   <i className="fas fa-comment mr-0.5"></i>
                                   {commentCount('COLUMN', `${table.name}.${column.name}`)}
                                 </button>
                               </div>
-                              <div className="erd-column-extra-row grid grid-cols-2 gap-1 mt-2">
+                              <div className="erd-column-extra-row mt-2 grid grid-cols-2 gap-[4px]!">
                                 <input
                                   type="text"
                                   value={column.defaultValue ?? ''}
                                   onChange={(event) => updateColumn(tableIndex, columnIndex, { defaultValue: event.target.value })}
-                                  className="erd-column-extra-input"
+                                  className="erd-column-extra-input h-[24px] min-w-0 rounded-[6px] border border-[#E5E7EB] bg-white px-[6px] text-[10px]! leading-[15px]! outline-none focus:border-[#00C471]"
                                   placeholder="DEFAULT"
                                 />
                                 <input
                                   type="text"
                                   value={column.check ?? ''}
                                   onChange={(event) => updateColumn(tableIndex, columnIndex, { check: event.target.value })}
-                                  className="erd-column-extra-input"
+                                  className="erd-column-extra-input h-[24px] min-w-0 rounded-[6px] border border-[#E5E7EB] bg-white px-[6px] text-[10px]! leading-[15px]! outline-none focus:border-[#00C471]"
                                   placeholder="CHECK"
                                 />
                               </div>
@@ -1674,11 +1680,11 @@ export default function SquadErdApp() {
                   )}
 
                   {schema.relationships.length > 0 ? (
-                    <div className="erd-relationship-list rounded-xl border border-blue-100 bg-blue-50/60 p-3">
+                    <div className="erd-relationship-list mt-[16px]! rounded-xl border border-blue-100 bg-blue-50/60 p-3">
                       <p className="text-[10px] font-extrabold text-blue-700 uppercase mb-2">Relationships</p>
                       <div className="space-y-2">
                         {schema.relationships.map((relationship) => (
-                          <div key={relationship.id} className="erd-relationship-item rounded-lg bg-white border border-blue-100 p-2">
+                          <div key={relationship.id} className="erd-relationship-item rounded-lg bg-white border border-blue-100 p-2 text-[10px]!">
                             <div className="flex items-center justify-between gap-2">
                               <p className="min-w-0 truncate text-[10px] font-bold text-gray-800">
                                 {relationship.from}.{relationship.fromColumn || '?'} → {relationship.to}.{relationship.toColumn || '?'}
@@ -1718,21 +1724,21 @@ export default function SquadErdApp() {
               </div>
             </div>
 
-            <div className="erd-code-panel h-64 border-t border-gray-200 p-2 bg-[#1E1E1E] shrink-0">
-              <div className="ide-container h-full">
-                <div className="erd-ide-header ide-header flex justify-between items-center px-3 py-1.5">
-                  <span className="erd-ide-title text-[10px] font-bold text-gray-400 flex items-center gap-1">
-                    <i className="fas fa-code"></i> schema.mermaid
+            <div className="erd-code-panel h-[256px]! shrink-0 border-t border-gray-200 bg-[#1E1E1E] p-[8px]!">
+              <div className="ide-container flex h-full flex-col overflow-hidden rounded-[12px] border border-[#333] bg-[#1E1E1E] text-[#D4D4D4] [box-shadow:0_10px_15px_-3px_rgba(0,0,0,0.2)]">
+                <div className="erd-ide-header ide-header flex h-[28px]! items-center justify-between px-[12px]! py-0!">
+                  <span className="erd-ide-title flex items-center gap-[4px]! text-[10px]! leading-[16px]! font-[700]! text-gray-400">
+                    <i className="fas fa-code text-[10px]! leading-[16px]!"></i> schema.mermaid
                   </span>
-                  <span className="erd-ide-status text-[9px] text-gray-500">Live Editor</span>
+                  <span className="erd-ide-status text-[9px]! leading-[14px]! text-gray-500">Live Editor</span>
                 </div>
-                <div className="erd-code-body flex-1 flex p-1 relative overflow-hidden">
-                  <div className="erd-line-numbers line-numbers text-[10px] font-mono leading-relaxed opacity-40 pt-1 text-gray-400">1</div>
+                <div className="erd-code-body relative flex flex-1 overflow-hidden p-[4px]!">
+                  <div className="erd-line-numbers line-numbers w-[16px] pt-[4px]! font-mono text-[10px]! leading-[16px]! text-gray-400 opacity-40">1</div>
                   <textarea
                     ref={textareaRef}
                     value={mermaidCode}
                     onChange={(event) => handleCodeChange(event.target.value)}
-                    className="erd-code-textarea code-editor text-[11px] leading-relaxed p-1"
+                    className="erd-code-textarea code-editor h-full w-full resize-none border-none bg-[#1E1E1E] p-[4px]! [font-family:'Consolas','JetBrains_Mono',monospace]! text-[11px]! leading-[16.5px]! text-[#9CDCFE] outline-none"
                     spellCheck={false}
                   />
                 </div>
@@ -1741,7 +1747,7 @@ export default function SquadErdApp() {
           </div>
 
           <div
-            className="erd-diagram-wrapper flex-1 relative"
+            className="erd-diagram-wrapper relative flex-1 cursor-grab overflow-hidden bg-white bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] bg-[size:20px_20px] active:cursor-grabbing"
             onMouseDown={(event) => {
               if (event.button !== 0) {
                 return
@@ -1764,7 +1770,7 @@ export default function SquadErdApp() {
             }}
           >
             <div
-              className="erd-pan-zoom-container"
+              className="erd-pan-zoom-container flex h-full w-full items-center justify-center origin-center [transition:transform_0.1s_ease-out]"
               style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})` }}
             >
               {diagramSvg ? (
@@ -1797,7 +1803,7 @@ export default function SquadErdApp() {
           </div>
         </div>
 
-        <div className={`absolute top-16 right-0 bottom-0 w-80 bg-white border-l border-gray-200 shadow-2xl flex flex-col transform ${chatOpen ? 'translate-x-0' : 'translate-x-full'} erd-chat-drawer`}>
+        <div className={`absolute top-16 right-0 bottom-0 w-80 bg-white border-l border-gray-200 shadow-2xl flex flex-col transform ${chatOpen ? 'translate-x-0' : 'translate-x-full'} erd-chat-drawer z-[60] transition-[transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]`}>
           <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-blue-50/50 shrink-0">
             <h3 className="font-extrabold text-gray-900 flex items-center gap-2">
               <i className="fas fa-comments text-blue-500"></i> 설계 토론방
@@ -1842,7 +1848,7 @@ export default function SquadErdApp() {
 
       {versionOpen ? (
         <div className="erd-version-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="erd-version-modal-panel bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden modal-enter flex max-h-[88vh]">
+          <div className="erd-version-modal-panel modal-enter flex max-h-[88vh]! w-full max-w-[1024px]! overflow-hidden rounded-2xl bg-white shadow-2xl">
             <aside className="w-80 border-r border-gray-100 bg-gray-50 flex flex-col">
               <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
@@ -1946,7 +1952,7 @@ export default function SquadErdApp() {
 
       {commentTarget ? (
         <div className="erd-comment-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
-          <div className="erd-comment-modal-panel bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden modal-enter">
+          <div className="erd-comment-modal-panel modal-enter w-full max-w-[448px]! overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <div className="min-w-0">
                 <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
@@ -1997,14 +2003,14 @@ export default function SquadErdApp() {
       ) : null}
 
       {relationModalOpen ? (
-        <div className="erd-relation-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <form onSubmit={addRelationship} className="erd-relation-modal-panel bg-white w-80 rounded-2xl shadow-2xl p-6 modal-enter">
-            <h3 className="erd-relation-modal-title text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <i className="fas fa-link text-brand"></i> 관계 설정
+        <div className="erd-relation-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-0! backdrop-blur-sm">
+          <form onSubmit={addRelationship} className="erd-relation-modal-panel modal-enter w-[320px]! max-w-[320px]! rounded-[16px]! bg-white p-[24px]! [box-shadow:0_25px_50px_-12px_rgba(0,0,0,0.25)]!">
+            <h3 className="erd-relation-modal-title mb-[16px]! flex items-center gap-[8px]! text-[14px]! leading-[20px]! font-[700]! text-gray-900">
+              <i className="fas fa-link text-[14px]! leading-[20px]! text-brand"></i> 관계 설정
             </h3>
             <div className="erd-relation-field-list space-y-4">
               <div className="erd-relation-field">
-                <label className="erd-relation-label block text-xs font-bold text-gray-500 mb-1">출발 테이블</label>
+                <label className="erd-relation-label mb-[4px]! block text-[12px]! leading-[16px]! font-[700]! text-gray-500">출발 테이블</label>
                 <select
                   value={relationForm.from}
                   onChange={(event) => {
@@ -2017,13 +2023,13 @@ export default function SquadErdApp() {
                       toColumn: current.toColumn || `${event.target.value.toLowerCase()}_${nextColumn}`,
                     }))
                   }}
-                  className="erd-relation-control w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 outline-none focus:border-brand"
+                  className="erd-relation-control h-[34px]! w-full! rounded-[8px]! border border-gray-200 bg-gray-50 px-[12px]! py-[8px]! pr-[28px]! text-[12px]! leading-[16px]! outline-none focus:border-brand"
                 >
                   {schema.tables.map((table) => <option key={table.id} value={table.name}>{table.name}</option>)}
                 </select>
               </div>
-              <div className="erd-relation-field">
-                <label className="erd-relation-label block text-xs font-bold text-gray-500 mb-1">도착 테이블</label>
+              <div className="erd-relation-field mt-[16px]!">
+                <label className="erd-relation-label mb-[4px]! block text-[12px]! leading-[16px]! font-[700]! text-gray-500">도착 테이블</label>
                 <select
                   value={relationForm.to}
                   onChange={(event) => {
@@ -2035,32 +2041,32 @@ export default function SquadErdApp() {
                       toColumn: existingFk || `${current.from.toLowerCase()}_${current.fromColumn}`,
                     }))
                   }}
-                  className="erd-relation-control w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 outline-none focus:border-brand"
+                  className="erd-relation-control h-[34px]! w-full! rounded-[8px]! border border-gray-200 bg-gray-50 px-[12px]! py-[8px]! pr-[28px]! text-[12px]! leading-[16px]! outline-none focus:border-brand"
                 >
                   {schema.tables.map((table) => <option key={table.id} value={table.name}>{table.name}</option>)}
                 </select>
               </div>
-              <div className="erd-relation-grid grid grid-cols-2 gap-2">
+              <div className="erd-relation-grid mt-[16px]! grid grid-cols-2 gap-[8px]!">
                 <div className="erd-relation-field">
-                  <label className="erd-relation-label block text-xs font-bold text-gray-500 mb-1">부모 PK</label>
-                  <select value={relationForm.fromColumn} onChange={(event) => setRelationForm((current) => ({ ...current, fromColumn: event.target.value }))} className="erd-relation-control w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none focus:border-brand">
+                  <label className="erd-relation-label mb-[4px]! block text-[12px]! leading-[16px]! font-[700]! text-gray-500">부모 PK</label>
+                  <select value={relationForm.fromColumn} onChange={(event) => setRelationForm((current) => ({ ...current, fromColumn: event.target.value }))} className="erd-relation-control h-[34px]! w-full! rounded-[8px]! border border-gray-200 bg-white px-[12px]! py-[8px]! pr-[28px]! text-[12px]! leading-[16px]! outline-none focus:border-brand">
                     {(schema.tables.find((table) => table.name === relationForm.from)?.columns ?? []).map((column) => (
                       <option key={column.name} value={column.name}>{column.name}</option>
                     ))}
                   </select>
                 </div>
                 <div className="erd-relation-field">
-                  <label className="erd-relation-label block text-xs font-bold text-gray-500 mb-1">자식 FK</label>
+                  <label className="erd-relation-label mb-[4px]! block text-[12px]! leading-[16px]! font-[700]! text-gray-500">자식 FK</label>
                   <input
                     value={relationForm.toColumn}
                     onChange={(event) => setRelationForm((current) => ({ ...current, toColumn: event.target.value }))}
                     type="text"
-                    className="erd-relation-control w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-brand"
+                    className="erd-relation-control h-[34px]! w-full! rounded-[8px]! border border-gray-200 px-[12px]! py-[8px]! text-[12px]! leading-[16px]! outline-none focus:border-brand"
                     placeholder="user_id"
                   />
                 </div>
               </div>
-              <label className="erd-relation-checkbox flex items-center gap-2 text-xs font-bold text-gray-600">
+              <label className="erd-relation-checkbox mt-[16px]! flex min-h-[22px] items-center gap-2 text-[12px]! leading-[16px]! font-bold text-gray-600">
                 <input
                   type="checkbox"
                   checked={relationForm.autoCreateFk}
@@ -2068,28 +2074,28 @@ export default function SquadErdApp() {
                 />
                 FK 컬럼이 없으면 자동 생성
               </label>
-              <div className="erd-relation-field">
-                <label className="erd-relation-label block text-xs font-bold text-gray-500 mb-1">관계 유형</label>
-                <select value={relationForm.type} onChange={(event) => setRelationForm((current) => ({ ...current, type: event.target.value }))} className="erd-relation-control w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none focus:border-brand">
+              <div className="erd-relation-field mt-[16px]!">
+                <label className="erd-relation-label mb-[4px]! block text-[12px]! leading-[16px]! font-[700]! text-gray-500">관계 유형</label>
+                <select value={relationForm.type} onChange={(event) => setRelationForm((current) => ({ ...current, type: event.target.value }))} className="erd-relation-control h-[34px]! w-full! rounded-[8px]! border border-gray-200 bg-white px-[12px]! py-[8px]! pr-[28px]! text-[12px]! leading-[16px]! outline-none focus:border-brand">
                   {RELATIONSHIP_TYPE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
               </div>
-              <div className="erd-relation-field">
-                <label className="erd-relation-label block text-xs font-bold text-gray-500 mb-1">삭제 규칙</label>
-                <select value={relationForm.onDelete} onChange={(event) => setRelationForm((current) => ({ ...current, onDelete: event.target.value as ErdRelationship['onDelete'] }))} className="erd-relation-control w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none focus:border-brand">
+              <div className="erd-relation-field mt-[16px]!">
+                <label className="erd-relation-label mb-[4px]! block text-[12px]! leading-[16px]! font-[700]! text-gray-500">삭제 규칙</label>
+                <select value={relationForm.onDelete} onChange={(event) => setRelationForm((current) => ({ ...current, onDelete: event.target.value as ErdRelationship['onDelete'] }))} className="erd-relation-control h-[34px]! w-full! rounded-[8px]! border border-gray-200 bg-white px-[12px]! py-[8px]! pr-[28px]! text-[12px]! leading-[16px]! outline-none focus:border-brand">
                   {ON_DELETE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                 </select>
               </div>
-              <div className="erd-relation-field">
-                <label className="erd-relation-label block text-xs font-bold text-gray-500 mb-1">설명</label>
-                <input value={relationForm.label} onChange={(event) => setRelationForm((current) => ({ ...current, label: event.target.value }))} type="text" className="erd-relation-control w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-brand" />
+              <div className="erd-relation-field mt-[16px]!">
+                <label className="erd-relation-label mb-[4px]! block text-[12px]! leading-[16px]! font-[700]! text-gray-500">설명</label>
+                <input value={relationForm.label} onChange={(event) => setRelationForm((current) => ({ ...current, label: event.target.value }))} type="text" className="erd-relation-control h-[34px]! w-full! rounded-[8px]! border border-gray-200 px-[12px]! py-[8px]! text-[12px]! leading-[16px]! outline-none focus:border-brand" />
               </div>
             </div>
-            <div className="erd-relation-actions flex justify-end gap-2 mt-6">
-              <button type="button" onClick={() => setRelationModalOpen(false)} className="erd-relation-cancel px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition">취소</button>
-              <button type="submit" className="erd-relation-submit px-5 py-2 bg-brand text-white text-xs font-bold rounded-lg hover:bg-green-600 transition">연결</button>
+            <div className="erd-relation-actions mt-[24px]! flex justify-end gap-[8px]!">
+              <button type="button" onClick={() => setRelationModalOpen(false)} className="erd-relation-cancel inline-flex h-[34px]! items-center justify-center rounded-[8px]! px-[16px]! py-0! text-[12px]! leading-[16px]! font-[700]! text-gray-500 transition hover:bg-gray-100">취소</button>
+              <button type="submit" className="erd-relation-submit inline-flex h-[34px]! items-center justify-center rounded-[8px]! bg-brand px-[20px]! py-0! text-[12px]! leading-[16px]! font-[700]! text-white transition hover:bg-green-600">연결</button>
             </div>
           </form>
         </div>
@@ -2097,7 +2103,7 @@ export default function SquadErdApp() {
 
       {sqlImportOpen ? (
         <div className="erd-sql-import-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="erd-sql-import-panel bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden modal-enter">
+          <div className="erd-sql-import-panel modal-enter w-full max-w-[672px]! overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
                 <i className="fas fa-file-import text-blue-500"></i> SQL 가져오기
@@ -2108,7 +2114,7 @@ export default function SquadErdApp() {
               <textarea
                 value={sqlImportText}
                 onChange={(event) => setSqlImportText(event.target.value)}
-                className="erd-sql-import-textarea w-full h-72 rounded-xl border border-gray-200 bg-gray-950 text-blue-100 font-mono text-xs p-4 outline-none focus:border-blue-400"
+                className="erd-sql-import-textarea h-[288px]! w-full rounded-xl border border-gray-200 bg-gray-950 p-4 [font-family:'Consolas','JetBrains_Mono',monospace]! text-xs text-blue-100 outline-none focus:border-blue-400"
                 spellCheck={false}
                 placeholder={'CREATE TABLE users (\n  id BIGINT PRIMARY KEY,\n  email VARCHAR(255) NOT NULL UNIQUE\n);'}
               />
@@ -2125,34 +2131,34 @@ export default function SquadErdApp() {
       ) : null}
 
       {helpOpen ? (
-        <div className="erd-help-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="erd-help-modal-panel bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden modal-enter flex flex-col max-h-[90vh]">
-            <div className="erd-help-modal-header px-8 py-5 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-              <h2 className="erd-help-modal-title text-xl font-bold text-gray-900 flex items-center gap-3">
-                <span className="erd-help-modal-icon w-8 h-8 bg-brand rounded-lg flex items-center justify-center text-white text-sm">
+        <div className="erd-help-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-[16px]! backdrop-blur-sm">
+          <div className="erd-help-modal-panel modal-enter flex max-h-[90vh]! w-full max-w-[1024px]! flex-col overflow-hidden rounded-[16px]! bg-white [box-shadow:0_25px_50px_-12px_rgba(0,0,0,0.25)]!">
+            <div className="erd-help-modal-header flex min-h-[73px] items-center justify-between border-b border-gray-100 bg-gray-50 px-[32px]! py-[20px]! box-border">
+              <h2 className="erd-help-modal-title m-0 flex items-center gap-[12px]! text-[20px]! leading-[28px]! font-[700]! text-gray-900">
+                <span className="erd-help-modal-icon flex h-[32px]! w-[32px]! flex-[0_0_32px] items-center justify-center rounded-[8px]! bg-brand text-[14px]! leading-[20px]! text-white">
                   <i className="fas fa-book"></i>
                 </span>
                 DevPath ERD 가이드북
               </h2>
-              <button onClick={() => setHelpOpen(false)} className="erd-help-modal-close text-gray-400 hover:text-gray-700 text-2xl transition">&times;</button>
+              <button onClick={() => setHelpOpen(false)} className="erd-help-modal-close flex h-[28px] w-[28px] items-center justify-center p-0 text-[24px]! leading-[28px]! text-gray-400 transition hover:text-gray-700">&times;</button>
             </div>
-            <div className="erd-help-modal-body flex-1 overflow-y-auto p-8 bg-white">
-              <div className="erd-help-modal-grid grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="erd-help-modal-body flex-1 overflow-y-auto bg-white! p-[32px]! [&_.help-card]:rounded-[12px]! [&_.help-card]:border [&_.help-card]:border-[#E5E7EB] [&_.help-card]:bg-[#F9FAFB] [&_.help-card]:p-[16px]! [&_.text-xl]:text-[20px]! [&_.text-xl]:leading-[28px]! [&_.text-sm]:text-[14px]! [&_.text-sm]:leading-[20px]! [&_.text-xs]:text-[12px]! [&_.text-xs]:leading-[16px]! [&_.text-\[10px\]]:text-[10px]! [&_.text-\[10px\]]:leading-[16px]!">
+              <div className="erd-help-modal-grid grid grid-cols-1 gap-[32px]! md:grid-cols-2">
                 <div className="erd-help-modal-column space-y-6">
                   <div>
-                    <h4 className="erd-help-modal-section-title text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <h4 className="erd-help-modal-section-title m-0 mb-[12px] flex items-center gap-[8px]! text-[18px]! leading-[28px]! font-[700]! text-gray-900">
                       <i className="fas fa-keyboard text-purple-500"></i> 필수 단축키 안내
                     </h4>
                     <div className="space-y-3">
-                      <div className="help-card flex gap-3 items-start">
-                        <div className="erd-help-key-chip px-2 py-1 bg-gray-200 text-gray-800 font-mono text-xs rounded border border-gray-300 shadow-sm mt-1 shrink-0">Ctrl+S</div>
+                      <div className="help-card flex items-start gap-3">
+                        <div className="erd-help-key-chip mt-[4px]! shrink-0 rounded-[4px]! border border-gray-300 bg-gray-200 px-[8px]! py-[4px]! font-mono text-xs text-[12px]! leading-[16px]! text-gray-800 shadow-sm">Ctrl+S</div>
                         <div>
                           <p className="text-sm font-bold text-gray-800">빠른 저장</p>
                           <p className="text-xs text-gray-500 leading-relaxed">작업 중인 ERD를 시스템에 안전하게 저장합니다.</p>
                         </div>
                       </div>
-                      <div className="help-card flex gap-3 items-start">
-                        <div className="erd-help-key-chip px-2 py-1 bg-gray-200 text-gray-800 font-mono text-xs rounded border border-gray-300 shadow-sm mt-1 shrink-0">Ctrl+Z</div>
+                      <div className="help-card flex items-start gap-3">
+                        <div className="erd-help-key-chip mt-[4px]! shrink-0 rounded-[4px]! border border-gray-300 bg-gray-200 px-[8px]! py-[4px]! font-mono text-xs text-[12px]! leading-[16px]! text-gray-800 shadow-sm">Ctrl+Z</div>
                         <div>
                           <p className="text-sm font-bold text-gray-800">실행 취소 (Undo)</p>
                           <p className="text-xs text-gray-500 leading-relaxed">코드 에디터에서 실수로 지운 내용을 즉시 복구합니다.</p>
@@ -2164,16 +2170,16 @@ export default function SquadErdApp() {
 
                 <div className="erd-help-modal-column space-y-6">
                   <div>
-                    <h4 className="erd-help-modal-section-title text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <h4 className="erd-help-modal-section-title m-0 mb-[12px] flex items-center gap-[8px]! text-[18px]! leading-[28px]! font-[700]! text-gray-900">
                       <i className="fas fa-mouse text-blue-500"></i> 마우스 조작 & 에디터
                     </h4>
-                    <div className="erd-help-action-grid grid grid-cols-2 gap-3 mb-3">
-                      <div className="help-card text-center py-4">
+                    <div className="erd-help-action-grid mb-[12px]! grid grid-cols-2 gap-[12px]!">
+                      <div className="help-card py-4 text-center">
                         <div className="text-xl text-gray-400 mb-1"><i className="fas fa-arrows-alt"></i></div>
                         <p className="text-xs font-bold text-gray-700">이동 (Pan)</p>
                         <p className="text-[10px] text-gray-400">빈 공간 드래그</p>
                       </div>
-                      <div className="help-card text-center py-4">
+                      <div className="help-card py-4 text-center">
                         <div className="text-xl text-gray-400 mb-1"><i className="fas fa-search-plus"></i></div>
                         <p className="text-xs font-bold text-gray-700">확대/축소</p>
                         <p className="text-[10px] text-gray-400">마우스 휠</p>
@@ -2187,8 +2193,8 @@ export default function SquadErdApp() {
                 </div>
               </div>
             </div>
-            <div className="erd-help-modal-footer p-5 border-t border-gray-100 bg-gray-50 flex justify-end">
-              <button onClick={() => setHelpOpen(false)} className="erd-help-modal-confirm px-6 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-black transition shadow-md">확인했습니다</button>
+            <div className="erd-help-modal-footer flex min-h-[81px] justify-end border-t border-gray-100 bg-gray-50 p-[20px]! box-border">
+              <button onClick={() => setHelpOpen(false)} className="erd-help-modal-confirm h-[40px] min-w-[96px] rounded-[12px]! bg-gray-900 px-[24px]! py-0! text-[14px]! leading-[20px]! font-[700]! text-white shadow-md transition hover:bg-black">확인했습니다</button>
             </div>
           </div>
         </div>

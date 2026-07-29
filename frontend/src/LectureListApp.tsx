@@ -392,20 +392,22 @@ export default function LectureListApp() {
         activeNavHref="/lecture-list"
       />
 
-      <main className="lecture-list-page app-main w-full bg-white">
-        <div className="lecture-list-category-shell sticky top-16 z-40 border-b border-gray-200 bg-white shadow-sm" onMouseLeave={() => setMegaMenuOpen(false)}>
+      <main className="lecture-list-page app-main flex w-full flex-col overflow-visible! bg-white pb-0!">
+        <div className="relative! top-auto! z-[900] h-[80px] flex-[0_0_80px] overflow-visible border-b border-gray-200 bg-white shadow-sm" onMouseLeave={() => setMegaMenuOpen(false)}>
           <div className="mx-auto max-w-7xl px-6">
             {loadingCatalogMenu ? (
               <div className="flex h-20 items-center text-sm font-medium text-gray-400">강의 메뉴를 불러오는 중입니다.</div>
             ) : categoryConfigs.length > 0 ? (
-              <div className="lecture-list-hide-scroll overflow-x-auto">
+              <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <div
-                  className="lecture-list-category-grid grid h-20 min-w-full text-sm"
+                  className="grid h-[80px]! min-w-full text-sm max-[1023px]:min-w-max"
                   style={{ gridTemplateColumns: `repeat(${categoryConfigs.length}, minmax(112px, 1fr))` }}
                 >
                   {categoryConfigs.map((category) => {
                     const active = selectedCategoryKey === category.key
-                    const buttonClassName = `lecture-category-btn ${active ? 'active' : ''}`
+                    const buttonClassName = `flex h-full w-full flex-col items-center justify-center [border-bottom:3px_solid_transparent] text-[#4b5563] [transition:all_0.2s] hover:text-[#00c471] ${
+                      active ? '[border-bottom-color:#00c471]! font-bold text-[#00c471]!' : ''
+                    }`
                     const isOverviewCategory = category.key === overviewCategoryKey
 
                     if (isOverviewCategory) {
@@ -434,15 +436,15 @@ export default function LectureListApp() {
           </div>
 
           {megaMenuOpen && desktopMegaMenuCategories.length > 0 ? (
-            <div className="lecture-mega-panel fixed top-[144px] left-0 right-0 z-50 hidden border-t border-gray-200 bg-white shadow-2xl xl:block">
+            <div className="fixed top-[144px]! right-0 left-0 z-[950]! hidden h-[400px]! overflow-visible border-t border-gray-200 bg-white shadow-2xl xl:block">
               <div className="mx-auto max-w-7xl px-6">
                 <div
-                  className="lecture-mega-grid grid min-h-[400px]"
+                  className="grid h-[400px]! min-h-[400px]! [grid-auto-rows:400px]"
                   style={{ gridTemplateColumns: `repeat(${desktopMegaMenuCategories.length + 1}, minmax(0, 1fr))` }}
                 >
-                  <div className="lecture-mega-intro flex flex-col justify-center border-r border-gray-100 bg-gray-50 px-8">
+                  <div className="box-border flex h-[400px]! min-w-0 flex-col justify-center border-r border-gray-100 bg-gray-50 px-8">
                     <h3 className="mb-2 text-base font-bold text-gray-900">전체 카테고리</h3>
-                    <p className="text-xs leading-relaxed text-gray-500">원하는 분야를 선택해보세요.</p>
+                    <p className="whitespace-nowrap text-xs leading-relaxed text-gray-500">원하는 분야를 선택해보세요.</p>
                   </div>
 
                   {desktopMegaMenuCategories.map((category, index) => (
@@ -457,16 +459,16 @@ export default function LectureListApp() {
                           handleSelectCategory(category.key)
                         }
                       }}
-                      className={`lecture-mega-column p-8 text-left ${index < desktopMegaMenuCategories.length - 1 ? 'border-r border-gray-100' : ''}`}
+                      className={`box-border block h-[400px]! min-w-0 cursor-pointer p-[32px]! text-left ${index < desktopMegaMenuCategories.length - 1 ? 'border-r border-gray-100' : ''}`}
                     >
-                      <h3 className="lecture-mega-title mb-4 flex w-full items-center gap-2 border-b-2 border-gray-900 pb-2 text-sm font-bold text-gray-900">
-                        <i className={`${category.icon} text-brand`} />
+                      <h3 className="mb-4 flex h-[30px] min-w-0 w-full items-center gap-2 whitespace-nowrap border-b-2 border-gray-900 pb-2 text-sm leading-[20px] font-bold text-gray-900">
+                        <i className={`${category.icon} text-brand w-[16px] basis-[16px] text-center`} />
                         {category.label}
                       </h3>
-                      <ul className="lecture-mega-list text-sm text-gray-600">
+                      <ul className="grid text-sm text-gray-600 [grid-auto-rows:20px] gap-y-[12px]">
                         {category.megaMenuItems.map((item) => (
-                          <li key={`${category.key}-${item.label}`} className="lecture-mega-item">
-                            <span className="lecture-mega-label block transition hover:text-brand hover:font-bold">{item.label}</span>
+                          <li key={`${category.key}-${item.label}`} className="h-[20px] min-w-0">
+                            <span className="block h-[20px] overflow-hidden text-ellipsis whitespace-nowrap leading-[20px] transition hover:text-brand hover:font-bold">{item.label}</span>
                           </li>
                         ))}
                       </ul>
@@ -478,9 +480,9 @@ export default function LectureListApp() {
           ) : null}
         </div>
 
-        <div ref={scrollRegionRef} className="lecture-list-scroll-region">
-          <div className="lecture-list-body-zoom pb-20">
-            <div className="lecture-filter-section border-b border-gray-200 bg-white py-6 transition-all duration-300">
+        <div ref={scrollRegionRef} className="min-h-0 flex-auto overflow-x-hidden overflow-y-auto overscroll-y-contain bg-white [scrollbar-gutter:stable]">
+          <div className="ml-[calc((100%-(100%/var(--lecture-list-body-zoom)))/2)] w-[calc((100%-5px)/var(--lecture-list-body-zoom))] origin-top-left pb-20 [--lecture-list-body-zoom:0.9] [zoom:var(--lecture-list-body-zoom)] max-[1023px]:ml-0 max-[1023px]:w-full max-[1023px]:transform-none max-[1023px]:[zoom:1]">
+            <div className="border-b border-gray-200 bg-white! py-6 transition-all duration-300">
               <div className="mx-auto max-w-7xl px-6">
             {catalogMenuError ? (
               <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -499,7 +501,9 @@ export default function LectureListApp() {
                           key={`${group.name}-${tag.name}`}
                           type="button"
                           onClick={() => setSelectedTag((current) => (current === tag.name ? null : tag.name))}
-                          className={`lecture-sub-tag ${selectedTag === tag.name ? 'active' : ''}`}
+                          className={`whitespace-nowrap rounded-[4px] border border-[#e5e7eb] bg-white px-[12px] py-[6px] text-[13px]! text-[#6b7280] [transition:all_0.2s] hover:border-[#00c471] hover:text-[#00c471] ${
+                            selectedTag === tag.name ? 'border-[#00c471] bg-[#00c471] font-semibold text-white' : ''
+                          }`}
                         >
                           {tag.name}
                         </button>
@@ -510,45 +514,45 @@ export default function LectureListApp() {
               </div>
             ) : null}
 
-            <div className="lecture-filter-toolbar mt-6 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-6 md:flex-row">
-              <div className="lecture-list-hide-scroll flex w-full items-center gap-3 overflow-x-auto md:w-auto">
-                <label className="lecture-filter-select-shell">
-                  <select value={difficultyFilter} onChange={(event) => setDifficultyFilter(event.target.value as LectureDifficultyFilter)} className="lecture-filter-select">
+            <div className="mt-[8px]! flex min-h-[51px] flex-col items-center justify-between gap-4 border-t border-gray-200 pt-[12px]! md:flex-row max-[767px]:items-stretch">
+              <div className="flex w-full items-center gap-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] md:w-auto [&::-webkit-scrollbar]:hidden">
+                <label className="relative inline-flex w-[112px] min-w-[112px] items-center max-[767px]:min-w-0">
+                  <select value={difficultyFilter} onChange={(event) => setDifficultyFilter(event.target.value as LectureDifficultyFilter)} className="h-[38px] w-full appearance-none rounded-[8px] border border-[#d1d5db] bg-[#f9fafb] py-[8px] pr-[34px] pl-[12px] text-[14px]! leading-[20px]! text-[#374151] outline-none focus:border-[#9ca3af]">
                     <option value="ALL">난이도 전체</option>
                     <option value="BEGINNER">입문</option>
                     <option value="INTERMEDIATE">중급</option>
                     <option value="ADVANCED">고급</option>
                   </select>
-                  <i className="fas fa-chevron-down lecture-filter-select-icon" />
+                  <i className="fas fa-chevron-down pointer-events-none absolute top-1/2 right-[12px] -translate-y-1/2 text-[14px]! leading-[14px]! text-[#4b5563]" />
                 </label>
-                <label className="lecture-filter-select-shell">
-                  <select value={priceFilter} onChange={(event) => setPriceFilter(event.target.value as LecturePriceFilter)} className="lecture-filter-select">
+                <label className="relative inline-flex w-[112px] min-w-[112px] items-center max-[767px]:min-w-0">
+                  <select value={priceFilter} onChange={(event) => setPriceFilter(event.target.value as LecturePriceFilter)} className="h-[38px] w-full appearance-none rounded-[8px] border border-[#d1d5db] bg-[#f9fafb] py-[8px] pr-[34px] pl-[12px] text-[14px]! leading-[20px]! text-[#374151] outline-none focus:border-[#9ca3af]">
                     <option value="ALL">가격 전체</option>
                     <option value="FREE">무료</option>
                     <option value="UNDER_50000">5만원 이하</option>
                     <option value="UNDER_100000">10만원 이하</option>
                     <option value="OVER_100000">10만원 초과</option>
                   </select>
-                  <i className="fas fa-chevron-down lecture-filter-select-icon" />
+                  <i className="fas fa-chevron-down pointer-events-none absolute top-1/2 right-[12px] -translate-y-1/2 text-[14px]! leading-[14px]! text-[#4b5563]" />
                 </label>
-                <label className="lecture-discount-filter flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" checked={onlyFree} onChange={(event) => setOnlyFree(event.target.checked)} className="accent-[#00C471]" />
+                <label className="flex h-[38px] items-center gap-2 text-[14px]! leading-[20px]! text-gray-700">
+                  <input type="checkbox" checked={onlyFree} onChange={(event) => setOnlyFree(event.target.checked)} className="h-[16px] w-[16px] flex-[0_0_16px] accent-[#00C471]" />
                   무료만 보기
                 </label>
               </div>
 
-              <div className="lecture-search-sort-row flex w-full items-center gap-3 md:w-auto">
+              <div className="flex min-h-[38px] w-full items-center gap-3 md:w-auto max-[767px]:min-w-0 max-[767px]:flex-col max-[767px]:items-stretch">
                 <div className="relative flex-1 md:w-64">
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     placeholder="강의명 검색"
-                    className="lecture-search-input w-full rounded-lg border border-gray-300 py-2 pr-4 pl-9 text-sm"
+                    className="h-[38px] w-full rounded-[8px] border border-[#d1d5db] bg-[#f9fafb] py-[8px]! pr-[16px]! pl-[36px]! text-[14px]! leading-[20px]! text-[#374151] outline-none placeholder:text-[#9ca3af] placeholder:opacity-100 focus:border-[#9ca3af] max-[767px]:min-w-0"
                   />
-                  <i className="lecture-search-icon fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
+                  <i className="fas fa-search absolute top-1/2 left-[12px] -translate-y-1/2 text-[14px]! leading-[14px]! text-[#9ca3af]!" />
                 </div>
-                <select value={sortKey} onChange={(event) => setSortKey(event.target.value as LectureSortKey)} className="lecture-sort-select bg-transparent text-sm font-bold text-gray-700">
+                <select value={sortKey} onChange={(event) => setSortKey(event.target.value as LectureSortKey)} className="h-[38px] rounded-[8px] border border-[#d1d5db] bg-[#f9fafb]! py-[8px] pr-[32px] pl-[12px] text-[14px]! leading-[20px]! font-bold text-[#374151] outline-none focus:border-[#9ca3af] max-[767px]:min-w-0">
                   <option value="recommended">추천순</option>
                   <option value="latest">최신순</option>
                   <option value="priceAsc">가격 낮은순</option>
@@ -606,7 +610,7 @@ export default function LectureListApp() {
                 return (
                   <div
                     key={course.courseId}
-                    className="lecture-course-card group relative cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white"
+                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white [transition:all_0.2s_ease-in-out] hover:-translate-y-[4px] hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)]"
                     onClick={() => handleCourseOpen(course.courseId)}
                   >
                     <div className="relative aspect-video overflow-hidden bg-gray-100">

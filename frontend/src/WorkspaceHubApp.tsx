@@ -404,7 +404,7 @@ export default function WorkspaceHubApp() {
               <button
                 type="button"
                 onClick={openProjectCreateModal}
-                className="workspace-hub-create-btn bg-brand hover:bg-green-600 text-white px-5 py-3 rounded-xl text-sm font-extrabold transition flex items-center gap-2 shadow-sm w-full md:w-auto justify-center"
+                className="workspace-hub-create-btn flex h-[40px]! w-full items-center justify-center gap-2 rounded-[10px]! bg-brand px-[18px]! py-0! text-[13px]! leading-[1]! font-extrabold text-white shadow-sm transition hover:bg-green-600 md:w-auto"
               >
                 <i className="fas fa-plus"></i> 새 프로젝트 시작
               </button>
@@ -412,17 +412,17 @@ export default function WorkspaceHubApp() {
           </div>
 
           <div className="flex-1 p-8 overflow-y-auto pt-2 custom-scrollbar">
-            <div className="workspace-hub-filter-row flex flex-wrap items-center gap-3 mb-6">
-              <div className="workspace-hub-filter-group flex gap-1.5 bg-gray-100/80 p-0.5 rounded-full">
-                <button onClick={() => setTypeFilter('all')} className={typeFilter === 'all' ? 'workspace-hub-filter-btn type-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn type-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>전체 보기</button>
-                <button onClick={() => setTypeFilter('squad')} className={typeFilter === 'squad' ? 'workspace-hub-filter-btn type-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn type-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>팀 (Squad)</button>
-                <button onClick={() => setTypeFilter('mentoring')} className={typeFilter === 'mentoring' ? 'workspace-hub-filter-btn type-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn type-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>멘토링</button>
+            <div className="workspace-hub-filter-row mb-6 flex flex-wrap items-center gap-[12px]!">
+              <div className="workspace-hub-filter-group flex gap-[6px]! rounded-full bg-gray-100/80 p-[2px]!">
+                <button onClick={() => setTypeFilter('all')} className={typeFilter === 'all' ? 'workspace-hub-filter-btn type-filter active inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-gray-200 bg-white px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50' : 'workspace-hub-filter-btn type-filter inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-transparent px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-500 transition hover:text-gray-700'}>전체 보기</button>
+                <button onClick={() => setTypeFilter('squad')} className={typeFilter === 'squad' ? 'workspace-hub-filter-btn type-filter active inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-gray-200 bg-white px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50' : 'workspace-hub-filter-btn type-filter inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-transparent px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-500 transition hover:text-gray-700'}>팀 (Squad)</button>
+                <button onClick={() => setTypeFilter('mentoring')} className={typeFilter === 'mentoring' ? 'workspace-hub-filter-btn type-filter active inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-gray-200 bg-white px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50' : 'workspace-hub-filter-btn type-filter inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-transparent px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-500 transition hover:text-gray-700'}>멘토링</button>
               </div>
               <div className="w-px h-5 bg-gray-300 hidden sm:block"></div>
-              <div className="workspace-hub-filter-group flex gap-1.5 bg-gray-100/80 p-0.5 rounded-full">
-                <button onClick={() => setStatusFilter('all')} className={statusFilter === 'all' ? 'workspace-hub-filter-btn status-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn status-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>상태 전체</button>
-                <button onClick={() => setStatusFilter('progress')} className={statusFilter === 'progress' ? 'workspace-hub-filter-btn status-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn status-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>진행 중</button>
-                <button onClick={() => setStatusFilter('completed')} className={statusFilter === 'completed' ? 'workspace-hub-filter-btn status-filter active px-3 py-1 rounded-full bg-white shadow-sm border border-gray-200 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition' : 'workspace-hub-filter-btn status-filter px-3 py-1 rounded-full border border-transparent text-[11px] font-bold text-gray-500 hover:text-gray-700 transition'}>완료됨</button>
+              <div className="workspace-hub-filter-group flex gap-[6px]! rounded-full bg-gray-100/80 p-[2px]!">
+                <button onClick={() => setStatusFilter('all')} className={statusFilter === 'all' ? 'workspace-hub-filter-btn status-filter active inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-gray-200 bg-white px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50' : 'workspace-hub-filter-btn status-filter inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-transparent px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-500 transition hover:text-gray-700'}>상태 전체</button>
+                <button onClick={() => setStatusFilter('progress')} className={statusFilter === 'progress' ? 'workspace-hub-filter-btn status-filter active inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-gray-200 bg-white px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50' : 'workspace-hub-filter-btn status-filter inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-transparent px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-500 transition hover:text-gray-700'}>진행 중</button>
+                <button onClick={() => setStatusFilter('completed')} className={statusFilter === 'completed' ? 'workspace-hub-filter-btn status-filter active inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-gray-200 bg-white px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50' : 'workspace-hub-filter-btn status-filter inline-flex! h-[34px]! items-center! justify-center! rounded-full border border-transparent px-[18px]! py-0! text-[12px]! leading-[1]! font-bold text-gray-500 transition hover:text-gray-700'}>완료됨</button>
               </div>
             </div>
 
@@ -743,38 +743,38 @@ function SettingsModal({ project, onClose }: { project: WorkspaceHubProject | nu
   }
 
   return (
-    <div id="settingsModal" className={project ? 'workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active' : 'workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4'}>
-      <div className="workspace-hub-modal-content workspace-hub-settings-modal bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-        <div className="workspace-hub-settings-header p-6 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="workspace-hub-settings-title font-extrabold text-gray-900 text-lg">
+    <div id="settingsModal" className={project ? 'workspace-hub-modal-overlay active fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/40 p-4 opacity-100 visible backdrop-blur-sm [transition:opacity_0.2s]' : 'workspace-hub-modal-overlay fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/40 p-4 opacity-0 invisible backdrop-blur-sm [transition:opacity_0.2s]'}>
+      <div className={`workspace-hub-modal-content workspace-hub-settings-modal w-[448px]! max-w-[calc(100vw-32px)]! overflow-hidden rounded-[16px]! bg-white [box-shadow:0_20px_45px_rgba(17,24,39,0.18)]! [transition:transform_0.2s_cubic-bezier(0.16,1,0.3,1)] ${project ? '[transform:scale(1)]' : '[transform:scale(0.95)]'}`}>
+        <div className="workspace-hub-settings-header flex min-h-[77px]! items-center justify-between border-b border-gray-100 p-[24px]!">
+          <h3 className="workspace-hub-settings-title text-[18px]! leading-[28px]! font-extrabold text-gray-900">
             <i className="fas fa-cog text-brand mr-2"></i>프로젝트 설정
           </h3>
-          <button onClick={onClose} className="workspace-hub-settings-close text-gray-400 hover:text-gray-600 transition">
+          <button onClick={onClose} className="workspace-hub-settings-close h-[24px]! w-[24px]! text-[20px]! leading-[1]! text-gray-400 transition hover:text-gray-600">
             <i className="fas fa-times text-xl"></i>
           </button>
         </div>
-        <div className="workspace-hub-settings-body p-6 space-y-4">
+        <div className="workspace-hub-settings-body space-y-4 gap-[16px]! p-[24px]!">
           <div>
-            <label className="workspace-hub-settings-label block text-xs font-bold text-gray-600 mb-1.5">프로젝트 이름</label>
-            <input value={project?.title ?? ''} readOnly className="workspace-hub-settings-control w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition" />
+            <label className="workspace-hub-settings-label mb-[6px]! block text-[12px]! leading-[16px]! font-bold text-gray-600">프로젝트 이름</label>
+            <input value={project?.title ?? ''} readOnly className="workspace-hub-settings-control h-[42px]! w-full rounded-[12px]! border border-gray-200 px-[16px]! py-0! text-[14px]! leading-[20px]! outline-none transition focus:border-brand focus:ring-1 focus:ring-brand" />
           </div>
           <div>
-            <label className="workspace-hub-settings-label block text-xs font-bold text-gray-600 mb-1.5">설명</label>
-            <textarea value={project?.description ?? ''} readOnly rows={3} className="workspace-hub-settings-control workspace-hub-settings-textarea w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none transition resize-none"></textarea>
+            <label className="workspace-hub-settings-label mb-[6px]! block text-[12px]! leading-[16px]! font-bold text-gray-600">설명</label>
+            <textarea value={project?.description ?? ''} readOnly rows={3} className="workspace-hub-settings-control workspace-hub-settings-textarea h-[86px]! w-full resize-none rounded-[12px]! border border-gray-200 px-[16px]! py-[10px]! text-[14px]! leading-[20px]! outline-none transition focus:border-brand focus:ring-1 focus:ring-brand"></textarea>
           </div>
           <div>
-            <label className="workspace-hub-settings-label block text-xs font-bold text-gray-600 mb-1.5">공개 범위</label>
-            <select className="workspace-hub-settings-control w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:border-brand outline-none transition bg-white" defaultValue="팀원만 보기 (Private)">
+            <label className="workspace-hub-settings-label mb-[6px]! block text-[12px]! leading-[16px]! font-bold text-gray-600">공개 범위</label>
+            <select className="workspace-hub-settings-control h-[42px]! w-full rounded-[12px]! border border-gray-200 bg-white px-[16px]! py-0! text-[14px]! leading-[20px]! outline-none transition focus:border-brand" defaultValue="팀원만 보기 (Private)">
               <option>팀원만 보기 (Private)</option>
               <option>라운지 공개 (Public)</option>
             </select>
           </div>
         </div>
-        <div className="workspace-hub-settings-footer p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
-          <button onClick={onClose} className="workspace-hub-settings-secondary-btn px-5 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition">
+        <div className="workspace-hub-settings-footer flex justify-end gap-[8px]! border-t border-gray-100 bg-gray-50 p-[16px]!">
+          <button onClick={onClose} className="workspace-hub-settings-secondary-btn h-[40px]! rounded-[12px]! px-[20px]! py-0! text-[14px]! leading-[20px]! font-bold text-gray-600 transition hover:bg-gray-200">
             취소
           </button>
-          <button onClick={handleSave} className="workspace-hub-settings-primary-btn px-5 py-2 rounded-xl text-sm font-bold bg-brand text-white hover:bg-green-600 transition">
+          <button onClick={handleSave} className="workspace-hub-settings-primary-btn h-[40px]! rounded-[12px]! bg-brand px-[20px]! py-0! text-[14px]! leading-[20px]! font-bold text-white transition hover:bg-green-600">
             변경사항 저장
           </button>
         </div>
@@ -844,8 +844,8 @@ function MembersModal({
   const members = settings?.members ?? []
 
   return (
-    <div id="membersModal" className="workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active">
-      <div className="workspace-hub-modal-content workspace-hub-members-modal bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+    <div id="membersModal" className="workspace-hub-modal-overlay active fixed inset-0 z-[1000]! flex items-center justify-center bg-gray-900/40 p-4 opacity-100! visible! backdrop-blur-sm [transition:opacity_0.2s]!">
+      <div className="workspace-hub-modal-content workspace-hub-members-modal w-[448px]! max-w-[calc(100vw-32px)]! overflow-hidden rounded-[16px]! bg-white [box-shadow:0_20px_45px_rgba(17,24,39,0.18)]! [transform:scale(1)]! [transition:transform_0.2s_cubic-bezier(0.16,1,0.3,1)]!">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <h3 className="font-extrabold text-gray-900 text-lg">
             <i className="fas fa-users text-blue-500 mr-2"></i>멤버 관리
@@ -854,7 +854,7 @@ function MembersModal({
             <i className="fas fa-times text-xl"></i>
           </button>
         </div>
-        <div className="workspace-hub-members-list p-2 max-h-60 overflow-y-auto">
+        <div className="workspace-hub-members-list max-h-[240px]! overflow-y-auto p-[8px]!">
           {loadingMembers ? (
             <div className="p-6 text-center text-xs font-bold text-gray-400">멤버 목록을 불러오는 중입니다.</div>
           ) : null}
@@ -863,22 +863,22 @@ function MembersModal({
           ) : null}
           {!loadingMembers &&
             members.map((member) => (
-              <div key={member.memberId} className="workspace-hub-member-row flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition">
+              <div key={member.memberId} className="workspace-hub-member-row flex min-h-[64px]! items-center justify-between rounded-[12px]! p-[12px]! transition hover:bg-gray-50">
                 <div className="flex items-center gap-3 min-w-0">
                   <UserAvatar
                     name={member.learnerName ?? `member-${member.learnerId}`}
                     imageUrl={member.learnerId === currentUserId ? currentUserProfileImage ?? member.profileImage ?? null : member.profileImage ?? null}
-                    className="workspace-hub-member-avatar w-10 h-10 shadow-sm shrink-0"
+                    className="workspace-hub-member-avatar h-[40px]! w-[40px]! shrink-0 shadow-sm"
                     iconClassName="text-sm"
                   />
                   <div className="min-w-0">
-                    <p className="workspace-hub-member-name text-sm font-bold text-gray-900 flex items-center gap-1 truncate">
+                    <p className="workspace-hub-member-name flex items-center gap-1 truncate text-[14px]! leading-[20px]! font-bold text-gray-900">
                       <span className="truncate">{member.learnerName ?? '이름 없는 멤버'}</span>
                       {member.learnerId === currentUserId ? (
                         <span className="bg-brand text-white text-[9px] px-1.5 py-0.5 rounded shrink-0">나</span>
                       ) : null}
                     </p>
-                    <p className="workspace-hub-member-role text-[10px] text-gray-400">
+                    <p className="workspace-hub-member-role text-[10px]! leading-[14px]! text-gray-400">
                       {member.position ?? member.roleLabel ?? '역할 미정'}
                     </p>
                   </div>
@@ -886,8 +886,8 @@ function MembersModal({
               </div>
             ))}
         </div>
-        <div className="workspace-hub-members-footer p-4 border-t border-gray-100 bg-gray-50 text-center">
-          <button onClick={onClose} className="workspace-hub-members-footer-button w-full py-2.5 rounded-xl text-sm font-bold bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition shadow-sm">
+        <div className="workspace-hub-members-footer border-t border-gray-100 bg-gray-50 p-[16px]! text-center">
+          <button onClick={onClose} className="workspace-hub-members-footer-button h-[42px]! w-full rounded-[12px]! border border-gray-300 bg-white px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">
             닫기
           </button>
         </div>
@@ -910,8 +910,8 @@ function ProjectCreateModal({
   }
 
   return (
-    <div className="workspace-hub-modal-overlay fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 active" onClick={onClose}>
-      <div className="workspace-hub-modal-content workspace-hub-project-create-modal w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
+    <div className="workspace-hub-modal-overlay active fixed inset-0 z-[1000]! flex items-center justify-center bg-gray-900/40 p-4 opacity-100! visible! backdrop-blur-sm [transition:opacity_0.2s]!" onClick={onClose}>
+      <div className="workspace-hub-modal-content workspace-hub-project-create-modal w-full max-w-[64rem]! [transform:scale(1)]! [transition:transform_0.2s_cubic-bezier(0.16,1,0.3,1)]!" onClick={(event) => event.stopPropagation()}>
         <ProjectCreatePanel onClose={onClose} onCreated={onCreated} />
       </div>
     </div>

@@ -315,10 +315,16 @@ export default function CommunityLoungeApp() {
 
   useEffect(() => {
     document.title = 'DevPath - 라운지'
-    document.body.classList.add('community-lounge-body')
+    const root = document.getElementById('root')
+    const bodyClasses = ['h-[100dvh]!', 'min-h-0!', 'overflow-hidden!']
+    const rootClasses = ['h-[100dvh]!', 'min-h-0!']
+
+    document.body.classList.add(...bodyClasses)
+    root?.classList.add(...rootClasses)
 
     return () => {
-      document.body.classList.remove('community-lounge-body')
+      document.body.classList.remove(...bodyClasses)
+      root?.classList.remove(...rootClasses)
     }
   }, [])
 
@@ -787,7 +793,7 @@ export default function CommunityLoungeApp() {
     <div className="flex h-screen overflow-hidden text-gray-800">
       <ProjectAside activeKey="lounge" mySquads={asideSquads} />
 
-      <div className="community-lounge-page contents">
+      <div className="contents text-[16px] leading-[24px] [&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_select]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]! [&_button]:text-[14px]! [&_button]:leading-[20px]! [&_input]:text-[14px]! [&_input]:leading-[20px]! [&_select]:text-[14px]! [&_select]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]! [&_.text-4xl]:text-[36px]! [&_.text-4xl]:leading-[40px]! [&_.text-2xl]:text-[24px]! [&_.text-2xl]:leading-[32px]! [&_.text-xl]:text-[20px]! [&_.text-xl]:leading-[28px]! [&_.text-lg]:text-[18px]! [&_.text-lg]:leading-[28px]! [&_.text-base]:text-[16px]! [&_.text-base]:leading-[24px]! [&_.text-sm]:text-[14px]! [&_.text-sm]:leading-[20px]! [&_.text-xs]:text-[12px]! [&_.text-xs]:leading-[16px]! [&_.text-\[11px\]]:text-[11px]! [&_.text-\[11px\]]:leading-[16px]! [&_.text-\[10px\]]:text-[10px]! [&_.text-\[10px\]]:leading-[14px]! [&_.text-\[9px\]]:text-[9px]! [&_.text-\[9px\]]:leading-[12px]! [&_input::placeholder]:text-[14px]! [&_input::placeholder]:leading-[normal]! [&_input::placeholder]:text-[#9CA3AF]! [&_input::placeholder]:opacity-100! [&_textarea::placeholder]:text-[14px]! [&_textarea::placeholder]:leading-[normal]! [&_textarea::placeholder]:text-[#9CA3AF]! [&_textarea::placeholder]:opacity-100!">
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
           <ProjectHeader
             session={session}
@@ -840,7 +846,7 @@ export default function CommunityLoungeApp() {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="기술 스택, 제목, 태그 검색..."
-                    className="community-lounge-search-input w-full pl-11 pr-4 py-3 rounded-xl text-sm outline-none focus:bg-gray-50 transition"
+                    className="w-full min-h-[44px] pl-11 pr-4 py-3 rounded-xl text-sm leading-[20px] outline-none focus:bg-gray-50 transition placeholder:leading-[normal]"
                   />
                 </div>
 
@@ -1425,7 +1431,7 @@ function CreateSquadModal({
               <select
                 value={form.type}
                 onChange={(event) => onTypeChange(event.target.value as LoungeType)}
-                className="community-lounge-create-type-select w-full border border-gray-300 rounded-xl px-3 py-3 text-sm outline-none bg-white font-medium"
+                className="w-full appearance-none border border-gray-300 rounded-xl pl-3 pr-[44px] py-3 text-sm outline-none bg-white bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20fill=%27none%27%20viewBox=%270%200%2024%2024%27%20stroke=%27%239CA3AF%27%3E%3Cpath%20stroke-linecap=%27round%27%20stroke-linejoin=%27round%27%20stroke-width=%272%27%20d=%27M19%209l-7%207-7-7%27%3E%3C/path%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_18px_center] bg-[length:16px_16px] font-medium"
               >
                 <option value="project">🚀 팀 프로젝트 모집</option>
                 <option value="join_wish">🙋 참여 희망 (Hire Me)</option>
@@ -1481,7 +1487,7 @@ function CreateSquadModal({
             <textarea
               value={form.desc}
               onChange={(event) => onChange({ ...form, desc: event.target.value })}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm h-56 resize-none focus:border-brand outline-none"
+              className="w-full h-[224px] border border-gray-300 rounded-xl px-4 py-3 text-sm resize-none focus:border-brand outline-none"
             ></textarea>
           </div>
         </div>

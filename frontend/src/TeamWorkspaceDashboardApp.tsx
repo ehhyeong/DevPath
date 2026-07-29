@@ -4,6 +4,7 @@ import TeamWorkspaceHeader from './components/TeamWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
 import { projectApiRequest } from './project-api'
+import { TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME } from './team-workspace-constants'
 import { TEAM_WORKSPACE_COLLABORATION_NAV, TEAM_WORKSPACE_RESOURCE_NAV } from './team-workspace-nav'
 
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
@@ -244,7 +245,7 @@ function scheduleJoinPath(event: CalendarEvent) {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800">
+    <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800`}>
       <div className="team-ws-card w-[420px] border border-gray-100 bg-white p-8 text-center shadow-sm">
         <i className="fas fa-circle-exclamation mb-3 text-3xl text-red-400"></i>
         <h1 className="text-xl font-black text-gray-900">팀 프로젝트 대시보드를 열 수 없습니다</h1>
@@ -276,15 +277,18 @@ export default function TeamWorkspaceDashboardApp() {
   useEffect(() => {
     const html = document.documentElement
     const body = document.body
+    const root = document.getElementById('root')
     const previousTitle = document.title
 
-    html.classList.add('team-ws-dashboard-document')
-    body.classList.add('team-ws-dashboard-body')
+    html.classList.add('team-ws-dashboard-document', 'h-full!', 'overflow-hidden!')
+    body.classList.add('team-ws-dashboard-body', 'h-full!', 'overflow-hidden!', 'bg-[#F3F4F6]!')
+    root?.classList.add('h-screen!')
     document.title = 'DevPath - 팀 프로젝트 대시보드'
 
     return () => {
-      html.classList.remove('team-ws-dashboard-document')
-      body.classList.remove('team-ws-dashboard-body')
+      html.classList.remove('team-ws-dashboard-document', 'h-full!', 'overflow-hidden!')
+      body.classList.remove('team-ws-dashboard-body', 'h-full!', 'overflow-hidden!', 'bg-[#F3F4F6]!')
+      root?.classList.remove('h-screen!')
       document.title = previousTitle
     }
   }, [])
@@ -466,7 +470,7 @@ export default function TeamWorkspaceDashboardApp() {
 
   if (loading) {
     return (
-      <div className="team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800">
+      <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F9FAFB] text-gray-800`}>
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-team"></div>
           <p className="text-sm font-bold text-gray-500">팀 프로젝트 대시보드를 불러오는 중입니다.</p>
@@ -480,7 +484,7 @@ export default function TeamWorkspaceDashboardApp() {
   }
 
   return (
-    <div className="team-ws-dashboard-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800">
+    <div className={`${TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME} team-ws-dashboard-page flex h-screen overflow-hidden bg-[#F3F4F6] text-gray-800`}>
       <aside className={`${sidebarPinned ? 'pinned ' : ''}team-ws-sidebar group z-50 flex w-20 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl transition-all duration-300 ease-in-out hover:w-64`}>
         <div className="flex h-20 shrink-0 cursor-pointer items-center border-b border-gray-100 px-5 transition hover:bg-gray-50">
           <a
@@ -672,7 +676,7 @@ export default function TeamWorkspaceDashboardApp() {
                       </div>
                       <p className="text-sm font-bold text-gray-700">아직 등록된 미션이 없습니다</p>
                       <p className="mb-4 mt-1 text-xs text-gray-500">칸반 보드에서 이번 주에 진행할 첫 번째 작업을 생성해보세요.</p>
-                      <button type="button" onClick={() => goTo('/team-ws-kanban')} className="team-dashboard-source-button flex items-center gap-2 rounded-lg bg-team px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700">
+                      <button type="button" onClick={() => goTo('/team-ws-kanban')} className="team-dashboard-source-button flex min-h-[32px] shrink-0 items-center gap-2 rounded-[8px] bg-team px-[16px]! py-[8px]! text-[12px]! leading-[16px]! font-bold text-white box-border shadow-sm transition hover:bg-indigo-700">
                         <i className="fas fa-plus"></i> 새 작업 만들기
                       </button>
                     </div>
@@ -691,8 +695,8 @@ export default function TeamWorkspaceDashboardApp() {
                       type="button"
                       onClick={() => goTo(hasDashboardData ? '/team-ws-milestone' : '/team-ws-architecture')}
                       className={hasDashboardData
-                        ? 'team-dashboard-source-button rounded-lg bg-team px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700'
-                        : 'team-dashboard-source-button rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-gray-600 shadow-sm transition hover:bg-gray-50'}
+                        ? 'team-dashboard-source-button min-h-[32px] shrink-0 rounded-[8px] bg-team px-[16px]! py-[8px]! text-[12px]! leading-[16px]! font-bold text-white box-border shadow-sm transition hover:bg-indigo-700'
+                        : 'team-dashboard-source-button min-h-[32px] shrink-0 rounded-[8px] border border-gray-200 bg-white px-[16px]! py-[8px]! text-[12px]! leading-[16px]! font-bold text-gray-600 box-border shadow-sm transition hover:bg-gray-50'}
                     >
                       {hasDashboardData ? '피드백 확인하기' : '아키텍처 설계 시작하기'}
                     </button>
@@ -776,7 +780,7 @@ export default function TeamWorkspaceDashboardApp() {
                               </div>
                             </div>
                             {joinable ? (
-                              <button type="button" onClick={() => goTo(scheduleJoinPath(event))} className="team-dashboard-scrum-button rounded-lg bg-brand px-3 py-1.5 text-[10px] font-bold text-white shadow-sm transition hover:bg-green-600">
+                              <button type="button" onClick={() => goTo(scheduleJoinPath(event))} className="team-dashboard-scrum-button min-h-[27px] shrink-0 rounded-[8px] bg-brand px-[12px]! py-[6px]! text-[10px]! leading-[15px]! font-bold text-white box-border shadow-sm transition hover:bg-green-600">
                                 참여하기
                               </button>
                             ) : null}
@@ -797,7 +801,7 @@ export default function TeamWorkspaceDashboardApp() {
                     </div>
                   )}
 
-                  <button type="button" onClick={() => goTo('/team-ws-meeting')} className="team-dashboard-meeting-button flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white py-2.5 text-xs font-bold text-gray-700 shadow-sm transition hover:bg-gray-50">
+                  <button type="button" onClick={() => goTo('/team-ws-meeting')} className="team-dashboard-meeting-button flex min-h-[38px] w-full shrink-0 items-center justify-center gap-2 rounded-[12px] border border-gray-200 bg-white pt-[10px]! pb-[10px]! text-[12px]! leading-[16px]! font-bold text-gray-700 box-border shadow-sm transition hover:bg-gray-50">
                     <i className={`fas fa-video ${upcomingEvents.length > 0 ? 'text-brand' : 'text-gray-400'}`}></i> 화상 회의장 입장
                   </button>
                 </div>
@@ -815,7 +819,7 @@ export default function TeamWorkspaceDashboardApp() {
                           "여러분 2주차 기획과 API 명세서를 훌륭하게 합의하셨네요! 이번 주부터 시작되는 실제 기능 개발 단계에서는 파트 간 소통이 가장 중요합니다. 어려운 점은 언제든 Q&A에 남겨주세요."
                         </p>
                       </div>
-                      <button type="button" onClick={() => goTo('/team-ws-qna')} className="team-dashboard-mentor-button flex w-full items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-800 py-2 text-xs font-bold text-white transition hover:bg-gray-700">
+                      <button type="button" onClick={() => goTo('/team-ws-qna')} className="team-dashboard-mentor-button flex min-h-[32px] w-full shrink-0 items-center justify-center gap-2 rounded-[12px] border border-gray-700 bg-gray-800 pt-[8px]! pb-[8px]! text-[12px]! leading-[16px]! font-bold text-white box-border transition hover:bg-gray-700">
                         멘토에게 질문하기 <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] text-white">1</span>
                       </button>
                     </>
@@ -832,7 +836,7 @@ export default function TeamWorkspaceDashboardApp() {
                           </p>
                         </div>
                       </div>
-                      <button type="button" onClick={() => goTo('/team-ws-qna')} className="team-dashboard-mentor-button flex w-full items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-800 py-2 text-xs font-bold text-gray-400 transition hover:bg-gray-700">
+                      <button type="button" onClick={() => goTo('/team-ws-qna')} className="team-dashboard-mentor-button flex min-h-[32px] w-full shrink-0 items-center justify-center gap-2 rounded-[12px] border border-gray-700 bg-gray-800 pt-[8px]! pb-[8px]! text-[12px]! leading-[16px]! font-bold text-gray-400 box-border transition hover:bg-gray-700">
                         멘토에게 첫 질문 남기기
                       </button>
                     </>

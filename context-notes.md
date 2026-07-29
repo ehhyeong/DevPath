@@ -1,0 +1,359 @@
+# 학습자 UI lock Tailwind 이전 컨텍스트 노트
+
+## 2026-07-24
+
+- 다음 학습자 이전 단위는 `/roadmap`이며 실제 페이지 구현 파일은 `frontend/src/pages/RoadmapDetailPage.tsx`다.
+- 전용 강제 범위는 추천 분기와 ADD·MODIFY·DELETE·REORDER 변경 노드의 3px dashed 테두리, 배경색, opacity, pulse 애니메이션이다.
+- `RoadmapApp.tsx`는 `RoadmapDetailPage`를 연결만 하므로 실제 유틸리티는 페이지 구현 파일에 둔다.
+- `/roadmap`의 ADD·MODIFY·DELETE·REORDER 및 추천 분기 고정값은 `RoadmapDetailPage.tsx`의 Tailwind arbitrary utility로 이전했다.
+- 기존 pulse keyframes는 arbitrary animation utility가 참조하므로 `index.css`에 유지하고, 다섯 개 전용 selector 선언만 제거했다.
+- 1440×900 기본 화면의 변경 전후 스크린샷 SHA-256은 `5C2BCA7644D2F77187232D383FF3B36D1284110C3098C6AE7B56858D6458E619`로 동일하다.
+- 첫 노드의 배경색·테두리·그림자·색상·opacity·좌표 계산값도 변경 전후 완전히 일치했으며 자료는 `frontend/.codex-artifacts/ui-lock-roadmap`에 저장했다.
+- 현재 로드맵 데이터에는 대기·완료 변경사항이 모두 0건이라 조건부 노드를 직접 캡처하지 못했다. 애플리케이션 상태를 만들지 않고 빌드 CSS에서 3px important 테두리, 원본 색상, opacity 및 pulse animation 생성 여부를 확인했다.
+- `npm.cmd run build`, `npm.cmd exec eslint -- src/pages/RoadmapDetailPage.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 학습자 이전 단위는 `/instructor-channel`과 `/instructor-profile`이며 두 라우트 모두 `frontend/src/InstructorChannelApp.tsx`를 사용한다.
+- 전용 고정 범위는 `.instructor-channel-body-zoom`의 데스크톱 zoom 0.9, 역보정 너비·좌측 마진·transform origin과 1023px 이하 원복값이다.
+- 두 라우트의 zoom CSS는 `InstructorChannelApp.tsx` 래퍼의 Tailwind arbitrary utility로 이전했으며 CSS 변수와 원본 `calc()` 식을 그대로 보존했다.
+- Tailwind의 `max-[1023px]`는 1023px 미만 조건을 생성하므로 사용하지 않고, 원본과 같은 `@media (max-width: 1023px)`를 생성하는 arbitrary at-rule variant로 보정했다.
+- 빌드 산출물에서 `@media (width <= 1023px)`와 width 100%, margin-left 0, zoom 1, transform none 선언을 확인했다.
+- 1023px 이하 실제 계산값은 zoom 1과 margin-left 0이며 데스크톱은 zoom 0.9와 원본 역보정 계산값을 유지한다.
+- 1440×900에서 두 라우트의 변경 전후 스크린샷 SHA-256은 모두 `17BA0EB52E373D7F144F67FB5230297630C6B7322DDC70182713F708B3BFA6D4`로 동일하고 계산 스타일 JSON도 동일하다.
+- 비교 자료는 `frontend/.codex-artifacts/ui-lock-instructor-channel`에 저장했다.
+- `npm.cmd run build`, `npm.cmd exec eslint -- src/InstructorChannelApp.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 이전 단위는 모든 페이지에 적용되는 최종 `*::-webkit-scrollbar` important override다.
+- 관리자 페이지를 포함한 모든 라우트가 `frontend/src/main.tsx`를 거치므로 공통 Tailwind scrollbar utility는 `document.documentElement`에 적용한다.
+- 문서 자체 scrollbar는 self variant로, body와 모든 내부 스크롤 요소는 descendant variant로 동일한 important 값을 적용한다.
+- 전역 scrollbar Tailwind utility는 `main.tsx`에서 `document.documentElement`에 적용하며 5px 크기, 버튼 제거, 투명 track·corner, `#D1D5DB` thumb·hover, 5px radius, border 0을 모두 important로 유지한다.
+- 기존 최종 `*::-webkit-scrollbar` override 블록은 `index.css`에서 제거했고, 페이지별 scrollbar 규칙은 이전과 같이 공통 important utility에 덮이는 구조를 유지한다.
+- 빌드 CSS에서 self·descendant pseudo-element에 대한 모든 원본 선언이 생성된 것을 확인했다.
+- 1440×900 `/roadmap`과 `/instructor-channel`의 변경 전후 스크린샷과 scrollbar 색상·폭·크기 계산값이 모두 동일하다.
+- 비교 자료는 `frontend/.codex-artifacts/ui-lock-global-scrollbar`에 저장했다.
+- `npm.cmd run build`, 기존 Fast Refresh 규칙만 제외한 `npm.cmd exec eslint -- src/main.tsx --rule "react-refresh/only-export-components: off"`, `git diff --check`가 통과했다.
+- `npm.cmd exec eslint -- src/main.tsx` 단독 실행은 export 없는 엔트리 파일의 기존 `lazy()` 선언 43건을 `react-refresh/only-export-components`로 보고해 실패했으며 새 scrollbar 코드에는 오류가 없다.
+- 다음 학습자 이전 단위는 스쿼드 8개 페이지가 공유하는 `.squad-dashboard-page` 문서·사이드바 잠금과 `/squad-dashboard` 전용 카드·버튼 잠금이다.
+- 공통 문서 잠금은 각 `Squad*App.tsx`가 실제로 추가하는 html·body 클래스에서 Tailwind utility로 교체하고, 공통 내비게이션은 `components/SquadWorkspaceAside.tsx`에 이전한다.
+- 대시보드 전용 `squad-dashboard-*`, `hover-card`, `timeline-line`, `fade-in`, `plus-menu-enter` 사용처는 `SquadDashboardApp.tsx`에 직접 이전한다.
+- 스쿼드 공통 문서 잠금은 8개 `Squad*App.tsx`의 effect에 `h-full!`, `h-dvh!`, `min-h-0!`, `overflow-hidden!` 유틸리티로 이전했다.
+- 공통 내비게이션의 48px 최소 높이, 14×16px 패딩, 12px radius, 28px 아이콘 line-height, 16px 배지는 `SquadWorkspaceAside.tsx`에 이전했다.
+- `/squad-dashboard?workspaceId=9005`를 1440×900에서 비교했으며, 21개 계산 스타일·치수 항목의 전후 diff는 0건이다. 화면과 JSON은 `frontend/.codex-artifacts/ui-lock-squad-dashboard`에 저장했다.
+- `npm.cmd run build`와 `git diff --check`는 통과했다.
+- 대상 ESLint는 기존 `SquadWorkspaceAside.tsx:123`의 `react-hooks/set-state-in-effect` 1건 때문에 실패했고, 기존 Hook dependency 경고 14건도 남아 있다. 이번 변경 구간에서 새 린트 오류는 확인되지 않았다.
+- 다음 스쿼드 이전 단위는 `/squad-workspace`이며 실제 구현 파일은 `frontend/src/SquadWorkspaceApp.tsx`다.
+- 비교 상태는 칸반 기본 화면과 작업 생성·수정 모달이다. 전용 CSS 범위는 `kanban-card`, `filter-tab`, `kanban-col`, 추가 버튼, 작업 모달이다.
+- `/squad-workspace`의 칸반 카드, 필터, 빈 열 pseudo-element, 42px 추가 버튼, 448px 작업 모달 고정값을 `SquadWorkspaceApp.tsx`의 Tailwind utility로 이전했다.
+- 전역 `.filter-tab`에서 상속되던 2px 하단 테두리와 hover 색도 페이지 TSX에 명시해 전용 클래스 제거 후에도 계산 스타일을 보존했다.
+- 1440×900 기본 화면, 작업 모달, 실제 `내 작업만` 필터로 만든 빈 열의 비교 계산 스타일 diff는 모두 0건이다. 자료는 `frontend/.codex-artifacts/ui-lock-squad-workspace`에 저장했다.
+- `index.css`의 `.squad-workspace-page` 전용 selector는 0건이다.
+- `npm.cmd run build`, `npx.cmd eslint src/SquadWorkspaceApp.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 스쿼드 이전 단위는 `/squad-review`이며 실제 구현 파일은 `frontend/src/SquadReviewApp.tsx`다.
+- 비교 상태는 리뷰 상세의 PR 카드·상단 추가 버튼·탭·AI 제목·diff 줄과 수동 리뷰 생성 모달이다.
+- `/squad-review`는 실제 리뷰 데이터가 있는 `workspaceId=11`에서 1440×900으로 검증했다.
+- PR 카드 110px 최소 높이, 32px 추가 버튼, 28px 탭, 48px 줄 번호 열, 13px/28px diff 행, AI gradient, 512px 생성 모달을 `SquadReviewApp.tsx`의 Tailwind utility로 이전했다.
+- 리뷰 상세와 생성 모달의 변경 전후 계산 스타일 및 좌표 diff는 모두 0건이다. 자료는 `frontend/.codex-artifacts/ui-lock-squad-review`에 저장했다.
+- 스크린샷 평균 채널 차이는 상세 0.002186, 생성 모달 0.576664이며 모달 잔차는 backdrop blur 합성 영역에 집중된다.
+- `index.css`의 `.squad-review-page` 전용 selector는 0건이다.
+- `npm.cmd run build`와 `git diff --check`가 통과했다.
+- `npx.cmd eslint src/SquadReviewApp.tsx`는 오류 0건이며 기존 280행 Hook 의존성 경고 1건만 남는다.
+- 다음 스쿼드 이전 단위는 `/squad-erd`이며 실제 구현 파일은 `frontend/src/SquadErdApp.tsx`다.
+- 전용 CSS 규모가 커서 툴바, 캔버스, ERD 테이블, 컬럼 편집, schema 패널과 모달을 상태별로 나눠 검증한다.
+
+- 다음 학습자 이전 단위는 `/job-matching`이며 구현 파일은 `frontend/src/JobMatchingApp.tsx`다.
+- 전용 고정 범위는 16px·24px 페이지 기본 글자, 14px·20px 폼과 버튼, 10px·11px·12px 보조 글자, select 화살표와 패딩, 추천 이유 행 정렬, 전체 화면 분석 로더다.
+- 비교 viewport는 1440×900으로 고정하고 기본 화면과 조건부 로더를 우선 검증한다.
+- 페이지 루트의 Pretendard, 16px·24px 기본 글자와 14px·20px 폼, 10px·14px 및 11px·16px 보조 글자를 정확한 arbitrary utility로 이전했다.
+- select는 14px SVG 화살표, 오른쪽 12px 위치, 8px 36px 8px 12px 패딩, 1.2 line-height를 유지했다. 전역 unlayered 폼 규칙보다 우선하도록 필요한 값에는 important modifier를 사용했다.
+- 추천 이유와 부족 스킬 행은 12px·16px, 32px 최소 높이, 8px 패딩, -8px 좌우 마진, 첫 열 `flex: 1 1 auto`, 오른쪽 상태 열 nowrap과 우측 정렬을 그대로 유지했다.
+- 전체 화면 로더는 rgba(30, 41, 59, 0.4) 배경, 10px backdrop blur, 400ms 전환, 50px 스피너, 3px 테두리, 50% radius, pulse와 spin 애니메이션을 `JobMatchingApp.tsx`로 이전했다.
+- `index.css`의 직무 매칭 전용 selector는 0건이다. Tailwind arbitrary animation이 참조하는 `spin`과 `pulse` keyframes만 유지했다.
+- 1440×900 분석 결과 화면은 변경 전후 PNG의 차이 픽셀이 0개다. 로더는 회전 스피너와 pulse 문구 영역을 제외한 화면의 차이 픽셀이 0개이고, 애니메이션 요소의 계산 스타일은 원본과 일치한다.
+- 비교 자료는 `frontend/.codex-artifacts/ui-lock-job-matching`에 저장했다.
+- `npm.cmd run build`, `npm.cmd exec eslint -- src/JobMatchingApp.tsx`, `git diff --check`가 모두 통과했다.
+
+- 다음 학습자 이전 단위는 `/learning`이며 구현 파일은 `frontend/src/LearningPlayerApp.tsx`다.
+- `.learning-player-surface` 스코프에는 56px 헤더, 400px 사이드바, 54px 탭뿐 아니라 노트 작성·빈 상태·수정 모달, Q&A 목록·질문 모달, 과제 결과 오버레이 고정값도 포함되어 있어 함께 이전한다.
+- 비교용 수강 강의는 브라우저에서 실제 접근 가능한 `courseId=73`을 사용하고 viewport는 1440×900으로 고정한다.
+- 변경 전 기준 상태는 커리큘럼 기본 화면, Q&A 목록, 질문 작성 모달, 노트 빈 상태, 노트 작성 폼이다. 자료는 `frontend/.codex-artifacts/ui-lock-learning`에 저장한다.
+- 56px 헤더, 400px 사이드바, 54px 탭, 42px Q&A 검색 입력, 48px 하단 질문 버튼, 노트 카드와 작성 폼, 질문·노트 수정 모달, 과제 결과 오버레이의 원래 px 값을 `LearningPlayerApp.tsx`의 Tailwind arbitrary utility로 이전했다.
+- 전역 unlayered 폼 규칙이 버튼과 입력의 글자 크기를 상속값으로 덮어쓰므로 해당 폼 요소에는 Tailwind important modifier를 사용해 원래 12px·14px 글자 크기와 16px·20px line-height를 보존했다.
+- `index.css`에서 `.learning-player-surface`와 `body:has(.learning-player-surface)` 전용 selector는 0건이다. Tailwind arbitrary animation이 참조하는 `learningFadeInUp`, `learningFadeIn`, `learningSlideInRight` keyframes 정의만 유지했다.
+- 1440×900 viewport에서 기본·Q&A·질문 작성 모달·노트 빈 상태를 변경 전후 캡처했다. 계산 스타일은 글자 크기, line-height, 패딩, gap, 높이, 색상, border-radius가 원본 값과 일치한다.
+- 픽셀 단위 비교에서는 비디오 포스터·backdrop blur·텍스트 안티앨리어싱 재렌더링 때문에 기본 7,654개, Q&A 21,544개, 질문 모달 9,363개, 노트 빈 상태 31,342개의 픽셀이 달랐지만 육안상 레이아웃과 고정 UI 값의 차이는 확인되지 않았다.
+- 노트 작성 폼은 변경 전 계산값을 기준으로 12px·14px 글자, 16px·20px line-height, 24px 패널 패딩, 16px 카드 패딩, 96px textarea, 36px 버튼과 8px·12px radius를 그대로 이전했다. 브라우저 연결이 마지막 상태 전환에서 끊겨 변경 후 작성 폼 캡처는 확보하지 못했다.
+- `npm.cmd run build`, `npm.cmd exec eslint -- src/LearningPlayerApp.tsx`, `git diff --check`가 모두 통과했다.
+
+- 다음 학습자 이전 단위는 `/workspace-hub`이며 페이지 구현은 `frontend/src/WorkspaceHubApp.tsx`다.
+- 워크스페이스 허브의 프로젝트 생성 모달은 `/project-create`와 `frontend/src/ProjectCreateApp.tsx`의 `ProjectCreatePanel`을 공유하므로 패널 자체의 고정값은 해당 구현 파일에 이전한다.
+- 이번 비교 상태는 기본 화면, 설정 모달, 멤버 모달, 프로젝트 생성 모달이다. 공용으로 사용되는 `.project-card`, `.modal-overlay`, `.modal-content`, `.text-mentor`, `.bg-mentor` 규칙은 다른 페이지 영향 때문에 이번 제거 범위에서 제외한다.
+- `/workspace-hub`의 34px 필터 버튼, 40px 생성 버튼, 448px 설정·멤버 모달, 42px 폼과 버튼, 멤버 행·아바타 값을 `WorkspaceHubApp.tsx`의 정확한 Tailwind arbitrary utility로 이전했다.
+- 공유 `ProjectCreatePanel`의 560×1024px 패널, 35/65% 열, 30px 제목, 38px 입력, 46px GitHub 입력, 50px submit 값을 `ProjectCreateApp.tsx`에 이전했다. 따라서 `/project-create`도 같은 패널 이전을 함께 적용받는다.
+- 1440×900에서 기본 화면, 설정 모달, 멤버 모달, 프로젝트 생성 모달의 변경 전후 계산 스타일·좌표 diff와 픽셀 diff가 모두 0건이다. 자료는 `frontend/.codex-artifacts/ui-lock-workspace-hub`에 저장했다.
+- `npm.cmd run build`, 기존 effect 린트 규칙만 제외한 `npm.cmd exec eslint -- src/WorkspaceHubApp.tsx src/ProjectCreateApp.tsx --rule "react-hooks/set-state-in-effect: off"`, `git diff --check`가 통과했다.
+- 기본 대상 린트는 기존 `WorkspaceHubApp.tsx:800`의 effect 내부 동기 `setSettings(null)` 1건으로 실패했다. 이번 UI lock 변경과 무관해 수정하지 않았다.
+- 다음 학습자 이전 단위는 `/community-lounge`이며 구현 파일은 `frontend/src/CommunityLoungeApp.tsx`다.
+- 이 페이지의 고정 스코프는 body와 `#root`의 100dvh 잠금, `.community-lounge-page` 아래의 정확한 글자 크기·line-height·폼 글꼴·placeholder, 44px 검색 입력, 224px 생성 textarea, 커스텀 select 화살표다.
+- 공용 `.modal`, `.modal-enter`, `.hide-scroll`, `.card-hover`, `.tab-btn` 규칙은 다른 페이지도 사용하므로 이번 페이지 전용 스코프 제거 범위에서 제외한다.
+- `/community-lounge`의 body와 `#root`에는 unlayered 전역 규칙보다 우선하도록 `h-[100dvh]!`, `min-h-0!`, `overflow-hidden!` 유틸리티를 effect에서 추가하고 정리한다.
+- 라운지 래퍼의 descendant arbitrary variant로 9px부터 36px까지의 정확한 font-size와 line-height, 폼 글꼴, placeholder를 이전했다. 검색 입력 44px, 생성 textarea 224px, select의 16px SVG 화살표와 44px 오른쪽 padding도 원래 값 그대로 보존했다.
+- 1440×900 viewport에서 기본 화면과 생성 모달의 변경 전후 스크린샷은 각각 차이 픽셀 0개였다. 계산 스타일과 좌표 diff도 0건이며 select background-image의 동일 SVG URL 인코딩 문자열 차이는 시각 diff에서 제외했다.
+- 비교 자료는 `frontend/.codex-artifacts/ui-lock-community-lounge`에 저장했다.
+- `npm.cmd run build`, `npm.cmd exec eslint -- src/CommunityLoungeApp.tsx`, `git diff --check`가 모두 통과했다.
+
+- 사용자는 기능, 마크업 구조, 보이는 결과를 변경하지 않고 `index.css`의 페이지 고정 스코프를 Tailwind 유틸리티로 이전하도록 요청했다.
+- Tailwind 기본 스케일로 근사하지 않고 원래 px/rem 값을 arbitrary value로 보존한다.
+- 페이지별 고정은 해당 페이지 TSX에 둔다. 서로 다른 페이지를 하나의 TSX로 합치지 않는다.
+- 강사 페이지군은 후순위다. 학습자 페이지군부터 작업한다.
+- 학습자 범위가 홈, 강의, 로드맵, 멘토링, 스쿼드, 팀 워크스페이스 등으로 넓어 동일 구현을 공유하는 `/`와 `/home`을 첫 독립 검증 단위로 선택했다.
+- 스크린샷은 변경 전후 동일 viewport와 동일 브라우저 상태를 사용한다.
+- 홈 페이지의 문서 스크롤 잠금은 기존 unlayered 전역 `body` 규칙보다 우선해야 하므로 Tailwind v4 important modifier를 사용한다.
+- 첫 시각 검증 viewport는 1440×900으로 고정했다.
+- 최종 전후 캡처는 동일 화면 영역인 1440×733으로 저장했다.
+- 제목 72px/74px, 자간 -1.8px, 배지 12px/16px와 4×12px 패딩, 버튼 radius 12px 및 버튼 계산 치수·색상이 전후 동일하다.
+- zoom 컨테이너의 계산 폭은 브라우저 반올림으로 0.08px 차이가 남지만 실제 캡처에서 보이는 배치 차이는 없다.
+- `npm.cmd run build`는 통과했다.
+- `npm.cmd run lint`는 기존 저장소 오류 86개와 경고 20개로 실패했다. 이번 변경과 겹치는 `App.tsx` 오류는 기존의 `false ?` 상수 조건 1건이다.
+- 다음 학습자 단위는 `/roadmap-hub`이며 실제 페이지 구현 파일은 `frontend/src/pages/RoadmapHubPage.tsx`다.
+- `/roadmap-hub` 기준 캡처는 홈과 같은 1440×900 CSS viewport의 상단 1440×733 영역을 사용한다.
+- `/roadmap-hub`의 직무 탭과 기술 탭 모두 변경 전후 계산 스타일 및 요소 좌표 diff가 0건이다.
+- 히어로 제목 60px/60px, 본문 18px/29px, 버튼 최소 높이 60px과 16×32px 패딩, 탭 최소 높이 64px, 카드 16×20px 패딩, 스킬 칩 56px을 원본 값 그대로 이전했다.
+- `npm.cmd run build`, `npm.cmd exec eslint -- src/pages/RoadmapHubPage.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 학습자 단위는 `/lecture-list`이며 구현 파일은 `frontend/src/LectureListApp.tsx`다.
+- 강의 목록은 기본 화면 외에 카테고리 hover로 열리는 400px mega menu도 별도로 비교해야 한다.
+- `/lecture-list`의 페이지 전용 UI lock은 `frontend/src/LectureListApp.tsx`의 해당 요소에 Tailwind arbitrary utility로 이전했다.
+- `index.css`에서 강의 카드, 카테고리, mega menu, 필터, 검색, 정렬, zoom 및 모바일 대응 selector를 제거했다.
+- 변경 전후 검증 viewport는 1440×900으로 통일했다. 기본 화면과 mega menu 스크린샷 및 계산 스타일 JSON은 `frontend/.codex-artifacts/ui-lock-lecture-list`에 저장했다.
+- mega menu의 변경 전후 계산 스타일 및 좌표 diff는 0건이다.
+- 기본 화면의 font-size, line-height, padding, height, color, border-radius 등 계산 스타일은 모두 일치한다. 0.9 zoom 내부 좌표는 브라우저 반올림으로 최대 0.25px, 폭은 0.08px 차이가 남는다.
+- `npm.cmd run build`, `npm.cmd exec eslint -- src/LectureListApp.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 학습자 이전 단위는 `/course-detail`이며 구현 파일은 `frontend/src/CourseDetailApp.tsx`다.
+- 강의 상세는 기본 정보 탭뿐 아니라 40px 새 질문 버튼, 36px 필터와 검색 입력이 표시되는 Q&A 탭도 별도로 비교해야 한다.
+- `/course-detail`의 전용 UI lock은 `frontend/src/CourseDetailApp.tsx`의 해당 요소에 Tailwind arbitrary utility로 이전했다.
+- hero badge 26px, tab active border 2px, zoom 0.9, 새 질문 버튼 40px, Q&A 필터와 검색 입력 36px 등 원래 값을 유지했다.
+- `index.css`에서 강의 상세 page scope, body zoom, tab active, accordion hover, Q&A 고정 selector 및 모바일 zoom 대응을 제거했다.
+- 기본 정보 탭과 Q&A 탭의 변경 전후 계산 스타일 및 좌표 diff는 모두 0건이다. 스크린샷과 JSON은 `frontend/.codex-artifacts/ui-lock-course-detail`에 저장했다.
+- `npm.cmd run build`와 `git diff --check`가 통과했다.
+- `npm.cmd exec eslint -- src/CourseDetailApp.tsx`는 기존 114행 미사용 변수 2건 때문에 실패했다. 해당 규칙만 제외한 재검증은 오류 0건, 기존 Hook 의존성 경고 1건이다.
+- 다음 학습자 이전 단위는 `/mentoring-hub`이며 구현 파일은 `frontend/src/MentoringHubApp.tsx`다.
+- 멘토링 허브는 body와 `#root`의 100dvh 잠금, 본문 zoom 0.9 외에도 chip, 46px 검색·필터, 카드 hover, 672px 상세 모달과 448px 신청 모달을 비교해야 한다.
+- `/mentoring-hub`의 body와 `#root` 잠금은 `MentoringHubApp.tsx`의 effect에서 Tailwind utility class를 직접 추가하고 정리하도록 이전했다.
+- 본문 zoom 0.9, chip 38px, 검색·필터 46px, 상세 모달 672px, 신청 모달 448px, 카드 hover `translateY(-4px)` 값을 원본 그대로 유지했다.
+- `index.css`의 멘토링 허브 전용 selector는 0건이다. 모달의 비범위 keyframes 정의만 유지하고 animation 호출은 Tailwind arbitrary utility로 이전했다.
+- 기본 화면, 상세 모달, 신청 모달의 변경 전후 계산 스타일 및 좌표 diff는 모두 0건이다. 자료는 `frontend/.codex-artifacts/ui-lock-mentoring-hub`에 저장했다.
+- `npm.cmd run build`, `npm.cmd exec eslint -- src/MentoringHubApp.tsx`, `git diff --check`가 모두 통과했다.
+- `/squad-erd`의 툴바, schema 패널, 테이블·컬럼 편집, Mermaid 코드 패널, 관계·SQL·버전·코멘트·도움말 모달과 채팅 서랍 고정값을 `SquadErdApp.tsx`의 Tailwind utility로 이전했다.
+- `index.css`의 `.squad-erd-page` 전용 selector는 0건이며 공통 스쿼드 규칙과 다음 `.squad-files-page` 블록은 유지했다.
+- 1440×900에서 기본, 테이블·관계, 관계 설정, 도움말, SQL, 버전, 코멘트, 채팅 8개 상태의 계산 스타일과 좌표를 비교했다. 기본·테이블·관계·도움말·코멘트·채팅은 전체 diff 0건이고 애니메이션 모달도 고정 속성 diff 0건이다.
+- 비교 PNG 16개는 `frontend/.codex-artifacts/ui-lock-squad-erd`에 저장했으며 상태별 전후 SHA-256이 모두 일치한다.
+- `npm.cmd run build`와 `git diff --check`가 통과했다. `npx.cmd eslint src/SquadErdApp.tsx`는 오류 0건이고 기존 Hook 의존성 경고 2건만 남는다.
+- 다음 스쿼드 이전 단위는 `/squad-schedule`이며 실제 구현 파일은 `frontend/src/SquadScheduleApp.tsx`다.
+- 일정 화면은 월간·주간 탭, 캘린더 셀과 이벤트 pill, 예정 일정의 마감 배지, 생성·수정 모달을 상태별로 나눠 검증한다.
+- `/squad-schedule`의 툴바, 월간·주간 탭, 캘린더 셀, 이벤트 pill, 마감 표시, 예정 카드와 일정 생성·수정 모달 고정값을 `SquadScheduleApp.tsx`의 Tailwind utility로 이전했다.
+- `index.css`의 `.squad-schedule-page` 전용 selector는 0건이며 인접한 공통 keyframes와 다음 페이지 규칙은 유지했다.
+- 1440×900에서 월간·주간·생성 모달의 계산 스타일과 좌표 diff는 모두 0건이다. 수정 모달의 공통 action도 38px·13px·18px·border-box 값을 확인했다.
+- 비교 PNG는 `frontend/.codex-artifacts/ui-lock-squad-schedule`에 저장했다. 일정 콘텐츠의 미세 픽셀 차이는 없고 전체 캡처의 잔여 차이는 공통 상단 헤더의 동적 표시 영역에만 있다.
+- `npm.cmd run build`, `npx.cmd eslint src/SquadScheduleApp.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 스쿼드 이전 단위는 `/squad-files`이며 실제 구현 파일은 `frontend/src/SquadFilesApp.tsx`다.
+- 자료실 화면은 툴바·검색·필터·파일 목록 외에도 파일 미리보기, 업로드, 새 폴더 모달을 상태별로 나눠 검증한다.
+- `/squad-files?workspaceId=9005`의 툴바, 검색, 필터, 파일 목록, 미리보기, 업로드와 새 폴더 모달 고정값을 `SquadFilesApp.tsx`의 Tailwind arbitrary utility로 이전했다.
+- 129px 툴바, 38px 검색, 42px 상단 버튼, 24px 필터, 30px 정렬, 56px 파일 행, 1024px·85vh 미리보기, 512px 업로드, 384px 새 폴더 패널과 원본 글자·line-height·간격·색·radius를 그대로 유지했다.
+- 파일 행 hover·focus 메뉴 표시와 0.15초·0.1초 전환, dropzone의 0.2초 전환과 dragover `#EBFDF5`·`#00C471`, 768px 이하 20px 좌우 패딩도 Tailwind 상태·미디어 유틸리티로 이전했다.
+- `index.css`의 `.squad-files-page` 전용 selector는 0건이다.
+- 1440×900에서 기본, 업로드, 새 폴더, 미리보기 네 상태의 계산 스타일과 좌표 diff는 모두 0건이다. 비교 자료는 `frontend/.codex-artifacts/ui-lock-squad-files`에 저장했다.
+- 스크린샷 잔차는 기본 화면의 동적 상단 아바타, 반투명 backdrop 합성에만 있으며 대상 UI의 배치와 고정 속성 차이는 없다. 새 폴더 모달은 16픽셀에서 채널 값 1 차이만 확인됐다.
+- `npm.cmd run build`, `npx.cmd eslint src/SquadFilesApp.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 스쿼드 이전 단위는 `/squad-meeting`이며 실제 구현 파일은 `frontend/src/SquadMeetingApp.tsx`다.
+- 회의 화면은 대기실과 오디오 설정 모달 외에도 입장 후 참가자 stage, hover 하단 제어바, 회의록·채팅 패널, 화면 공유 상태를 나눠 검증한다.
+- `/squad-meeting?workspaceId=9005`의 대기실, 채널, 참가자 그리드·타일, hover 하단 제어바, 회의록·채팅 패널, 리액션, 화면 공유 플레이어와 오디오 설정 고정값을 `SquadMeetingApp.tsx`의 Tailwind arbitrary utility로 이전했다.
+- 24·28·32·34·36·38·44·46·48·56px 버튼, 74px 채널, 176·196px 참가자 카드, 80·92px 아바타, 448px 오디오 패널과 원본 글자·line-height·padding·gap·색·radius·shadow·transition을 그대로 유지했다.
+- `index.css`의 `.squad-meeting-page` 전용 selector는 0건이며 참가자 pulse, floating reaction, audio meter에 필요한 `squadMeetingParticipantPulse`, `squadMeetingFloatUp`, `squadMeetingMeterBounce` keyframes만 유지했다.
+- 1440×900에서 대기실, 오디오 설정, 회의실, 채팅, 리액션 상태의 대상 계산 스타일과 고정 좌표를 비교했다. 대기실·오디오·회의실·채팅은 diff 0건이고 리액션은 스타일 diff 0건이며 전환 캡처 타이밍으로 Y 좌표 약 0.3px만 차이 났다.
+- 기본 대기실·오디오·회의실 전체 스크린샷의 8단계 이상 픽셀 차이는 각각 0.0175%, 0.0326%, 0.0152%이며 동적 마이크 미터·네트워크 측정·회의 타이머 표시가 잔차에 포함된다. 자료는 `frontend/.codex-artifacts/ui-lock-squad-meeting`에 저장했다.
+- `npm.cmd run build`와 `git diff --check`가 통과했다. `npx.cmd eslint src/SquadMeetingApp.tsx`는 오류 0건이고 기존 Hook 의존성 경고 9건만 남는다.
+- 다음 스쿼드 이전 단위는 `/squad-settings`이며 실제 구현 파일은 `frontend/src/SquadSettingsApp.tsx`다.
+- 설정 화면은 기본 정보 탭의 입력·저장 버튼, 통합 탭의 연결 버튼, 위험 영역의 보관·삭제 버튼을 상태별로 나눠 검증한다.
+- `/squad-settings?workspaceId=9005`의 44px 탭, 16px 카드 radius와 원본 shadow, 46px 입력, 96px textarea, 68px 정보 타일, 44px 저장 버튼, 32px 통합 버튼, 40px 위험 버튼을 `SquadSettingsApp.tsx`의 정확한 Tailwind utility로 이전했다.
+- 탭의 0.875rem/1.25rem 글자와 line-height, 0.75rem gap·radius, active·danger 색과 0.2초 전환도 원본 계산값대로 유지했다.
+- `index.css`의 `.squad-settings-page` 전용 selector는 0건이다.
+- 1440×900에서 일반 탭과 통합 탭의 계산 스타일·좌표 diff는 0건이다. 통합 탭의 변경 전후 PNG SHA-256은 `8AC72A47E0CE328D87B7321503D9F9CFC7DC8C9A40FCF4D749D19D580A4E9AC8`로 동일하다.
+- 위험 탭의 고정 스타일은 모두 일치했다. 변경 전 캡처가 fade-in 직전 프레임에 저장되어 버튼 Y 좌표가 안정 상태보다 10px 낮게 기록됐으므로 해당 순간 좌표와 빈 PNG는 픽셀 동일성 근거에서 제외했다.
+- 비교 자료는 `frontend/.codex-artifacts/ui-lock-squad-settings`에 저장했다.
+- `npm.cmd run build`, `npx.cmd eslint src/SquadSettingsApp.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 학습자 이전 단위는 `/team-ws-dashboard`와 `.team-ws-dashboard-page` 공통 스코프다.
+- 공통 스코프는 `TeamWorkspaceDashboardApp.tsx`, `TeamWorkspaceMilestoneApp.tsx`, `TeamWorkspaceSuiteApp.tsx`, `TeamWorkspaceHeader.tsx`가 함께 사용하므로 대시보드 화면만 맞추고 제거하지 않고 모든 공유 사용처에 동일 Tailwind utility를 적용한다.
+- 첫 비교 상태는 1440×900 기본 화면과 80px에서 256px로 확장되는 사이드바 hover 상태다.
+- `.team-ws-dashboard-page`의 문서 잠금, 14px/20px 글자, 색상 토큰, 80px/256px 사이드바, 64px 헤더, nav 상태, 카드, 스크롤바와 공통 모달 패널 값을 `TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME`의 정확한 Tailwind arbitrary utility로 이전했다.
+- 공유 잠금은 `TeamWorkspaceDashboardApp.tsx`, `TeamWorkspaceMilestoneApp.tsx`, `TeamWorkspaceSuiteApp.tsx`의 모든 루트와 `TeamWorkspaceHeader.tsx`에 적용했다. 대시보드 전용 27px·32px·38px 버튼과 12px 글자·원본 패딩·radius도 해당 앱에 직접 이전했다.
+- `index.css`의 `.team-ws-dashboard-page`, `team-ws-dashboard-document`, `team-ws-dashboard-body` selector는 0건이다. 아직 이전하지 않은 suite 전용 모달·칸반 규칙은 그대로 유지했다.
+- 1440×900에서 대시보드 기본, 사이드바 hover, 알림 팝업의 계산 스타일과 좌표 diff는 모두 0건이다. PNG 픽셀 차이는 기본 24.896219%, hover 0.206250%, 팝업 0.091667%였고 기본 화면의 평균 채널 차이는 1.32532485로, 육안 배치와 고정 속성은 동일했다.
+- `/team-ws-kanban`에서 공통 루트와 활성 nav를 확인했고 작업 모달은 512px 폭, 24px radius, 0.2초 원본 transform transition을 유지했다. `/team-ws-milestone`에서도 80px 사이드바, 64px 헤더, 문서 overflow 잠금과 공통 글자값을 확인했다.
+- 비교 자료는 `frontend/.codex-artifacts/ui-lock-team-ws-dashboard`에 저장했다.
+- `npm.cmd run build`, 대상 5개 TSX/TS 파일의 `npx.cmd eslint`, `git diff --check`가 모두 통과했다.
+- 다음 학습자 이전 단위는 `/team-ws-milestone`의 페이지 전용 스코프다.
+- `/team-ws-milestone` 전용 잠금은 `.week-tab`의 pointer cursor와 `all 0.2s ease` transition, active의 `#111827` 배경·흰색 글자·700 굵기·`#111827` border, 비활성 hover의 `#F3F4F6` 배경으로 총 3개 규칙이다.
+- 비교 상태는 1440×900 기본 화면과 비활성 week tab hover 상태로 잡는다.
+- week tab의 원본 상태값을 `TeamWorkspaceMilestoneApp.tsx`의 active·inactive 분기 Tailwind utility에 직접 이전했고 `index.css`의 `.team-ws-milestone-page` selector는 0건이다.
+- 1440×900에서 기본과 비활성 hover 상태의 탭 계산 스타일·치수·좌표 diff는 모두 0건이다.
+- 웹폰트와 Week 2 active 상태가 안정된 뒤 저장한 PNG의 변경 픽셀은 기본 0.144444%, hover 0.158025%이며 평균 채널 차이는 각각 0.01012680, 0.00867850이다. 남은 차이는 로드맵 spinner와 active 점멸처럼 캡처 시점에 따라 달라지는 애니메이션 영역이다.
+- 비교 자료는 `frontend/.codex-artifacts/ui-lock-team-ws-milestone`에 저장했다.
+- `npm.cmd run build`, `npx.cmd eslint src/TeamWorkspaceMilestoneApp.tsx`, `git diff --check`가 모두 통과했다.
+- 다음 학습자 이전 단위는 `TeamWorkspaceSuiteApp.tsx`의 `.team-ws-suite-page` 공통 잠금과 `/team-ws-kanban` 전용 잠금이다.
+- 이번 Suite 범위는 `.team-ws-modal-panel`의 공통 자식 3개 규칙, `.team-ws-kanban-task-*` 작업 모달 규칙, `.kanban-card`·`.kanban-col`·필터·검색·추가 버튼 규칙이다.
+- 같은 `.team-ws-suite-page` 아래의 Q&A·파일·아키텍처·일정·회의 규칙은 각 후속 라우트 검증 때 이전하도록 이번 제거 범위에서 제외한다.
+- 비교 상태는 1440×900 칸반 기본 화면, 첫 카드 hover, 새 작업 추가 모달이다.
+- 칸반 카드·빈 컬럼·30px 필터·192×38px 검색·40px 추가 버튼 규칙은 `TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME`의 Tailwind descendant utility로 이전했다.
+- Suite 공통 모달의 74px header와 label·폼 기본값은 `Modal` 패널에, 칸반 작업 모달의 512px 폭·95vh·24px radius·81px header·46px 입력·128px textarea·38/42px 버튼은 해당 모달 마크업에 직접 이전했다.
+- `index.css`의 공통 모달 자식, 칸반 작업 모달, 칸반 카드·컬럼·툴바 제거 대상 selector는 0건이다. Q&A부터 이어지는 다른 Suite 페이지 규칙은 유지했다.
+- 1440×900 기본·첫 카드 hover·새 작업 모달에서 대상 계산 스타일·치수·좌표 diff는 모두 0건이다.
+- 변경 전 모달 PNG는 모달 DOM과 계산값 수집 직후 열리기 전 프레임을 캡처해 픽셀 동일성 근거에서 제외했다. 모달 고정값 검증은 저장된 전후 JSON의 0차이 결과를 사용한다.
+- 비교 자료는 `frontend/.codex-artifacts/ui-lock-team-ws-kanban`에 저장했다.
+- `npm.cmd run build`, `npx.cmd eslint src/TeamWorkspaceSuiteApp.tsx src/team-workspace-constants.ts`, `git diff --check`가 모두 통과했다.
+- 다음 학습자 이전 단위는 `/team-ws-qna`의 Suite 전용 잠금이다.
+- `/team-ws-qna` 범위는 페이지 heading·1024px content·44px 작성 버튼·384×38px 검색·30px 상태 탭·24px 태그·빈 상태·질문 카드와 672px 질문 작성 모달이다.
+- 질문 상세 모달은 Q&A 전용 selector를 사용하지 않고 공통 `Modal`만 사용하므로 이번 전용 제거 범위에서 제외한다.
+- 비교 상태는 실제 데이터에 따라 기본 목록과 카드 hover를 우선하며, 질문이 없으면 빈 상태를 비교하고 질문 작성 모달은 별도로 검증한다.
+- `/team-ws-qna`의 페이지 잠금은 `TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME`의 descendant arbitrary utility로, 포털 질문 작성 모달 잠금은 해당 모달 요소의 arbitrary utility로 이전했다.
+- Q&A 전용 `index.css` 구간은 `.team-ws-suite-page .qna-card`부터 질문 작성 모달 끝까지 제거했고, 뒤의 architecture 모달 규칙은 유지했다.
+- 1440×900 실제 데이터 기준 기본 목록·카드 hover·질문 작성 모달의 계산 스타일과 좌표 차이는 각각 0건이다. 기본 화면 전후 PNG는 SHA-256까지 동일하다.
+- 질문 작성 모달의 변경 전 PNG는 열림 직전 화면을 캡처한 경쟁 상태였으므로 시각 판정에서 제외했다. 모달은 변경 전후 JSON 계산값과 변경 후 열린 상태 PNG로 검증했다.
+- 최종 검증은 `npm.cmd run build`, `npx.cmd eslint src/TeamWorkspaceSuiteApp.tsx src/team-workspace-constants.ts`, Q&A 대상 CSS selector count 0, `git diff --check` 모두 통과했다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-team-ws-qna`에 저장했다.
+- 다음 학습자 이전 단위는 Q&A 바로 뒤에 이어지는 `/team-ws-architecture` 전용 잠금이다.
+- 이번 범위는 `arch-tab`, 변경 이력 list·item pseudo-line·dot과 672px architecture 문서 추가·수정 모달이다.
+- Q&A 뒤의 `filter-tab`, `file-card`, `team-ws-empty-panel`은 파일 페이지 공통 규칙이고, `calendar-*`는 일정 페이지 규칙이므로 architecture 제거 범위에서 제외한다.
+- API 상세 모달은 architecture 전용 selector를 사용하지 않고 공통 `Modal`만 사용하므로 이번 제거 범위에서 제외한다.
+- architecture 탭·timeline 규칙은 `TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME` descendant arbitrary utility로, 포털 문서 모달은 해당 모달 요소의 arbitrary utility로 이전했다.
+- architecture 전용 modal block과 `arch-tab`·changelog block만 제거했으며 인접한 파일 규칙 9개와 일정 규칙 16개는 유지했다.
+- 1440×900 API 문서 모달의 전후 계산 스타일 JSON과 PNG는 각각 SHA-256까지 동일하다. placeholder 색상 `#9CA3AF`와 opacity 1도 일치한다.
+- 기본 화면에서 직접 고정되는 tab·timeline 첫 item·pseudo-line·dot의 계산값 차이는 0건이다. 변경 전 캡처 중 font loading으로 중간 activity가 한 줄 더 감긴 탓에 changelog 전체 높이와 마지막 item y에만 20px의 콘텐츠 종속 차이가 남았고, 고정 CSS 속성 차이는 없었다.
+- 최종 검증은 `npm.cmd run build`, `npx.cmd eslint src/TeamWorkspaceSuiteApp.tsx src/team-workspace-constants.ts`, architecture selector count 0, `git diff --check` 모두 통과했다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-team-ws-architecture`에 저장했다.
+- 다음 Suite 소스 잠금은 파일 페이지의 `filter-tab`·`file-card`·업로드 모달 영역이다.
+- `/team-ws-files` 범위는 filter tab, file card와 hover, 공통 empty panel, 44px·36px 업로드 버튼, 512px 업로드 모달의 header·tab·drop zone·footer다.
+- 파일 상세 모달은 파일 전용 selector를 사용하지 않고 공통 `Modal`만 사용하므로 이번 제거 범위에서 제외한다.
+- 파일 공통 block과 업로드 block 사이의 `calendar-*`·`team-ws-schedule-*`는 일정 페이지 규칙이므로 유지한다.
+- 파일 탭·카드·빈 상태·업로드 버튼은 `TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME` descendant arbitrary utility로, 포털 업로드 모달은 해당 form과 자식 요소의 arbitrary utility로 이전했다.
+- 파일 공통 block과 업로드 modal block만 제거했으며 일정 규칙 header 16개는 유지했다.
+- 1440×900 기본 목록의 전후 JSON과 PNG는 SHA-256까지 동일하고, 카드 hover JSON도 SHA-256까지 동일하다.
+- 업로드 모달의 직접 선택자 15개와 accent-color `#4F46E5` 전후 JSON도 SHA-256까지 동일하다. 모달을 연 페이지 버튼의 hover 배경 전환 시점은 직접 모달 비교에서 제외했다.
+- 최종 검증은 `npm.cmd run build`, `npx.cmd eslint src/TeamWorkspaceSuiteApp.tsx src/team-workspace-constants.ts`, files selector count 0, `git diff --check` 모두 통과했다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-team-ws-files`에 저장했다.
+- 다음 Suite 소스 잠금은 `/team-ws-schedule`의 calendar grid·고정 높이 layout·일정 생성·상세 modal 영역이다.
+- `/team-ws-schedule` 범위는 7열 calendar grid, header·day, min-height 0 layout, 30px×6 row grid, 58px upcoming card와 384px 상세·삭제·완료 모달이다.
+- 1023px 이하 overflow·auto-height 규칙과 800px 이하 데스크톱 compact 규칙도 Tailwind arbitrary media variant로 보존한다.
+- 일정 생성 모달은 schedule 전용 selector 없이 공통 `Modal`만 사용하므로 전용 CSS 제거 대상에서는 제외한다.
+- 완료 모달은 일정 생성·삭제 API 호출 뒤에만 열리므로 외부 데이터를 변경하지 않고 정적 소스와 동일 구조의 삭제 확인 모달까지 브라우저에서 검증한다.
+- 일정 페이지 내부 규칙은 `TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME`의 descendant arbitrary utility로, 페이지 루트 밖 포털 상태에도 적용되어야 하는 상세·삭제·완료 모달 규칙은 해당 요소의 직접 arbitrary utility로 이전했다.
+- 전역 `button, input, select, textarea { font: inherit; }`가 상세 모달 버튼의 일반 글자 유틸리티보다 우선해, 원본과 동일한 삭제 버튼 12px/16px와 확인 버튼 14px/20px에만 important utility를 적용했다.
+- 1440×900 기본 화면은 변경 전후 계산 스타일 차이 0건이며 JPEG SHA-256도 `89342D18B19B6BD72B357D95BCC9A31DC47C493B025142ACFD765202EC45C6EA`로 일치한다.
+- 상세 모달과 삭제 확인 모달의 대상 계산 스타일 차이도 각각 0건이다. 일정 생성·삭제 API는 호출하지 않았고 완료 모달은 동일 TSX 구조에 직접 고정값을 옮겨 정적으로 검증했다.
+- 900×900에서는 main `overflow-y: auto`, content `height: auto`와 `min-height: 100%`를 확인했다. 1440×800에서는 main padding 18px 24px, heading 14px, layout gap 16px, panel padding 16px, month 10px, legend 8px, grid header 28px, upcoming card 56px를 확인했다.
+- 최종 검증은 `npm.cmd run build`, `npx.cmd eslint src/TeamWorkspaceSuiteApp.tsx src/team-workspace-constants.ts`, schedule 전용 CSS selector count 0, 다음 meeting write selector count 1, `git diff --check` 모두 통과했다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-team-ws-schedule`에 저장했다.
+- 다음 학습자 Suite 전용 잠금은 `/team-ws-meeting`의 회의록·필터·작성 모달 영역이다.
+- `/team-ws-meeting` 범위는 44px 작성 버튼, 28px 필터, 36px 첫 작성 버튼, 최소 150px 회의록 카드와 672px 작성·상세 모달이다.
+- 페이지 내부 카드·필터 규칙은 공통 Suite 루트 descendant utility로, 포털로 표시되는 작성·상세 모달 규칙은 해당 form과 상세 panel의 직접 utility로 이전한다.
+- 삭제 버튼은 브라우저 기본 confirm 뒤 실제 API를 호출하므로 데이터 보존을 위해 클릭하지 않고, 상세 화면과 수정 모달 전환까지만 검증한다.
+- meeting 제거 경계 바로 뒤의 `.team-ws-realtime-page .video-container`부터는 라이브·음성 채널의 다음 작업 범위이므로 유지한다.
+- 회의록 작성 버튼·필터·카드·badge·date·title·summary는 `TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME`의 descendant arbitrary utility로 이전했다.
+- 작성·상세 모달은 각각의 form과 panel에 672px, 24px radius, 24px header/body, 입력 46px, textarea 192px, 버튼 36px·44px와 원본 글자 크기·line-height를 직접 이전했다.
+- 입력 focus는 `focus:border-[#4F46E5]`와 `focus:ring-[#4F46E5]`로 원본 hex를 직접 보존했고, transition 완료 뒤 변경 전과 border·ring 계산값이 일치함을 확인했다.
+- 공통 `.text-mentor` 잠금이 기존 meeting 전용 선언보다 우선해 실제 변경 전 카드 색상은 `#A78BFA`였다. 선언값만 보고 `#7C3AED`로 바꾸지 않고 실제 계산 스타일과 스크린샷을 기준으로 공통 색상을 유지했다.
+- 1440×900 목록·작성 모달·상세 모달과 입력 focus의 대상 계산 스타일 차이는 모두 0건이다. 스크린샷도 직접 열어 geometry·폰트·간격·색상·radius가 동일함을 확인했다.
+- 작성·수정·삭제 API는 호출하지 않았으며, 삭제 confirm도 데이터 보존을 위해 열지 않았다.
+- 최종 검증은 `npm.cmd run build`, `npx.cmd eslint src/TeamWorkspaceSuiteApp.tsx src/team-workspace-constants.ts`, meeting 전용 CSS selector count 0, 다음 realtime 경계 selector count 1, `git diff --check` 모두 통과했다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-team-ws-meeting`에 저장했다.
+- 다음 학습자 Suite 잠금은 `/team-ws-live-meeting`과 `/team-voice-channel`이 공유하는 `.team-ws-realtime-page` 영역이다.
+- realtime 범위는 video inset shadow, 6초 avatar float, 발화자 glow와 green border, 320px chat sidebar, 48px control button, screen-share overscroll·touch와 fullscreen 치수다.
+- `teamWsAvatarFloat`와 `teamWsSpeakingGlow` keyframes는 selector 고정값이 아니라 arbitrary animation utility가 참조하는 원본 animation 정의다. selector만 제거하고 keyframes는 그대로 유지해야 움직임과 중간 프레임을 정확히 보존할 수 있다.
+- 화면 공유 시작은 브라우저 권한과 실제 capture stream을 요구하므로 자동 승인하지 않는다. 기본 DOM과 정적 fullscreen utility를 검증하고 실제 공유 권한 동작은 호출하지 않는다.
+- 음성·카메라 버튼은 미디어 권한이나 기기 상태를 바꿀 수 있으므로 클릭하지 않고, 채팅 열기·닫기처럼 로컬 UI 상태만 상호작용 검증한다.
+- `.team-ws-realtime-page`의 22개 descendant arbitrary utility로 video inset shadow, avatar animation·발화 glow, 320px chat sidebar, 48px control, screen-share 일반·fullscreen 고정값을 이전했다.
+- `index.css`에서는 realtime selector를 0개로 줄였고 `teamWsAvatarFloat`, `teamWsSpeakingGlow` keyframes와 바로 다음 mentoring 경계 주석은 각각 1개로 유지했다.
+- 1440×900 live meeting의 변경 전후 계산 스타일 차이는 0건이다. voice channel도 정적 속성 차이는 0건이며, 비교에서 제외한 값은 동일한 6초 animation의 캡처 시점에 따라 달라지는 `.avatar-float`와 자식 avatar의 `x`·`y`·`transform`뿐이다.
+- voice channel의 채팅 닫힘 상태는 안정화 후 변경 전후 계산 스타일 차이가 0건이다. 전후 스크린샷을 직접 열어 geometry·폰트·간격·버튼 치수·색상·radius가 동일하고 Ping·연결 시간 텍스트와 avatar animation 위상만 동적으로 달라짐을 확인했다.
+- 미디어·화면 공유 권한과 실제 capture stream은 호출하지 않았다. 빌드 결과에서 원본 두 animation, inset shadow, 320px max-width, touch-action, overscroll, fullscreen aspect-ratio utility가 생성됨을 확인했다.
+- 최종 검증은 `npm.cmd run build`, `npx.cmd eslint src/TeamWorkspaceSuiteApp.tsx src/team-workspace-constants.ts`, realtime selector count 0, 두 keyframe count 각각 1, mentoring 경계 count 1, `git diff --check` 모두 통과했다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-team-ws-realtime`에 저장했다.
+- 일반 팀 워크스페이스 학습자 잠금은 모두 끝났고, 다음 학습자 그룹은 `/mentoring-dashboard`부터 시작하는 `.mentoring-common-page` 공통 잠금이다.
+- `/mentoring-dashboard` 작업 범위는 `.mentoring-common-page` 루트의 배경·색상·Pretendard·16px/24px, form control 폰트와 text size 보정, brand·mentor 색상, pinned sidebar 상태, 32px scroll padding, 1152px container를 포함한다.
+- dashboard 전용 범위는 숨김 heading, 24px hero, 80px avatar, 34px DM 버튼, 288px progress card, 24px grid·card, mission·empty state·38~40px 버튼, feedback·task·Q&A 카드와 9~10px badge다.
+- 공용 shell 규칙은 같은 `MentoringCommonWorkspaceApp` 루트에 descendant arbitrary utility로 유지하므로 다른 mentoring 페이지에도 기존과 동일하게 적용한다. curriculum 이후의 페이지 전용 selector는 이번 단위에서 제거하지 않는다.
+- sidebar pin은 로컬 UI 상태이므로 기본·고정 상태를 모두 검증한다. 알림과 DM 모달은 읽기·입력 전 상태까지만 확인하고 메시지 전송이나 데이터 변경 API는 호출하지 않는다.
+- 공용 shell과 dashboard 잠금을 `MENTORING_COMMON_PAGE_LOCK_CLASS_NAME` descendant arbitrary utility로 이전했다. 루트 font·16px/24px, 9~24px text 보정, pinned sidebar, 32px scroll, 1152px container, hero·card·button·badge 값을 모두 원본 단위와 색상으로 보존했다.
+- `index.css`의 mentoring 공용 루트·scroll·container·dashboard selector는 각각 0개다. instructor 공용 block은 건드리지 않았고 남은 mentoring source lock 주석은 `.mentoring-source-workspace` 바로 앞으로 옮겨 다음 작업 경계를 유지했다.
+- 1440×900 기본·알림 패널·DM 모달의 전후 계산 스타일 차이는 각각 0건이다. 세 상태의 전후 JPEG SHA-256도 각각 완전히 동일해 geometry·폰트·간격·버튼 치수·색상·radius와 렌더 픽셀이 일치한다.
+- 첫 after 기본 캡처는 API 재로딩 화면을 잡은 레이스였으므로 dashboard hero와 card의 visible 상태를 기다린 뒤 다시 저장했다. 안정화된 전후 기본 이미지 해시는 `47CF184B636AE879BE0628CF02FE9E168885856970B7EF16B5D01012ECA2E929`로 동일하다.
+- 현재 브라우저 제어 표면에는 hover 동작이 없어 축소 sidebar 안의 0px pin 버튼을 실제 클릭할 수 없었다. pinned 상태는 빌드 CSS에서 sidebar 256px, text margin 0.75rem·width auto·opacity 1, section height auto·margin 1.5rem/0.5rem, pin 28px·margin 0.5rem·opacity 1이 정확히 생성됨을 확인했다.
+- `npm.cmd run build`는 통과했다. 기본 `eslint src/MentoringCommonWorkspaceApp.tsx`는 기존 코드의 `react-hooks/set-state-in-effect` 두 곳에서 실패했고, 해당 기존 규칙만 끈 보조 lint는 통과했다. `git diff --check`도 통과했다.
+- 알림 지우기, DM 입력·전송과 기타 데이터 변경 API는 호출하지 않았다. 비교 산출물은 `frontend/.codex-artifacts/ui-lock-mentoring-dashboard`에 저장했다.
+- 다음 학습자 단위는 `/mentoring-workspace`의 `.mentoring-source-workspace`·kanban column 규칙과 workspace 전용 container 폭이다.
+- `/mentoring-workspace` 범위는 root gap 0, 검색 input placeholder `#9CA3AF`·opacity 1, kanban column min-width 320px·rgba border·16px radius·rgba background, article 12px radius·16px padding, workspace container width/height 100%·max-width none이다.
+- placeholder CSS는 Q&A·파일 페이지와 한 묶음이므로 workspace selector만 분리해 제거하고 나머지 두 selector는 보존한다. 1152px container 묶음도 curriculum·Q&A·schedule·files·meeting에 계속 필요하므로 건드리지 않는다.
+- 긴급 필터와 새 할 일 모달은 로컬 UI 상태만 검증한다. 검색어 입력, 카드 더블클릭, 저장과 task 상태 변경 API는 호출하지 않는다.
+- workspace root에는 `gap-0!`과 input placeholder utility를, kanban section과 article에는 320px·rgba·16px/12px·16px utility를 직접 적용했다. container는 공용 1152px utility보다 우선하도록 `.mentoring-common-workspace-page` 상태를 포함한 descendant variant로 100%·none·100%를 적용했다.
+- dashboard 공용 container를 Tailwind로 옮긴 직후에는 같은 specificity의 생성 순서 때문에 workspace 전용 `max-width: none` CSS가 밀려 실제 화면이 원래 1296px에서 1152px로 좁아져 있었다. 원본 CSS cascade를 임시 재현해 1296px 기준을 다시 저장했고, 최종 conditional utility로 원래 폭을 복원했다.
+- 원본 replay와 최종 utility의 1440×900 기본·긴급 필터·새 할 일 모달 계산 스타일 차이는 각각 0건이다. 기본과 모달 JPEG SHA-256은 각각 완전히 동일하고, 긴급 필터도 두 이미지를 직접 열어 동일함을 확인했다.
+- API 재조회와 HMR이 로컬 filter·modal 상태를 초기화하는 레이스가 있어 카드 수와 modal DOM이 연속으로 유지되는지 확인한 뒤 캡처를 갱신했다. 잘못 저장된 로딩·기본 상태 이미지는 최종 산출물에서 덮어썼다.
+- `index.css`의 `.mentoring-source-workspace`, `.mentoring-source-kanban-col`, workspace container selector는 모두 0개다. Q&A·파일 placeholder selector는 각각 1개로 유지했다.
+- `npm.cmd run build`와 `git diff --check`는 통과했다. 대상 파일 기본 lint는 기존 `react-hooks/set-state-in-effect` 두 곳에서 실패하고, 해당 기존 규칙만 끈 보조 lint는 통과했다.
+- 검색 입력, 카드 더블클릭, task 저장·상태 변경 API는 호출하지 않았다. 비교 산출물은 `frontend/.codex-artifacts/ui-lock-mentoring-workspace`에 저장했다.
+- 다음 학습자 단위는 `/mentoring-curriculum`의 1152px container와 timeline pulse 규칙이다.
+- `/mentoring-curriculum`의 현재 전용 고정은 grouped container의 `max-width: 1152px !important`와 `.timeline-pulse`의 `animation: mentoringTimelinePulse 1.8s infinite`다.
+- 공용 mentoring container에는 앞선 dashboard 이전에서 이미 같은 `max-w-[1152px]!`가 적용되어 있으므로 curriculum selector만 grouped CSS에서 제거해 원래 cascade를 유지한다. timeline 요소에는 정확한 animation shorthand arbitrary utility를 직접 적용하고 keyframes는 보존한다.
+- 비교 기준은 실제 workspace의 1440×900 기본 curriculum 화면이며, 애니메이션 위상에 따라 변하는 순간 box-shadow는 선언 일치와 정적 계산 스타일을 함께 확인한다.
+- curriculum timeline 요소에 `animate-[mentoringTimelinePulse_1.8s_infinite]`를 직접 적용했고, grouped container에서 curriculum selector와 timeline selector만 제거했다. Q&A·schedule·files·meeting container selector와 `@keyframes mentoringTimelinePulse`는 각각 유지했다.
+- 1440×900 기본 화면 JPEG는 전후 SHA-256이 완전히 동일하다. timeline이 보이도록 같은 600px 스크롤 위치에서도 전후 이미지를 직접 확인했고, pulse 애니메이션 위상 차이 외의 시각 차이는 없다.
+- 기본 화면과 timeline 화면의 계산 스타일은 클래스 출처, selector 출처, 애니메이션 순간 `box-shadow`를 제외하면 모두 0건이다. animation은 전후 모두 `mentoringTimelinePulse`, `1.8s`, `infinite`, `ease`로 일치한다.
+- `index.css`의 `.mentoring-common-curriculum-page`와 `.timeline-pulse` selector는 0개다. pulse keyframes와 다음 네 페이지의 container selector는 각각 1개다.
+- `npm.cmd run build`와 `git diff --check`는 통과했다. 대상 파일 기본 lint는 기존 `react-hooks/set-state-in-effect` 두 곳에서 실패하고, 해당 기존 규칙만 끈 보조 lint는 통과했다. 빌드의 기존 arbitrary descendant selector 최적화 경고 6건은 이번 curriculum 변경과 무관하다.
+- 데이터 입력·제출·상태 변경 API는 호출하지 않았다. 비교 산출물은 `frontend/.codex-artifacts/ui-lock-mentoring-curriculum`에 저장했다.
+- 다음 학습자 단위는 `/mentoring-qna`의 placeholder, 1152px container, 16px Q&A card 규칙이다.
+- `/mentoring-qna`의 현재 전용 고정은 검색 input placeholder `#9CA3AF !important`·opacity 1, grouped container `max-width: 1152px !important`, `.qna-card` radius `16px !important`다.
+- 공용 mentoring container에는 이미 정확한 `max-w-[1152px]!`가 있으므로 Q&A selector만 grouped CSS에서 제거한다. 검색 input과 질문 article에는 각각 placeholder arbitrary utility와 `rounded-[16px]!`를 직접 적용한다.
+- 비교 상태는 1440×900 기본 목록, 답변 대기 필터, 질문 작성 모달이다. 필터와 모달은 로컬 상태만 사용하고 검색 입력·질문 펼치기·등록 API는 호출하지 않는다.
+- 검색 input과 질문 제목 input에 `placeholder:text-[#9CA3AF]! placeholder:opacity-100!`를 적용하고 질문 article의 기존 `rounded-2xl`을 정확한 `rounded-[16px]!`로 교체했다. 공용 1152px utility는 그대로 사용한다.
+- grouped placeholder에서 Q&A selector만, grouped container에서 Q&A selector만, Q&A card 전용 selector만 제거했다. 파일 placeholder와 schedule·files·meeting container selector는 각각 1개로 유지했다.
+- 1440×900 기본·답변 대기 필터·질문 작성 모달의 계산 스타일 차이는 모두 0건이다. 답변 대기와 모달 JPEG SHA-256은 전후 완전히 동일하며, 기본 화면은 해시가 달랐지만 두 이미지를 직접 확인해 시각 차이가 없음을 확인했다.
+- `npm.cmd run build`와 `git diff --check`는 통과했다. 생성 CSS에서 16px radius와 placeholder color·opacity utility 생성을 확인했다. 빌드의 기존 descendant selector 최적화 경고 6건은 이번 Q&A 변경과 무관하다.
+- 대상 파일 기본 lint는 기존 `react-hooks/set-state-in-effect` 두 곳에서 실패하고, 해당 기존 규칙만 끈 보조 lint는 통과했다.
+- 질문 검색·상세 조회·등록 API는 호출하지 않았다. 비교 산출물은 `frontend/.codex-artifacts/ui-lock-mentoring-qna`에 저장했다.
+- 다음 학습자 단위는 `/mentoring-schedule`의 1152px container와 calendar day 경계 규칙이다.
+- `/mentoring-schedule`의 현재 전용 고정은 grouped container `max-width: 1152px !important`, calendar day의 `:nth-child(7n)` 우측 border 0과 `:nth-last-child(-n + 7)` 하단 border 0이다.
+- 공용 mentoring container에는 이미 정확한 `max-w-[1152px]!`가 있으므로 schedule selector만 grouped CSS에서 제거한다. calendar day에는 두 pseudo-class 조건을 exact arbitrary variant로 직접 적용한다.
+- 비교 상태는 1440×900 기본 캘린더와 개인 일정 추가 모달이다. 모달은 로컬 open 상태만 사용하고 입력·저장 API는 호출하지 않는다.
+- calendar day에 `[&:nth-child(7n)]:border-r-0!`와 `[&:nth-last-child(-n+7)]:border-b-0!`를 직접 적용하고, grouped container에서 schedule selector와 두 calendar day selector를 제거했다.
+- 1440×900 기본 캘린더와 개인 일정 추가 모달의 계산 스타일 차이는 모두 0건이다. 7·21·28번째 셀의 우측 border와 마지막 7개 셀의 하단 border는 전후 모두 0px다.
+- 모달 JPEG SHA-256은 전후 완전히 동일하다. 기본 화면은 해시가 달랐지만 두 이미지를 직접 확인해 시각 차이가 없음을 확인했다.
+- `index.css`의 `.mentoring-common-schedule-page`와 `.mentoring-source-calendar-day` selector는 0개다. files·meeting container와 다음 files 전용 규칙은 유지했다.
+- 첫 `npm.cmd run build`는 기존 CSS 경고 6건을 출력한 뒤 120초 제한에 걸렸고, 같은 명령을 240초 제한으로 다시 실행해 통과했다. 생성 CSS에서 두 nth-child utility가 각각 border width 0 important로 생성됨을 확인했다.
+- 대상 파일 기본 lint는 기존 `react-hooks/set-state-in-effect` 두 곳에서 실패하고, 해당 기존 규칙만 끈 보조 lint와 `git diff --check`는 통과했다.
+- 일정 입력·저장 API는 호출하지 않았다. 비교 산출물은 `frontend/.codex-artifacts/ui-lock-mentoring-schedule`에 저장했다.
+- 다음 학습자 단위는 `/mentoring-files`의 placeholder, 1152px container, file card·filter·empty state·upload modal 규칙이다.
+- `/mentoring-files`의 실제 남은 전용 고정은 input placeholder `#9CA3AF !important`·opacity 1, grouped container `max-width: 1152px !important`, file card `min-height: 260px !important`·radius 16px, file card h3 line-height 20px다.
+- 공용 mentoring container에는 이미 정확한 `max-w-[1152px]!`가 있으므로 files selector만 grouped CSS에서 제거한다. 검색·외부 링크 URL·자료 제목 input과 file card·h3에는 exact arbitrary utility를 직접 적용한다.
+- 비교 상태는 1440×900 기본 목록, 외부 링크 필터, 파일 업로드 모달, 링크 공유 모달이다. 검색 입력·파일 선택·링크 입력·등록 API는 호출하지 않는다.
+- 검색·URL·자료 제목 input에 `placeholder:text-[#9CA3AF]! placeholder:opacity-100!`를 적용했다. file card에는 `min-h-[260px]! rounded-[16px]!`, h3에는 `leading-[20px]!`를 직접 적용했다.
+- grouped container에서 files selector와 files placeholder·card·h3 selector를 제거했다. meeting container와 ERD 규칙은 유지했다.
+- 최종 비교는 CSS viewport가 정확히 1440×900임을 다시 확인한 뒤 캡처했다. 복구 직후 Chrome viewport 적용 순서 때문에 생성된 1646×838 임시 캡처는 판정에서 제외하고 현재 작업 산출물 폴더에서 제거했다.
+- 기본·외부 링크 필터·파일 업로드 모달·링크 공유 모달의 계산 스타일 차이는 모두 0건이다. 기본 화면과 링크 모달 JPEG SHA-256은 완전히 동일하고, 필터와 파일 모달도 이미지를 직접 확인해 시각 차이가 없다.
+- `index.css`의 `.mentoring-common-files-page` selector는 0개다. meeting container selector는 1개, ERD selector는 유지했다.
+- `npm.cmd run build`, 기존 effect 규칙만 끈 보조 lint, `git diff --check`는 통과했다. 생성 CSS에서 260px min-height, 16px radius, 20px line-height, placeholder color·opacity의 important utility를 확인했다.
+- 대상 파일 기본 lint는 기존 `react-hooks/set-state-in-effect` 두 곳에서만 실패했다. 검색·필터 외 입력·파일 선택·링크 입력·등록 API는 호출하지 않았다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-mentoring-files`에 저장했다. 다음 학습자 단위는 `/mentoring-meeting`의 1152px container와 meeting 전용 규칙이다.
+- `/mentoring-meeting`의 실제 남은 전용 고정은 `.mentoring-common-meeting-page .mentoring-common-container { max-width: 1152px !important; }` 한 건이다. 공통 `MENTORING_COMMON_PAGE_LOCK_CLASS_NAME`에 동일한 `max-w-[1152px]!`가 이미 있으므로 TSX 추가 변경 없이 중복 selector만 제거할 수 있다.
+- 비교 상태는 실제 `workspaceId=9005`의 1440×900 기본 회의 목록과 첫 회의록 상세 모달이다. 밋업 입장 링크와 VOD 토스트는 비교 중 실행하지 않는다.
+- `index.css`에서 meeting 전용 selector만 제거했고 `.mentoring-common-erd-page` 경계와 규칙은 유지했다. `MentoringCommonWorkspaceApp.tsx`는 이번 단위에서 추가로 수정하지 않았다.
+- 기본 화면과 회의록 상세 모달에서 1152px 컨테이너, 제목 24px/32px, 입장 버튼 44px·14px/20px·12px radius, 회의록 카드 16px radius·20px padding, 모달 672px·24px radius, 닫기 버튼 32px를 포함한 핵심 계산 스타일 차이는 모두 0건이다.
+- 기본 화면 JPEG의 전후 SHA-256은 `A14BB7C2DCE3D2F494B35C32B74A84FB742D69F82E2CF0AD96BF34F9A46C7671`, 모달은 `2AEA91B5C5EDF1FF78457F7D3FBFB36E389F878876AA9D48F092C0D93B59E7C6`로 각각 완전히 동일하다.
+- `npm.cmd run build`, 기존 effect 규칙만 끈 보조 lint, meeting selector 0개, 공통 exact Tailwind source 1개, 생성 CSS `max-width:1152px!important` 2개, `git diff --check`를 확인했다. 기본 lint는 기존 `react-hooks/set-state-in-effect` 두 곳에서만 실패했다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-mentoring-meeting`에 저장했다. 다음 학습자 단위는 `/mentoring-live-meeting`이다.
+- `/mentoring-live-meeting`은 실제 컴포넌트와 `index.css`를 다시 대조했지만 `.mentoring-common-live-meeting-page`나 live room 전용 mentoring selector가 없다. 공통 root·scroll·container 잠금은 이미 Tailwind로 이전됐고, 라이브 룸의 높이·grid·버튼·채팅 패널 치수는 TSX utility이므로 이번 단위는 무변경으로 종료한다.
+- 다음 실제 잔여 잠금은 `/mentoring-erd`다. 범위는 ERD 전용 scroll/container, 4px column list, 14px/1fr/22px editor grid, 26px input/select, 22px flag/delete control, relation line·anchor·cardinality·label, visual table z-index·connect shadow다.
+- ERD 데이터가 없는 `workspaceId=9005`에서는 기본 빈 상태를 기준으로 저장하고, 테이블 추가와 관계 연결은 저장 API를 호출하지 않는 로컬 React 상태만 사용해 editor·relation 상태를 만든다. 버전 저장과 삭제 confirm은 실행하지 않는다.
+- ERD scroll/container와 컬럼 editor·input·select·flag·delete control, 관계선·anchor·cardinality·label·table 선택 상태를 원래 px·rgba·색상·shadow·radius·transition 그대로 Tailwind arbitrary utility로 이전했다.
+- 앞서 이전한 공통 mentoring descendant utility의 specificity가 ERD 전용 `padding: 0`, full-width container, 세부 글자 크기를 덮고 있음을 브라우저 계산 스타일로 확인했다. ERD root 상태를 포함한 exact descendant variant를 추가해 기존 전용 CSS의 의도값을 그대로 복원했다.
+- 선택 관계선은 base와 selected important utility를 동시에 두면 Tailwind 생성 순서에 따라 base 값이 이길 수 있어, 선택 여부에 따라 한쪽 값만 렌더링하도록 class 분기를 정리했다. 선택 상태는 stroke `#00C471`·3.5px, anchor ring, cardinality·label의 원래 녹색 shadow를 정확히 유지한다.
+- `index.css`에서 ERD 전용 selector를 모두 제거했고 `.mentoring-common-erd-page`와 ERD 세부 class selector는 0개다. 바로 뒤 `mentoringTimelinePulse` keyframes는 1개로 유지했다.
+- 1440×900 빈 화면·컬럼 편집기·선택 관계선의 계산 스타일 전후 차이는 모두 0건이다. JPEG SHA-256은 빈 화면 `720B9B18F2E6D3F7FD9127D169F4E3E73F611FD6E64AF155AD6AFE24E1339D08`, 편집기 `0C7737A785709175F105A770C7B826B0BBC315AAF4990ECCAD26E541C6FA16E8`, 관계선 `60CB82E9D711ACE99CA2ADB08A881175F1F1CFC51B28878E7F495074162DC5C7`로 각 전후가 완전히 동일하다.
+- `npm.cmd run build`는 통과했고 기존 CSS 최적화 경고 6건만 출력했다. 생성 CSS에서 14px/minmax/22px와 minmax/86px grid, 26px input, 22px control, 3.5px selected stroke와 exact drop-shadow가 생성됨을 확인했다.
+- 대상 파일 기본 lint는 기존 `react-hooks/set-state-in-effect` 두 곳에서만 실패했고 해당 기존 규칙만 끈 대상 lint와 `git diff --check`는 통과했다. 버전 저장·삭제·기타 데이터 변경 API는 호출하지 않았다.
+- 비교 산출물은 `frontend/.codex-artifacts/ui-lock-mentoring-erd`에 저장했다. 이 단위로 멘토링 공용 워크스페이스의 학습자 전용 강한 고정 범위는 끝났다.

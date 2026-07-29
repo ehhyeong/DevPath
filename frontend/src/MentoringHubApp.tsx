@@ -214,10 +214,13 @@ export default function MentoringHubApp() {
 
   useEffect(() => {
     document.title = 'DevPath - 멘토링 찾기'
-    document.body.classList.add('mentoring-hub-body')
+    const root = document.getElementById('root')
+    document.body.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+    root?.classList.add('h-dvh!', 'min-h-0!')
 
     return () => {
-      document.body.classList.remove('mentoring-hub-body')
+      document.body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
+      root?.classList.remove('h-dvh!', 'min-h-0!')
     }
   }, [])
 
@@ -449,7 +452,7 @@ export default function MentoringHubApp() {
         />
 
         <main className="flex-1 overflow-y-auto bg-[#F8F9FA] relative" id="mainContainer">
-          <div className="mentoring-hub-main-content max-w-7xl mx-auto px-6 py-10">
+          <div className="mentoring-hub-main-content mx-auto max-w-7xl px-6 py-10 [zoom:0.9]">
             <div className="flex flex-col md:flex-row md:justify-between items-start md:items-end mb-8 gap-4">
               <div>
                 <span className="text-brand font-bold text-xs bg-green-50 px-3 py-1 rounded-full mb-3 inline-block border border-green-100">
@@ -471,7 +474,7 @@ export default function MentoringHubApp() {
                     type="text"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    className="mentoring-search-input bg-transparent outline-none w-full text-sm h-full"
+                    className="mentoring-search-input h-full w-full bg-transparent text-[14px]! leading-[20px]! outline-none placeholder:text-[14px]! placeholder:leading-normal placeholder:text-[#9CA3AF] placeholder:opacity-100"
                     placeholder="프로젝트 제목, 기술 스택, 멘토 이름으로 검색해보세요"
                   />
                 </div>
@@ -481,7 +484,7 @@ export default function MentoringHubApp() {
                     id="typeSelect"
                     value={typeFilter}
                     onChange={(event) => setTypeFilter(event.target.value as TypeFilter)}
-                    className="mentoring-filter-select w-full md:w-auto bg-white border border-gray-200 text-gray-700 text-sm rounded-xl pl-4 pr-10 h-[46px] focus:border-brand outline-none font-bold cursor-pointer transition hover:bg-gray-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22%239CA3AF%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:14px] bg-[position:right_14px_center] shadow-sm"
+                    className="mentoring-filter-select h-[46px] w-full cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22%239CA3AF%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[position:right_14px_center] bg-no-repeat pr-10 pl-4 text-[14px]! leading-[20px]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 focus:border-brand md:w-auto"
                   >
                     <option value="all">🎯 진행방식 전체</option>
                     <option value="study">👥 공통 과제형 (스터디)</option>
@@ -492,7 +495,7 @@ export default function MentoringHubApp() {
                     id="sortSelect"
                     value={sort}
                     onChange={(event) => setSort(event.target.value as SortFilter)}
-                    className="mentoring-filter-select w-full md:w-auto bg-white border border-gray-200 text-gray-700 text-sm rounded-xl pl-4 pr-10 h-[46px] focus:border-brand outline-none font-bold cursor-pointer transition hover:bg-gray-50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22%239CA3AF%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[length:14px] bg-[position:right_14px_center] shadow-sm"
+                    className="mentoring-filter-select h-[46px] w-full cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke-width%3D%222%22%20stroke%3D%22%239CA3AF%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[position:right_14px_center] bg-no-repeat pr-10 pl-4 text-[14px]! leading-[20px]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 focus:border-brand md:w-auto"
                   >
                     <option value="latest">✨ 최신 등록순</option>
                     <option value="deadline">⏳ 마감 임박순</option>
@@ -505,7 +508,11 @@ export default function MentoringHubApp() {
                   <button
                     key={option.value}
                     type="button"
-                    className={`chip shrink-0${category === option.value ? ' active' : ''}`}
+                    className={`chip inline-flex h-[38px] shrink-0 cursor-pointer items-center justify-center gap-[6px] rounded-[999px] border border-[#E5E7EB] bg-white px-[16px] py-0 text-[13px]! font-bold text-[#6B7280] [transition:all_0.2s] ${
+                      category === option.value
+                        ? 'border-[#00C471]! bg-[#00C471]! text-white! [box-shadow:0_4px_10px_rgba(0,196,113,0.2)]'
+                        : 'hover:bg-[#F3F4F6] hover:text-[#111827]'
+                    }`}
                     data-filter={option.value}
                     onClick={() => setCategory(option.value)}
                   >
@@ -571,7 +578,7 @@ export default function MentoringHubApp() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeApply}></div>
           <form
             onSubmit={submitApplication}
-            className="mentoring-apply-modal bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 overflow-hidden mentoring-modal-enter"
+            className="mentoring-apply-modal relative z-10 w-full max-w-[448px] animate-[mentoringModalSlideUp_0.3s_ease-out_forwards] overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
             <div className="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
               <h2 className="text-lg font-extrabold text-gray-900">📝 참여 신청서 작성</h2>
@@ -657,7 +664,7 @@ export default function MentoringHubApp() {
 function MentoringCard({ project, onOpen }: { project: MentoringProject; onOpen: () => void }) {
   return (
     <article
-      className={`project-card bg-white rounded-2xl border border-gray-200 overflow-hidden cursor-pointer group flex flex-col h-full shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-6 ${
+      className={`project-card group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] [transition:all_0.3s_ease]! hover:border-[#00C471]! hover:[box-shadow:0_15px_30px_rgba(0,0,0,0.08)]! hover:[transform:translateY(-4px)]! ${
         project.closed ? 'opacity-70 grayscale-[0.3]' : ''
       }`}
       onClick={onOpen}
@@ -728,7 +735,7 @@ function DetailModal({
   return (
     <div id="detailModal" className="modal active fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="mentoring-detail-modal bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[95vh] mentoring-modal-enter overflow-hidden">
+      <div className="mentoring-detail-modal relative z-10 flex max-h-[95vh] w-full max-w-[672px] animate-[mentoringModalSlideUp_0.3s_ease-out_forwards] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="p-8 bg-gradient-to-br from-gray-800 to-gray-900 relative shrink-0 text-white">
           <button
             type="button"

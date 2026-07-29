@@ -163,8 +163,8 @@ export function ProjectCreatePanel({ onClose, onCreated }: ProjectCreatePanelPro
   }
 
   return (
-    <div className="project-create-panel w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex h-[560px] border border-gray-100 overflow-hidden">
-      <div className="w-[35%] bg-gray-900 p-8 text-white flex flex-col justify-between relative shrink-0">
+    <div className="project-create-panel flex h-[560px]! w-full max-w-[1024px]! overflow-hidden rounded-[16px]! border border-gray-100 bg-white font-['Pretendard',sans-serif]! tracking-[0]! shadow-2xl [box-sizing:border-box]! [&_*]:box-border! [&_*]:tracking-[0]! [&_h2]:mb-[16px]! [&_h2]:text-[30px]! [&_h2]:leading-[36px]! [&_h2]:font-black! [&_h2]:text-white! [&_h3]:text-[20px]! [&_h3]:leading-[28px]! [&_h3]:font-black! [&_h3]:text-[#111827]! [&_p]:text-[12px]! [&_p]:leading-[19px]! [&_label]:mb-[6px]! [&_label]:text-[11px]! [&_label]:leading-[16px]! [&_label]:font-bold! [&_input]:h-[38px]! [&_input]:rounded-[12px]! [&_input]:px-[12px]! [&_input]:py-[8px]! [&_input]:text-[14px]! [&_input]:leading-[20px]! [&_input]:text-[#111827]! [&_input::placeholder]:text-[14px]! [&_input::placeholder]:text-[#9CA3AF]!">
+      <div className="relative flex w-[35%]! shrink-0 flex-col justify-between bg-gray-900 p-[32px]! text-white">
         <div className="relative z-10">
           <span className="inline-block bg-blue-500/20 text-blue-400 text-[10px] font-black px-2 py-1 rounded border border-blue-500/30 mb-4 uppercase tracking-widest">Team Squad</span>
           <h2 className="text-3xl font-black mb-4 leading-tight tracking-tight">
@@ -180,14 +180,14 @@ export function ProjectCreatePanel({ onClose, onCreated }: ProjectCreatePanelPro
         <button
           type="button"
           onClick={handleBack}
-          className="relative z-10 text-gray-400 hover:text-white text-xs font-bold flex items-center gap-2 transition w-fit bg-white/5 hover:bg-white/10 px-3 py-2 rounded-lg border border-white/10"
+          className="relative z-10 flex min-h-[32px]! w-fit! items-center gap-2 rounded-[8px]! border border-white/10 bg-white/5 px-[12px]! py-[8px]! text-[12px]! leading-[16px]! font-bold! text-gray-400 transition hover:bg-white/10 hover:text-white"
         >
           <i className="fas fa-arrow-left"></i> 로비로 돌아가기
         </button>
         <div className="absolute bottom-[-30px] right-[-30px] w-56 h-56 bg-blue-600 rounded-full blur-[90px] opacity-30 pointer-events-none"></div>
       </div>
 
-      <form onSubmit={handleSubmit} className="w-[65%] p-8 flex flex-col justify-between bg-white relative">
+      <form onSubmit={handleSubmit} className="relative flex w-[65%]! flex-col justify-between bg-white p-[32px]!">
         <div>
           <h3 className="text-xl font-black text-gray-900 flex items-center gap-2 tracking-tight">
             <i className="fas fa-cubes text-blue-500"></i> 워크스페이스 프로필 설정
@@ -258,12 +258,12 @@ export function ProjectCreatePanel({ onClose, onCreated }: ProjectCreatePanelPro
               </label>
             </div>
             <div className="relative flex items-center github-input-group mb-2">
-              <span className="prefix absolute left-3 text-xs text-gray-400 font-mono transition">https://github.com/</span>
+              <span className="prefix absolute left-[12px]! font-mono text-[12px]! leading-[16px]! text-[#9CA3AF]! transition">https://github.com/</span>
               <input
                 type="text"
                 value={githubRepo}
                 onChange={(event) => setGithubRepo(event.target.value)}
-                className="w-full border-2 border-gray-200 hover:border-gray-300 rounded-xl pl-[140px] pr-3 py-2.5 text-sm font-mono outline-none focus:border-blue-500 focus:bg-blue-50/10 transition shadow-sm bg-gray-50 hover:bg-white"
+                className="h-[46px]! w-full rounded-[12px]! border-[2px]! border-gray-200 bg-gray-50 pt-[10px]! pr-[12px]! pb-[10px]! pl-[140px]! font-mono! text-[14px]! leading-[20px]! shadow-sm transition [&&]:h-[46px]! [&&]:pt-[10px]! [&&]:pr-[12px]! [&&]:pb-[10px]! [&&]:pl-[140px]! hover:border-gray-300 hover:bg-white focus:border-blue-500 focus:bg-blue-50/10 outline-none"
                 placeholder="organization/repository"
               />
             </div>
@@ -281,7 +281,7 @@ export function ProjectCreatePanel({ onClose, onCreated }: ProjectCreatePanelPro
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-gray-900 hover:bg-black text-white py-3.5 rounded-xl font-bold shadow-xl shadow-gray-900/20 transition transform active:scale-[0.98] text-sm flex justify-center items-center gap-2 disabled:opacity-80 disabled:pointer-events-none"
+            className="flex h-[50px]! w-full transform items-center justify-center gap-2 rounded-[12px]! bg-gray-900 px-0! py-[14px]! text-[14px]! leading-[20px]! font-bold! text-white shadow-xl shadow-gray-900/20 transition hover:bg-black active:scale-[0.98] disabled:pointer-events-none disabled:opacity-80"
           >
             {submitting ? (
               <>
