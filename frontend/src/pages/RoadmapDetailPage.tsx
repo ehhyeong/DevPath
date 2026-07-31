@@ -1190,8 +1190,13 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
 
   return (
     <>
-      <div className="drawer-overlay" onClick={onClose} />
-      <aside className={`side-drawer${node ? ' open' : ''}`}>
+      <div
+        className="drawer-overlay fixed bottom-[0] left-[0] right-[0] top-[var(--roadmap-fixed-top)] z-[150] bg-[rgba(0,0,0,0.3)] [backdrop-filter:blur(2px)]"
+        onClick={onClose}
+      />
+      <aside
+        className={`side-drawer fixed right-[0] top-[var(--roadmap-fixed-top)] z-[200] flex h-[calc(100dvh-var(--roadmap-fixed-top))] w-[min(500px,100vw)] flex-col border-l-[1px] border-solid border-[#e5e7eb] bg-[#fff] [box-shadow:-4px_0_32px_rgba(0,0,0,0.12)] [transition:transform_0.3s_ease] ${node ? 'open [transform:translateX(0)]' : '[transform:translateX(100%)]'}`}
+      >
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-start bg-gray-50 shrink-0">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2">
