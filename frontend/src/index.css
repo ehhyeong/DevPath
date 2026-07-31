@@ -849,45 +849,6 @@ aside:hover .sidebar-text {
   animation: fadeIn 0.3s ease-out;
 }
 
-.channel-tab {
-  border-bottom: 2px solid transparent;
-  color: #6b7280;
-  font-weight: 600;
-  padding-bottom: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.channel-tab.active {
-  border-color: #00c471;
-  color: #111827;
-}
-
-.playlist-scroll {
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  scroll-behavior: smooth;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.playlist-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.course-card {
-  min-width: 280px;
-  max-width: 280px;
-  flex-shrink: 0;
-  transition: transform 0.2s;
-}
-
-.course-card:hover {
-  transform: translateY(-4px);
-}
-
 .community-filter-btn.active span,
 .playlist-filter-btn.active span,
 .review-filter-btn.active span {
@@ -1155,49 +1116,6 @@ aside:hover .sidebar-text {
   to {
     opacity: 1;
   }
-}
-
-.chart-bar {
-  width: 100%;
-  border-radius: 6px;
-  background-color: #f3f4f6;
-  position: relative;
-  overflow: hidden;
-}
-
-.chart-bar-fill {
-  background-color: #00c471;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  transition: height 1s ease-out;
-}
-
-.job-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #e5e7eb;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.job-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background-color: #fafafa;
-  padding: 20px;
-  transition: all 0.2s;
-}
-
-.job-card:hover {
-  border-color: #00c471;
-  background-color: #f0fdf4;
-  transform: translateY(-2px);
 }
 
 .qna-card {
@@ -1608,21 +1526,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 
 .project-card { transition: all 0.2s; border: 1px solid #E5E7EB; }
 .project-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); border-color: #00C471; }
-
-.dropdown-menu {
-  display: none;
-  position: absolute;
-  top: 2.5rem;
-  right: 1rem;
-  background: white;
-  border: 1px solid #E5E7EB;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  z-index: 50;
-  min-width: 140px;
-}
-
-.dropdown-menu.show { display: block; animation: workspaceHubFadeIn 0.1s ease-out; }
 
 @keyframes workspaceHubFadeIn {
   from { opacity: 0; transform: translateY(-5px); }

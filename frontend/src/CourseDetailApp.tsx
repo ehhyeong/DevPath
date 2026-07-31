@@ -796,7 +796,7 @@ export default function CourseDetailApp() {
               <div className="course-detail-hero-tags mb-2 flex flex-wrap items-center! gap-2">
                 <span className="course-detail-hero-badge inline-flex! min-h-[26px]! box-border items-center! justify-center! rounded bg-primary px-2 py-1 text-xs leading-[16px]! font-bold text-white">Best Seller</span>
                 {heroTags.map((tag) => (
-                  <span key={tag} className="job-tag inline-flex! min-h-[26px]! box-border items-center! justify-center! leading-[16px]!">
+                  <span key={tag} className="job-tag inline-flex min-h-[26px] box-border items-center justify-center rounded-[6px] border-[1px] border-solid border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.1)] px-[10px] py-[4px] text-[12px] leading-[16px] font-[600] text-[#e5e7eb]">
                     {tag}
                   </span>
                 ))}
@@ -910,7 +910,7 @@ export default function CourseDetailApp() {
                     </h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       {jobCards.map((item) => (
-                        <div key={item.key} className="job-card">
+                        <div key={item.key} className="job-card rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-[#fafafa] p-[20px] [transition:all_0.2s] hover:border-[#00c471] hover:bg-[#f0fdf4] hover:[transform:translateY(-2px)]">
                           <div className="mb-3 flex items-center gap-3">
                             <div className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold ${item.iconShellClassName}`}>
                               <i className={item.iconClassName} />

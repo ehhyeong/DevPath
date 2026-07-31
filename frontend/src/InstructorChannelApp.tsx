@@ -682,7 +682,7 @@ function ChannelHero({
               key={key}
               type="button"
               onClick={() => onTabChange(key)}
-              className={`channel-tab ${activeTab === key ? 'active' : ''}`}
+              className={`channel-tab cursor-pointer border-b-[2px] border-b-solid border-b-transparent pb-[12px] font-[600] text-[#6b7280] [transition:all_0.2s] ${activeTab === key ? 'active border-[#00c471]! text-[#111827]' : ''}`}
             >
               {label}
             </button>
@@ -847,9 +847,9 @@ function PlaylistTab({
             </div>
             <a href="/lecture-list" className="text-sm font-bold text-brand hover:underline">모두 보기</a>
           </div>
-          <div className="playlist-scroll">
+          <div className="playlist-scroll flex gap-[20px] overflow-x-auto pb-[10px] scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none]! [&::-webkit-scrollbar]:hidden">
             {section.courses.map((course) => (
-              <div key={course.courseId} className="course-card group overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <div key={course.courseId} className="course-card group min-w-[280px] max-w-[280px] shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white [transition:transform_0.2s] hover:[transform:translateY(-4px)]">
                 <button type="button" onClick={() => onOpenCourse(course.courseId)} className="block w-full text-left">
                   <div className="relative h-40 overflow-hidden bg-gray-200">
                     <img src={course.thumbnailUrl} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" alt={course.title} />
