@@ -1986,53 +1986,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   backdrop-filter: blur(2px);
 }
 
-.node-detail-section {
-  margin-bottom: 34px;
-}
-
-.node-detail-section-title {
-  color: #374151;
-  font-size: 0.92rem;
-  font-weight: 800;
-  margin-bottom: 12px;
-}
-
-.node-essential-list {
-  color: #4b5563;
-  display: flex;
-  flex-direction: column;
-  font-size: 0.9rem;
-  gap: 10px;
-  line-height: 1.8;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.node-essential-item {
-  overflow-wrap: anywhere;
-  padding-left: 14px;
-  position: relative;
-}
-
-.node-essential-item::before {
-  color: #6b7280;
-  content: "-";
-  font-weight: 700;
-  left: 0;
-  position: absolute;
-}
-
-.node-essential-name {
-  color: #374151;
-  font-weight: 800;
-}
-
-.node-essential-description {
-  color: #4b5563;
-  font-weight: 500;
-}
-
 .node-resource-heading {
   align-items: center;
   border-bottom: 1px solid #edf2f7;

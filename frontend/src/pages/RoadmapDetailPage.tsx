@@ -1219,15 +1219,15 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
             ))}
           </div>
 
-          <section className="node-detail-section">
-            <h3 className="node-detail-section-title">반드시 알아야 할 개념</h3>
+          <section className="mb-[34px]">
+            <h3 className="mb-[12px] text-[#374151] [font-size:0.92rem] [font-weight:800]">반드시 알아야 할 개념</h3>
             {concepts.length > 0 ? (
-              <ul className="node-essential-list">
+              <ul className="m-[0] flex list-none flex-col gap-[10px] p-[0] text-[#4b5563] [font-size:0.9rem] [line-height:1.8]">
                 {concepts.map((concept) => (
-                  <li key={`${concept.title}-${concept.description ?? ''}`} className="node-essential-item">
-                    <span className="node-essential-name">{concept.title}</span>
+                  <li key={`${concept.title}-${concept.description ?? ''}`} className="relative pl-[14px] [overflow-wrap:anywhere] before:absolute before:left-[0] before:text-[#6b7280] before:content-['-'] before:[font-weight:700]">
+                    <span className="text-[#374151] [font-weight:800]">{concept.title}</span>
                     {concept.description && (
-                      <span className="node-essential-description">: {concept.description}</span>
+                      <span className="text-[#4b5563] [font-weight:500]">: {concept.description}</span>
                     )}
                   </li>
                 ))}
@@ -1237,7 +1237,7 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
             )}
           </section>
 
-          <section className="node-detail-section">
+          <section className="mb-[34px]">
             <h3 className="node-resource-heading">
               <i className="fas fa-heart" />
               추천 무료 자료
