@@ -1796,10 +1796,6 @@ aside:hover .sidebar-text {
 
 body { font-family: 'Pretendard', sans-serif; background-color: #F8F9FA; overflow-x: hidden; }
 
-/* 멘토링 전용 색상 */
-.text-mentor { color: #8B5CF6; }
-.bg-mentor { background-color: #8B5CF6; }
-
 /* 사이드바 스타일 (기존 유지) */
 .sidebar-section-title { opacity: 0; height: 0; overflow: hidden; transition: all 0.3s ease; }
 aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
