@@ -642,6 +642,12 @@ function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationCha
 
 const roadmapRuleBadgeClassName =
   'absolute top-[-10px] right-[10px] [font-size:0.7rem] [padding:2px_8px] [border-radius:99px] [font-weight:800] [border:1px_solid] z-[30] [box-shadow:0_2px_4px_rgba(0,0,0,0.1)]'
+const roadmapNodeHeaderClassName = 'flex w-full min-w-0 items-center justify-between gap-[10px]'
+const roadmapNodeTitleGroupClassName = 'flex min-w-0 flex-[1_1_auto] items-center gap-[8px] [font-size:1.05rem] [&_i]:flex-[0_0_auto]'
+const roadmapNodeTitleTextClassName = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap'
+const roadmapNodeDescriptionClassName = 'mt-[4px] whitespace-normal [overflow-wrap:anywhere] [font-size:0.75rem] leading-[1.4] [font-weight:500] opacity-[0.7]'
+const roadmapNodeMetaClassName = 'ml-auto flex flex-[0_0_auto] gap-[4px] whitespace-nowrap'
+const roadmapNodeMetaTagClassName = 'inline-flex flex-[0_0_auto] items-center whitespace-nowrap bg-[rgba(0,0,0,0.06)] [padding:2px_8px] rounded-[4px] [font-size:0.7rem] [font-weight:normal] leading-[1.2]'
 
 interface RoadmapNodeCardProps {
   node: RoadmapNodeItem
@@ -682,8 +688,8 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
       >
         {visibleBadge.label}
       </div>
-      <div className="node-header">
-        <div className="node-title-group">
+      <div className={roadmapNodeHeaderClassName}>
+        <div className={roadmapNodeTitleGroupClassName}>
           {node.status === 'COMPLETED' && (
             <i className="fas fa-check-circle" style={{ color: '#00c471' }} />
           )}
@@ -699,30 +705,30 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
           {isPendingNodeStatus(node.status) && !readyToClear && (
             <i className="fas fa-circle" style={{ color: '#cbd5e1' }} />
           )}
-          <span className="node-title-text" title={node.title}>{node.title}</span>
+          <span className={roadmapNodeTitleTextClassName} title={node.title}>{node.title}</span>
         </div>
         {node.status === 'IN_PROGRESS' && (
-          <div className="node-meta">
-            <span className="meta-tag">진행중</span>
+          <div className={roadmapNodeMetaClassName}>
+            <span className={roadmapNodeMetaTagClassName}>진행중</span>
           </div>
         )}
         {readyToClear && node.status !== 'IN_PROGRESS' && (
-          <div className="node-meta">
-            <span className="meta-tag">완료가능</span>
+          <div className={roadmapNodeMetaClassName}>
+            <span className={roadmapNodeMetaTagClassName}>완료가능</span>
           </div>
         )}
         {isPendingNodeStatus(node.status) && !readyToClear && !node.deferred && (
-          <div className="node-meta">
-            <span className="meta-tag">대기중</span>
+          <div className={roadmapNodeMetaClassName}>
+            <span className={roadmapNodeMetaTagClassName}>대기중</span>
           </div>
         )}
         {node.deferred && node.status !== 'COMPLETED' && (
-          <div className="node-meta">
-            <span className="meta-tag">스킵</span>
+          <div className={roadmapNodeMetaClassName}>
+            <span className={roadmapNodeMetaTagClassName}>스킵</span>
           </div>
         )}
       </div>
-      {node.content && <div className="node-desc">{node.content}</div>}
+      {node.content && <div className={roadmapNodeDescriptionClassName}>{node.content}</div>}
       {node.requiredTags && node.requiredTags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {node.requiredTags.map((tag) => {
@@ -789,13 +795,13 @@ function GhostAddCard({ change, processing, badge, onApply, onIgnore }: GhostAdd
       >
         {visibleBadge.label}
       </div>
-      <div className="node-header">
-        <div className="node-title-group">
+      <div className={roadmapNodeHeaderClassName}>
+        <div className={roadmapNodeTitleGroupClassName}>
           <i className="fas fa-plus-circle text-blue-500" />
-          <span className="node-title-text" title={change.nodeTitle}>{change.nodeTitle}</span>
+          <span className={roadmapNodeTitleTextClassName} title={change.nodeTitle}>{change.nodeTitle}</span>
         </div>
       </div>
-      <div className="node-desc">{change.contextSummary || change.reason}</div>
+      <div className={roadmapNodeDescriptionClassName}>{change.contextSummary || change.reason}</div>
       <div className="mt-2 flex gap-1.5">
         <button
           disabled={processing}
