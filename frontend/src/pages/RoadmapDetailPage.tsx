@@ -1607,6 +1607,13 @@ interface RoadmapPageToolbarProps extends RoadmapMetricsProps {
   roadmaps: MyRoadmapSummary[]
 }
 
+const roadmapNodeCountWrapClassName = 'inline-flex items-stretch gap-[1px] overflow-hidden rounded-[6px] bg-[#e5e7eb] [box-shadow:0_1px_6px_rgba(0,0,0,0.04)]'
+const roadmapNodeCountCardClassName = 'flex min-w-[42px] flex-col items-center justify-center gap-[2px] [padding:5px_10px]'
+const roadmapTotalNodeCountCardClassName = '[background:linear-gradient(135deg,_#00c471_0%,_#00e887_100%)]'
+const roadmapDoneNodeCountCardClassName = '[background:linear-gradient(135deg,_#3b82f6_0%,_#60a5fa_100%)]'
+const roadmapNodeCountNumberClassName = '[font-size:17px] leading-[1] [font-weight:900] text-[#fff]'
+const roadmapNodeCountLabelClassName = '[font-size:8px] leading-[1] [font-weight:800] text-[#fff]'
+
 function RoadmapHeaderMetrics({
   changesCount,
   totalNodes,
@@ -1630,14 +1637,14 @@ function RoadmapHeaderMetrics({
         ) : null}
       </button>
 
-      <div className="node-count-wrap" title={'\uC804\uCCB4 / \uC644\uB8CC'}>
-        <div className="node-count-card total">
-          <span className="node-count-number">{totalNodes}</span>
-          <span className="node-count-label">{'\uC804\uCCB4'}</span>
+      <div className={roadmapNodeCountWrapClassName} title={'\uC804\uCCB4 / \uC644\uB8CC'}>
+        <div className={`${roadmapNodeCountCardClassName} total ${roadmapTotalNodeCountCardClassName}`}>
+          <span className={roadmapNodeCountNumberClassName}>{totalNodes}</span>
+          <span className={roadmapNodeCountLabelClassName}>{'\uC804\uCCB4'}</span>
         </div>
-        <div className="node-count-card done">
-          <span className="node-count-number">{doneNodes}</span>
-          <span className="node-count-label">{'\uC644\uB8CC'}</span>
+        <div className={`${roadmapNodeCountCardClassName} done ${roadmapDoneNodeCountCardClassName}`}>
+          <span className={roadmapNodeCountNumberClassName}>{doneNodes}</span>
+          <span className={roadmapNodeCountLabelClassName}>{'\uC644\uB8CC'}</span>
         </div>
       </div>
 
@@ -1781,14 +1788,14 @@ function RoadmapPageToolbar({
             ) : null}
           </button>
 
-          <div className="node-count-wrap" title={'\uC804\uCCB4 / \uC644\uB8CC'}>
-            <div className="node-count-card total">
-              <span className="node-count-number">{totalNodes}</span>
-              <span className="node-count-label">{'\uC804\uCCB4'}</span>
+          <div className={roadmapNodeCountWrapClassName} title={'\uC804\uCCB4 / \uC644\uB8CC'}>
+            <div className={`${roadmapNodeCountCardClassName} total ${roadmapTotalNodeCountCardClassName}`}>
+              <span className={roadmapNodeCountNumberClassName}>{totalNodes}</span>
+              <span className={roadmapNodeCountLabelClassName}>{'\uC804\uCCB4'}</span>
             </div>
-            <div className="node-count-card done">
-              <span className="node-count-number">{doneNodes}</span>
-              <span className="node-count-label">{'\uC644\uB8CC'}</span>
+            <div className={`${roadmapNodeCountCardClassName} done ${roadmapDoneNodeCountCardClassName}`}>
+              <span className={roadmapNodeCountNumberClassName}>{doneNodes}</span>
+              <span className={roadmapNodeCountLabelClassName}>{'\uC644\uB8CC'}</span>
             </div>
           </div>
 
@@ -2344,14 +2351,14 @@ export default function RoadmapDetailPage() {
             </button>
 
             {/* 노드 카운트 */}
-            <div className="node-count-wrap" title="전체 / 완료">
-              <div className="node-count-card total">
-                <span className="node-count-number">{totalNodes}</span>
-                <span className="node-count-label">전체</span>
+            <div className={roadmapNodeCountWrapClassName} title="전체 / 완료">
+              <div className={`${roadmapNodeCountCardClassName} total ${roadmapTotalNodeCountCardClassName}`}>
+                <span className={roadmapNodeCountNumberClassName}>{totalNodes}</span>
+                <span className={roadmapNodeCountLabelClassName}>전체</span>
               </div>
-              <div className="node-count-card done">
-                <span className="node-count-number">{doneNodes}</span>
-                <span className="node-count-label">완료</span>
+              <div className={`${roadmapNodeCountCardClassName} done ${roadmapDoneNodeCountCardClassName}`}>
+                <span className={roadmapNodeCountNumberClassName}>{doneNodes}</span>
+                <span className={roadmapNodeCountLabelClassName}>완료</span>
               </div>
             </div>
 

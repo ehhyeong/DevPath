@@ -2005,28 +2005,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 .change-item.delete   { border-left-color: #ef4444; }
 .change-item.reorder  { border-left-color: #6366f1; }
 
-/* ── 노드 카운트 배지 ── */
-.node-count-wrap {
-  display: inline-flex; align-items: stretch;
-  gap: 1px; border-radius: 6px; overflow: hidden;
-  background: #e5e7eb;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
-}
-.node-count-card {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 2px; padding: 5px 10px;
-  background: white; min-width: 42px;
-}
-.node-count-card.total { background: linear-gradient(135deg, #00c471 0%, #00e887 100%); }
-.node-count-card.done  { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); }
-.node-count-label  { font-size: 8px; font-weight: 800; color: #64748b; line-height: 1; }
-.node-count-number { font-size: 17px; font-weight: 900; line-height: 1; color: #0f172a; }
-.node-count-card.total .node-count-label,
-.node-count-card.total .node-count-number,
-.node-count-card.done  .node-count-label,
-.node-count-card.done  .node-count-number { color: white; }
-
 /* ── 아코디언 ── */
 .info-accordion { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
 .info-accordion.open { max-height: 800px; transition: max-height 0.5s ease-in; }
