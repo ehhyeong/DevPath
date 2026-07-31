@@ -1241,8 +1241,8 @@ function PostDetailModal({
   if (!post) return null
 
   return (
-    <div className="post-modal-overlay" onClick={onClose} aria-hidden="true">
-      <div className="post-modal-box" onClick={(event) => event.stopPropagation()}>
+    <div className="post-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-[rgba(0,0,0,0.5)] p-[20px]" onClick={onClose} aria-hidden="true">
+      <div className="post-modal-box max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-[16px] bg-white [box-shadow:0_25px_50px_rgba(0,0,0,0.3)]" onClick={(event) => event.stopPropagation()}>
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
           <span className={`rounded px-2 py-1 text-xs font-bold ${getCommunityCategoryClass(post.category)}`}>
             {getCommunityCategoryLabel(post.category)}
