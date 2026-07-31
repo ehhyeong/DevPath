@@ -2507,9 +2507,9 @@ export default function RoadmapDetailPage() {
                   <i className="fas fa-info-circle text-gray-400" />
                   {roadmap.infoTitle?.trim() || roadmap.title}
                 </div>
-                <i className={`fas fa-chevron-down text-gray-400 chevron${infoOpen ? ' rotate' : ''}`} />
+                <i className={`fas fa-chevron-down text-gray-400 [transition:transform_0.3s]! ${infoOpen ? '[transform:rotate(180deg)]' : ''}`} />
               </div>
-              <div className={`info-accordion${infoOpen ? ' open' : ''} bg-gray-50 border-t border-gray-100`}>
+              <div className={`${infoOpen ? 'max-h-[800px] [transition:max-height_0.5s_ease-in]' : 'max-h-0 [transition:max-height_0.3s_ease-out]'} overflow-hidden bg-gray-50 border-t border-gray-100`}>
                 <RoadmapInfoContent content={roadmap.infoContent} />
               </div>
             </div>

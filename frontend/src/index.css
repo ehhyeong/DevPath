@@ -2005,12 +2005,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 .change-item.delete   { border-left-color: #ef4444; }
 .change-item.reorder  { border-left-color: #6366f1; }
 
-/* ── 아코디언 ── */
-.info-accordion { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-.info-accordion.open { max-height: 800px; transition: max-height 0.5s ease-in; }
-.chevron { transition: transform 0.3s; }
-.chevron.rotate { transform: rotate(180deg); }
-
 /* ── 배지 펄스 ── */
 @keyframes badge-pulse {
   0%, 100% { transform: scale(1); }
