@@ -3395,31 +3395,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   color: #0f172a;
 }
 
-.guide-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9999;
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
-}
-
-.guide-modal-content {
-  display: flex;
-  width: 480px;
-  max-width: 90%;
-  flex-direction: column;
-  border-radius: 16px;
-  background-color: #ffffff;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
 @keyframes modalFadeIn {
   from {
     opacity: 0;
@@ -3431,92 +3406,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
     transform: translateY(0);
   }
 }
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #f1f5f9;
-  padding: 20px 24px;
-}
-
-.modal-title {
-  margin: 0;
-  color: #0f172a;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  padding: 4px;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background-color: #f1f5f9;
-  color: #0f172a;
-}
-
-.modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-}
-
-.guide-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background-color: #f8fafc;
-  padding: 16px;
-}
-
-.guide-card h4 {
-  margin: 0 0 8px;
-  color: #334155;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.guide-card p {
-  margin: 0;
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.5;
-  word-break: keep-all;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid #f1f5f9;
-  padding: 16px 24px;
-}
-
-.primary-btn {
-  border: 0;
-  border-radius: 8px;
-  background-color: #3b82f6;
-  padding: 10px 20px;
-  color: #ffffff;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.2s;
-}
-
-.primary-btn:hover {
-  background-color: #2563eb;
-}
-
 
 /* Consolidated from devpath-compat.css. */
 /* Font Awesome 6 class compatibility for the vendored Font Awesome 5.15.4 build. */

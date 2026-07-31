@@ -21,6 +21,8 @@ const sections: InstructorNavItemSection[] = Array.from(
   new Set(instructorNavItems.map((item) => item.section)),
 )
 
+const GUIDE_CARD_CLASS = 'guide-card rounded-[12px] border border-[#e2e8f0] bg-[#f8fafc] p-[16px] [&_h4]:m-0 [&_h4]:mb-[8px] [&_h4]:text-[15px] [&_h4]:font-[600] [&_h4]:text-[#334155] [&_p]:m-0 [&_p]:text-[14px] [&_p]:leading-[1.5] [&_p]:text-[#64748b] [&_p]:[word-break:keep-all]'
+
 export default function InstructorSidebar({
   currentPageKey,
 }: {
@@ -125,11 +127,21 @@ export default function InstructorSidebar({
       </aside>
 
       {isGuideOpen ? (
-        <div className="guide-modal-overlay" onClick={() => setIsGuideOpen(false)}>
-          <div className="guide-modal-content" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">📖 DevPath 강사 가이드</h3>
-              <button type="button" className="close-btn" onClick={() => setIsGuideOpen(false)}>
+        <div
+          className="guide-modal-overlay fixed top-0 left-0 z-[9999] flex h-screen w-screen items-center justify-center bg-[rgba(15,23,42,0.4)] [backdrop-filter:blur(4px)]"
+          onClick={() => setIsGuideOpen(false)}
+        >
+          <div
+            className="guide-modal-content flex w-[480px] max-w-[90%] flex-col rounded-[16px] bg-white [animation:modalFadeIn_0.3s_cubic-bezier(0.16,1,0.3,1)] [box-shadow:0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="modal-header flex items-center justify-between px-[24px] py-[20px] [border-bottom:1px_solid_#f1f5f9]">
+              <h3 className="modal-title m-0 text-[18px] font-[700] text-[#0f172a]">📖 DevPath 강사 가이드</h3>
+              <button
+                type="button"
+                className="close-btn flex cursor-pointer items-center justify-center bg-transparent p-[4px] text-[#94a3b8] [border-radius:50%] [border:0] [transition:all_0.2s] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+                onClick={() => setIsGuideOpen(false)}
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -148,23 +160,27 @@ export default function InstructorSidebar({
               </button>
             </div>
 
-            <div className="modal-body">
-              <div className="guide-card">
+            <div className="modal-body flex flex-col gap-[16px] p-[24px]">
+              <div className={GUIDE_CARD_CLASS}>
                 <h4>🚀 첫 강의 등록하기</h4>
                 <p>좌측 '강의 관리' 메뉴에서 [새 강의 만들기]를 클릭하여 커리큘럼과 영상을 업로드할 수 있습니다.</p>
               </div>
-              <div className="guide-card">
+              <div className={GUIDE_CARD_CLASS}>
                 <h4>👥 수강생 소통 방법</h4>
                 <p>'수강생 관리' 메뉴에서 질문에 답변하고, 공지사항을 등록하여 학생들과 소통해 보세요.</p>
               </div>
-              <div className="guide-card">
+              <div className={GUIDE_CARD_CLASS}>
                 <h4>💰 정산 및 수익 확인</h4>
                 <p>매월 1일, '통계 및 수익' 탭에서 지난달의 수익 리포트를 확인하고 정산을 신청할 수 있습니다.</p>
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button type="button" className="primary-btn" onClick={() => setIsGuideOpen(false)}>
+            <div className="modal-footer flex justify-end px-[24px] py-[16px] [border-top:1px_solid_#f1f5f9]">
+              <button
+                type="button"
+                className="primary-btn cursor-pointer rounded-[8px] bg-[#3b82f6] px-[20px] py-[10px] text-[14px]! leading-[21px]! font-[600] text-white [border:0] [transition:background-color_0.2s] hover:bg-[#2563eb]"
+                onClick={() => setIsGuideOpen(false)}
+              >
                 확인했습니다
               </button>
             </div>
