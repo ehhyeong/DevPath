@@ -1858,12 +1858,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 .proof-card-badge i { color: #f59e0b; flex: 0 0 auto; }
 .proof-card-badge-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ── 노드 내부 요소 ── */
-.progress-container  { width: 100%; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.node-progress-bg    { flex: 1; height: 6px; background: rgba(0,0,0,0.1); border-radius: 99px; overflow: hidden; }
-.node-progress-bar   { height: 100%; background: #eab308; border-radius: 99px; }
-.progress-pct        { font-size: 10px; font-weight: 800; color: #b45309; white-space: nowrap; }
-
 /* ── 변경 라벨 배지 (노드 위) ── */
 /* ── 로드맵 정보 아코디언 HTML 렌더링 ── */
 .roadmap-info-html .p-6 { padding: 1.14rem 1.24rem; }

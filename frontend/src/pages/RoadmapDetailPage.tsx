@@ -755,16 +755,16 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
       )}
       {node.status !== 'COMPLETED' && node.status !== 'LOCKED'
         && (node.status === 'IN_PROGRESS' || readyToClear || progressPercent > 0) && (
-        <div className="progress-container">
-          <div className="node-progress-bg">
+        <div className="progress-container mt-[6px] flex w-full items-center gap-[8px]">
+          <div className="node-progress-bg h-[6px] overflow-hidden rounded-[99px] bg-[rgba(0,0,0,0.1)] [flex:1_1_0%]">
             <div
-              className="node-progress-bar"
+              className="node-progress-bar h-full rounded-[99px] bg-[#eab308]"
               style={{
                 width: `${progressPercent}%`,
               }}
             />
           </div>
-          <span className="progress-pct">
+          <span className="progress-pct whitespace-nowrap text-[#b45309] [font-size:10px] [font-weight:800]">
             {progressPercent}%
           </span>
         </div>
