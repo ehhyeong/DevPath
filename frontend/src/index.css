@@ -1840,24 +1840,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   50%       { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
 }
 
-/* ── Proof Card 배지 (노드 좌상단, 필수 배지와 동일 높이) ── */
-.proof-card-badge {
-  position: absolute; top: -10px; left: 10px;
-  max-width: calc(100% - 72px); /* 우상단 rule-badge와 겹치지 않도록 폭 제한 */
-  display: inline-flex; align-items: center; gap: 4px;
-  background: #fff; border: 1px solid #00c471;
-  color: #00c471;
-  font-size: 0.7rem; font-weight: 800;
-  padding: 2px 8px; border-radius: 99px;
-  z-index: 30;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-.proof-card-badge:hover { transform: translateY(-1px); }
-.proof-card-badge i { color: #f59e0b; flex: 0 0 auto; }
-.proof-card-badge-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
 /* ── 변경 라벨 배지 (노드 위) ── */
 /* ── 로드맵 정보 아코디언 HTML 렌더링 ── */
 .roadmap-info-html .p-6 { padding: 1.14rem 1.24rem; }

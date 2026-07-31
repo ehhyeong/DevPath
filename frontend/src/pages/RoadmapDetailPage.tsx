@@ -209,12 +209,15 @@ interface ProofCardBadgeProps {
   card: ProofCardSummary
 }
 
+const roadmapProofCardBadgeClassName =
+  'absolute top-[-10px] left-[10px] z-[30] inline-flex max-w-[calc(100%-72px)] cursor-pointer items-center gap-[4px] rounded-[99px] border-[1px] border-solid border-[#00c471] bg-white [padding:2px_8px] [font-size:0.7rem] font-[800] text-[#00c471] [box-shadow:0_2px_4px_rgba(0,0,0,0.1)] [transition:transform_0.2s] hover:[transform:translateY(-1px)]'
+
 // Proof 카드를 노드 내부 왼쪽 위(필수 배지와 동일 높이)에 출력해 옆 브랜치 노드와의 겹침을 방지한다.
 function ProofCardBadge({ card }: ProofCardBadgeProps) {
   return (
-    <div className="proof-card-badge" title={card.title} onClick={(e) => e.stopPropagation()}>
-      <i className="fas fa-medal" />
-      <span className="proof-card-badge-text">{card.title}</span>
+    <div className={roadmapProofCardBadgeClassName} title={card.title} onClick={(e) => e.stopPropagation()}>
+      <i className="fas fa-medal flex-[0_0_auto] text-[#f59e0b]" />
+      <span className="overflow-hidden text-ellipsis whitespace-nowrap">{card.title}</span>
     </div>
   )
 }
