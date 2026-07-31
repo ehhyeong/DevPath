@@ -2485,7 +2485,7 @@ export default function RoadmapDetailPage() {
       <main className={`roadmap-main${panelOpen ? ' panel-open' : ''} relative w-full`}>
 
         {/* 로드맵 카테고리 라벨 (전환 드롭다운) */}
-        <div className="roadmap-category-badge fixed left-8 z-[60]">
+        <div className="fixed top-[calc(var(--roadmap-fixed-top)+12px)] left-8 z-[60]">
           <RoadmapSwitcherDropdown
             currentCustomRoadmapId={customRoadmapId}
             currentTitle={roadmap.title}

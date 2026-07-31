@@ -1745,10 +1745,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   transform: translateY(-50%) translateX(-1px);
 }
 
-.roadmap-category-badge {
-  top: calc(var(--roadmap-fixed-top) + 12px);
-}
-
 /* ── 메인 노드 박스 ── */
 .node-box {
   position: relative;
