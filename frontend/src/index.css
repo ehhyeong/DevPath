@@ -1257,16 +1257,6 @@ aside:hover .sidebar-text {
   }
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: var(--devpath-scrollbar-size);
-  height: var(--devpath-scrollbar-size);
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--devpath-scrollbar-thumb);
-  border-radius: 5px;
-}
-
 .sticky-roadmap {
   position: sticky;
   top: 100px;
@@ -1816,10 +1806,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 
 .rank-1 { background: linear-gradient(135deg, #FFD700, #FDB931); color: white; border: none; }
 .rank-2 { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); color: white; border: none; }
-
-.custom-scrollbar::-webkit-scrollbar { width: var(--devpath-scrollbar-size); height: var(--devpath-scrollbar-size); }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--devpath-scrollbar-thumb); border-radius: 5px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: var(--devpath-scrollbar-track); }
 
 .hover-card { transition: all 0.3s ease; border: 1px solid #E5E7EB; }
 .hover-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); border-color: #D1D5DB; }
@@ -3075,10 +3061,6 @@ input[type="checkbox"]:checked { background-color: #00C471; border-color: #00C47
 .info-accordion.open { max-height: 800px; transition: max-height 0.5s ease-in; }
 .chevron { transition: transform 0.3s; }
 .chevron.rotate { transform: rotate(180deg); }
-
-/* ── 스크롤바 ── */
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
 
 /* ── 배지 펄스 ── */
 @keyframes badge-pulse {
