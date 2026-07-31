@@ -1107,7 +1107,10 @@ function MyRoadmapBuilderPage() {
         </aside>
 
         {/* ── 메인 캔버스 ── */}
-        <main ref={mainRef} className="builder-dot-pattern relative flex-1 overflow-y-auto p-8">
+        <main
+          ref={mainRef}
+          className="builder-dot-pattern relative flex-1 overflow-y-auto bg-[#f9fafb] [background-image:radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:24px_24px] p-8"
+        >
 
           {/* 편집 모드 배너 */}
           {editMyRoadmapId && !editLoading && !editLoadError && (

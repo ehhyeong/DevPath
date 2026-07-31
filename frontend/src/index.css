@@ -2286,13 +2286,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 
 
 /* Consolidated from my-roadmap.css. */
-/* 배경 도트 패턴 */
-.builder-dot-pattern {
-  background-color: #f9fafb;
-  background-image: radial-gradient(#e5e7eb 1.5px, transparent 1.5px);
-  background-size: 24px 24px;
-}
-
 /* 노드 등장 애니메이션 */
 .builder-step-enter {
   animation: builderStepPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
