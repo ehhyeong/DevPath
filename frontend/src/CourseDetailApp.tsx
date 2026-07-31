@@ -37,6 +37,9 @@ type ReviewSortKey = 'latest' | 'ratingDesc' | 'ratingAsc'
 
 const APP_HEADER_HEIGHT_PX = 64
 const STUDENT_PREVIEW_BANNER_HEIGHT_PX = 44
+const qnaInputBaseClassName = 'qna-input w-full rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white px-[12px] py-[10px] [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
+const qnaInputClassName = `${qnaInputBaseClassName} text-[14px]!`
+const qnaTextareaClassName = 'qna-textarea min-h-[140px] w-full resize-none rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white p-[12px] text-[14px]! [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
 
 function readNumberSearchParam(name: string) {
   const value = new URLSearchParams(window.location.search).get(name)
@@ -1146,7 +1149,7 @@ export default function CourseDetailApp() {
                           id="qnaSearch"
                           value={qnaSearch}
                           onChange={(event) => setQnaSearch(event.target.value)}
-                          className="course-detail-qna-search-input qna-input qna-focus h-[36px]! w-full bg-white py-0! pr-[44px]! pl-[38px]! text-[13px]! leading-[18px]! font-bold! text-gray-700 placeholder:text-[13px]! placeholder:font-bold placeholder:text-[#9ca3af]"
+                          className={`${qnaInputBaseClassName} course-detail-qna-search-input h-[36px]! py-0! pr-[44px]! pl-[38px]! text-[13px]! leading-[18px]! font-bold! text-gray-700 placeholder:text-[13px]! placeholder:font-bold placeholder:text-[#9ca3af]`}
                           placeholder="제목/내용/작성자 키워드 검색"
                         />
                       </div>
@@ -1228,7 +1231,7 @@ export default function CourseDetailApp() {
                               <input
                                 value={commentDrafts[question.id] ?? ''}
                                 onChange={(event) => setCommentDrafts((current) => ({ ...current, [question.id]: event.target.value }))}
-                                className="qna-input qna-focus"
+                                className={qnaInputClassName}
                                 placeholder="댓글을 입력하세요"
                               />
                               <button
@@ -1384,15 +1387,15 @@ export default function CourseDetailApp() {
 
       {askModalOpen ? (
         <div
-          className="qna-modal-backdrop show"
+          className="qna-modal-backdrop show fixed inset-0 z-[2500] flex items-center justify-center bg-[rgba(17,24,39,0.55)] p-[16px]"
           id="askModal"
           onClick={(event) => {
             if (event.target === event.currentTarget) setAskModalOpen(false)
           }}
         >
-          <div className="qna-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="qna-modal-header">
-              <div className="qna-modal-title"><i className="fas fa-pen-to-square text-primary" /> 새 질문 작성</div>
+          <div className="qna-modal w-[min(680px,96vw)] overflow-hidden rounded-[18px] border-[1px] border-solid border-[#e5e7eb] bg-white [box-shadow:0_24px_72px_rgba(17,24,39,0.18)]" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="qna-modal-header flex items-center justify-between bg-white px-[16px] py-[14px] [border-bottom:1px_solid_#f3f4f6]">
+              <div className="qna-modal-title flex items-center gap-[8px] text-[14px] font-[900] text-[#111827]"><i className="fas fa-pen-to-square text-primary" /> 새 질문 작성</div>
               <button
                 type="button"
                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-50"
@@ -1402,7 +1405,7 @@ export default function CourseDetailApp() {
               </button>
             </div>
 
-            <div className="qna-modal-body">
+            <div className="qna-modal-body p-[16px]">
               <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-xs font-bold text-gray-700">제목</label>
@@ -1410,7 +1413,7 @@ export default function CourseDetailApp() {
                     id="qnaTitle"
                     value={questionDraft.title}
                     onChange={(event) => setQuestionDraft((current) => ({ ...current, title: event.target.value }))}
-                    className="qna-input qna-focus"
+                    className={qnaInputClassName}
                     placeholder="예: 클래스와 프로세스 차이가 궁금합니다"
                   />
                 </div>
@@ -1420,7 +1423,7 @@ export default function CourseDetailApp() {
                     id="qnaTag"
                     value={questionDraft.tag}
                     onChange={(event) => setQuestionDraft((current) => ({ ...current, tag: event.target.value }))}
-                    className="qna-input qna-focus"
+                    className={qnaInputClassName}
                     placeholder="예: Unit 3 / 12:40 / 상속"
                   />
                 </div>
@@ -1433,7 +1436,7 @@ export default function CourseDetailApp() {
                   maxLength={1000}
                   value={questionDraft.body}
                   onChange={(event) => setQuestionDraft((current) => ({ ...current, body: event.target.value }))}
-                  className="qna-textarea qna-focus"
+                  className={qnaTextareaClassName}
                   placeholder="질문 내용을 자세하게 적어주세요."
                 />
               </div>
@@ -1446,7 +1449,7 @@ export default function CourseDetailApp() {
               </div>
             </div>
 
-            <div className="qna-modal-footer">
+            <div className="qna-modal-footer flex justify-end gap-[8px] bg-[#f9fafb] px-[16px] py-[12px] [border-top:1px_solid_#f3f4f6]">
               <button
                 type="button"
                 className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-50"

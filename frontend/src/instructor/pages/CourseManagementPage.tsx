@@ -191,7 +191,10 @@ function CourseHashTags({ tags }: { tags: string[] }) {
   return (
     <div className="mb-2.5 flex flex-wrap gap-1.5">
       {tags.map((tag, index) => (
-        <span key={`${tag}-${index}`} className={index === 0 ? 'hash-tag hash-tag-brand' : 'hash-tag'}>
+        <span
+          key={`${tag}-${index}`}
+          className={`hash-tag inline-flex cursor-pointer items-center rounded-[6px] border-[1px] border-solid border-[#e5e7eb] bg-[#f3f4f6] px-[8px] py-[4px] text-[11px] font-[600] tracking-[-0.01em] text-[#4b5563] [transition:all_0.2s] hover:bg-[#e5e7eb] hover:text-[#111827] ${index === 0 ? 'hash-tag-brand border-[#d1fae5]! bg-[#f0fdf4]! text-[#059669] hover:bg-[#dcfce7]!' : ''}`}
+        >
           {tag}
         </span>
       ))}

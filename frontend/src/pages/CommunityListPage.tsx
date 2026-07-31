@@ -8,6 +8,7 @@ type View = 'list' | 'detail'
 type CategoryFilter = 'all' | 'qa' | 'tech' | 'career' | 'free'
 
 const categoryFilters: CategoryFilter[] = ['all', 'qa', 'tech', 'career', 'free']
+const techTagClassName = 'tech-tag rounded-[4px] bg-[#f1f3f5] px-[8px] py-[2px] text-[11px] font-[600] text-[#495057]'
 
 function readCategoryFilterFromLocation(): CategoryFilter {
   const value = new URLSearchParams(window.location.search).get('category')
@@ -151,9 +152,9 @@ export default function CommunityListPage() {
                       </div>
                       <p className="mb-3 line-clamp-2 text-sm text-gray-600">JPA 연관관계 조회 시 발생하는 N+1 문제로 인해 성능 이슈가 있습니다. Fetch Join과 BatchSize 중 어떤 것이 더 효율적일까요?</p>
                       <div className="mb-3 flex flex-wrap gap-2">
-                        <span className="tech-tag">#Java</span>
-                        <span className="tech-tag">#Spring Boot</span>
-                        <span className="tech-tag">#JPA</span>
+                        <span className={techTagClassName}>#Java</span>
+                        <span className={techTagClassName}>#Spring Boot</span>
+                        <span className={techTagClassName}>#JPA</span>
                       </div>
                       <div className="flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
                         <div className="flex items-center gap-2">
@@ -188,9 +189,9 @@ export default function CommunityListPage() {
                       </div>
                       <p className="mb-3 line-clamp-2 text-sm text-gray-600">React 19의 주요 변경 사항과 서버 컴포넌트(RSC) 도입 배경 및 성능 최적화 사례 공유합니다.</p>
                       <div className="mb-3 flex flex-wrap gap-2">
-                        <span className="tech-tag">#React</span>
-                        <span className="tech-tag">#Frontend</span>
-                        <span className="tech-tag">#Trend</span>
+                        <span className={techTagClassName}>#React</span>
+                        <span className={techTagClassName}>#Frontend</span>
+                        <span className={techTagClassName}>#Trend</span>
                       </div>
                       <div className="flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">
                         <div className="flex items-center gap-2">
@@ -255,9 +256,9 @@ export default function CommunityListPage() {
                       <p>현업에서는 보통 이런 경우 <code>BatchSize</code>를 사용하는지, 아니면 QueryDSL로 DTO 조회를 하는지 궁금합니다!</p>
                     </div>
                     <div className="mb-8 flex flex-wrap gap-2">
-                      <span className="tech-tag">#Java</span>
-                      <span className="tech-tag">#Spring Boot</span>
-                      <span className="tech-tag">#JPA</span>
+                      <span className={techTagClassName}>#Java</span>
+                      <span className={techTagClassName}>#Spring Boot</span>
+                      <span className={techTagClassName}>#JPA</span>
                     </div>
                   </div>
                 </div>
@@ -312,11 +313,11 @@ export default function CommunityListPage() {
               <i className="fas fa-hashtag text-[#00C471]" /> 인기 태그
             </h3>
             <div className="flex flex-wrap gap-2">
-              <a href="#" className="tech-tag">#JavaScript</a>
-              <a href="#" className="tech-tag">#React</a>
-              <a href="#" className="tech-tag">#Python</a>
-              <a href="#" className="tech-tag">#AWS</a>
-              <a href="#" className="tech-tag">#Docker</a>
+              <a href="#" className={techTagClassName}>#JavaScript</a>
+              <a href="#" className={techTagClassName}>#React</a>
+              <a href="#" className={techTagClassName}>#Python</a>
+              <a href="#" className={techTagClassName}>#AWS</a>
+              <a href="#" className={techTagClassName}>#Docker</a>
             </div>
           </div>
         </aside>
