@@ -619,6 +619,19 @@ type MilestoneFeedbackEntry = {
   text: string
 }
 
+const INSTRUCTOR_TEAM_MILESTONE_UI_LOCK_CLASSES = [
+  "box-border! tracking-[0]! font-['Pretendard',sans-serif]! text-[14px]! leading-[20px]! [&_*]:box-border! [&_*]:tracking-[0]!",
+  "[&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]! [&_button]:leading-[inherit]! [&_input]:leading-[inherit]! [&_textarea]:leading-[inherit]!",
+  '[&_h1]:text-[24px]! [&_h1]:leading-[32px]! [&_h1]:font-[800]!',
+  '[&_.itw-top-action]:min-h-[42px]! [&_.itw-top-action]:px-[20px]! [&_.itw-top-action]:py-[10px]! [&_.itw-top-action]:text-[14px]! [&_.itw-top-action]:leading-[20px]! [&_.itw-top-action]:font-[700]!',
+  '[&_.itw-week-tab]:min-h-[42px]! [&_.itw-week-tab]:px-[20px]! [&_.itw-week-tab]:py-[10px]! [&_.itw-week-tab]:text-[14px]! [&_.itw-week-tab]:leading-[20px]! [&_.itw-week-tab]:font-[700]!',
+  '[&_.itw-modal-button]:min-h-[42px]! [&_.itw-modal-button]:px-[20px]! [&_.itw-modal-button]:py-[10px]! [&_.itw-modal-button]:text-[14px]! [&_.itw-modal-button]:leading-[20px]! [&_.itw-modal-button]:font-[700]!',
+  '[&_.itw-eval-button]:min-h-[34px]! [&_.itw-eval-button]:px-[16px]! [&_.itw-eval-button]:py-[8px]! [&_.itw-eval-button]:text-[12px]! [&_.itw-eval-button]:leading-[16px]! [&_.itw-eval-button]:font-[700]!',
+  '[&_.itw-send-button]:min-h-[36px]! [&_.itw-send-button]:px-0! [&_.itw-send-button]:py-[10px]! [&_.itw-send-button]:text-[12px]! [&_.itw-send-button]:leading-[16px]! [&_.itw-send-button]:font-[700]!',
+  '[&_.itw-icon-button]:h-[32px]! [&_.itw-icon-button]:min-h-[32px]! [&_.itw-icon-button]:w-[32px]! [&_.itw-icon-button]:min-w-[32px]! [&_.itw-icon-button]:p-0!',
+  '[&_.itw-confirm-button]:min-h-[48px]! [&_.itw-confirm-button]:px-0! [&_.itw-confirm-button]:py-[14px]! [&_.itw-confirm-button]:text-[14px]! [&_.itw-confirm-button]:leading-[20px]! [&_.itw-confirm-button]:font-[700]!',
+].join(' ')
+
 function MilestonePage({ data, workspaceId, reload }: { data: TeamData; workspaceId: number | null; reload: () => Promise<void> }) {
   const learners = membersOnly(data)
   const weeks = useMemo(() => buildMilestoneWeeks(data.milestones), [data.milestones])
@@ -690,7 +703,7 @@ function MilestonePage({ data, workspaceId, reload }: { data: TeamData; workspac
   }
 
   return (
-    <div className="instructor-team-milestone flex h-full w-full flex-col font-['Pretendard'] text-[14px] leading-normal">
+    <div className={`instructor-team-milestone flex h-full w-full flex-col font-['Pretendard'] text-[14px] leading-normal ${INSTRUCTOR_TEAM_MILESTONE_UI_LOCK_CLASSES}`}>
       <div className="mb-6 flex shrink-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900"><i className="fas fa-flag-checkered text-[#7C3AED]" /> 마일스톤 및 피드백 관리</h1>
@@ -1079,6 +1092,16 @@ function kanbanPriorityMeta(priority?: TaskPriority | null) {
   return { label: '보통', className: 'bg-orange-50 text-orange-500', icon: '' }
 }
 
+const INSTRUCTOR_TEAM_KANBAN_UI_LOCK_CLASSES = [
+  "box-border! tracking-[0]! font-['Pretendard',sans-serif]! text-[14px]! leading-[20px]! [&_*]:box-border! [&_*]:tracking-[0]!",
+  "[&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_select]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]!",
+  '[&_h1]:text-[24px]! [&_h1]:leading-[32px]! [&_h1]:font-[800]!',
+  '[&_.itw-kanban-filter-tab]:min-h-[30px]! [&_.itw-kanban-filter-tab]:px-[16px]! [&_.itw-kanban-filter-tab]:py-[6px]! [&_.itw-kanban-filter-tab]:text-[12px]! [&_.itw-kanban-filter-tab]:leading-[16px]! [&_.itw-kanban-filter-tab]:font-[700]!',
+  '[&_.itw-kanban-top-button]:min-h-[42px]! [&_.itw-kanban-top-button]:px-[20px]! [&_.itw-kanban-top-button]:py-[10px]! [&_.itw-kanban-top-button]:text-[14px]! [&_.itw-kanban-top-button]:leading-[20px]! [&_.itw-kanban-top-button]:font-[700]!',
+  '[&_.kanban-card]:[transition:box-shadow_0.2s,border-color_0.2s,transform_0.2s]!',
+  '[&_.kanban-card:active]:cursor-grabbing! [&_.kanban-card:active]:[transform:scale(0.98)]!',
+].join(' ')
+
 function KanbanPage({ data, workspaceId, reload }: { data: TeamData; workspaceId: number | null; reload: () => Promise<void> }) {
   const members = membersOnly(data)
   const [modalTask, setModalTask] = useState<WorkspaceTask | null | 'new'>(null)
@@ -1153,7 +1176,7 @@ function KanbanPage({ data, workspaceId, reload }: { data: TeamData; workspaceId
   }
 
   return (
-    <div className="instructor-team-kanban flex h-full min-h-0 flex-col overflow-hidden">
+    <div className={`instructor-team-kanban flex h-full min-h-0 flex-col overflow-hidden ${INSTRUCTOR_TEAM_KANBAN_UI_LOCK_CLASSES}`}>
       <div className="relative z-10 flex shrink-0 flex-col justify-between gap-4 border-b border-gray-200 bg-white px-8 py-6 shadow-sm md:flex-row md:items-center">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900"><i className="fas fa-columns text-[#7C3AED]" />팀 칸반 보드 모니터링</h1>
@@ -1374,6 +1397,15 @@ function apiStatusMeta(status: ApiEndpointSpec['status']) {
   return { label: '설계 중', className: 'bg-gray-100 text-gray-500', icon: '' }
 }
 
+const INSTRUCTOR_TEAM_ARCHITECTURE_UI_LOCK_CLASSES = [
+  "box-border! tracking-[0]! font-['Pretendard',sans-serif]! text-[14px]! leading-[20px]! [&_*]:box-border! [&_*]:tracking-[0]!",
+  "[&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_select]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]!",
+  '[&_h1]:text-[24px]! [&_h1]:leading-[32px]! [&_h1]:font-[800]!',
+  '[&_.arch-tab]:[border-bottom:2px_solid_transparent]! [&_.arch-tab]:cursor-pointer! [&_.arch-tab]:[transition:border-color_0.2s,color_0.2s]!',
+  '[&_.arch-tab.active]:border-[#7c3aed]! [&_.arch-tab.active]:text-[#7c3aed]! [&_.arch-tab.active]:font-[800]!',
+  '[&_.api-row]:[transition:background-color_0.2s,box-shadow_0.2s]! [&_.api-row:hover]:bg-[#f9fafb]!',
+].join(' ')
+
 function ArchitecturePage({ data, workspaceId, reload }: { data: TeamData; workspaceId: number | null; reload: () => Promise<void> }) {
   const [mode, setMode] = useState<ArchitectureTab>('api')
   const [selectedApi, setSelectedApi] = useState<ApiEndpointSpec | null>(null)
@@ -1443,7 +1475,7 @@ function ArchitecturePage({ data, workspaceId, reload }: { data: TeamData; works
   }
 
   return (
-    <div className="instructor-team-architecture flex h-full min-h-0 overflow-hidden">
+    <div className={`instructor-team-architecture flex h-full min-h-0 overflow-hidden ${INSTRUCTOR_TEAM_ARCHITECTURE_UI_LOCK_CLASSES}`}>
       <div className="z-10 flex h-full flex-1 flex-col border-r border-gray-200 bg-white">
         <div className="flex shrink-0 flex-col justify-between gap-4 px-8 pt-6 md:flex-row md:items-end">
           <div>
@@ -1624,6 +1656,14 @@ function qnaRoleMeta(member: WorkspaceMember | null) {
   return { label: raw || 'Team', badge: 'bg-gray-50 text-gray-600 border-gray-100' }
 }
 
+const INSTRUCTOR_TEAM_QNA_UI_LOCK_CLASSES = [
+  "box-border! tracking-[0]! font-['Pretendard',sans-serif]! text-[14px]! leading-[20px]! [&_*]:box-border! [&_*]:tracking-[0]!",
+  "[&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]!",
+  '[&_h1]:text-[24px]! [&_h1]:leading-[32px]! [&_h1]:font-[800]!',
+  '[&_.filter-tab]:min-h-[42px]! [&_.filter-tab]:px-[20px]! [&_.filter-tab]:py-[10px]! [&_.filter-tab]:rounded-[12px]! [&_.filter-tab]:text-[14px]! [&_.filter-tab]:leading-[20px]! [&_.filter-tab]:font-[700]! [&_.filter-tab]:cursor-pointer! [&_.filter-tab]:[transition:background-color_0.2s,color_0.2s,border-color_0.2s]!',
+  '[&_.filter-tab.active]:border-[#111827]! [&_.filter-tab.active]:bg-[#111827]! [&_.filter-tab.active]:text-white! [&_.filter-tab.active]:font-[700]!',
+].join(' ')
+
 function QnaPage({ data, workspaceId, reload }: { data: TeamData; workspaceId: number | null; reload: () => Promise<void> }) {
   const [filter, setFilter] = useState<'all' | 'wait' | 'done'>('all')
   const [keyword, setKeyword] = useState('')
@@ -1688,7 +1728,7 @@ function QnaPage({ data, workspaceId, reload }: { data: TeamData; workspaceId: n
   }
 
   return (
-    <div className="instructor-team-qna flex h-full flex-col">
+    <div className={`instructor-team-qna flex h-full flex-col ${INSTRUCTOR_TEAM_QNA_UI_LOCK_CLASSES}`}>
       <div className="mb-8 flex shrink-0 flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900"><i className="fas fa-comments text-[#7C3AED]" />멘토 Q&A 관리</h1>
@@ -1850,6 +1890,16 @@ function scheduleEventMeta(type: ScheduleEventType) {
   return { label: '라이브 밋업', icon: 'fas fa-video', dot: 'bg-[#7C3AED]', badge: 'bg-[#7C3AED] text-white', card: 'border-purple-100 bg-purple-50/50' }
 }
 
+const INSTRUCTOR_TEAM_SCHEDULE_UI_LOCK_CLASSES = [
+  "box-border! tracking-[0]! font-['Pretendard',sans-serif]! text-[14px]! leading-[20px]! [&_*]:box-border! [&_*]:tracking-[0]!",
+  "[&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_select]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]!",
+  '[&_h1]:text-[24px]! [&_h1]:leading-[32px]! [&_h1]:font-[800]!',
+  '[&_.calendar-grid]:grid! [&_.calendar-grid]:[grid-template-columns:repeat(7,minmax(0,1fr))]! [&_.calendar-grid]:gap-[1px]! [&_.calendar-grid]:overflow-hidden! [&_.calendar-grid]:border-[1px]! [&_.calendar-grid]:border-solid! [&_.calendar-grid]:border-[#e5e7eb]! [&_.calendar-grid]:rounded-[12px]! [&_.calendar-grid]:bg-[#e5e7eb]!',
+  '[&_.calendar-header]:px-[8px]! [&_.calendar-header]:py-[6px]! [&_.calendar-header]:bg-[#f9fafb]! [&_.calendar-header]:text-center! [&_.calendar-header]:text-[12px]! [&_.calendar-header]:leading-[16px]! [&_.calendar-header]:font-[800]! [&_.calendar-header]:text-[#6b7280]!',
+  '[&_.calendar-day]:min-h-[76px]! [&_.calendar-day]:px-[8px]! [&_.calendar-day]:py-[6px]! [&_.calendar-day]:border-0! [&_.calendar-day]:bg-white! [&_.calendar-day]:[transition:background-color_0.2s]! [&_.calendar-day]:cursor-pointer!',
+  '[&_.calendar-day:hover]:bg-[#f9fafb]! [&_.calendar-day.today]:bg-[#eef2ff]! [&_.calendar-day.today:hover]:bg-[#eef2ff]! [&_.calendar-day.other-month]:bg-[#f9fafb]! [&_.calendar-day.other-month]:text-[#d1d5db]! [&_.calendar-day.other-month]:cursor-default!',
+].join(' ')
+
 function SchedulePage({ data, workspaceId, reload }: { data: TeamData; workspaceId: number | null; reload: () => Promise<void> }) {
   const [calendarDate, setCalendarDate] = useState(() => new Date())
   const [modalDate, setModalDate] = useState<string | null>(null)
@@ -1911,7 +1961,7 @@ function SchedulePage({ data, workspaceId, reload }: { data: TeamData; workspace
   }
 
   return (
-    <div className="instructor-team-schedule flex h-full flex-col">
+    <div className={`instructor-team-schedule flex h-full flex-col ${INSTRUCTOR_TEAM_SCHEDULE_UI_LOCK_CLASSES}`}>
       <div className="mb-4 flex shrink-0 flex-col justify-between gap-3 md:flex-row md:items-end">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900"><i className="fas fa-calendar-check text-[#7C3AED]" />공식 일정 및 캘린더 관리</h1>
@@ -2054,6 +2104,21 @@ type FileFilter = 'all' | 'official' | 'shared' | 'link'
 type FileViewMode = 'grid' | 'list'
 type FileUploadMode = 'file' | 'link'
 
+const INSTRUCTOR_TEAM_FILES_UI_LOCK_CLASSES = [
+  "box-border! tracking-[0]! font-['Pretendard',sans-serif]! text-[14px]! leading-[20px]! [&_*]:box-border! [&_*]:tracking-[0]!",
+  "[&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]!",
+  '[&_h1]:text-[24px]! [&_h1]:leading-[32px]! [&_h1]:font-[800]!',
+  '[&_.team-files-filter-tab]:inline-flex! [&_.team-files-filter-tab]:items-center! [&_.team-files-filter-tab]:gap-[8px]! [&_.team-files-filter-tab]:pb-[8px]! [&_.team-files-filter-tab]:[border-bottom:2px_solid_transparent]! [&_.team-files-filter-tab]:text-[#9ca3af]! [&_.team-files-filter-tab]:text-[14px]! [&_.team-files-filter-tab]:leading-[20px]! [&_.team-files-filter-tab]:font-[700]! [&_.team-files-filter-tab]:[transition:color_0.2s,border-color_0.2s]!',
+  '[&_.team-files-filter-tab.active]:[border-bottom-color:#111827]! [&_.team-files-filter-tab.active]:text-[#111827]!',
+  '[&_.file-card:hover]:[transform:translateY(-4px)]! [&_.file-card:hover]:[border-color:#c4b5fd]! [&_.file-card:hover]:[box-shadow:0_20px_25px_-5px_rgb(0_0_0_/_0.08),0_8px_10px_-6px_rgb(0_0_0_/_0.06)]!',
+  '[&_.file-badge]:inline-flex! [&_.file-badge]:items-center! [&_.file-badge]:rounded-[9999px]! [&_.file-badge]:px-[8px]! [&_.file-badge]:py-[4px]! [&_.file-badge]:text-[10px]! [&_.file-badge]:leading-[12px]! [&_.file-badge]:font-[800]!',
+  '[&_.file-badge.official]:bg-[#f3e8ff]! [&_.file-badge.official]:text-[#7c3aed]! [&_.file-badge.shared]:bg-[#e0e7ff]! [&_.file-badge.shared]:text-[#4f46e5]!',
+  '[&_.file-detail-badge]:inline-block! [&_.file-detail-badge]:mb-[8px]! [&_.file-detail-badge]:border-[1px]! [&_.file-detail-badge]:border-solid! [&_.file-detail-badge]:rounded-[4px]! [&_.file-detail-badge]:px-[6px]! [&_.file-detail-badge]:py-[2px]! [&_.file-detail-badge]:text-[9px]! [&_.file-detail-badge]:leading-[12px]! [&_.file-detail-badge]:font-[800]!',
+  '[&_.file-detail-badge.official]:border-[#ddd6fe]! [&_.file-detail-badge.official]:bg-[#f3e8ff]! [&_.file-detail-badge.official]:text-[#7c3aed]! [&_.file-detail-badge.shared]:border-[#c7d2fe]! [&_.file-detail-badge.shared]:bg-[#e0e7ff]! [&_.file-detail-badge.shared]:text-[#4f46e5]!',
+  '[&_.file-ext-badge]:inline-flex! [&_.file-ext-badge]:min-w-[34px]! [&_.file-ext-badge]:items-center! [&_.file-ext-badge]:justify-center! [&_.file-ext-badge]:rounded-[8px]! [&_.file-ext-badge]:bg-[#f3f4f6]! [&_.file-ext-badge]:px-[7px]! [&_.file-ext-badge]:py-[4px]! [&_.file-ext-badge]:text-[#6b7280]! [&_.file-ext-badge]:text-[10px]! [&_.file-ext-badge]:leading-[12px]! [&_.file-ext-badge]:font-[900]!',
+  '[&_.upload-zone]:bg-[#f9fafb]! [&_.upload-zone:hover]:[border-color:#7c3aed]! [&_.upload-zone:hover]:bg-[#f5f3ff]! [&_.upload-zone.dragging]:[border-color:#7c3aed]! [&_.upload-zone.dragging]:bg-[#f5f3ff]!',
+].join(' ')
+
 function FilesPage({ data, workspaceId, reload }: { data: TeamData; workspaceId: number | null; reload: () => Promise<void> }) {
   const [filter, setFilter] = useState<FileFilter>('all')
   const [viewMode, setViewMode] = useState<FileViewMode>('grid')
@@ -2136,7 +2201,7 @@ function FilesPage({ data, workspaceId, reload }: { data: TeamData; workspaceId:
   }
 
   return (
-    <div className="instructor-team-files flex h-full flex-col">
+    <div className={`instructor-team-files flex h-full flex-col ${INSTRUCTOR_TEAM_FILES_UI_LOCK_CLASSES}`}>
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="flex items-center gap-3 text-2xl font-extrabold text-gray-900"><i className="fas fa-folder-open text-[#7C3AED]" />팀 통합 자료실 관리</h1>
@@ -2470,6 +2535,21 @@ async function downloadWorkspaceFile(file: WorkspaceFile) {
 
 type MeetingNoteFilter = 'all' | 'mentor' | 'team'
 
+const INSTRUCTOR_TEAM_MEETING_UI_LOCK_CLASSES = [
+  "box-border! tracking-[0]! font-['Pretendard',sans-serif]! text-[14px]! leading-[20px]! [&_*]:box-border! [&_*]:tracking-[0]!",
+  "[&_a]:font-['Pretendard',sans-serif]! [&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]!",
+  '[&_h1]:text-[24px]! [&_h1]:leading-[32px]! [&_h1]:font-[800]!',
+  '[&_h3]:text-[14px]! [&_h3]:leading-[20px]! [&_h3]:font-[800]!',
+  '[&_h4]:text-[17px]! [&_h4]:leading-[24px]!',
+  '[&_p]:leading-[1.45]! [&_span]:leading-[1.45]! [&_label]:leading-[1.45]! [&_input]:leading-[1.45]! [&_textarea]:leading-[1.45]!',
+  '[&>div:first-child_button]:min-h-[42px]! [&>div:first-child_button]:px-[18px]! [&>div:first-child_button]:py-[10px]! [&>div:first-child_button]:text-[13px]! [&>div:first-child_button]:leading-[18px]! [&>div:first-child_button]:font-[700]!',
+  '[&_section_a]:text-[13px]! [&_section_a]:leading-[18px]! [&_section_a]:font-[700]! [&_section_button]:text-[13px]! [&_section_button]:leading-[18px]! [&_section_button]:font-[700]!',
+  "[&_section_a[class*='py-3.5']]:min-h-[42px]! [&_section_a[class*='py-3.5']]:py-[10px]! [&_section_button[class*='py-3.5']]:min-h-[42px]! [&_section_button[class*='py-3.5']]:py-[10px]!",
+  "[&_section_a[class*='py-2.5']]:min-h-[34px]! [&_section_a[class*='py-2.5']]:py-[8px]! [&_section_a[class*='py-2.5']]:text-[12px]! [&_section_a[class*='py-2.5']]:leading-[16px]! [&_section_button[class*='py-2.5']]:min-h-[34px]! [&_section_button[class*='py-2.5']]:py-[8px]! [&_section_button[class*='py-2.5']]:text-[12px]! [&_section_button[class*='py-2.5']]:leading-[16px]!",
+  '[&_.rounded-lg.px-4.py-2]:min-h-[30px]! [&_.rounded-lg.px-4.py-2]:px-[14px]! [&_.rounded-lg.px-4.py-2]:py-[6px]! [&_.rounded-lg.px-4.py-2]:text-[12px]! [&_.rounded-lg.px-4.py-2]:leading-[16px]!',
+  '[&_.text-sm]:text-[13px]! [&_.text-sm]:leading-[19px]! [&_.text-xs]:text-[12px]! [&_.text-xs]:leading-[16px]! [&_.text-lg]:text-[17px]! [&_.text-lg]:leading-[24px]!',
+].join(' ')
+
 function MeetingPage({ data, workspaceId, reload }: { data: TeamData; workspaceId: number | null; reload: () => Promise<void> }) {
   const [meetupModalOpen, setMeetupModalOpen] = useState(false)
   const [noteModalOpen, setNoteModalOpen] = useState(false)
@@ -2546,7 +2626,7 @@ function MeetingPage({ data, workspaceId, reload }: { data: TeamData; workspaceI
   }
 
   return (
-    <div className="instructor-team-meeting space-y-8">
+    <div className={`instructor-team-meeting space-y-8 ${INSTRUCTOR_TEAM_MEETING_UI_LOCK_CLASSES}`}>
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900"><i className="fas fa-video text-[#7C3AED]" />화상 멘토링 & 회의록 관리</h1>
@@ -2845,6 +2925,18 @@ function StreamVideo({ stream, className, muted = false }: { stream: MediaStream
   return <video ref={videoRef} className={className} autoPlay playsInline muted={muted} />
 }
 
+const INSTRUCTOR_TEAM_LIVE_MEETING_UI_LOCK_CLASSES = [
+  "box-border! tracking-[0]! font-['Pretendard',sans-serif]! text-[14px]! leading-[20px]! [&_*]:box-border! [&_*]:tracking-[0]!",
+  "[&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]!",
+  '[&_h1]:text-[14px]! [&_h1]:leading-[20px]! [&_.text-sm]:text-[14px]! [&_.text-sm]:leading-[20px]!',
+  '[&_h3]:text-[18px]! [&_h3]:leading-[28px]! [&_.text-lg]:text-[18px]! [&_.text-lg]:leading-[28px]!',
+  '[&_.text-xs]:text-[12px]! [&_.text-xs]:leading-[16px]!',
+  '[&_header_button.h-10.w-10]:h-[40px]! [&_header_button.h-10.w-10]:w-[40px]! [&_header_button.h-10.w-10]:min-w-[40px]! [&_header_button.h-10.w-10]:p-0!',
+  '[&_footer_button.h-12.w-12]:h-[48px]! [&_footer_button.h-12.w-12]:w-[48px]! [&_footer_button.h-12.w-12]:min-w-[48px]! [&_footer_button.h-12.w-12]:p-0! [&_footer_button.h-12.w-12]:text-[18px]! [&_footer_button.h-12.w-12]:leading-[28px]!',
+  '[&_footer_button.h-12:not(.w-12)]:h-[48px]! [&_footer_button.h-12:not(.w-12)]:min-h-[48px]! [&_footer_button.h-12:not(.w-12)]:px-[24px]! [&_footer_button.h-12:not(.w-12)]:py-0! [&_footer_button.h-12:not(.w-12)]:text-[14px]! [&_footer_button.h-12:not(.w-12)]:leading-[20px]!',
+  '[&_.recording-pulse]:animate-[instructor-team-live-recording-pulse_2s_infinite]!',
+].join(' ')
+
 function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: number | null }) {
   const session = useMemo(() => readStoredAuthSession(), [])
   const [sideTab, setSideTab] = useState<'chat' | 'users'>('users')
@@ -3003,15 +3095,15 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
   }
 
   return (
-    <div className="instructor-team-live-meeting flex h-screen flex-col overflow-hidden bg-gray-950 text-white">
+    <div className={`instructor-team-live-meeting flex h-screen flex-col overflow-hidden bg-gray-950 text-white ${INSTRUCTOR_TEAM_LIVE_MEETING_UI_LOCK_CLASSES}`}>
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-800 bg-gray-900 px-6">
         <div className="flex items-center gap-4">
           <button type="button" onClick={leaveMeeting} className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-gray-400 transition hover:bg-gray-700 hover:text-white"><i className="fas fa-arrow-left" /></button>
           <div>
             <div className="mb-0.5 flex items-center gap-2">
-              <span className="flex items-center gap-1 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-[9px] font-extrabold text-red-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />ON AIR</span>
-              <span className="rounded border border-purple-500/30 bg-purple-500/20 px-1.5 py-0.5 text-[9px] font-extrabold text-purple-400">강사 (Host)</span>
-              {recording ? <span className="flex items-center gap-1 rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-[9px] font-extrabold text-gray-300"><i className="fas fa-circle text-[8px] text-red-500 recording-pulse" />REC</span> : null}
+              <span className="flex items-center gap-1 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-[9px]! leading-[12px]! font-extrabold text-red-400"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />ON AIR</span>
+              <span className="rounded border border-purple-500/30 bg-purple-500/20 px-1.5 py-0.5 text-[9px]! leading-[12px]! font-extrabold text-purple-400">강사 (Host)</span>
+              {recording ? <span className="flex items-center gap-1 rounded border border-gray-700 bg-gray-800 px-1.5 py-0.5 text-[9px]! leading-[12px]! font-extrabold text-gray-300"><i className="fas fa-circle text-[8px] text-red-500 recording-pulse" />REC</span> : null}
             </div>
             <h1 className="text-sm leading-none font-bold text-white">3주차 라이브 코드 리뷰</h1>
           </div>
@@ -3020,7 +3112,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
           <div className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 font-mono text-xs text-gray-300"><i className="far fa-clock" />{formatTime(new Date().toISOString())}</div>
           <button type="button" onClick={() => setSidebarOpen((current) => !current)} className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-gray-400 transition hover:bg-gray-700 hover:text-white">
             <i className="fas fa-users" />
-            <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full border-2 border-gray-900 bg-[#7C3AED] text-[9px] font-bold text-white">{participantCount}</span>
+            <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full border-2 border-gray-900 bg-[#7C3AED] text-[9px]! leading-[12px]! font-bold text-white">{participantCount}</span>
           </button>
         </div>
       </header>
@@ -3071,7 +3163,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
           {sideTab === 'chat' ? (
             <>
               <div className="custom-scrollbar flex flex-1 flex-col overflow-y-auto p-4">
-                <div className="my-2 shrink-0 text-center"><span className="rounded-full bg-gray-800 px-3 py-1 text-[10px] font-medium text-gray-400">멘토링 라이브 룸이 열렸습니다.</span></div>
+                <div className="my-2 shrink-0 text-center"><span className="rounded-full bg-gray-800 px-3 py-1 text-[10px]! leading-[12px]! font-medium text-gray-400">멘토링 라이브 룸이 열렸습니다.</span></div>
                 {messages.length === 0 ? (
                   <div className="flex flex-1 flex-col items-center justify-center pb-10 text-gray-500 opacity-60">
                     <i className="far fa-comments mb-3 text-4xl text-gray-600" />
@@ -3084,7 +3176,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
                     <div className={item.own ? 'flex flex-col items-end' : ''}>
                       <div className={`mb-1 flex items-center gap-2 ${item.own ? 'flex-row-reverse' : ''}`}>
                         <span className={`text-xs font-bold ${item.own ? 'text-[#A78BFA]' : 'text-gray-300'}`}>{item.sender}</span>
-                        <span className="text-[9px] text-gray-500">{item.time}</span>
+                        <span className="text-[9px]! leading-[12px]! text-gray-500">{item.time}</span>
                       </div>
                       <p className={`max-w-[220px] break-all p-3 text-sm font-medium shadow-md ${item.own ? 'rounded-b-xl rounded-tl-xl bg-[#7C3AED] text-white' : 'rounded-b-xl rounded-tr-xl bg-gray-800 text-gray-200'}`}>{item.content}</p>
                     </div>
@@ -3102,13 +3194,13 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex shrink-0 items-center justify-between border-b border-gray-800 p-4">
                 <span className="text-xs font-bold text-gray-400">전체 인원 제어</span>
-                <button type="button" onClick={muteAll} className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-[10px] font-bold text-gray-300 transition hover:bg-gray-700">모두 음소거</button>
+                <button type="button" onClick={muteAll} className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-[10px]! leading-[12px]! font-bold text-gray-300 transition hover:bg-gray-700">모두 음소거</button>
               </div>
               <div className="custom-scrollbar flex-1 space-y-1 overflow-y-auto p-2">
                 <div className="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-800/40 p-2.5">
                   <div className="flex items-center gap-3">
                     <img src={avatarUrl(hostName)} className="h-8 w-8 rounded-full border border-[#7C3AED]" alt="" />
-                    <div><span className="block text-sm leading-tight font-bold text-[#A78BFA]">나 ({hostName})</span><span className="mt-0.5 inline-block rounded bg-[#7C3AED] px-1.5 py-0.5 text-[10px] font-bold text-white">Host</span></div>
+                    <div><span className="block text-sm leading-tight font-bold text-[#A78BFA]">나 ({hostName})</span><span className="mt-0.5 inline-block rounded bg-[#7C3AED] px-1.5 py-0.5 text-[10px]! leading-[12px]! font-bold text-white">Host</span></div>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <i className={`fas fa-desktop ${screenStream ? 'animate-pulse text-[#A78BFA]' : 'text-gray-600'}`} />
@@ -3126,7 +3218,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
                       <div><span className="block text-sm font-bold text-gray-200">{member.learnerName ?? '팀원'}</span><span className="inline-block rounded border border-blue-500/30 bg-blue-500/20 px-1 text-[8px] text-blue-400">{member.roleLabel ?? shortRoleLabel(member.position) ?? 'Member'}</span></div>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-500">
-                      {index === 0 && handRaised ? <button type="button" onClick={() => setHandRaised(false)} className="rounded bg-gray-700 px-1.5 py-0.5 text-[9px] text-white transition hover:bg-gray-600">손 내리기</button> : null}
+                      {index === 0 && handRaised ? <button type="button" onClick={() => setHandRaised(false)} className="rounded bg-gray-700 px-1.5 py-0.5 text-[9px]! leading-[12px]! text-white transition hover:bg-gray-600">손 내리기</button> : null}
                       <i className={`fas fa-microphone-slash ${mutedAll ? 'text-red-500' : 'text-gray-500'}`} />
                       <i className="fas fa-video" />
                     </div>
@@ -3145,7 +3237,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
           <button type="button" onClick={() => void toggleCam()} className={`flex h-12 w-12 items-center justify-center rounded-full border text-lg transition ${camOn ? 'border-gray-700 bg-gray-800 text-white hover:bg-gray-700' : 'border-red-500/30 bg-red-500/20 text-red-500 hover:bg-red-500/30'}`}><i className={camOn ? 'fas fa-video' : 'fas fa-video-slash'} /></button>
           <button type="button" onClick={() => void toggleScreenShare()} className={`flex h-12 w-12 items-center justify-center rounded-full text-lg transition ${screenStream ? 'bg-[#7C3AED] text-white shadow-lg shadow-purple-900/50 hover:bg-purple-600' : 'border border-gray-700 bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'}`}><i className="fas fa-desktop" /></button>
           <div className="mx-2 h-8 w-px bg-gray-800" />
-          <button type="button" onClick={() => void toggleRecord()} className={`group relative flex h-12 w-12 items-center justify-center rounded-full border text-lg transition ${recording ? 'border-red-500/50 bg-red-500/20 text-red-500' : 'border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700'}`}><i className="fas fa-circle text-sm" /><div className="pointer-events-none absolute -top-8 rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition group-hover:opacity-100 whitespace-nowrap">밋업 녹화하기</div></button>
+          <button type="button" onClick={() => void toggleRecord()} className={`group relative flex h-12 w-12 items-center justify-center rounded-full border text-lg transition ${recording ? 'border-red-500/50 bg-red-500/20 text-red-500' : 'border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700'}`}><i className="fas fa-circle text-sm" /><div className="pointer-events-none absolute -top-8 rounded bg-gray-800 px-2 py-1 text-[10px]! leading-[12px]! text-white opacity-0 transition group-hover:opacity-100 whitespace-nowrap">밋업 녹화하기</div></button>
           <div className="mx-2 h-8 w-px bg-gray-800" />
           <button type="button" onClick={() => setEndModalOpen(true)} className="flex h-12 items-center justify-center gap-2 rounded-full bg-red-600 px-6 font-bold text-white shadow-lg shadow-red-900/50 transition hover:bg-red-700"><i className="fas fa-phone-slash" /><span className="hidden md:inline">회의 종료</span></button>
         </div>
@@ -3181,10 +3273,10 @@ function ParticipantTile({ member, handRaised, mutedAll, onLowerHand }: { member
   return (
     <div className={`group relative overflow-hidden rounded-2xl bg-gray-800 ${handRaised ? 'border-2 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.3)]' : 'border border-gray-700'}`}>
       <img src={member.profileImage ?? avatarUrl(member.learnerName)} className="absolute inset-0 h-full w-full bg-gray-700 object-cover" alt="" />
-      <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-md">
+      <div className="absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px]! leading-[12px]! font-bold text-white backdrop-blur-md">
         <i className={`fas fa-microphone-slash ${mutedAll ? 'text-red-500' : 'text-gray-400'}`} />{member.learnerName ?? '팀원'} ({member.roleLabel ?? shortRoleLabel(member.position) ?? 'Member'})
       </div>
-      {handRaised ? <button type="button" onClick={onLowerHand} className="absolute top-2 right-2 flex animate-bounce items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-[10px] font-bold text-white shadow-lg"><i className="fas fa-hand-paper" />질문 있음</button> : null}
+      {handRaised ? <button type="button" onClick={onLowerHand} className="absolute top-2 right-2 flex animate-bounce items-center gap-1 rounded-full bg-yellow-500 px-2 py-1 text-[10px]! leading-[12px]! font-bold text-white shadow-lg"><i className="fas fa-hand-paper" />질문 있음</button> : null}
     </div>
   )
 }

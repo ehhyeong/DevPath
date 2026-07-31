@@ -68,6 +68,20 @@ const EMPTY_DATA: WorkspaceData = {
 const WORKSPACE_NOTIFICATION_EVENT = 'devpath-instructor-ws-notification'
 const MAX_WORKSPACE_NOTIFICATIONS = 40
 const WORKSPACE_REFRESH_INTERVAL_MS = 5000
+const INSTRUCTOR_WS_UI_LOCK_CLASSES = [
+  "bg-[#F3F4F6]! text-[#1F2937]! font-['Pretendard',sans-serif]! text-[16px]! leading-[24px]!",
+  "[&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_select]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]!",
+  '[&_.text-2xl]:text-[24px]! [&_.text-2xl]:leading-[32px]! [&_.text-xl]:text-[20px]! [&_.text-xl]:leading-[28px]! [&_.text-lg]:text-[18px]! [&_.text-lg]:leading-[28px]!',
+  '[&_.text-sm]:text-[14px]! [&_.text-sm]:leading-[20px]! [&_button]:text-[14px]! [&_button]:leading-[20px]! [&_input]:text-[14px]! [&_input]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]!',
+  String.raw`[&_.text-xs]:text-[12px]! [&_.text-xs]:leading-[16px]! [&_.text-\[11px\]]:text-[11px]! [&_.text-\[11px\]]:leading-[16px]! [&_.text-\[10px\]]:text-[10px]! [&_.text-\[10px\]]:leading-[14px]! [&_.text-\[9px\]]:text-[9px]! [&_.text-\[9px\]]:leading-[12px]!`,
+  '[&_.nav-item]:flex! [&_.nav-item]:items-center! [&_.nav-item]:rounded-[0.75rem]! [&_.nav-item]:px-[1rem]! [&_.nav-item]:py-[0.75rem]! [&_.nav-item]:text-[#6B7280]! [&_.nav-item]:text-[14px]! [&_.nav-item]:leading-[20px]! [&_.nav-item]:font-[500]! [&_.nav-item]:[transition:color_0.2s_ease,background_0.2s_ease,transform_0.2s_ease]!',
+  '[&_.nav-item:hover]:bg-[#F9FAFB]! [&_.nav-item:hover]:text-[#111827]! [&_.nav-item:hover]:[transform:translateX(2px)]!',
+  '[&_.nav-item.active]:bg-[#111827]! [&_.nav-item.active]:text-[#ffffff]! [&_.nav-item.active]:font-[700]! [&_.nav-item.active_i]:text-[#A78BFA]!',
+  '[&_.sidebar-text]:w-0! [&_.sidebar-text]:ml-0! [&_.sidebar-text]:overflow-hidden! [&_.sidebar-text]:whitespace-nowrap! [&_.sidebar-text]:opacity-0! [&_.sidebar-text]:[transition:width_0.25s_ease,margin-left_0.25s_ease,opacity_0.2s_ease]!',
+  '[&_.instructor-ws-sidebar:hover_.sidebar-text]:w-auto! [&_.instructor-ws-sidebar:hover_.sidebar-text]:ml-[0.75rem]! [&_.instructor-ws-sidebar:hover_.sidebar-text]:opacity-100!',
+  '[&_.sidebar-section-title]:h-0! [&_.sidebar-section-title]:overflow-hidden! [&_.sidebar-section-title]:opacity-0! [&_.sidebar-section-title]:[transition:height_0.3s_ease,margin_0.3s_ease,opacity_0.3s_ease]!',
+  '[&_.instructor-ws-sidebar:hover_.sidebar-section-title]:h-auto! [&_.instructor-ws-sidebar:hover_.sidebar-section-title]:mt-[1.5rem]! [&_.instructor-ws-sidebar:hover_.sidebar-section-title]:mb-[0.5rem]! [&_.instructor-ws-sidebar:hover_.sidebar-section-title]:opacity-100!',
+].join(' ')
 
 function getWorkspaceIdFromUrl(): number | null {
   const parsed = Number(new URLSearchParams(window.location.search).get('workspaceId'))
@@ -517,7 +531,7 @@ function InstructorWsShell({
   }
 
   return (
-    <div className="instructor-ws-page flex h-screen overflow-hidden bg-[#F3F4F6] font-['Pretendard'] text-gray-800" onClick={() => setNotiOpen(false)}>
+    <div className={`instructor-ws-page flex h-screen overflow-hidden bg-[#F3F4F6] font-['Pretendard'] text-gray-800 ${INSTRUCTOR_WS_UI_LOCK_CLASSES}`} onClick={() => setNotiOpen(false)}>
       <aside className="instructor-ws-sidebar group z-50 flex w-20 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl transition-all duration-300 ease-in-out hover:w-64">
         <a href="/instructor-mentoring" className="flex h-20 shrink-0 items-center border-b border-gray-100 px-5 transition hover:bg-gray-50">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-900 text-lg font-bold text-white shadow-md">

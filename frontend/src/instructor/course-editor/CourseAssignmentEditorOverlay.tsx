@@ -22,6 +22,7 @@ type Props = {
   lessonTitle: string
   onClose: () => void
   standalone?: boolean
+  standaloneClassName?: string
 }
 
 function createLocalId(prefix: string) {
@@ -69,7 +70,13 @@ function readFileAsBase64(file: File) {
   })
 }
 
-export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, onClose, standalone = false }: Props) {
+export default function CourseAssignmentEditorOverlay({
+  lessonId,
+  lessonTitle,
+  onClose,
+  standalone = false,
+  standaloneClassName = '',
+}: Props) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -272,7 +279,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
       <div
         className={
           standalone
-            ? 'content-assignment-editor-page flex min-h-screen items-center justify-center bg-[#F8F9FA] px-4'
+            ? `content-assignment-editor-page flex min-h-screen items-center justify-center bg-[#F8F9FA] px-4 ${standaloneClassName}`
             : 'fixed inset-0 z-[90] flex items-center justify-center bg-black/30 backdrop-blur-[2px]'
         }
       >
@@ -284,7 +291,7 @@ export default function CourseAssignmentEditorOverlay({ lessonId, lessonTitle, o
   }
 
   return (
-    <div className={standalone ? 'content-assignment-editor-page relative min-h-screen bg-[#F8F9FA]' : 'fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]'}>
+    <div className={standalone ? `content-assignment-editor-page relative min-h-screen bg-[#F8F9FA] ${standaloneClassName}` : 'fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]'}>
       <div className="content-assignment-editor-toast-container fixed right-8 top-20 z-[95] flex flex-col gap-2">
         {toasts.map((toast) => (
           <div key={toast.id} className="rounded-xl border border-gray-700 bg-gray-900/90 px-5 py-3 text-sm font-bold text-white shadow-xl">
