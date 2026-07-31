@@ -1915,14 +1915,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 .proof-card-badge i { color: #f59e0b; flex: 0 0 auto; }
 .proof-card-badge-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ── Rule badge ── */
-.rule-badge {
-  position: absolute; top: -10px; right: 10px;
-  font-size: 0.7rem; padding: 2px 8px;
-  border-radius: 99px; font-weight: 800;
-  border: 1px solid; z-index: 30;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
 /* ── 노드 내부 요소 ── */
 .node-header      { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; min-width: 0; }
 .node-title-group { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; font-size: 1.05rem; }

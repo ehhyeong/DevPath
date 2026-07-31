@@ -640,6 +640,9 @@ function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationCha
   return { slots, edges, rowCount }
 }
 
+const roadmapRuleBadgeClassName =
+  'absolute top-[-10px] right-[10px] [font-size:0.7rem] [padding:2px_8px] [border-radius:99px] [font-weight:800] [border:1px_solid] z-[30] [box-shadow:0_2px_4px_rgba(0,0,0,0.1)]'
+
 interface RoadmapNodeCardProps {
   node: RoadmapNodeItem
   proofCard?: ProofCardSummary
@@ -670,7 +673,7 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
         <ProofCardBadge card={proofCard} />
       )}
       <div
-        className="rule-badge"
+        className={roadmapRuleBadgeClassName}
         style={{
           background: visibleBadge.background,
           color: visibleBadge.color,
@@ -777,7 +780,7 @@ function GhostAddCard({ change, processing, badge, onApply, onIgnore }: GhostAdd
     >
       <ChangeLabel change={change} />
       <div
-        className="rule-badge"
+        className={roadmapRuleBadgeClassName}
         style={{
           background: visibleBadge.background,
           color: visibleBadge.color,
