@@ -3411,7 +3411,7 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   }
 }
 
-.sidebar-sticky-content {
+.instructor-sidebar .sidebar-sticky-content {
   position: relative;
   top: auto;
   display: flex;
@@ -3421,12 +3421,12 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   flex-direction: column;
 }
 
-.sidebar-nav {
+.instructor-sidebar .sidebar-nav {
   flex: 1;
   overflow-y: auto;
 }
 
-.sidebar-section + .sidebar-section {
+.instructor-sidebar .sidebar-section + .sidebar-section {
   margin-top: 22px;
 }
 
@@ -3439,7 +3439,7 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   letter-spacing: 0;
 }
 
-.sidebar-menu-list {
+.instructor-sidebar .sidebar-menu-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3448,7 +3448,7 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   list-style: none;
 }
 
-.sidebar-menu-item {
+.instructor-sidebar .sidebar-menu-item {
   display: flex;
   width: 100%;
   align-items: center;
@@ -3466,11 +3466,11 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-.sidebar-menu-item:active {
+.instructor-sidebar .sidebar-menu-item:active {
   transform: scale(0.98);
 }
 
-.menu-icon {
+.instructor-sidebar .menu-icon {
   display: flex;
   width: 20px;
   flex-shrink: 0;
@@ -3480,121 +3480,121 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
-.theme-blue .menu-icon {
+.instructor-sidebar .theme-blue .menu-icon {
   color: #3b82f6;
 }
 
-.theme-blue:hover {
+.instructor-sidebar .theme-blue:hover {
   background-color: #f0f9ff;
   color: #1d4ed8;
 }
 
-.theme-blue.active {
+.instructor-sidebar .theme-blue.active {
   background-color: #eff6ff;
   color: #2563eb;
   font-weight: 600;
 }
 
-.theme-blue.active .menu-icon {
+.instructor-sidebar .theme-blue.active .menu-icon {
   color: #2563eb;
 }
 
-.theme-orange .menu-icon {
+.instructor-sidebar .theme-orange .menu-icon {
   color: #f97316;
 }
 
-.theme-orange:hover {
+.instructor-sidebar .theme-orange:hover {
   background-color: #fff7ed;
   color: #c2410c;
 }
 
-.theme-orange.active {
+.instructor-sidebar .theme-orange.active {
   background-color: #ffedd5;
   color: #ea580c;
   font-weight: 600;
 }
 
-.theme-orange.active .menu-icon {
+.instructor-sidebar .theme-orange.active .menu-icon {
   color: #ea580c;
 }
 
-.theme-teal .menu-icon {
+.instructor-sidebar .theme-teal .menu-icon {
   color: #14b8a6;
 }
 
-.theme-teal:hover {
+.instructor-sidebar .theme-teal:hover {
   background-color: #f0fdfa;
   color: #0f766e;
 }
 
-.theme-teal.active {
+.instructor-sidebar .theme-teal.active {
   background-color: #ccfbf1;
   color: #0d9488;
   font-weight: 600;
 }
 
-.theme-teal.active .menu-icon {
+.instructor-sidebar .theme-teal.active .menu-icon {
   color: #0d9488;
 }
 
-.theme-purple .menu-icon {
+.instructor-sidebar .theme-purple .menu-icon {
   color: #a855f7;
 }
 
-.theme-purple:hover {
+.instructor-sidebar .theme-purple:hover {
   background-color: #faf5ff;
   color: #7e22ce;
 }
 
-.theme-purple.active {
+.instructor-sidebar .theme-purple.active {
   background-color: #f3e8ff;
   color: #9333ea;
   font-weight: 600;
 }
 
-.theme-purple.active .menu-icon {
+.instructor-sidebar .theme-purple.active .menu-icon {
   color: #9333ea;
 }
 
-.theme-yellow .menu-icon {
+.instructor-sidebar .theme-yellow .menu-icon {
   color: #f59e0b;
 }
 
-.theme-yellow:hover {
+.instructor-sidebar .theme-yellow:hover {
   background-color: #fefce8;
   color: #a16207;
 }
 
-.theme-yellow.active {
+.instructor-sidebar .theme-yellow.active {
   background-color: #fef3c7;
   color: #d97706;
   font-weight: 600;
 }
 
-.theme-yellow.active .menu-icon {
+.instructor-sidebar .theme-yellow.active .menu-icon {
   color: #d97706;
 }
 
-.theme-slate .menu-icon {
+.instructor-sidebar .theme-slate .menu-icon {
   color: #64748b;
 }
 
-.theme-slate:hover {
+.instructor-sidebar .theme-slate:hover {
   background-color: #f8fafc;
   color: #334155;
 }
 
-.theme-slate.active {
+.instructor-sidebar .theme-slate.active {
   background-color: #f1f5f9;
   color: #475569;
   font-weight: 600;
 }
 
-.theme-slate.active .menu-icon {
+.instructor-sidebar .theme-slate.active .menu-icon {
   color: #475569;
 }
 
-.menu-label {
+.instructor-sidebar .menu-label {
   min-width: 0;
   flex: 1;
   overflow: hidden;
@@ -3602,7 +3602,7 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   white-space: nowrap;
 }
 
-.menu-badge {
+.instructor-sidebar .menu-badge {
   min-width: 20px;
   border-radius: 999px;
   background-color: #fee2e2;
@@ -3614,13 +3614,13 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   text-align: center;
 }
 
-.sidebar-footer {
+.instructor-sidebar .sidebar-footer {
   margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid #f1f5f9;
 }
 
-.help-button {
+.instructor-sidebar .help-button {
   display: flex;
   width: 100%;
   align-items: center;
@@ -3638,7 +3638,7 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.help-button:hover {
+.instructor-sidebar .help-button:hover {
   background-color: #f1f5f9;
   color: #0f172a;
 }
