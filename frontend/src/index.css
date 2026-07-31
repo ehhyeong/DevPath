@@ -1986,18 +1986,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   backdrop-filter: blur(2px);
 }
 
-.node-detail-copy {
-  color: #374151;
-  font-size: 0.9rem;
-  font-weight: 500;
-  line-height: 1.9;
-  margin-bottom: 34px;
-}
-
-.node-detail-copy p + p {
-  margin-top: 14px;
-}
-
 .node-detail-section {
   margin-bottom: 34px;
 }

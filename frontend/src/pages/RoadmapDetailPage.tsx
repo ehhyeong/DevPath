@@ -1213,7 +1213,7 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
           </button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          <div className="node-detail-copy">
+          <div className="mb-[34px] text-[#374151] [font-size:0.9rem] [font-weight:500] [line-height:1.9] [&_p+p]:mt-[14px]">
             {descriptionParagraphs.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
