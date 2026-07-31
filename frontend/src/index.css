@@ -627,16 +627,6 @@ aside:hover .sidebar-text {
   padding: 20px;
 }
 
-.modal-box {
-  width: 100%;
-  max-width: 680px;
-  max-height: 90vh;
-  overflow-y: auto;
-  border-radius: 16px;
-  background: white;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-}
-
 .reply-item {
   animation: fadeIn 0.2s ease-out;
 }
