@@ -405,13 +405,6 @@ pre {
   color: #1f2937;
 }
 
-.roadmap-preview-copy {
-  margin-top: 4px;
-  font-size: 0.63rem;
-  line-height: 1.35;
-  color: #94a3b8;
-}
-
 .roadmap-preview-next {
   position: absolute;
   left: 50%;
@@ -448,10 +441,6 @@ pre {
   font-size: 1rem;
   font-weight: 700;
   color: #334155;
-}
-
-.roadmap-preview-next .roadmap-preview-copy {
-  margin-top: 5px;
 }
 
 @media (max-width: 768px) {
@@ -555,30 +544,6 @@ pre {
 .hide-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-.input-shell {
-  width: 100%;
-  border-radius: 20px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  padding: 0.9rem 1rem;
-  font-size: 0.95rem;
-  outline: none;
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.input-shell:focus {
-  border-color: #6ee7b7;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
-}
-
-.input-shell:disabled {
-  cursor: not-allowed;
 }
 
 :root {
@@ -790,56 +755,6 @@ pre {
   font-weight: 700;
 }
 
-.instructor-nav-item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-radius: 12px;
-  padding: 12px 16px;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 500;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
-  transform: translateZ(0);
-}
-
-.instructor-nav-item::before {
-  content: '';
-  position: absolute;
-  left: -6px;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 999px;
-  background: #00c471;
-  opacity: 0;
-  transform: scaleY(0.6);
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-.instructor-nav-item:hover {
-  background: #f3f4f6;
-  color: #111827;
-  transform: translateY(-1px);
-}
-
-.instructor-nav-item.active {
-  background: #e6f9f1;
-  color: #00c471;
-  font-weight: 700;
-}
-
-.instructor-nav-item.active::before {
-  opacity: 1;
-  transform: scaleY(1);
-}
-
 .hash-tag {
   display: inline-flex;
   align-items: center;
@@ -891,22 +806,6 @@ aside:hover .sidebar-text {
   color: #9ca3af;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
-}
-
-.input-field {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  transition: all 0.2s;
-  background: #fff;
-}
-
-.input-field:focus {
-  border-color: #00c471;
-  box-shadow: 0 0 0 3px rgba(0, 196, 113, 0.12);
 }
 
 .tech-tag {
@@ -1056,10 +955,6 @@ aside:hover .sidebar-text {
   }
 }
 
-.hidden-section {
-  display: none;
-}
-
 .prose h3 {
   font-size: 1.1rem;
   font-weight: 700;
@@ -1085,15 +980,6 @@ aside:hover .sidebar-text {
 
 #postListContainer {
   min-height: var(--postListMinH, 0px);
-}
-
-.toggle-checkbox:checked {
-  right: 0;
-  border-color: #00c471;
-}
-
-.toggle-checkbox:checked + .toggle-label {
-  background-color: #00c471;
 }
 
 .perspective {
@@ -1134,17 +1020,12 @@ aside:hover .sidebar-text {
 .completion-proof-back-title,
 .completion-proof-description,
 .completion-proof-list-text,
-.completion-proof-section-title,
-.proof-card-display-title,
-.proof-card-back-title,
-.proof-card-back-description,
-.proof-card-list-text {
+.completion-proof-section-title {
   overflow-wrap: anywhere;
   word-break: keep-all;
 }
 
-.completion-proof-front-title,
-.proof-card-display-title {
+.completion-proof-front-title {
   display: -webkit-box;
   line-height: 1.15;
   -webkit-box-orient: vertical;
@@ -1152,8 +1033,7 @@ aside:hover .sidebar-text {
   overflow: hidden;
 }
 
-.completion-proof-back-title,
-.proof-card-back-title {
+.completion-proof-back-title {
   display: -webkit-box;
   line-height: 1.25;
   -webkit-box-orient: vertical;
@@ -1161,16 +1041,14 @@ aside:hover .sidebar-text {
   overflow: hidden;
 }
 
-.completion-proof-description,
-.proof-card-back-description {
+.completion-proof-description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   overflow: hidden;
 }
 
-.completion-proof-list-text,
-.proof-card-list-text {
+.completion-proof-list-text {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1257,12 +1135,6 @@ aside:hover .sidebar-text {
   }
 }
 
-.sticky-roadmap {
-  position: sticky;
-  top: 100px;
-  height: fit-content;
-}
-
 @keyframes learningFadeInUp {
   from {
     opacity: 0;
@@ -1283,92 +1155,6 @@ aside:hover .sidebar-text {
   to {
     opacity: 1;
   }
-}
-
-.roadmap-container {
-  position: relative;
-  padding-left: 0;
-}
-
-.roadmap-line {
-  position: absolute;
-  left: 19px;
-  top: 10px;
-  bottom: 30px;
-  width: 2px;
-  background-color: #e5e7eb;
-  z-index: 0;
-}
-
-.roadmap-progress {
-  position: absolute;
-  left: 19px;
-  top: 10px;
-  width: 2px;
-  background-color: #00c471;
-  z-index: 1;
-}
-
-.step-icon {
-  position: absolute;
-  left: 4px;
-  top: 0;
-  width: 32px;
-  height: 32px;
-  z-index: 20;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.step-icon.completed {
-  background-color: #00c471;
-  border: 2px solid #00c471;
-  color: white;
-}
-
-.step-icon.current {
-  background-color: white;
-  border: 2px solid #00c471;
-}
-
-.step-icon.waiting {
-  background-color: #f3f4f6;
-  border: 2px solid #e5e7eb;
-  color: #9ca3af;
-}
-
-.phase-label-container {
-  position: relative;
-  z-index: 10;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  padding-left: 46px;
-}
-
-.phase-label {
-  font-size: 11px;
-  font-weight: 800;
-  color: #9ca3af;
-  text-transform: uppercase;
-  background-color: #f8f9fa;
-  padding: 2px 4px;
-  border-radius: 4px;
-}
-
-.phase-label.active {
-  color: #00c471;
-}
-
-.roadmap-item {
-  position: relative;
-  padding-left: 46px;
-  margin-bottom: 24px;
-  min-height: 32px;
 }
 
 .chart-bar {
@@ -1798,9 +1584,6 @@ aside:hover .sidebar-text {
 .sidebar-section-title { opacity: 0; height: 0; overflow: hidden; transition: all 0.3s ease; }
 aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
 
-.rank-1 { background: linear-gradient(135deg, #FFD700, #FDB931); color: white; border: none; }
-.rank-2 { background: linear-gradient(135deg, #E0E0E0, #BDBDBD); color: white; border: none; }
-
 .hover-card { transition: all 0.3s ease; border: 1px solid #E5E7EB; }
 .hover-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); border-color: #D1D5DB; }
 
@@ -2019,25 +1802,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 
 .accent-brand {
   accent-color: #00C471;
-}
-
-.type-card {
-  transition: all 0.2s;
-  border: 2px solid transparent;
-}
-
-.type-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-}
-
-.type-card.selected {
-  border-color: #00C471;
-  background-color: #F0FDF4;
-}
-
-.type-card.selected .check-icon {
-  opacity: 1;
 }
 
 @keyframes mentoringModalSlideUp {
@@ -2902,9 +2666,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   border: 1px solid; z-index: 30;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-.rule-all  { background: #ecfdf5; color: #166534; border-color: #00c471; }
-.rule-pick { background: #eff6ff; color: #1e40af; border-color: #3b82f6; }
-
 /* ── 노드 내부 요소 ── */
 .node-header      { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 10px; min-width: 0; }
 .node-title-group { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; font-size: 1.05rem; }
@@ -2920,15 +2681,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 .progress-pct        { font-size: 10px; font-weight: 800; color: #b45309; white-space: nowrap; }
 
 /* ── 변경 라벨 배지 (노드 위) ── */
-.change-label-badge {
-  position: absolute; top: -28px; left: 50%; transform: translateX(-50%);
-  font-size: 0.75rem; font-weight: 700;
-  padding: 2px 12px; border-radius: 99px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  display: flex; align-items: center; gap: 4px;
-  white-space: nowrap;
-}
-
 /* ── 로드맵 정보 아코디언 HTML 렌더링 ── */
 .roadmap-info-html .p-6 { padding: 1.14rem 1.24rem; }
 .roadmap-info-html .text-sm { font-size: 0.875rem; }
