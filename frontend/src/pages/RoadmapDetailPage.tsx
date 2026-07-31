@@ -102,8 +102,8 @@ function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): 
       return `${roadmapNodeBoxClassName} node-change-reorder border-[3px]! border-dashed! border-[#6366f1]! bg-[#eef2ff]! [animation:pulse-indigo_2s_infinite]`
     }
   }
-  if (node.status === 'COMPLETED') return `${roadmapNodeBoxClassName} status-done`
-  if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return `${roadmapNodeBoxClassName} status-active`
+  if (node.status === 'COMPLETED') return `${roadmapNodeBoxClassName} status-done bg-[#f0fdf4]! border-[#00c471]! text-[#166534]`
+  if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return `${roadmapNodeBoxClassName} status-active bg-[#fefce8]! border-[#eab308]! text-[#854d0e]`
   if (node.status === 'LOCKED') return `${roadmapNodeBoxClassName} bg-[#f1f5f9]! border-[#cbd5e1]! text-[#94a3b8] hover:[transform:none]! hover:[box-shadow:none]! hover:border-[#cbd5e1]!`
   return roadmapNodeBoxClassName  // PENDING/NOT_STARTED: 기본 스타일 (클릭 가능)
 }
