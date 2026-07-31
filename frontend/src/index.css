@@ -1959,14 +1959,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 }
 .badge-pulse { animation: badge-pulse 2s infinite; }
 
-.node-empty-text {
-  color: #9ca3af;
-  font-size: 0.86rem;
-  font-weight: 600;
-  line-height: 1.7;
-  padding: 14px 0;
-}
-
 @media (max-width: 960px) {
   .roadmap-main.panel-open .roadmap-content {
     max-width: 100%;

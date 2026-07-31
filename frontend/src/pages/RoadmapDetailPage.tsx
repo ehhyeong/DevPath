@@ -1238,7 +1238,7 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
                 ))}
               </ul>
             ) : (
-              <p className="node-empty-text">관리자에서 핵심 개념을 등록하면 여기에 표시됩니다.</p>
+              <p className="node-empty-text text-[#9ca3af] [font-size:0.86rem] [font-weight:600] [line-height:1.7] [padding:14px_0]">관리자에서 핵심 개념을 등록하면 여기에 표시됩니다.</p>
             )}
           </section>
 
@@ -1268,7 +1268,7 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
                 ))}
               </div>
             ) : (
-              <p className="node-empty-text">추천 자료 준비 중입니다.</p>
+              <p className="node-empty-text text-[#9ca3af] [font-size:0.86rem] [font-weight:600] [line-height:1.7] [padding:14px_0]">추천 자료 준비 중입니다.</p>
             )}
           </section>
         </div>
