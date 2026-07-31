@@ -1238,27 +1238,27 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
           </section>
 
           <section className="mb-[34px]">
-            <h3 className="node-resource-heading">
-              <i className="fas fa-heart" />
+            <h3 className="mb-[8px] flex items-center gap-[10px] border-b-[1px] border-solid border-[#edf2f7] pb-[12px] text-[#00a862] [font-size:0.92rem] [font-weight:800]">
+              <i className="fas fa-heart text-[#00c471]" />
               추천 무료 자료
             </h3>
             {resources.length > 0 ? (
-              <div className="node-resource-list">
+              <div className="flex flex-col">
                 {resources.map((resource) => (
                   <a
                     key={resource.resourceId}
                     href={resource.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="node-resource-row"
+                    className="group flex items-start justify-between gap-[14px] border-b-[1px] border-solid border-[#edf2f7] [padding:13px_6px_14px] [color:inherit] no-underline [transition:background-color_0.15s_ease,color_0.15s_ease] hover:bg-[#f7fffb]"
                   >
-                    <div className="node-resource-main">
-                      <span className="node-resource-title">{resource.title}</span>
+                    <div className="min-w-[0]">
+                      <span className="text-[#374151] [font-size:0.9rem] [font-weight:700] [line-height:1.5] underline underline-offset-[3px] group-hover:text-[#008f55]">{resource.title}</span>
                       {resource.description && (
-                        <p className="node-resource-description">{resource.description}</p>
+                        <p className="mt-[5px] text-[#6b7280] [font-size:0.78rem] [font-weight:500] [line-height:1.55]">{resource.description}</p>
                       )}
                     </div>
-                    <span className="node-resource-badge">{nodeResourceSourceLabel(resource.sourceType)}</span>
+                    <span className="shrink-0 rounded-[4px] bg-[#e5e7eb] [padding:5px_7px] text-[#6b7280] [font-size:0.7rem] [font-weight:800] [line-height:1]">{nodeResourceSourceLabel(resource.sourceType)}</span>
                   </a>
                 ))}
               </div>
