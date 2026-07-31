@@ -2279,7 +2279,7 @@ export default function RoadmapDetailPage() {
         onLoginClick={() => openAuthModal('login')}
         activeNavHref="/roadmap-hub"
         startOverlay={(
-          <a href="/roadmap-hub" className="roadmap-header-back-link pointer-events-auto" aria-label="로드맵 목록으로 돌아가기">
+          <a href="/roadmap-hub" className="pointer-events-auto absolute top-[50%] left-[calc((var(--left-rail)*-1)+28px)] inline-flex items-center gap-[4px] [transform:translateY(-50%)] text-[#6b7280] [font-size:13px] [font-weight:800] leading-[1] whitespace-nowrap [transition:color_0.2s_ease,transform_0.2s_ease] hover:[transform:translateY(-50%)_translateX(-1px)] hover:text-[#111827]" aria-label="로드맵 목록으로 돌아가기">
             <i className="fas fa-arrow-left" />
             <span>로드맵 목록</span>
           </a>

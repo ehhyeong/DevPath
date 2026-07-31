@@ -1724,27 +1724,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   min-width: max-content;
 }
 
-.roadmap-header-back-link {
-  position: absolute;
-  top: 50%;
-  left: calc((var(--left-rail) * -1) + 28px);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transform: translateY(-50%);
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-  transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.roadmap-header-back-link:hover {
-  color: #111827;
-  transform: translateY(-50%) translateX(-1px);
-}
-
 .roadmap-canvas-scroll {
   width: 100%;
   overflow-x: auto;
