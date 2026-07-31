@@ -30,7 +30,7 @@ html {
 body {
   min-width: 320px;
   margin: 0;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-family: 'Pretendard', sans-serif;
   overflow-x: hidden;
   overflow-y: scroll;
   background-color: #F8F9FA;
@@ -1793,8 +1793,6 @@ aside:hover .sidebar-text {
     gap: 0;
   }
 }
-
-body { font-family: 'Pretendard', sans-serif; background-color: #F8F9FA; overflow-x: hidden; }
 
 /* 사이드바 스타일 (기존 유지) */
 .sidebar-section-title { opacity: 0; height: 0; overflow: hidden; transition: all 0.3s ease; }
