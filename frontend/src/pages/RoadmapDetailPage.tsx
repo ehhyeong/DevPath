@@ -1443,7 +1443,11 @@ function ChangesPanel({
           {(['all', 'ADD', 'MODIFY', 'DELETE', 'REORDER'] as const).map((f) => (
             <button
               key={f}
-              className={`filter-chip${filter === f ? ' active' : ''}`}
+              className={`[padding:4px_10px] [border-radius:99px] [font-size:11px]! [font-weight:bold] cursor-pointer ${
+                filter === f
+                  ? '[border:1px_solid_#1e293b] bg-[#1e293b] text-[#fff]'
+                  : '[border:1px_solid_#e2e8f0] text-[#64748b]'
+              }`}
               onClick={() => setFilter(f)}
             >
               {f === 'all'
