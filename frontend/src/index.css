@@ -3080,33 +3080,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   }
 }
 
-.roadmap-hub-card {
-  transition: all 0.2s ease-in-out;
-  background-color: white;
-}
-
-.roadmap-hub-card:hover {
-  border-color: #00c471;
-  transform: translateY(-3px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.skill-btn {
-  transition: all 0.15s;
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-  height: 100%;
-  background-color: white;
-}
-
-.skill-btn:hover {
-  border-color: #00c471;
-  background-color: #ecfdf5;
-  color: #00c471;
-}
-
-
 /* Consolidated from InstructorSidebar.css. */
 .instructor-layout-main.app-main {
   overflow: hidden;

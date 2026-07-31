@@ -151,8 +151,8 @@ function renderRoleCard(item: RoadmapHubItem) {
   const iconClass = getRoadmapHubIconClass(item, 'fas fa-map')
   const iconStyle = getIconStyle(item.iconColor)
   const cardClassName = item.featured
-    ? 'roadmap-hub-card relative min-h-[60px] overflow-hidden rounded-lg border-2 border-brand bg-green-50/30 px-[20px] py-[16px] shadow-md max-[767px]:min-h-0 max-[767px]:px-[16px] max-[767px]:py-[14px]'
-    : 'roadmap-hub-card min-h-[60px] rounded-lg border border-gray-200 px-[20px] py-[16px] shadow-sm max-[767px]:min-h-0 max-[767px]:px-[16px] max-[767px]:py-[14px]'
+    ? 'roadmap-hub-card relative min-h-[60px] overflow-hidden rounded-lg border-2 border-brand bg-white px-[20px] py-[16px] shadow-md [transition:all_0.2s_ease-in-out] hover:border-[#00c471] hover:[box-shadow:0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] hover:[transform:translateY(-3px)] max-[767px]:min-h-0 max-[767px]:px-[16px] max-[767px]:py-[14px]'
+    : 'roadmap-hub-card min-h-[60px] rounded-lg border border-gray-200 bg-white px-[20px] py-[16px] shadow-sm [transition:all_0.2s_ease-in-out] hover:border-[#00c471] hover:[box-shadow:0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-2px_rgba(0,0,0,0.05)] hover:[transform:translateY(-3px)] max-[767px]:min-h-0 max-[767px]:px-[16px] max-[767px]:py-[14px]'
 
   const content = (
     <>
@@ -190,7 +190,7 @@ function renderSkillChip(item: RoadmapHubItem) {
   const chipKey = `${item.title}-${item.sortOrder}`
   const iconClass = getRoadmapHubIconClass(item, 'fas fa-code')
   const iconStyle = getIconStyle(item.iconColor)
-  const className = 'skill-btn min-h-[56px] rounded border border-gray-200 px-[16px] py-[8px] text-left text-[14px]! leading-[20px]! text-gray-700 shadow-sm max-[767px]:min-h-[48px] max-[767px]:px-[12px]'
+  const className = 'skill-btn flex h-full min-h-[56px]! items-center rounded border border-gray-200 bg-white px-[16px] py-[8px] text-left text-[14px]! leading-[20px]! text-gray-700 shadow-sm [transition:all_0.15s] hover:border-[#00c471] hover:bg-[#ecfdf5] hover:text-[#00c471] max-[767px]:min-h-[48px] max-[767px]:px-[12px]'
   const content = (
     <span className="flex min-w-0 items-center gap-2">
       <i className={`${iconClass} w-[20px] shrink-0 text-center text-[16px] leading-[20px]! opacity-80`} style={iconStyle} aria-hidden="true" />
