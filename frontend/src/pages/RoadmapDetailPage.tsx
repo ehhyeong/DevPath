@@ -1430,7 +1430,10 @@ function ChangesPanel({
     : pendingChanges.filter((c) => c.nodeChangeType === filter)
 
   return (
-    <div id="changesPanel" className={`changes-panel${open ? ' open' : ''}`}>
+    <div
+      id="changesPanel"
+      className={`changes-panel fixed bottom-[0] right-[0] top-[var(--roadmap-fixed-top)] z-[100] flex w-[var(--changes-panel-width)] flex-col border-l-[1px] border-solid border-[#e5e7eb] bg-[#fff] [box-shadow:-4px_0_24px_rgba(0,0,0,0.08)] [transition:transform_0.3s_ease] ${open ? 'open [transform:translateX(0)]' : '[transform:translateX(100%)]'}`}
+    >
       {/* 패널 헤더 */}
       <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 bg-gray-50">
         <h2 className="font-bold text-lg text-gray-900">로드맵 관리</h2>
