@@ -2001,18 +2001,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 }
 .changes-panel.open { transform: translateX(0); }
 
-.changes-panel .tab-btn {
-  flex: 1 1 0;
-  min-width: 0;
-  margin: 0;
-  padding: 12px 0;
-  font-weight: bold;
-  font-size: 14px;
-  color: #64748b;
-  border-bottom: 2px solid transparent;
-}
-.changes-panel .tab-btn.active { color: #00c471; border-bottom-color: #00c471; background: #f0fdf4; }
-
 .change-item {
   border-left: 4px solid transparent;
   margin-bottom: 8px; background: white;

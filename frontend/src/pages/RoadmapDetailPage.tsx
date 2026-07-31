@@ -1394,6 +1394,10 @@ interface ChangesPanelProps {
 
 type FilterType = 'all' | 'ADD' | 'MODIFY' | 'DELETE' | 'REORDER'
 
+const changesPanelTabClassName = 'tab-btn flex-[1_1_0] min-w-0 m-0! [padding:12px_0]! [font-weight:bold]! [font-size:14px]! border-b-[2px]! [border-bottom-style:solid]!'
+const changesPanelActiveTabClassName = 'active border-b-[#00c471]! bg-[#f0fdf4] text-[#00c471]!'
+const changesPanelInactiveTabClassName = 'border-b-transparent! text-[#64748b]!'
+
 function ChangesPanel({
   open,
   onClose,
@@ -1424,13 +1428,13 @@ function ChangesPanel({
       {/* 탭 */}
       <div className="flex border-b border-gray-100 bg-white">
         <button
-          className={`tab-btn${tab === 'pending' ? ' active' : ''}`}
+          className={`${changesPanelTabClassName} ${tab === 'pending' ? changesPanelActiveTabClassName : changesPanelInactiveTabClassName}`}
           onClick={() => setTab('pending')}
         >
           대기중 ({pendingChanges.length})
         </button>
         <button
-          className={`tab-btn${tab === 'history' ? ' active' : ''}`}
+          className={`${changesPanelTabClassName} ${tab === 'history' ? changesPanelActiveTabClassName : changesPanelInactiveTabClassName}`}
           onClick={() => setTab('history')}
         >
           완료됨 ({histories.length})
