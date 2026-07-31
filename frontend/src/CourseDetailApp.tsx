@@ -40,6 +40,7 @@ const STUDENT_PREVIEW_BANNER_HEIGHT_PX = 44
 const qnaInputBaseClassName = 'qna-input w-full rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white px-[12px] py-[10px] [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
 const qnaInputClassName = `${qnaInputBaseClassName} text-[14px]!`
 const qnaTextareaClassName = 'qna-textarea min-h-[140px] w-full resize-none rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white p-[12px] text-[14px]! [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
+const qnaMetaIconClassName = 'inline-flex items-center gap-[6px] text-[12px] font-[800] text-[#6b7280] [&_i]:text-[#9ca3af]'
 
 function readNumberSearchParam(name: string) {
   const value = new URLSearchParams(window.location.search).get(name)
@@ -102,6 +103,20 @@ function buildQuestionFilterClass(active: boolean) {
     active
       ? 'border-[#111827] bg-[#111827] text-white'
       : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+  }`
+}
+
+function buildQuestionBadgeClass(status: CourseQuestionStatus) {
+  return `inline-flex items-center gap-[6px] whitespace-nowrap rounded-[999px] border-[1px] border-solid px-[8px] py-[4px] text-[10px] font-[900] ${
+    status === 'answered'
+      ? 'border-[#bbf7d0] bg-[#ecfdf5] text-[#065f46] [&_i]:text-[#00c471]'
+      : 'border-[#fed7aa] bg-[#fff7ed] text-[#9a3412] [&_i]:text-[#f97316]'
+  }`
+}
+
+function buildQuestionCardClass(opened: boolean) {
+  return `qna-card cursor-pointer p-6 [transition:transform_0.15s,_box-shadow_0.15s,_border-color_0.15s,_background-color_0.15s] hover:[box-shadow:0_12px_28px_rgba(17,24,39,0.08)]! hover:[transform:translateY(-1px)] ${
+    opened ? 'hover:border-[#e5e7eb]!' : 'hover:border-[rgba(0,196,113,0.35)]!'
   }`
 }
 
@@ -1178,13 +1193,13 @@ export default function CourseDetailApp() {
                     return (
                       <div
                         key={question.id}
-                        className={`qna-card qna-card-item p-6 ${opened ? 'open' : ''}`}
+                        className={buildQuestionCardClass(opened)}
                         onClick={() => handleToggleQuestion(question.id)}
                       >
                         <div className="mb-3 flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <div className="mb-2 flex items-center gap-2">
-                              <span className={`qna-badge ${question.status === 'answered' ? 'answered' : 'pending'}`}>
+                              <span className={buildQuestionBadgeClass(question.status)}>
                                 <i className={`fas ${question.status === 'answered' ? 'fa-circle-check' : 'fa-circle-question'}`} />
                                 {buildQuestionStatusLabel(question.status)}
                               </span>
@@ -1199,15 +1214,15 @@ export default function CourseDetailApp() {
 
                         <div className="mt-4 flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <span className="qna-meta-icon"><i className="fas fa-eye" /><span className="qna-views">{question.views}</span></span>
-                            <span className="qna-meta-icon"><i className="fas fa-comment-dots" /><span className="qna-comments">{buildQuestionCommentCount(question)}</span></span>
+                            <span className={qnaMetaIconClassName}><i className="fas fa-eye" /><span className="qna-views">{question.views}</span></span>
+                            <span className={qnaMetaIconClassName}><i className="fas fa-comment-dots" /><span className="qna-comments">{buildQuestionCommentCount(question)}</span></span>
                           </div>
                           <span className="text-xs font-extrabold text-gray-400">
                             <i className={`fas qna-chevron ${opened ? 'fa-chevron-up' : 'fa-chevron-down'}`} />
                           </span>
                         </div>
 
-                        <div className="qna-detail mt-4">
+                        <div className={`mt-4 overflow-hidden [transition:max-height_0.28s_ease] ${opened ? 'max-h-[520px]' : 'max-h-0'}`}>
                           <div className="border-t border-gray-100 pt-4">
                             <div className="mb-3 text-xs font-extrabold text-gray-500">
                               <i className="fas fa-comments mr-1 text-gray-400" /> 댓글
