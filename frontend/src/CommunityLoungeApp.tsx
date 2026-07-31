@@ -871,7 +871,7 @@ export default function CommunityLoungeApp() {
                       id="hideClosedCheckbox"
                       checked={hideClosed}
                       onChange={(event) => setHideClosed(event.target.checked)}
-                      className="w-4 h-4 text-brand focus:ring-brand rounded border-gray-300 cursor-pointer appearance-none border checked:bg-brand checked:border-brand flex items-center justify-center relative after:content-[''] after:absolute after:w-1.5 after:h-2.5 after:border-r-2 after:border-b-2 after:border-white after:rotate-45 after:-mt-0.5 checked:after:block after:hidden"
+                      className="w-4 h-4 text-brand focus:ring-brand rounded border-gray-300 cursor-pointer appearance-none border checked:bg-[#00C471] checked:border-[#00C471] flex items-center justify-center relative after:content-[''] after:absolute after:w-1.5 after:h-2.5 after:border-r-2 after:border-b-2 after:border-white after:rotate-45 after:-mt-0.5 checked:after:block after:hidden"
                     />
                     <span>모집중만 보기</span>
                   </label>

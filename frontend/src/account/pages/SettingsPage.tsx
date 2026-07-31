@@ -32,7 +32,7 @@ function ToggleSwitch({
         id={id}
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className={`absolute z-[1] block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-300 ${
+        className={`absolute z-[1] block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-300 checked:border-[#00C471] checked:bg-[#00C471] ${
           checked ? 'right-0 border-[#00C471]' : 'right-1/2 border-[#E5E7EB]'
         }`}
       />
