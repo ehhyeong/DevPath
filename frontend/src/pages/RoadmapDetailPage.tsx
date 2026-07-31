@@ -84,25 +84,28 @@ function isNodeReadyToClear(node: RoadmapNodeItem) {
   return node.readyToClear === true
 }
 
+const roadmapNodeBoxClassName =
+  'node-box relative z-[20] flex w-[var(--roadmap-node-width)] cursor-pointer flex-col justify-center gap-[6px] rounded-[8px] border-[2px] border-solid border-[#334155] bg-[#fff] [padding:14px_20px] text-left [font-size:0.95rem] [font-weight:700] [box-shadow:0_4px_6px_-1px_rgba(0,0,0,0.05)] [transition:all_0.2s_cubic-bezier(0.4,0,0.2,1)] hover:[transform:translateY(-2px)] hover:border-[#00c471] hover:[box-shadow:0_10px_15px_-3px_rgba(0,0,0,0.1)]'
+
 function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): string {
   if (change) {
     if (change.nodeChangeType === 'ADD') {
-      return 'node-box node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]'
+      return `${roadmapNodeBoxClassName} node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]`
     }
     if (change.nodeChangeType === 'MODIFY') {
-      return 'node-box node-change-modify border-[3px]! border-dashed! border-[#f59e0b]! bg-[#fef3c7]! [animation:pulse-orange_2s_infinite]'
+      return `${roadmapNodeBoxClassName} node-change-modify border-[3px]! border-dashed! border-[#f59e0b]! bg-[#fef3c7]! [animation:pulse-orange_2s_infinite]`
     }
     if (change.nodeChangeType === 'DELETE') {
-      return 'node-box node-change-delete border-[3px]! border-dashed! border-[#ef4444]! bg-[#fee2e2]! opacity-[0.6] [animation:pulse-red_2s_infinite]'
+      return `${roadmapNodeBoxClassName} node-change-delete border-[3px]! border-dashed! border-[#ef4444]! bg-[#fee2e2]! opacity-[0.6] [animation:pulse-red_2s_infinite]`
     }
     if (change.nodeChangeType === 'REORDER') {
-      return 'node-box node-change-reorder border-[3px]! border-dashed! border-[#6366f1]! bg-[#eef2ff]! [animation:pulse-indigo_2s_infinite]'
+      return `${roadmapNodeBoxClassName} node-change-reorder border-[3px]! border-dashed! border-[#6366f1]! bg-[#eef2ff]! [animation:pulse-indigo_2s_infinite]`
     }
   }
-  if (node.status === 'COMPLETED') return 'node-box status-done'
-  if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return 'node-box status-active'
-  if (node.status === 'LOCKED') return 'node-box bg-[#f1f5f9]! border-[#cbd5e1]! text-[#94a3b8] hover:[transform:none]! hover:[box-shadow:none]! hover:border-[#cbd5e1]!'
-  return 'node-box'  // PENDING/NOT_STARTED: 기본 스타일 (클릭 가능)
+  if (node.status === 'COMPLETED') return `${roadmapNodeBoxClassName} status-done`
+  if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return `${roadmapNodeBoxClassName} status-active`
+  if (node.status === 'LOCKED') return `${roadmapNodeBoxClassName} bg-[#f1f5f9]! border-[#cbd5e1]! text-[#94a3b8] hover:[transform:none]! hover:[box-shadow:none]! hover:border-[#cbd5e1]!`
+  return roadmapNodeBoxClassName  // PENDING/NOT_STARTED: 기본 스타일 (클릭 가능)
 }
 
 function getChangeItemClass(type?: ChangeType | null) {
@@ -781,7 +784,7 @@ function GhostAddCard({ change, processing, badge, onApply, onIgnore }: GhostAdd
 
   return (
     <div
-      className="node-box node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]"
+      className={`${roadmapNodeBoxClassName} node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]`}
       style={{ color: '#1e40af' }}
     >
       <ChangeLabel change={change} />
