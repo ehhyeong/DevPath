@@ -101,7 +101,7 @@ function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): 
   }
   if (node.status === 'COMPLETED') return 'node-box status-done'
   if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return 'node-box status-active'
-  if (node.status === 'LOCKED') return 'node-box status-locked'
+  if (node.status === 'LOCKED') return 'node-box bg-[#f1f5f9]! border-[#cbd5e1]! text-[#94a3b8] hover:[transform:none]! hover:[box-shadow:none]! hover:border-[#cbd5e1]!'
   return 'node-box'  // PENDING/NOT_STARTED: 기본 스타일 (클릭 가능)
 }
 
