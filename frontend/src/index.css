@@ -3309,17 +3309,14 @@ input[type="checkbox"]:checked { background-color: #00C471; border-color: #00C47
 }
 
 /* 스크롤바 */
-.builder-dot-pattern::-webkit-scrollbar,
-aside::-webkit-scrollbar {
+.builder-dot-pattern::-webkit-scrollbar {
   width: 6px;
 }
-.builder-dot-pattern::-webkit-scrollbar-thumb,
-aside::-webkit-scrollbar-thumb {
+.builder-dot-pattern::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
-.builder-dot-pattern::-webkit-scrollbar-track,
-aside::-webkit-scrollbar-track {
+.builder-dot-pattern::-webkit-scrollbar-track {
   background: transparent;
 }
 
