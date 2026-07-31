@@ -1689,14 +1689,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   pointer-events: none;
 }
 
-.roadmap-header-metrics {
-  margin-right: 168px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  pointer-events: auto;
-}
-
 .roadmap-page-toolbar__inner {
   width: min(100%, 1600px);
   height: 100%;

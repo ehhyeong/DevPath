@@ -1629,6 +1629,7 @@ const roadmapTotalNodeCountCardClassName = '[background:linear-gradient(135deg,_
 const roadmapDoneNodeCountCardClassName = '[background:linear-gradient(135deg,_#3b82f6_0%,_#60a5fa_100%)]'
 const roadmapNodeCountNumberClassName = '[font-size:17px] leading-[1] [font-weight:900] text-[#fff]'
 const roadmapNodeCountLabelClassName = '[font-size:8px] leading-[1] [font-weight:800] text-[#fff]'
+const roadmapHeaderMetricsClassName = 'mr-[168px] flex items-center gap-[12px] pointer-events-auto'
 
 function RoadmapHeaderMetrics({
   changesCount,
@@ -1638,7 +1639,7 @@ function RoadmapHeaderMetrics({
   onToggleChangesPanel,
 }: RoadmapMetricsProps) {
   return (
-    <div className="roadmap-header-metrics">
+    <div className={roadmapHeaderMetricsClassName}>
       <button
         type="button"
         onClick={onToggleChangesPanel}
