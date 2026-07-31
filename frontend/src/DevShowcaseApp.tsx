@@ -473,7 +473,7 @@ export default function DevShowcaseApp() {
                 <button
                   type="button"
                   onClick={openUploadModal}
-                  className="dev-showcase-upload-trigger bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-lg flex items-center gap-2"
+                  className="dev-showcase-upload-trigger flex items-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-[14px]! leading-[20px]! font-bold text-white shadow-lg transition hover:bg-black"
                 >
                   <i className="fas fa-upload"></i>
                   프로젝트 등록
@@ -483,11 +483,11 @@ export default function DevShowcaseApp() {
               <section className="dev-showcase-filter-panel bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
                 <div className="dev-showcase-filter-row flex flex-col lg:flex-row lg:items-center gap-3">
                   <div className="dev-showcase-search-shell flex-1 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-                    <i className="fas fa-search text-gray-400"></i>
+                    <i className="fas fa-search text-[16px] leading-none text-gray-400"></i>
                     <input
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
-                      className="dev-showcase-search-input bg-transparent outline-none w-full text-sm"
+                      className="dev-showcase-search-input w-full bg-transparent text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100"
                       placeholder="프로젝트 제목/설명/팀 이름 검색"
                     />
                   </div>
@@ -504,7 +504,7 @@ export default function DevShowcaseApp() {
                     <select
                       value={sort}
                       onChange={(event) => setSort(event.target.value as SortFilter)}
-                      className="dev-showcase-sort-select text-sm border border-gray-200 rounded-xl px-4 py-3 bg-white outline-none"
+                      className="dev-showcase-sort-select rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px]! leading-[20px]! outline-none"
                     >
                       <option value="popular">인기순 (좋아요)</option>
                       <option value="recent">최신순</option>
@@ -561,21 +561,21 @@ export default function DevShowcaseApp() {
       {uploadOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="닫기" onClick={() => setUploadOpen(false)}></button>
-          <form onSubmit={createShowcase} className="dev-showcase-upload-modal bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 p-8 transform transition-all dev-showcase-modal-enter max-h-[90vh] overflow-y-auto">
+          <form onSubmit={createShowcase} className="dev-showcase-upload-modal relative z-10 max-h-[90vh] w-full max-w-lg animate-[devShowcaseModalSlideUp_0.25s_ease-out_forwards] overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl transition-all">
             <h3 className="text-xl font-extrabold text-gray-900 mb-6 flex items-center gap-2">
               <i className="fas fa-upload text-brand"></i>
               완성 프로젝트 등록
             </h3>
 
             <div className="mb-6 pb-6 border-b border-gray-100">
-              <label className="block text-xs font-bold text-gray-600 mb-2 flex items-center gap-2">
+              <label className="mb-[6px] flex items-center gap-2 text-xs font-bold text-gray-600">
                 <i className="fas fa-archive text-brand"></i>
                 내 워크스페이스에서 바로 불러오기
               </label>
               <select
                 value=""
                 onChange={(event) => importWorkspaceProject(event.target.value)}
-                className="w-full border border-green-200 bg-green-50 text-brand font-bold rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand transition cursor-pointer"
+                className="w-full cursor-pointer rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-[14px]! leading-[20px]! font-bold text-brand transition focus:ring-1 focus:ring-brand focus:outline-none"
               >
                 <option value="">-- 완료된 프로젝트 선택 --</option>
                 {completedProjects.map((project) => (
@@ -597,7 +597,7 @@ export default function DevShowcaseApp() {
                   <select
                     value={newShowcase.category}
                     onChange={(event) => setNewShowcase((current) => ({ ...current, category: event.target.value as ShowcaseCategory }))}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none bg-white"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[14px]! leading-[20px]! outline-none focus:border-brand"
                   >
                     <option value="FULLSTACK">Web</option>
                     <option value="MOBILE">App</option>
@@ -609,7 +609,7 @@ export default function DevShowcaseApp() {
                   <input
                     value={newShowcase.team}
                     onChange={(event) => setNewShowcase((current) => ({ ...current, team: event.target.value }))}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-brand"
                     placeholder="Team DevPath"
                   />
                 </UploadField>
@@ -620,7 +620,7 @@ export default function DevShowcaseApp() {
                   required
                   value={newShowcase.title}
                   onChange={(event) => setNewShowcase((current) => ({ ...current, title: event.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-brand"
                   placeholder="눈에 띄는 제목을 작성해주세요."
                 />
               </UploadField>
@@ -629,7 +629,7 @@ export default function DevShowcaseApp() {
                 <input
                   value={newShowcase.short}
                   onChange={(event) => setNewShowcase((current) => ({ ...current, short: event.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-brand"
                   placeholder="프로젝트의 핵심 가치를 한 줄로 요약해주세요."
                 />
               </UploadField>
@@ -639,7 +639,7 @@ export default function DevShowcaseApp() {
                   required
                   value={newShowcase.description}
                   onChange={(event) => setNewShowcase((current) => ({ ...current, description: event.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm h-32 resize-none focus:border-brand outline-none"
+                  className="h-32 w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-brand"
                   placeholder="프로젝트 기획 의도, 구현된 핵심 기능, 배운 점 등을 상세히 적어주세요."
                 />
               </UploadField>
@@ -648,7 +648,7 @@ export default function DevShowcaseApp() {
                 <input
                   value={newShowcase.tech}
                   onChange={(event) => setNewShowcase((current) => ({ ...current, tech: event.target.value }))}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-brand"
                   placeholder="React, Spring Boot, MySQL"
                 />
               </UploadField>
@@ -658,7 +658,7 @@ export default function DevShowcaseApp() {
                   <input
                     value={newShowcase.githubUrl}
                     onChange={(event) => setNewShowcase((current) => ({ ...current, githubUrl: event.target.value }))}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-brand"
                     placeholder="https://github.com/..."
                   />
                 </UploadField>
@@ -666,7 +666,7 @@ export default function DevShowcaseApp() {
                   <input
                     value={newShowcase.demoUrl}
                     onChange={(event) => setNewShowcase((current) => ({ ...current, demoUrl: event.target.value }))}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:border-brand outline-none"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-brand"
                     placeholder="https://..."
                   />
                 </UploadField>
@@ -674,10 +674,10 @@ export default function DevShowcaseApp() {
             </div>
 
             <div className="mt-8 flex justify-end gap-3">
-              <button type="button" onClick={() => setUploadOpen(false)} className="px-6 py-3 bg-gray-100 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition">
+              <button type="button" onClick={() => setUploadOpen(false)} className="rounded-xl bg-gray-100 px-6 py-3 text-[14px]! leading-[20px]! font-bold text-gray-600 transition hover:bg-gray-200">
                 취소
               </button>
-              <button type="submit" disabled={submitting} className="px-8 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-black shadow-lg transition disabled:opacity-60">
+              <button type="submit" disabled={submitting} className="rounded-xl bg-gray-900 px-8 py-3 text-[14px]! leading-[20px]! font-bold text-white shadow-lg transition hover:bg-black disabled:opacity-60">
                 {submitting ? '등록 중' : '등록하기'}
               </button>
             </div>
@@ -702,13 +702,13 @@ function FilterChip({ active, icon, label, onClick }: { active: boolean; icon: s
     <button
       type="button"
       onClick={onClick}
-      className={
+      className={`chip inline-flex items-center gap-[6px] rounded-[999px] border border-[#E5E7EB] bg-white px-[10px] py-[6px] text-[12px]! leading-[16px]! font-bold text-[#374151] [transition:all_0.2s] ${
         active
-          ? 'chip active'
-          : 'chip'
-      }
+          ? 'active border-[#00C471]! bg-[#EBFDF5]! text-[#00C471]!'
+          : 'hover:bg-[#F3F4F6]'
+      }`}
     >
-      <i className={`fas ${icon} text-[11px]`}></i>
+      <i className={`fas ${icon} text-[11px] leading-none`}></i>
       {label}
     </button>
   )
@@ -742,7 +742,7 @@ function ShowcaseCard({
           onOpen()
         }
       }}
-      className="project-card group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition duration-300 hover:border-brand hover:shadow-xl"
+      className="project-card group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition duration-300 hover:border-brand hover:shadow-xl hover:[transform:none]!"
     >
       <div className="mb-4 flex items-start justify-between">
         <div className="flex gap-2">
@@ -830,7 +830,7 @@ function DetailModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <button type="button" className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-label="닫기" onClick={onClose}></button>
-      <div className="dev-showcase-modal-enter relative z-10 flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="relative z-10 flex max-h-[92vh] w-full max-w-5xl animate-[devShowcaseModalSlideUp_0.25s_ease-out_forwards] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="relative flex h-44 shrink-0 flex-col justify-end bg-gradient-to-br from-gray-800 to-gray-900 p-8">
           <button type="button" onClick={onClose} className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
             <i className="fas fa-times"></i>
@@ -1004,7 +1004,7 @@ function DetailMetric({ label, value }: { label: string; value: number }) {
 function UploadField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-gray-500 mb-1.5">{label}</label>
+      <label className="mb-[6px] block text-xs font-bold text-gray-500">{label}</label>
       {children}
     </div>
   )

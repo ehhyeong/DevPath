@@ -1597,170 +1597,9 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 }
 @keyframes borderGlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-/* DevSquad lounge baseline styles from the supplied HTML */
-#viewLounge .tab-btn {
-  padding: 0.5rem 1rem;
-  margin-right: 0;
-  border-bottom: 2px solid transparent;
-}
-
-#viewLounge .tab-btn.font-medium { font-weight: 500; }
-#viewLounge .tab-btn.font-bold { font-weight: 700; }
-#viewLounge .tab-btn.text-gray-500 { color: #6B7280; }
-#viewLounge .tab-btn.text-brand { color: #00C471; }
-#viewLounge .tab-btn.active { border-bottom: 2px solid #00C471; color: #00C471; font-weight: 700; }
-.card-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-
-/* Dev showcase styles from the supplied head block */
-.dev-showcase-page .dev-showcase-upload-trigger {
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 700;
-}
-
-.dev-showcase-page .dev-showcase-filter-panel {
-  padding: 16px;
-  border-radius: 16px;
-}
-
-.dev-showcase-page .dev-showcase-filter-row {
-  gap: 12px;
-}
-
-.dev-showcase-page .dev-showcase-search-shell {
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 12px;
-}
-
-.dev-showcase-page .dev-showcase-search-shell .fa-search {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.dev-showcase-page .dev-showcase-search-input,
-.dev-showcase-page .dev-showcase-sort-select {
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.dev-showcase-page .dev-showcase-search-input::placeholder {
-  color: #9CA3AF;
-  font-size: 14px;
-  line-height: 20px;
-  opacity: 1;
-}
-
-.dev-showcase-page .dev-showcase-chip-list {
-  gap: 8px;
-}
-
-.dev-showcase-page .chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 700;
-  border: 1px solid #E5E7EB;
-  background: #fff;
-  color: #374151;
-  transition: all 0.2s;
-}
-
-.dev-showcase-page .chip.active {
-  border-color: #00C471;
-  background: #EBFDF5;
-  color: #00C471;
-}
-
-.dev-showcase-page .chip:hover:not(.active) {
-  background: #F3F4F6;
-}
-
-.dev-showcase-page .chip i {
-  font-size: 11px;
-  line-height: 1;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal {
-  width: 100%;
-  max-width: 512px;
-  max-height: 90vh;
-  padding: 32px;
-  border-radius: 16px;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal h3 {
-  margin-bottom: 24px;
-  gap: 8px;
-  font-size: 20px;
-  line-height: 28px;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal label {
-  margin-bottom: 6px;
-  font-size: 12px;
-  line-height: 16px;
-  font-weight: 700;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal > .border-b {
-  margin-bottom: 24px;
-  padding-bottom: 24px;
-}
-
-.dev-showcase-page .dev-showcase-upload-grid {
-  gap: 20px;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal input,
-.dev-showcase-page .dev-showcase-upload-modal select,
-.dev-showcase-page .dev-showcase-upload-modal textarea {
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal input::placeholder,
-.dev-showcase-page .dev-showcase-upload-modal textarea::placeholder {
-  color: #9CA3AF;
-  font-size: 14px;
-  line-height: 20px;
-  opacity: 1;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal textarea {
-  height: 128px;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal .mt-8 {
-  margin-top: 32px;
-  gap: 12px;
-}
-
-.dev-showcase-page .dev-showcase-upload-modal button {
-  font-size: 14px;
-  line-height: 20px;
-}
-
-.dev-showcase-modal-enter {
-  animation: devShowcaseModalSlideUp 0.25s ease-out forwards;
-}
-
 @keyframes devShowcaseModalSlideUp {
   from { transform: translateY(18px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
-}
-
-.dev-showcase-page .project-card:hover {
-  transform: none;
 }
 
 /* Workspace hub styles from the supplied head block */
@@ -1794,11 +1633,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 .modal-overlay.active { opacity: 1; visibility: visible; }
 .modal-content { transform: scale(0.95); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
 .modal-overlay.active .modal-content { transform: scale(1); }
-
-.github-input-group:focus-within i,
-.github-input-group:focus-within span.prefix {
-  color: #3B82F6;
-}
 
 .accent-brand {
   accent-color: #00C471;
@@ -2027,44 +1861,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 
 
 
-
-/* =========================================================
-   커뮤니티 페이지 (community-list / community-write)
-   ========================================================= */
-
-.community-tag-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #ecfdf5;
-  color: #00c471;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.community-editor-area {
-  min-height: 500px;
-  line-height: 1.6;
-  font-family: inherit;
-}
-
-.community-editor-toolbar button {
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.2s;
-  color: #6b7280;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.community-editor-toolbar button:hover {
-  background-color: #f3f4f6;
-  color: #111827;
-}
 
 
 

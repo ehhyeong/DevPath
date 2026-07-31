@@ -114,7 +114,7 @@ export default function CommunityWritePage() {
             {/* 태그 입력 */}
             <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-6 py-3">
               {tags.map((tag) => (
-                <span key={tag} className="community-tag-badge">
+                <span key={tag} className="community-tag-badge inline-flex items-center gap-[4px] rounded-[9999px] bg-[#ECFDF5] px-[10px] py-[4px] text-[12px] leading-[18px] font-[600] text-[#00C471]">
                   #{tag}
                   <button type="button" onClick={() => removeTag(tag)} className="ml-1 hover:text-green-700">
                     <i className="fas fa-times" />
@@ -132,7 +132,7 @@ export default function CommunityWritePage() {
             </div>
 
             {/* 에디터 툴바 */}
-            <div className="community-editor-toolbar flex flex-wrap gap-1 border-b border-gray-100 bg-gray-50/50 px-6 py-3">
+            <div className="community-editor-toolbar flex flex-wrap gap-1 border-b border-gray-100 bg-gray-50/50 px-6 py-3 [&_button]:cursor-pointer [&_button]:rounded-[4px] [&_button]:[border:none] [&_button]:bg-transparent [&_button]:px-[8px] [&_button]:py-[4px] [&_button]:text-[14px]! [&_button]:leading-[21px]! [&_button]:text-[#6B7280] [&_button]:[transition:all_0.2s] [&_button:hover]:bg-[#F3F4F6] [&_button:hover]:text-[#111827]">
               <button type="button" title="굵게"><i className="fas fa-bold" /></button>
               <button type="button" title="기울임"><i className="fas fa-italic" /></button>
               <button type="button" title="취소선"><i className="fas fa-strikethrough" /></button>
@@ -151,7 +151,7 @@ export default function CommunityWritePage() {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="community-editor-area w-full resize-none p-6 text-gray-700 outline-none"
+              className="community-editor-area min-h-[500px] w-full resize-none p-6 [font-family:inherit] leading-[1.6]! text-gray-700 outline-none"
             />
           </div>
 
