@@ -108,12 +108,14 @@ function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): 
   return roadmapNodeBoxClassName  // PENDING/NOT_STARTED: 기본 스타일 (클릭 가능)
 }
 
+const changeItemClassName = 'change-item mb-[8px] cursor-pointer rounded-[8px] border-[1px] border-solid border-[#e2e8f0] bg-[#fff] p-[12px] hover:bg-[#f8fafc]'
+
 function getChangeItemClass(type?: ChangeType | null) {
-  if (type === 'ADD')    return 'change-item new'
-  if (type === 'MODIFY') return 'change-item modified'
-  if (type === 'DELETE') return 'change-item delete'
-  if (type === 'REORDER') return 'change-item reorder'
-  return 'change-item'
+  if (type === 'ADD')    return `${changeItemClassName} new border-l-[#3b82f6]`
+  if (type === 'MODIFY') return `${changeItemClassName} modified border-l-[#f59e0b]`
+  if (type === 'DELETE') return `${changeItemClassName} delete border-l-[#ef4444]`
+  if (type === 'REORDER') return `${changeItemClassName} reorder border-l-[#6366f1]`
+  return changeItemClassName
 }
 
 function changeBadgeStyle(type?: ChangeType | null): CSSProperties {

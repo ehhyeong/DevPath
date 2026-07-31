@@ -1925,18 +1925,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   font-size: 0.85rem;
 }
 
-.change-item {
-  border-left: 4px solid transparent;
-  margin-bottom: 8px; background: white;
-  border-radius: 8px; border: 1px solid #e2e8f0;
-  padding: 12px; cursor: pointer;
-}
-.change-item:hover { background: #f8fafc; }
-.change-item.new      { border-left-color: #3b82f6; }
-.change-item.modified { border-left-color: #f59e0b; }
-.change-item.delete   { border-left-color: #ef4444; }
-.change-item.reorder  { border-left-color: #6366f1; }
-
 /* ── 배지 펄스 ── */
 @keyframes badge-pulse {
   0%, 100% { transform: scale(1); }
