@@ -652,16 +652,6 @@ aside:hover .sidebar-text {
   font-size: 0.9em;
 }
 
-.completion-confetti-piece {
-  position: absolute;
-  top: -10%;
-  border-radius: 999px;
-  opacity: 0;
-  animation-name: completion-confetti-fall;
-  animation-timing-function: ease-out;
-  animation-fill-mode: forwards;
-}
-
 @keyframes completion-confetti-fall {
   0% {
     opacity: 0;

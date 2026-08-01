@@ -4360,7 +4360,7 @@ export default function LearningPlayerApp() {
             {completionParticles.map((particle) => (
               <span
                 key={`${completionBurstKey}-${particle.id}`}
-                className="completion-confetti-piece"
+                className="absolute top-[-10%] rounded-[999px] opacity-[0] [animation-name:completion-confetti-fall] [animation-timing-function:ease-out] [animation-fill-mode:forwards]"
                 style={{
                   left: `${particle.left}%`,
                   width: `${particle.size}px`,
