@@ -1585,20 +1585,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   --roadmap-line-color: #cbd5e1;
 }
 
-/* ── 메인 레이아웃 ── */
-.roadmap-main {
-  width: 100%;
-  height: calc(100dvh - var(--roadmap-fixed-top));
-  max-height: calc(100dvh - var(--roadmap-fixed-top));
-  min-height: 0;
-  margin-top: var(--roadmap-fixed-top);
-  overflow-x: hidden;
-  overflow-y: auto;
-  background: #f8f9fa;
-  overscroll-behavior-y: contain;
-  scrollbar-gutter: stable;
-}
-
 .roadmap-content {
   max-width: 1400px;
   min-height: 100%;

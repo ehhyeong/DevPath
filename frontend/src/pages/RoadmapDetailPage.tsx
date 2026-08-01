@@ -1624,6 +1624,8 @@ interface RoadmapPageToolbarProps extends RoadmapMetricsProps {
 }
 
 const roadmapPageClassName = 'h-[100dvh] min-h-0 w-full overflow-hidden bg-[#f8f9fa]'
+const roadmapMainClassName =
+  'roadmap-main h-[calc(100dvh-var(--roadmap-fixed-top))] max-h-[calc(100dvh-var(--roadmap-fixed-top))] min-h-0 mt-[var(--roadmap-fixed-top)] overflow-x-hidden [overflow-y:auto] bg-[#f8f9fa] [overscroll-behavior-y:contain] [scrollbar-gutter:stable]'
 const roadmapNodeCountWrapClassName = 'inline-flex items-stretch gap-[1px] overflow-hidden rounded-[6px] bg-[#e5e7eb] [box-shadow:0_1px_6px_rgba(0,0,0,0.04)]'
 const roadmapNodeCountCardClassName = 'flex min-w-[42px] flex-col items-center justify-center gap-[2px] [padding:5px_10px]'
 const roadmapTotalNodeCountCardClassName = '[background:linear-gradient(135deg,_#00c471_0%,_#00e887_100%)]'
@@ -2503,7 +2505,7 @@ export default function RoadmapDetailPage() {
       />
 
       {/* ── 메인 콘텐츠 ───────────────────────────────────────────────────────── */}
-      <main className={`roadmap-main${panelOpen ? ' panel-open' : ''} relative w-full`}>
+      <main className={`${roadmapMainClassName}${panelOpen ? ' panel-open' : ''} relative w-full`}>
 
         {/* 로드맵 카테고리 라벨 (전환 드롭다운) */}
         <div className="fixed top-[calc(var(--roadmap-fixed-top)+12px)] left-8 z-[60]">
