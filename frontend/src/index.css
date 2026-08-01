@@ -617,19 +617,6 @@ aside:hover .sidebar-text {
   padding: 20px;
 }
 
-.my-post-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #2563eb;
-  font-size: 10px;
-  font-weight: 700;
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;

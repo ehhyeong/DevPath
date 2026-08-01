@@ -949,7 +949,7 @@ function CommunityTab({
                   {getCommunityCategoryLabel(post.category)}
                 </span>
                 {post.mine ? (
-                  <span className="my-post-badge">
+                  <span className="inline-flex items-center gap-[4px] rounded-[999px] border-[1px] border-solid border-[#bfdbfe] bg-[#eff6ff] px-[8px] py-[2px] text-[10px] font-[700] text-[#2563eb]">
                     <i className="fas fa-user" /> 내 글
                   </span>
                 ) : null}
