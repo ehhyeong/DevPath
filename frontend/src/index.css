@@ -1586,14 +1586,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 }
 
 /* ── 메인 레이아웃 ── */
-.roadmap-page {
-  width: 100%;
-  height: 100dvh;
-  min-height: 0;
-  overflow: hidden;
-  background: #f8f9fa;
-}
-
 .roadmap-main {
   width: 100%;
   height: calc(100dvh - var(--roadmap-fixed-top));

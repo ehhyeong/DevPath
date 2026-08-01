@@ -1623,6 +1623,7 @@ interface RoadmapPageToolbarProps extends RoadmapMetricsProps {
   roadmaps: MyRoadmapSummary[]
 }
 
+const roadmapPageClassName = 'h-[100dvh] min-h-0 w-full overflow-hidden bg-[#f8f9fa]'
 const roadmapNodeCountWrapClassName = 'inline-flex items-stretch gap-[1px] overflow-hidden rounded-[6px] bg-[#e5e7eb] [box-shadow:0_1px_6px_rgba(0,0,0,0.04)]'
 const roadmapNodeCountCardClassName = 'flex min-w-[42px] flex-col items-center justify-center gap-[2px] [padding:5px_10px]'
 const roadmapTotalNodeCountCardClassName = '[background:linear-gradient(135deg,_#00c471_0%,_#00e887_100%)]'
@@ -2286,7 +2287,7 @@ export default function RoadmapDetailPage() {
   const showLegacyHeader = false
 
   return (
-    <div className="roadmap-page text-gray-800">
+    <div className={`${roadmapPageClassName} text-gray-800`}>
 
       {/* ── 헤더 ──────────────────────────────────────────────────────────────── */}
       <SiteHeader
