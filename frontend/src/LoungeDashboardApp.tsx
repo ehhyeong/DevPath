@@ -286,6 +286,9 @@ function getHubProjectProgressClass(project: WorkspaceHubProjectResponse) {
   return 'bg-blue-500'
 }
 
+const loungeAiRecommendationCardClassName =
+  "relative rounded-[1rem] bg-white bg-clip-padding [border:1px_solid_transparent] [transition:all_0.3s] hover:[transform:translateY(-3px)] hover:[box-shadow:0_10px_25px_-5px_rgba(0,196,113,0.2)] before:absolute before:top-[-2px] before:right-[-2px] before:bottom-[-2px] before:left-[-2px] before:z-[-1] before:rounded-[1.1rem] before:[background-image:linear-gradient(45deg,_#00C471,_#3B82F6,_#00C471,_#8B5CF6)] before:[background-size:300%] before:[animation:borderGlow_3s_linear_infinite] before:content-['']"
+
 export default function LoungeDashboardApp() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
@@ -733,7 +736,7 @@ export default function LoungeDashboardApp() {
                         </button>
                       </div>
                     ) : recommendedProject ? (
-                    <div className="ai-border cursor-pointer group p-5 flex flex-col md:flex-row gap-5 items-start md:items-center justify-between" onClick={() => goTo(getRecommendationTarget(recommendedProject))}>
+                    <div className={`${loungeAiRecommendationCardClassName} cursor-pointer group p-5 flex flex-col md:flex-row gap-5 items-start md:items-center justify-between`} onClick={() => goTo(getRecommendationTarget(recommendedProject))}>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="bg-brand text-white text-[10px] font-extrabold px-2 py-0.5 rounded shadow-sm">AI 맞춤 {recommendedProject.recommendationScore ?? 0}%</span>
