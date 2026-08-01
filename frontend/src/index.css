@@ -1672,15 +1672,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   stroke: #3b82f6;
 }
 
-.roadmap-slot {
-  position: relative;
-  z-index: 5;
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  transform: translateY(var(--slot-offset-y, 0));
-}
-
 .roadmap-slot-official-branch {
   align-self: stretch;
 }

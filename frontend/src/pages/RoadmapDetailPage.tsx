@@ -905,6 +905,8 @@ const roadmapEdgeLayerClassName =
   'roadmap-edge-layer absolute [inset:0] z-[1] pointer-events-none overflow-visible'
 const roadmapEdgeBaseClassName =
   'roadmap-edge [fill:none] [stroke:var(--roadmap-line-color)] [stroke-width:3] [stroke-linecap:round] [stroke-linejoin:round]'
+const roadmapSlotBaseClassName =
+  'roadmap-slot relative z-[5] flex justify-center w-full [transform:translateY(var(--slot-offset-y,_0))]'
 
 function RoadmapGraph({
   layout,
@@ -1035,7 +1037,7 @@ function RoadmapGraph({
           <div
             key={slot.id}
             ref={registerSlot(slot.id)}
-            className={`roadmap-slot roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
+            className={`${roadmapSlotBaseClassName} roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
               slot.kind === 'suggested-branch'
                 ? '[&_.node-box]:border-[3px]! [&_.node-box]:border-dashed! [&_.node-box]:border-[#3b82f6]! [&_.node-box]:bg-[#eff6ff]! [&_.node-box]:text-[#1e40af] [&_.node-box]:[animation:pulse-blue_2s_infinite]'
                 : ''
