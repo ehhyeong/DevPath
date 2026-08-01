@@ -1201,7 +1201,7 @@ function MyRoadmapBuilderPage() {
 
                 return (
                   <div key={row.sortOrder}>
-                    <div className="group relative z-10 mb-2 builder-step-enter">
+                    <div className="group relative z-10 mb-2 animate-[builderStepPop_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
                       {row.isBranching ? (
                         // ── 분기 row ──
                         <div className="flex items-start">
