@@ -4375,7 +4375,7 @@ export default function LearningPlayerApp() {
           </div>
 
           <div className="relative z-10 w-full max-w-4xl text-center">
-            <div className="completion-fade-enter mb-10">
+            <div className="[animation:completion-fade-up_0.55s_cubic-bezier(0.16,1,0.3,1)_both] mb-10">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#00C471]/30 bg-[#00C471]/20 px-3 py-1 text-sm font-semibold text-[#00C471]">
                 <i className="fas fa-crown" /> 학습 완료
               </div>
@@ -4455,7 +4455,7 @@ export default function LearningPlayerApp() {
               </div>
             </div>
 
-            <div className="completion-fade-enter-delay mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="[animation:completion-fade-up_0.7s_cubic-bezier(0.16,1,0.3,1)_0.18s_both] mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <button
                 type="button"
                 onClick={() => { window.location.href = completionRoadmapReturnHref }}
@@ -4471,13 +4471,13 @@ export default function LearningPlayerApp() {
                 <i className="fas fa-file-signature" /> 내 증명 카드 보기
               </button>
             </div>
-            <p className="completion-fade-enter-delay mt-6 text-xs text-gray-500">
+            <p className="[animation:completion-fade-up_0.7s_cubic-bezier(0.16,1,0.3,1)_0.18s_both] mt-6 text-xs text-gray-500">
               이 완료 카드는 현재 강의 진행률과 제출된 과제 결과를 기준으로 생성됩니다.
             </p>
             <button
               type="button"
               onClick={closeCompletionOverlay}
-              className="completion-fade-enter-delay mt-6 text-xs font-bold text-gray-400 transition hover:text-white"
+              className="[animation:completion-fade-up_0.7s_cubic-bezier(0.16,1,0.3,1)_0.18s_both] mt-6 text-xs font-bold text-gray-400 transition hover:text-white"
             >
               이 화면 닫기
             </button>

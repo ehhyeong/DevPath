@@ -666,14 +666,6 @@ aside:hover .sidebar-text {
   }
 }
 
-.completion-fade-enter {
-  animation: completion-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.completion-fade-enter-delay {
-  animation: completion-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
-}
-
 @keyframes completion-fade-up {
   from {
     opacity: 0;
