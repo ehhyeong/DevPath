@@ -1655,14 +1655,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   min-width: max-content;
 }
 
-.roadmap-edge-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  overflow: visible;
-}
-
 .roadmap-edge {
   fill: none;
   stroke: var(--roadmap-line-color);
