@@ -1047,6 +1047,16 @@ function RoadmapGraph({
                 ? '[&_.node-box]:[width:var(--roadmap-side-node-width)]'
                 : ''
             } ${
+              (slot.kind === 'official-branch' && slot.lane === 'right') ||
+              ((slot.kind === 'applied-branch' || slot.kind === 'suggested-branch') &&
+                (slot.lane === 'right' || slot.lane === 'side-right'))
+                ? '[justify-content:flex-start]!'
+                : (slot.kind === 'official-branch' && slot.lane === 'left') ||
+                    ((slot.kind === 'applied-branch' || slot.kind === 'suggested-branch') &&
+                      (slot.lane === 'left' || slot.lane === 'side-left'))
+                  ? '[justify-content:flex-end]!'
+                  : ''
+            } ${
               slot.kind === 'suggested-branch'
                 ? '[&_.node-box]:border-[3px]! [&_.node-box]:border-dashed! [&_.node-box]:border-[#3b82f6]! [&_.node-box]:bg-[#eff6ff]! [&_.node-box]:text-[#1e40af] [&_.node-box]:[animation:pulse-blue_2s_infinite]'
                 : ''

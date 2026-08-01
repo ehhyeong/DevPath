@@ -1672,22 +1672,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   stroke: #3b82f6;
 }
 
-.roadmap-slot-official-branch.roadmap-lane-right,
-.roadmap-slot-applied-branch.roadmap-lane-right,
-.roadmap-slot-applied-branch.roadmap-lane-side-right,
-.roadmap-slot-suggested-branch.roadmap-lane-right,
-.roadmap-slot-suggested-branch.roadmap-lane-side-right {
-  justify-content: flex-start;
-}
-
-.roadmap-slot-official-branch.roadmap-lane-left,
-.roadmap-slot-applied-branch.roadmap-lane-left,
-.roadmap-slot-applied-branch.roadmap-lane-side-left,
-.roadmap-slot-suggested-branch.roadmap-lane-left,
-.roadmap-slot-suggested-branch.roadmap-lane-side-left {
-  justify-content: flex-end;
-}
-
 /* ── 변경사항 노드 오버레이 ── */
 @keyframes pulse-blue {
   0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
