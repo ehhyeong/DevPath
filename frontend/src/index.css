@@ -1672,14 +1672,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   stroke: #3b82f6;
 }
 
-.roadmap-slot-official-branch .node-box,
-.roadmap-slot-applied-branch .node-box,
-.roadmap-slot-suggested-branch .node-box,
-.roadmap-slot-ghost-add.roadmap-lane-side-left .node-box,
-.roadmap-slot-ghost-add.roadmap-lane-side-right .node-box {
-  width: var(--roadmap-side-node-width);
-}
-
 .roadmap-slot-official-branch.roadmap-lane-right,
 .roadmap-slot-applied-branch.roadmap-lane-right,
 .roadmap-slot-applied-branch.roadmap-lane-side-right,
