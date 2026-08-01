@@ -4385,13 +4385,13 @@ export default function LearningPlayerApp() {
               </p>
             </div>
 
-            <div className="mx-auto h-[450px] w-full max-w-[320px] perspective">
+            <div className="mx-auto h-[450px] w-full max-w-[320px] [perspective:1000px]">
               <div
                 className={`${completionCardFlipped ? 'flipped ' : ''}completion-card group h-full w-full cursor-pointer`}
                 onClick={() => setCompletionCardFlipped((current) => !current)}
               >
-                <div className="card-inner relative rounded-3xl shadow-[0_25px_50px_rgba(0,0,0,0.45)]">
-                  <div className="card-front flex flex-col bg-white">
+                <div className="relative h-full w-full rounded-3xl shadow-[0_25px_50px_rgba(0,0,0,0.45)] [transition:transform_0.6s] [transform-style:preserve-3d] [.flipped_&]:[transform:rotateY(180deg)]">
+                  <div className="absolute top-[0] left-[0] flex h-full w-full flex-col overflow-hidden rounded-[1rem] bg-white [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
                     <div className={`relative flex h-44 flex-col justify-between bg-gradient-to-br ${completionTheme.frontGradientClassName} p-6`}>
                       <div className="flex items-start justify-between">
                         <span className="rounded border border-white/10 bg-white/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur">
@@ -4428,7 +4428,7 @@ export default function LearningPlayerApp() {
                     </div>
                   </div>
 
-                  <div className="card-back flex flex-col bg-gray-900 p-6 text-left text-white">
+                  <div className="absolute top-[0] left-[0] flex h-full w-full flex-col overflow-hidden rounded-[1rem] bg-gray-900 p-6 text-left text-white [-webkit-backface-visibility:hidden] [backface-visibility:hidden] [transform:rotateY(180deg)]">
                     <div className="mb-4 border-b border-gray-700 pb-4">
                       <h3 className="completion-proof-back-title text-lg font-bold text-white">{completionProofCard.title}</h3>
                       <p className="completion-proof-description mt-1 text-xs leading-relaxed text-gray-400">{completionProofCard.description}</p>
