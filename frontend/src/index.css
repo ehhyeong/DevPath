@@ -748,10 +748,6 @@ aside:hover .sidebar-text {
   }
 }
 
-.modal-animate {
-  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
 .devpath-modal-overlay {
   position: fixed;
   inset: 0;

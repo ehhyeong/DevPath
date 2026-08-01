@@ -1289,7 +1289,7 @@ export default function CourseDetailApp() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setEnrollModalOpen(false)}
           />
-          <div className="modal-animate relative mx-4 w-full max-w-[380px] overflow-hidden rounded-2xl bg-white px-8 py-10 shadow-2xl">
+          <div className="[animation:popIn_0.2s_cubic-bezier(0.16,1,0.3,1)_forwards] relative mx-4 w-full max-w-[380px] overflow-hidden rounded-2xl bg-white px-8 py-10 shadow-2xl">
             <div className="mb-8 flex justify-center">
               <div className="flex h-[72px] w-[72px] animate-bounce items-center justify-center rounded-full bg-green-50 duration-1000">
                 <svg className="h-10 w-10 text-brand" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1351,7 +1351,7 @@ export default function CourseDetailApp() {
             aria-label="공지 닫기"
             onClick={() => setSelectedNews(null)}
           />
-          <div className="modal-animate relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+          <div className="[animation:popIn_0.2s_cubic-bezier(0.16,1,0.3,1)_forwards] relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
               <div className="min-w-0">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
