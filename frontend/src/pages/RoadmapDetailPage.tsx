@@ -899,6 +899,8 @@ interface RoadmapGraphProps {
 
 const roadmapCanvasScrollClassName =
   'roadmap-canvas-scroll w-full [overflow-x:auto] [overflow-y:visible] [padding:8px_16px_32px]'
+const roadmapGraphClassName =
+  'roadmap-graph relative grid [grid-template-columns:var(--roadmap-side-node-width)_var(--roadmap-node-width)_var(--roadmap-side-node-width)] [column-gap:var(--roadmap-lane-gap)] [row-gap:var(--roadmap-row-gap)] items-center justify-items-center w-max min-w-[calc(var(--roadmap-side-node-width)*2+var(--roadmap-node-width)+var(--roadmap-lane-gap)*2)] [margin:0_auto] [padding:32px_0_72px]'
 
 function RoadmapGraph({
   layout,
@@ -1000,7 +1002,7 @@ function RoadmapGraph({
     <div className={roadmapCanvasScrollClassName}>
       <div
         ref={graphRef}
-        className="roadmap-graph"
+        className={roadmapGraphClassName}
         style={{
           gridTemplateRows: `repeat(${Math.max(layout.rowCount, 1)}, minmax(var(--roadmap-row-min-height), auto))`,
         }}

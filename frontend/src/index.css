@@ -1655,27 +1655,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   min-width: max-content;
 }
 
-.roadmap-graph {
-  position: relative;
-  display: grid;
-  grid-template-columns:
-    var(--roadmap-side-node-width)
-    var(--roadmap-node-width)
-    var(--roadmap-side-node-width);
-  column-gap: var(--roadmap-lane-gap);
-  row-gap: var(--roadmap-row-gap);
-  align-items: center;
-  justify-items: center;
-  width: max-content;
-  min-width: calc(
-    var(--roadmap-side-node-width) * 2 +
-    var(--roadmap-node-width) +
-    var(--roadmap-lane-gap) * 2
-  );
-  margin: 0 auto;
-  padding: 32px 0 72px;
-}
-
 .roadmap-edge-layer {
   position: absolute;
   inset: 0;
