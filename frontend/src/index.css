@@ -1662,19 +1662,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   }
 }
 
-/* 스크롤바 */
-.builder-dot-pattern::-webkit-scrollbar {
-  width: 6px;
-}
-.builder-dot-pattern::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-.builder-dot-pattern::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-
 /* Consolidated from roadmap-hub.css. */
 .hub-header {
   position: fixed;

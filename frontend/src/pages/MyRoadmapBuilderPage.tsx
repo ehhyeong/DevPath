@@ -1109,7 +1109,7 @@ function MyRoadmapBuilderPage() {
         {/* ── 메인 캔버스 ── */}
         <main
           ref={mainRef}
-          className="builder-dot-pattern relative flex-1 overflow-y-auto bg-[#f9fafb] [background-image:radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:24px_24px] p-8"
+          className="relative flex-1 overflow-y-auto bg-[#f9fafb] [background-image:radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:24px_24px] p-8 [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-thumb]:rounded-[4px] [&::-webkit-scrollbar-thumb]:bg-[#cbd5e1] [&::-webkit-scrollbar-track]:bg-transparent"
         >
 
           {/* 편집 모드 배너 */}
