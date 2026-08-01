@@ -469,7 +469,7 @@ export default function InstructorChannelApp() {
           />
 
           <div className="mx-auto max-w-7xl px-6 py-8">
-            <div className={activeTab === 'home' ? 'block animate-fade-in' : 'hidden'}>
+            <div className={activeTab === 'home' ? 'block animate-[fadeIn_0.3s_ease-out]' : 'hidden'}>
               <HomeTab
                 channel={channel}
                 careers={careers}
@@ -479,7 +479,7 @@ export default function InstructorChannelApp() {
               />
             </div>
 
-            <div className={activeTab === 'playlist' ? 'block animate-fade-in' : 'hidden'}>
+            <div className={activeTab === 'playlist' ? 'block animate-[fadeIn_0.3s_ease-out]' : 'hidden'}>
               <PlaylistTab
                 playlistFilter={playlistFilter}
                 sections={filteredPlaylistSections}
@@ -490,7 +490,7 @@ export default function InstructorChannelApp() {
               />
             </div>
 
-            <div className={activeTab === 'community' ? 'block animate-fade-in' : 'hidden'}>
+            <div className={activeTab === 'community' ? 'block animate-[fadeIn_0.3s_ease-out]' : 'hidden'}>
               <CommunityTab
                 posts={filteredCommunityPosts}
                 communityFilter={communityFilter}
@@ -503,7 +503,7 @@ export default function InstructorChannelApp() {
               />
             </div>
 
-            <div className={activeTab === 'reviews' ? 'block animate-fade-in' : 'hidden'}>
+            <div className={activeTab === 'reviews' ? 'block animate-[fadeIn_0.3s_ease-out]' : 'hidden'}>
               <ReviewsTab
                 visibleReviews={visibleReviews}
                 reviewSummary={reviewSummary}
@@ -1299,7 +1299,7 @@ function PostDetailModal({
 
           <div className="mb-5 space-y-4">
             {post.replies.length ? post.replies.map((reply) => (
-              <div key={reply.id} className="reply-item flex gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div key={reply.id} className="flex animate-[fadeIn_0.2s_ease-out] gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
                 <UserAvatar name={reply.author} imageUrl={null} className="h-9 w-9" alt={reply.author} />
                 <div className="flex-1">
                   <div className="mb-1 flex items-center gap-2">

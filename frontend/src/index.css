@@ -606,16 +606,6 @@ aside:hover .sidebar-text {
   animation: fadeIn 0.5s ease-in-out;
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-.community-filter-btn.active span,
-.playlist-filter-btn.active span,
-.review-filter-btn.active span {
-  color: white !important;
-}
-
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -625,10 +615,6 @@ aside:hover .sidebar-text {
   justify-content: center;
   background: rgba(0, 0, 0, 0.5);
   padding: 20px;
-}
-
-.reply-item {
-  animation: fadeIn 0.2s ease-out;
 }
 
 .my-post-badge {
