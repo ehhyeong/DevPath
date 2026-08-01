@@ -1655,13 +1655,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   min-width: max-content;
 }
 
-.roadmap-canvas-scroll {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding: 8px 16px 32px;
-}
-
 .roadmap-graph {
   position: relative;
   display: grid;

@@ -897,6 +897,9 @@ interface RoadmapGraphProps {
   onIgnore: (id: number) => void
 }
 
+const roadmapCanvasScrollClassName =
+  'roadmap-canvas-scroll w-full [overflow-x:auto] [overflow-y:visible] [padding:8px_16px_32px]'
+
 function RoadmapGraph({
   layout,
   proofCardByNodeId,
@@ -994,7 +997,7 @@ function RoadmapGraph({
   }
 
   return (
-    <div className="roadmap-canvas-scroll">
+    <div className={roadmapCanvasScrollClassName}>
       <div
         ref={graphRef}
         className="roadmap-graph"
