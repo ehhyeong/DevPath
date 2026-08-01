@@ -679,10 +679,6 @@ aside:hover .sidebar-text {
   font-size: 0.9em;
 }
 
-#postListContainer {
-  min-height: var(--postListMinH, 0px);
-}
-
 .perspective {
   perspective: 1000px;
 }
