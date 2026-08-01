@@ -1630,6 +1630,9 @@ const roadmapDoneNodeCountCardClassName = '[background:linear-gradient(135deg,_#
 const roadmapNodeCountNumberClassName = '[font-size:17px] leading-[1] [font-weight:900] text-[#fff]'
 const roadmapNodeCountLabelClassName = '[font-size:8px] leading-[1] [font-weight:800] text-[#fff]'
 const roadmapHeaderMetricsClassName = 'mr-[168px] flex items-center gap-[12px] pointer-events-auto'
+const roadmapHeaderMetricsShellClassName = 'roadmap-header-metrics-shell hidden h-full w-full'
+const roadmapHeaderMetricsShellInnerClassName =
+  'flex h-full w-full items-center justify-end pointer-events-none [margin-inline:auto] [padding-inline:clamp(16px,3vw,32px)]'
 
 function RoadmapHeaderMetrics({
   changesCount,
@@ -2299,8 +2302,8 @@ export default function RoadmapDetailPage() {
           </a>
         )}
         endOverlay={(
-          <div className="roadmap-header-metrics-shell">
-            <div className="roadmap-header-metrics-shell__inner">
+          <div className={roadmapHeaderMetricsShellClassName}>
+            <div className={roadmapHeaderMetricsShellInnerClassName}>
               <RoadmapHeaderMetrics
                 changesCount={changes.length}
                 totalNodes={totalNodes}

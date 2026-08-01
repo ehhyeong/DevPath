@@ -1650,12 +1650,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   backdrop-filter: blur(10px);
 }
 
-.roadmap-header-metrics-shell {
-  width: 100%;
-  height: 100%;
-  display: none;
-}
-
 .roadmap-header-list-shell {
   width: 100%;
   height: 100%;
@@ -1676,17 +1670,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 
 .roadmap-header-list-shell__inner > * {
   pointer-events: auto;
-}
-
-.roadmap-header-metrics-shell__inner {
-  width: 100%;
-  height: 100%;
-  margin-inline: auto;
-  padding-inline: clamp(16px, 3vw, 32px);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  pointer-events: none;
 }
 
 .roadmap-page-toolbar__inner {
