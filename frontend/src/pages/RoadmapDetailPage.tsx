@@ -1038,6 +1038,8 @@ function RoadmapGraph({
             key={slot.id}
             ref={registerSlot(slot.id)}
             className={`${roadmapSlotBaseClassName} roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
+              slot.kind === 'official-branch' ? '[align-self:stretch]' : ''
+            } ${
               slot.kind === 'suggested-branch'
                 ? '[&_.node-box]:border-[3px]! [&_.node-box]:border-dashed! [&_.node-box]:border-[#3b82f6]! [&_.node-box]:bg-[#eff6ff]! [&_.node-box]:text-[#1e40af] [&_.node-box]:[animation:pulse-blue_2s_infinite]'
                 : ''
