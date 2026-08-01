@@ -369,7 +369,7 @@ function App() {
           </div>
 
           <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 text-left md:grid-cols-3">
-            <div className={`${glassPanelClassName} float rounded-2xl p-6`} style={{ animationDelay: '0s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '0s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-500">
                   <i className="fab fa-hotjar" />
@@ -385,7 +385,7 @@ function App() {
               </div>
             </div>
 
-            <div className={`${glassPanelClassName} float rounded-2xl p-6`} style={{ animationDelay: '1s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '1s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-500">
                   <i className="fas fa-user-graduate" />
@@ -414,7 +414,7 @@ function App() {
               </div>
             </div>
 
-            <div className={`${glassPanelClassName} float rounded-2xl p-6`} style={{ animationDelay: '2s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '2s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-purple-500">
                   <i className="fas fa-briefcase" />
