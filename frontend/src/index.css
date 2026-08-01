@@ -1655,23 +1655,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   min-width: max-content;
 }
 
-.roadmap-edge.roadmap-edge-suggestion {
-  stroke: #3b82f6;
-  stroke-dasharray: 8 8;
-}
-
-.roadmap-edge-theme-review {
-  stroke: #ea580c;
-}
-
-.roadmap-edge-theme-advanced {
-  stroke: #4338ca;
-}
-
-.roadmap-edge-theme-suggestion {
-  stroke: #3b82f6;
-}
-
 /* ── 변경사항 노드 오버레이 ── */
 @keyframes pulse-blue {
   0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }

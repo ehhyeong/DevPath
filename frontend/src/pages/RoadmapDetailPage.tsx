@@ -904,7 +904,14 @@ const roadmapGraphClassName =
 const roadmapEdgeLayerClassName =
   'roadmap-edge-layer absolute [inset:0] z-[1] pointer-events-none overflow-visible'
 const roadmapEdgeBaseClassName =
-  'roadmap-edge [fill:none] [stroke:var(--roadmap-line-color)] [stroke-width:3] [stroke-linecap:round] [stroke-linejoin:round]'
+  'roadmap-edge [fill:none] [stroke-width:3] [stroke-linecap:round] [stroke-linejoin:round]'
+const roadmapEdgeStrokeClassName: Record<EdgeTheme, string> = {
+  default: '[stroke:var(--roadmap-line-color)]',
+  review: '[stroke:#ea580c]',
+  advanced: '[stroke:#4338ca]',
+  suggestion: '[stroke:#3b82f6]',
+}
+const roadmapSuggestionEdgeClassName = '[stroke:#3b82f6] [stroke-dasharray:8_8]'
 const roadmapSlotBaseClassName =
   'roadmap-slot relative z-[5] flex justify-center w-full [transform:translateY(var(--slot-offset-y,_0))]'
 
@@ -1027,7 +1034,11 @@ function RoadmapGraph({
               <path
                 key={edge.id}
                 d={path}
-                className={`${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme}`}
+                className={`${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme} ${
+                  edge.kind === 'suggestion'
+                    ? roadmapSuggestionEdgeClassName
+                    : roadmapEdgeStrokeClassName[edge.theme]
+                }`}
               />
             )
           })}
