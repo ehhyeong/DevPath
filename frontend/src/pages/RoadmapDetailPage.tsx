@@ -1697,7 +1697,7 @@ function RoadmapHeaderMetrics({
         <i className="fas fa-history" />
         <span>{'\uBCC0\uACBD\uC0AC\uD56D'}</span>
         {changesCount > 0 ? (
-          <span className="badge-pulse absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
+          <span className="[animation:badge-pulse_2s_infinite] absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
             {changesCount}
           </span>
         ) : null}
@@ -1848,7 +1848,7 @@ function RoadmapPageToolbar({
             <i className="fas fa-history" />
             <span>{'\uBCC0\uACBD\uC0AC\uD56D'}</span>
             {changesCount > 0 ? (
-              <span className="badge-pulse absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
+              <span className="[animation:badge-pulse_2s_infinite] absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
                 {changesCount}
               </span>
             ) : null}
@@ -2410,7 +2410,7 @@ export default function RoadmapDetailPage() {
               <i className="fas fa-history" />
               <span>변경사항</span>
               {changes.length > 0 && (
-                <span className="badge-pulse absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
+                <span className="[animation:badge-pulse_2s_infinite] absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
                   {changes.length}
                 </span>
               )}
