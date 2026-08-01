@@ -4381,7 +4381,7 @@ export default function LearningPlayerApp() {
               </div>
               <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-5xl">수고하셨습니다!</h1>
               <p className="mx-auto max-w-2xl text-lg leading-relaxed text-gray-400">
-                <span className="completion-proof-text font-bold text-white">"{completionProofCard.title}"</span> 강의를 성공적으로 완료했습니다.
+                <span className="font-bold text-white [overflow-wrap:anywhere] [word-break:keep-all]">"{completionProofCard.title}"</span> 강의를 성공적으로 완료했습니다.
               </p>
             </div>
 
@@ -4400,7 +4400,7 @@ export default function LearningPlayerApp() {
                       </div>
                       <i className={`${completionTheme.iconClassName} absolute bottom-[-10px] right-[-10px] text-8xl text-white/10`} />
                       <div className="relative z-10 text-left text-white">
-                        <h3 className="completion-proof-front-title mb-1 text-2xl font-semibold tracking-tight">{completionProofCard.frontTitle}</h3>
+                        <h3 className="mb-1 overflow-hidden text-2xl leading-[1.15] font-semibold tracking-tight [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [word-break:keep-all]">{completionProofCard.frontTitle}</h3>
                         <p className="flex items-center gap-1 text-xs font-medium text-white/80">
                           <i className="fas fa-check-circle text-[#00C471]" /> DevPath Verified
                         </p>
@@ -4430,8 +4430,8 @@ export default function LearningPlayerApp() {
 
                   <div className="absolute top-[0] left-[0] flex h-full w-full flex-col overflow-hidden rounded-[1rem] bg-gray-900 p-6 text-left text-white [-webkit-backface-visibility:hidden] [backface-visibility:hidden] [transform:rotateY(180deg)]">
                     <div className="mb-4 border-b border-gray-700 pb-4">
-                      <h3 className="completion-proof-back-title text-lg font-bold text-white">{completionProofCard.title}</h3>
-                      <p className="completion-proof-description mt-1 text-xs leading-relaxed text-gray-400">{completionProofCard.description}</p>
+                      <h3 className="overflow-hidden text-lg leading-[1.25] font-bold text-white [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [word-break:keep-all]">{completionProofCard.title}</h3>
+                      <p className="mt-1 overflow-hidden text-xs leading-relaxed text-gray-400 [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:4] [word-break:keep-all]">{completionProofCard.description}</p>
                     </div>
                     <div className="flex-1">
                       <p className={`mb-3 text-[10px] font-bold uppercase tracking-wider ${completionTheme.markerClassName}`}>
@@ -4441,14 +4441,14 @@ export default function LearningPlayerApp() {
                         {completionProofCard.verifiedSkills.map((item) => (
                           <li key={`${completionProofCard.title}-${item}`} className="flex items-start gap-2">
                             <i className="fas fa-check mt-0.5 text-[10px] text-[#00C471]" />
-                            <span className="completion-proof-list-text">{item}</span>
+                            <span className="overflow-hidden [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [word-break:keep-all]">{item}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                     <div className="mt-5 border-t border-gray-700 pt-4">
                       <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">완료 섹션</div>
-                      <div className="completion-proof-section-title mt-2 text-sm font-bold text-white">{completionProofCard.sectionTitle}</div>
+                      <div className="mt-2 overflow-hidden text-sm font-bold text-white [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [word-break:keep-all]">{completionProofCard.sectionTitle}</div>
                     </div>
                   </div>
                 </div>

@@ -652,53 +652,6 @@ aside:hover .sidebar-text {
   font-size: 0.9em;
 }
 
-.completion-proof-text,
-.completion-proof-front-title,
-.completion-proof-back-title,
-.completion-proof-description,
-.completion-proof-list-text,
-.completion-proof-section-title {
-  overflow-wrap: anywhere;
-  word-break: keep-all;
-}
-
-.completion-proof-front-title {
-  display: -webkit-box;
-  line-height: 1.15;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-}
-
-.completion-proof-back-title {
-  display: -webkit-box;
-  line-height: 1.25;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.completion-proof-description {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  overflow: hidden;
-}
-
-.completion-proof-list-text {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.completion-proof-section-title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
 .completion-confetti-piece {
   position: absolute;
   top: -10%;
