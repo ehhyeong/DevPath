@@ -239,10 +239,6 @@ pre {
   background-color: #00c471;
 }
 
-.code-editor {
-  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-}
-
 @media (max-width: 768px) {
   .roadmap-preview-shell {
     max-width: 344px;

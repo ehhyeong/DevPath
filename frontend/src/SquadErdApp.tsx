@@ -1738,7 +1738,7 @@ export default function SquadErdApp() {
                     ref={textareaRef}
                     value={mermaidCode}
                     onChange={(event) => handleCodeChange(event.target.value)}
-                    className="erd-code-textarea code-editor h-full w-full resize-none border-none bg-[#1E1E1E] p-[4px]! [font-family:'Consolas','JetBrains_Mono',monospace]! text-[11px]! leading-[16.5px]! text-[#9CDCFE] outline-none"
+                    className="erd-code-textarea h-full w-full resize-none border-none bg-[#1E1E1E] p-[4px]! [font-family:'Consolas','JetBrains_Mono',monospace]! text-[11px]! leading-[16.5px]! text-[#9CDCFE] outline-none"
                     spellCheck={false}
                   />
                 </div>
