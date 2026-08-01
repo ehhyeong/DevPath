@@ -903,6 +903,8 @@ const roadmapGraphClassName =
   'roadmap-graph relative grid [grid-template-columns:var(--roadmap-side-node-width)_var(--roadmap-node-width)_var(--roadmap-side-node-width)] [column-gap:var(--roadmap-lane-gap)] [row-gap:var(--roadmap-row-gap)] items-center justify-items-center w-max min-w-[calc(var(--roadmap-side-node-width)*2+var(--roadmap-node-width)+var(--roadmap-lane-gap)*2)] [margin:0_auto] [padding:32px_0_72px]'
 const roadmapEdgeLayerClassName =
   'roadmap-edge-layer absolute [inset:0] z-[1] pointer-events-none overflow-visible'
+const roadmapEdgeBaseClassName =
+  'roadmap-edge [fill:none] [stroke:var(--roadmap-line-color)] [stroke-width:3] [stroke-linecap:round] [stroke-linejoin:round]'
 
 function RoadmapGraph({
   layout,
@@ -1023,7 +1025,7 @@ function RoadmapGraph({
               <path
                 key={edge.id}
                 d={path}
-                className={`roadmap-edge roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme}`}
+                className={`${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme}`}
               />
             )
           })}

@@ -1655,14 +1655,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   min-width: max-content;
 }
 
-.roadmap-edge {
-  fill: none;
-  stroke: var(--roadmap-line-color);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .roadmap-edge.roadmap-edge-suggestion {
   stroke: #3b82f6;
   stroke-dasharray: 8 8;
