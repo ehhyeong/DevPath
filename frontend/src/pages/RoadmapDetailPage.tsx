@@ -1626,6 +1626,8 @@ interface RoadmapPageToolbarProps extends RoadmapMetricsProps {
 const roadmapPageClassName = 'h-[100dvh] min-h-0 w-full overflow-hidden bg-[#f8f9fa]'
 const roadmapMainClassName =
   'roadmap-main h-[calc(100dvh-var(--roadmap-fixed-top))] max-h-[calc(100dvh-var(--roadmap-fixed-top))] min-h-0 mt-[var(--roadmap-fixed-top)] overflow-x-hidden [overflow-y:auto] bg-[#f8f9fa] [overscroll-behavior-y:contain] [scrollbar-gutter:stable]'
+const roadmapContentClassName =
+  'roadmap-content max-w-[1400px] min-h-full [margin-left:auto] [margin-right:auto] pt-[var(--roadmap-content-gap)] pb-[96px] [transition:max-width_0.3s_ease,margin_0.3s_ease,padding-left_0.3s_ease,padding-right_0.3s_ease]'
 const roadmapNodeCountWrapClassName = 'inline-flex items-stretch gap-[1px] overflow-hidden rounded-[6px] bg-[#e5e7eb] [box-shadow:0_1px_6px_rgba(0,0,0,0.04)]'
 const roadmapNodeCountCardClassName = 'flex min-w-[42px] flex-col items-center justify-center gap-[2px] [padding:5px_10px]'
 const roadmapTotalNodeCountCardClassName = '[background:linear-gradient(135deg,_#00c471_0%,_#00e887_100%)]'
@@ -2517,7 +2519,7 @@ export default function RoadmapDetailPage() {
           />
         </div>
 
-        <div className="roadmap-content relative flex flex-col items-center w-full">
+        <div className={`${roadmapContentClassName} relative flex flex-col items-center w-full`}>
 
           {/* ── 정보 아코디언 ────────────────────────────────────────────────── */}
           <div className="w-full max-w-4xl px-4 mt-8 mb-16 relative z-20">

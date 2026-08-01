@@ -1585,20 +1585,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   --roadmap-line-color: #cbd5e1;
 }
 
-.roadmap-content {
-  max-width: 1400px;
-  min-height: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding-top: var(--roadmap-content-gap);
-  padding-bottom: 96px;
-  transition:
-    max-width 0.3s ease,
-    margin 0.3s ease,
-    padding-left 0.3s ease,
-    padding-right 0.3s ease;
-}
-
 .roadmap-main.panel-open .roadmap-content {
   max-width: calc(100% - var(--changes-panel-width));
   margin-left: 0;
