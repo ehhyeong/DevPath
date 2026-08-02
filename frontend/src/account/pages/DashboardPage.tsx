@@ -392,7 +392,7 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
               </div>
               {['월', '화', '수', '목', '금', '토', '일'].map((label) => (
                 <div key={label} className="flex h-full w-full flex-col items-center justify-end gap-1 opacity-20">
-                  <div className="chart-bar h-[0%]" />
+                  <div className="chart-bar relative h-[0%] w-full overflow-hidden rounded-[6px] bg-[#f3f4f6]" />
                   <span className="text-[10px] text-gray-400">{label}</span>
                 </div>
               ))}
@@ -508,7 +508,7 @@ function DashboardEmptyReference({ displayName }: { displayName: string }) {
           <h1 className="text-2xl font-bold">.</h1>
           <p className="mt-1 text-sm">.</p>
         </div>
-        <div className="dashboard-empty-roadmap-card sticky-roadmap flex h-[600px] flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="dashboard-empty-roadmap-card sticky top-[100px] flex h-fit flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="dashboard-empty-roadmap-title flex items-center gap-2 font-bold text-gray-900">
               <i className="fas fa-map text-gray-400" /> 나의 학습 로드맵
@@ -909,8 +909,8 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                 ) : null}
                 {weeklyBars.map((bar) => (
                   <div key={bar.label} className="flex h-full w-full flex-col items-center justify-end gap-1">
-                    <div className="chart-bar" style={{ height: `${bar.height}%` }}>
-                      <div className={`chart-bar-fill h-full ${bar.tone}`} />
+                    <div className="chart-bar relative w-full overflow-hidden rounded-[6px] bg-[#f3f4f6]" style={{ height: `${bar.height}%` }}>
+                      <div className={`chart-bar-fill absolute bottom-0 left-0 h-full w-full bg-[#00c471]! [transition:height_1s_ease-out] ${bar.tone}`} />
                     </div>
                     <span className={`text-[10px] ${bar.active ? 'font-bold text-gray-900' : 'text-gray-400'}`}>
                       {bar.label}
@@ -1234,7 +1234,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
             <h1 className="text-2xl font-bold">.</h1>
             <p className="mt-1 text-sm">.</p>
           </div>
-          <div className="sticky-roadmap dashboard-populated-roadmap-card space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="dashboard-populated-roadmap-card sticky top-[100px] h-fit space-y-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
             {roadmapTitle ? (
               <>
                 <div className="flex items-center justify-between">

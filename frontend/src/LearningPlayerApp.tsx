@@ -4360,7 +4360,7 @@ export default function LearningPlayerApp() {
             {completionParticles.map((particle) => (
               <span
                 key={`${completionBurstKey}-${particle.id}`}
-                className="completion-confetti-piece"
+                className="absolute top-[-10%] rounded-[999px] opacity-[0] [animation-name:completion-confetti-fall] [animation-timing-function:ease-out] [animation-fill-mode:forwards]"
                 style={{
                   left: `${particle.left}%`,
                   width: `${particle.size}px`,
@@ -4375,23 +4375,23 @@ export default function LearningPlayerApp() {
           </div>
 
           <div className="relative z-10 w-full max-w-4xl text-center">
-            <div className="completion-fade-enter mb-10">
+            <div className="[animation:completion-fade-up_0.55s_cubic-bezier(0.16,1,0.3,1)_both] mb-10">
               <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#00C471]/30 bg-[#00C471]/20 px-3 py-1 text-sm font-semibold text-[#00C471]">
                 <i className="fas fa-crown" /> 학습 완료
               </div>
               <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-5xl">수고하셨습니다!</h1>
               <p className="mx-auto max-w-2xl text-lg leading-relaxed text-gray-400">
-                <span className="completion-proof-text font-bold text-white">"{completionProofCard.title}"</span> 강의를 성공적으로 완료했습니다.
+                <span className="font-bold text-white [overflow-wrap:anywhere] [word-break:keep-all]">"{completionProofCard.title}"</span> 강의를 성공적으로 완료했습니다.
               </p>
             </div>
 
-            <div className="mx-auto h-[450px] w-full max-w-[320px] perspective">
+            <div className="mx-auto h-[450px] w-full max-w-[320px] [perspective:1000px]">
               <div
                 className={`${completionCardFlipped ? 'flipped ' : ''}completion-card group h-full w-full cursor-pointer`}
                 onClick={() => setCompletionCardFlipped((current) => !current)}
               >
-                <div className="card-inner relative rounded-3xl shadow-[0_25px_50px_rgba(0,0,0,0.45)]">
-                  <div className="card-front flex flex-col bg-white">
+                <div className="relative h-full w-full rounded-3xl shadow-[0_25px_50px_rgba(0,0,0,0.45)] [transition:transform_0.6s] [transform-style:preserve-3d] [.flipped_&]:[transform:rotateY(180deg)]">
+                  <div className="absolute top-[0] left-[0] flex h-full w-full flex-col overflow-hidden rounded-[1rem] bg-white [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
                     <div className={`relative flex h-44 flex-col justify-between bg-gradient-to-br ${completionTheme.frontGradientClassName} p-6`}>
                       <div className="flex items-start justify-between">
                         <span className="rounded border border-white/10 bg-white/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur">
@@ -4400,7 +4400,7 @@ export default function LearningPlayerApp() {
                       </div>
                       <i className={`${completionTheme.iconClassName} absolute bottom-[-10px] right-[-10px] text-8xl text-white/10`} />
                       <div className="relative z-10 text-left text-white">
-                        <h3 className="completion-proof-front-title mb-1 text-2xl font-semibold tracking-tight">{completionProofCard.frontTitle}</h3>
+                        <h3 className="mb-1 overflow-hidden text-2xl leading-[1.15] font-semibold tracking-tight [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [word-break:keep-all]">{completionProofCard.frontTitle}</h3>
                         <p className="flex items-center gap-1 text-xs font-medium text-white/80">
                           <i className="fas fa-check-circle text-[#00C471]" /> DevPath Verified
                         </p>
@@ -4428,10 +4428,10 @@ export default function LearningPlayerApp() {
                     </div>
                   </div>
 
-                  <div className="card-back flex flex-col bg-gray-900 p-6 text-left text-white">
+                  <div className="absolute top-[0] left-[0] flex h-full w-full flex-col overflow-hidden rounded-[1rem] bg-gray-900 p-6 text-left text-white [-webkit-backface-visibility:hidden] [backface-visibility:hidden] [transform:rotateY(180deg)]">
                     <div className="mb-4 border-b border-gray-700 pb-4">
-                      <h3 className="completion-proof-back-title text-lg font-bold text-white">{completionProofCard.title}</h3>
-                      <p className="completion-proof-description mt-1 text-xs leading-relaxed text-gray-400">{completionProofCard.description}</p>
+                      <h3 className="overflow-hidden text-lg leading-[1.25] font-bold text-white [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [word-break:keep-all]">{completionProofCard.title}</h3>
+                      <p className="mt-1 overflow-hidden text-xs leading-relaxed text-gray-400 [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:4] [word-break:keep-all]">{completionProofCard.description}</p>
                     </div>
                     <div className="flex-1">
                       <p className={`mb-3 text-[10px] font-bold uppercase tracking-wider ${completionTheme.markerClassName}`}>
@@ -4441,21 +4441,21 @@ export default function LearningPlayerApp() {
                         {completionProofCard.verifiedSkills.map((item) => (
                           <li key={`${completionProofCard.title}-${item}`} className="flex items-start gap-2">
                             <i className="fas fa-check mt-0.5 text-[10px] text-[#00C471]" />
-                            <span className="completion-proof-list-text">{item}</span>
+                            <span className="overflow-hidden [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [word-break:keep-all]">{item}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                     <div className="mt-5 border-t border-gray-700 pt-4">
                       <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">완료 섹션</div>
-                      <div className="completion-proof-section-title mt-2 text-sm font-bold text-white">{completionProofCard.sectionTitle}</div>
+                      <div className="mt-2 overflow-hidden text-sm font-bold text-white [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [word-break:keep-all]">{completionProofCard.sectionTitle}</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="completion-fade-enter-delay mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div className="[animation:completion-fade-up_0.7s_cubic-bezier(0.16,1,0.3,1)_0.18s_both] mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <button
                 type="button"
                 onClick={() => { window.location.href = completionRoadmapReturnHref }}
@@ -4471,13 +4471,13 @@ export default function LearningPlayerApp() {
                 <i className="fas fa-file-signature" /> 내 증명 카드 보기
               </button>
             </div>
-            <p className="completion-fade-enter-delay mt-6 text-xs text-gray-500">
+            <p className="[animation:completion-fade-up_0.7s_cubic-bezier(0.16,1,0.3,1)_0.18s_both] mt-6 text-xs text-gray-500">
               이 완료 카드는 현재 강의 진행률과 제출된 과제 결과를 기준으로 생성됩니다.
             </p>
             <button
               type="button"
               onClick={closeCompletionOverlay}
-              className="completion-fade-enter-delay mt-6 text-xs font-bold text-gray-400 transition hover:text-white"
+              className="[animation:completion-fade-up_0.7s_cubic-bezier(0.16,1,0.3,1)_0.18s_both] mt-6 text-xs font-bold text-gray-400 transition hover:text-white"
             >
               이 화면 닫기
             </button>

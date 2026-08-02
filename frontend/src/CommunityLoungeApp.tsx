@@ -871,7 +871,7 @@ export default function CommunityLoungeApp() {
                       id="hideClosedCheckbox"
                       checked={hideClosed}
                       onChange={(event) => setHideClosed(event.target.checked)}
-                      className="w-4 h-4 text-brand focus:ring-brand rounded border-gray-300 cursor-pointer appearance-none border checked:bg-brand checked:border-brand flex items-center justify-center relative after:content-[''] after:absolute after:w-1.5 after:h-2.5 after:border-r-2 after:border-b-2 after:border-white after:rotate-45 after:-mt-0.5 checked:after:block after:hidden"
+                      className="w-4 h-4 text-brand focus:ring-brand rounded border-gray-300 cursor-pointer appearance-none border checked:bg-[#00C471] checked:border-[#00C471] flex items-center justify-center relative after:content-[''] after:absolute after:w-1.5 after:h-2.5 after:border-r-2 after:border-b-2 after:border-white after:rotate-45 after:-mt-0.5 checked:after:block after:hidden"
                     />
                     <span>모집중만 보기</span>
                   </label>
@@ -1049,8 +1049,8 @@ function FilterTab({ active, label, onClick }: { active: boolean; label: string;
   return (
     <button
       type="button"
-      className={`tab-btn px-4 py-2 rounded-lg text-sm transition whitespace-nowrap ${
-        active ? 'active font-bold text-brand' : 'font-medium text-gray-500 hover:bg-gray-50'
+      className={`tab-btn mr-[0]! whitespace-nowrap rounded-lg border-b-[2px]! [border-bottom-style:solid]! px-[1rem]! py-[0.5rem]! text-sm transition ${
+        active ? 'active border-b-[#00C471]! font-[700]! text-[#00C471]!' : 'border-b-transparent! font-[500]! text-[#6B7280]! hover:bg-gray-50'
       }`}
       onClick={onClick}
     >
@@ -1080,7 +1080,7 @@ function SquadCard({
     <article
       className={`bg-white rounded-2xl p-6 border ${
         isJoin ? 'border-brand/30' : 'border-gray-200'
-      } shadow-[0_2px_10px_rgba(0,0,0,0.02)] card-hover transition cursor-pointer relative flex flex-col group ${
+      } shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition hover:[transform:translateY(-4px)] hover:[box-shadow:0_10px_20px_rgba(0,0,0,0.05)] cursor-pointer relative flex flex-col group ${
         squad.isClosed ? 'opacity-70 grayscale-[0.3]' : ''
       }`}
       onClick={onOpen}

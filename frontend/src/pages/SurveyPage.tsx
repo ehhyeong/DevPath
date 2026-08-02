@@ -369,7 +369,7 @@ function SurveyPage() {
               {question.options.map((option, i) => (
                 <div
                   key={i}
-                  className="option-card group flex items-center justify-between rounded-lg border border-gray-200 bg-white p-5 text-left shadow-sm hover:shadow-md"
+                  className="option-card group flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-white p-5 text-left shadow-sm [transition:all_0.2s] hover:border-[#00c471] hover:bg-[#f0fdf4] hover:[box-shadow:0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] hover:[transform:translateY(-2px)]"
                   onClick={() => selectOption(option.scores)}
                 >
                   <span className="text-lg font-medium text-gray-800">{option.text}</span>
@@ -429,7 +429,7 @@ function SurveyPage() {
                     <a
                       key={key}
                       href={rid ? `/roadmap?original=${rid}` : '/roadmap-hub'}
-                      className="survey-result-card flex items-center gap-2 rounded border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm hover:bg-gray-50"
+                      className="survey-result-card flex items-center gap-2 rounded border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm [transition:all_0.2s] hover:border-[#9ca3af] hover:bg-gray-50 hover:[transform:translateY(-2px)]"
                     >
                       <i className={`fas ${data.icon} text-gray-400`} /> {data.title}
                     </a>

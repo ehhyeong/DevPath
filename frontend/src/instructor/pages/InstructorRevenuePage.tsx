@@ -224,8 +224,8 @@ export default function InstructorRevenuePage() {
 
   if (loading) {
     return (
-      <div className="instructor-revenue-page p-6">
-        <div className="instructor-revenue-content">
+      <div className="instructor-revenue-page min-h-[calc(100dvh-var(--app-header-height))]! box-border! bg-[#f3f4f6]! p-6 font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]! text-[#1f2937]!">
+        <div className="instructor-revenue-content w-[111.111111%]! origin-top-left! [transform:scale(0.9)]!">
           <LoadingCard label="정산 리포트를 불러오는 중입니다." />
         </div>
       </div>
@@ -234,8 +234,8 @@ export default function InstructorRevenuePage() {
 
   if (error || !summary) {
     return (
-      <div className="instructor-revenue-page p-6">
-        <div className="instructor-revenue-content">
+      <div className="instructor-revenue-page min-h-[calc(100dvh-var(--app-header-height))]! box-border! bg-[#f3f4f6]! p-6 font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]! text-[#1f2937]!">
+        <div className="instructor-revenue-content w-[111.111111%]! origin-top-left! [transform:scale(0.9)]!">
           <ErrorCard message={error ?? '정산 데이터를 불러오지 못했습니다.'} />
         </div>
       </div>
@@ -263,8 +263,8 @@ export default function InstructorRevenuePage() {
   const visibleTransactions = showAllTransactions ? filteredTransactions : filteredTransactions.slice(0, 6)
 
   return (
-    <div className="instructor-revenue-page p-6">
-      <div className="instructor-revenue-content mx-auto max-w-[1280px]">
+    <div className="instructor-revenue-page min-h-[calc(100dvh-var(--app-header-height))]! box-border! bg-[#f3f4f6]! p-6 font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]! text-[#1f2937]!">
+      <div className="instructor-revenue-content mx-auto w-[111.111111%]! max-w-[1280px] origin-top-left! [transform:scale(0.9)]!">
         <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900">수익 리포트</h1>

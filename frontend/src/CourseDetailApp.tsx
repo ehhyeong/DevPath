@@ -37,6 +37,10 @@ type ReviewSortKey = 'latest' | 'ratingDesc' | 'ratingAsc'
 
 const APP_HEADER_HEIGHT_PX = 64
 const STUDENT_PREVIEW_BANNER_HEIGHT_PX = 44
+const qnaInputBaseClassName = 'qna-input w-full rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white px-[12px] py-[10px] [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
+const qnaInputClassName = `${qnaInputBaseClassName} text-[14px]!`
+const qnaTextareaClassName = 'qna-textarea min-h-[140px] w-full resize-none rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white p-[12px] text-[14px]! [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
+const qnaMetaIconClassName = 'inline-flex items-center gap-[6px] text-[12px] font-[800] text-[#6b7280] [&_i]:text-[#9ca3af]'
 
 function readNumberSearchParam(name: string) {
   const value = new URLSearchParams(window.location.search).get(name)
@@ -99,6 +103,20 @@ function buildQuestionFilterClass(active: boolean) {
     active
       ? 'border-[#111827] bg-[#111827] text-white'
       : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+  }`
+}
+
+function buildQuestionBadgeClass(status: CourseQuestionStatus) {
+  return `inline-flex items-center gap-[6px] whitespace-nowrap rounded-[999px] border-[1px] border-solid px-[8px] py-[4px] text-[10px] font-[900] ${
+    status === 'answered'
+      ? 'border-[#bbf7d0] bg-[#ecfdf5] text-[#065f46] [&_i]:text-[#00c471]'
+      : 'border-[#fed7aa] bg-[#fff7ed] text-[#9a3412] [&_i]:text-[#f97316]'
+  }`
+}
+
+function buildQuestionCardClass(opened: boolean) {
+  return `qna-card cursor-pointer p-6 [transition:transform_0.15s,_box-shadow_0.15s,_border-color_0.15s,_background-color_0.15s] hover:[box-shadow:0_12px_28px_rgba(17,24,39,0.08)]! hover:[transform:translateY(-1px)] ${
+    opened ? 'hover:border-[#e5e7eb]!' : 'hover:border-[rgba(0,196,113,0.35)]!'
   }`
 }
 
@@ -796,7 +814,7 @@ export default function CourseDetailApp() {
               <div className="course-detail-hero-tags mb-2 flex flex-wrap items-center! gap-2">
                 <span className="course-detail-hero-badge inline-flex! min-h-[26px]! box-border items-center! justify-center! rounded bg-primary px-2 py-1 text-xs leading-[16px]! font-bold text-white">Best Seller</span>
                 {heroTags.map((tag) => (
-                  <span key={tag} className="job-tag inline-flex! min-h-[26px]! box-border items-center! justify-center! leading-[16px]!">
+                  <span key={tag} className="job-tag inline-flex min-h-[26px] box-border items-center justify-center rounded-[6px] border-[1px] border-solid border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.1)] px-[10px] py-[4px] text-[12px] leading-[16px] font-[600] text-[#e5e7eb]">
                     {tag}
                   </span>
                 ))}
@@ -910,7 +928,7 @@ export default function CourseDetailApp() {
                     </h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       {jobCards.map((item) => (
-                        <div key={item.key} className="job-card">
+                        <div key={item.key} className="job-card rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-[#fafafa] p-[20px] [transition:all_0.2s] hover:border-[#00c471] hover:bg-[#f0fdf4] hover:[transform:translateY(-2px)]">
                           <div className="mb-3 flex items-center gap-3">
                             <div className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold ${item.iconShellClassName}`}>
                               <i className={item.iconClassName} />
@@ -1146,7 +1164,7 @@ export default function CourseDetailApp() {
                           id="qnaSearch"
                           value={qnaSearch}
                           onChange={(event) => setQnaSearch(event.target.value)}
-                          className="course-detail-qna-search-input qna-input qna-focus h-[36px]! w-full bg-white py-0! pr-[44px]! pl-[38px]! text-[13px]! leading-[18px]! font-bold! text-gray-700 placeholder:text-[13px]! placeholder:font-bold placeholder:text-[#9ca3af]"
+                          className={`${qnaInputBaseClassName} course-detail-qna-search-input h-[36px]! py-0! pr-[44px]! pl-[38px]! text-[13px]! leading-[18px]! font-bold! text-gray-700 placeholder:text-[13px]! placeholder:font-bold placeholder:text-[#9ca3af]`}
                           placeholder="제목/내용/작성자 키워드 검색"
                         />
                       </div>
@@ -1175,13 +1193,13 @@ export default function CourseDetailApp() {
                     return (
                       <div
                         key={question.id}
-                        className={`qna-card qna-card-item p-6 ${opened ? 'open' : ''}`}
+                        className={buildQuestionCardClass(opened)}
                         onClick={() => handleToggleQuestion(question.id)}
                       >
                         <div className="mb-3 flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <div className="mb-2 flex items-center gap-2">
-                              <span className={`qna-badge ${question.status === 'answered' ? 'answered' : 'pending'}`}>
+                              <span className={buildQuestionBadgeClass(question.status)}>
                                 <i className={`fas ${question.status === 'answered' ? 'fa-circle-check' : 'fa-circle-question'}`} />
                                 {buildQuestionStatusLabel(question.status)}
                               </span>
@@ -1196,15 +1214,15 @@ export default function CourseDetailApp() {
 
                         <div className="mt-4 flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <span className="qna-meta-icon"><i className="fas fa-eye" /><span className="qna-views">{question.views}</span></span>
-                            <span className="qna-meta-icon"><i className="fas fa-comment-dots" /><span className="qna-comments">{buildQuestionCommentCount(question)}</span></span>
+                            <span className={qnaMetaIconClassName}><i className="fas fa-eye" /><span className="qna-views">{question.views}</span></span>
+                            <span className={qnaMetaIconClassName}><i className="fas fa-comment-dots" /><span className="qna-comments">{buildQuestionCommentCount(question)}</span></span>
                           </div>
                           <span className="text-xs font-extrabold text-gray-400">
                             <i className={`fas qna-chevron ${opened ? 'fa-chevron-up' : 'fa-chevron-down'}`} />
                           </span>
                         </div>
 
-                        <div className="qna-detail mt-4">
+                        <div className={`mt-4 overflow-hidden [transition:max-height_0.28s_ease] ${opened ? 'max-h-[520px]' : 'max-h-0'}`}>
                           <div className="border-t border-gray-100 pt-4">
                             <div className="mb-3 text-xs font-extrabold text-gray-500">
                               <i className="fas fa-comments mr-1 text-gray-400" /> 댓글
@@ -1228,7 +1246,7 @@ export default function CourseDetailApp() {
                               <input
                                 value={commentDrafts[question.id] ?? ''}
                                 onChange={(event) => setCommentDrafts((current) => ({ ...current, [question.id]: event.target.value }))}
-                                className="qna-input qna-focus"
+                                className={qnaInputClassName}
                                 placeholder="댓글을 입력하세요"
                               />
                               <button
@@ -1271,7 +1289,7 @@ export default function CourseDetailApp() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={() => setEnrollModalOpen(false)}
           />
-          <div className="modal-animate relative mx-4 w-full max-w-[380px] overflow-hidden rounded-2xl bg-white px-8 py-10 shadow-2xl">
+          <div className="[animation:popIn_0.2s_cubic-bezier(0.16,1,0.3,1)_forwards] relative mx-4 w-full max-w-[380px] overflow-hidden rounded-2xl bg-white px-8 py-10 shadow-2xl">
             <div className="mb-8 flex justify-center">
               <div className="flex h-[72px] w-[72px] animate-bounce items-center justify-center rounded-full bg-green-50 duration-1000">
                 <svg className="h-10 w-10 text-brand" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1333,7 +1351,7 @@ export default function CourseDetailApp() {
             aria-label="공지 닫기"
             onClick={() => setSelectedNews(null)}
           />
-          <div className="modal-animate relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
+          <div className="[animation:popIn_0.2s_cubic-bezier(0.16,1,0.3,1)_forwards] relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
               <div className="min-w-0">
                 <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -1384,15 +1402,15 @@ export default function CourseDetailApp() {
 
       {askModalOpen ? (
         <div
-          className="qna-modal-backdrop show"
+          className="qna-modal-backdrop show fixed inset-0 z-[2500] flex items-center justify-center bg-[rgba(17,24,39,0.55)] p-[16px]"
           id="askModal"
           onClick={(event) => {
             if (event.target === event.currentTarget) setAskModalOpen(false)
           }}
         >
-          <div className="qna-modal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="qna-modal-header">
-              <div className="qna-modal-title"><i className="fas fa-pen-to-square text-primary" /> 새 질문 작성</div>
+          <div className="qna-modal w-[min(680px,96vw)] overflow-hidden rounded-[18px] border-[1px] border-solid border-[#e5e7eb] bg-white [box-shadow:0_24px_72px_rgba(17,24,39,0.18)]" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="qna-modal-header flex items-center justify-between bg-white px-[16px] py-[14px] [border-bottom:1px_solid_#f3f4f6]">
+              <div className="qna-modal-title flex items-center gap-[8px] text-[14px] font-[900] text-[#111827]"><i className="fas fa-pen-to-square text-primary" /> 새 질문 작성</div>
               <button
                 type="button"
                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-50"
@@ -1402,7 +1420,7 @@ export default function CourseDetailApp() {
               </button>
             </div>
 
-            <div className="qna-modal-body">
+            <div className="qna-modal-body p-[16px]">
               <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-xs font-bold text-gray-700">제목</label>
@@ -1410,7 +1428,7 @@ export default function CourseDetailApp() {
                     id="qnaTitle"
                     value={questionDraft.title}
                     onChange={(event) => setQuestionDraft((current) => ({ ...current, title: event.target.value }))}
-                    className="qna-input qna-focus"
+                    className={qnaInputClassName}
                     placeholder="예: 클래스와 프로세스 차이가 궁금합니다"
                   />
                 </div>
@@ -1420,7 +1438,7 @@ export default function CourseDetailApp() {
                     id="qnaTag"
                     value={questionDraft.tag}
                     onChange={(event) => setQuestionDraft((current) => ({ ...current, tag: event.target.value }))}
-                    className="qna-input qna-focus"
+                    className={qnaInputClassName}
                     placeholder="예: Unit 3 / 12:40 / 상속"
                   />
                 </div>
@@ -1433,7 +1451,7 @@ export default function CourseDetailApp() {
                   maxLength={1000}
                   value={questionDraft.body}
                   onChange={(event) => setQuestionDraft((current) => ({ ...current, body: event.target.value }))}
-                  className="qna-textarea qna-focus"
+                  className={qnaTextareaClassName}
                   placeholder="질문 내용을 자세하게 적어주세요."
                 />
               </div>
@@ -1446,7 +1464,7 @@ export default function CourseDetailApp() {
               </div>
             </div>
 
-            <div className="qna-modal-footer">
+            <div className="qna-modal-footer flex justify-end gap-[8px] bg-[#f9fafb] px-[16px] py-[12px] [border-top:1px_solid_#f3f4f6]">
               <button
                 type="button"
                 className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-50"

@@ -84,33 +84,38 @@ function isNodeReadyToClear(node: RoadmapNodeItem) {
   return node.readyToClear === true
 }
 
+const roadmapNodeBoxClassName =
+  'node-box relative z-[20] flex w-[var(--roadmap-node-width)] cursor-pointer flex-col justify-center gap-[6px] rounded-[8px] border-[2px] border-solid border-[#334155] bg-[#fff] [padding:14px_20px] text-left [font-size:0.95rem] [font-weight:700] [box-shadow:0_4px_6px_-1px_rgba(0,0,0,0.05)] [transition:all_0.2s_cubic-bezier(0.4,0,0.2,1)] hover:[transform:translateY(-2px)] hover:border-[#00c471] hover:[box-shadow:0_10px_15px_-3px_rgba(0,0,0,0.1)]'
+
 function getNodeBoxClass(node: RoadmapNodeItem, change?: RecommendationChange): string {
   if (change) {
     if (change.nodeChangeType === 'ADD') {
-      return 'node-box node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]'
+      return `${roadmapNodeBoxClassName} node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]`
     }
     if (change.nodeChangeType === 'MODIFY') {
-      return 'node-box node-change-modify border-[3px]! border-dashed! border-[#f59e0b]! bg-[#fef3c7]! [animation:pulse-orange_2s_infinite]'
+      return `${roadmapNodeBoxClassName} node-change-modify border-[3px]! border-dashed! border-[#f59e0b]! bg-[#fef3c7]! [animation:pulse-orange_2s_infinite]`
     }
     if (change.nodeChangeType === 'DELETE') {
-      return 'node-box node-change-delete border-[3px]! border-dashed! border-[#ef4444]! bg-[#fee2e2]! opacity-[0.6] [animation:pulse-red_2s_infinite]'
+      return `${roadmapNodeBoxClassName} node-change-delete border-[3px]! border-dashed! border-[#ef4444]! bg-[#fee2e2]! opacity-[0.6] [animation:pulse-red_2s_infinite]`
     }
     if (change.nodeChangeType === 'REORDER') {
-      return 'node-box node-change-reorder border-[3px]! border-dashed! border-[#6366f1]! bg-[#eef2ff]! [animation:pulse-indigo_2s_infinite]'
+      return `${roadmapNodeBoxClassName} node-change-reorder border-[3px]! border-dashed! border-[#6366f1]! bg-[#eef2ff]! [animation:pulse-indigo_2s_infinite]`
     }
   }
-  if (node.status === 'COMPLETED') return 'node-box status-done'
-  if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return 'node-box status-active'
-  if (node.status === 'LOCKED') return 'node-box status-locked'
-  return 'node-box'  // PENDING/NOT_STARTED: 기본 스타일 (클릭 가능)
+  if (node.status === 'COMPLETED') return `${roadmapNodeBoxClassName} status-done bg-[#f0fdf4]! border-[#00c471]! text-[#166534]`
+  if (node.status === 'IN_PROGRESS' || isNodeReadyToClear(node)) return `${roadmapNodeBoxClassName} status-active bg-[#fefce8]! border-[#eab308]! text-[#854d0e]`
+  if (node.status === 'LOCKED') return `${roadmapNodeBoxClassName} bg-[#f1f5f9]! border-[#cbd5e1]! text-[#94a3b8] hover:[transform:none]! hover:[box-shadow:none]! hover:border-[#cbd5e1]!`
+  return roadmapNodeBoxClassName  // PENDING/NOT_STARTED: 기본 스타일 (클릭 가능)
 }
 
+const changeItemClassName = 'change-item mb-[8px] cursor-pointer rounded-[8px] border-[1px] border-solid border-[#e2e8f0] bg-[#fff] p-[12px] hover:bg-[#f8fafc]'
+
 function getChangeItemClass(type?: ChangeType | null) {
-  if (type === 'ADD')    return 'change-item new'
-  if (type === 'MODIFY') return 'change-item modified'
-  if (type === 'DELETE') return 'change-item delete'
-  if (type === 'REORDER') return 'change-item reorder'
-  return 'change-item'
+  if (type === 'ADD')    return `${changeItemClassName} new border-l-[#3b82f6]`
+  if (type === 'MODIFY') return `${changeItemClassName} modified border-l-[#f59e0b]`
+  if (type === 'DELETE') return `${changeItemClassName} delete border-l-[#ef4444]`
+  if (type === 'REORDER') return `${changeItemClassName} reorder border-l-[#6366f1]`
+  return changeItemClassName
 }
 
 function changeBadgeStyle(type?: ChangeType | null): CSSProperties {
@@ -204,12 +209,15 @@ interface ProofCardBadgeProps {
   card: ProofCardSummary
 }
 
+const roadmapProofCardBadgeClassName =
+  'absolute top-[-10px] left-[10px] z-[30] inline-flex max-w-[calc(100%-72px)] cursor-pointer items-center gap-[4px] rounded-[99px] border-[1px] border-solid border-[#00c471] bg-white [padding:2px_8px] [font-size:0.7rem] font-[800] text-[#00c471] [box-shadow:0_2px_4px_rgba(0,0,0,0.1)] [transition:transform_0.2s] hover:[transform:translateY(-1px)]'
+
 // Proof 카드를 노드 내부 왼쪽 위(필수 배지와 동일 높이)에 출력해 옆 브랜치 노드와의 겹침을 방지한다.
 function ProofCardBadge({ card }: ProofCardBadgeProps) {
   return (
-    <div className="proof-card-badge" title={card.title} onClick={(e) => e.stopPropagation()}>
-      <i className="fas fa-medal" />
-      <span className="proof-card-badge-text">{card.title}</span>
+    <div className={roadmapProofCardBadgeClassName} title={card.title} onClick={(e) => e.stopPropagation()}>
+      <i className="fas fa-medal flex-[0_0_auto] text-[#f59e0b]" />
+      <span className="overflow-hidden text-ellipsis whitespace-nowrap">{card.title}</span>
     </div>
   )
 }
@@ -640,6 +648,15 @@ function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationCha
   return { slots, edges, rowCount }
 }
 
+const roadmapRuleBadgeClassName =
+  'absolute top-[-10px] right-[10px] [font-size:0.7rem] [padding:2px_8px] [border-radius:99px] [font-weight:800] [border:1px_solid] z-[30] [box-shadow:0_2px_4px_rgba(0,0,0,0.1)]'
+const roadmapNodeHeaderClassName = 'flex w-full min-w-0 items-center justify-between gap-[10px]'
+const roadmapNodeTitleGroupClassName = 'flex min-w-0 flex-[1_1_auto] items-center gap-[8px] [font-size:1.05rem] [&_i]:flex-[0_0_auto]'
+const roadmapNodeTitleTextClassName = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap'
+const roadmapNodeDescriptionClassName = 'mt-[4px] whitespace-normal [overflow-wrap:anywhere] [font-size:0.75rem] leading-[1.4] [font-weight:500] opacity-[0.7]'
+const roadmapNodeMetaClassName = 'ml-auto flex flex-[0_0_auto] gap-[4px] whitespace-nowrap'
+const roadmapNodeMetaTagClassName = 'inline-flex flex-[0_0_auto] items-center whitespace-nowrap bg-[rgba(0,0,0,0.06)] [padding:2px_8px] rounded-[4px] [font-size:0.7rem] [font-weight:normal] leading-[1.2]'
+
 interface RoadmapNodeCardProps {
   node: RoadmapNodeItem
   proofCard?: ProofCardSummary
@@ -670,7 +687,7 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
         <ProofCardBadge card={proofCard} />
       )}
       <div
-        className="rule-badge"
+        className={roadmapRuleBadgeClassName}
         style={{
           background: visibleBadge.background,
           color: visibleBadge.color,
@@ -679,8 +696,8 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
       >
         {visibleBadge.label}
       </div>
-      <div className="node-header">
-        <div className="node-title-group">
+      <div className={roadmapNodeHeaderClassName}>
+        <div className={roadmapNodeTitleGroupClassName}>
           {node.status === 'COMPLETED' && (
             <i className="fas fa-check-circle" style={{ color: '#00c471' }} />
           )}
@@ -696,30 +713,30 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
           {isPendingNodeStatus(node.status) && !readyToClear && (
             <i className="fas fa-circle" style={{ color: '#cbd5e1' }} />
           )}
-          <span className="node-title-text" title={node.title}>{node.title}</span>
+          <span className={roadmapNodeTitleTextClassName} title={node.title}>{node.title}</span>
         </div>
         {node.status === 'IN_PROGRESS' && (
-          <div className="node-meta">
-            <span className="meta-tag">진행중</span>
+          <div className={roadmapNodeMetaClassName}>
+            <span className={roadmapNodeMetaTagClassName}>진행중</span>
           </div>
         )}
         {readyToClear && node.status !== 'IN_PROGRESS' && (
-          <div className="node-meta">
-            <span className="meta-tag">완료가능</span>
+          <div className={roadmapNodeMetaClassName}>
+            <span className={roadmapNodeMetaTagClassName}>완료가능</span>
           </div>
         )}
         {isPendingNodeStatus(node.status) && !readyToClear && !node.deferred && (
-          <div className="node-meta">
-            <span className="meta-tag">대기중</span>
+          <div className={roadmapNodeMetaClassName}>
+            <span className={roadmapNodeMetaTagClassName}>대기중</span>
           </div>
         )}
         {node.deferred && node.status !== 'COMPLETED' && (
-          <div className="node-meta">
-            <span className="meta-tag">스킵</span>
+          <div className={roadmapNodeMetaClassName}>
+            <span className={roadmapNodeMetaTagClassName}>스킵</span>
           </div>
         )}
       </div>
-      {node.content && <div className="node-desc">{node.content}</div>}
+      {node.content && <div className={roadmapNodeDescriptionClassName}>{node.content}</div>}
       {node.requiredTags && node.requiredTags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {node.requiredTags.map((tag) => {
@@ -741,16 +758,16 @@ function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }:
       )}
       {node.status !== 'COMPLETED' && node.status !== 'LOCKED'
         && (node.status === 'IN_PROGRESS' || readyToClear || progressPercent > 0) && (
-        <div className="progress-container">
-          <div className="node-progress-bg">
+        <div className="progress-container mt-[6px] flex w-full items-center gap-[8px]">
+          <div className="node-progress-bg h-[6px] overflow-hidden rounded-[99px] bg-[rgba(0,0,0,0.1)] [flex:1_1_0%]">
             <div
-              className="node-progress-bar"
+              className="node-progress-bar h-full rounded-[99px] bg-[#eab308]"
               style={{
                 width: `${progressPercent}%`,
               }}
             />
           </div>
-          <span className="progress-pct">
+          <span className="progress-pct whitespace-nowrap text-[#b45309] [font-size:10px] [font-weight:800]">
             {progressPercent}%
           </span>
         </div>
@@ -772,12 +789,12 @@ function GhostAddCard({ change, processing, badge, onApply, onIgnore }: GhostAdd
 
   return (
     <div
-      className="node-box node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]"
+      className={`${roadmapNodeBoxClassName} node-change-add border-[3px]! border-dashed! border-[#3b82f6]! bg-[#eff6ff]! [animation:pulse-blue_2s_infinite]`}
       style={{ color: '#1e40af' }}
     >
       <ChangeLabel change={change} />
       <div
-        className="rule-badge"
+        className={roadmapRuleBadgeClassName}
         style={{
           background: visibleBadge.background,
           color: visibleBadge.color,
@@ -786,13 +803,13 @@ function GhostAddCard({ change, processing, badge, onApply, onIgnore }: GhostAdd
       >
         {visibleBadge.label}
       </div>
-      <div className="node-header">
-        <div className="node-title-group">
+      <div className={roadmapNodeHeaderClassName}>
+        <div className={roadmapNodeTitleGroupClassName}>
           <i className="fas fa-plus-circle text-blue-500" />
-          <span className="node-title-text" title={change.nodeTitle}>{change.nodeTitle}</span>
+          <span className={roadmapNodeTitleTextClassName} title={change.nodeTitle}>{change.nodeTitle}</span>
         </div>
       </div>
-      <div className="node-desc">{change.contextSummary || change.reason}</div>
+      <div className={roadmapNodeDescriptionClassName}>{change.contextSummary || change.reason}</div>
       <div className="mt-2 flex gap-1.5">
         <button
           disabled={processing}
@@ -879,6 +896,24 @@ interface RoadmapGraphProps {
   onApply: (id: number) => void
   onIgnore: (id: number) => void
 }
+
+const roadmapCanvasScrollClassName =
+  'roadmap-canvas-scroll w-full [overflow-x:auto] [overflow-y:visible] [padding:8px_16px_32px]'
+const roadmapGraphClassName =
+  'roadmap-graph relative grid [grid-template-columns:var(--roadmap-side-node-width)_var(--roadmap-node-width)_var(--roadmap-side-node-width)] [column-gap:var(--roadmap-lane-gap)] [row-gap:var(--roadmap-row-gap)] items-center justify-items-center w-max min-w-[calc(var(--roadmap-side-node-width)*2+var(--roadmap-node-width)+var(--roadmap-lane-gap)*2)] [margin:0_auto] [padding:32px_0_72px]'
+const roadmapEdgeLayerClassName =
+  'roadmap-edge-layer absolute [inset:0] z-[1] pointer-events-none overflow-visible'
+const roadmapEdgeBaseClassName =
+  'roadmap-edge [fill:none] [stroke-width:3] [stroke-linecap:round] [stroke-linejoin:round]'
+const roadmapEdgeStrokeClassName: Record<EdgeTheme, string> = {
+  default: '[stroke:var(--roadmap-line-color)]',
+  review: '[stroke:#ea580c]',
+  advanced: '[stroke:#4338ca]',
+  suggestion: '[stroke:#3b82f6]',
+}
+const roadmapSuggestionEdgeClassName = '[stroke:#3b82f6] [stroke-dasharray:8_8]'
+const roadmapSlotBaseClassName =
+  'roadmap-slot relative z-[5] flex justify-center w-full [transform:translateY(var(--slot-offset-y,_0))]'
 
 function RoadmapGraph({
   layout,
@@ -977,16 +1012,16 @@ function RoadmapGraph({
   }
 
   return (
-    <div className="roadmap-canvas-scroll">
+    <div className={roadmapCanvasScrollClassName}>
       <div
         ref={graphRef}
-        className="roadmap-graph"
+        className={roadmapGraphClassName}
         style={{
           gridTemplateRows: `repeat(${Math.max(layout.rowCount, 1)}, minmax(var(--roadmap-row-min-height), auto))`,
         }}
       >
         <svg
-          className="roadmap-edge-layer"
+          className={roadmapEdgeLayerClassName}
           width={graphSize.width}
           height={graphSize.height}
           viewBox={`0 0 ${graphSize.width} ${graphSize.height}`}
@@ -999,7 +1034,11 @@ function RoadmapGraph({
               <path
                 key={edge.id}
                 d={path}
-                className={`roadmap-edge roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme}`}
+                className={`${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme} ${
+                  edge.kind === 'suggestion'
+                    ? roadmapSuggestionEdgeClassName
+                    : roadmapEdgeStrokeClassName[edge.theme]
+                }`}
               />
             )
           })}
@@ -1009,7 +1048,26 @@ function RoadmapGraph({
           <div
             key={slot.id}
             ref={registerSlot(slot.id)}
-            className={`roadmap-slot roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
+            className={`${roadmapSlotBaseClassName} roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
+              slot.kind === 'official-branch' ? '[align-self:stretch]' : ''
+            } ${
+              slot.kind === 'official-branch' ||
+              slot.kind === 'applied-branch' ||
+              slot.kind === 'suggested-branch' ||
+              (slot.kind === 'ghost-add' && (slot.lane === 'side-left' || slot.lane === 'side-right'))
+                ? '[&_.node-box]:[width:var(--roadmap-side-node-width)]'
+                : ''
+            } ${
+              (slot.kind === 'official-branch' && slot.lane === 'right') ||
+              ((slot.kind === 'applied-branch' || slot.kind === 'suggested-branch') &&
+                (slot.lane === 'right' || slot.lane === 'side-right'))
+                ? '[justify-content:flex-start]!'
+                : (slot.kind === 'official-branch' && slot.lane === 'left') ||
+                    ((slot.kind === 'applied-branch' || slot.kind === 'suggested-branch') &&
+                      (slot.lane === 'left' || slot.lane === 'side-left'))
+                  ? '[justify-content:flex-end]!'
+                  : ''
+            } ${
               slot.kind === 'suggested-branch'
                 ? '[&_.node-box]:border-[3px]! [&_.node-box]:border-dashed! [&_.node-box]:border-[#3b82f6]! [&_.node-box]:bg-[#eff6ff]! [&_.node-box]:text-[#1e40af] [&_.node-box]:[animation:pulse-blue_2s_infinite]'
                 : ''
@@ -1178,8 +1236,13 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
 
   return (
     <>
-      <div className="drawer-overlay" onClick={onClose} />
-      <aside className={`side-drawer${node ? ' open' : ''}`}>
+      <div
+        className="drawer-overlay fixed bottom-[0] left-[0] right-[0] top-[var(--roadmap-fixed-top)] z-[150] bg-[rgba(0,0,0,0.3)] [backdrop-filter:blur(2px)]"
+        onClick={onClose}
+      />
+      <aside
+        className={`side-drawer fixed right-[0] top-[var(--roadmap-fixed-top)] z-[200] flex h-[calc(100dvh-var(--roadmap-fixed-top))] w-[min(500px,100vw)] flex-col border-l-[1px] border-solid border-[#e5e7eb] bg-[#fff] [box-shadow:-4px_0_32px_rgba(0,0,0,0.12)] [transition:transform_0.3s_ease] ${node ? 'open [transform:translateX(0)]' : '[transform:translateX(100%)]'}`}
+      >
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-start bg-gray-50 shrink-0">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2">
@@ -1201,57 +1264,57 @@ function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClos
           </button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-          <div className="node-detail-copy">
+          <div className="mb-[34px] text-[#374151] [font-size:0.9rem] [font-weight:500] [line-height:1.9] [&_p+p]:mt-[14px]">
             {descriptionParagraphs.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
 
-          <section className="node-detail-section">
-            <h3 className="node-detail-section-title">반드시 알아야 할 개념</h3>
+          <section className="mb-[34px]">
+            <h3 className="mb-[12px] text-[#374151] [font-size:0.92rem] [font-weight:800]">반드시 알아야 할 개념</h3>
             {concepts.length > 0 ? (
-              <ul className="node-essential-list">
+              <ul className="m-[0] flex list-none flex-col gap-[10px] p-[0] text-[#4b5563] [font-size:0.9rem] [line-height:1.8]">
                 {concepts.map((concept) => (
-                  <li key={`${concept.title}-${concept.description ?? ''}`} className="node-essential-item">
-                    <span className="node-essential-name">{concept.title}</span>
+                  <li key={`${concept.title}-${concept.description ?? ''}`} className="relative pl-[14px] [overflow-wrap:anywhere] before:absolute before:left-[0] before:text-[#6b7280] before:content-['-'] before:[font-weight:700]">
+                    <span className="text-[#374151] [font-weight:800]">{concept.title}</span>
                     {concept.description && (
-                      <span className="node-essential-description">: {concept.description}</span>
+                      <span className="text-[#4b5563] [font-weight:500]">: {concept.description}</span>
                     )}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="node-empty-text">관리자에서 핵심 개념을 등록하면 여기에 표시됩니다.</p>
+              <p className="node-empty-text text-[#9ca3af] [font-size:0.86rem] [font-weight:600] [line-height:1.7] [padding:14px_0]">관리자에서 핵심 개념을 등록하면 여기에 표시됩니다.</p>
             )}
           </section>
 
-          <section className="node-detail-section">
-            <h3 className="node-resource-heading">
-              <i className="fas fa-heart" />
+          <section className="mb-[34px]">
+            <h3 className="mb-[8px] flex items-center gap-[10px] border-b-[1px] border-solid border-[#edf2f7] pb-[12px] text-[#00a862] [font-size:0.92rem] [font-weight:800]">
+              <i className="fas fa-heart text-[#00c471]" />
               추천 무료 자료
             </h3>
             {resources.length > 0 ? (
-              <div className="node-resource-list">
+              <div className="flex flex-col">
                 {resources.map((resource) => (
                   <a
                     key={resource.resourceId}
                     href={resource.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="node-resource-row"
+                    className="group flex items-start justify-between gap-[14px] border-b-[1px] border-solid border-[#edf2f7] [padding:13px_6px_14px] [color:inherit] no-underline [transition:background-color_0.15s_ease,color_0.15s_ease] hover:bg-[#f7fffb]"
                   >
-                    <div className="node-resource-main">
-                      <span className="node-resource-title">{resource.title}</span>
+                    <div className="min-w-[0]">
+                      <span className="text-[#374151] [font-size:0.9rem] [font-weight:700] [line-height:1.5] underline underline-offset-[3px] group-hover:text-[#008f55]">{resource.title}</span>
                       {resource.description && (
-                        <p className="node-resource-description">{resource.description}</p>
+                        <p className="mt-[5px] text-[#6b7280] [font-size:0.78rem] [font-weight:500] [line-height:1.55]">{resource.description}</p>
                       )}
                     </div>
-                    <span className="node-resource-badge">{nodeResourceSourceLabel(resource.sourceType)}</span>
+                    <span className="shrink-0 rounded-[4px] bg-[#e5e7eb] [padding:5px_7px] text-[#6b7280] [font-size:0.7rem] [font-weight:800] [line-height:1]">{nodeResourceSourceLabel(resource.sourceType)}</span>
                   </a>
                 ))}
               </div>
             ) : (
-              <p className="node-empty-text">추천 자료 준비 중입니다.</p>
+              <p className="node-empty-text text-[#9ca3af] [font-size:0.86rem] [font-weight:600] [line-height:1.7] [padding:14px_0]">추천 자료 준비 중입니다.</p>
             )}
           </section>
         </div>
@@ -1391,6 +1454,10 @@ interface ChangesPanelProps {
 
 type FilterType = 'all' | 'ADD' | 'MODIFY' | 'DELETE' | 'REORDER'
 
+const changesPanelTabClassName = 'tab-btn flex-[1_1_0] min-w-0 m-0! [padding:12px_0]! [font-weight:bold]! [font-size:14px]! border-b-[2px]! [border-bottom-style:solid]!'
+const changesPanelActiveTabClassName = 'active border-b-[#00c471]! bg-[#f0fdf4] text-[#00c471]!'
+const changesPanelInactiveTabClassName = 'border-b-transparent! text-[#64748b]!'
+
 function ChangesPanel({
   open,
   onClose,
@@ -1409,7 +1476,10 @@ function ChangesPanel({
     : pendingChanges.filter((c) => c.nodeChangeType === filter)
 
   return (
-    <div id="changesPanel" className={`changes-panel${open ? ' open' : ''}`}>
+    <div
+      id="changesPanel"
+      className={`changes-panel fixed bottom-[0] right-[0] top-[var(--roadmap-fixed-top)] z-[100] flex w-[var(--changes-panel-width)] flex-col border-l-[1px] border-solid border-[#e5e7eb] bg-[#fff] [box-shadow:-4px_0_24px_rgba(0,0,0,0.08)] [transition:transform_0.3s_ease] ${open ? 'open [transform:translateX(0)]' : '[transform:translateX(100%)]'}`}
+    >
       {/* 패널 헤더 */}
       <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 bg-gray-50">
         <h2 className="font-bold text-lg text-gray-900">로드맵 관리</h2>
@@ -1421,13 +1491,13 @@ function ChangesPanel({
       {/* 탭 */}
       <div className="flex border-b border-gray-100 bg-white">
         <button
-          className={`tab-btn${tab === 'pending' ? ' active' : ''}`}
+          className={`${changesPanelTabClassName} ${tab === 'pending' ? changesPanelActiveTabClassName : changesPanelInactiveTabClassName}`}
           onClick={() => setTab('pending')}
         >
           대기중 ({pendingChanges.length})
         </button>
         <button
-          className={`tab-btn${tab === 'history' ? ' active' : ''}`}
+          className={`${changesPanelTabClassName} ${tab === 'history' ? changesPanelActiveTabClassName : changesPanelInactiveTabClassName}`}
           onClick={() => setTab('history')}
         >
           완료됨 ({histories.length})
@@ -1440,7 +1510,11 @@ function ChangesPanel({
           {(['all', 'ADD', 'MODIFY', 'DELETE', 'REORDER'] as const).map((f) => (
             <button
               key={f}
-              className={`filter-chip${filter === f ? ' active' : ''}`}
+              className={`[padding:4px_10px] [border-radius:99px] [font-size:11px]! [font-weight:bold] cursor-pointer ${
+                filter === f
+                  ? '[border:1px_solid_#1e293b] bg-[#1e293b] text-[#fff]'
+                  : '[border:1px_solid_#e2e8f0] text-[#64748b]'
+              }`}
               onClick={() => setFilter(f)}
             >
               {f === 'all'
@@ -1590,6 +1664,22 @@ interface RoadmapPageToolbarProps extends RoadmapMetricsProps {
   roadmaps: MyRoadmapSummary[]
 }
 
+const roadmapPageClassName = 'h-[100dvh] min-h-0 w-full overflow-hidden bg-[#f8f9fa]'
+const roadmapMainClassName =
+  'roadmap-main h-[calc(100dvh-var(--roadmap-fixed-top))] max-h-[calc(100dvh-var(--roadmap-fixed-top))] min-h-0 mt-[var(--roadmap-fixed-top)] overflow-x-hidden [overflow-y:auto] bg-[#f8f9fa] [overscroll-behavior-y:contain] [scrollbar-gutter:stable]'
+const roadmapContentClassName =
+  'roadmap-content max-w-[1400px] min-h-full [margin-left:auto] [margin-right:auto] pt-[var(--roadmap-content-gap)] pb-[96px] [transition:max-width_0.3s_ease,margin_0.3s_ease,padding-left_0.3s_ease,padding-right_0.3s_ease]'
+const roadmapNodeCountWrapClassName = 'inline-flex items-stretch gap-[1px] overflow-hidden rounded-[6px] bg-[#e5e7eb] [box-shadow:0_1px_6px_rgba(0,0,0,0.04)]'
+const roadmapNodeCountCardClassName = 'flex min-w-[42px] flex-col items-center justify-center gap-[2px] [padding:5px_10px]'
+const roadmapTotalNodeCountCardClassName = '[background:linear-gradient(135deg,_#00c471_0%,_#00e887_100%)]'
+const roadmapDoneNodeCountCardClassName = '[background:linear-gradient(135deg,_#3b82f6_0%,_#60a5fa_100%)]'
+const roadmapNodeCountNumberClassName = '[font-size:17px] leading-[1] [font-weight:900] text-[#fff]'
+const roadmapNodeCountLabelClassName = '[font-size:8px] leading-[1] [font-weight:800] text-[#fff]'
+const roadmapHeaderMetricsClassName = 'mr-[168px] flex items-center gap-[12px] pointer-events-auto'
+const roadmapHeaderMetricsShellClassName = 'roadmap-header-metrics-shell hidden h-full w-full'
+const roadmapHeaderMetricsShellInnerClassName =
+  'flex h-full w-full items-center justify-end pointer-events-none [margin-inline:auto] [padding-inline:clamp(16px,3vw,32px)]'
+
 function RoadmapHeaderMetrics({
   changesCount,
   totalNodes,
@@ -1598,7 +1688,7 @@ function RoadmapHeaderMetrics({
   onToggleChangesPanel,
 }: RoadmapMetricsProps) {
   return (
-    <div className="roadmap-header-metrics">
+    <div className={roadmapHeaderMetricsClassName}>
       <button
         type="button"
         onClick={onToggleChangesPanel}
@@ -1607,20 +1697,20 @@ function RoadmapHeaderMetrics({
         <i className="fas fa-history" />
         <span>{'\uBCC0\uACBD\uC0AC\uD56D'}</span>
         {changesCount > 0 ? (
-          <span className="badge-pulse absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
+          <span className="[animation:badge-pulse_2s_infinite] absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
             {changesCount}
           </span>
         ) : null}
       </button>
 
-      <div className="node-count-wrap" title={'\uC804\uCCB4 / \uC644\uB8CC'}>
-        <div className="node-count-card total">
-          <span className="node-count-number">{totalNodes}</span>
-          <span className="node-count-label">{'\uC804\uCCB4'}</span>
+      <div className={roadmapNodeCountWrapClassName} title={'\uC804\uCCB4 / \uC644\uB8CC'}>
+        <div className={`${roadmapNodeCountCardClassName} total ${roadmapTotalNodeCountCardClassName}`}>
+          <span className={roadmapNodeCountNumberClassName}>{totalNodes}</span>
+          <span className={roadmapNodeCountLabelClassName}>{'\uC804\uCCB4'}</span>
         </div>
-        <div className="node-count-card done">
-          <span className="node-count-number">{doneNodes}</span>
-          <span className="node-count-label">{'\uC644\uB8CC'}</span>
+        <div className={`${roadmapNodeCountCardClassName} done ${roadmapDoneNodeCountCardClassName}`}>
+          <span className={roadmapNodeCountNumberClassName}>{doneNodes}</span>
+          <span className={roadmapNodeCountLabelClassName}>{'\uC644\uB8CC'}</span>
         </div>
       </div>
 
@@ -1758,20 +1848,20 @@ function RoadmapPageToolbar({
             <i className="fas fa-history" />
             <span>{'\uBCC0\uACBD\uC0AC\uD56D'}</span>
             {changesCount > 0 ? (
-              <span className="badge-pulse absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
+              <span className="[animation:badge-pulse_2s_infinite] absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
                 {changesCount}
               </span>
             ) : null}
           </button>
 
-          <div className="node-count-wrap" title={'\uC804\uCCB4 / \uC644\uB8CC'}>
-            <div className="node-count-card total">
-              <span className="node-count-number">{totalNodes}</span>
-              <span className="node-count-label">{'\uC804\uCCB4'}</span>
+          <div className={roadmapNodeCountWrapClassName} title={'\uC804\uCCB4 / \uC644\uB8CC'}>
+            <div className={`${roadmapNodeCountCardClassName} total ${roadmapTotalNodeCountCardClassName}`}>
+              <span className={roadmapNodeCountNumberClassName}>{totalNodes}</span>
+              <span className={roadmapNodeCountLabelClassName}>{'\uC804\uCCB4'}</span>
             </div>
-            <div className="node-count-card done">
-              <span className="node-count-number">{doneNodes}</span>
-              <span className="node-count-label">{'\uC644\uB8CC'}</span>
+            <div className={`${roadmapNodeCountCardClassName} done ${roadmapDoneNodeCountCardClassName}`}>
+              <span className={roadmapNodeCountNumberClassName}>{doneNodes}</span>
+              <span className={roadmapNodeCountLabelClassName}>{'\uC644\uB8CC'}</span>
             </div>
           </div>
 
@@ -2242,7 +2332,7 @@ export default function RoadmapDetailPage() {
   const showLegacyHeader = false
 
   return (
-    <div className="roadmap-page text-gray-800">
+    <div className={`${roadmapPageClassName} text-gray-800`}>
 
       {/* ── 헤더 ──────────────────────────────────────────────────────────────── */}
       <SiteHeader
@@ -2252,14 +2342,14 @@ export default function RoadmapDetailPage() {
         onLoginClick={() => openAuthModal('login')}
         activeNavHref="/roadmap-hub"
         startOverlay={(
-          <a href="/roadmap-hub" className="roadmap-header-back-link pointer-events-auto" aria-label="로드맵 목록으로 돌아가기">
+          <a href="/roadmap-hub" className="pointer-events-auto absolute top-[50%] left-[calc((var(--left-rail)*-1)+28px)] inline-flex items-center gap-[4px] [transform:translateY(-50%)] text-[#6b7280] [font-size:13px] [font-weight:800] leading-[1] whitespace-nowrap [transition:color_0.2s_ease,transform_0.2s_ease] hover:[transform:translateY(-50%)_translateX(-1px)] hover:text-[#111827]" aria-label="로드맵 목록으로 돌아가기">
             <i className="fas fa-arrow-left" />
             <span>로드맵 목록</span>
           </a>
         )}
         endOverlay={(
-          <div className="roadmap-header-metrics-shell">
-            <div className="roadmap-header-metrics-shell__inner">
+          <div className={roadmapHeaderMetricsShellClassName}>
+            <div className={roadmapHeaderMetricsShellInnerClassName}>
               <RoadmapHeaderMetrics
                 changesCount={changes.length}
                 totalNodes={totalNodes}
@@ -2320,21 +2410,21 @@ export default function RoadmapDetailPage() {
               <i className="fas fa-history" />
               <span>변경사항</span>
               {changes.length > 0 && (
-                <span className="badge-pulse absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
+                <span className="[animation:badge-pulse_2s_infinite] absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-sm">
                   {changes.length}
                 </span>
               )}
             </button>
 
             {/* 노드 카운트 */}
-            <div className="node-count-wrap" title="전체 / 완료">
-              <div className="node-count-card total">
-                <span className="node-count-number">{totalNodes}</span>
-                <span className="node-count-label">전체</span>
+            <div className={roadmapNodeCountWrapClassName} title="전체 / 완료">
+              <div className={`${roadmapNodeCountCardClassName} total ${roadmapTotalNodeCountCardClassName}`}>
+                <span className={roadmapNodeCountNumberClassName}>{totalNodes}</span>
+                <span className={roadmapNodeCountLabelClassName}>전체</span>
               </div>
-              <div className="node-count-card done">
-                <span className="node-count-number">{doneNodes}</span>
-                <span className="node-count-label">완료</span>
+              <div className={`${roadmapNodeCountCardClassName} done ${roadmapDoneNodeCountCardClassName}`}>
+                <span className={roadmapNodeCountNumberClassName}>{doneNodes}</span>
+                <span className={roadmapNodeCountLabelClassName}>완료</span>
               </div>
             </div>
 
@@ -2458,10 +2548,10 @@ export default function RoadmapDetailPage() {
       />
 
       {/* ── 메인 콘텐츠 ───────────────────────────────────────────────────────── */}
-      <main className={`roadmap-main${panelOpen ? ' panel-open' : ''} relative w-full`}>
+      <main className={`${roadmapMainClassName}${panelOpen ? ' panel-open' : ''} relative w-full`}>
 
         {/* 로드맵 카테고리 라벨 (전환 드롭다운) */}
-        <div className="roadmap-category-badge fixed left-8 z-[60]">
+        <div className="fixed top-[calc(var(--roadmap-fixed-top)+12px)] left-8 z-[60]">
           <RoadmapSwitcherDropdown
             currentCustomRoadmapId={customRoadmapId}
             currentTitle={roadmap.title}
@@ -2470,7 +2560,7 @@ export default function RoadmapDetailPage() {
           />
         </div>
 
-        <div className="roadmap-content relative flex flex-col items-center w-full">
+        <div className={`${roadmapContentClassName} relative flex flex-col items-center w-full`}>
 
           {/* ── 정보 아코디언 ────────────────────────────────────────────────── */}
           <div className="w-full max-w-4xl px-4 mt-8 mb-16 relative z-20">
@@ -2483,9 +2573,9 @@ export default function RoadmapDetailPage() {
                   <i className="fas fa-info-circle text-gray-400" />
                   {roadmap.infoTitle?.trim() || roadmap.title}
                 </div>
-                <i className={`fas fa-chevron-down text-gray-400 chevron${infoOpen ? ' rotate' : ''}`} />
+                <i className={`fas fa-chevron-down text-gray-400 [transition:transform_0.3s]! ${infoOpen ? '[transform:rotate(180deg)]' : ''}`} />
               </div>
-              <div className={`info-accordion${infoOpen ? ' open' : ''} bg-gray-50 border-t border-gray-100`}>
+              <div className={`${infoOpen ? 'max-h-[800px] [transition:max-height_0.5s_ease-in]' : 'max-h-0 [transition:max-height_0.3s_ease-out]'} overflow-hidden bg-gray-50 border-t border-gray-100`}>
                 <RoadmapInfoContent content={roadmap.infoContent} />
               </div>
             </div>

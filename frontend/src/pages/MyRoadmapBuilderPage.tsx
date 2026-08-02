@@ -1107,7 +1107,10 @@ function MyRoadmapBuilderPage() {
         </aside>
 
         {/* ── 메인 캔버스 ── */}
-        <main ref={mainRef} className="builder-dot-pattern relative flex-1 overflow-y-auto p-8">
+        <main
+          ref={mainRef}
+          className="relative flex-1 overflow-y-auto bg-[#f9fafb] [background-image:radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:24px_24px] p-8 [&::-webkit-scrollbar]:w-[6px] [&::-webkit-scrollbar-thumb]:rounded-[4px] [&::-webkit-scrollbar-thumb]:bg-[#cbd5e1] [&::-webkit-scrollbar-track]:bg-transparent"
+        >
 
           {/* 편집 모드 배너 */}
           {editMyRoadmapId && !editLoading && !editLoadError && (
@@ -1198,7 +1201,7 @@ function MyRoadmapBuilderPage() {
 
                 return (
                   <div key={row.sortOrder}>
-                    <div className="group relative z-10 mb-2 builder-step-enter">
+                    <div className="group relative z-10 mb-2 animate-[builderStepPop_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
                       {row.isBranching ? (
                         // ── 분기 row ──
                         <div className="flex items-start">

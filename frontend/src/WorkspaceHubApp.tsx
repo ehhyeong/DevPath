@@ -681,7 +681,10 @@ function ProjectMenu({
   }
 
   return (
-    <div id={project.menuId} className={visible ? 'dropdown-menu show' : 'dropdown-menu'}>
+    <div
+      id={project.menuId}
+      className={`dropdown-menu absolute top-[2.5rem] right-[1rem] z-[50] min-w-[140px] rounded-[0.5rem] border-[1px] border-solid border-[#E5E7EB] bg-[#FFFFFF] [box-shadow:0_4px_6px_-1px_rgba(0,0,0,0.1)] ${visible ? 'show block animate-[workspaceHubFadeIn_0.1s_ease-out]' : 'hidden'}`}
+    >
       {project.type === 'squad' ? (
         <ul className="py-1 text-sm text-gray-700">
           <li>

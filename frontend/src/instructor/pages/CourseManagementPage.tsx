@@ -191,7 +191,10 @@ function CourseHashTags({ tags }: { tags: string[] }) {
   return (
     <div className="mb-2.5 flex flex-wrap gap-1.5">
       {tags.map((tag, index) => (
-        <span key={`${tag}-${index}`} className={index === 0 ? 'hash-tag hash-tag-brand' : 'hash-tag'}>
+        <span
+          key={`${tag}-${index}`}
+          className={`hash-tag inline-flex cursor-pointer items-center rounded-[6px] border-[1px] border-solid border-[#e5e7eb] bg-[#f3f4f6] px-[8px] py-[4px] text-[11px] font-[600] tracking-[-0.01em] text-[#4b5563] [transition:all_0.2s] hover:bg-[#e5e7eb] hover:text-[#111827] ${index === 0 ? 'hash-tag-brand border-[#d1fae5]! bg-[#f0fdf4]! text-[#059669] hover:bg-[#dcfce7]!' : ''}`}
+        >
           {tag}
         </span>
       ))}
@@ -328,7 +331,7 @@ function PublishedCourseCard(_: {
               onClick={() => {
                 window.location.href = `/instructor-course-detail?courseId=${course.courseId}`
               }}
-              className="inline-flex h-[34px] items-center justify-center rounded-[10px] bg-gray-900 px-[14px] text-[12px] font-semibold text-white transition hover:bg-gray-700"
+              className="inline-flex h-[34px]! min-h-[34px]! items-center justify-center rounded-[12px]! bg-[#111827]! px-[16px]! py-[8px]! text-[12px]! leading-[16px]! font-[900]! tracking-[0]! text-[#ffffff]! [box-shadow:0_6px_14px_rgba(17,24,39,0.12)]! transition hover:bg-black! [&:hover]:[box-shadow:0_8px_18px_rgba(17,24,39,0.16)]!"
             >
               관리하기
             </button>
@@ -399,7 +402,7 @@ function DraftCourseCard(_: { course: CourseCardModel }) {
   const { course } = _
 
   return (
-    <article className="course-item rounded-[16px] border border-gray-200 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+    <article className="course-item rounded-[16px] border border-gray-200 bg-white p-4 font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]! shadow-[0_1px_3px_rgba(0,0,0,0.02)] [&_.hash-tag]:text-[11px]! [&_.hash-tag]:leading-[1.2]! [&_button]:text-[12px]! [&_button]:leading-[1.2]!">
       <div className="flex flex-col gap-4 md:flex-row md:items-start">
         <div className="flex h-[100px] w-full shrink-0 items-center justify-center rounded-[10px] border border-gray-200 bg-gray-50 md:w-[160px]">
           <i className="fas fa-pen text-2xl text-gray-300" />
@@ -409,15 +412,15 @@ function DraftCourseCard(_: { course: CourseCardModel }) {
           <div className="mb-1 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-1.5 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-600">
-                  <i className="fas fa-edit text-[8px]" />
+                <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-[11px]! leading-[1.2]! font-semibold text-gray-600">
+                  <i className="fas fa-edit text-[11px]! leading-[1]!" />
                   작성 중
                 </span>
-                <span className="text-[11px] font-medium text-gray-400">
+                <span className="text-[12px]! leading-[1.2]! font-medium text-gray-400">
                   생성일 {course.displayDate}
                 </span>
               </div>
-              <h3 className="truncate text-base font-bold text-gray-500">{course.displayTitle}</h3>
+              <h3 className="truncate text-[16px]! leading-[1.25]! font-bold text-gray-500">{course.displayTitle}</h3>
               <CourseHashTags tags={course.displayTags} />
             </div>
 
@@ -432,7 +435,7 @@ function DraftCourseCard(_: { course: CourseCardModel }) {
 
           <div className="mt-6 flex items-center justify-between gap-6">
             <div className="w-full max-w-sm">
-              <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-gray-500">
+              <div className="mb-1 flex items-center justify-between text-[12px]! leading-[1.2]! font-medium text-gray-500">
                 <span>진행률 {course.displayDraftProgress}%</span>
                 <span>{course.displayDraftMessage}</span>
               </div>
@@ -711,7 +714,7 @@ export default function CourseManagementPage() {
             onClick={() => {
               window.location.href = '/course-editor'
             }}
-            className="inline-flex h-[34px] items-center gap-2 rounded-[10px] bg-emerald-500 px-[14px] text-[12px] font-semibold text-white transition hover:bg-emerald-600"
+            className="inline-flex h-[40px]! min-h-[40px]! items-center gap-2 rounded-[14px]! bg-[#00c471]! px-[15px]! py-[10px]! text-[13px]! leading-[18px]! font-[900]! tracking-[0]! text-[#ffffff]! [box-shadow:0_10px_20px_rgba(0,196,113,0.18)]! transition hover:bg-[#00b565]! hover:[transform:translateY(-1px)]! active:[transform:translateY(0)_scale(0.99)]!"
           >
             <i className="fas fa-plus" />
             새 강의 만들기
@@ -753,9 +756,9 @@ export default function CourseManagementPage() {
           />
         </div>
 
-        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="inline-flex rounded-[12px] bg-[#F3F4F6] p-1">
+        <div className="mb-5 flex flex-col gap-[14px]! font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]! tracking-[0]! [&_i]:leading-[1]! lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-[10px]!">
+            <div className="inline-flex h-[38px]! items-center! rounded-[12px]! bg-[#f3f4f6]! p-[4px]!">
               {[
                 { key: 'all' as const, label: '전체보기' },
                 { key: 'published' as const, label: '공개 중' },
@@ -765,7 +768,7 @@ export default function CourseManagementPage() {
                   key={item.key}
                   type="button"
                   onClick={() => setFilterStatus(item.key)}
-                  className={`inline-flex h-[32px] items-center rounded-[8px] px-[14px] text-[12px] font-semibold leading-none transition ${
+                  className={`inline-flex h-[30px]! min-h-[30px]! items-center rounded-[8px]! px-[13px]! py-0! text-[12px]! leading-[16px]! font-[800]! tracking-[0]! transition ${
                     filterStatus === item.key
                       ? 'bg-white text-gray-900 shadow-[0_1px_4px_rgba(0,0,0,0.06)]'
                       : 'text-gray-500 hover:text-gray-900'
@@ -780,7 +783,7 @@ export default function CourseManagementPage() {
               <select
                 value={filterCategory}
                 onChange={(event) => setFilterCategory(event.target.value)}
-                className="h-[34px] appearance-none rounded-full border border-gray-200 bg-white pl-[14px] pr-9 text-[12px] font-semibold leading-none text-gray-700 outline-none transition hover:border-gray-300 hover:bg-gray-50"
+                className="h-[36px]! min-h-[36px]! appearance-none rounded-[10px]! border border-[#e5e7eb]! bg-[#ffffff]! py-0! pr-9 pl-[14px]! text-[12px]! leading-[16px]! font-[700]! tracking-[0]! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.03)]! outline-none transition hover:border-gray-300 hover:bg-gray-50"
               >
                 <option value="all">전체 카테고리</option>
                 {categoryOptions.map((category) => (
@@ -796,7 +799,7 @@ export default function CourseManagementPage() {
               <select
                 value={filterLevel}
                 onChange={(event) => setFilterLevel(event.target.value)}
-                className="h-[34px] appearance-none rounded-full border border-gray-200 bg-white pl-[14px] pr-9 text-[12px] font-semibold leading-none text-gray-700 outline-none transition hover:border-gray-300 hover:bg-gray-50"
+                className="h-[36px]! min-h-[36px]! appearance-none rounded-[10px]! border border-[#e5e7eb]! bg-[#ffffff]! py-0! pr-9 pl-[14px]! text-[12px]! leading-[16px]! font-[700]! tracking-[0]! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.03)]! outline-none transition hover:border-gray-300 hover:bg-gray-50"
               >
                 <option value="all">전체 난이도</option>
                 {levelOptions.map((level) => (
@@ -808,12 +811,12 @@ export default function CourseManagementPage() {
               <i className="fas fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400" />
             </div>
 
-            <label className="inline-flex h-[34px] items-center gap-2 rounded-full border border-gray-200 bg-white px-[14px] text-[12px] font-semibold leading-none text-gray-600 transition hover:border-gray-300 hover:bg-gray-50">
+            <label className="inline-flex h-[36px]! min-h-[36px]! items-center gap-[8px]! whitespace-nowrap! rounded-[10px]! border border-[#e5e7eb]! bg-[#ffffff]! px-[14px]! text-[12px]! leading-[16px]! font-[700]! tracking-[0]! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.03)]! transition hover:border-gray-300 hover:bg-gray-50">
               <input
                 type="checkbox"
                 checked={pendingOnly}
                 onChange={(event) => setPendingOnly(event.target.checked)}
-                className="h-[14px] w-[14px] rounded border border-gray-300 accent-emerald-500"
+                className="h-[14px]! min-h-[14px]! w-[14px]! border border-gray-300 [border-radius:4px]! [box-shadow:none]! accent-emerald-500"
               />
               미답변 질문 있는 강의만
             </label>
@@ -825,7 +828,7 @@ export default function CourseManagementPage() {
               <select
                 value={quickViewFilter}
                 onChange={(event) => setQuickViewFilter(event.target.value as QuickViewFilter)}
-                className="h-[34px] w-full appearance-none rounded-[10px] border border-gray-200 bg-white pl-[14px] pr-9 text-[12px] font-semibold leading-none text-gray-700 outline-none transition hover:border-gray-300 hover:bg-gray-50"
+                className="h-[36px]! min-h-[36px]! w-full appearance-none rounded-[10px]! border border-[#e5e7eb]! bg-[#ffffff]! py-0! pr-9 pl-[14px]! text-[12px]! leading-[16px]! font-[700]! tracking-[0]! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.03)]! outline-none transition hover:border-gray-300 hover:bg-gray-50"
               >
                 <option value="latest">최신순</option>
                 <option value="oldest">오래된순</option>
@@ -845,7 +848,7 @@ export default function CourseManagementPage() {
                 onChange={(event) => setSearch(event.target.value)}
                 type="text"
                 placeholder="강의명 검색..."
-                className="h-[34px] w-full rounded-[10px] border border-gray-200 bg-white py-0 pl-8 pr-4 text-[12px] font-medium leading-none text-gray-700 outline-none transition focus:border-emerald-500 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.1)]"
+                className="h-[36px]! min-h-[36px]! w-full rounded-[10px]! border border-[#e5e7eb]! bg-[#ffffff]! py-0! pr-[14px]! pl-[32px]! text-[12px]! leading-[16px]! font-[600]! tracking-[0]! text-[#374151]! [box-shadow:0_1px_2px_rgba(15,23,42,0.03)]! outline-none transition placeholder:font-[600]! placeholder:text-[#9ca3af]! placeholder:opacity-100! focus:border-emerald-500 focus:shadow-[0_0_0_3px_rgba(16,185,129,0.1)]"
               />
             </div>
           </div>

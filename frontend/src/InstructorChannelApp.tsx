@@ -469,7 +469,7 @@ export default function InstructorChannelApp() {
           />
 
           <div className="mx-auto max-w-7xl px-6 py-8">
-            <div className={activeTab === 'home' ? 'block animate-fade-in' : 'hidden'}>
+            <div className={activeTab === 'home' ? 'block animate-[fadeIn_0.3s_ease-out]' : 'hidden'}>
               <HomeTab
                 channel={channel}
                 careers={careers}
@@ -479,7 +479,7 @@ export default function InstructorChannelApp() {
               />
             </div>
 
-            <div className={activeTab === 'playlist' ? 'block animate-fade-in' : 'hidden'}>
+            <div className={activeTab === 'playlist' ? 'block animate-[fadeIn_0.3s_ease-out]' : 'hidden'}>
               <PlaylistTab
                 playlistFilter={playlistFilter}
                 sections={filteredPlaylistSections}
@@ -490,7 +490,7 @@ export default function InstructorChannelApp() {
               />
             </div>
 
-            <div className={activeTab === 'community' ? 'block animate-fade-in' : 'hidden'}>
+            <div className={activeTab === 'community' ? 'block animate-[fadeIn_0.3s_ease-out]' : 'hidden'}>
               <CommunityTab
                 posts={filteredCommunityPosts}
                 communityFilter={communityFilter}
@@ -503,7 +503,7 @@ export default function InstructorChannelApp() {
               />
             </div>
 
-            <div className={activeTab === 'reviews' ? 'block animate-fade-in' : 'hidden'}>
+            <div className={activeTab === 'reviews' ? 'block animate-[fadeIn_0.3s_ease-out]' : 'hidden'}>
               <ReviewsTab
                 visibleReviews={visibleReviews}
                 reviewSummary={reviewSummary}
@@ -682,7 +682,7 @@ function ChannelHero({
               key={key}
               type="button"
               onClick={() => onTabChange(key)}
-              className={`channel-tab ${activeTab === key ? 'active' : ''}`}
+              className={`channel-tab cursor-pointer border-b-[2px] border-b-solid border-b-transparent pb-[12px] font-[600] text-[#6b7280] [transition:all_0.2s] ${activeTab === key ? 'active border-[#00c471]! text-[#111827]' : ''}`}
             >
               {label}
             </button>
@@ -847,9 +847,9 @@ function PlaylistTab({
             </div>
             <a href="/lecture-list" className="text-sm font-bold text-brand hover:underline">모두 보기</a>
           </div>
-          <div className="playlist-scroll">
+          <div className="playlist-scroll flex gap-[20px] overflow-x-auto pb-[10px] scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none]! [&::-webkit-scrollbar]:hidden">
             {section.courses.map((course) => (
-              <div key={course.courseId} className="course-card group overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <div key={course.courseId} className="course-card group min-w-[280px] max-w-[280px] shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white [transition:transform_0.2s] hover:[transform:translateY(-4px)]">
                 <button type="button" onClick={() => onOpenCourse(course.courseId)} className="block w-full text-left">
                   <div className="relative h-40 overflow-hidden bg-gray-200">
                     <img src={course.thumbnailUrl} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" alt={course.title} />
@@ -949,7 +949,7 @@ function CommunityTab({
                   {getCommunityCategoryLabel(post.category)}
                 </span>
                 {post.mine ? (
-                  <span className="my-post-badge">
+                  <span className="inline-flex items-center gap-[4px] rounded-[999px] border-[1px] border-solid border-[#bfdbfe] bg-[#eff6ff] px-[8px] py-[2px] text-[10px] font-[700] text-[#2563eb]">
                     <i className="fas fa-user" /> 내 글
                   </span>
                 ) : null}
@@ -1113,6 +1113,8 @@ function ReviewsTab({
   )
 }
 
+const channelModalBoxClassName = 'modal-box max-h-[90vh] w-full max-w-[680px] overflow-y-auto rounded-[16px] bg-white [box-shadow:0_25px_50px_rgba(0,0,0,0.3)]'
+
 function WritePostModal({
   open,
   writeCategory,
@@ -1138,7 +1140,7 @@ function WritePostModal({
 
   return (
     <div className="modal-overlay" onClick={onClose} aria-hidden="true">
-      <div className="modal-box" onClick={(event) => event.stopPropagation()}>
+      <div className={channelModalBoxClassName} onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <h2 className="text-lg font-extrabold text-gray-900">커뮤니티 글 쓰기</h2>
           <button type="button" onClick={onClose} className="text-gray-400 transition hover:text-gray-600">
@@ -1241,8 +1243,8 @@ function PostDetailModal({
   if (!post) return null
 
   return (
-    <div className="post-modal-overlay" onClick={onClose} aria-hidden="true">
-      <div className="post-modal-box" onClick={(event) => event.stopPropagation()}>
+    <div className="post-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-[rgba(0,0,0,0.5)] p-[20px]" onClick={onClose} aria-hidden="true">
+      <div className="post-modal-box max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-[16px] bg-white [box-shadow:0_25px_50px_rgba(0,0,0,0.3)]" onClick={(event) => event.stopPropagation()}>
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
           <span className={`rounded px-2 py-1 text-xs font-bold ${getCommunityCategoryClass(post.category)}`}>
             {getCommunityCategoryLabel(post.category)}
@@ -1297,7 +1299,7 @@ function PostDetailModal({
 
           <div className="mb-5 space-y-4">
             {post.replies.length ? post.replies.map((reply) => (
-              <div key={reply.id} className="reply-item flex gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div key={reply.id} className="flex animate-[fadeIn_0.2s_ease-out] gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
                 <UserAvatar name={reply.author} imageUrl={null} className="h-9 w-9" alt={reply.author} />
                 <div className="flex-1">
                   <div className="mb-1 flex items-center gap-2">
@@ -1362,7 +1364,7 @@ function EditPostModal({
 
   return (
     <div className="modal-overlay" onClick={onClose} aria-hidden="true">
-      <div className="modal-box" onClick={(event) => event.stopPropagation()}>
+      <div className={channelModalBoxClassName} onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <h2 className="text-lg font-extrabold text-gray-900">게시글 수정</h2>
           <button type="button" onClick={onClose} className="text-gray-400 transition hover:text-gray-600">

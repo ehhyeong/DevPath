@@ -177,6 +177,38 @@ async function fetchReviewData(signal?: AbortSignal) {
   ])
 }
 
+const INSTRUCTOR_REVIEWS_UI_LOCK_CLASSES = [
+  "h-[calc(100vh-64px)]! min-h-[calc(100vh-64px)]! overflow-y-auto! [overflow-anchor:none]! bg-[#f8f9fa]! p-[32px]! text-[#1f2937]! font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]!",
+  '[&>.mx-auto]:w-full! [&>.mx-auto]:max-w-none!',
+  '[&_h1]:mb-[4px]! [&_h1]:text-[#111827]! [&_h1]:text-[24px]! [&_h1]:leading-[32px]! [&_h1]:font-[900]! [&_h1]:tracking-[0]!',
+  '[&_h1+p]:text-[#6b7280]! [&_h1+p]:text-[14px]! [&_h1+p]:leading-[20px]! [&_h1+p]:font-[500]!',
+  '[&_.instructor-reviews-course-filter]:h-[38px]! [&_.instructor-reviews-course-filter]:w-[240px]! [&_.instructor-reviews-course-filter]:flex-[0_0_240px]!',
+  '[&_.instructor-reviews-course-select]:h-[38px]! [&_.instructor-reviews-course-select]:w-[240px]! [&_.instructor-reviews-course-select]:min-w-[240px]! [&_.instructor-reviews-course-select]:rounded-[8px]! [&_.instructor-reviews-course-select]:border-[1px]! [&_.instructor-reviews-course-select]:border-solid! [&_.instructor-reviews-course-select]:border-[#e5e7eb]! [&_.instructor-reviews-course-select]:bg-[#ffffff]! [&_.instructor-reviews-course-select]:pt-[8px]! [&_.instructor-reviews-course-select]:pr-[40px]! [&_.instructor-reviews-course-select]:pb-[8px]! [&_.instructor-reviews-course-select]:pl-[16px]! [&_.instructor-reviews-course-select]:text-[#374151]! [&_.instructor-reviews-course-select]:text-[14px]! [&_.instructor-reviews-course-select]:leading-[20px]! [&_.instructor-reviews-course-select]:font-[700]! [&_.instructor-reviews-course-select]:[box-shadow:0_1px_2px_rgba(15,23,42,0.06)]!',
+  '[&_.instructor-reviews-course-arrow]:top-1/2! [&_.instructor-reviews-course-arrow]:right-[12px]! [&_.instructor-reviews-course-arrow]:[transform:translateY(-50%)]! [&_.instructor-reviews-course-arrow]:text-[#9ca3af]! [&_.instructor-reviews-course-arrow]:text-[12px]! [&_.instructor-reviews-course-arrow]:leading-none!',
+  '[&_.instructor-reviews-search-box]:h-[38px]! [&_.instructor-reviews-search-box]:w-[178px]! [&_.instructor-reviews-search-box]:rounded-[8px]! [&_.instructor-reviews-search-box]:border-[1px]! [&_.instructor-reviews-search-box]:border-solid! [&_.instructor-reviews-search-box]:border-[#e5e7eb]! [&_.instructor-reviews-search-box]:bg-[#ffffff]! [&_.instructor-reviews-search-box]:px-[12px]! [&_.instructor-reviews-search-box]:py-[8px]! [&_.instructor-reviews-search-box]:[box-shadow:0_1px_2px_rgba(15,23,42,0.06)]!',
+  '[&_.instructor-reviews-summary-grid_article]:min-h-[220px]! [&_.instructor-reviews-summary-grid_article]:rounded-[16px]! [&_.instructor-reviews-summary-grid_article]:border-[1px]! [&_.instructor-reviews-summary-grid_article]:border-solid! [&_.instructor-reviews-summary-grid_article]:border-[#e5e7eb]! [&_.instructor-reviews-summary-grid_article]:bg-[#ffffff]! [&_.instructor-reviews-summary-grid_article]:p-[24px]! [&_.instructor-reviews-summary-grid_article]:[box-shadow:0_2px_10px_rgba(0,0,0,0.02)]!',
+  '[&_.instructor-reviews-summary-grid_article:hover]:[transform:translateY(-2px)]! [&_.instructor-reviews-summary-grid_article:hover]:[box-shadow:0_10px_25px_rgba(0,0,0,0.05)]!',
+  '[&_.instructor-reviews-summary-grid_article_span.uppercase]:text-[#9ca3af]! [&_.instructor-reviews-summary-grid_article_span.uppercase]:text-[12px]! [&_.instructor-reviews-summary-grid_article_span.uppercase]:leading-[16px]! [&_.instructor-reviews-summary-grid_article_span.uppercase]:font-[800]! [&_.instructor-reviews-summary-grid_article_span.uppercase]:tracking-[0.08em]!',
+  '[&_.instructor-reviews-summary-grid_article_.text-4xl]:text-[#111827]! [&_.instructor-reviews-summary-grid_article_.text-4xl]:text-[36px]! [&_.instructor-reviews-summary-grid_article_.text-4xl]:leading-[40px]! [&_.instructor-reviews-summary-grid_article_.text-4xl]:font-[900]! [&_.instructor-reviews-summary-grid_article_.text-4xl]:tracking-[0]!',
+  '[&_.instructor-reviews-summary-grid_article_button]:h-[32px]! [&_.instructor-reviews-summary-grid_article_button]:rounded-[8px]! [&_.instructor-reviews-summary-grid_article_button]:px-[12px]! [&_.instructor-reviews-summary-grid_article_button]:py-[8px]! [&_.instructor-reviews-summary-grid_article_button]:text-[12px]! [&_.instructor-reviews-summary-grid_article_button]:leading-[16px]! [&_.instructor-reviews-summary-grid_article_button]:font-[700]!',
+  '[&_.instructor-reviews-tabs]:mb-[16px]! [&_.instructor-reviews-tabs]:border-b-[1px]! [&_.instructor-reviews-tabs]:border-b-[#e5e7eb]!',
+  '[&_.instructor-reviews-tabs>button]:-mb-[1px]! [&_.instructor-reviews-tabs>button]:border-b-[2px]! [&_.instructor-reviews-tabs>button]:px-[24px]! [&_.instructor-reviews-tabs>button]:py-[12px]! [&_.instructor-reviews-tabs>button]:text-[14px]! [&_.instructor-reviews-tabs>button]:leading-[20px]! [&_.instructor-reviews-tabs>button]:font-[700]!',
+  '[&_.instructor-reviews-tabs>button_span]:ml-[6px]! [&_.instructor-reviews-tabs>button_span]:rounded-[999px]! [&_.instructor-reviews-tabs>button_span]:px-[8px]! [&_.instructor-reviews-tabs>button_span]:py-[2px]! [&_.instructor-reviews-tabs>button_span]:text-[11px]! [&_.instructor-reviews-tabs>button_span]:leading-[16px]!',
+  '[&_.instructor-reviews-toolbar]:mb-[20px]! [&_.instructor-reviews-toolbar]:gap-[12px]! [&_.instructor-reviews-toolbar_select]:h-[36px]! [&_.instructor-reviews-toolbar_select]:rounded-[8px]! [&_.instructor-reviews-toolbar_select]:border-[1px]! [&_.instructor-reviews-toolbar_select]:border-solid! [&_.instructor-reviews-toolbar_select]:border-[#e5e7eb]! [&_.instructor-reviews-toolbar_select]:bg-[#ffffff]! [&_.instructor-reviews-toolbar_select]:px-[12px]! [&_.instructor-reviews-toolbar_select]:py-[8px]! [&_.instructor-reviews-toolbar_select]:text-[#374151]! [&_.instructor-reviews-toolbar_select]:text-[13px]! [&_.instructor-reviews-toolbar_select]:leading-[18px]! [&_.instructor-reviews-toolbar_select]:font-[600]!',
+  '[&_.instructor-reviews-review-card]:mb-[16px]! [&_.instructor-reviews-review-card]:rounded-[12px]! [&_.instructor-reviews-review-card]:border-[1px]! [&_.instructor-reviews-review-card]:border-solid! [&_.instructor-reviews-review-card]:border-[#e5e7eb]! [&_.instructor-reviews-review-card]:border-l-[4px]! [&_.instructor-reviews-review-card]:bg-[#ffffff]! [&_.instructor-reviews-review-card]:p-[24px]! [&_.instructor-reviews-review-card]:[box-shadow:none]! [&_.instructor-reviews-review-card]:[transition:border-color_0.2s_ease,box-shadow_0.2s_ease]!',
+  '[&_.instructor-reviews-review-card:hover]:border-[#a7f3d0]! [&_.instructor-reviews-review-card:hover]:[box-shadow:0_4px_20px_rgba(0,196,113,0.08)]!',
+  '[&_.instructor-reviews-review-card>div:first-child_span:first-child]:inline-block! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:mb-[8px]! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:rounded-[6px]! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:bg-[#f3f4f6]! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:px-[8px]! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:py-[4px]! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:text-[#6b7280]! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:text-[11px]! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:leading-[16px]! [&_.instructor-reviews-review-card>div:first-child_span:first-child]:font-[800]!',
+  '[&_.instructor-reviews-review-card_.text-yellow-400]:text-[12px]! [&_.instructor-reviews-review-card_.text-yellow-400]:leading-[16px]! [&_.instructor-reviews-review-card_p]:text-[#374151]! [&_.instructor-reviews-review-card_p]:text-[14px]! [&_.instructor-reviews-review-card_p]:leading-[22px]! [&_.instructor-reviews-review-card_p]:font-[500]!',
+  '[&_.instructor-reviews-review-card_.rounded-full]:text-[11px]! [&_.instructor-reviews-review-card_.rounded-full]:leading-[16px]! [&_.instructor-reviews-review-card_.rounded-full]:font-[700]!',
+  '[&_.instructor-reviews-review-card_button]:min-h-[34px]! [&_.instructor-reviews-review-card_button]:rounded-[8px]! [&_.instructor-reviews-review-card_button]:px-[14px]! [&_.instructor-reviews-review-card_button]:py-[8px]! [&_.instructor-reviews-review-card_button]:text-[12px]! [&_.instructor-reviews-review-card_button]:leading-[16px]! [&_.instructor-reviews-review-card_button]:font-[700]!',
+  '[&_.instructor-reviews-review-card_textarea]:min-h-[110px]! [&_.instructor-reviews-review-card_textarea]:resize-none! [&_.instructor-reviews-review-card_textarea]:rounded-[8px]! [&_.instructor-reviews-review-card_textarea]:border-[1px]! [&_.instructor-reviews-review-card_textarea]:border-solid! [&_.instructor-reviews-review-card_textarea]:border-[#e5e7eb]! [&_.instructor-reviews-review-card_textarea]:bg-[#ffffff]! [&_.instructor-reviews-review-card_textarea]:p-[12px]! [&_.instructor-reviews-review-card_textarea]:text-[#374151]! [&_.instructor-reviews-review-card_textarea]:text-[13px]! [&_.instructor-reviews-review-card_textarea]:leading-[20px]! [&_.instructor-reviews-review-card_textarea]:font-[500]!',
+  '[&_.instructor-reviews-review-card_textarea:focus]:border-[#00c471]! [&_.instructor-reviews-review-card_textarea:focus]:[box-shadow:0_0_0_3px_rgba(0,196,113,0.1)]!',
+  '[&_.instructor-reviews-reply-section]:mt-[16px]! [&_.instructor-reviews-reply-section]:pt-[16px]! [&_.instructor-reviews-review-card_.bg-green-50]:border-[#bbf7d0]!',
+  '[&_.instructor-reviews-template-modal]:w-[400px]! [&_.instructor-reviews-template-modal]:max-w-[calc(100vw-32px)]! [&_.instructor-reviews-template-modal]:rounded-[16px]! [&_.instructor-reviews-template-modal]:bg-[#ffffff]! [&_.instructor-reviews-template-modal]:[box-shadow:0_10px_40px_rgba(0,0,0,0.2)]!',
+  '[&_.instructor-reviews-template-modal_h3]:text-[#111827]! [&_.instructor-reviews-template-modal_h3]:text-[14px]! [&_.instructor-reviews-template-modal_h3]:leading-[20px]! [&_.instructor-reviews-template-modal_h3]:font-[900]!',
+  '[&_.instructor-reviews-template-modal_button]:text-[13px]! [&_.instructor-reviews-template-modal_button]:leading-[18px]! [&_.instructor-reviews-template-modal_button]:font-[800]! [&_.instructor-reviews-template-modal_button_div:last-child]:text-[#6b7280]! [&_.instructor-reviews-template-modal_button_div:last-child]:text-[12px]! [&_.instructor-reviews-template-modal_button_div:last-child]:leading-[16px]! [&_.instructor-reviews-template-modal_button_div:last-child]:font-[400]!',
+].join(' ')
+
 export default function InstructorReviewsPage({ session }: { session: AuthSession }) {
   const [reviews, setReviews] = useState<InstructorReviewListItem[]>([])
   const [courseCatalog, setCourseCatalog] = useState<InstructorCourseListItem[]>([])
@@ -304,8 +336,8 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
     }
   }, [courseFilter, availableCourseOptions])
 
-  if (loading) return <div className="instructor-reviews-page p-6"><LoadingCard label="수강평 데이터를 불러오는 중입니다." /></div>
-  if (error || !summary || !helpful) return <div className="instructor-reviews-page p-6"><ErrorCard message={error ?? '수강평 데이터를 불러오지 못했습니다.'} /></div>
+  if (loading) return <div className={`instructor-reviews-page p-6 ${INSTRUCTOR_REVIEWS_UI_LOCK_CLASSES}`}><LoadingCard label="수강평 데이터를 불러오는 중입니다." /></div>
+  if (error || !summary || !helpful) return <div className={`instructor-reviews-page p-6 ${INSTRUCTOR_REVIEWS_UI_LOCK_CLASSES}`}><ErrorCard message={error ?? '수강평 데이터를 불러오지 못했습니다.'} /></div>
 
   const totalReviewCount = summary.totalReviews
   const unansweredCount = helpful.unansweredCount
@@ -334,7 +366,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
   const hasMore = filteredReviews.length > visibleLimit
 
   return (
-    <div className="instructor-reviews-page w-full overflow-y-auto bg-[#F8F9FA] p-8">
+    <div className={`instructor-reviews-page w-full overflow-y-auto bg-[#F8F9FA] p-8 ${INSTRUCTOR_REVIEWS_UI_LOCK_CLASSES}`}>
       <div className="mx-auto max-w-[1200px]">
         <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
@@ -356,7 +388,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
           </div>
         </div>
 
-        <div className="mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+        <div className="instructor-reviews-summary-grid mb-8 grid grid-cols-1 gap-5 md:grid-cols-3">
           <article className="flex h-full flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_25px_rgba(0,0,0,0.05)]">
             <div className="mb-4 flex items-center justify-between">
               <span className="text-xs font-extrabold uppercase tracking-widest text-gray-400">평균 평점</span>
@@ -427,7 +459,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
           </article>
         </div>
 
-        <div className="mb-4 flex border-b border-gray-200">
+        <div className="instructor-reviews-tabs mb-4 flex border-b border-gray-200">
           {[
             { key: 'all', label: '전체 수강평', count: totalReviewCount, tone: 'bg-gray-100 text-gray-600' },
             { key: 'unreplied', label: '미답변', count: unansweredCount, tone: 'bg-orange-100 text-orange-600' },
@@ -442,7 +474,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
           ))}
         </div>
 
-        <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="instructor-reviews-toolbar mb-5 flex items-center justify-between gap-3">
           <div className="flex gap-2">
             <select value={sortFilter} onChange={(event) => setSortFilter(event.target.value)} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-semibold text-gray-700 outline-none focus:border-[#00C471]">
               <option value="latest">최신순</option>
@@ -468,7 +500,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
             const displayName = profile?.name || review.reply?.authorName || session.name
             const profileImage = profile?.profileImage ?? review.reply?.authorProfileImage ?? null
             return (
-              <article key={review.reviewId} className={`group relative mb-4 rounded-xl border border-gray-200 border-l-4 bg-white p-6 transition hover:border-emerald-200 hover:shadow-[0_4px_20px_rgba(0,196,113,0.08)] ${meta.borderTone}`}>
+              <article key={review.reviewId} className={`instructor-reviews-review-card group relative mb-4 rounded-xl border border-gray-200 border-l-4 bg-white p-6 transition hover:border-emerald-200 hover:shadow-[0_4px_20px_rgba(0,196,113,0.08)] ${meta.borderTone}`}>
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="mb-2 inline-block rounded-md bg-gray-100 px-2 py-1 text-[11px] font-extrabold text-gray-500">{review.courseTitle}</span>
@@ -505,7 +537,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
                 ) : null}
 
                 {review.reply ? (
-                  <div className="mt-4 border-t border-gray-100 pt-4">
+                  <div className="instructor-reviews-reply-section mt-4 border-t border-gray-100 pt-4">
                     <div className="flex items-start">
                       <div className="z-10 flex flex-col items-center gap-1">
                         <UserAvatar name={displayName} imageUrl={profileImage} className="h-8 w-8 bg-white shadow-sm" alt={displayName} />
@@ -586,7 +618,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
 
       {templateModalOpen ? (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-[400px] overflow-hidden rounded-2xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
+          <div className="instructor-reviews-template-modal w-full max-w-[400px] overflow-hidden rounded-2xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
             <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-5 py-4">
               <h3 className="text-sm font-black text-gray-900"><i className="fas fa-bolt mr-2 text-yellow-400" />빠른 답변 템플릿</h3>
               <button type="button" onClick={() => setTemplateModalOpen(false)} className="text-gray-400 transition hover:text-gray-600">

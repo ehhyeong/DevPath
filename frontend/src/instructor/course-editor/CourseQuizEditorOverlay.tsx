@@ -22,6 +22,7 @@ type Props = {
   courseTags?: string[]
   onClose: () => void
   standalone?: boolean
+  standaloneClassName?: string
 }
 
 const QUESTION_EXPLANATION_MAX_LENGTH = 120
@@ -119,6 +120,7 @@ export default function CourseQuizEditorOverlay({
   courseTags = [],
   onClose,
   standalone = false,
+  standaloneClassName = '',
 }: Props) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -485,7 +487,7 @@ export default function CourseQuizEditorOverlay({
       <div
         className={
           standalone
-            ? 'course-quiz-editor-page flex min-h-screen items-center justify-center bg-[#F0F2F5] px-4'
+            ? `course-quiz-editor-page flex min-h-screen items-center justify-center bg-[#F0F2F5] px-4 ${standaloneClassName}`
             : 'fixed inset-0 z-[90] flex items-center justify-center bg-black/30 backdrop-blur-[2px]'
         }
       >
@@ -500,7 +502,7 @@ export default function CourseQuizEditorOverlay({
     <div
       className={
         standalone
-          ? 'course-quiz-editor-page min-h-screen bg-[#F0F2F5]'
+          ? `course-quiz-editor-page min-h-screen bg-[#F0F2F5] ${standaloneClassName}`
           : 'course-quiz-editor-modal fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]'
       }
     >

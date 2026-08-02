@@ -131,6 +131,8 @@ function getHeaderMoveStyle(key: HeaderMoveKey): CSSProperties {
   }
 }
 
+const glassPanelClassName = 'glass-panel border-[1px] border-solid border-[rgba(255,255,255,0.5)] bg-[rgba(255,255,255,0.7)] [backdrop-filter:blur(12px)] [box-shadow:0_8px_32px_rgba(0,0,0,0.05)]'
+
 function App() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -367,7 +369,7 @@ function App() {
           </div>
 
           <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 text-left md:grid-cols-3">
-            <div className="glass-panel float rounded-2xl p-6" style={{ animationDelay: '0s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '0s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-500">
                   <i className="fab fa-hotjar" />
@@ -383,7 +385,7 @@ function App() {
               </div>
             </div>
 
-            <div className="glass-panel float rounded-2xl p-6" style={{ animationDelay: '1s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '1s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-500">
                   <i className="fas fa-user-graduate" />
@@ -412,7 +414,7 @@ function App() {
               </div>
             </div>
 
-            <div className="glass-panel float rounded-2xl p-6" style={{ animationDelay: '2s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '2s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-purple-500">
                   <i className="fas fa-briefcase" />
@@ -470,49 +472,49 @@ function App() {
           </div>
 
           <div className="flex h-96 flex-1 items-center justify-center" data-aos="fade-left">
-            <div className="roadmap-preview-shell">
-              <div className="roadmap-preview-scene">
+            <div className="roadmap-preview-shell relative mx-auto flex h-[380px] w-full max-w-[404px] [flex-basis:auto] [flex-grow:0] [flex-shrink:0] items-center justify-center overflow-hidden [border:1px_solid_rgba(226,232,240,0.92)] rounded-[32px] [background:linear-gradient(180deg,rgba(255,255,255,0.99)_0%,rgba(248,250,252,0.97)_58%,rgba(241,245,249,0.98)_100%)] [box-shadow:0_28px_64px_rgba(15,23,42,0.1)] [isolation:isolate] before:absolute before:inset-0 before:z-[-2] before:content-[''] before:[background-image:radial-gradient(circle,rgba(148,163,184,0.22)_1px,transparent_1px)] before:[background-size:16px_16px] before:opacity-[0.45] after:absolute after:z-[-1] after:h-[92px] after:rounded-[999px] after:content-[''] after:[inset:16px_58px_auto] after:[background:linear-gradient(180deg,rgba(226,232,240,0.9)_0%,rgba(255,255,255,0)_100%)] after:[filter:blur(28px)]">
+              <div className="roadmap-preview-scene relative z-[1] h-[332px] w-[min(100%,280px)]">
                 <svg
-                  className="roadmap-preview-lines"
+                  className="roadmap-preview-lines pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible"
                   viewBox="0 0 280 332"
                   fill="none"
                   preserveAspectRatio="none"
                   aria-hidden="true"
                 >
                   <path
-                    className="roadmap-preview-line"
+                    className="roadmap-preview-line [fill:none] [stroke:#cbd5e1] [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:3]"
                     d="M140 50V86M74 86H206M74 86V106M206 86V106M74 196V220M206 196V220M74 220H206M140 220V250"
                   />
-                  <circle className="roadmap-preview-joint" cx="140" cy="86" r="4" />
-                  <circle className="roadmap-preview-joint" cx="140" cy="222" r="4" />
+                  <circle className="roadmap-preview-joint [fill:#cbd5e1]" cx="140" cy="86" r="4" />
+                  <circle className="roadmap-preview-joint [fill:#cbd5e1]" cx="140" cy="222" r="4" />
                 </svg>
 
-                <div className="roadmap-preview-pill">
+                <div className="roadmap-preview-pill absolute top-0 left-1/2 z-[2] inline-flex h-[48px] [transform:translateX(-50%)] items-center gap-[8px] whitespace-nowrap rounded-[999px] [background:#111827] px-[18px] text-[0.88rem] font-[700] text-white [box-shadow:0_18px_36px_rgba(17,24,39,0.22)]">
                   <i className="fas fa-flag" />
                   <span>시작: 개발 기초</span>
                 </div>
 
-                <div className="roadmap-preview-branches">
-                  <div className="roadmap-preview-card roadmap-preview-card--green">
-                    <div className="roadmap-preview-icon roadmap-preview-icon--green">
+                <div className="roadmap-preview-branches absolute top-[104px] right-[4px] left-[4px] z-[2] flex items-stretch justify-between gap-[20px]">
+                  <div className="roadmap-preview-card roadmap-preview-card--green flex min-h-[94px] w-[118px] flex-col items-center justify-center gap-[10px] rounded-[24px] [border:1px_solid_rgba(134,239,172,0.78)] [background:rgba(255,255,255,0.96)] px-[12px] py-[14px] text-center [backdrop-filter:blur(12px)] [box-shadow:0_16px_30px_rgba(134,239,172,0.22)]">
+                    <div className="roadmap-preview-icon roadmap-preview-icon--green flex h-[42px] w-[42px] items-center justify-center rounded-[14px] [border:2px_solid_currentColor] [background:#f0fdf4] text-[1.05rem] [color:#00c471] [box-shadow:0_8px_18px_rgba(148,163,184,0.18)]">
                       <i className="fab fa-html5" />
                     </div>
-                    <p className="roadmap-preview-title">HTML/CSS</p>
+                    <p className="roadmap-preview-title text-[0.84rem] font-[700] [color:#1f2937]">HTML/CSS</p>
                   </div>
-                  <div className="roadmap-preview-card roadmap-preview-card--blue">
-                    <div className="roadmap-preview-icon roadmap-preview-icon--blue">
+                  <div className="roadmap-preview-card roadmap-preview-card--blue flex min-h-[94px] w-[118px] flex-col items-center justify-center gap-[10px] rounded-[24px] [border:1px_solid_rgba(147,197,253,0.78)] [background:rgba(255,255,255,0.96)] px-[12px] py-[14px] text-center [backdrop-filter:blur(12px)] [box-shadow:0_16px_30px_rgba(96,165,250,0.2)]">
+                    <div className="roadmap-preview-icon roadmap-preview-icon--blue flex h-[42px] w-[42px] items-center justify-center rounded-[14px] [border:2px_solid_currentColor] [background:#eff6ff] text-[1.05rem] [color:#3b82f6] [box-shadow:0_8px_18px_rgba(148,163,184,0.18)]">
                       <i className="fab fa-js" />
                     </div>
-                    <p className="roadmap-preview-title">JavaScript</p>
+                    <p className="roadmap-preview-title text-[0.84rem] font-[700] [color:#1f2937]">JavaScript</p>
                   </div>
                 </div>
 
-                <div className="roadmap-preview-next">
-                  <div className="roadmap-preview-next-badge">
+                <div className="roadmap-preview-next absolute bottom-[2px] left-1/2 z-[2] flex h-[84px] w-[188px] [transform:translateX(-50%)] flex-col items-center justify-center rounded-[22px] [border:1px_solid_rgba(226,232,240,0.95)] [background:rgba(255,255,255,0.97)] px-[16px] text-center [backdrop-filter:blur(14px)] [box-shadow:0_18px_34px_rgba(148,163,184,0.18)]">
+                  <div className="roadmap-preview-next-badge mb-[6px] inline-flex items-center gap-[6px] text-[0.64rem] font-[700] tracking-[0.08em] [color:#94a3b8]">
                     <i className="fas fa-lock" />
                     <span>잠금</span>
                   </div>
-                  <p className="roadmap-preview-next-title">프레임워크</p>
+                  <p className="roadmap-preview-next-title text-[1rem] font-[700] [color:#334155]">프레임워크</p>
                 </div>
               </div>
             </div>

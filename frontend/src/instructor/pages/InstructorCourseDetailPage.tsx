@@ -211,7 +211,7 @@ export default function InstructorCourseDetailPage() {
 
   if (loading) {
     return (
-      <div className="instructor-course-detail-page p-8">
+      <div className="instructor-course-detail-page min-h-[calc(100dvh-var(--app-header-height))]! box-border! bg-[#f8f9fa]! p-8 font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]! text-[#1f2937]!">
         <LoadingCard label="강의 상세 정보를 불러오는 중입니다." />
       </div>
     )
@@ -219,7 +219,7 @@ export default function InstructorCourseDetailPage() {
 
   if (error || !detail || !courseId) {
     return (
-      <div className="instructor-course-detail-page p-8">
+      <div className="instructor-course-detail-page min-h-[calc(100dvh-var(--app-header-height))]! box-border! bg-[#f8f9fa]! p-8 font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]! text-[#1f2937]!">
         <ErrorCard message={error ?? '강의 정보를 찾을 수 없습니다.'} />
       </div>
     )
@@ -242,17 +242,17 @@ export default function InstructorCourseDetailPage() {
   const pendingQuestionCount = courseSummary?.pendingQuestionCount ?? 0
 
   return (
-    <div className="instructor-course-detail-page p-8">
-      <div className="instructor-course-detail-content mx-auto max-w-[1240px]">
+    <div className="instructor-course-detail-page min-h-[calc(100dvh-var(--app-header-height))]! box-border! bg-[#f8f9fa]! p-8 font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]! text-[#1f2937]!">
+      <div className="instructor-course-detail-content m-0! w-full! max-w-none!">
         {actionError ? (
           <div className="mb-6 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
             {actionError}
           </div>
         ) : null}
 
-        <section className="instructor-course-detail-hero mb-8 flex flex-col items-start justify-between gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm xl:flex-row">
+        <section className="instructor-course-detail-hero mb-[32px]! flex flex-col items-start justify-between gap-6 rounded-[12px]! border-[1px]! border-[#e5e7eb]! bg-[#ffffff]! p-[24px]! [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]! [&_p]:tracking-[0]! [&_span]:tracking-[0]! xl:flex-row">
           <div className="flex flex-col gap-6 md:flex-row">
-            <div className="instructor-course-detail-thumbnail flex h-24 w-40 items-center justify-center overflow-hidden rounded-lg bg-gray-200 text-gray-400">
+            <div className="instructor-course-detail-thumbnail flex h-[96px]! w-[160px]! items-center justify-center overflow-hidden rounded-[8px]! bg-gray-200 text-gray-400">
               {detail.thumbnailUrl ? (
                 <img src={detail.thumbnailUrl} alt={detail.title} className="h-full w-full object-cover" />
               ) : (
@@ -265,7 +265,7 @@ export default function InstructorCourseDetailPage() {
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${statusMeta.tone}`}>{statusMeta.label}</span>
                 <span className="text-xs text-gray-400">최종 수정: {formatDate(courseSummary?.publishedAt)}</span>
               </div>
-              <h1 className="mb-2 text-2xl font-bold text-gray-900">{detail.title}</h1>
+              <h1 className="[margin:0_0_8px]! text-[24px]! leading-[32px]! font-[700]! tracking-[0]! text-[#111827]!">{detail.title}</h1>
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                 <span>
                   <i className="fas fa-user-friends mr-1" /> {formatNumber(studentCount)}명 수강 중
@@ -283,14 +283,14 @@ export default function InstructorCourseDetailPage() {
               onClick={() => {
                 window.location.href = `/course-editor?courseId=${courseId}`
               }}
-              className="instructor-course-detail-edit-button flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-green-600"
+              className="instructor-course-detail-edit-button flex h-[40px]! items-center gap-[8px]! rounded-[8px]! bg-[#00c471]! px-[20px]! py-[10px]! text-[14px]! leading-[20px]! font-[700]! text-[#ffffff]! [box-shadow:0_4px_6px_-1px_rgba(15,23,42,0.12)]! transition hover:bg-green-600"
             >
               <i className="fas fa-edit" /> 커리큘럼/영상 편집
             </button>
           </div>
         </section>
 
-        <div className="instructor-course-detail-tabs mb-6 flex border-b border-gray-200">
+        <div className="instructor-course-detail-tabs mb-[24px]! flex border-gray-200 border-b-[1px]! border-b-[#e5e7eb]!">
           {[
             ['dashboard', '대시보드'],
             ['students', '수강생 관리'],
@@ -300,8 +300,10 @@ export default function InstructorCourseDetailPage() {
               key={key}
               type="button"
               onClick={() => setActiveTab(key as DetailTab)}
-              className={`instructor-course-detail-tab px-6 py-3 text-sm font-bold transition ${
-                activeTab === key ? 'border-b-2 border-brand text-brand' : 'text-gray-500 hover:text-gray-800'
+              className={`instructor-course-detail-tab border-b-[2px]! bg-transparent! px-[24px]! py-[12px]! text-[14px]! leading-[20px]! tracking-[0]! transition ${
+                activeTab === key
+                  ? 'border-[#00c471]! font-[700]! text-[#00c471]!'
+                  : 'font-[500]! text-[#6b7280]! hover:text-gray-800'
               }`}
             >
               {label}
@@ -312,25 +314,25 @@ export default function InstructorCourseDetailPage() {
         {activeTab === 'dashboard' ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <article className="instructor-course-detail-stat-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <p className="mb-2 text-xs font-bold uppercase text-gray-500">이번 달 수익</p>
-                <h3 className="text-2xl font-extrabold text-gray-900">{formatCurrency(currentMonthRevenue, detail.currency ?? 'KRW')}</h3>
+              <article className="instructor-course-detail-stat-card rounded-[12px]! border-[1px]! border-[#e5e7eb]! bg-[#ffffff]! p-[24px]! [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!">
+                <p className="mb-[8px]! text-[12px]! leading-[16px]! font-[700]! tracking-[0]! text-[#6b7280]! uppercase">이번 달 수익</p>
+                <h3 className="text-[24px]! leading-[32px]! font-[800]! tracking-[0]! text-[#111827]!">{formatCurrency(currentMonthRevenue, detail.currency ?? 'KRW')}</h3>
                 <p className="mt-2 text-xs text-green-600">
                   <i className="fas fa-arrow-up" /> {revenueChangePercent ? `지난달 대비 ${revenueChangePercent}%` : '비교 데이터 없음'}
                 </p>
               </article>
 
-              <article className="instructor-course-detail-stat-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <p className="mb-2 text-xs font-bold uppercase text-gray-500">평균 진도율</p>
-                <h3 className="text-2xl font-extrabold text-gray-900">{averageProgress.toFixed(1)}%</h3>
+              <article className="instructor-course-detail-stat-card rounded-[12px]! border-[1px]! border-[#e5e7eb]! bg-[#ffffff]! p-[24px]! [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!">
+                <p className="mb-[8px]! text-[12px]! leading-[16px]! font-[700]! tracking-[0]! text-[#6b7280]! uppercase">평균 진도율</p>
+                <h3 className="text-[24px]! leading-[32px]! font-[800]! tracking-[0]! text-[#111827]!">{averageProgress.toFixed(1)}%</h3>
                 <div className="mt-3 h-1.5 w-full rounded-full bg-gray-100">
                   <div className="h-1.5 rounded-full bg-brand" style={{ width: `${Math.min(100, averageProgress)}%` }} />
                 </div>
               </article>
 
-              <article className="instructor-course-detail-stat-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <p className="mb-2 text-xs font-bold uppercase text-gray-500">미답변 질문</p>
-                <h3 className="text-2xl font-extrabold text-red-500">{formatNumber(pendingQuestionCount)}건</h3>
+              <article className="instructor-course-detail-stat-card rounded-[12px]! border-[1px]! border-[#e5e7eb]! bg-[#ffffff]! p-[24px]! [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!">
+                <p className="mb-[8px]! text-[12px]! leading-[16px]! font-[700]! tracking-[0]! text-[#6b7280]! uppercase">미답변 질문</p>
+                <h3 className="text-[24px]! leading-[32px]! font-[800]! tracking-[0]! text-[#111827]!">{formatNumber(pendingQuestionCount)}건</h3>
                 <button
                   type="button"
                   onClick={() => {
@@ -343,8 +345,8 @@ export default function InstructorCourseDetailPage() {
               </article>
             </div>
 
-            <section className="instructor-course-detail-chart-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="mb-4 font-bold text-gray-900">최근 7일 판매 추이</h3>
+            <section className="instructor-course-detail-chart-card rounded-[12px]! border-[1px]! border-[#e5e7eb]! bg-[#ffffff]! p-[24px]! [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!">
+              <h3 className="mb-4 text-[16px]! leading-[24px]! font-[700]! tracking-[0]! text-[#111827]!">최근 7일 판매 추이</h3>
               <div className="flex h-40 items-end justify-between gap-2">
                 {dailySales.map((item) => (
                   <div key={item.label} className="group relative h-full w-full rounded-t-md bg-gray-100">
@@ -369,21 +371,21 @@ export default function InstructorCourseDetailPage() {
             {students.length === 0 ? (
               <EmptyCard title="수강생 데이터가 없습니다." description="아직 이 강의를 수강 중인 학생이 없습니다." />
             ) : (
-              <div className="instructor-course-detail-table-wrap overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+              <div className="instructor-course-detail-table-wrap overflow-hidden rounded-[12px]! border-[1px]! border-[#e5e7eb]! bg-[#ffffff]! [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!">
+                <table className="w-full! text-left text-[14px]! leading-[20px]!">
+                  <thead className="bg-[#f9fafb]! text-[12px]! leading-[16px]! font-[700]! text-[#6b7280]! uppercase">
                     <tr>
-                      <th className="px-6 py-3">수강생</th>
-                      <th className="px-6 py-3">진도율</th>
-                      <th className="px-6 py-3">최근 학습일</th>
-                      <th className="px-6 py-3">쪽지</th>
+                      <th className="px-[24px]! py-[12px]!">수강생</th>
+                      <th className="px-[24px]! py-[12px]!">진도율</th>
+                      <th className="px-[24px]! py-[12px]!">최근 학습일</th>
+                      <th className="px-[24px]! py-[12px]!">쪽지</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {students.map((student) => (
                       <tr key={student.studentId} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 font-bold text-gray-900">{student.studentName}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-[24px]! py-[16px]! font-bold text-gray-900">{student.studentName}</td>
+                        <td className="px-[24px]! py-[16px]!">
                           <div className="flex items-center gap-2">
                             <div className="h-1.5 w-20 rounded-full bg-gray-100">
                               <div
@@ -396,8 +398,8 @@ export default function InstructorCourseDetailPage() {
                             <span className="text-xs text-gray-500">{(student.progressPercent ?? 0).toFixed(0)}%</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-500">{formatDateTime(student.lastAccessedAt)}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-[24px]! py-[16px]! text-gray-500">{formatDateTime(student.lastAccessedAt)}</td>
+                        <td className="px-[24px]! py-[16px]!">
                           <button
                             type="button"
                             onClick={() => {
@@ -419,9 +421,9 @@ export default function InstructorCourseDetailPage() {
         ) : null}
 
         {activeTab === 'settings' ? (
-          <section className="instructor-course-detail-settings-card max-w-2xl rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
+          <section className="instructor-course-detail-settings-card max-w-[672px]! rounded-[12px]! border-[1px]! border-[#e5e7eb]! bg-[#ffffff]! p-[32px]! [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]! [&_label]:text-[14px]! [&_label]:leading-[20px]! [&_label]:tracking-[0]! [&_span]:text-[14px]! [&_span]:leading-[20px]! [&_span]:tracking-[0]!">
             <div className="mb-6 border-b border-gray-100 pb-6">
-              <h3 className="mb-4 font-bold text-gray-900">가격 설정</h3>
+              <h3 className="mb-4 text-[16px]! leading-[24px]! font-[700]! tracking-[0]! text-[#111827]!">가격 설정</h3>
               <div className="flex items-center gap-4">
                 <label htmlFor="course-price" className="w-24 text-sm text-gray-600">
                   가격 (원)
@@ -432,13 +434,13 @@ export default function InstructorCourseDetailPage() {
                   onChange={(event) => setSettingsPriceInput(formatPriceInput(event.target.value))}
                   type="text"
                   inputMode="numeric"
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm outline-none focus:border-brand"
+                  className="h-[40px]! rounded-[8px]! border-[1px]! border-[#d1d5db]! px-[16px]! py-[8px]! text-[14px]! leading-[20px]! text-[#374151]! outline-none focus:border-brand"
                 />
               </div>
             </div>
 
             <div className="mb-6 border-b border-gray-100 pb-6">
-              <h3 className="mb-4 font-bold text-gray-900">공개 상태</h3>
+              <h3 className="mb-4 text-[16px]! leading-[24px]! font-[700]! tracking-[0]! text-[#111827]!">공개 상태</h3>
               <label className="flex items-center gap-3">
                 <input
                   type="radio"
@@ -466,7 +468,7 @@ export default function InstructorCourseDetailPage() {
                 type="button"
                 onClick={handleSaveSettings}
                 disabled={saving}
-                className="instructor-course-detail-save-button rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
+                className="instructor-course-detail-save-button h-[40px]! rounded-[8px]! bg-[#111827]! px-[24px]! py-[10px]! text-[14px]! leading-[20px]! font-[700]! text-[#ffffff]! transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? '저장 중...' : '저장하기'}
               </button>
