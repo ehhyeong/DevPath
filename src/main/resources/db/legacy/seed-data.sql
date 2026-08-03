@@ -13778,15 +13778,30 @@ WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서�
   );
 
 UPDATE qna_questions question
-SET adopted_answer_id = answer.answer_id,
+SET adopted_answer_id = (
+        SELECT MAX(answer.answer_id)
+        FROM qna_answers answer
+        WHERE answer.question_id = question.question_id
+    ),
     qna_status = 'ANSWERED',
-    updated_at = answer.created_at
-FROM qna_answers answer, workspace workspace_seed
-WHERE answer.question_id = question.question_id
-  AND workspace_seed.id = question.workspace_id
-  AND workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+    updated_at = (
+        SELECT MAX(answer.created_at)
+        FROM qna_answers answer
+        WHERE answer.question_id = question.question_id
+    )
+WHERE EXISTS (
+      SELECT 1
+      FROM workspace workspace_seed
+      WHERE workspace_seed.id = question.workspace_id
+        AND workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  )
   AND question.title = 'Redis 쿠폰 중복 발급 테스트 방식 질문'
-  AND question.adopted_answer_id IS NULL;
+  AND question.adopted_answer_id IS NULL
+  AND EXISTS (
+      SELECT 1
+      FROM qna_answers answer
+      WHERE answer.question_id = question.question_id
+  );
 
 INSERT INTO meeting_note (
     workspace_id,

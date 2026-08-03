@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import SquadWorkspaceAside from './components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
@@ -200,17 +200,45 @@ export default function SquadReviewApp() {
     setCommentDraft('')
   }, [selectedReviewId])
 
-  function selectedFileStorageKey(reviewId: number) {
+  const selectedFileStorageKey = useCallback((reviewId: number) => {
     return `devpath.squadReview.${workspaceId ?? 'unknown'}.${reviewId}.selectedFilePath`
-  }
+  }, [workspaceId])
 
-  function applyDetail(detailData: CodeReviewDetail) {
+  const applyDetail = useCallback((detailData: CodeReviewDetail) => {
     const storedFilePath = window.localStorage.getItem(selectedFileStorageKey(detailData.summary.reviewId))
     const nextFilePath = resolveDefaultFilePath(detailData, storedFilePath)
 
     setDetail(detailData)
     setSelectedFilePath(nextFilePath)
-  }
+  }, [selectedFileStorageKey])
+
+  const loadDetail = useCallback(async (reviewId: number, ignore = false) => {
+    if (!workspaceId) {
+      return
+    }
+
+    setDetailLoading(true)
+
+    try {
+      const detailData = await projectApiRequest<CodeReviewDetail>(
+        `/api/workspaces/${workspaceId}/code-reviews/${reviewId}`,
+        {},
+        'required',
+      )
+
+      if (!ignore) {
+        applyDetail(detailData)
+      }
+    } catch {
+      if (!ignore) {
+        setToast('리뷰 상세를 불러오지 못했습니다.')
+      }
+    } finally {
+      if (!ignore) {
+        setDetailLoading(false)
+      }
+    }
+  }, [applyDetail, workspaceId])
 
   function selectReviewFile(filePath: string) {
     if (detail) {
@@ -277,7 +305,7 @@ export default function SquadReviewApp() {
     return () => {
       ignore = true
     }
-  }, [workspaceId])
+  }, [loadDetail, workspaceId])
 
   async function reloadBoard(preferredReviewId?: number | null) {
     if (!workspaceId) {
@@ -305,34 +333,6 @@ export default function SquadReviewApp() {
     } else {
       setSelectedReviewId(null)
       setDetail(null)
-    }
-  }
-
-  async function loadDetail(reviewId: number, ignore = false) {
-    if (!workspaceId) {
-      return
-    }
-
-    setDetailLoading(true)
-
-    try {
-      const detailData = await projectApiRequest<CodeReviewDetail>(
-        `/api/workspaces/${workspaceId}/code-reviews/${reviewId}`,
-        {},
-        'required',
-      )
-
-      if (!ignore) {
-        applyDetail(detailData)
-      }
-    } catch {
-      if (!ignore) {
-        setToast('리뷰 상세를 불러오지 못했습니다.')
-      }
-    } finally {
-      if (!ignore) {
-        setDetailLoading(false)
-      }
     }
   }
 

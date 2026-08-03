@@ -197,7 +197,9 @@ public class DiagnosisQuizService {
 
     // 프론트 시연 계정은 Gemini 호출을 건너뛰고 고정 데모 추천으로 대체한다.
     if (isFrontendRoadmapDemoFallback(user, clearedNode, nodeTags)) {
-      return buildFrontendRoadmapDemoFallback(user, clearedNode, roadmapId, customRoadmapId, isLowScore).stream()
+      return buildFrontendRoadmapDemoFallback(
+              user, clearedNode, roadmapId, customRoadmapId, isLowScore)
+          .stream()
           .map(String::valueOf)
           .collect(Collectors.joining(","));
     }
@@ -711,7 +713,8 @@ public class DiagnosisQuizService {
     int score = resolveTestRunScore(userId, originalNodeId, courseScores);
 
     String recommendedNodes =
-        analyzeAndRecommend(userId, originalNodeId, score, roadmapId, customRoadmapId, courseScores);
+        analyzeAndRecommend(
+            userId, originalNodeId, score, roadmapId, customRoadmapId, courseScores);
 
     boolean isLowScore = (double) score / 100 < REVIEW_THRESHOLD;
     return DiagnosisQuizDto.TestRunResponse.builder()
@@ -854,8 +857,7 @@ public class DiagnosisQuizService {
         .orElse(null);
   }
 
-  private void refreshFrontendRoadmapDemoChange(
-      RecommendationChange change, boolean isLowScore) {
+  private void refreshFrontendRoadmapDemoChange(RecommendationChange change, boolean isLowScore) {
     RoadmapNode node = change.getRoadmapNode();
     if (node != null) {
       node.updateAdminInfo(
@@ -866,7 +868,8 @@ public class DiagnosisQuizService {
           frontendRoadmapDemoSubTopics(isLowScore),
           null);
     }
-    change.updateSuggestionText(frontendRoadmapDemoReason(isLowScore), frontendRoadmapDemoContextSummary());
+    change.updateSuggestionText(
+        frontendRoadmapDemoReason(isLowScore), frontendRoadmapDemoContextSummary());
   }
 
   private CustomRoadmap findCustomRoadmap(Long userId, Long roadmapId, Long customRoadmapId) {
@@ -917,9 +920,7 @@ public class DiagnosisQuizService {
   }
 
   private String frontendRoadmapDemoSubTopics(boolean isLowScore) {
-    return isLowScore
-        ? "DOM,CSSOM,렌더 트리,레이아웃,페인트,Vite"
-        : "DOM,CSSOM,렌더 트리,레이아웃,페인트,DevTools,Vite";
+    return isLowScore ? "DOM,CSSOM,렌더 트리,레이아웃,페인트,Vite" : "DOM,CSSOM,렌더 트리,레이아웃,페인트,DevTools,Vite";
   }
 
   private String frontendRoadmapDemoReason(boolean isLowScore) {

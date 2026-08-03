@@ -129,10 +129,21 @@ function buildReviewFilterClass(active: boolean) {
 }
 
 function toQuestionSummary(question: QnaQuestionDetail): QnaQuestionSummary {
-  const { content: _content, updatedAt: _updatedAt, answers, ...summary } = question
   return {
-    ...summary,
-    answerCount: answers.length,
+    id: question.id,
+    authorId: question.authorId,
+    authorName: question.authorName,
+    courseId: question.courseId,
+    lessonId: question.lessonId,
+    templateType: question.templateType,
+    difficulty: question.difficulty,
+    title: question.title,
+    adoptedAnswerId: question.adoptedAnswerId,
+    lectureTimestamp: question.lectureTimestamp,
+    qnaStatus: question.qnaStatus,
+    answerCount: question.answers.length,
+    viewCount: question.viewCount,
+    createdAt: question.createdAt,
   }
 }
 
@@ -450,7 +461,7 @@ export default function CourseDetailApp() {
       cancelled = true
       controller.abort()
     }
-  }, [courseId, session?.accessToken])
+  }, [courseId, isStudentPreview, session])
 
   useEffect(() => {
     setOpenSectionIds(displayCourse.sections[0] ? [displayCourse.sections[0].sectionId] : [])

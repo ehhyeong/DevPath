@@ -18,6 +18,7 @@ import com.devpath.api.admin.dto.governance.NodeTypeRequest;
 import com.devpath.api.admin.dto.governance.PendingCourseResponse;
 import com.devpath.api.admin.dto.governance.RoadmapNodeUpsertRequest;
 import com.devpath.api.admin.dto.governance.TagMergeRequest;
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -56,6 +57,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest(
@@ -73,6 +75,8 @@ import org.springframework.test.util.ReflectionTestUtils;
   TagValidationService.class
 })
 class AdminGovernanceServiceIntegrationTest {
+
+  @MockitoBean private InstructorNotificationService instructorNotificationService;
 
   @Autowired private AdminCourseGovernanceService adminCourseGovernanceService;
   @Autowired private AdminNodeGovernanceService adminNodeGovernanceService;
@@ -110,11 +114,13 @@ class AdminGovernanceServiceIntegrationTest {
         .extracting(Course::getStatus)
         .isEqualTo(CourseStatus.PUBLISHED);
 
+    Course rejectedCourse =
+        saveCourse(instructor, "Rejected Pending Course", CourseStatus.IN_REVIEW);
     adminCourseGovernanceService.rejectCourse(
-        course.getCourseId(), courseRejectRequest("Needs more work"));
+        rejectedCourse.getCourseId(), courseRejectRequest("Needs more work"));
     flushAndClear();
 
-    assertThat(courseRepository.findById(course.getCourseId()))
+    assertThat(courseRepository.findById(rejectedCourse.getCourseId()))
         .get()
         .extracting(Course::getStatus)
         .isEqualTo(CourseStatus.DRAFT);
@@ -401,7 +407,8 @@ class AdminGovernanceServiceIntegrationTest {
         mergeTagsRequest(sourceTag.getTagId(), targetTag.getTagId()));
     flushAndClear();
 
-    assertThat(tagRepository.findById(sourceTag.getTagId())).isEmpty();
+    assertThat(tagRepository.findById(sourceTag.getTagId()))
+        .hasValueSatisfying(tag -> assertThat(tag.getIsDeleted()).isTrue());
     assertThat(courseTagMapRepository.findAllByCourseCourseId(course.getCourseId()))
         .extracting(mapping -> mapping.getTag().getTagId())
         .containsExactly(targetTag.getTagId());

@@ -154,6 +154,16 @@ export type WorkspaceNotificationDraft = Omit<WorkspaceNotification, 'id' | 'cre
   createdAt?: string
 }
 
+export type VoiceChannelSummary = {
+  channelId: number
+  workspaceId: number
+  name: string
+  description?: string | null
+  activeParticipantCount: number
+  currentSessionStartedAt?: string | null
+  createdAt?: string | null
+}
+
 export type WorkspaceData = {
   dashboard: WorkspaceDashboard | null
   tasks: WorkspaceTask[]
@@ -164,4 +174,5 @@ export type WorkspaceData = {
   meetingNotes: MeetingNote[]
   meetingSettings: MeetingSettings | null
   activityLogs: ActivityLogItem[]
+  voiceChannels: VoiceChannelSummary[]
 }

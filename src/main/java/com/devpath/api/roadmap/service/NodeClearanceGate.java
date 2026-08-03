@@ -12,8 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 노드 클리어의 "태그 게이트" 판정 단일 소스. 클리어 커맨드(NodeClearanceCommandService)와
- * 로드맵 뷰(CustomRoadmapQueryService)가 동일 로직을 공유해 UI 표시와 실제 클리어 가능 여부가 어긋나지 않게 한다.
+ * 노드 클리어의 "태그 게이트" 판정 단일 소스. 클리어 커맨드(NodeClearanceCommandService)와 로드맵
+ * 뷰(CustomRoadmapQueryService)가 동일 로직을 공유해 UI 표시와 실제 클리어 가능 여부가 어긋나지 않게 한다.
  *
  * <p>클리어 조건 = <b>모든 필수 태그 충족</b>.
  *

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ErrorCard, LoadingCard, formatDate, formatNumber } from '../../account/ui'
+import { ErrorCard, LoadingCard } from '../../account/ui'
+import { formatDate, formatNumber } from '../../account/ui-utils'
 import { instructorCourseApi, instructorMarketingApi } from '../../lib/api'
 import type {
   InstructorCouponItem,
@@ -86,12 +87,10 @@ export default function InstructorMarketingPage() {
   const [selectedStatus, setSelectedStatus] = useState<CouponStatusKey>('ALL')
   const [query, setQuery] = useState('')
   const [showExpiringSoonOnly, setShowExpiringSoonOnly] = useState(false)
+  const [now] = useState(() => Date.now())
 
   useEffect(() => {
     const controller = new AbortController()
-
-    setLoading(true)
-    setError(null)
 
     Promise.all([
       instructorCourseApi.getCourses(controller.signal),
@@ -140,7 +139,7 @@ export default function InstructorMarketingPage() {
     }
 
     const expiresAt = new Date(item.expiresAt).getTime()
-    const diffDays = Math.ceil((expiresAt - Date.now()) / (1000 * 60 * 60 * 24))
+    const diffDays = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))
     return diffDays >= 0 && diffDays <= 7
   })
 

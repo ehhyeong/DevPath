@@ -19,6 +19,7 @@ const headerLinks = [
 ]
 
 const instructorHeaderLink = { key: 'instructorDashboard', href: '/instructor-dashboard', label: '강사 대시보드' }
+const showLegacyHeader = false
 
 type HeaderMoveKey = 'brandGroup' | 'navGroup'
 
@@ -253,7 +254,7 @@ function App() {
         onLoginClick={() => openAuthModal('login')}
       />
 
-      {false ? <nav className="app-header">
+      {showLegacyHeader ? <nav className="app-header">
         <div className="mx-auto flex h-full w-full max-w-[1600px] items-center gap-8 px-8">
           <div className="hidden w-60 items-center px-4 lg:flex" style={{ transform: 'translateX(var(--logo-nudge))' }}>
             <a

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ErrorCard, LoadingCard, formatDate, formatNumber } from '../../account/ui'
+import { ErrorCard, LoadingCard } from '../../account/ui'
+import { formatDate, formatNumber } from '../../account/ui-utils'
 import UserAvatar from '../../components/UserAvatar'
 import {
   buildInstructorCourseOptions,
@@ -231,8 +232,6 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
 
   useEffect(() => {
     const controller = new AbortController()
-    setLoading(true)
-    setError(null)
     Promise.all([
       fetchReviewData(controller.signal),
       userApi.getMyProfile(controller.signal).catch(() => null),
@@ -255,16 +254,45 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
     return () => controller.abort()
   }, [])
 
-  useEffect(() => {
-    setVisibleLimit(6)
-  }, [currentTab, courseFilter, sortFilter, starFilter, search])
-
   async function refreshReviewData() {
     const [nextReviews, nextSummary, nextHelpful, nextTemplates] = await fetchReviewData()
-    setReviews(nextReviews.map(normalizeReview))
+    const normalizedReviews = nextReviews.map(normalizeReview)
+    const nextCourseOptions = buildInstructorCourseOptions(courseCatalog).filter(([value]) =>
+      normalizedReviews.some((review) => String(review.courseId) === value),
+    )
+    setReviews(normalizedReviews)
     setSummary(nextSummary)
     setHelpful(nextHelpful)
     setTemplates(nextTemplates)
+    if (courseFilter !== 'all' && !nextCourseOptions.some(([value]) => value === courseFilter)) {
+      setCourseFilter('all')
+      setVisibleLimit(6)
+    }
+  }
+
+  function changeCurrentTab(nextTab: ReviewTabKey) {
+    setCurrentTab(nextTab)
+    setVisibleLimit(6)
+  }
+
+  function changeCourseFilter(nextFilter: string) {
+    setCourseFilter(nextFilter)
+    setVisibleLimit(6)
+  }
+
+  function changeSortFilter(nextFilter: string) {
+    setSortFilter(nextFilter)
+    setVisibleLimit(6)
+  }
+
+  function changeStarFilter(nextFilter: string) {
+    setStarFilter(nextFilter)
+    setVisibleLimit(6)
+  }
+
+  function changeSearch(nextSearch: string) {
+    setSearch(nextSearch)
+    setVisibleLimit(6)
   }
 
   function updateDraft(reviewId: number, value: string) {
@@ -330,12 +358,6 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
       ? reviews.filter((review) => allowedCourseIds.has(review.courseId))
       : reviews
 
-  useEffect(() => {
-    if (courseFilter !== 'all' && !availableCourseOptions.some(([value]) => value === courseFilter)) {
-      setCourseFilter('all')
-    }
-  }, [courseFilter, availableCourseOptions])
-
   if (loading) return <div className={`instructor-reviews-page p-6 ${INSTRUCTOR_REVIEWS_UI_LOCK_CLASSES}`}><LoadingCard label="수강평 데이터를 불러오는 중입니다." /></div>
   if (error || !summary || !helpful) return <div className={`instructor-reviews-page p-6 ${INSTRUCTOR_REVIEWS_UI_LOCK_CLASSES}`}><ErrorCard message={error ?? '수강평 데이터를 불러오지 못했습니다.'} /></div>
 
@@ -375,7 +397,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
           </div>
           <div className="flex items-center gap-2">
             <div className="instructor-reviews-course-filter relative">
-              <select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)} className="instructor-reviews-course-select min-w-[240px] cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-bold text-gray-700 shadow-sm outline-none focus:border-green-500">
+              <select value={courseFilter} onChange={(event) => changeCourseFilter(event.target.value)} className="instructor-reviews-course-select min-w-[240px] cursor-pointer appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-4 pr-10 text-sm font-bold text-gray-700 shadow-sm outline-none focus:border-green-500">
                 <option value="all">전체 강의 보기</option>
                 {courseOptions.map(([courseId, courseTitle]) => <option key={courseId} value={courseId}>{courseTitle}</option>)}
               </select>
@@ -383,7 +405,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
             </div>
             <div className="instructor-reviews-search-box flex h-10 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 shadow-sm">
               <i className="fas fa-search text-gray-400" />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} type="text" placeholder="검색" className="w-32 bg-transparent text-sm font-bold text-gray-600 outline-none placeholder:text-gray-400" />
+              <input value={search} onChange={(event) => changeSearch(event.target.value)} type="text" placeholder="검색" className="w-32 bg-transparent text-sm font-bold text-gray-600 outline-none placeholder:text-gray-400" />
             </div>
           </div>
         </div>
@@ -433,7 +455,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
               <p className="text-xs font-bold text-gray-500">답변을 기다리는 수강생이 있습니다.</p>
             </div>
             <div className="relative z-10 mt-6">
-              <button type="button" onClick={() => setCurrentTab('unreplied')} className="w-full rounded-lg bg-orange-500 py-2 text-xs font-bold text-white shadow-md transition hover:bg-orange-600">
+              <button type="button" onClick={() => changeCurrentTab('unreplied')} className="w-full rounded-lg bg-orange-500 py-2 text-xs font-bold text-white shadow-md transition hover:bg-orange-600">
                 미답변 리뷰 모아보기 <i className="fas fa-arrow-right ml-1" />
               </button>
             </div>
@@ -465,7 +487,7 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
             { key: 'unreplied', label: '미답변', count: unansweredCount, tone: 'bg-orange-100 text-orange-600' },
             { key: 'low', label: '별점 3점 이하', count: lowRatingCount, tone: 'bg-gray-100 text-gray-600' },
           ].map((tab) => (
-            <button key={tab.key} type="button" onClick={() => setCurrentTab(tab.key as ReviewTabKey)} className={`-mb-px flex items-center px-6 py-3 text-sm font-bold transition ${currentTab === tab.key ? 'border-b-2 border-b-[#00C471] text-[#00C471]' : 'border-b-2 border-b-transparent text-gray-500 hover:text-gray-900'}`}>
+            <button key={tab.key} type="button" onClick={() => changeCurrentTab(tab.key as ReviewTabKey)} className={`-mb-px flex items-center px-6 py-3 text-sm font-bold transition ${currentTab === tab.key ? 'border-b-2 border-b-[#00C471] text-[#00C471]' : 'border-b-2 border-b-transparent text-gray-500 hover:text-gray-900'}`}>
               {tab.label}
               <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-bold ${currentTab === tab.key ? 'bg-[#E6F9F1] text-[#00C471]' : tab.tone}`}>
                 {formatNumber(tab.count)}
@@ -476,13 +498,13 @@ export default function InstructorReviewsPage({ session }: { session: AuthSessio
 
         <div className="instructor-reviews-toolbar mb-5 flex items-center justify-between gap-3">
           <div className="flex gap-2">
-            <select value={sortFilter} onChange={(event) => setSortFilter(event.target.value)} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-semibold text-gray-700 outline-none focus:border-[#00C471]">
+            <select value={sortFilter} onChange={(event) => changeSortFilter(event.target.value)} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-semibold text-gray-700 outline-none focus:border-[#00C471]">
               <option value="latest">최신순</option>
               <option value="oldest">오래된순</option>
               <option value="high">별점 높은순</option>
               <option value="low">별점 낮은순</option>
             </select>
-            <select value={starFilter} onChange={(event) => setStarFilter(event.target.value)} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-semibold text-gray-700 outline-none focus:border-[#00C471]">
+            <select value={starFilter} onChange={(event) => changeStarFilter(event.target.value)} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-semibold text-gray-700 outline-none focus:border-[#00C471]">
               <option value="all">별점 전체</option>
               <option value="5">5점만</option>
               <option value="4">4점만</option>

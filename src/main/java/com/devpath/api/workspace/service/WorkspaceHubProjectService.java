@@ -1,8 +1,10 @@
 package com.devpath.api.workspace.service;
 
+import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteAcceptResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteLinkResponse;
-import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.mentoring.entity.Mentoring;
 import com.devpath.domain.mentoring.entity.MentoringPost;
 import com.devpath.domain.mentoring.entity.MentoringStatus;
@@ -16,8 +18,6 @@ import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;
-import com.devpath.common.exception.CustomException;
-import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.workspace.entity.ActivityLog;
 import com.devpath.domain.workspace.entity.ActivityLogType;
 import com.devpath.domain.workspace.entity.CalendarEvent;
@@ -90,7 +90,8 @@ public class WorkspaceHubProjectService {
     Workspace workspace = getWorkspace(workspaceId);
     validateWorkspaceInviteSharer(workspace, userId);
 
-    LocalDateTime expiresAt = LocalDateTime.now().plusDays(INVITE_EXPIRE_DAYS).truncatedTo(ChronoUnit.SECONDS);
+    LocalDateTime expiresAt =
+        LocalDateTime.now().plusDays(INVITE_EXPIRE_DAYS).truncatedTo(ChronoUnit.SECONDS);
     return new WorkspaceInviteLinkResponse(
         workspace.getId(), encodeInviteToken(workspace.getId(), expiresAt), expiresAt);
   }
@@ -365,8 +366,7 @@ public class WorkspaceHubProjectService {
         tasks.stream()
             .sorted(
                 Comparator.comparing(
-                        WorkspaceTask::getDueDate,
-                        Comparator.nullsLast(Comparator.naturalOrder()))
+                        WorkspaceTask::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()))
                     .thenComparing(
                         WorkspaceTask::getCreatedAt,
                         Comparator.nullsLast(Comparator.naturalOrder()))
@@ -704,7 +704,9 @@ public class WorkspaceHubProjectService {
     if (normalized.contains("pm") || normalized.contains("湲고쉷")) {
       return "PM";
     }
-    if (normalized.contains("devops") || normalized.contains("infra") || normalized.contains("?명봽")) {
+    if (normalized.contains("devops")
+        || normalized.contains("infra")
+        || normalized.contains("?명봽")) {
       return "OPS";
     }
 

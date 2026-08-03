@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Chart from 'chart.js/auto'
-import { ErrorCard, LoadingCard, formatCurrency, formatDateTime, formatNumber } from '../../account/ui'
+import { ErrorCard, LoadingCard } from '../../account/ui'
+import { formatCurrency, formatDateTime, formatNumber } from '../../account/ui-utils'
 import { instructorRevenueApi } from '../../lib/api'
 import type {
   InstructorRevenueCourseBreakdownItem,
@@ -99,9 +100,6 @@ export default function InstructorRevenuePage() {
 
   useEffect(() => {
     const controller = new AbortController()
-
-    setLoading(true)
-    setError(null)
 
     instructorRevenueApi
       .getSummary(controller.signal)

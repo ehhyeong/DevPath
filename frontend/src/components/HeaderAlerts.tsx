@@ -197,7 +197,7 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
       })
 
     return () => controller.abort()
-  }, [session.accessToken])
+  }, [session.accessToken, session.userId])
 
   useEffect(() => {
     if (!openPanel) {

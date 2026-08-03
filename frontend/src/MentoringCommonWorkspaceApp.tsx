@@ -1127,8 +1127,6 @@ function MentoringShell({
 
   useEffect(() => {
     if (!workspaceId) {
-      setNotifications([])
-      setClearedNotifications(false)
       return undefined
     }
 
@@ -3060,22 +3058,6 @@ function ErdPage({
   const selectedColumns = selectedTable?.columns ?? []
   const generatedMermaidCode = useMemo(() => generateMermaidErd(tables, relationships), [tables, relationships])
 
-  useEffect(() => {
-    setTables(initialSchema.tables)
-    setRelationships(initialSchema.relationships)
-    setSelectedTableId(initialSchema.tables[0]?.id ?? null)
-    setSelectedRelationshipId(null)
-    setTool('select')
-    setConnectSourceId(null)
-    setPendingTargetId(null)
-    setRelationModalOpen(false)
-    setSaveModalOpen(false)
-    setDragState(null)
-    setTableCounter(initialSchema.tables.length + 1)
-    setConnectionCounter(initialSchema.relationships.length + 1)
-    setDirty(false)
-  }, [initialSchema])
-
   function markDirty() {
     setDirty(true)
   }
@@ -4889,7 +4871,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
       case 'erd':
         return (
           <ErdPage
-            key={`${data.erd?.version ?? 0}-${data.erd?.updatedAt ?? 'empty'}`}
+            key={`${data.erd?.version ?? 0}-${data.erd?.updatedAt ?? 'empty'}-${data.erd?.schemaJson ?? ''}-${data.erd?.mermaidCode ?? ''}`}
             erd={data.erd}
             versions={data.erdVersions}
             onSaveErd={saveErd}

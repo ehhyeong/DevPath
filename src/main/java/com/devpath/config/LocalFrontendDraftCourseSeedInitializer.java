@@ -69,7 +69,7 @@ public class LocalFrontendDraftCourseSeedInitializer implements CommandLineRunne
   }
 
   private static final String SEED_SQL =
-      """
+"""
       DO $$
       DECLARE
         v_instructor_id bigint;

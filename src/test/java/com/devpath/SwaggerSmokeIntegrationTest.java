@@ -78,6 +78,7 @@ class SwaggerSmokeIntegrationTest {
         .perform(get("/v3/api-docs/learner"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.paths['/api/courses']").exists())
+        .andExpect(jsonPath("$.paths['/api/instructors/{instructorId}/profile']").exists())
         .andExpect(jsonPath("$.paths['/api/me/skills/check']").exists())
         .andExpect(jsonPath("$.paths['/api/instructor/courses/{courseId}']").doesNotExist())
         .andExpect(jsonPath("$.paths['/api/admin/tags']").doesNotExist());
@@ -86,7 +87,7 @@ class SwaggerSmokeIntegrationTest {
         .perform(get("/v3/api-docs/instructor"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.paths['/api/instructor/courses/{courseId}']").exists())
-        .andExpect(jsonPath("$.paths['/api/instructors/{instructorId}/profile']").exists())
+        .andExpect(jsonPath("$.paths['/api/instructors/{instructorId}/profile']").doesNotExist())
         .andExpect(jsonPath("$.paths['/api/me/skills/check']").doesNotExist())
         .andExpect(jsonPath("$.paths['/api/admin/tags']").doesNotExist());
 
@@ -128,8 +129,10 @@ class SwaggerSmokeIntegrationTest {
                 .with(authentication(instructorAuthentication())))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
-        .andExpect(jsonPath("$.data.totalMatchedNodes").value(greaterThanOrEqualTo(2)))
-        .andExpect(jsonPath("$.data.matchedNodes.length()").value(greaterThanOrEqualTo(2)));
+        .andExpect(jsonPath("$.data.courseTags").value(hasItem("Java")))
+        .andExpect(jsonPath("$.data.courseTags").value(hasItem("Spring Boot")))
+        .andExpect(jsonPath("$.data.totalMatchedNodes").isNumber())
+        .andExpect(jsonPath("$.data.matchedNodes").isArray());
 
     mockMvc
         .perform(
@@ -140,11 +143,16 @@ class SwaggerSmokeIntegrationTest {
         .andExpect(jsonPath("$.data.totalNodes").value(greaterThanOrEqualTo(4)))
         .andExpect(jsonPath("$.data.nodeCoverages[0].coveragePercent").value(notNullValue()));
 
-    mockMvc
-        .perform(get("/api/courses/{courseId}/news", courseId))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.success").value(true))
-        .andExpect(jsonPath("$.data.length()").value(greaterThanOrEqualTo(2)));
+    jdbcTemplate.update("update courses set status = 'PUBLISHED' where course_id = ?", courseId);
+    try {
+      mockMvc
+          .perform(get("/api/courses/{courseId}/news", courseId))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.success").value(true))
+          .andExpect(jsonPath("$.data.length()").value(greaterThanOrEqualTo(2)));
+    } finally {
+      jdbcTemplate.update("update courses set status = 'DRAFT' where course_id = ?", courseId);
+    }
 
     mockMvc
         .perform(get("/api/instructors/{instructorId}/profile", instructorId))

@@ -130,11 +130,11 @@ public class RecommendationChangeService {
                 .findAllByUserIdAndTargetCustomRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
                     userId, customRoadmapId, RecommendationChangeStatus.SUGGESTED)
             : roadmapId == null
-            ? recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
-                userId, RecommendationChangeStatus.SUGGESTED)
-            : recommendationChangeRepository
-                .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
-                    userId, roadmapId, RecommendationChangeStatus.SUGGESTED);
+                ? recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
+                    userId, RecommendationChangeStatus.SUGGESTED)
+                : recommendationChangeRepository
+                    .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusOrderByCreatedAtDesc(
+                        userId, roadmapId, RecommendationChangeStatus.SUGGESTED);
 
     return changes.stream().map(this::toDetail).toList();
   }
@@ -227,11 +227,11 @@ public class RecommendationChangeService {
                 .findAllByUserIdAndTargetCustomRoadmapIdAndChangeStatusInOrderByUpdatedAtDesc(
                     userId, customRoadmapId, processedStatuses)
             : roadmapId == null
-            ? recommendationChangeRepository.findAllByUserIdAndChangeStatusInOrderByUpdatedAtDesc(
-                userId, processedStatuses)
-            : recommendationChangeRepository
-                .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusInOrderByUpdatedAtDesc(
-                    userId, roadmapId, processedStatuses);
+                ? recommendationChangeRepository
+                    .findAllByUserIdAndChangeStatusInOrderByUpdatedAtDesc(userId, processedStatuses)
+                : recommendationChangeRepository
+                    .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndChangeStatusInOrderByUpdatedAtDesc(
+                        userId, roadmapId, processedStatuses);
 
     return histories.stream()
         .map(

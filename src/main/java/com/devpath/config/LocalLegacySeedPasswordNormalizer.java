@@ -26,7 +26,8 @@ public class LocalLegacySeedPasswordNormalizer implements CommandLineRunner {
 
   private static final String SEED_PASSWORD = "devpath1234";
 
-  // LocalTestAccountInitializer(learner/instructor/admin)와 lounge/mentor/project 시드는 이미 devpath1234 이므로,
+  // LocalTestAccountInitializer(learner/instructor/admin)와 lounge/mentor/project 시드는 이미 devpath1234
+  // 이므로,
   // 비밀번호가 통일되지 않은 legacy seed-data.sql 계정만 대상으로 한다.
   private static final List<String> LEGACY_SEED_EMAILS =
       List.of(
@@ -65,7 +66,8 @@ public class LocalLegacySeedPasswordNormalizer implements CommandLineRunner {
     }
 
     if (normalized > 0) {
-      log.info("Normalized {} legacy seed account password(s) to the shared seed password.", normalized);
+      log.info(
+          "Normalized {} legacy seed account password(s) to the shared seed password.", normalized);
     }
   }
 }

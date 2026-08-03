@@ -37,13 +37,7 @@ public class QnaRealtimePublisher {
     Long courseId = question.getCourseId();
     Long questionId = question.getId();
     Runnable publish =
-        () ->
-            webSocketHandler.publishAnswerChanged(
-                userId,
-                courseId,
-                questionId,
-                answerId,
-                type);
+        () -> webSocketHandler.publishAnswerChanged(userId, courseId, questionId, answerId, type);
 
     if (TransactionSynchronizationManager.isActualTransactionActive()) {
       TransactionSynchronizationManager.registerSynchronization(

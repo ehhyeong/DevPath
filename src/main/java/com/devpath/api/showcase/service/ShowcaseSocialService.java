@@ -69,12 +69,14 @@ public class ShowcaseSocialService {
     showcaseService.getShowcaseEntity(showcaseId);
     List<ShowcaseComment> comments =
         showcaseCommentRepository
-        .findAllByShowcaseIdAndIsDeletedFalseOrderByCreatedAtAsc(showcaseId)
-        .stream()
-        .toList();
+            .findAllByShowcaseIdAndIsDeletedFalseOrderByCreatedAtAsc(showcaseId)
+            .stream()
+            .toList();
     Map<Long, String> profileImages = profileImages(comments);
     return comments.stream()
-        .map(comment -> ShowcaseCommentResponse.from(comment, profileImages.get(comment.getUserId())))
+        .map(
+            comment ->
+                ShowcaseCommentResponse.from(comment, profileImages.get(comment.getUserId())))
         .toList();
   }
 

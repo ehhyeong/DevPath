@@ -62,6 +62,7 @@ import org.springframework.test.util.ReflectionTestUtils;
   InstructorAnnouncementQueryService.class,
   InstructorNodeClassificationQueryService.class,
   InstructorNodeCoverageQueryService.class,
+  InstructorCourseValueParser.class,
   TagValidationService.class
 })
 class InstructorCourseServiceIntegrationTest {
@@ -114,7 +115,7 @@ class InstructorCourseServiceIntegrationTest {
     userProfileRepository.save(
         UserProfile.builder()
             .user(instructor)
-            .profileImage("/images/profiles/test-instructor.png")
+            .profileImage("https://cdn.devpath.com/profiles/test-instructor.png")
             .channelName("Test Backend Lab")
             .bio("강사용 강의 테스트 프로필")
             .phone("010-1234-5678")
@@ -248,7 +249,7 @@ class InstructorCourseServiceIntegrationTest {
     assertThat(detail.getInstructor().getInstructorId()).isEqualTo(instructorId);
     assertThat(detail.getInstructor().getChannelName()).isEqualTo("Test Backend Lab");
     assertThat(detail.getInstructor().getProfileImage())
-        .isEqualTo("/images/profiles/test-instructor.png");
+        .isEqualTo("https://cdn.devpath.com/profiles/test-instructor.png");
     assertThat(detail.getInstructor().getHeadline()).isNotBlank();
     assertThat(detail.getInstructor().getSpecialties())
         .containsExactlyInAnyOrder("Java", "Spring Boot");

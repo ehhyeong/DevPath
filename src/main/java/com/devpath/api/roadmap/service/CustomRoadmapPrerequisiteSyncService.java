@@ -20,8 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 커스텀 로드맵의 선행관계(prereq) 그래프를 만드는 단일 서비스. 모든 진입점(복사·조회·클리어·순서변경·분기편집)이 동일한 규칙으로 그래프를 전량
- * 재생성하므로 경로별 불일치가 발생하지 않는다.
+ * 커스텀 로드맵의 선행관계(prereq) 그래프를 만드는 단일 서비스. 모든 진입점(복사·조회·클리어·순서변경·분기편집)이 동일한 규칙으로 그래프를 전량 재생성하므로 경로별
+ * 불일치가 발생하지 않는다.
  *
  * <p>그래프 규칙:
  *
@@ -157,8 +157,7 @@ public class CustomRoadmapPrerequisiteSyncService {
     Map<Integer, List<CustomRoadmapNode>> positionalGroups =
         ordered.stream()
             .filter(
-                node ->
-                    node.getBranchFromNodeId() == null && node.effectiveBranchGroup() != null)
+                node -> node.getBranchFromNodeId() == null && node.effectiveBranchGroup() != null)
             .collect(
                 Collectors.groupingBy(
                     CustomRoadmapNode::effectiveBranchGroup, TreeMap::new, Collectors.toList()));

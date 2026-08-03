@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -18,11 +19,13 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
 
   private static final String TYPE_PEER_LIST = "peer-list";
   private static final String TYPE_PEER_JOINED = "peer-joined";
   private static final String TYPE_PEER_LEFT = "peer-left";
+  private static final String TYPE_LEAVE = "leave";
   private static final String TYPE_OFFER = "offer";
   private static final String TYPE_ANSWER = "answer";
   private static final String TYPE_ICE_CANDIDATE = "ice-candidate";
@@ -51,13 +54,33 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
 
     Map<String, ClientSession> clients =
         channelSessions.computeIfAbsent(client.channelId(), key -> new ConcurrentHashMap<>());
-    List<VoiceSignalingPeer> peers =
-        clients.values().stream()
-            .filter(existing -> !existing.userId().equals(client.userId()))
-            .map(existing -> new VoiceSignalingPeer(existing.userId(), existing.userName()))
-            .toList();
-
-    clients.put(session.getId(), client);
+    List<ClientSession> supersededSessions;
+    List<VoiceSignalingPeer> peers;
+    synchronized (clients) {
+      supersededSessions =
+          clients.values().stream()
+              .filter(existing -> existing.userId().equals(client.userId()))
+              .toList();
+      supersededSessions.forEach(existing -> clients.remove(existing.session().getId()));
+      peers =
+          clients.values().stream()
+              .map(existing -> new VoiceSignalingPeer(existing.userId(), existing.userName()))
+              .distinct()
+              .toList();
+      clients.put(session.getId(), client);
+    }
+    for (ClientSession superseded : supersededSessions) {
+      if (superseded.session().isOpen()) {
+        superseded.session().close(CloseStatus.NORMAL);
+      }
+    }
+    log.info(
+        "Voice signaling connected. channelId={}, userId={}, sessionId={}, peers={}, superseded={}",
+        client.channelId(),
+        client.userId(),
+        session.getId(),
+        peers.size(),
+        supersededSessions.size());
     sendPeerList(client.session(), client.channelId(), peers);
     broadcastPeerChange(client, TYPE_PEER_JOINED);
   }
@@ -73,6 +96,15 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
 
     JsonNode root = objectMapper.readTree(message.getPayload());
     String type = root.path("type").asText("");
+
+    if (TYPE_LEAVE.equals(type)) {
+      ClientSession leavingClient = removeClientSession(session);
+      if (leavingClient != null) {
+        broadcastPeerChange(leavingClient, TYPE_PEER_LEFT);
+      }
+      session.close(CloseStatus.NORMAL);
+      return;
+    }
 
     if (isTransientRoomEventType(type)) {
       broadcastTransientRoomEvent(client, type, root.path("payload"));
@@ -99,6 +131,16 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
     outgoing.put("fromUserName", client.userName());
     outgoing.set("payload", root.path("payload"));
 
+    if (TYPE_OFFER.equals(type) || TYPE_ANSWER.equals(type)) {
+      log.info(
+          "Voice signaling SDP. type={}, channelId={}, fromUserId={}, targetUserId={}, payloadSize={}",
+          type,
+          client.channelId(),
+          client.userId(),
+          targetUserId,
+          root.path("payload").toString().length());
+    }
+
     sendToUser(client.channelId(), targetUserId, outgoing);
   }
 
@@ -107,12 +149,25 @@ public class VoiceSignalingWebSocketHandler extends TextWebSocketHandler {
     ClientSession client = removeClientSession(session);
 
     if (client != null) {
+      log.info(
+          "Voice signaling closed. channelId={}, userId={}, sessionId={}, status={}",
+          client.channelId(),
+          client.userId(),
+          session.getId(),
+          status);
       broadcastPeerChange(client, TYPE_PEER_LEFT);
     }
   }
 
   @Override
   public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
+    ClientSession client = getRegisteredClientSession(session);
+    log.warn(
+        "Voice signaling transport error. channelId={}, userId={}, sessionId={}",
+        client == null ? null : client.channelId(),
+        client == null ? null : client.userId(),
+        session.getId(),
+        exception);
     session.close(CloseStatus.SERVER_ERROR);
   }
 

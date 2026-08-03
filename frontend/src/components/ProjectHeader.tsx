@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import type { AuthSession } from '../types/auth'
 import AccountUserMenu from './AccountUserMenu'
 import HeaderAlerts from './HeaderAlerts'
-import { siteHeaderLinks, siteHeaderTuning } from './SiteHeader'
+import { siteHeaderLinks, siteHeaderTuning } from './site-header-config'
 
 type ProjectHeaderProps = {
   session: AuthSession | null

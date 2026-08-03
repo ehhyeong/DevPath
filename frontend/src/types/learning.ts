@@ -230,7 +230,7 @@ export interface AssignmentPrecheckResponse {
   message: string | null
 }
 
-export interface CreateSubmissionRequest extends AssignmentPrecheckRequest {}
+export type CreateSubmissionRequest = AssignmentPrecheckRequest
 
 export interface AssignmentSubmissionResponse {
   submissionId: number

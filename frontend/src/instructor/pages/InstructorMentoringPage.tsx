@@ -577,9 +577,6 @@ export default function InstructorMentoringPage() {
   useEffect(() => {
     const controller = new AbortController()
 
-    setLoading(true)
-    setError(null)
-
     instructorMentoringApi
       .getBoard(controller.signal)
       .then((board) => {
@@ -609,10 +606,6 @@ export default function InstructorMentoringPage() {
       .map((project) => project.workspaceId as number)))
 
     if (workspaceIds.length === 0) {
-      setWorkspaceDashboards({})
-      setWorkspaceSettings({})
-      setWorkspaceMilestones({})
-      setWorkspaceTasks({})
       return
     }
 
@@ -1029,7 +1022,7 @@ export default function InstructorMentoringPage() {
       }
       const route = project.mode === 'team' ? teamRoutes[actionLabel] : commonRoutes[actionLabel]
       if (route) {
-        window.location.href = `${route}?workspaceId=${project.workspaceId}`
+        window.location.assign(`${route}?workspaceId=${project.workspaceId}`)
         return
       }
     }

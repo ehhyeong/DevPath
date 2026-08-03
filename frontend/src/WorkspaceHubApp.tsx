@@ -457,6 +457,7 @@ export default function WorkspaceHubApp() {
 
       <SettingsModal project={settingsProject} onClose={() => setSettingsProject(null)} />
       <MembersModal
+        key={membersProject?.projectId ?? 'closed'}
         project={membersProject}
         currentUserProfileImage={profileImage}
         onClose={() => setMembersProject(null)}
@@ -796,11 +797,10 @@ function MembersModal({
   onClose: () => void
 }) {
   const [settings, setSettings] = useState<WorkspaceSettingsResponse | null>(null)
-  const [loadingMembers, setLoadingMembers] = useState(false)
+  const [loadingMembers, setLoadingMembers] = useState(() => Boolean(project && readStoredAuthSession()?.accessToken))
 
   useEffect(() => {
     if (!project) {
-      setSettings(null)
       return
     }
 
@@ -811,7 +811,6 @@ function MembersModal({
 
     const controller = new AbortController()
     const headers = { Authorization: `${currentSession.tokenType} ${currentSession.accessToken}` }
-    setLoadingMembers(true)
 
     axios
       .get<ApiEnvelope<WorkspaceSettingsResponse>>(
