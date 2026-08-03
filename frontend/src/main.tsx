@@ -209,7 +209,7 @@ if (pathname === '/admin-dashboard') {
                                                 : pathname === '/mentoring-meeting'
                                                   ? suspense(<MentoringCommonWorkspaceApp page="meeting" />)
                                                   : pathname === '/mentoring-live-meeting'
-                                                    ? suspense(<MentoringCommonWorkspaceApp page="live-meeting" />)
+                                                    ? suspense(<InstructorWsDashboardApp page="live-meeting" />)
                                                     : pathname === '/mentoring-erd'
                                                       ? suspense(<MentoringCommonWorkspaceApp page="erd" />)
                                     : pathname === '/dev-showcase'

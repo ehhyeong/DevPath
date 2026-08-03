@@ -2679,6 +2679,7 @@ function StreamVideo({ stream, className, muted = false }: { stream: MediaStream
 
 function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspaceId: number | null }) {
   const session = useMemo(() => readStoredAuthSession(), [])
+  const participantMode = window.location.pathname === '/mentoring-live-meeting'
   const channelId = data.voiceChannels[0]?.channelId ?? null
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
@@ -3073,7 +3074,9 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
 
   const leaveMeeting = useCallback(() => {
     const socket = socketRef.current
-    const meetingHref = buildHref('meeting', workspaceId)
+    const meetingHref = participantMode
+      ? `/mentoring-meeting${workspaceId ? `?workspaceId=${workspaceId}` : ''}`
+      : buildHref('meeting', workspaceId)
     let navigationStarted = false
     const navigateToMeeting = () => {
       if (navigationStarted) return
@@ -3101,7 +3104,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
 
     socket?.close()
     navigateToMeeting()
-  }, [closePeerConnections, stopStream, workspaceId])
+  }, [closePeerConnections, participantMode, stopStream, workspaceId])
 
   async function retryLocalMedia() {
     if (localStreamRef.current || !navigator.mediaDevices?.getUserMedia) return
@@ -3234,7 +3237,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
           <div>
             <div className="mb-0.5 flex items-center gap-2">
               <span className={`rounded px-1.5 py-0.5 text-[9px] font-extrabold ${connected ? 'bg-red-500/20 text-red-400' : 'bg-gray-800 text-gray-400'}`}><i className="fas fa-circle mr-1 animate-pulse" />{connected ? 'LIVE' : '연결 중'}</span>
-              <span className="rounded border border-purple-500/30 bg-purple-500/20 px-1.5 py-0.5 text-[9px] font-extrabold text-purple-400">HOST 권한</span>
+              <span className="rounded border border-purple-500/30 bg-purple-500/20 px-1.5 py-0.5 text-[9px] font-extrabold text-purple-400">{participantMode ? 'MENTEE' : 'HOST 권한'}</span>
             </div>
             <h1 className="text-sm font-bold leading-none text-white">3주차 라이브 코드 리뷰</h1>
           </div>
@@ -3256,7 +3259,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
                   <p className="mt-1 text-xs font-bold text-gray-400">{localStream ? '카메라 꺼짐' : '카메라 연결 중'}</p>
                 </div>
               )}
-              <span className="absolute top-4 left-4 rounded bg-red-500 px-2 py-1 text-[10px] font-extrabold">HOST</span>
+              <span className="absolute top-4 left-4 rounded bg-red-500 px-2 py-1 text-[10px] font-extrabold">{participantMode ? 'MENTEE' : 'HOST'}</span>
               {!micOn ? <span className="absolute right-4 bottom-4 rounded-full bg-red-500 px-2 py-1 text-[10px] font-bold"><i className="fas fa-microphone-slash mr-1" />음소거</span> : null}
             </div>
             {screenStream ? (
@@ -3293,7 +3296,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
               <button type="button" onClick={toggleCam} className={`flex h-12 w-12 items-center justify-center rounded-full border text-lg transition ${camOn ? 'border-gray-700 bg-gray-800 text-white hover:bg-gray-700' : 'border-red-500/30 bg-red-500 text-white'}`}><i className={camOn ? 'fas fa-video' : 'fas fa-video-slash'} /></button>
               <button type="button" onClick={() => void toggleScreenShare()} className={`flex h-12 w-12 items-center justify-center rounded-full text-lg text-white shadow-lg transition ${screenStream ? 'bg-blue-500 shadow-blue-900/30' : 'bg-[#00C471] shadow-green-900/30'}`}><i className="fas fa-desktop" /></button>
               <button type="button" onClick={toggleRecord} className={`flex h-12 w-12 items-center justify-center rounded-full border text-lg transition ${recording ? 'border-red-500 bg-red-500 text-white shadow-lg shadow-red-900/50' : 'border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700'}`}><i className="fas fa-record-vinyl" /></button>
-              <button type="button" onClick={leaveMeeting} className="flex h-12 items-center justify-center gap-2 rounded-full bg-red-600 px-6 font-bold text-white shadow-lg shadow-red-900/50"><i className="fas fa-phone-slash" /> 밋업 종료</button>
+              <button type="button" onClick={leaveMeeting} className="flex h-12 items-center justify-center gap-2 rounded-full bg-red-600 px-6 font-bold text-white shadow-lg shadow-red-900/50"><i className="fas fa-phone-slash" /> {participantMode ? '나가기' : '밋업 종료'}</button>
             </div>
           </footer>
         </main>
