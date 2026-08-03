@@ -92,11 +92,11 @@ function InvalidLessonView({ courseId }: { courseId: number | null }) {
 
 export default function QuizCreatorPage() {
   const { lessonId, lessonTitle, courseId } = readLessonEditorContextFromUrl()
-  const [courseTags, setCourseTags] = useState<string[]>([])
+  const [courseTagsResult, setCourseTagsResult] = useState<{ courseId: number; tags: string[] } | null>(null)
+  const courseTags = courseTagsResult?.courseId === courseId ? courseTagsResult.tags : []
 
   useEffect(() => {
     if (!courseId) {
-      setCourseTags([])
       return
     }
 
@@ -105,11 +105,11 @@ export default function QuizCreatorPage() {
     instructorCourseApi
       .getCourseDetail(courseId, controller.signal)
       .then((course) => {
-        setCourseTags(course.tags.map((tag) => tag.tagName))
+        setCourseTagsResult({ courseId, tags: course.tags.map((tag) => tag.tagName) })
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setCourseTags([])
+          setCourseTagsResult({ courseId, tags: [] })
         }
       })
 

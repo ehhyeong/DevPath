@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { userApi } from '../../lib/api'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
-import { readLocalPreferences } from '../ui'
+import { readLocalPreferences } from '../ui-utils'
 import type { AuthSession } from '../../types/auth'
 import type { UserProfile } from '../../types/learner'
 

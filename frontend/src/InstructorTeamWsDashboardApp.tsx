@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from 'react'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import { clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
@@ -578,7 +578,8 @@ function ActivityLogPanel({ logs }: { logs: ActivityLogItem[] }) {
 }
 
 function ScheduleSummary({ events, workspaceId }: { events: CalendarEvent[]; workspaceId: number | null }) {
-  const upcoming = [...events].filter((event) => new Date(event.startAt).getTime() >= Date.now() - 86400000).sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()).slice(0, 3)
+  const [now] = useState(() => Date.now())
+  const upcoming = [...events].filter((event) => new Date(event.startAt).getTime() >= now - 86400000).sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()).slice(0, 3)
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between"><h3 className="flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="far fa-calendar-check text-gray-400" />팀 공식 & 스크럼 일정</h3><a href={buildHref('schedule', workspaceId)} className="text-[10px] text-gray-400 hover:text-[#7C3AED]"><i className="fas fa-external-link-alt" /></a></div>
@@ -2556,10 +2557,11 @@ function MeetingPage({ data, workspaceId, reload }: { data: TeamData; workspaceI
   const [selectedNote, setSelectedNote] = useState<MeetingNote | null>(null)
   const [filter, setFilter] = useState<MeetingNoteFilter>('all')
   const [success, setSuccess] = useState<{ title: string; description: ReactNode } | null>(null)
+  const [now] = useState(() => Date.now())
   const ownerId = data.dashboard?.ownerId
   const learners = membersOnly(data)
   const futureMeetups = data.events
-    .filter((event) => parseScheduleDescription(event.description).type === 'meetup' && new Date(event.startAt).getTime() >= Date.now() - 86400000)
+    .filter((event) => parseScheduleDescription(event.description).type === 'meetup' && new Date(event.startAt).getTime() >= now - 86400000)
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
   const nextMeetup = futureMeetups[0] ?? null
   const activeVoiceCount = data.voiceChannels.reduce((sum, channel) => sum + channel.activeParticipantCount, 0)
@@ -2959,6 +2961,10 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
   const liveParticipants: WorkspaceMember[] = []
   const hostName = data.dashboard?.ownerName ?? session?.name ?? '강사'
   const participantCount = liveParticipants.length + 1
+  const mediaStartupError = !navigator.mediaDevices?.getUserMedia
+    ? '현재 브라우저에서 카메라와 마이크를 사용할 수 없습니다.'
+    : null
+  const visibleError = mediaStartupError ?? error
 
   function stopStream(stream: MediaStream | null) {
     stream?.getTracks().forEach((track) => track.stop())
@@ -2967,7 +2973,6 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
   async function ensureLocalStream() {
     if (localStreamRef.current) return localStreamRef.current
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError('현재 브라우저에서 카메라와 마이크를 사용할 수 없습니다.')
       return null
     }
     try {
@@ -2985,8 +2990,34 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
   }
 
   useEffect(() => {
-    void ensureLocalStream()
+    if (!navigator.mediaDevices?.getUserMedia) {
+      return
+    }
+
+    let active = true
+
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        if (!active) {
+          stopStream(stream)
+          return
+        }
+
+        localStreamRef.current = stream
+        setLocalStream(stream)
+        setMicOn(true)
+        setCamOn(true)
+        setError(null)
+      })
+      .catch(() => {
+        if (active) {
+          setError('카메라 또는 마이크 권한을 허용해야 라이브 미팅을 시작할 수 있습니다.')
+        }
+      })
+
     return () => {
+      active = false
       mediaRecorderRef.current?.stop()
       stopStream(localStreamRef.current)
       stopStream(screenStreamRef.current)
@@ -3117,7 +3148,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspaceId: n
         </div>
       </header>
 
-      {error ? <div className="shrink-0 bg-red-600 px-6 py-2 text-xs font-bold text-white">{error}</div> : null}
+      {visibleError ? <div className="shrink-0 bg-red-600 px-6 py-2 text-xs font-bold text-white">{visibleError}</div> : null}
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <main className="relative flex min-w-0 flex-1 flex-col gap-4 p-4">
@@ -3306,7 +3337,7 @@ export default function InstructorTeamWsDashboardApp({ page = 'dashboard' }: { p
     setData(await loadInstructorTeamWorkspaceData(workspaceId))
   }
 
-  async function refreshRealtimeData() {
+  const refreshRealtimeData = useCallback(async () => {
     if (!workspaceId || document.hidden || realtimeRefreshRef.current) return
     realtimeRefreshRef.current = true
     try {
@@ -3316,7 +3347,7 @@ export default function InstructorTeamWsDashboardApp({ page = 'dashboard' }: { p
     } finally {
       realtimeRefreshRef.current = false
     }
-  }
+  }, [workspaceId])
 
   useEffect(() => {
     document.title = `DevPath - ${PAGE_CONFIG[page].title}`
@@ -3365,7 +3396,7 @@ export default function InstructorTeamWsDashboardApp({ page = 'dashboard' }: { p
       window.removeEventListener('focus', refreshOnFocus)
       document.removeEventListener('visibilitychange', refreshOnVisible)
     }
-  }, [session, workspaceId, loading])
+  }, [session, workspaceId, loading, refreshRealtimeData])
 
   if (authView) {
     return <AuthModal view={authView} onViewChange={setAuthView} onAuthenticated={() => { setAuthView(null); window.location.reload() }} onClose={() => { clearStoredAuthSession(); window.location.href = '/' }} />

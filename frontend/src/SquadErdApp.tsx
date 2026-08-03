@@ -716,6 +716,38 @@ export default function SquadErdApp() {
     }
   }, [])
 
+  const storeCurrentDraft = useCallback((code: string) => {
+    if (!workspaceId) {
+      return
+    }
+
+    try {
+      localStorage.setItem(getErdDraftKey(workspaceId), code)
+    } catch {
+      // Local backup should not block editing or saving to the server.
+    }
+  }, [workspaceId])
+
+  const refreshMessages = useCallback(async (silent = false) => {
+    if (!workspaceId) {
+      return
+    }
+
+    try {
+      const nextMessages = await projectApiRequest<TeamMessage[]>(
+        `/api/lounge/chats/messages?loungeId=${workspaceId}`,
+        {},
+        'required',
+      )
+      setMessages(nextMessages ?? [])
+    } catch (loadError) {
+      if (!silent) {
+        const message = loadError instanceof Error ? loadError.message : '설계 토론방 메시지를 불러오지 못했습니다.'
+        showAuthToast({ message, variant: 'error', durationMs: 2200 })
+      }
+    }
+  }, [workspaceId])
+
   useEffect(() => {
     document.title = 'DevPath - ERD Architect'
     const html = document.documentElement
@@ -793,7 +825,7 @@ export default function SquadErdApp() {
     return () => {
       ignore = true
     }
-  }, [renderDiagram, workspaceId])
+  }, [renderDiagram, storeCurrentDraft, workspaceId])
 
   useEffect(() => {
     if (!workspaceId) {
@@ -805,7 +837,7 @@ export default function SquadErdApp() {
     }, 3000)
 
     return () => window.clearInterval(timer)
-  }, [workspaceId])
+  }, [refreshMessages, workspaceId])
 
   useEffect(() => {
     if (!chatOpen || !chatScrollRef.current) {
@@ -876,18 +908,6 @@ export default function SquadErdApp() {
       message: `${squadActorName(session?.name)}님이 ${message}`,
       targetPath: '/squad-erd',
     })
-  }
-
-  function storeCurrentDraft(code: string) {
-    if (!workspaceId) {
-      return
-    }
-
-    try {
-      localStorage.setItem(getErdDraftKey(workspaceId), code)
-    } catch {
-      // Local backup should not block editing or saving to the server.
-    }
   }
 
   function recordHistorySnapshot(code: string) {
@@ -1253,26 +1273,6 @@ export default function SquadErdApp() {
     setSqlImportText('')
     notifyErdChange(`SQL 가져오기로 ERD 테이블 ${nextSchema.tables.length}개를 생성했습니다.`)
     showAuthToast({ message: 'SQL에서 ERD를 가져왔습니다.', durationMs: 1600 })
-  }
-
-  async function refreshMessages(silent = false) {
-    if (!workspaceId) {
-      return
-    }
-
-    try {
-      const nextMessages = await projectApiRequest<TeamMessage[]>(
-        `/api/lounge/chats/messages?loungeId=${workspaceId}`,
-        {},
-        'required',
-      )
-      setMessages(nextMessages ?? [])
-    } catch (loadError) {
-      if (!silent) {
-        const message = loadError instanceof Error ? loadError.message : '설계 토론방 메시지를 불러오지 못했습니다.'
-        showAuthToast({ message, variant: 'error', durationMs: 2200 })
-      }
-    }
   }
 
   async function refreshVersions(silent = false) {

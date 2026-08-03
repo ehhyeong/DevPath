@@ -9,7 +9,8 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js'
-import { ErrorCard, LoadingCard, formatNumber } from '../../account/ui'
+import { ErrorCard, LoadingCard } from '../../account/ui'
+import { formatNumber } from '../../account/ui-utils'
 import {
   instructorAnalyticsApi,
   instructorCourseApi,
@@ -1174,15 +1175,17 @@ export default function InstructorDashboardPage({ session }: { session: AuthSess
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        closeQuickReply()
+      if (event.key === 'Escape' && !replySubmitting) {
+        setSelectedQuestion(null)
+        setReplyDraft('')
+        setReplyError(null)
       }
     }
 
     document.addEventListener('keydown', handleEscape)
 
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [selectedQuestion])
+  }, [selectedQuestion, replySubmitting])
 
   const sortedUnansweredQuestions = useMemo(
     () => [...unansweredQuestions].sort(compareCreatedAsc),

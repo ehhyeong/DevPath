@@ -300,22 +300,22 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
   const [quickBody, setQuickBody] = useState('')
   const [toast, setToast] = useState<ToastState>(null)
   const [loading, setLoading] = useState(true)
-  const [timelineLoading, setTimelineLoading] = useState(false)
-  const [editingAnswer, setEditingAnswer] = useState(false)
+  const [loadedTimelineId, setLoadedTimelineId] = useState<number | null>(null)
+  const [editingAnswerId, setEditingAnswerId] = useState<number | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const editorRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
 
-    setLoading(true)
-
     Promise.all([
       instructorQnaApi.getInbox(statusFilter === 'pending' ? 'UNANSWERED' : 'ANSWERED', controller.signal),
       instructorQnaApi.getTemplates(controller.signal),
     ])
       .then(([nextQuestions, nextTemplates]) => {
-        setQuestions(nextQuestions.map(normalizeQuestion))
+        const normalizedQuestions = nextQuestions.map(normalizeQuestion)
+        setQuestions(normalizedQuestions)
+        setSelectedId(normalizedQuestions[0]?.questionId ?? null)
         setQuickReplies(nextTemplates.map(normalizeTemplate))
       })
       .catch((error: Error) => {
@@ -357,6 +357,9 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
   const courseOptions = buildInstructorCourseOptions(courseCatalog).filter(([value]) =>
     questions.some((question) => String(question.courseId) === value),
   )
+  const activeCourseFilter = courseFilter === 'all' || courseOptions.some(([value]) => value === courseFilter)
+    ? courseFilter
+    : 'all'
   const allowedCourseIds = new Set(courseOptions.map(([value]) => Number(value)))
   const scopedQuestions =
     courseCatalog.length > 0
@@ -364,7 +367,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
       : questions
   const visibleQuestions = [...scopedQuestions]
     .filter((question) => {
-      if (courseFilter !== 'all' && String(question.courseId) !== courseFilter) {
+      if (activeCourseFilter !== 'all' && String(question.courseId) !== activeCourseFilter) {
         return false
       }
 
@@ -380,25 +383,19 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
         : (left.createdAt ?? '').localeCompare(right.createdAt ?? ''),
     )
 
-  useEffect(() => {
-    if (!visibleQuestions.some((question) => question.questionId === selectedId)) {
-      setSelectedId(visibleQuestions[0]?.questionId ?? null)
-    }
-  }, [selectedId, visibleQuestions])
+  const activeSelectedId = visibleQuestions.some((question) => question.questionId === selectedId)
+    ? selectedId
+    : visibleQuestions[0]?.questionId ?? null
 
   useEffect(() => {
-    if (!selectedId) {
-      setTimeline(null)
-      setDraftText('')
+    if (!activeSelectedId) {
       return
     }
 
     const controller = new AbortController()
-    setTimelineLoading(true)
-    setEditingAnswer(false)
 
     instructorQnaApi
-      .getTimeline(selectedId, controller.signal)
+      .getTimeline(activeSelectedId, controller.signal)
       .then((nextTimeline) => {
         const normalizedTimeline = normalizeTimeline(nextTimeline)
         setTimeline(normalizedTimeline)
@@ -408,17 +405,18 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
       })
       .catch((error: Error) => {
         if (!controller.signal.aborted) {
+          setDraftText('')
           setToast({ message: error.message, tone: 'info' })
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) {
-          setTimelineLoading(false)
+          setLoadedTimelineId(activeSelectedId)
         }
       })
 
     return () => controller.abort()
-  }, [selectedId])
+  }, [activeSelectedId])
 
   useEffect(() => {
     if (!toast) {
@@ -429,20 +427,23 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
     return () => window.clearTimeout(timeoutId)
   }, [toast])
 
+  const activeTimeline = timeline?.question.questionId === activeSelectedId ? timeline : null
+  const timelineLoading = activeSelectedId !== null && loadedTimelineId !== activeSelectedId
+  const editingAnswer = editingAnswerId === activeSelectedId
   const current =
-    timeline?.question ?? visibleQuestions.find((question) => question.questionId === selectedId) ?? null
+    activeTimeline?.question ?? visibleQuestions.find((question) => question.questionId === activeSelectedId) ?? null
   const customization = readInstructorChannelCustomization(session.userId)
   const instructorDisplayName =
     customization?.displayName?.trim() ||
     profile?.channelName?.trim() ||
     profile?.name?.trim() ||
-    timeline?.publishedAnswer?.authorName?.trim() ||
+    activeTimeline?.publishedAnswer?.authorName?.trim() ||
     session.name ||
     '강사'
   const instructorProfileImage =
     sanitizeInstructorProfileImageUrl(customization?.profileImageUrl) ??
     sanitizeInstructorProfileImageUrl(profile?.profileImage) ??
-    sanitizeInstructorProfileImageUrl(timeline?.publishedAnswer?.authorProfileImage) ??
+    sanitizeInstructorProfileImageUrl(activeTimeline?.publishedAnswer?.authorProfileImage) ??
     null
   const showAnswerForm = current ? current.status === 'UNANSWERED' || editingAnswer : false
 
@@ -481,11 +482,30 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
     }
   }
 
-  useEffect(() => {
-    if (courseFilter !== 'all' && !courseOptions.some(([value]) => value === courseFilter)) {
-      setCourseFilter('all')
-    }
-  }, [courseFilter, courseOptions])
+  function changeStatusFilter(nextStatus: QuestionStatusFilter) {
+    if (nextStatus === statusFilter) return
+    setLoading(true)
+    setSelectedId(null)
+    setEditingAnswerId(null)
+    setStatusFilter(nextStatus)
+  }
+
+  function changeCourseFilter(nextCourseFilter: string) {
+    setCourseFilter(nextCourseFilter)
+    setSelectedId(null)
+    setEditingAnswerId(null)
+  }
+
+  function changeSearch(nextSearch: string) {
+    setSearch(nextSearch)
+    setSelectedId(null)
+    setEditingAnswerId(null)
+  }
+
+  function selectQuestion(questionId: number) {
+    setSelectedId(questionId)
+    setEditingAnswerId(null)
+  }
 
   function focusEditorSelection(start: number, end: number) {
     window.requestAnimationFrame(() => {
@@ -657,10 +677,10 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
     }
 
     try {
-      if (timeline?.publishedAnswer) {
+      if (activeTimeline?.publishedAnswer) {
         await instructorQnaApi.updateAnswer(
           current.questionId,
-          timeline.publishedAnswer.answerId,
+          activeTimeline.publishedAnswer.answerId,
           content,
         )
       } else {
@@ -675,8 +695,9 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
 
       setQuestions(nextQuestions.map(normalizeQuestion))
       setTimeline(normalizedTimeline)
+      setLoadedTimelineId(current.questionId)
       setDraftText(normalizedTimeline.publishedAnswer?.content ?? normalizedTimeline.draft?.draftContent ?? '')
-      setEditingAnswer(false)
+      setEditingAnswerId(null)
       setToast({ message: '답변을 등록했습니다.', tone: 'success' })
     } catch (error) {
       setToast({
@@ -771,7 +792,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                 <i className="fas fa-search pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400" />
                 <input
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => changeSearch(event.target.value)}
                   className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-xs font-semibold text-gray-700 outline-none transition focus:border-[#00c471]"
                   placeholder="제목, 작성자, 내용으로 검색"
                 />
@@ -779,8 +800,8 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
 
               <div className="grid grid-cols-2 gap-2">
                 <select
-                  value={courseFilter}
-                  onChange={(event) => setCourseFilter(event.target.value)}
+                  value={activeCourseFilter}
+                  onChange={(event) => changeCourseFilter(event.target.value)}
                   className="h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-xs font-semibold text-gray-700 outline-none transition focus:border-[#00c471]"
                 >
                   <option value="all">전체 강의</option>
@@ -809,7 +830,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setStatusFilter(key as QuestionStatusFilter)}
+                    onClick={() => changeStatusFilter(key as QuestionStatusFilter)}
                     className={`flex h-10 flex-1 items-center justify-center rounded-xl border text-xs font-bold transition ${
                       statusFilter === key
                         ? 'border-gray-900 bg-gray-900 text-white'
@@ -833,9 +854,9 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                 <button
                   key={question.questionId}
                   type="button"
-                  onClick={() => setSelectedId(question.questionId)}
+                  onClick={() => selectQuestion(question.questionId)}
                   className={`instructor-qna-item mb-3 w-full rounded-2xl border border-l-4 p-4 text-left transition ${
-                    selectedId === question.questionId
+                    activeSelectedId === question.questionId
                       ? 'is-active border-[#00c471] border-l-[#00c471] bg-[#f0fdf4] shadow-[0_6px_18px_rgba(0,196,113,0.08)]'
                       : 'border-gray-200 border-l-transparent bg-white hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_8px_18px_rgba(15,23,42,0.06)]'
                   }`}
@@ -1051,7 +1072,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                             className="flex h-11 items-center gap-2 rounded-xl bg-[#00c471] px-7 text-xs font-bold text-white shadow-md transition hover:bg-[#00b366]"
                           >
                             <i className="fas fa-paper-plane" />
-                            {timeline?.publishedAnswer ? '답변 수정' : '답변 등록'}
+                            {activeTimeline?.publishedAnswer ? '답변 수정' : '답변 등록'}
                           </button>
                         </div>
                       </div>
@@ -1080,7 +1101,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                         </div>
                         <button
                           type="button"
-                          onClick={() => setEditingAnswer(true)}
+                          onClick={() => setEditingAnswerId(activeSelectedId)}
                           className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-500 transition hover:text-[#00c471]"
                         >
                           <i className="fas fa-edit mr-1" />
@@ -1088,7 +1109,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                         </button>
                       </div>
 
-                      <MarkdownContent content={timeline?.publishedAnswer?.content ?? ''} />
+                      <MarkdownContent content={activeTimeline?.publishedAnswer?.content ?? ''} />
                     </div>
                   )}
                 </div>

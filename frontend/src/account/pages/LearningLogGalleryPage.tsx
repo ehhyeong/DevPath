@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { certificateApi, proofCardApi } from '../../lib/api'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
-import { downloadBase64File } from '../ui'
+import { downloadBase64File } from '../ui-utils'
 import type { ProofCardDetail, ProofCardGalleryItem } from '../../types/learner'
 
 type ProofCardType = 'language' | 'cs' | 'framework' | 'backend'

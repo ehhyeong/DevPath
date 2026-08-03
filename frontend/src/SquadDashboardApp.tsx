@@ -348,6 +348,53 @@ export default function SquadDashboardApp() {
     }
   }, [workspaceId])
 
+  const refreshTeamMessages = useCallback(async () => {
+    if (!workspaceId || !readStoredAuthSession()?.accessToken) {
+      return
+    }
+
+    try {
+      const nextMessages = await projectApiRequest<TeamMessage[]>(
+        `/api/lounge/chats/messages?loungeId=${workspaceId}`,
+        {},
+        'required',
+      )
+
+      setMessages(nextMessages ?? [])
+    } catch {
+      // Keep the last successful chat snapshot during transient polling failures.
+    }
+  }, [workspaceId])
+
+  const loadDirectMessages = useCallback(async (member: WorkspaceMember, silent = false) => {
+    if (!workspaceId) {
+      return
+    }
+
+    if (!silent) {
+      setDirectLoading(true)
+    }
+
+    try {
+      const nextMessages = await projectApiRequest<DirectMessage[]>(
+        `/api/workspaces/${workspaceId}/direct-messages/${member.learnerId}`,
+        {},
+        'required',
+      )
+
+      setDirectMessages(nextMessages ?? [])
+    } catch (loadError) {
+      if (!silent) {
+        const message = loadError instanceof Error ? loadError.message : '1:1 메시지를 불러오지 못했습니다.'
+        showAuthToast({ message, variant: 'error', durationMs: 2200 })
+      }
+    } finally {
+      if (!silent) {
+        setDirectLoading(false)
+      }
+    }
+  }, [workspaceId])
+
   useEffect(() => {
     document.title = 'DevPath - 스쿼드 대시보드'
     const html = document.documentElement
@@ -459,7 +506,7 @@ export default function SquadDashboardApp() {
     }, 3000)
 
     return () => window.clearInterval(intervalId)
-  }, [workspaceId, session?.accessToken])
+  }, [workspaceId, session?.accessToken, refreshTeamMessages])
 
   useEffect(() => {
     if (chatOpen && chatScrollRef.current) {
@@ -481,7 +528,7 @@ export default function SquadDashboardApp() {
     }, 3000)
 
     return () => window.clearInterval(intervalId)
-  }, [workspaceId, session?.accessToken, selectedDmMember])
+  }, [workspaceId, session?.accessToken, selectedDmMember, loadDirectMessages])
 
   useEffect(() => {
     if (directScrollRef.current) {
@@ -599,24 +646,6 @@ export default function SquadDashboardApp() {
     }
   }
 
-  async function refreshTeamMessages() {
-    if (!workspaceId || !readStoredAuthSession()?.accessToken) {
-      return
-    }
-
-    try {
-      const nextMessages = await projectApiRequest<TeamMessage[]>(
-        `/api/lounge/chats/messages?loungeId=${workspaceId}`,
-        {},
-        'required',
-      )
-
-      setMessages(nextMessages ?? [])
-    } catch {
-      // Keep the last successful chat snapshot during transient polling failures.
-    }
-  }
-
   async function sendTeamMessage(content = messageInput.trim()) {
     if (!workspaceId || !content) {
       return
@@ -643,35 +672,6 @@ export default function SquadDashboardApp() {
     } catch (sendError) {
       const message = sendError instanceof Error ? sendError.message : '메시지를 보내지 못했습니다.'
       showAuthToast({ message, variant: 'error', durationMs: 2200 })
-    }
-  }
-
-  async function loadDirectMessages(member: WorkspaceMember, silent = false) {
-    if (!workspaceId) {
-      return
-    }
-
-    if (!silent) {
-      setDirectLoading(true)
-    }
-
-    try {
-      const nextMessages = await projectApiRequest<DirectMessage[]>(
-        `/api/workspaces/${workspaceId}/direct-messages/${member.learnerId}`,
-        {},
-        'required',
-      )
-
-      setDirectMessages(nextMessages ?? [])
-    } catch (loadError) {
-      if (!silent) {
-        const message = loadError instanceof Error ? loadError.message : '1:1 메시지를 불러오지 못했습니다.'
-        showAuthToast({ message, variant: 'error', durationMs: 2200 })
-      }
-    } finally {
-      if (!silent) {
-        setDirectLoading(false)
-      }
     }
   }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ErrorCard, LoadingCard, formatNumber } from '../../account/ui'
+import { ErrorCard, LoadingCard } from '../../account/ui'
+import { formatNumber } from '../../account/ui-utils'
 import { buildInstructorCourseOptions } from '../../instructor/course-display'
 import { instructorAnalyticsApi } from '../../lib/api'
 import type { InstructorAnalyticsDashboard } from '../../types/instructor'
@@ -219,13 +220,18 @@ export default function StudentAnalyticsPage() {
 
   useEffect(() => {
     const controller = new AbortController()
-
-    setLoading(true)
-    setError(null)
+    let fallbackRequested = false
 
     instructorAnalyticsApi
       .getDashboard(courseId ?? undefined, controller.signal)
       .then((response) => {
+        const nextCourseOptions = buildInstructorCourseOptions(response.courseOptions)
+        if (courseId !== null && !nextCourseOptions.some(([value]) => Number(value) === courseId)) {
+          fallbackRequested = true
+          setCourseId(null)
+          return
+        }
+
         setAnalytics(response)
       })
       .catch((nextError: Error) => {
@@ -236,7 +242,7 @@ export default function StudentAnalyticsPage() {
         setError(nextError.message)
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && !fallbackRequested) {
           setLoading(false)
         }
       })
@@ -246,11 +252,11 @@ export default function StudentAnalyticsPage() {
 
   const availableCourseOptions = analytics ? buildInstructorCourseOptions(analytics.courseOptions) : []
 
-  useEffect(() => {
-    if (courseId !== null && !availableCourseOptions.some(([value]) => Number(value) === courseId)) {
-      setCourseId(null)
-    }
-  }, [courseId, availableCourseOptions])
+  function changeCourse(nextCourseId: number | null) {
+    setLoading(true)
+    setError(null)
+    setCourseId(nextCourseId)
+  }
 
   if (loading) {
     return (
@@ -362,7 +368,7 @@ export default function StudentAnalyticsPage() {
           <div className="student-analytics-controls flex items-center gap-3">
             <select
               value={courseId ?? 'all'}
-              onChange={(event) => setCourseId(event.target.value === 'all' ? null : Number(event.target.value))}
+              onChange={(event) => changeCourse(event.target.value === 'all' ? null : Number(event.target.value))}
               className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300"
             >
               <option value="all">전체 강의</option>

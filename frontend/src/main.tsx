@@ -98,6 +98,10 @@ function suspense(page: ReactElement) {
   return <Suspense fallback={null}>{page}</Suspense>
 }
 
+export function RootPage({ page }: { page: ReactElement }) {
+  return page
+}
+
 let pathname = window.location.pathname.replace(/\/+$/, '')
 
 if (pathname === '') {
@@ -268,7 +272,7 @@ if (pathname === '/admin-dashboard') {
                                                                           ? suspense(<SquadSettingsApp />)
                                                                           : suspense(<App />)
 
-  renderPage(page, {
+  renderPage(<RootPage page={page} />, {
     missingRootMessage: 'root element was not found',
   })
 }

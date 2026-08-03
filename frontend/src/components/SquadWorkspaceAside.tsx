@@ -81,6 +81,7 @@ export default function SquadWorkspaceAside({
   const [githubLinked, setGithubLinked] = useState<boolean | null>(null)
   const [localPinned, setLocalPinned] = useState(readSidebarPinned)
   const sidebarPinned = pinned ?? localPinned
+  const activeGithubLinked = workspaceId ? githubLinked : false
   const projectLabel = projectName?.trim() || '스쿼드 프로젝트'
   const sections: NavSection[] = [
     {
@@ -120,7 +121,6 @@ export default function SquadWorkspaceAside({
 
   useEffect(() => {
     if (!workspaceId) {
-      setGithubLinked(false)
       return
     }
 
@@ -152,7 +152,7 @@ export default function SquadWorkspaceAside({
   }, [workspaceId])
 
   function handleNavigate(event: MouseEvent<HTMLAnchorElement>, href: string, item?: NavItem) {
-    if (item?.key === 'review' && githubLinked !== true) {
+    if (item?.key === 'review' && activeGithubLinked !== true) {
       event.preventDefault()
       showAuthToast({
         message: '코드 피드백은 GitHub 저장소를 연동한 뒤 이용할 수 있습니다.',
@@ -216,7 +216,7 @@ export default function SquadWorkspaceAside({
             {section.items.map((item) => {
               const href = navHref(item.path, workspaceId)
               const badgeCount = item.badgeCount ?? 0
-              const blocked = item.key === 'review' && githubLinked !== true
+              const blocked = item.key === 'review' && activeGithubLinked !== true
 
               return (
                 <a
