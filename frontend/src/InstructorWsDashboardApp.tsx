@@ -19,6 +19,7 @@ import {
   uploadInstructorWorkspaceFile,
 } from './instructor-workspace-api'
 import type { ApiEnvelope } from './project-api'
+import { getVoiceIceServers } from './voice-webrtc'
 
 import type {
   ActivityLogItem,
@@ -38,6 +39,7 @@ import type {
   WorkspaceNotification,
   WorkspaceNotificationDraft,
   WorkspaceTask,
+  VoiceChannelSummary,
 } from './instructor-workspace-types'
 
 type WorkspaceAuthSession = NonNullable<ReturnType<typeof readStoredAuthSession>>
@@ -63,6 +65,7 @@ const EMPTY_DATA: WorkspaceData = {
   meetingNotes: [],
   meetingSettings: null,
   activityLogs: [],
+  voiceChannels: [],
 }
 
 const WORKSPACE_NOTIFICATION_EVENT = 'devpath-instructor-ws-notification'
@@ -139,10 +142,6 @@ function pushWorkspaceNotification(workspaceId: number | null, draft: WorkspaceN
   const next = [notification, ...readStoredWorkspaceNotifications(workspaceId).filter((item) => item.id !== notification.id)].slice(0, MAX_WORKSPACE_NOTIFICATIONS)
   writeStoredWorkspaceNotifications(workspaceId, next)
   window.dispatchEvent(new CustomEvent(WORKSPACE_NOTIFICATION_EVENT, { detail: { workspaceId, notification } }))
-}
-
-function getVoiceIceServers(): RTCIceServer[] {
-  return [{ urls: ['stun:stun.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] }]
 }
 
 function buildVoiceSignalingUrl(channelId: number, accessToken: string) {
@@ -668,7 +667,8 @@ function DashboardPage({ data, workspaceId, onOpenNotice }: { data: WorkspaceDat
   }, 0) / totalLearners)
   const reviewWaiting = waitingCount
   const unanswered = data.questions.filter((question) => !isQuestionAnswered(question)).length
-  const upcomingEvents = [...data.events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()).filter((event) => new Date(event.startAt).getTime() >= Date.now() - 86400000)
+  const [now] = useState(() => Date.now())
+  const upcomingEvents = [...data.events].sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()).filter((event) => new Date(event.startAt).getTime() >= now - 86400000)
   const todayEvent = upcomingEvents.find((event) => isSameDay(event.startAt, new Date())) ?? upcomingEvents[0] ?? null
   const hasData = totalLearners > 0 || data.tasks.length > 0 || data.questions.length > 0 || data.events.length > 0
   const riskRows = learners.map((member) => {
@@ -1683,7 +1683,7 @@ function QnaPage({ data, workspaceId, reload }: { data: WorkspaceData; workspace
   const [filter, setFilter] = useState<'waiting' | 'answered' | 'all'>('waiting')
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [detail, setDetail] = useState<QuestionDetail | null>(null)
+  const [detailResult, setDetailResult] = useState<{ questionId: number; detail: QuestionDetail | null } | null>(null)
   const [answer, setAnswer] = useState('')
   const [successOpen, setSuccessOpen] = useState(false)
   const waitingCount = data.questions.filter((question) => !isQuestionAnswered(question)).length
@@ -1693,21 +1693,21 @@ function QnaPage({ data, workspaceId, reload }: { data: WorkspaceData; workspace
     return matchesFilter && searchText.includes(query.toLowerCase())
   })
   const selected = data.questions.find((question) => question.id === selectedId) ?? null
+  const detail = detailResult?.questionId === selectedId ? detailResult.detail : null
 
   useEffect(() => {
     if (!selectedId) {
-      setDetail(null)
       return
     }
     let active = true
     fetchInstructorWorkspaceQuestionDetail(selectedId)
       .then((nextDetail) => {
         if (!active) return
-        setDetail(nextDetail)
+        setDetailResult({ questionId: selectedId, detail: nextDetail })
         const answers = nextDetail.answers ?? []
         setAnswer(answers.length > 0 ? answers[answers.length - 1].content : '')
       })
-      .catch(() => { if (active) setDetail(null) })
+      .catch(() => { if (active) setDetailResult({ questionId: selectedId, detail: null }) })
     return () => { active = false }
   }, [selectedId])
 
@@ -1724,7 +1724,7 @@ function QnaPage({ data, workspaceId, reload }: { data: WorkspaceData; workspace
     setAnswer('')
     await reload()
     setSelectedId(null)
-    setDetail(null)
+    setDetailResult(null)
     setSuccessOpen(true)
   }
 
@@ -2644,12 +2644,19 @@ function MeetingNoteDetailModal({ note, deleting, onClose, onEdit, onDelete }: {
 type LivePeer = {
   userId: number
   userName: string
-  stream: MediaStream
-  screenSharing?: boolean
+  cameraStream: MediaStream | null
+  screenStream: MediaStream | null
+  screenSharing: boolean
+}
+
+type LivePeerTransceivers = {
+  microphone: RTCRtpTransceiver
+  camera: RTCRtpTransceiver
+  screen: RTCRtpTransceiver
 }
 
 type LiveSignalMessage = {
-  type: 'peer-list' | 'peer-joined' | 'peer-left' | 'offer' | 'answer' | 'ice-candidate' | 'screen-share-start' | 'screen-share-stop' | 'error'
+  type: 'peer-list' | 'peer-joined' | 'peer-left' | 'offer' | 'answer' | 'ice-candidate' | 'camera-start' | 'screen-share-start' | 'screen-share-stop' | 'error'
   peers?: Array<{ userId: number; userName: string }>
   fromUserId?: number
   fromUserName?: string
@@ -2672,7 +2679,7 @@ function StreamVideo({ stream, className, muted = false }: { stream: MediaStream
 
 function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspaceId: number | null }) {
   const session = useMemo(() => readStoredAuthSession(), [])
-  const channelId = workspaceId
+  const channelId = data.voiceChannels[0]?.channelId ?? null
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
   const [remotePeers, setRemotePeers] = useState<LivePeer[]>([])
@@ -2686,13 +2693,22 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
   const [error, setError] = useState<string | null>(null)
   const socketRef = useRef<WebSocket | null>(null)
   const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map())
+  const peerTransceiversRef = useRef<Map<number, LivePeerTransceivers>>(new Map())
   const pendingIceCandidatesRef = useRef<Map<number, RTCIceCandidateInit[]>>(new Map())
+  const makingOffersRef = useRef<Set<number>>(new Set())
+  const departedPeerIdsRef = useRef<Set<number>>(new Set())
   const localStreamRef = useRef<MediaStream | null>(null)
   const screenStreamRef = useRef<MediaStream | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordedChunksRef = useRef<Blob[]>([])
   const members = data.dashboard?.members ?? []
   const participantCount = remotePeers.length + 1
+  const startupError = !channelId || !session?.accessToken
+    ? '로그인 세션이나 워크스페이스 정보가 없어 라이브 룸을 열 수 없습니다.'
+    : !navigator.mediaDevices?.getUserMedia
+      ? '현재 브라우저에서 카메라와 마이크를 사용할 수 없습니다.'
+      : null
+  const visibleError = startupError ?? error
 
   const stopStream = useCallback((stream: MediaStream | null) => {
     stream?.getTracks().forEach((track) => track.stop())
@@ -2701,7 +2717,10 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
   const closePeerConnections = useCallback(() => {
     peerConnectionsRef.current.forEach((connection) => connection.close())
     peerConnectionsRef.current.clear()
+    peerTransceiversRef.current.clear()
     pendingIceCandidatesRef.current.clear()
+    makingOffersRef.current.clear()
+    departedPeerIdsRef.current.clear()
     setRemotePeers([])
   }, [])
 
@@ -2711,21 +2730,50 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
     socket.send(JSON.stringify({ type, targetUserId, payload }))
   }, [])
 
-  const broadcastRoomEvent = useCallback((type: 'screen-share-start' | 'screen-share-stop', payload: Record<string, unknown> = {}) => {
+  const broadcastRoomEvent = useCallback((type: 'camera-start' | 'screen-share-start' | 'screen-share-stop', payload: Record<string, unknown> = {}) => {
     const socket = socketRef.current
     if (!socket || socket.readyState !== WebSocket.OPEN) return
     socket.send(JSON.stringify({ type, payload }))
   }, [])
 
-  const attachRemoteStream = useCallback((userId: number, userName: string, stream: MediaStream) => {
+  const updateRemotePeer = useCallback((
+    userId: number,
+    userName: string,
+    update: (peer: LivePeer) => LivePeer,
+  ) => {
     setRemotePeers((current) => {
+      if (departedPeerIdsRef.current.has(userId)) return current
       const existing = current.find((peer) => peer.userId === userId)
       if (existing) {
-        return current.map((peer) => peer.userId === userId ? { ...peer, userName, stream } : peer)
+        return current.map((peer) => peer.userId === userId ? update({ ...peer, userName }) : peer)
       }
-      return [...current, { userId, userName, stream }]
+      return [...current, update({
+        userId,
+        userName,
+        cameraStream: null,
+        screenStream: null,
+        screenSharing: false,
+      })]
     })
   }, [])
+
+  const attachRemoteCameraTrack = useCallback((userId: number, userName: string, track: MediaStreamTrack) => {
+    updateRemotePeer(userId, userName, (peer) => {
+      const stream = peer.cameraStream ?? new MediaStream()
+      if (!stream.getTracks().some((currentTrack) => currentTrack.id === track.id)) {
+        stream.addTrack(track)
+      }
+      return { ...peer, cameraStream: stream }
+    })
+  }, [updateRemotePeer])
+
+  const attachRemoteScreenTrack = useCallback((userId: number, userName: string, track: MediaStreamTrack) => {
+    const stream = new MediaStream([track])
+    updateRemotePeer(userId, userName, (peer) => ({ ...peer, screenStream: stream }))
+    track.addEventListener('ended', () => {
+      updateRemotePeer(userId, userName, (peer) => ({ ...peer, screenStream: null, screenSharing: false }))
+    })
+  }, [updateRemotePeer])
 
   const getOrCreatePeerConnection = useCallback((peer: { userId: number; userName: string }) => {
     const existing = peerConnectionsRef.current.get(peer.userId)
@@ -2733,9 +2781,30 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
 
     const peerConnection = new RTCPeerConnection({ iceServers: getVoiceIceServers() })
     const currentLocalStream = localStreamRef.current
+    const currentScreenStream = screenStreamRef.current
+    const currentMicrophoneTrack = currentLocalStream?.getAudioTracks()[0] ?? null
+    const currentCameraTrack = currentLocalStream?.getVideoTracks()[0] ?? null
+    const currentScreenTrack = currentScreenStream?.getVideoTracks()[0] ?? null
 
-    currentLocalStream?.getTracks().forEach((track) => peerConnection.addTrack(track, currentLocalStream))
-    screenStreamRef.current?.getVideoTracks().forEach((track) => peerConnection.addTrack(track, screenStreamRef.current as MediaStream))
+    if (session?.userId && session.userId < peer.userId) {
+      const microphoneTransceiver = peerConnection.addTransceiver(currentMicrophoneTrack ?? 'audio', {
+        direction: 'sendrecv',
+        ...(currentLocalStream ? { streams: [currentLocalStream] } : {}),
+      })
+      const cameraTransceiver = peerConnection.addTransceiver(currentCameraTrack ?? 'video', {
+        direction: 'sendrecv',
+        ...(currentLocalStream ? { streams: [currentLocalStream] } : {}),
+      })
+      const screenTransceiver = peerConnection.addTransceiver(currentScreenTrack ?? 'video', {
+        direction: 'sendrecv',
+        ...(currentScreenStream ? { streams: [currentScreenStream] } : {}),
+      })
+      peerTransceiversRef.current.set(peer.userId, {
+        microphone: microphoneTransceiver,
+        camera: cameraTransceiver,
+        screen: screenTransceiver,
+      })
+    }
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
@@ -2743,72 +2812,132 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
       }
     }
     peerConnection.ontrack = (event) => {
-      const stream = event.streams[0] ?? new MediaStream([event.track])
-      attachRemoteStream(peer.userId, peer.userName, stream)
+      const transceiverIndex = peerConnection.getTransceivers().indexOf(event.transceiver)
+      if (transceiverIndex === 2) {
+        attachRemoteScreenTrack(peer.userId, peer.userName, event.track)
+        return
+      }
+      attachRemoteCameraTrack(peer.userId, peer.userName, event.track)
     }
     peerConnection.onconnectionstatechange = () => {
-      if (['failed', 'closed', 'disconnected'].includes(peerConnection.connectionState)) {
+      if (['failed', 'closed'].includes(peerConnection.connectionState)) {
+        peerConnectionsRef.current.delete(peer.userId)
+        peerTransceiversRef.current.delete(peer.userId)
+        pendingIceCandidatesRef.current.delete(peer.userId)
         setRemotePeers((current) => current.filter((item) => item.userId !== peer.userId))
       }
     }
 
     peerConnectionsRef.current.set(peer.userId, peerConnection)
     return peerConnection
-  }, [attachRemoteStream, sendSignalingMessage])
+  }, [attachRemoteCameraTrack, attachRemoteScreenTrack, sendSignalingMessage, session?.userId])
+
+  const bindLocalTracksToRemoteOffer = useCallback(async (userId: number, peerConnection: RTCPeerConnection) => {
+    const [microphone, camera, screen] = peerConnection.getTransceivers()
+    if (!microphone || !camera || !screen) {
+      throw new Error('라이브 미팅의 미디어 채널 구성이 올바르지 않습니다.')
+    }
+
+    const currentLocalStream = localStreamRef.current
+    const currentScreenStream = screenStreamRef.current
+    microphone.direction = 'sendrecv'
+    camera.direction = 'sendrecv'
+    screen.direction = 'sendrecv'
+    if (currentLocalStream) {
+      microphone.sender.setStreams(currentLocalStream)
+      camera.sender.setStreams(currentLocalStream)
+    }
+    if (currentScreenStream) {
+      screen.sender.setStreams(currentScreenStream)
+    }
+    await Promise.all([
+      microphone.sender.replaceTrack(currentLocalStream?.getAudioTracks()[0] ?? null),
+      camera.sender.replaceTrack(currentLocalStream?.getVideoTracks()[0] ?? null),
+      screen.sender.replaceTrack(currentScreenStream?.getVideoTracks()[0] ?? null),
+    ])
+    peerTransceiversRef.current.set(userId, { microphone, camera, screen })
+  }, [])
 
   const startOffer = useCallback(async (peer: { userId: number; userName: string }) => {
     const peerConnection = getOrCreatePeerConnection(peer)
-    if (peerConnection.signalingState !== 'stable') return
-    const offer = await peerConnection.createOffer()
-    await peerConnection.setLocalDescription(offer)
-    if (peerConnection.localDescription) {
-      sendSignalingMessage('offer', peer.userId, peerConnection.localDescription.toJSON())
+    if (peerConnection.signalingState !== 'stable') {
+      await new Promise<void>((resolve) => {
+        const timeoutId = window.setTimeout(finish, 5000)
+
+        function finish() {
+          window.clearTimeout(timeoutId)
+          peerConnection.removeEventListener('signalingstatechange', handleSignalingStateChange)
+          resolve()
+        }
+
+        function handleSignalingStateChange() {
+          if (peerConnection.signalingState === 'stable' || peerConnection.signalingState === 'closed') {
+            finish()
+          }
+        }
+
+        peerConnection.addEventListener('signalingstatechange', handleSignalingStateChange)
+      })
+    }
+    if (peerConnection.signalingState !== 'stable' || makingOffersRef.current.has(peer.userId)) return
+
+    makingOffersRef.current.add(peer.userId)
+    try {
+      const offer = await peerConnection.createOffer()
+      await peerConnection.setLocalDescription(offer)
+      if (peerConnection.localDescription) {
+        sendSignalingMessage('offer', peer.userId, peerConnection.localDescription.toJSON())
+      }
+    } finally {
+      makingOffersRef.current.delete(peer.userId)
     }
   }, [getOrCreatePeerConnection, sendSignalingMessage])
 
   const handlePeerAvailable = useCallback(async (peer: { userId: number; userName: string }) => {
     if (!session?.userId || peer.userId === session.userId) return
+    updateRemotePeer(peer.userId, peer.userName, (currentPeer) => currentPeer)
     getOrCreatePeerConnection(peer)
+    if (screenStreamRef.current) {
+      broadcastRoomEvent('screen-share-start')
+    }
     if (session.userId < peer.userId) {
       await startOffer(peer)
     }
-  }, [getOrCreatePeerConnection, session?.userId, startOffer])
-
-  const renegotiateAllPeerConnections = useCallback(async () => {
-    await Promise.all([...peerConnectionsRef.current.entries()].map(async ([userId, peerConnection]) => {
-      if (peerConnection.signalingState !== 'stable') return
-      const offer = await peerConnection.createOffer()
-      await peerConnection.setLocalDescription(offer)
-      if (peerConnection.localDescription) {
-        sendSignalingMessage('offer', userId, peerConnection.localDescription.toJSON())
-      }
-    }))
-  }, [sendSignalingMessage])
+  }, [broadcastRoomEvent, getOrCreatePeerConnection, session?.userId, startOffer, updateRemotePeer])
 
   const handleSignalMessage = useCallback(async (rawMessage: string) => {
     const message = JSON.parse(rawMessage) as LiveSignalMessage
 
     if (message.type === 'peer-list') {
-      await Promise.all((message.peers ?? []).map((peer) => handlePeerAvailable(peer)))
+      await Promise.all((message.peers ?? []).map((peer) => {
+        departedPeerIdsRef.current.delete(peer.userId)
+        return handlePeerAvailable(peer)
+      }))
       return
     }
     if (message.type === 'peer-joined' && message.fromUserId && message.fromUserName) {
+      departedPeerIdsRef.current.delete(message.fromUserId)
       await handlePeerAvailable({ userId: message.fromUserId, userName: message.fromUserName })
       return
     }
     if (message.type === 'peer-left' && message.fromUserId) {
+      departedPeerIdsRef.current.add(message.fromUserId)
       peerConnectionsRef.current.get(message.fromUserId)?.close()
       peerConnectionsRef.current.delete(message.fromUserId)
+      peerTransceiversRef.current.delete(message.fromUserId)
+      pendingIceCandidatesRef.current.delete(message.fromUserId)
       setRemotePeers((current) => current.filter((peer) => peer.userId !== message.fromUserId))
       return
     }
     if (message.type === 'offer' && message.fromUserId && message.fromUserName && message.payload) {
+      if (departedPeerIdsRef.current.has(message.fromUserId)) return
       const peer = { userId: message.fromUserId, userName: message.fromUserName }
       const peerConnection = getOrCreatePeerConnection(peer)
       if (peerConnection.signalingState !== 'stable') {
         await peerConnection.setLocalDescription({ type: 'rollback' } as RTCSessionDescriptionInit).catch(() => undefined)
       }
       await peerConnection.setRemoteDescription(message.payload as RTCSessionDescriptionInit)
+      await bindLocalTracksToRemoteOffer(peer.userId, peerConnection)
       const candidates = pendingIceCandidatesRef.current.get(peer.userId) ?? []
       pendingIceCandidatesRef.current.delete(peer.userId)
       await Promise.all(candidates.map((candidate) => peerConnection.addIceCandidate(candidate).catch(() => undefined)))
@@ -2820,9 +2949,11 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
       return
     }
     if (message.type === 'answer' && message.fromUserId && message.fromUserName && message.payload) {
+      if (departedPeerIdsRef.current.has(message.fromUserId)) return
       const peerConnection = getOrCreatePeerConnection({ userId: message.fromUserId, userName: message.fromUserName })
+      const answer = message.payload as RTCSessionDescriptionInit
       if (peerConnection.signalingState !== 'stable') {
-        await peerConnection.setRemoteDescription(message.payload as RTCSessionDescriptionInit)
+        await peerConnection.setRemoteDescription(answer)
       }
       const candidates = pendingIceCandidatesRef.current.get(message.fromUserId) ?? []
       pendingIceCandidatesRef.current.delete(message.fromUserId)
@@ -2830,6 +2961,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
       return
     }
     if (message.type === 'ice-candidate' && message.fromUserId && message.fromUserName && message.payload) {
+      if (departedPeerIdsRef.current.has(message.fromUserId)) return
       const peerConnection = getOrCreatePeerConnection({ userId: message.fromUserId, userName: message.fromUserName })
       const candidate = message.payload as RTCIceCandidateInit
       if (!peerConnection.remoteDescription) {
@@ -2841,53 +2973,115 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
       await peerConnection.addIceCandidate(candidate).catch(() => undefined)
       return
     }
+    if (message.type === 'camera-start' && message.fromUserId && message.fromUserName) {
+      if (session?.userId && session.userId < message.fromUserId) {
+        await startOffer({ userId: message.fromUserId, userName: message.fromUserName })
+      }
+      return
+    }
     if ((message.type === 'screen-share-start' || message.type === 'screen-share-stop') && message.fromUserId) {
-      setRemotePeers((current) => current.map((peer) => peer.userId === message.fromUserId ? { ...peer, screenSharing: message.type === 'screen-share-start' } : peer))
+      updateRemotePeer(message.fromUserId, message.fromUserName ?? '참여자', (peer) => ({
+        ...peer,
+        screenSharing: message.type === 'screen-share-start',
+      }))
       return
     }
     if (message.type === 'error') {
       setError(message.detail ?? '라이브 룸 연결 오류가 발생했습니다.')
     }
-  }, [getOrCreatePeerConnection, handlePeerAvailable, sendSignalingMessage])
+  }, [bindLocalTracksToRemoteOffer, getOrCreatePeerConnection, handlePeerAvailable, sendSignalingMessage, session?.userId, startOffer, updateRemotePeer])
 
-  const startMeeting = useCallback(async () => {
-    if (!channelId || !session?.accessToken) {
-      setError('로그인 세션이나 워크스페이스 정보가 없어 라이브 룸을 열 수 없습니다.')
+  const attachLocalMediaToPeerConnections = useCallback(async (stream: MediaStream) => {
+    const microphoneTrack = stream.getAudioTracks()[0] ?? null
+    const cameraTrack = stream.getVideoTracks()[0] ?? null
+
+    await Promise.all([...peerTransceiversRef.current.values()].flatMap((transceivers) => {
+      transceivers.microphone.sender.setStreams(stream)
+      transceivers.camera.sender.setStreams(stream)
+      return [
+        transceivers.microphone.sender.replaceTrack(microphoneTrack),
+        transceivers.camera.sender.replaceTrack(cameraTrack),
+      ]
+    }))
+    broadcastRoomEvent('camera-start')
+    const localUserId = session?.userId
+    if (localUserId) {
+      await Promise.all([...peerConnectionsRef.current.entries()]
+        .filter(([userId]) => localUserId < userId)
+        .map(([userId]) => startOffer({ userId, userName: '참여자' })))
+    }
+  }, [broadcastRoomEvent, session?.userId, startOffer])
+
+  useEffect(() => {
+    if (!channelId || !session?.accessToken || !navigator.mediaDevices?.getUserMedia) {
       return
     }
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError('현재 브라우저에서 카메라와 마이크를 사용할 수 없습니다.')
-      return
+
+    let active = true
+
+    const socket = new WebSocket(buildVoiceSignalingUrl(channelId, session.accessToken))
+    socketRef.current = socket
+    socket.onopen = () => {
+      if (active) setConnected(true)
+    }
+    socket.onmessage = (event) => {
+      void handleSignalMessage(event.data).catch(() => setError('시그널링 메시지를 처리하지 못했습니다.'))
+    }
+    socket.onerror = () => {
+      if (active) setError('시그널링 서버에 연결하지 못했습니다.')
+    }
+    socket.onclose = (event) => {
+      if (!active) return
+      setConnected(false)
+      setError(`시그널링 연결이 종료되었습니다. 잠시 후 다시 입장해 주세요. (${event.code})`)
+      socketRef.current = null
+      closePeerConnections()
     }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      localStreamRef.current = stream
-      setLocalStream(stream)
-      setMicOn(true)
-      setCamOn(true)
-      setError(null)
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
+      .then(async (stream) => {
+        if (!active) {
+          stopStream(stream)
+          return
+        }
 
-      const socket = new WebSocket(buildVoiceSignalingUrl(channelId, session.accessToken))
-      socketRef.current = socket
-      socket.onopen = () => setConnected(true)
-      socket.onmessage = (event) => {
-        void handleSignalMessage(event.data).catch(() => setError('시그널링 메시지를 처리하지 못했습니다.'))
-      }
-      socket.onerror = () => setError('시그널링 서버에 연결하지 못했습니다.')
-      socket.onclose = () => {
-        setConnected(false)
-        socketRef.current = null
-        closePeerConnections()
-      }
-    } catch {
-      setError('카메라 또는 마이크 권한을 허용해야 라이브 미팅을 시작할 수 있습니다.')
+        localStreamRef.current = stream
+        setLocalStream(stream)
+        setMicOn(true)
+        setCamOn(true)
+        setError(null)
+        await attachLocalMediaToPeerConnections(stream)
+      })
+      .catch(() => {
+        if (active) {
+          setError('내 카메라 또는 마이크를 열지 못했습니다. 아래 마이크 또는 카메라 버튼을 눌러 다시 시도해 주세요.')
+        }
+      })
+
+    return () => {
+      active = false
+      socket.close()
+      if (socketRef.current === socket) socketRef.current = null
+      closePeerConnections()
+      stopStream(localStreamRef.current)
+      stopStream(screenStreamRef.current)
+      localStreamRef.current = null
+      screenStreamRef.current = null
     }
-  }, [channelId, closePeerConnections, handleSignalMessage, session?.accessToken])
+  }, [attachLocalMediaToPeerConnections, channelId, closePeerConnections, handleSignalMessage, session?.accessToken, stopStream])
 
   const leaveMeeting = useCallback(() => {
+    const socket = socketRef.current
+    const meetingHref = buildHref('meeting', workspaceId)
+    let navigationStarted = false
+    const navigateToMeeting = () => {
+      if (navigationStarted) return
+      navigationStarted = true
+      window.location.assign(meetingHref)
+    }
+
     mediaRecorderRef.current?.stop()
-    socketRef.current?.close()
     socketRef.current = null
     closePeerConnections()
     stopStream(localStreamRef.current)
@@ -2897,26 +3091,58 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
     setLocalStream(null)
     setScreenStream(null)
     setConnected(false)
-    window.location.href = buildHref('meeting', workspaceId)
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.addEventListener('close', navigateToMeeting, { once: true })
+      socket.send(JSON.stringify({ type: 'leave' }))
+      socket.close(1000, 'leave')
+      window.setTimeout(navigateToMeeting, 1000)
+      return
+    }
+
+    socket?.close()
+    navigateToMeeting()
   }, [closePeerConnections, stopStream, workspaceId])
 
-  useEffect(() => {
-    void startMeeting()
-    return () => {
-      socketRef.current?.close()
-      closePeerConnections()
-      stopStream(localStreamRef.current)
-      stopStream(screenStreamRef.current)
+  async function retryLocalMedia() {
+    if (localStreamRef.current || !navigator.mediaDevices?.getUserMedia) return
+
+    setError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      if (!socketRef.current) {
+        stopStream(stream)
+        return
+      }
+      if (localStreamRef.current) {
+        stopStream(stream)
+        return
+      }
+
+      localStreamRef.current = stream
+      setLocalStream(stream)
+      setMicOn(true)
+      setCamOn(true)
+      await attachLocalMediaToPeerConnections(stream)
+    } catch {
+      setError('내 카메라 또는 마이크를 열지 못했습니다. 브라우저 권한과 다른 앱의 장치 사용 여부를 확인해 주세요.')
     }
-  }, [closePeerConnections, startMeeting, stopStream])
+  }
 
   function toggleMic() {
+    if (!localStreamRef.current) {
+      void retryLocalMedia()
+      return
+    }
     const enabled = !micOn
     localStreamRef.current?.getAudioTracks().forEach((track) => { track.enabled = enabled })
     setMicOn(enabled)
   }
 
   function toggleCam() {
+    if (!localStreamRef.current) {
+      void retryLocalMedia()
+      return
+    }
     const enabled = !camOn
     localStreamRef.current?.getVideoTracks().forEach((track) => { track.enabled = enabled })
     setCamOn(enabled)
@@ -2924,11 +3150,12 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
 
   async function toggleScreenShare() {
     if (screenStreamRef.current) {
-      stopStream(screenStreamRef.current)
+      const currentScreenStream = screenStreamRef.current
       screenStreamRef.current = null
       setScreenStream(null)
+      await Promise.all([...peerTransceiversRef.current.values()].map((transceivers) => transceivers.screen.sender.replaceTrack(null)))
       broadcastRoomEvent('screen-share-stop')
-      await renegotiateAllPeerConnections()
+      stopStream(currentScreenStream)
       return
     }
     if (!navigator.mediaDevices?.getDisplayMedia) {
@@ -2936,20 +3163,27 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
       return
     }
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+      const screenTrack = stream.getVideoTracks()[0]
+      if (!screenTrack) {
+        stopStream(stream)
+        setError('공유할 화면 영상 트랙을 열지 못했습니다.')
+        return
+      }
       screenStreamRef.current = stream
       setScreenStream(stream)
-      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+      screenTrack.addEventListener('ended', () => {
+        if (screenStreamRef.current !== stream) return
         screenStreamRef.current = null
         setScreenStream(null)
+        void Promise.all([...peerTransceiversRef.current.values()].map((transceivers) => transceivers.screen.sender.replaceTrack(null)))
         broadcastRoomEvent('screen-share-stop')
-        void renegotiateAllPeerConnections()
       })
-      stream.getTracks().forEach((track) => {
-        peerConnectionsRef.current.forEach((connection) => connection.addTrack(track, stream))
-      })
+      await Promise.all([...peerTransceiversRef.current.values()].map((transceivers) => {
+        transceivers.screen.sender.setStreams(stream)
+        return transceivers.screen.sender.replaceTrack(screenTrack)
+      }))
       broadcastRoomEvent('screen-share-start')
-      await renegotiateAllPeerConnections()
     } catch {
       setError('화면 공유가 취소되었거나 권한이 허용되지 않았습니다.')
     }
@@ -3010,7 +3244,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
           <button type="button" onClick={() => setSideTab('users')} className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-gray-400"><i className="fas fa-users" /><span className="ml-1 text-[10px] text-[#00C471]">{participantCount}</span></button>
         </div>
       </header>
-      {error ? <div className="bg-red-500 px-6 py-2 text-xs font-bold text-white">{error}</div> : null}
+      {visibleError ? <div className="bg-red-500 px-6 py-2 text-xs font-bold text-white">{visibleError}</div> : null}
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[1fr_320px]">
         <main className="flex min-h-0 flex-col bg-black">
           <div className="custom-scrollbar grid flex-1 grid-cols-1 gap-4 overflow-y-auto p-6 md:grid-cols-2">
@@ -3018,7 +3252,7 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
               {localStream && camOn ? <StreamVideo stream={localStream} muted className="h-full w-full object-cover" /> : (
                 <div className="text-center">
                   <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-[#7C3AED] text-2xl font-black">M</div>
-                  <p className="text-lg font-extrabold">{data.dashboard?.ownerName ?? session?.name ?? '멘토'}</p>
+                  <p className="text-lg font-extrabold">{session?.name ?? data.dashboard?.ownerName ?? '멘토'}</p>
                   <p className="mt-1 text-xs font-bold text-gray-400">{localStream ? '카메라 꺼짐' : '카메라 연결 중'}</p>
                 </div>
               )}
@@ -3033,8 +3267,14 @@ function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; workspace
             ) : null}
             {remotePeers.map((peer) => (
               <div key={peer.userId} className="group relative flex min-h-[180px] items-center justify-center overflow-hidden rounded-2xl border border-gray-800 bg-gray-900">
-                <StreamVideo stream={peer.stream} className="h-full w-full object-cover" />
-                <div className="absolute right-3 bottom-3 rounded bg-black/70 px-2 py-1 text-[10px] font-bold">{peer.userName}{peer.screenSharing ? ' · 화면 공유 중' : ''}</div>
+                {peer.cameraStream ? <StreamVideo stream={peer.cameraStream} className="h-full w-full object-cover" /> : <span className="text-xs font-bold text-gray-500">카메라 연결 중</span>}
+                <div className="absolute right-3 bottom-3 rounded bg-black/70 px-2 py-1 text-[10px] font-bold">{peer.userName}</div>
+              </div>
+            ))}
+            {remotePeers.filter((peer) => peer.screenSharing && peer.screenStream).map((peer) => (
+              <div key={`${peer.userId}-screen`} className="relative min-h-[260px] overflow-hidden rounded-2xl border border-[#00C471] bg-gray-900">
+                <StreamVideo stream={peer.screenStream} className="h-full w-full object-contain" />
+                <span className="absolute top-4 left-4 rounded bg-[#00C471] px-2 py-1 text-[10px] font-extrabold text-white">{peer.userName} 화면 공유</span>
               </div>
             ))}
             {remotePeers.length === 0 && members.slice(0, 3).map((member) => (
@@ -3198,13 +3438,14 @@ export default function InstructorWsDashboardApp({ page = 'dashboard' }: { page?
         throw new Error('로그인이 필요합니다.')
       }
 
-      const [dashboard, tasks, events, questions] = await Promise.all([
+      const [dashboard, tasks, events, questions, voiceChannels] = await Promise.all([
         workspaceApiRequest<WorkspaceDashboard>(`/api/workspaces/${workspaceId}/dashboard`, refreshedSession),
         workspaceApiRequest<WorkspaceTask[]>(`/api/workspaces/${workspaceId}/tasks`, refreshedSession),
         workspaceApiRequest<CalendarEvent[]>(`/api/workspaces/${workspaceId}/calendar-events`, refreshedSession),
         workspaceApiRequest<QuestionSummary[]>(`/api/workspaces/${workspaceId}/questions`, refreshedSession),
+        optionalRequest(workspaceApiRequest<VoiceChannelSummary[]>(`/api/workspaces/${workspaceId}/voice-channels`, refreshedSession), []),
       ])
-      setData((current) => ({ ...current, dashboard, tasks, events, questions }))
+      setData((current) => ({ ...current, dashboard, tasks, events, questions, voiceChannels }))
       setLoading(false)
 
       const liveRoomUrl = `${window.location.origin}${buildHref('live-meeting', workspaceId)}`
@@ -3233,7 +3474,7 @@ export default function InstructorWsDashboardApp({ page = 'dashboard' }: { page?
     }
   }, [session, workspaceId])
 
-  async function refreshRealtimeData() {
+  const refreshRealtimeData = useCallback(async () => {
     if (!workspaceId || document.hidden || realtimeRefreshRef.current) return
     realtimeRefreshRef.current = true
     try {
@@ -3241,7 +3482,7 @@ export default function InstructorWsDashboardApp({ page = 'dashboard' }: { page?
     } finally {
       realtimeRefreshRef.current = false
     }
-  }
+  }, [loadData, workspaceId])
 
   useEffect(() => {
     document.title = `DevPath - ${PAGE_CONFIG[page].title}`
@@ -3275,7 +3516,7 @@ export default function InstructorWsDashboardApp({ page = 'dashboard' }: { page?
       window.removeEventListener('focus', refreshOnFocus)
       document.removeEventListener('visibilitychange', refreshOnVisible)
     }
-  }, [session, workspaceId, loading])
+  }, [session, workspaceId, loading, refreshRealtimeData])
 
   async function createNotice(title: string, content: string, important: boolean) {
     if (!workspaceId) return

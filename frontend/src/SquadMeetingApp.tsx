@@ -8,6 +8,16 @@ import {
   useRef,
   useState,
 } from 'react'
+
+function useLatest<T>(value: T) {
+  const ref = useRef(value)
+
+  useEffect(() => {
+    ref.current = value
+  }, [value])
+
+  return ref
+}
 import AuthModal, { type AuthView } from './components/AuthModal'
 import SquadWorkspaceAside from './components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
@@ -15,6 +25,7 @@ import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
 import { createSquadNotification, squadActorName } from './squad-notifications'
+import { getVoiceIceServers } from './voice-webrtc'
 import {
   appendSquadVoiceMinutesTranscriptLine,
   clearSquadVoiceChatMessages,
@@ -36,7 +47,6 @@ import {
 import type {
   AudioDeviceOption,
   AudioProcessingStatus,
-  CameraSignalPayload,
   CameraView,
   FloatingReaction,
   NavigatorWithNetworkInformation,
@@ -45,7 +55,6 @@ import type {
   RoomPanelTab,
   ScreenShareDragState,
   ScreenSharePan,
-  ScreenShareSignalPayload,
   ScreenShareView,
   SecurityStatus,
   SecurityTone,
@@ -119,7 +128,6 @@ const INITIAL_NETWORK_STATUS: NetworkStatus = {
   tone: 'checking',
 }
 
-const DEFAULT_VOICE_STUN_URLS = ['stun:stun.l.google.com:19302']
 const VOICE_REACTIONS = ['👍', '👏', '❤️', '🎉', '💡'] as const
 const FLOATING_REACTION_VISIBLE_MS = 2500
 const SCREEN_SHARE_MIN_ZOOM = 1
@@ -127,20 +135,10 @@ const SCREEN_SHARE_MAX_ZOOM = 4
 const SCREEN_SHARE_WHEEL_ZOOM_STEP = 0.16
 const SCREEN_SHARE_BUTTON_ZOOM_STEP = 0.25
 
-function getVoiceStunUrls() {
-  const raw = (import.meta.env.VITE_VOICE_STUN_URLS as string | undefined)?.trim()
-
-  if (!raw) {
-    return DEFAULT_VOICE_STUN_URLS
-  }
-
-  const urls = raw.split(',').map((url) => url.trim()).filter(Boolean)
-
-  return urls.length > 0 ? urls : DEFAULT_VOICE_STUN_URLS
-}
-
-function getVoiceIceServers(): RTCIceServer[] {
-  return [{ urls: getVoiceStunUrls() }]
+type VoicePeerTransceivers = {
+  microphone: RTCRtpTransceiver
+  camera: RTCRtpTransceiver
+  screen: RTCRtpTransceiver
 }
 
 function buildVoiceSignalingUrl(channelId: number, accessToken: string) {
@@ -409,6 +407,7 @@ export default function SquadMeetingApp() {
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [channels, setChannels] = useState<VoiceChannel[]>([])
   const [activeChannel, setActiveChannel] = useState<VoiceChannel | null>(null)
+  const activeChannelId = activeChannel?.channelId ?? null
   const [participants, setParticipants] = useState<VoiceParticipant[]>([])
   const [presentUsers, setPresentUsers] = useState<VoicePresence[]>([])
   const [roomPanelTab, setRoomPanelTab] = useState<RoomPanelTab>('minutes')
@@ -449,8 +448,9 @@ export default function SquadMeetingApp() {
   const [localCameraStream, setLocalCameraStream] = useState<MediaStream | null>(null)
   const [remoteCameraStreams, setRemoteCameraStreams] = useState<Map<number, CameraView>>(() => new Map())
   const [localScreenShareStream, setLocalScreenShareStream] = useState<MediaStream | null>(null)
-  const [remoteScreenShare, setRemoteScreenShare] = useState<ScreenShareView | null>(null)
+  const [remoteScreenShares, setRemoteScreenShares] = useState<Map<number, ScreenShareView>>(() => new Map())
   const [screenSharePlayerOpen, setScreenSharePlayerOpen] = useState(false)
+  const [screenSharePlayerUserId, setScreenSharePlayerUserId] = useState<number | null>(null)
   const [screenShareZoom, setScreenShareZoom] = useState(SCREEN_SHARE_MIN_ZOOM)
   const [screenSharePan, setScreenSharePan] = useState<ScreenSharePan>({ x: 0, y: 0 })
   const [screenShareDragging, setScreenShareDragging] = useState(false)
@@ -461,13 +461,15 @@ export default function SquadMeetingApp() {
   const localCameraStreamRef = useRef<MediaStream | null>(null)
   const localScreenShareStreamRef = useRef<MediaStream | null>(null)
   const remoteCameraStreamsRef = useRef<Map<number, CameraView>>(new Map())
-  const remoteCameraStreamIdsRef = useRef<Map<number, string>>(new Map())
-  const remoteScreenShareStreamIdsRef = useRef<Map<number, string>>(new Map())
-  const remoteScreenShareTrackIdsRef = useRef<Map<number, string>>(new Map())
+  const remoteCameraPendingRef = useRef<Set<number>>(new Set())
+  const remoteScreenShareViewsRef = useRef<Map<number, ScreenShareView>>(new Map())
   const remoteScreenSharePendingRef = useRef<Set<number>>(new Set())
   const screenShareDragRef = useRef<ScreenShareDragState | null>(null)
   const signalingSocketRef = useRef<WebSocket | null>(null)
   const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map())
+  const peerTransceiversRef = useRef<Map<number, VoicePeerTransceivers>>(new Map())
+  const makingOffersRef = useRef<Set<number>>(new Set())
+  const departedPeerIdsRef = useRef<Set<number>>(new Set())
   const remoteAudioElementsRef = useRef<Map<number, SinkAudioElement>>(new Map())
   const remoteAudioMutedRef = useRef(false)
   const remoteAudioContainerRef = useRef<HTMLDivElement | null>(null)
@@ -475,7 +477,6 @@ export default function SquadMeetingApp() {
   const joiningRef = useRef(false)
   const reactionTimerIdsRef = useRef<number[]>([])
   const pendingIceCandidatesRef = useRef<Map<number, RTCIceCandidateInit[]>>(new Map())
-  const pendingRenegotiationPeerIdsRef = useRef<Set<number>>(new Set())
   const audioContextRef = useRef<AudioContext | null>(null)
   const micLoopbackAudioRef = useRef<SinkAudioElement | null>(null)
   const soundTestAudioRef = useRef<SinkAudioElement | null>(null)
@@ -494,6 +495,16 @@ export default function SquadMeetingApp() {
   const minutesTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const minutesAppendErrorShownRef = useRef(false)
   const restoredVoiceChannelRef = useRef<number | null>(null)
+  const disconnectVoiceSessionRef = useLatest(disconnectVoiceSession)
+  const closeScreenSharePlayerRef = useLatest(closeScreenSharePlayer)
+  const applySelectedOutputToRemoteAudioRef = useLatest(applySelectedOutputToRemoteAudio)
+  const applySelectedOutputToTestAudioRef = useLatest(applySelectedOutputToTestAudio)
+  const loadAudioDevicesRef = useLatest(loadAudioDevices)
+  const stopMicMonitorRef = useLatest(stopMicMonitor)
+  const reconnectExistingVoiceSessionRef = useLatest(reconnectExistingVoiceSession)
+  const startMinutesSpeechRecognitionRef = useLatest(startMinutesSpeechRecognition)
+  const startMicMonitorRef = useLatest(startMicMonitor)
+  const shouldSyncMinutesDraftFromServerRef = useLatest(shouldSyncMinutesDraftFromServer)
 
   useEffect(() => {
     document.title = 'DevPath - 음성 회의'
@@ -515,7 +526,7 @@ export default function SquadMeetingApp() {
     }
   }, [])
 
-  useEffect(() => () => disconnectVoiceSession(), [])
+  useEffect(() => () => disconnectVoiceSessionRef.current(), [disconnectVoiceSessionRef])
 
   useEffect(() => () => {
     reactionTimerIdsRef.current.forEach((timerId) => window.clearTimeout(timerId))
@@ -523,11 +534,17 @@ export default function SquadMeetingApp() {
   }, [])
 
   useEffect(() => {
-    if (!localScreenShareStream && !remoteScreenShare) {
+    const selectedScreenShareExists = screenSharePlayerUserId != null
+      && (screenSharePlayerUserId === session?.userId
+        ? Boolean(localScreenShareStream)
+        : remoteScreenShares.has(screenSharePlayerUserId))
+
+    if ((!localScreenShareStream && remoteScreenShares.size === 0) || (screenSharePlayerOpen && !selectedScreenShareExists)) {
       resetScreenSharePlayer()
       setScreenSharePlayerOpen(false)
+      setScreenSharePlayerUserId(null)
     }
-  }, [localScreenShareStream, remoteScreenShare])
+  }, [localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, session?.userId])
 
   useEffect(() => {
     if (!screenSharePlayerOpen) {
@@ -536,7 +553,7 @@ export default function SquadMeetingApp() {
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        closeScreenSharePlayer()
+        closeScreenSharePlayerRef.current()
       }
     }
 
@@ -545,7 +562,7 @@ export default function SquadMeetingApp() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [screenSharePlayerOpen])
+  }, [closeScreenSharePlayerRef, screenSharePlayerOpen])
 
   useEffect(() => {
     if (!screenSharePlayerOpen) {
@@ -556,6 +573,7 @@ export default function SquadMeetingApp() {
       if (!document.fullscreenElement) {
         resetScreenSharePlayer()
         setScreenSharePlayerOpen(false)
+        setScreenSharePlayerUserId(null)
       }
     }
 
@@ -567,25 +585,26 @@ export default function SquadMeetingApp() {
   }, [screenSharePlayerOpen])
 
   useEffect(() => {
-    void applySelectedOutputToRemoteAudio()
-    void applySelectedOutputToTestAudio()
-  }, [selectedOutputId])
+    void applySelectedOutputToRemoteAudioRef.current()
+    void applySelectedOutputToTestAudioRef.current()
+  }, [applySelectedOutputToRemoteAudioRef, applySelectedOutputToTestAudioRef, selectedOutputId])
 
   useEffect(() => {
-    void loadAudioDevices(false)
+    const stopCurrentMicMonitor = stopMicMonitorRef.current
+    void loadAudioDevicesRef.current(false)
 
     function handleDeviceChange() {
-      void loadAudioDevices(false)
+      void loadAudioDevicesRef.current(false)
     }
 
     navigator.mediaDevices?.addEventListener?.('devicechange', handleDeviceChange)
 
     return () => {
       navigator.mediaDevices?.removeEventListener?.('devicechange', handleDeviceChange)
-      stopMicMonitor()
+      stopCurrentMicMonitor()
       stopSoundTest()
     }
-  }, [])
+  }, [loadAudioDevicesRef, stopMicMonitorRef])
 
   useEffect(() => {
     if (!audioSettingsOpen) {
@@ -608,8 +627,8 @@ export default function SquadMeetingApp() {
       }
 
       const startedAt = performance.now()
-      const probePath = activeChannel
-        ? `/api/voice-channels/${activeChannel.channelId}/participants`
+      const probePath = activeChannelId
+        ? `/api/voice-channels/${activeChannelId}/participants`
         : '/api/lounge/shell'
       const headers = new Headers({ Accept: 'application/json' })
 
@@ -656,7 +675,7 @@ export default function SquadMeetingApp() {
       window.removeEventListener('offline', handleNetworkChange)
       connection?.removeEventListener('change', handleNetworkChange)
     }
-  }, [activeChannel?.channelId, session?.accessToken, session?.tokenType])
+  }, [activeChannelId, session?.accessToken, session?.tokenType])
 
   useEffect(() => {
     if (!workspaceId) {
@@ -764,8 +783,30 @@ export default function SquadMeetingApp() {
     }
 
     restoredVoiceChannelRef.current = activeChannel.channelId
-    void reconnectExistingVoiceSession()
-  }, [activeChannel?.channelId, isJoined, session?.accessToken])
+    void reconnectExistingVoiceSessionRef.current()
+  }, [activeChannel?.channelId, isJoined, reconnectExistingVoiceSessionRef, session?.accessToken])
+
+  useEffect(() => {
+    if (!isJoined) {
+      return undefined
+    }
+
+    function resumeRemoteAudio() {
+      remoteAudioElementsRef.current.forEach((audio) => {
+        if (audio.paused) {
+          void audio.play().catch(() => undefined)
+        }
+      })
+    }
+
+    window.addEventListener('pointerdown', resumeRemoteAudio, { capture: true })
+    window.addEventListener('keydown', resumeRemoteAudio, { capture: true })
+
+    return () => {
+      window.removeEventListener('pointerdown', resumeRemoteAudio, { capture: true })
+      window.removeEventListener('keydown', resumeRemoteAudio, { capture: true })
+    }
+  }, [isJoined])
 
   useEffect(() => {
     if (!isJoined) {
@@ -791,36 +832,38 @@ export default function SquadMeetingApp() {
     }
 
     if (!speechRecognitionRef.current) {
-      startMinutesSpeechRecognition()
+      startMinutesSpeechRecognitionRef.current()
     }
-  }, [activeChannel?.channelId, isJoined, isMuted, voiceMinutes?.recording])
+  }, [activeChannel?.channelId, isJoined, isMuted, startMinutesSpeechRecognitionRef, voiceMinutes?.recording])
 
   useEffect(() => {
+    const stopCurrentMicMonitor = stopMicMonitorRef.current
+
     if (!session?.accessToken || !activeChannel?.channelId) {
-      stopMicMonitor()
+      stopCurrentMicMonitor()
       return
     }
 
     const shouldMonitorMic = audioSettingsOpen || (!isJoined && !waitingMicMuted)
 
     if (!shouldMonitorMic) {
-      stopMicMonitor()
+      stopCurrentMicMonitor()
       return
     }
 
     let stopped = false
 
-    void loadAudioDevices(true).then(() => {
+    void loadAudioDevicesRef.current(true).then(() => {
       if (!stopped) {
-        void startMicMonitor(selectedInputId)
+        void startMicMonitorRef.current(selectedInputId)
       }
     })
 
     return () => {
       stopped = true
-      stopMicMonitor()
+      stopCurrentMicMonitor()
     }
-  }, [activeChannel?.channelId, audioSettingsOpen, isJoined, selectedInputId, session?.accessToken, waitingMicMuted])
+  }, [activeChannel?.channelId, audioSettingsOpen, isJoined, loadAudioDevicesRef, selectedInputId, session?.accessToken, startMicMonitorRef, stopMicMonitorRef, waitingMicMuted])
 
   useEffect(() => {
     if (!activeChannel?.channelId || !session?.accessToken) {
@@ -905,7 +948,7 @@ export default function SquadMeetingApp() {
 
         setVoiceChatMessages(messages)
         setVoiceMinutes(minutes)
-        if (shouldSyncMinutesDraftFromServer()) {
+        if (shouldSyncMinutesDraftFromServerRef.current()) {
           setMinutesDraft(minutes.transcript ?? '')
         }
       } catch {
@@ -927,7 +970,7 @@ export default function SquadMeetingApp() {
         setVoiceChatMessages(messages)
         setVoiceMinutes(minutes)
 
-        if (shouldSyncMinutesDraftFromServer()) {
+        if (shouldSyncMinutesDraftFromServerRef.current()) {
           setMinutesDraft(minutes.transcript ?? '')
         }
       } catch {
@@ -944,7 +987,7 @@ export default function SquadMeetingApp() {
       stopped = true
       window.clearInterval(refreshId)
     }
-  }, [activeChannel?.channelId, isJoined, session?.accessToken])
+  }, [activeChannel?.channelId, isJoined, session?.accessToken, shouldSyncMinutesDraftFromServerRef])
 
   function handleLogout() {
     clearStoredAuthSession()
@@ -1086,7 +1129,10 @@ export default function SquadMeetingApp() {
       socket.onerror = null
       socket.onclose = null
 
-      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'leave' }))
+        socket.close(1000, 'leave')
+      } else if (socket.readyState === WebSocket.CONNECTING) {
         socket.close()
       }
     }
@@ -1263,16 +1309,17 @@ export default function SquadMeetingApp() {
       peerConnection.close()
     })
     peerConnectionsRef.current.clear()
+    peerTransceiversRef.current.clear()
     pendingIceCandidatesRef.current.clear()
-    pendingRenegotiationPeerIdsRef.current.clear()
+    makingOffersRef.current.clear()
+    departedPeerIdsRef.current.clear()
     stopRemoteAudioElements()
-    remoteCameraStreamIdsRef.current.clear()
     remoteCameraStreamsRef.current.clear()
-    remoteScreenShareStreamIdsRef.current.clear()
-    remoteScreenShareTrackIdsRef.current.clear()
+    remoteCameraPendingRef.current.clear()
+    remoteScreenShareViewsRef.current.clear()
     remoteScreenSharePendingRef.current.clear()
     setRemoteCameraStreams(new Map())
-    setRemoteScreenShare(null)
+    setRemoteScreenShares(new Map())
   }
 
   function disconnectVoiceSession() {
@@ -1461,14 +1508,9 @@ export default function SquadMeetingApp() {
     nextTrack.enabled = !micMuted
 
     await Promise.all(
-      Array.from(peerConnectionsRef.current.values()).map(async (peerConnection) => {
-        const sender = peerConnection.getSenders().find((item) => item.track?.kind === 'audio')
-
-        if (sender) {
-          await sender.replaceTrack(nextTrack)
-        } else {
-          peerConnection.addTrack(nextTrack, nextStream)
-        }
+      Array.from(peerTransceiversRef.current.values()).map(({ microphone }) => {
+        microphone.sender.setStreams(nextStream)
+        return microphone.sender.replaceTrack(nextTrack)
       }),
     )
 
@@ -1510,11 +1552,22 @@ export default function SquadMeetingApp() {
     })
   }
 
+  async function resumeRemoteAudioPlayback() {
+    await Promise.all(
+      Array.from(remoteAudioElementsRef.current.values())
+        .filter((audio) => audio.paused)
+        .map((audio) => audio.play().catch(() => undefined)),
+    )
+  }
+
   function toggleRemoteAudioMuted() {
     const nextMuted = !remoteAudioMutedRef.current
 
     remoteAudioMutedRef.current = nextMuted
     applyRemoteAudioMuted(nextMuted)
+    if (!nextMuted) {
+      void resumeRemoteAudioPlayback()
+    }
     setRemoteAudioMuted(nextMuted)
     showAuthToast({
       message: nextMuted ? '회의 듣기를 껐습니다.' : '회의 듣기를 켰습니다.',
@@ -1559,37 +1612,13 @@ export default function SquadMeetingApp() {
       ?? '참가자'
   }
 
-  function clearRemoteScreenShare(userId: number, stream?: MediaStream) {
-    const streamId = stream?.id
-
-    if (!streamId || remoteScreenShareStreamIdsRef.current.get(userId) === streamId) {
-      remoteScreenShareStreamIdsRef.current.delete(userId)
+  function clearRemoteScreenShare(userId: number, removeTrack = false) {
+    if (removeTrack) {
+      remoteScreenShareViewsRef.current.delete(userId)
     }
-
-    remoteScreenShareTrackIdsRef.current.delete(userId)
     remoteScreenSharePendingRef.current.delete(userId)
-    setRemoteScreenShare((current) =>
-      current?.userId === userId && (!stream || current.stream === stream) ? null : current,
-    )
-  }
-
-  function clearRemoteCameraStream(userId: number, stream?: MediaStream) {
-    const streamId = stream?.id
-
-    if (!streamId || remoteCameraStreamIdsRef.current.get(userId) === streamId) {
-      remoteCameraStreamIdsRef.current.delete(userId)
-    }
-
-    const currentView = remoteCameraStreamsRef.current.get(userId)
-
-    if (currentView && (!stream || currentView.stream === stream)) {
-      remoteCameraStreamsRef.current.delete(userId)
-    }
-
-    setRemoteCameraStreams((current) => {
-      const currentView = current.get(userId)
-
-      if (!currentView || (stream && currentView.stream !== stream)) {
+    setRemoteScreenShares((current) => {
+      if (!current.has(userId)) {
         return current
       }
 
@@ -1600,57 +1629,45 @@ export default function SquadMeetingApp() {
     })
   }
 
-  function promoteRemoteCameraToScreenShare(
-    userId: number,
-    userName: string | undefined,
-    payload: ScreenShareSignalPayload | null | undefined,
-  ) {
-    const currentView = remoteCameraStreamsRef.current.get(userId)
-
-    if (!currentView) {
-      return false
+  function clearRemoteCameraStream(userId: number, removeTrack = false) {
+    if (removeTrack) {
+      remoteCameraStreamsRef.current.delete(userId)
     }
+    remoteCameraPendingRef.current.delete(userId)
 
-    const [videoTrack] = currentView.stream.getVideoTracks()
+    setRemoteCameraStreams((current) => {
+      if (!current.has(userId)) {
+        return current
+      }
 
-    if (!videoTrack) {
-      return false
-    }
+      const next = new Map(current)
 
-    const knownCameraStreamId = remoteCameraStreamIdsRef.current.get(userId)
-    const matchesStream = Boolean(payload?.streamId && currentView.stream.id === payload.streamId)
-    const matchesTrack = Boolean(payload?.trackId && videoTrack.id === payload.trackId)
-    const unclassifiedVideo = !knownCameraStreamId || knownCameraStreamId !== currentView.stream.id
-
-    if (!matchesStream && !matchesTrack && !unclassifiedVideo) {
-      return false
-    }
-
-    clearRemoteCameraStream(userId, currentView.stream)
-    attachRemoteScreenStream(userId, userName ?? currentView.userName, currentView.stream, videoTrack)
-    return true
+      next.delete(userId)
+      return next
+    })
   }
 
   function attachRemoteScreenStream(userId: number, userName: string, stream: MediaStream, track: MediaStreamTrack) {
     const screenStream = stream.getVideoTracks().includes(track) ? stream : new MediaStream([track])
-    const cameraView = remoteCameraStreamsRef.current.get(userId)
-
-    if (cameraView && (cameraView.stream === stream || cameraView.stream === screenStream)) {
-      clearRemoteCameraStream(userId, cameraView.stream)
-    }
-
-    remoteScreenShareStreamIdsRef.current.set(userId, stream.id)
-    remoteScreenShareTrackIdsRef.current.set(userId, track.id)
-    remoteScreenSharePendingRef.current.delete(userId)
-    setRemoteScreenShare({
+    const screenShareView = {
       userId,
       userName: getVoiceDisplayName(userId, userName),
       stream: screenStream,
       local: false,
-    })
+    }
+
+    remoteScreenShareViewsRef.current.set(userId, screenShareView)
+    if (remoteScreenSharePendingRef.current.has(userId)) {
+      setRemoteScreenShares((current) => new Map(current).set(userId, screenShareView))
+    }
 
     track.onended = () => {
-      clearRemoteScreenShare(userId, screenStream)
+      clearRemoteScreenShare(userId, true)
+    }
+    track.onunmute = () => {
+      if (remoteScreenSharePendingRef.current.has(userId)) {
+        setRemoteScreenShares((current) => new Map(current).set(userId, screenShareView))
+      }
     }
   }
 
@@ -1664,51 +1681,39 @@ export default function SquadMeetingApp() {
     }
 
     remoteCameraStreamsRef.current.set(userId, cameraView)
-    setRemoteCameraStreams((current) => {
-      const next = new Map(current)
+    if (remoteCameraPendingRef.current.has(userId)) {
+      setRemoteCameraStreams((current) => {
+        const next = new Map(current)
 
-      next.set(userId, cameraView)
-      return next
-    })
+        next.set(userId, cameraView)
+        return next
+      })
+    }
 
     track.onended = () => {
-      clearRemoteCameraStream(userId, cameraStream)
+      clearRemoteCameraStream(userId, true)
     }
-    track.onmute = () => {
-      clearRemoteCameraStream(userId, cameraStream)
+    track.onunmute = () => {
+      if (remoteCameraPendingRef.current.has(userId)) {
+        setRemoteCameraStreams((current) => new Map(current).set(userId, cameraView))
+      }
     }
   }
 
-  function attachRemoteStream(userId: number, userName: string, stream: MediaStream, track: MediaStreamTrack) {
-    if (track.kind === 'video') {
-      const streamId = stream.id
-      const screenShareStreamId = remoteScreenShareStreamIdsRef.current.get(userId)
-      const screenShareTrackId = remoteScreenShareTrackIdsRef.current.get(userId)
-      const cameraStreamId = remoteCameraStreamIdsRef.current.get(userId)
-
-      if (screenShareTrackId && screenShareTrackId === track.id) {
-        attachRemoteScreenStream(userId, userName, stream, track)
-        return
-      }
-
-      if (screenShareStreamId && screenShareStreamId === streamId) {
-        attachRemoteScreenStream(userId, userName, stream, track)
-        return
-      }
-
-      if (cameraStreamId && cameraStreamId === streamId) {
-        attachRemoteCameraStream(userId, userName, stream, track)
-        return
-      }
-
-      if (remoteScreenSharePendingRef.current.has(userId)) {
-        remoteScreenSharePendingRef.current.delete(userId)
-        remoteScreenShareStreamIdsRef.current.set(userId, streamId)
-        attachRemoteScreenStream(userId, userName, stream, track)
-        return
-      }
-
+  function attachRemoteTrack(
+    userId: number,
+    userName: string,
+    stream: MediaStream,
+    track: MediaStreamTrack,
+    transceiverIndex: number,
+  ) {
+    if (transceiverIndex === 1) {
       attachRemoteCameraStream(userId, userName, stream, track)
+      return
+    }
+
+    if (transceiverIndex === 2) {
+      attachRemoteScreenStream(userId, userName, stream, track)
       return
     }
 
@@ -1727,8 +1732,9 @@ export default function SquadMeetingApp() {
       peerConnectionsRef.current.delete(userId)
     }
 
+    peerTransceiversRef.current.delete(userId)
+    makingOffersRef.current.delete(userId)
     pendingIceCandidatesRef.current.delete(userId)
-    pendingRenegotiationPeerIdsRef.current.delete(userId)
 
     const audio = remoteAudioElementsRef.current.get(userId)
 
@@ -1739,8 +1745,8 @@ export default function SquadMeetingApp() {
       remoteAudioElementsRef.current.delete(userId)
     }
 
-    clearRemoteCameraStream(userId)
-    clearRemoteScreenShare(userId)
+    clearRemoteCameraStream(userId, true)
+    clearRemoteScreenShare(userId, true)
   }
 
   function sendSignalingMessage(
@@ -1810,30 +1816,6 @@ export default function SquadMeetingApp() {
     socket.send(JSON.stringify({ type: speaking ? 'speaking' : 'stop-speaking', payload: { speaking } }))
   }
 
-  async function renegotiatePeerConnection(userId: number, peerConnection: RTCPeerConnection) {
-    if (peerConnection.signalingState !== 'stable') {
-      pendingRenegotiationPeerIdsRef.current.add(userId)
-      return
-    }
-
-    pendingRenegotiationPeerIdsRef.current.delete(userId)
-    const offer = await peerConnection.createOffer()
-
-    await peerConnection.setLocalDescription(offer)
-
-    if (peerConnection.localDescription) {
-      sendSignalingMessage('offer', userId, peerConnection.localDescription.toJSON())
-    }
-  }
-
-  async function renegotiateAllPeerConnections() {
-    await Promise.all(
-      Array.from(peerConnectionsRef.current.entries()).map(([userId, peerConnection]) =>
-        renegotiatePeerConnection(userId, peerConnection),
-      ),
-    )
-  }
-
   function getCurrentRemoteVoicePeers() {
     const peers = new Map<number, VoiceSignalingPeer>()
 
@@ -1876,37 +1858,17 @@ export default function SquadMeetingApp() {
 
     ensurePeerConnectionsForCurrentParticipants()
     await Promise.all(
-      Array.from(peerConnectionsRef.current.values()).map(async (peerConnection) => {
-        const existingSender = peerConnection.getSenders().find((sender) => sender.track === videoTrack)
-
-        if (!existingSender) {
-          peerConnection.addTrack(videoTrack, stream)
-        }
+      Array.from(peerTransceiversRef.current.values()).map(({ camera }) => {
+        camera.sender.setStreams(stream)
+        return camera.sender.replaceTrack(videoTrack)
       }),
     )
-    await renegotiateAllPeerConnections()
   }
 
   async function removeCameraTracksFromPeers() {
-    const cameraTracks = new Set(localCameraStreamRef.current?.getVideoTracks() ?? [])
-    let removed = false
-
-    if (cameraTracks.size === 0) {
-      return
-    }
-
-    peerConnectionsRef.current.forEach((peerConnection) => {
-      peerConnection.getSenders()
-        .filter((sender) => sender.track && cameraTracks.has(sender.track))
-        .forEach((sender) => {
-          peerConnection.removeTrack(sender)
-          removed = true
-        })
-    })
-
-    if (removed) {
-      await renegotiateAllPeerConnections()
-    }
+    await Promise.all(
+      Array.from(peerTransceiversRef.current.values()).map(({ camera }) => camera.sender.replaceTrack(null)),
+    )
   }
 
   async function addScreenShareTrackToPeers(stream: MediaStream) {
@@ -1918,37 +1880,33 @@ export default function SquadMeetingApp() {
 
     ensurePeerConnectionsForCurrentParticipants()
     await Promise.all(
-      Array.from(peerConnectionsRef.current.values()).map(async (peerConnection) => {
-        const existingSender = peerConnection.getSenders().find((sender) => sender.track === videoTrack)
-
-        if (!existingSender) {
-          peerConnection.addTrack(videoTrack, stream)
-        }
+      Array.from(peerTransceiversRef.current.values()).map(({ screen }) => {
+        screen.sender.setStreams(stream)
+        return screen.sender.replaceTrack(videoTrack)
       }),
     )
-    await renegotiateAllPeerConnections()
   }
 
   async function removeScreenShareTracksFromPeers() {
-    const screenShareTracks = new Set(localScreenShareStreamRef.current?.getVideoTracks() ?? [])
-    let removed = false
+    await Promise.all(
+      Array.from(peerTransceiversRef.current.values()).map(({ screen }) => screen.sender.replaceTrack(null)),
+    )
+  }
 
-    if (screenShareTracks.size === 0) {
+  async function attachLocalVoiceTrackToPeers(stream: MediaStream) {
+    const [audioTrack] = stream.getAudioTracks()
+
+    if (!audioTrack) {
       return
     }
 
-    peerConnectionsRef.current.forEach((peerConnection) => {
-      peerConnection.getSenders()
-        .filter((sender) => sender.track && screenShareTracks.has(sender.track))
-        .forEach((sender) => {
-          peerConnection.removeTrack(sender)
-          removed = true
-        })
-    })
-
-    if (removed) {
-      await renegotiateAllPeerConnections()
-    }
+    ensurePeerConnectionsForCurrentParticipants()
+    await Promise.all(
+      Array.from(peerTransceiversRef.current.values()).map(({ microphone }) => {
+        microphone.sender.setStreams(stream)
+        return microphone.sender.replaceTrack(audioTrack)
+      }),
+    )
   }
 
   async function stopLocalCamera({
@@ -2078,7 +2036,6 @@ export default function SquadMeetingApp() {
 
       localScreenShareStreamRef.current = stream
       setLocalScreenShareStream(stream)
-      setRemoteScreenShare(null)
       videoTrack.onended = () => {
         void stopScreenShare()
       }
@@ -2163,26 +2120,29 @@ export default function SquadMeetingApp() {
     }
 
     const peerConnection = new RTCPeerConnection({ iceServers: getVoiceIceServers() })
-    const localStream = localVoiceStreamRef.current
-    const localTracks = localStream?.getTracks() ?? []
+    const voiceStream = localVoiceStreamRef.current
+    const cameraStream = localCameraStreamRef.current
+    const screenStream = localScreenShareStreamRef.current
+    const microphoneTrack = voiceStream?.getAudioTracks()[0] ?? null
+    const cameraTrack = cameraStream?.getVideoTracks()[0] ?? null
+    const screenTrack = screenStream?.getVideoTracks()[0] ?? null
 
-    if (localStream) {
-      localTracks.forEach((track) => {
-        peerConnection.addTrack(track, localStream)
+    if (session?.userId && session.userId < peer.userId) {
+      const microphone = peerConnection.addTransceiver(microphoneTrack ?? 'audio', {
+        direction: 'sendrecv',
+        ...(voiceStream ? { streams: [voiceStream] } : {}),
       })
+      const camera = peerConnection.addTransceiver(cameraTrack ?? 'video', {
+        direction: 'sendrecv',
+        ...(cameraStream ? { streams: [cameraStream] } : {}),
+      })
+      const screen = peerConnection.addTransceiver(screenTrack ?? 'video', {
+        direction: 'sendrecv',
+        ...(screenStream ? { streams: [screenStream] } : {}),
+      })
+
+      peerTransceiversRef.current.set(peer.userId, { microphone, camera, screen })
     }
-
-    if (!localTracks.some((track) => track.kind === 'audio')) {
-      peerConnection.addTransceiver('audio', { direction: 'recvonly' })
-    }
-
-    localCameraStreamRef.current?.getVideoTracks().forEach((track) => {
-      peerConnection.addTrack(track, localCameraStreamRef.current as MediaStream)
-    })
-
-    localScreenShareStreamRef.current?.getVideoTracks().forEach((track) => {
-      peerConnection.addTrack(track, localScreenShareStreamRef.current as MediaStream)
-    })
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
@@ -2192,21 +2152,17 @@ export default function SquadMeetingApp() {
 
     peerConnection.ontrack = (event) => {
       const remoteStream = event.streams[0] ?? new MediaStream([event.track])
-      attachRemoteStream(peer.userId, peer.userName, remoteStream, event.track)
+      const transceiverIndex = peerConnection.getTransceivers().indexOf(event.transceiver)
+
+      if (departedPeerIdsRef.current.has(peer.userId)) {
+        return
+      }
+      attachRemoteTrack(peer.userId, peer.userName, remoteStream, event.track, transceiverIndex)
     }
 
     peerConnection.onconnectionstatechange = () => {
-      if (['failed', 'closed', 'disconnected'].includes(peerConnection.connectionState)) {
+      if (['failed', 'closed'].includes(peerConnection.connectionState)) {
         removeRemotePeer(peer.userId)
-      }
-    }
-
-    peerConnection.onsignalingstatechange = () => {
-      if (
-        peerConnection.signalingState === 'stable'
-        && pendingRenegotiationPeerIdsRef.current.has(peer.userId)
-      ) {
-        void renegotiatePeerConnection(peer.userId, peerConnection).catch(() => undefined)
       }
     }
 
@@ -2218,16 +2174,21 @@ export default function SquadMeetingApp() {
   async function startVoiceOffer(peer: VoiceSignalingPeer) {
     const peerConnection = getOrCreatePeerConnection(peer)
 
-    if (peerConnection.signalingState !== 'stable') {
+    if (peerConnection.signalingState !== 'stable' || makingOffersRef.current.has(peer.userId)) {
       return
     }
 
-    const offer = await peerConnection.createOffer()
+    makingOffersRef.current.add(peer.userId)
+    try {
+      const offer = await peerConnection.createOffer()
 
-    await peerConnection.setLocalDescription(offer)
+      await peerConnection.setLocalDescription(offer)
 
-    if (peerConnection.localDescription) {
-      sendSignalingMessage('offer', peer.userId, peerConnection.localDescription.toJSON())
+      if (peerConnection.localDescription) {
+        sendSignalingMessage('offer', peer.userId, peerConnection.localDescription.toJSON())
+      }
+    } finally {
+      makingOffersRef.current.delete(peer.userId)
     }
   }
 
@@ -2251,6 +2212,38 @@ export default function SquadMeetingApp() {
     }
   }
 
+  async function bindLocalTracksToRemoteOffer(userId: number, peerConnection: RTCPeerConnection) {
+    const [microphone, camera, screen] = peerConnection.getTransceivers()
+
+    if (!microphone || !camera || !screen) {
+      throw new Error('스쿼드 회의의 미디어 채널 구성이 올바르지 않습니다.')
+    }
+
+    const voiceStream = localVoiceStreamRef.current
+    const cameraStream = localCameraStreamRef.current
+    const screenStream = localScreenShareStreamRef.current
+
+    microphone.direction = 'sendrecv'
+    camera.direction = 'sendrecv'
+    screen.direction = 'sendrecv'
+    if (voiceStream) {
+      microphone.sender.setStreams(voiceStream)
+    }
+    if (cameraStream) {
+      camera.sender.setStreams(cameraStream)
+    }
+    if (screenStream) {
+      screen.sender.setStreams(screenStream)
+    }
+
+    await Promise.all([
+      microphone.sender.replaceTrack(voiceStream?.getAudioTracks()[0] ?? null),
+      camera.sender.replaceTrack(cameraStream?.getVideoTracks()[0] ?? null),
+      screen.sender.replaceTrack(screenStream?.getVideoTracks()[0] ?? null),
+    ])
+    peerTransceiversRef.current.set(userId, { microphone, camera, screen })
+  }
+
   async function flushPendingIceCandidates(userId: number, peerConnection: RTCPeerConnection) {
     const candidates = pendingIceCandidatesRef.current.get(userId) ?? []
 
@@ -2266,6 +2259,10 @@ export default function SquadMeetingApp() {
       return
     }
 
+    if (departedPeerIdsRef.current.has(message.fromUserId)) {
+      return
+    }
+
     const peer = { userId: message.fromUserId, userName: message.fromUserName }
     const peerConnection = getOrCreatePeerConnection(peer)
 
@@ -2274,6 +2271,7 @@ export default function SquadMeetingApp() {
     }
 
     await peerConnection.setRemoteDescription(message.payload as RTCSessionDescriptionInit)
+    await bindLocalTracksToRemoteOffer(peer.userId, peerConnection)
     await flushPendingIceCandidates(peer.userId, peerConnection)
 
     const answer = await peerConnection.createAnswer()
@@ -2290,6 +2288,10 @@ export default function SquadMeetingApp() {
       return
     }
 
+    if (departedPeerIdsRef.current.has(message.fromUserId)) {
+      return
+    }
+
     const peer = { userId: message.fromUserId, userName: message.fromUserName }
     const peerConnection = getOrCreatePeerConnection(peer)
 
@@ -2301,6 +2303,10 @@ export default function SquadMeetingApp() {
 
   async function handleVoiceIceCandidate(message: VoiceSignalingMessage) {
     if (!message.fromUserId || !message.fromUserName || !message.payload) {
+      return
+    }
+
+    if (departedPeerIdsRef.current.has(message.fromUserId)) {
       return
     }
 
@@ -2324,10 +2330,14 @@ export default function SquadMeetingApp() {
 
     switch (message.type) {
       case 'peer-list':
-        await Promise.all((message.peers ?? []).map((peer) => handlePeerAvailable(peer)))
+        await Promise.all((message.peers ?? []).map((peer) => {
+          departedPeerIdsRef.current.delete(peer.userId)
+          return handlePeerAvailable(peer)
+        }))
         break
       case 'peer-joined':
         if (message.fromUserId && message.fromUserName) {
+          departedPeerIdsRef.current.delete(message.fromUserId)
           await handlePeerAvailable({ userId: message.fromUserId, userName: message.fromUserName })
           if (activeChannel) {
             void refreshVoiceRoomState(activeChannel.channelId).catch(() => undefined)
@@ -2336,6 +2346,7 @@ export default function SquadMeetingApp() {
         break
       case 'peer-left':
         if (message.fromUserId) {
+          departedPeerIdsRef.current.add(message.fromUserId)
           removeRemotePeer(message.fromUserId)
           if (activeChannel) {
             void refreshVoiceRoomState(activeChannel.channelId).catch(() => undefined)
@@ -2394,31 +2405,28 @@ export default function SquadMeetingApp() {
           )
         }
         break
-      case 'camera-start': {
-        const payload = message.payload as CameraSignalPayload | null | undefined
+      case 'camera-start':
+        if (message.fromUserId) {
+          remoteCameraPendingRef.current.add(message.fromUserId)
+          const cameraView = remoteCameraStreamsRef.current.get(message.fromUserId)
 
-        if (message.fromUserId && payload?.streamId) {
-          remoteCameraStreamIdsRef.current.set(message.fromUserId, payload.streamId)
+          if (cameraView) {
+            setRemoteCameraStreams((current) => new Map(current).set(message.fromUserId as number, cameraView))
+          }
         }
         break
-      }
       case 'camera-stop':
         if (message.fromUserId) {
           clearRemoteCameraStream(message.fromUserId)
         }
         break
       case 'screen-share-start': {
-        const payload = message.payload as ScreenShareSignalPayload | null | undefined
-
         if (message.fromUserId) {
-          if (payload?.streamId) {
-            remoteScreenShareStreamIdsRef.current.set(message.fromUserId, payload.streamId)
-          }
-          if (payload?.trackId) {
-            remoteScreenShareTrackIdsRef.current.set(message.fromUserId, payload.trackId)
-          }
-          if (!promoteRemoteCameraToScreenShare(message.fromUserId, message.fromUserName, payload)) {
-            remoteScreenSharePendingRef.current.add(message.fromUserId)
+          remoteScreenSharePendingRef.current.add(message.fromUserId)
+          const screenShareView = remoteScreenShareViewsRef.current.get(message.fromUserId)
+
+          if (screenShareView) {
+            setRemoteScreenShares((current) => new Map(current).set(message.fromUserId as number, screenShareView))
           }
         }
         if (message.fromUserId && message.fromUserName) {
@@ -3295,10 +3303,18 @@ export default function SquadMeetingApp() {
 
     try {
       if (type === 'UNMUTE' && !localVoiceStreamRef.current) {
-        setWaitingMicMuted(true)
-        setAudioDeviceError('사용 가능한 마이크를 감지하지 못했습니다.')
-        showAuthToast({ message: '사용 가능한 마이크를 감지하지 못해 음소거 상태를 유지합니다.', durationMs: 2200 })
-        return
+        const localVoiceAvailable = await startLocalVoiceStreamIfAvailable(false)
+
+        if (!localVoiceAvailable || !localVoiceStreamRef.current) {
+          setWaitingMicMuted(true)
+          setAudioDeviceError('사용 가능한 마이크를 감지하지 못했습니다.')
+          showAuthToast({ message: '사용 가능한 마이크를 감지하지 못해 음소거 상태를 유지합니다.', durationMs: 2200 })
+          return
+        }
+
+        setWaitingMicMuted(false)
+        setAudioDeviceError(null)
+        await attachLocalVoiceTrackToPeers(localVoiceStreamRef.current)
       }
 
       await createVoiceEvent(type, memo)
@@ -3545,8 +3561,9 @@ export default function SquadMeetingApp() {
     setScreenSharePan({ x: 0, y: 0 })
   }
 
-  function openScreenSharePlayer() {
+  function openScreenSharePlayer(userId: number) {
     resetScreenSharePlayer()
+    setScreenSharePlayerUserId(userId)
     setScreenSharePlayerOpen(true)
 
     if (document.fullscreenElement || !document.documentElement.requestFullscreen) {
@@ -3559,6 +3576,7 @@ export default function SquadMeetingApp() {
   function closeScreenSharePlayer() {
     resetScreenSharePlayer()
     setScreenSharePlayerOpen(false)
+    setScreenSharePlayerUserId(null)
 
     if (!document.fullscreenElement) {
       return
@@ -3648,38 +3666,19 @@ export default function SquadMeetingApp() {
   }
 
   function renderScreenShareView(screenShare: ScreenShareView) {
-    const videoStyle: CSSProperties = {
-      transform: `translate3d(${screenSharePan.x}px, ${screenSharePan.y}px, 0) scale(${screenShareZoom})`,
-    }
-    const viewClassName = [
-      'squad-meeting-screen-share-view relative flex h-full w-full min-h-0 touch-none select-none items-center justify-center overflow-hidden rounded-[12px] bg-[#020617]',
-      screenShareZoom > SCREEN_SHARE_MIN_ZOOM ? 'is-zoomed cursor-grab' : '',
-      screenShareDragging ? 'is-dragging cursor-grabbing [&_.squad-meeting-screen-share-video]:transition-none' : '',
-    ]
-      .filter(Boolean)
-      .join(' ')
-
     return (
-      <div
-        className={viewClassName}
-        onWheel={handleScreenShareWheel}
-        onPointerDown={handleScreenSharePointerDown}
-        onPointerMove={handleScreenSharePointerMove}
-        onPointerUp={endScreenShareDrag}
-        onPointerCancel={endScreenShareDrag}
-      >
+      <div className="squad-meeting-screen-share-view relative flex h-full w-full min-h-0 select-none items-center justify-center overflow-hidden rounded-[12px] bg-[#020617]">
         <MediaStreamVideo
           stream={screenShare.stream}
           muted={screenShare.local}
-          className="squad-meeting-screen-share-video h-full w-full origin-center bg-[#020617] object-contain transition-[transform] duration-[90ms] ease-out will-change-transform"
-          style={videoStyle}
+          className="squad-meeting-screen-share-video h-full w-full bg-[#020617] object-contain"
         />
         <button
           type="button"
-          onClick={openScreenSharePlayer}
+          onClick={() => openScreenSharePlayer(screenShare.userId)}
           className="squad-meeting-screen-share-fullscreen-button absolute top-[12px] right-[12px] z-[3] inline-flex h-[36px] w-[36px] items-center justify-center rounded-[8px] border border-[#4b5563] bg-[rgba(0,0,0,0.72)] text-[14px] leading-none text-white [box-shadow:0_8px_20px_rgba(0,0,0,0.24)] backdrop-blur-[6px] transition-[background-color,border-color,transform] duration-160 ease-[ease] hover:-translate-y-[1px] hover:border-[#00c471] hover:bg-[rgba(17,24,39,0.9)]"
           title="전체화면으로 보기"
-          aria-label="화면 공유 전체화면으로 보기"
+          aria-label={`${screenShare.local ? '내' : screenShare.userName} 화면 공유 전체화면으로 보기`}
         >
           <i className="fas fa-expand"></i>
         </button>
@@ -3979,14 +3978,23 @@ export default function SquadMeetingApp() {
   function renderVoiceRoom() {
     const gridParticipants = roomParticipants.length > 0 ? roomParticipants : currentParticipant ? [currentParticipant] : []
     const participantGridClass = getParticipantGridClass(gridParticipants.length)
-    const activeScreenShare = localScreenShareStream && session?.userId
-      ? {
+    const activeScreenShares = [
+      ...(localScreenShareStream && session?.userId
+        ? [{
           userId: session.userId,
           userName: session.name,
           stream: localScreenShareStream,
           local: true,
-        }
-      : remoteScreenShare
+        } satisfies ScreenShareView]
+        : []),
+      ...remoteScreenShares.values(),
+    ]
+    const selectedScreenShare = activeScreenShares.find((screenShare) => screenShare.userId === screenSharePlayerUserId) ?? null
+    const screenShareGridClass = activeScreenShares.length === 1
+      ? 'grid-cols-1'
+      : activeScreenShares.length === 2
+        ? 'grid-cols-1 lg:grid-cols-2'
+        : 'grid-cols-1 md:grid-cols-2'
     const recordDotClass = voiceMinutes?.recording ? 'bg-red-500 pulse-record' : 'bg-gray-500'
 
     return (
@@ -4032,8 +4040,14 @@ export default function SquadMeetingApp() {
         <main className="flex-1 flex overflow-hidden relative">
           <section className="squad-meeting-room-stage-shell group/room-stage relative flex min-w-0 flex-1 flex-col overflow-hidden p-4 pb-[112px]!">
             <div className="squad-meeting-participant-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 p-4 box-border shadow-inner">
-              {activeScreenShare ? (
-                renderScreenShareView(activeScreenShare)
+              {activeScreenShares.length > 0 ? (
+                <div className={`grid h-full min-h-0 w-full gap-3 ${screenShareGridClass}`}>
+                  {activeScreenShares.map((screenShare) => (
+                    <div key={screenShare.userId} className="min-h-0 min-w-0 overflow-hidden rounded-[12px]">
+                      {renderScreenShareView(screenShare)}
+                    </div>
+                  ))}
+                </div>
               ) : gridParticipants.length > 0 ? (
                 <div className={`squad-meeting-participant-grid m-auto grid h-auto max-h-full w-[min(100%,var(--participant-grid-width,288px))] [--participant-card-width:288px] [--participant-card-height:176px] [--participant-avatar-size:80px] place-content-center gap-[16px] overflow-y-auto p-[2px] ${participantGridClass}`}>
                   {gridParticipants.map((participant, index) => renderMeetingGridTile(participant, index, gridParticipants.length))}
@@ -4160,7 +4174,7 @@ export default function SquadMeetingApp() {
 
           {renderRoomPanel()}
         </main>
-        {activeScreenShare && screenSharePlayerOpen ? renderScreenSharePlayer(activeScreenShare) : null}
+        {selectedScreenShare && screenSharePlayerOpen ? renderScreenSharePlayer(selectedScreenShare) : null}
         <div className="squad-meeting-reaction-container pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
           {floatingReactions.map((reaction) => (
             <div

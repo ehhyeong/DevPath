@@ -2,6 +2,11 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        VITE_VOICE_STUN_URLS: ${VITE_VOICE_STUN_URLS:-}
+        VITE_VOICE_TURN_URLS: ${VITE_VOICE_TURN_URLS:-}
+        VITE_VOICE_TURN_USERNAME: ${VITE_VOICE_TURN_USERNAME:-}
+        VITE_VOICE_TURN_CREDENTIAL: ${VITE_VOICE_TURN_CREDENTIAL:-}
     container_name: devpath-frontend
     profiles:
       - frontend-static
