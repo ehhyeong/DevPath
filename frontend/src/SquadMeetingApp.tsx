@@ -130,6 +130,7 @@ const INITIAL_NETWORK_STATUS: NetworkStatus = {
 
 const VOICE_REACTIONS = ['👍', '👏', '❤️', '🎉', '💡'] as const
 const FLOATING_REACTION_VISIBLE_MS = 2500
+const MEDIA_DEVICE_REQUEST_TIMEOUT_MS = 15000
 const SCREEN_SHARE_MIN_ZOOM = 1
 const SCREEN_SHARE_MAX_ZOOM = 4
 const SCREEN_SHARE_WHEEL_ZOOM_STEP = 0.16
@@ -139,6 +140,36 @@ type VoicePeerTransceivers = {
   microphone: RTCRtpTransceiver
   camera: RTCRtpTransceiver
   screen: RTCRtpTransceiver
+}
+
+function getUserMediaWithTimeout(constraints: MediaStreamConstraints) {
+  const mediaRequest = navigator.mediaDevices.getUserMedia(constraints)
+
+  return new Promise<MediaStream>((resolve, reject) => {
+    let timedOut = false
+    const timeoutId = window.setTimeout(() => {
+      timedOut = true
+      reject(new Error('미디어 장치 권한 응답 시간이 초과되었습니다. 장치 버튼을 눌러 다시 시도해 주세요.'))
+    }, MEDIA_DEVICE_REQUEST_TIMEOUT_MS)
+
+    void mediaRequest.then(
+      (stream) => {
+        if (timedOut) {
+          stream.getTracks().forEach((track) => track.stop())
+          return
+        }
+
+        window.clearTimeout(timeoutId)
+        resolve(stream)
+      },
+      (error: unknown) => {
+        if (!timedOut) {
+          window.clearTimeout(timeoutId)
+          reject(error)
+        }
+      },
+    )
+  })
 }
 
 function buildVoiceSignalingUrl(channelId: number, accessToken: string) {
@@ -1026,8 +1057,8 @@ export default function SquadMeetingApp() {
     let permissionStream: MediaStream | null = null
 
     try {
-      if (requestPermission && navigator.mediaDevices.getUserMedia) {
-        permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (requestPermission) {
+        permissionStream = await getUserMediaWithTimeout({ audio: true })
       }
 
       const devices = await navigator.mediaDevices.enumerateDevices()
@@ -1464,7 +1495,7 @@ export default function SquadMeetingApp() {
 
     stopLocalVoiceStream()
 
-    const rawStream = await navigator.mediaDevices.getUserMedia(getAudioConstraints(selectedInputId))
+    const rawStream = await getUserMediaWithTimeout(getAudioConstraints(selectedInputId))
     await applyAudioProcessingConstraints(rawStream)
     const stream = createNoiseGatedVoiceStream(rawStream)
 
@@ -1494,7 +1525,7 @@ export default function SquadMeetingApp() {
       return
     }
 
-    const nextRawStream = await navigator.mediaDevices.getUserMedia(getAudioConstraints(selectedInputId))
+    const nextRawStream = await getUserMediaWithTimeout(getAudioConstraints(selectedInputId))
     await applyAudioProcessingConstraints(nextRawStream)
     const nextStream = createNoiseGatedVoiceStream(nextRawStream)
     const [nextTrack] = nextStream.getAudioTracks()
@@ -1943,7 +1974,7 @@ export default function SquadMeetingApp() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(getCameraConstraints())
+      const stream = await getUserMediaWithTimeout(getCameraConstraints())
       const [videoTrack] = stream.getVideoTracks()
 
       if (!videoTrack) {
@@ -2588,7 +2619,7 @@ export default function SquadMeetingApp() {
     stopMicMonitor()
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(getAudioConstraints(deviceId))
+      const stream = await getUserMediaWithTimeout(getAudioConstraints(deviceId))
       await applyAudioProcessingConstraints(stream)
       updateAudioProcessingStatus(stream, audioProcessingStatus.noiseGate)
       const AudioContextClass =
@@ -3169,6 +3200,7 @@ export default function SquadMeetingApp() {
 
     try {
       let toastMessage = '진행 중인 음성 회의에 다시 연결했습니다.'
+      connectVoiceSignaling(activeChannel.channelId)
       const localVoiceAvailable = await startLocalVoiceStreamIfAvailable(isMuted)
 
       if (!localVoiceAvailable) {
@@ -3182,7 +3214,6 @@ export default function SquadMeetingApp() {
         }
       }
 
-      connectVoiceSignaling(activeChannel.channelId)
       await Promise.all([
         refreshVoiceRoomState(activeChannel.channelId),
         refreshVoiceMeetingPanel(activeChannel.channelId, true).catch(() => undefined),
@@ -3215,6 +3246,7 @@ export default function SquadMeetingApp() {
       let toastMessage = '음성 회의에 입장했습니다.'
 
       await joinSquadVoiceChannel(activeChannel.channelId)
+      connectVoiceSignaling(activeChannel.channelId)
 
       const localVoiceAvailable = await startLocalVoiceStreamIfAvailable(waitingMicMuted)
       const shouldMuteOnEntry = waitingMicMuted || !localVoiceAvailable
@@ -3233,7 +3265,6 @@ export default function SquadMeetingApp() {
         }
       }
 
-      connectVoiceSignaling(activeChannel.channelId)
       await Promise.all([
         refreshVoiceRoomState(activeChannel.channelId),
         refreshVoiceMeetingPanel(activeChannel.channelId, true).catch(() => undefined),
