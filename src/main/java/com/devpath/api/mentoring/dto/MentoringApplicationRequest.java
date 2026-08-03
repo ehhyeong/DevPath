@@ -17,7 +17,6 @@ public class MentoringApplicationRequest {
           @NotBlank(message = "신청 메시지는 필수입니다.")
           @Size(max = 2000, message = "신청 메시지는 2000자 이하여야 합니다.")
           String message,
-
       @Schema(description = "팀 프로젝트형 신청 시 희망 직군", example = "Frontend 개발자")
           @Size(max = 80, message = "희망 직군은 80자 이하여야 합니다.")
           String desiredPosition) {}

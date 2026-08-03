@@ -168,8 +168,8 @@ public class CustomRoadmapNode {
   }
 
   /**
-   * 유효 분기 그룹을 해석한다. 빌더 노드는 builderBranchGroup, 공식 노드는 로드맵이 분기 편집본이면 override(branchGroup),
-   * 아니면 원본 노드의 branchGroup을 따른다(레거시 안전).
+   * 유효 분기 그룹을 해석한다. 빌더 노드는 builderBranchGroup, 공식 노드는 로드맵이 분기 편집본이면 override(branchGroup), 아니면 원본
+   * 노드의 branchGroup을 따른다(레거시 안전).
    */
   public Integer effectiveBranchGroup() {
     if (builderModule != null) {

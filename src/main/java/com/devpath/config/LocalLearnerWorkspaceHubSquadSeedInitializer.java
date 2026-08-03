@@ -51,7 +51,6 @@ import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -296,8 +295,8 @@ public class LocalLearnerWorkspaceHubSquadSeedInitializer implements CommandLine
       LocalDate dueDate,
       MilestoneStatus status) {
     boolean exists =
-        milestoneRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByDueDateAsc(
-                workspace.getId())
+        milestoneRepository
+            .findAllByWorkspaceIdAndIsDeletedFalseOrderByDueDateAsc(workspace.getId())
             .stream()
             .anyMatch(milestone -> title.equals(milestone.getTitle()));
 
@@ -376,8 +375,8 @@ public class LocalLearnerWorkspaceHubSquadSeedInitializer implements CommandLine
       WorkspaceTaskPriority priority,
       LocalDate dueDate) {
     boolean exists =
-        workspaceTaskRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(
-                workspace.getId())
+        workspaceTaskRepository
+            .findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(workspace.getId())
             .stream()
             .anyMatch(task -> title.equals(task.getTitle()));
 
@@ -431,8 +430,8 @@ public class LocalLearnerWorkspaceHubSquadSeedInitializer implements CommandLine
       LocalDateTime startAt,
       LocalDateTime endAt) {
     boolean exists =
-        calendarEventRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByStartAtAsc(
-                workspace.getId())
+        calendarEventRepository
+            .findAllByWorkspaceIdAndIsDeletedFalseOrderByStartAtAsc(workspace.getId())
             .stream()
             .anyMatch(event -> title.equals(event.getTitle()));
 
@@ -561,10 +560,13 @@ public class LocalLearnerWorkspaceHubSquadSeedInitializer implements CommandLine
   private void ensureLink(
       Workspace workspace, User uploader, Long parentId, String title, String url) {
     boolean exists =
-        workspaceFileRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(
-                workspace.getId())
+        workspaceFileRepository
+            .findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(workspace.getId())
             .stream()
-            .anyMatch(file -> file.getItemType() == WorkspaceFileType.LINK && title.equals(file.getOriginalFileName()));
+            .anyMatch(
+                file ->
+                    file.getItemType() == WorkspaceFileType.LINK
+                        && title.equals(file.getOriginalFileName()));
 
     if (exists) {
       return;
@@ -613,11 +615,10 @@ public class LocalLearnerWorkspaceHubSquadSeedInitializer implements CommandLine
         """);
   }
 
-  private void ensureMeetingNote(
-      Workspace workspace, User creator, String title, String content) {
+  private void ensureMeetingNote(Workspace workspace, User creator, String title, String content) {
     boolean exists =
-        meetingNoteRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(
-                workspace.getId())
+        meetingNoteRepository
+            .findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(workspace.getId())
             .stream()
             .anyMatch(note -> title.equals(note.getTitle()));
 
@@ -635,20 +636,15 @@ public class LocalLearnerWorkspaceHubSquadSeedInitializer implements CommandLine
   }
 
   private void seedNotices(Workspace workspace) {
+    ensureNotice(workspace, "이번 주 목표", "로드맵 상세 API 필드 확정과 학습 진행률 카드 1차 구현을 이번 주 목표로 잡습니다.");
     ensureNotice(
-        workspace,
-        "이번 주 목표",
-        "로드맵 상세 API 필드 확정과 학습 진행률 카드 1차 구현을 이번 주 목표로 잡습니다.");
-    ensureNotice(
-        workspace,
-        "GitHub 연동 안내",
-        "코드 피드백 영역은 실제 DevPath 저장소 연결 후 확인할 예정이므로 현재 시드에서는 제외합니다.");
+        workspace, "GitHub 연동 안내", "코드 피드백 영역은 실제 DevPath 저장소 연결 후 확인할 예정이므로 현재 시드에서는 제외합니다.");
   }
 
   private void ensureNotice(Workspace workspace, String title, String content) {
     boolean exists =
-        workspaceNoticeRepository.findByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(
-                workspace.getId())
+        workspaceNoticeRepository
+            .findByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(workspace.getId())
             .stream()
             .anyMatch(notice -> title.equals(notice.getTitle()));
 
@@ -688,7 +684,8 @@ public class LocalLearnerWorkspaceHubSquadSeedInitializer implements CommandLine
                 });
 
     boolean hasAnswer =
-        answerRepository.findAllByQuestionIdAndIsDeletedFalseOrderByCreatedAtAsc(question.getId())
+        answerRepository
+            .findAllByQuestionIdAndIsDeletedFalseOrderByCreatedAtAsc(question.getId())
             .stream()
             .anyMatch(answer -> answer.getUser().getId().equals(owner.getId()));
 
@@ -711,25 +708,13 @@ public class LocalLearnerWorkspaceHubSquadSeedInitializer implements CommandLine
         ActivityLogType.MEMBER_JOINED,
         "learner@devpath.com님이 DevPath 스쿼드를 생성했습니다.");
     ensureActivityLog(
-        workspace,
-        squadMate,
-        ActivityLogType.MEMBER_JOINED,
-        "김학습님이 DevPath 스쿼드에 참여했습니다.");
+        workspace, squadMate, ActivityLogType.MEMBER_JOINED, "김학습님이 DevPath 스쿼드에 참여했습니다.");
     ensureActivityLog(
-        workspace,
-        owner,
-        ActivityLogType.MILESTONE_CREATED,
-        "MVP 범위 확정 마일스톤이 생성되었습니다.");
+        workspace, owner, ActivityLogType.MILESTONE_CREATED, "MVP 범위 확정 마일스톤이 생성되었습니다.");
     ensureActivityLog(
-        workspace,
-        squadMate,
-        ActivityLogType.TASK_CREATED,
-        "학습 진행률 카드 컴포넌트 구현 작업이 등록되었습니다.");
+        workspace, squadMate, ActivityLogType.TASK_CREATED, "학습 진행률 카드 컴포넌트 구현 작업이 등록되었습니다.");
     ensureActivityLog(
-        workspace,
-        owner,
-        ActivityLogType.DOC_UPDATED,
-        "DevPath API 초안 문서가 업데이트되었습니다.");
+        workspace, owner, ActivityLogType.DOC_UPDATED, "DevPath API 초안 문서가 업데이트되었습니다.");
   }
 
   private void ensureActivityLog(

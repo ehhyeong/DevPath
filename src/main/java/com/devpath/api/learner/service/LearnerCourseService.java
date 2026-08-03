@@ -203,7 +203,11 @@ public class LearnerCourseService {
         .instructor(mapInstructor(course, userProfile, specialties))
         .sections(
             mapSections(
-                sections, lessonsBySectionId, materialsByLessonId, assignmentMapping, quizzesByNodeId))
+                sections,
+                lessonsBySectionId,
+                materialsByLessonId,
+                assignmentMapping,
+                quizzesByNodeId))
         .news(mapNews(courseId, news))
         .build();
   }

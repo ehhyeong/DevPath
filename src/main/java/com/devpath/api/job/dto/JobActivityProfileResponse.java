@@ -17,7 +17,8 @@ public class JobActivityProfileResponse {
           int completedTaskCount,
       @Schema(description = "Number of issued proof cards", example = "5") int proofCardCount,
       @Schema(
-              description = "Average quiz/assignment grade of cleared nodes (null if no graded data)",
+              description =
+                  "Average quiz/assignment grade of cleared nodes (null if no graded data)",
               example = "92.5")
           Double averageProofCardScore,
       @Schema(description = "Skill signals extracted from internal DevPath activity")

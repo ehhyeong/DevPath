@@ -71,8 +71,7 @@ public class ProofCardService {
       return;
     }
 
-    ProofCardAssembler.AssembledProofCard assembled =
-        proofCardAssembler.assembleFromCourse(course);
+    ProofCardAssembler.AssembledProofCard assembled = proofCardAssembler.assembleFromCourse(course);
 
     ProofCard savedProofCard =
         proofCardRepository.save(

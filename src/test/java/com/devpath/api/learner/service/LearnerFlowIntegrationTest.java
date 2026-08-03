@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
 import com.devpath.api.common.dto.CourseListItemResponse;
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.learner.dto.SkillCheckDto;
 import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
 import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
@@ -70,6 +71,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DataJpaTest(
     properties = {
@@ -92,6 +94,8 @@ import org.springframework.test.context.ActiveProfiles;
   TagValidationService.class
 })
 class LearnerFlowIntegrationTest {
+
+  @MockitoBean private InstructorNotificationService instructorNotificationService;
 
   @Autowired private LearnerCourseService learnerCourseService;
   @Autowired private CourseWishlistService courseWishlistService;

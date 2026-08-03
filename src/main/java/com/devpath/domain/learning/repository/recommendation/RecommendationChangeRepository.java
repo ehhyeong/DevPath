@@ -25,7 +25,9 @@ public interface RecommendationChangeRepository extends JpaRepository<Recommenda
 
   List<RecommendationChange>
       findAllByUserIdAndTargetCustomRoadmapIdAndChangeStatusInOrderByUpdatedAtDesc(
-          Long userId, Long targetCustomRoadmapId, Collection<RecommendationChangeStatus> changeStatuses);
+          Long userId,
+          Long targetCustomRoadmapId,
+          Collection<RecommendationChangeStatus> changeStatuses);
 
   // 로드맵 X에 속한 추천: 추천 노드가 X에 있거나(보강/DELETE), 분기 기준 노드(branchFromNodeId)가 X에 있는(진단) 경우 모두 포함.
   // 진단 추천 노드는 시스템 동적 로드맵에 저장되므로 branchFromNode 기준으로도 매칭한다.

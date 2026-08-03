@@ -49,8 +49,7 @@ public enum ErrorCode {
   CUSTOM_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 노드를 찾을 수 없습니다."),
 
   INSUFFICIENT_TAGS(HttpStatus.BAD_REQUEST, "노드 진입에 필요한 태그가 부족합니다."),
-  NODE_RELEARN_REQUIRED(
-      HttpStatus.BAD_REQUEST, "심화/복습 노드는 추가 이후 관련 강의를 다시 학습해야 클리어할 수 있습니다."),
+  NODE_RELEARN_REQUIRED(HttpStatus.BAD_REQUEST, "심화/복습 노드는 추가 이후 관련 강의를 다시 학습해야 클리어할 수 있습니다."),
   NODE_LOCKED(HttpStatus.FORBIDDEN, "선행 노드를 먼저 완료해야 합니다."),
   NODE_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료된 노드입니다."),
 
@@ -62,8 +61,7 @@ public enum ErrorCode {
   RECOMMENDATION_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 추천입니다."),
   RECOMMENDATION_EXPIRED(HttpStatus.BAD_REQUEST, "만료된 추천입니다."),
   SUPPLEMENT_RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "보강 노드 추천을 찾을 수 없습니다."),
-  NODE_TAG_RESOLUTION_FAILED(
-      HttpStatus.BAD_REQUEST, "추천 노드에 연결할 적합한 학습 태그를 찾지 못했습니다."),
+  NODE_TAG_RESOLUTION_FAILED(HttpStatus.BAD_REQUEST, "추천 노드에 연결할 적합한 학습 태그를 찾지 못했습니다."),
   RISK_WARNING_NOT_FOUND(HttpStatus.NOT_FOUND, "리스크 경고를 찾을 수 없습니다."),
   OCR_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "OCR 결과를 찾을 수 없습니다."),
 

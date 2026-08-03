@@ -26,6 +26,7 @@ import com.devpath.domain.voice.repository.VoiceParticipantRepository;
 import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
+import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -66,6 +67,7 @@ public class VoiceChannelService {
   private final WorkspaceTaskRepository workspaceTaskRepository;
   private final UserRepository userRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final WorkspaceRepository workspaceRepository;
   private final GeminiProvider geminiProvider;
   private final ObjectMapper objectMapper;
 
@@ -713,10 +715,12 @@ public class VoiceChannelService {
   }
 
   private void validateWorkspaceMember(Long workspaceId, Long userId) {
-    if (userId == null
-        || !workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)) {
-      throw new CustomException(ErrorCode.VOICE_FORBIDDEN);
+    if (userId != null
+        && (workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId)
+            || workspaceRepository.existsByIdAndOwnerIdAndIsDeletedFalse(workspaceId, userId))) {
+      return;
     }
+    throw new CustomException(ErrorCode.VOICE_FORBIDDEN);
   }
 
   private void applyParticipantState(VoiceParticipant participant, VoiceEventType type) {

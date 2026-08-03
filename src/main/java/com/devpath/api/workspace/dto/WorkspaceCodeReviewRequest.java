@@ -36,7 +36,9 @@ public class WorkspaceCodeReviewRequest {
 
   @Schema(name = "WorkspaceCodeReviewAiReviewCreateRequest", description = "스쿼드 AI 코드 리뷰 실행")
   public record AiReviewCreate(
-      @Schema(description = "기본으로 표시할 선택 파일 경로", example = "src/main/java/com/devpath/auth/AuthService.java")
+      @Schema(
+              description = "기본으로 표시할 선택 파일 경로",
+              example = "src/main/java/com/devpath/auth/AuthService.java")
           @Size(max = 500, message = "파일 경로는 500자 이하여야 합니다.")
           String filePath) {}
 
@@ -46,7 +48,9 @@ public class WorkspaceCodeReviewRequest {
           @NotBlank(message = "피드백 내용을 입력해주세요.")
           @Size(max = 4000, message = "피드백 내용은 4000자 이하여야 합니다.")
           String body,
-      @Schema(description = "피드백 대상 파일 경로", example = "src/main/java/com/devpath/auth/AuthService.java")
+      @Schema(
+              description = "피드백 대상 파일 경로",
+              example = "src/main/java/com/devpath/auth/AuthService.java")
           @Size(max = 500, message = "파일 경로는 500자 이하여야 합니다.")
           String filePath) {}
 }

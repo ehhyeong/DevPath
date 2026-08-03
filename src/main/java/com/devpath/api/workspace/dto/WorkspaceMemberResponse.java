@@ -105,7 +105,9 @@ public class WorkspaceMemberResponse {
     if (normalized.contains("기획") || normalized.contains("pm")) {
       return "PM";
     }
-    if (normalized.contains("devops") || normalized.contains("infra") || normalized.contains("인프라")) {
+    if (normalized.contains("devops")
+        || normalized.contains("infra")
+        || normalized.contains("인프라")) {
       return "OPS";
     }
     return positionLabel.trim();

@@ -611,7 +611,9 @@ public class InstructorAnalyticsService {
                         "오답 패턴 재설계",
                         "%s 오답 신호가 높습니다. 핵심 개념 설명 뒤 바로 따라 하는 실습을 붙여 회복 동선을 짧게 가져가세요."
                             .formatted(item.nodeTitle()),
-                        item.weaknessScore() >= 65.0 ? "HIGH" : item.weaknessScore() >= 40.0 ? "MEDIUM" : "LOW")));
+                        item.weaknessScore() >= 65.0
+                            ? "HIGH"
+                            : item.weaknessScore() >= 40.0 ? "MEDIUM" : "LOW")));
     dropOffs.stream()
         .findFirst()
         .ifPresent(
@@ -621,7 +623,9 @@ public class InstructorAnalyticsService {
                         "이탈 구간 분할",
                         "%s에서 이탈률이 %.1f%%입니다. 긴 설명을 5분 안쪽 단위로 나누고 체크 질문을 추가하세요."
                             .formatted(item.lessonTitle(), item.dropOffRate()),
-                        item.dropOffRate() >= 40.0 ? "HIGH" : item.dropOffRate() >= 20.0 ? "MEDIUM" : "LOW")));
+                        item.dropOffRate() >= 40.0
+                            ? "HIGH"
+                            : item.dropOffRate() >= 20.0 ? "MEDIUM" : "LOW")));
 
     return insights.stream().limit(3).toList();
   }
