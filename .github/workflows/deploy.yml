@@ -98,6 +98,10 @@ jobs:
             git fetch origin master
             git reset --hard origin/master
 
+            # HTTPS 종단 Nginx가 WebSocket Upgrade 헤더를 백엔드로 전달하도록 보장
+            chmod +x scripts/configure-host-nginx-websocket.sh
+            ./scripts/configure-host-nginx-websocket.sh
+
             # 프론트엔드 컨테이너 재빌드
             docker compose --profile frontend-static up -d --build frontend
 
