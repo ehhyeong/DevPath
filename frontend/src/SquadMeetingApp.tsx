@@ -4135,7 +4135,7 @@ export default function SquadMeetingApp() {
                       ? 'bg-green-600 hover:bg-green-700 border-green-500'
                       : 'bg-gray-700 hover:bg-gray-600 border-gray-600'
                   }`}
-                  title={localCameraStream ? 'Turn camera off' : 'Turn camera on'}
+                  title={localCameraStream ? '카메라 끄기' : '카메라 켜기'}
                 >
                   <i className={`fas ${localCameraStream ? 'fa-video' : 'fa-video-slash'} text-xl`}></i>
                 </button>
@@ -4293,7 +4293,7 @@ export default function SquadMeetingApp() {
               <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
                 <i className="fas fa-headset text-brand"></i> 음성 회의
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5">카메라 없이 마이크와 헤드셋만 사용하는 스쿼드 회의 공간입니다.</p>
+              <p className="text-sm text-gray-500 mt-0.5">카메라, 마이크와 화면 공유를 함께 사용하는 스쿼드 회의 공간입니다.</p>
             </div>
             <div className="flex items-center gap-3">
               <button
