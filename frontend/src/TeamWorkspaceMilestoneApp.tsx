@@ -764,12 +764,12 @@ export default function TeamWorkspaceMilestoneApp() {
         </div>
 
         <nav className="custom-scrollbar flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3">
-          <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Team Dashboard</p>
-          <a href={navHref('/team-ws-dashboard', workspaceId)} className="nav-item">
+          <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Team Dashboard</p>
+          <a href={navHref('/team-ws-dashboard', workspaceId)} className="workspace-nav-item">
             <i className="fas fa-chart-line w-6 text-center text-lg"></i>
             <span className="sidebar-text">프로젝트 대시보드</span>
           </a>
-          <a href={navHref('/team-ws-milestone', workspaceId)} className="nav-item active">
+          <a href={navHref('/team-ws-milestone', workspaceId)} className="workspace-nav-item active">
             <div className="relative w-6 text-center text-lg">
               <i className="fas fa-flag-checkered"></i>
               {hasWorkspaceData ? <span className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full border border-white bg-red-500"></span> : null}
@@ -778,33 +778,33 @@ export default function TeamWorkspaceMilestoneApp() {
           </a>
 
           <div className="mx-2 my-2 h-px bg-gray-100"></div>
-          <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Collaboration</p>
+          <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Collaboration</p>
 
-          <a href={navHref('/team-ws-kanban', workspaceId)} className="nav-item">
+          <a href={navHref('/team-ws-kanban', workspaceId)} className="workspace-nav-item">
             <i className="fas fa-columns w-6 text-center text-lg"></i>
             <span className="sidebar-text">팀 칸반 (Jira)</span>
           </a>
-          <a href={navHref('/team-ws-architecture', workspaceId)} className="nav-item">
+          <a href={navHref('/team-ws-architecture', workspaceId)} className="workspace-nav-item">
             <i className="fas fa-project-diagram w-6 text-center text-lg"></i>
             <span className="sidebar-text">아키텍처 & API 설계</span>
           </a>
-          <a href={navHref('/team-ws-qna', workspaceId)} className="nav-item">
+          <a href={navHref('/team-ws-qna', workspaceId)} className="workspace-nav-item">
             <i className="fas fa-comments w-6 text-center text-lg"></i>
             <span className="sidebar-text">멘토 Q&A</span>
           </a>
 
           <div className="mx-2 my-2 h-px bg-gray-100"></div>
-          <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Resources & Live</p>
+          <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Resources & Live</p>
 
-          <a href={navHref('/team-ws-schedule', workspaceId)} className="nav-item">
+          <a href={navHref('/team-ws-schedule', workspaceId)} className="workspace-nav-item">
             <i className="fas fa-calendar-alt w-6 text-center text-lg"></i>
             <span className="sidebar-text">팀 캘린더 & 스케줄</span>
           </a>
-          <a href={navHref('/team-ws-files', workspaceId)} className="nav-item">
+          <a href={navHref('/team-ws-files', workspaceId)} className="workspace-nav-item">
             <i className="fas fa-folder-open w-6 text-center text-lg"></i>
             <span className="sidebar-text">통합 자료실</span>
           </a>
-          <a href={navHref('/team-ws-meeting', workspaceId)} className="nav-item">
+          <a href={navHref('/team-ws-meeting', workspaceId)} className="workspace-nav-item">
             <i className="fas fa-video w-6 text-center text-lg"></i>
             <span className="sidebar-text">라이브 미팅 & 회의록</span>
           </a>
@@ -1205,7 +1205,7 @@ export default function TeamWorkspaceMilestoneApp() {
       </div>
 
       {submitModalOpen ? (
-        <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+        <div className="team-workspace-milestone-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
           <form onSubmit={executeSubmit} className="modal-content relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
               <div>
@@ -1268,7 +1268,7 @@ export default function TeamWorkspaceMilestoneApp() {
       ) : null}
 
       {successModalOpen ? (
-        <div className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center p-4">
+        <div className="team-workspace-milestone-modal-overlay fixed inset-0 z-[1060] flex items-center justify-center bg-[rgba(0,0,0,0.5)] p-4">
           <button
             type="button"
             aria-label="닫기"

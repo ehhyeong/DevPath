@@ -239,47 +239,6 @@ pre {
   background-color: #00c471;
 }
 
-@media (max-width: 768px) {
-  .roadmap-preview-shell {
-    max-width: 344px;
-    height: 350px;
-    border-radius: 28px;
-  }
-
-  .roadmap-preview-scene {
-    width: min(100%, 256px);
-    height: 304px;
-  }
-
-  .roadmap-preview-branches {
-    top: 100px;
-  }
-
-  .roadmap-preview-card {
-    width: 108px;
-    min-height: 92px;
-    padding: 12px 10px;
-  }
-
-  .roadmap-preview-icon {
-    width: 38px;
-    height: 38px;
-    font-size: 0.96rem;
-  }
-
-  .roadmap-preview-pill {
-    height: 44px;
-    padding: 0 16px;
-    font-size: 0.82rem;
-  }
-
-  .roadmap-preview-next {
-    width: 168px;
-    height: 78px;
-    padding: 0 14px;
-  }
-}
-
 @keyframes float {
   0% {
     transform: translateY(0);
@@ -525,7 +484,7 @@ pre {
   }
 }
 
-.nav-item {
+.workspace-nav-item {
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
@@ -536,12 +495,12 @@ pre {
   cursor: pointer;
 }
 
-.nav-item:hover {
+.workspace-nav-item:hover {
   background-color: #f9fafb;
   color: #111827;
 }
 
-.nav-item.active {
+.workspace-nav-item.active {
   background-color: #f0fdf4;
   color: #00c471;
   font-weight: 700;
@@ -594,19 +553,8 @@ aside:hover .sidebar-text {
   border-bottom-color: #1f2937;
 }
 
-.fade-in {
+.survey-fade-in {
   animation: fadeIn 0.5s ease-in-out;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 20px;
 }
 
 @keyframes fadeIn {
@@ -667,24 +615,6 @@ aside:hover .sidebar-text {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.modal {
-  transition:
-    opacity 0.2s,
-    visibility 0.2s;
-  opacity: 0;
-  visibility: hidden;
-  z-index: 50;
-}
-
-.modal.active {
-  opacity: 1;
-  visibility: visible;
-}
-
-.modal-enter {
-  animation: modalScaleIn 0.2s ease-out forwards;
 }
 
 @keyframes modalScaleIn {
@@ -911,7 +841,7 @@ aside:hover .sidebar-text {
   background-color: #1d4ed8;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .devpath-modal-container {
     max-height: calc(100dvh - 24px);
   }
@@ -939,8 +869,8 @@ aside:hover .sidebar-text {
 }
 
 /* 사이드바 스타일 (기존 유지) */
-.sidebar-section-title { opacity: 0; height: 0; overflow: hidden; transition: all 0.3s ease; }
-aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
+.workspace-sidebar-section-title { opacity: 0; height: 0; overflow: hidden; transition: all 0.3s ease; }
+aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
 
 .hover-card { transition: all 0.3s ease; border: 1px solid #E5E7EB; }
 .hover-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); border-color: #D1D5DB; }
@@ -963,11 +893,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.modal-overlay { transition: opacity 0.2s; opacity: 0; visibility: hidden; z-index: 1000; }
-.modal-overlay.active { opacity: 1; visibility: visible; }
-.modal-content { transform: scale(0.95); transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-.modal-overlay.active .modal-content { transform: scale(1); }
 
 .accent-brand {
   accent-color: #00C471;
@@ -1265,132 +1190,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
 }
 
-@media (min-width: 1024px) {
-  .mentoring-dashboard-main-col,
-  .mentoring-dashboard-side-col {
-    display: contents !important;
-  }
-
-  .mentoring-dashboard-notice-card,
-  .mentoring-dashboard-mission-card,
-  .mentoring-dashboard-files-card {
-    grid-column: span 2 / span 2 !important;
-  }
-
-  .mentoring-dashboard-summary-card,
-  .mentoring-dashboard-live-card,
-  .mentoring-dashboard-note-card {
-    grid-column: span 1 / span 1 !important;
-  }
-
-  .mentoring-dashboard-notice-card {
-    order: 0 !important;
-  }
-
-  .mentoring-dashboard-summary-card {
-    order: 1 !important;
-  }
-
-  .mentoring-dashboard-mission-card {
-    order: 2 !important;
-  }
-
-  .mentoring-dashboard-live-card {
-    order: 3 !important;
-  }
-
-  .mentoring-dashboard-files-card {
-    order: 4 !important;
-  }
-
-  .mentoring-dashboard-note-card {
-    order: 5 !important;
-  }
-}
-
-@media (max-width: 767px) {
-  .mentoring-common-scroll {
-    padding: 20px !important;
-  }
-
-  .mentoring-dashboard-hero {
-    padding: 24px !important;
-  }
-
-  .mentoring-dashboard-progress-card {
-    width: 100% !important;
-  }
-
-  .mentoring-dashboard-mission-footer {
-    align-items: stretch !important;
-    flex-direction: column !important;
-  }
-
-  .mentoring-dashboard-submit-button {
-    width: 100% !important;
-  }
-}
-
-/* Course editor responsive layout stays in CSS. */
-@media (min-width: 1024px) {
-  .course-editor-page .course-editor-layout {
-    grid-template-columns: minmax(0, 1180px) 360px !important;
-    justify-content: start !important;
-  }
-
-  .course-editor-page .course-editor-main-column,
-  .course-editor-page .course-editor-side-column {
-    grid-column: auto / span 1 !important;
-  }
-
-  .course-editor-page .course-editor-main-column {
-    max-width: 1180px !important;
-  }
-
-  .course-editor-page .course-editor-side-column {
-    width: 360px !important;
-    max-width: 360px !important;
-  }
-}
-
-/* Student analytics responsive layout stays in CSS. */
-@media (max-width: 767px) {
-  .student-analytics-page .student-analytics-header,
-  .student-analytics-page .student-analytics-controls {
-    align-items: stretch !important;
-    flex-direction: column !important;
-  }
-
-  .student-analytics-page .student-analytics-select {
-    width: 100% !important;
-  }
-}
-
-/* Instructor mentoring responsive card grid stays in CSS. */
-@media (min-width: 1024px) {
-  .instructor-mentoring-page .instructor-mentoring-card-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  }
-}
-
-/* Instructor Q&A responsive layout stays in CSS. */
-@media (min-width: 1280px) {
-  .instructor-qna-page .instructor-qna-main {
-    flex-direction: row !important;
-  }
-
-  .instructor-qna-page .instructor-qna-inbox {
-    width: 400px !important;
-    flex: 0 0 400px !important;
-  }
-}
-
-@media (min-width: 1280px) {
-  .instructor-qna-page .instructor-qna-workspace {
-    flex-direction: row !important;
-  }
-}
-
 /* Quiz creator source UI lock. Backend, DB, shared header, and instructor aside stay untouched. */
 .app-main:has(.course-quiz-editor-page) {
   overflow-y: hidden !important;
@@ -1646,37 +1445,6 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
 }
 
 /* Consolidated from InstructorSidebar.css. */
-.instructor-layout-main.app-main {
-  overflow: hidden;
-}
-
-.instructor-layout-content.app-responsive-main {
-  height: calc(100dvh - var(--app-header-height));
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.instructor-sidebar {
-  display: none;
-  width: 250px;
-  height: calc(100dvh - var(--app-header-height));
-  min-height: calc(100dvh - var(--app-header-height));
-  align-self: stretch;
-  flex-shrink: 0;
-  flex-direction: column;
-  box-sizing: border-box;
-  padding: 24px 16px;
-  border-right: 1px solid #e2e8f0;
-  background-color: #ffffff;
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-}
-
-@media (min-width: 1024px) {
-  .instructor-sidebar {
-    display: flex;
-  }
-}
 
 .instructor-sidebar .sidebar-sticky-content {
   position: relative;
@@ -1697,7 +1465,7 @@ aside:hover .sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.
   margin-top: 22px;
 }
 
-.sidebar-section-title {
+.instructor-sidebar .workspace-sidebar-section-title {
   margin: 0 0 8px;
   padding: 0 12px;
   color: #94a3b8;

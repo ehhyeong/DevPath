@@ -210,7 +210,7 @@ export default function SquadWorkspaceAside({
       <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
         {sections.map((section) => (
           <div key={section.title}>
-            <p className={`sidebar-section-title px-4 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 ${sidebarPinned ? 'mt-[24px]! mb-[8px]! h-auto! opacity-100!' : ''}`}>
+            <p className={`workspace-sidebar-section-title px-4 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 ${sidebarPinned ? 'mt-[24px]! mb-[8px]! h-auto! opacity-100!' : ''}`}>
               {section.title}
             </p>
             {section.items.map((item) => {
@@ -223,7 +223,7 @@ export default function SquadWorkspaceAside({
                   key={item.key}
                   href={href}
                   onClick={(event) => handleNavigate(event, href, item)}
-                  className={`nav-item mb-[4px] flex min-h-[48px]! box-border items-center rounded-[12px]! px-[16px]! py-[14px]! [transition:all_0.2s_ease-in-out]! hover:translate-x-[4px]! ${activePage === item.key ? 'active bg-[#EBFDF5]! font-bold! text-[#00C471]! hover:bg-[#EBFDF5]! hover:text-[#00C471]!' : 'font-semibold! text-[#6B7280]! hover:bg-[#F3F4F6]! hover:text-[#111827]!'} ${blocked ? 'opacity-50' : ''}`}
+                  className={`workspace-nav-item mb-[4px] flex min-h-[48px]! box-border items-center rounded-[12px]! px-[16px]! py-[14px]! [transition:all_0.2s_ease-in-out]! hover:translate-x-[4px]! ${activePage === item.key ? 'active bg-[#EBFDF5]! font-bold! text-[#00C471]! hover:bg-[#EBFDF5]! hover:text-[#00C471]!' : 'font-semibold! text-[#6B7280]! hover:bg-[#F3F4F6]! hover:text-[#111827]!'} ${blocked ? 'opacity-50' : ''}`}
                   aria-disabled={blocked}
                 >
                   <i className={`${item.icon} w-6 shrink-0 grow-0 basis-[24px] text-center text-lg leading-[28px]!`}></i>

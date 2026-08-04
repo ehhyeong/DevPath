@@ -463,7 +463,7 @@ export default function SquadSettingsApp() {
   const projectName = settings?.name ?? '스쿼드 설정'
 
   return (
-    <div className="squad-dashboard-page squad-settings-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
+    <div className="squad-dashboard-page squad-settings-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.squad-settings-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
       <SquadWorkspaceAside activePage="settings" workspaceId={workspaceId} projectName={projectName} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
@@ -637,7 +637,7 @@ function GeneralPanel({
   onSave: (event: FormEvent) => void
 }) {
   return (
-    <section className="space-y-8 fade-in">
+    <section className="squad-settings-fade-in space-y-8">
       <div>
         <h3 className="text-xl font-black text-gray-900 mb-1">일반 설정</h3>
         <p className="text-sm text-gray-500 font-medium">스쿼드의 기본 정보와 공개 범위를 설정합니다.</p>
@@ -713,7 +713,7 @@ function MembersPanel({
   currentUserId: number | null
 }) {
   return (
-    <section className="space-y-8 fade-in">
+    <section className="squad-settings-fade-in space-y-8">
       <div className="flex justify-between items-end">
         <div>
           <h3 className="text-xl font-black text-gray-900 mb-1">팀원 관리</h3>
@@ -796,7 +796,7 @@ function IntegrationsPanel({
   onSyncGithub: () => void
 }) {
   return (
-    <section className="space-y-8 fade-in">
+    <section className="squad-settings-fade-in space-y-8">
       <div>
         <h3 className="text-xl font-black text-gray-900 mb-1">외부 서비스 연동</h3>
         <p className="text-sm text-gray-500 font-medium">스쿼드에서 사용할 외부 서비스 연동 상태를 관리합니다.</p>
@@ -939,7 +939,7 @@ function DangerPanel({
   onDeleteOpen: () => void
 }) {
   return (
-    <section className="space-y-8 fade-in">
+    <section className="squad-settings-fade-in space-y-8">
       <div>
         <h3 className="text-xl font-black text-red-600 mb-1">위험 구역 (Danger Zone)</h3>
         <p className="text-sm text-gray-500 font-medium">스쿼드의 삭제 및 보관 처리는 되돌릴 수 없으니 주의하세요.</p>
@@ -993,7 +993,7 @@ function DeleteModal({
 }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center p-4 bg-gray-900/80 backdrop-blur-sm z-[1200]">
-      <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl relative overflow-hidden flex flex-col p-8 fade-in border-t-8 border-red-500">
+      <div className="squad-settings-fade-in relative flex w-full max-w-md flex-col overflow-hidden rounded-3xl border-t-8 border-red-500 bg-white p-8 shadow-2xl">
         <h3 className="text-xl font-black text-red-600 mb-2 flex items-center gap-2">
           <i className="fas fa-exclamation-triangle" />
           정말 삭제하시겠습니까?

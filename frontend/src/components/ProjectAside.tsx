@@ -31,25 +31,25 @@ export default function ProjectAside({ activeKey, mySquads = [] }: ProjectAsideP
       </a>
 
       <nav className="flex-1 px-3 space-y-2 mt-4 overflow-y-auto overflow-x-hidden">
-        <p className="px-4 text-xs font-bold text-gray-400 sidebar-section-title">MENU</p>
+        <p className="workspace-sidebar-section-title px-4 text-xs font-bold text-gray-400">MENU</p>
         {projectAsideItems.map((item) => (
-          <a key={item.key} href={item.href} className={`nav-item${activeKey === item.key ? ' active' : ''}`}>
+          <a key={item.key} href={item.href} className={`workspace-nav-item${activeKey === item.key ? ' active' : ''}`}>
             <i className={`fas ${item.icon} w-6 text-center text-lg`} />
             <span className="sidebar-text">{item.label}</span>
           </a>
         ))}
 
-        <p className="px-4 text-xs font-bold text-gray-400 sidebar-section-title">MY PROJECTS</p>
+        <p className="workspace-sidebar-section-title px-4 text-xs font-bold text-gray-400">MY PROJECTS</p>
         <div id="mySquadList">
           {mySquads.length > 0 ? (
             mySquads.map((squad) => (
-              <a key={`${squad.href || 'squad'}-${squad.id}`} href={squad.href || `/squad-dashboard?workspaceId=${encodeURIComponent(squad.id)}`} className="nav-item">
+              <a key={`${squad.href || 'squad'}-${squad.id}`} href={squad.href || `/squad-dashboard?workspaceId=${encodeURIComponent(squad.id)}`} className="workspace-nav-item">
                 <span className={`w-2.5 h-2.5 rounded-full ${squad.colorClass || 'bg-blue-500'} shrink-0 mx-2`} />
                 <span className="sidebar-text truncate">{squad.name}</span>
               </a>
             ))
           ) : (
-            <div className="nav-item opacity-50 cursor-default hover:bg-transparent">
+            <div className="workspace-nav-item cursor-default opacity-50 hover:bg-transparent">
               <i className="fas fa-ghost w-6 text-center text-sm"></i>
               <span className="sidebar-text text-[11px]">참여 중인 프로젝트 없음</span>
             </div>

@@ -479,29 +479,29 @@ function Sidebar({
       </div>
 
       <nav className="custom-scrollbar mt-4 flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3">
-        <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Team Dashboard</p>
-        <a href={navHref('/team-ws-dashboard', workspaceId)} className="nav-item">
+        <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Team Dashboard</p>
+        <a href={navHref('/team-ws-dashboard', workspaceId)} className="workspace-nav-item">
           <i className="fas fa-chart-line w-6 text-center text-lg"></i>
           <span className="sidebar-text">프로젝트 대시보드</span>
         </a>
-        <a href={navHref('/team-ws-milestone', workspaceId)} className="nav-item">
+        <a href={navHref('/team-ws-milestone', workspaceId)} className="workspace-nav-item">
           <i className="fas fa-flag-checkered w-6 text-center text-lg"></i>
           <span className="sidebar-text">마일스톤 & 주간 과제</span>
         </a>
 
         <div className="mx-2 my-2 h-px bg-gray-100"></div>
-        <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Collaboration</p>
+        <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Collaboration</p>
         {TEAM_WORKSPACE_COLLABORATION_NAV.map((item) => (
-          <a key={item.key} href={navHref(item.path, workspaceId)} className={`nav-item ${activePage === item.key ? 'active' : ''}`}>
+          <a key={item.key} href={navHref(item.path, workspaceId)} className={`workspace-nav-item ${activePage === item.key ? 'active' : ''}`}>
             <i className={`fas ${item.icon} w-6 text-center text-lg`}></i>
             <span className="sidebar-text">{item.title}</span>
           </a>
         ))}
 
         <div className="mx-2 my-2 h-px bg-gray-100"></div>
-        <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Resources & Live</p>
+        <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Resources & Live</p>
         {TEAM_WORKSPACE_RESOURCE_NAV.map((item) => (
-          <a key={item.key} href={navHref(item.path, workspaceId)} className={`nav-item ${activePage === item.key ? 'active' : ''}`}>
+          <a key={item.key} href={navHref(item.path, workspaceId)} className={`workspace-nav-item ${activePage === item.key ? 'active' : ''}`}>
             <i className={`fas ${item.icon} w-6 text-center text-lg`}></i>
             <span className="sidebar-text">{item.title}</span>
           </a>
@@ -629,7 +629,7 @@ function Modal({
   headerClassName?: string
 }) {
   return (
-    <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+    <div className="team-workspace-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
       <button type="button" aria-label="닫기" className="absolute inset-0" onClick={onClose}></button>
       <div className={`modal-content team-ws-modal-panel relative z-10 overflow-hidden rounded-3xl bg-white shadow-2xl [&>div:first-child]:min-h-[74px] [&_label]:mb-[8px] [&_label]:block [&_label]:text-[12px] [&_label]:font-bold [&_label]:text-[#1F2937] [&_input]:rounded-[12px]! [&_input]:border-[#E5E7EB]! [&_input]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)] [&_select]:rounded-[12px]! [&_select]:border-[#E5E7EB]! [&_select]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)] [&_textarea]:rounded-[12px]! [&_textarea]:border-[#E5E7EB]! [&_textarea]:leading-[1.6] [&_textarea]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)] ${panelClassName}`}>
         <div className={`flex justify-between border-b border-gray-100 bg-gray-50 p-6 ${headerClassName}`}>
@@ -1315,7 +1315,7 @@ function FilesPage({
       </PageFrame>
 
       {uploadOpen ? (
-        <div id="uploadModal" className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+        <div id="uploadModal" className="team-workspace-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
           <form onSubmit={executeUpload} className="modal-content team-ws-files-upload-modal relative w-full max-w-[512px]! overflow-hidden rounded-[24px]! bg-white shadow-2xl [&_.text-team]:text-[#4F46E5]! [&_.border-team]:border-[#4F46E5]! [&_.team-ws-files-upload-zone.dragover]:border-[#4F46E5]! [&_.team-ws-files-upload-zone.dragover]:bg-[#EEF2FF]!">
             <div className="team-ws-files-upload-modal-header flex items-center justify-between border-b border-gray-100 bg-gray-50 p-[24px]!">
               <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
@@ -2232,7 +2232,7 @@ function SchedulePage({
         const isOfficial = meta.kind === 'official'
 
         return (
-          <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+          <div className="team-workspace-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
             <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setSelectedEvent(null)}></button>
             <div className="modal-content team-ws-modal-panel team-ws-event-detail-modal relative z-10 w-full! max-w-[384px]! overflow-hidden rounded-[24px]! bg-white shadow-2xl">
               <div className="team-ws-event-detail-header flex items-start justify-between gap-[16px] border-b border-gray-100 bg-gray-50 p-[24px]!">
@@ -2269,7 +2269,7 @@ function SchedulePage({
       })() : null}
 
       {deleteTarget ? (
-        <div id="deleteEventModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center p-4">
+        <div id="deleteEventModal" className="team-workspace-modal-overlay fixed inset-0 z-[1060] flex items-center justify-center bg-[rgba(0,0,0,0.5)] p-4">
           <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setDeleteTarget(null); setDeleteError(null) }}></button>
           <div className="modal-content team-ws-schedule-delete-modal relative z-10 w-full max-w-[384px]! rounded-[24px]! bg-white p-[32px]! text-center shadow-2xl">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-500 shadow-sm">
@@ -2291,7 +2291,7 @@ function SchedulePage({
       ) : null}
 
       {scheduleNotice ? (
-        <div id="successModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center p-4">
+        <div id="successModal" className="team-workspace-modal-overlay fixed inset-0 z-[1060] flex items-center justify-center bg-[rgba(0,0,0,0.5)] p-4">
           <button type="button" aria-label="닫기" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setScheduleNotice(null)}></button>
           <div className="modal-content team-ws-schedule-success-modal relative z-10 w-full max-w-[384px]! rounded-[24px]! bg-white p-[32px]! text-center shadow-2xl">
             <div className="team-ws-schedule-success-icon mx-auto mb-4 flex h-[64px]! w-[64px]! items-center justify-center rounded-full border border-indigo-100 bg-[#EEF2FF]! shadow-sm">
@@ -3047,7 +3047,7 @@ function MeetingPage({
       </PageFrame>
 
       {modalOpen ? (
-        <div id="teamNoteModal" className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+        <div id="teamNoteModal" className="team-workspace-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
           <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setModalOpen(false)}></button>
           <form onSubmit={saveNote} className="modal-content team-ws-meeting-note-modal relative z-10 flex w-full max-w-[672px]! flex-col rounded-[24px]! bg-white shadow-2xl [&_.bg-mentor-light]:bg-[#EDE9FE]! [&_.bg-team-light]:bg-[#EEF2FF]! [&_.text-mentor]:text-[#7C3AED]! [&_.text-team]:text-[#4F46E5]!">
             <div className="team-ws-meeting-note-modal-header flex shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 p-[24px]!">
@@ -3089,7 +3089,7 @@ function MeetingPage({
         const noteKind = meetingNoteKind(selectedNote)
 
         return (
-          <div id="noteDetailModal" className="modal-overlay active fixed inset-0 z-[1060] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+          <div id="noteDetailModal" className="team-workspace-modal-overlay fixed inset-0 z-[1060] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
             <button type="button" aria-label="닫기" className="absolute inset-0" onClick={() => setSelectedNote(null)}></button>
             <div className="modal-content team-ws-meeting-note-detail-modal relative z-10 flex max-h-[85vh] w-full max-w-[672px]! flex-col overflow-hidden rounded-[24px]! bg-white shadow-2xl [&_.bg-mentor-light]:bg-[#EDE9FE]! [&_.bg-team-light]:bg-[#EEF2FF]! [&_.text-mentor]:text-[#7C3AED]! [&_.text-team]:text-[#4F46E5]!">
               <div className="team-ws-meeting-note-detail-header flex shrink-0 items-start justify-between border-b border-gray-100 bg-gray-50 p-[24px]!">

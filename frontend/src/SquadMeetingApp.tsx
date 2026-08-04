@@ -4476,8 +4476,8 @@ export default function SquadMeetingApp() {
       )}
 
       {audioSettingsOpen ? (
-        <div className="modal active fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-opacity">
-          <div className="squad-meeting-audio-panel modal-enter w-[min(448px,calc(100vw-32px))]! max-w-[448px]! overflow-hidden rounded-[16px]! bg-white shadow-2xl">
+        <div className="squad-meeting-audio-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
+          <div className="squad-meeting-audio-panel w-[min(448px,calc(100vw-32px))]! max-w-[448px]! animate-[modalScaleIn_0.2s_ease-out_forwards] overflow-hidden rounded-[16px]! bg-white shadow-2xl">
             <div className="squad-meeting-audio-header flex h-[69px]! items-center justify-between border-b border-gray-100 bg-gray-50 p-[20px]!">
               <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
                 <i className="fas fa-sliders-h text-brand"></i> 오디오 설정

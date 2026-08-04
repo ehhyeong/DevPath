@@ -114,7 +114,7 @@ export default function CommunityListPage() {
         {/* 메인 콘텐츠 */}
         <section className="min-w-0 flex-1">
           {view === 'list' ? (
-            <div className="fade-in">
+            <div className="animate-[fadeIn_0.5s_ease-in-out]">
               <div className="mb-6 flex flex-col items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
                   <i className="fas fa-fire text-orange-500" /> 이번 주 인기글
@@ -212,7 +212,7 @@ export default function CommunityListPage() {
               </div>
             </div>
           ) : (
-            <div className="fade-in">
+            <div className="animate-[fadeIn_0.5s_ease-in-out]">
               <div className="mb-4">
                 <button
                   type="button"

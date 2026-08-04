@@ -1113,6 +1113,7 @@ function ReviewsTab({
   )
 }
 
+const channelModalOverlayClassName = 'instructor-channel-modal-overlay fixed inset-0 z-[2000] flex items-center justify-center bg-[rgba(0,0,0,0.5)] p-[20px]'
 const channelModalBoxClassName = 'modal-box max-h-[90vh] w-full max-w-[680px] overflow-y-auto rounded-[16px] bg-white [box-shadow:0_25px_50px_rgba(0,0,0,0.3)]'
 
 function WritePostModal({
@@ -1139,7 +1140,7 @@ function WritePostModal({
   if (!open) return null
 
   return (
-    <div className="modal-overlay" onClick={onClose} aria-hidden="true">
+    <div className={channelModalOverlayClassName} onClick={onClose} aria-hidden="true">
       <div className={channelModalBoxClassName} onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <h2 className="text-lg font-extrabold text-gray-900">커뮤니티 글 쓰기</h2>
@@ -1363,7 +1364,7 @@ function EditPostModal({
   if (!open) return null
 
   return (
-    <div className="modal-overlay" onClick={onClose} aria-hidden="true">
+    <div className={channelModalOverlayClassName} onClick={onClose} aria-hidden="true">
       <div className={channelModalBoxClassName} onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <h2 className="text-lg font-extrabold text-gray-900">게시글 수정</h2>

@@ -528,7 +528,7 @@ export default function LoungeDashboardApp() {
 
         <main className="flex-1 overflow-y-auto bg-[#F8F9FA] p-4 md:p-8 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-8">
-            <div className="bg-gradient-to-r from-slate-800 to-gray-900 rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-lg fade-in">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-800 to-gray-900 p-6 shadow-lg animate-[fadeIn_0.5s_ease-in-out] lg:p-8">
               <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-brand opacity-20 rounded-full blur-[80px] transform translate-x-1/3 -translate-y-1/3 pointer-events-none"></div>
               <div className="absolute bottom-0 right-1/4 w-[200px] h-[200px] bg-blue-600 opacity-20 rounded-full blur-[60px] transform translate-y-1/2 pointer-events-none"></div>
 
@@ -629,7 +629,7 @@ export default function LoungeDashboardApp() {
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               <div className="xl:col-span-2 space-y-8">
-                <section className="fade-in" style={{ animationDelay: '0.1s' }}>
+                <section className="animate-[fadeIn_0.5s_ease-in-out]" style={{ animationDelay: '0.1s' }}>
                   <div className="flex justify-between items-end mb-4 h-[28px]">
                     <h2 className="text-lg font-extrabold text-gray-900 flex items-center gap-2 leading-none">
                       <i className="fas fa-folder-open text-blue-500"></i> 진행 중인 프로젝트
@@ -713,7 +713,7 @@ export default function LoungeDashboardApp() {
                   )}
                 </section>
 
-                <section className="fade-in" style={{ animationDelay: '0.2s' }}>
+                <section className="animate-[fadeIn_0.5s_ease-in-out]" style={{ animationDelay: '0.2s' }}>
                   <div className="flex justify-between items-end mb-4">
                     <h2 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
                       <i className="fas fa-compass text-orange-500"></i> 새로운 스쿼드 & 프로젝트 탐색
@@ -802,7 +802,7 @@ export default function LoungeDashboardApp() {
                 </section>
               </div>
 
-              <aside className="space-y-8 fade-in" style={{ animationDelay: '0.3s' }}>
+              <aside className="animate-[fadeIn_0.5s_ease-in-out] space-y-8" style={{ animationDelay: '0.3s' }}>
                 <div>
                   <div className="mb-4 h-[28px]">
                     <h2 className="text-lg font-extrabold text-transparent select-none leading-none">Spacer</h2>

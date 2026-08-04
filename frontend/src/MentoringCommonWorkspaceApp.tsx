@@ -1064,7 +1064,7 @@ function SourceFormModal({
   }
 
   return (
-    <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
+    <div className="mentoring-workspace-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
       <div className={`modal-content relative w-full overflow-hidden rounded-3xl bg-white shadow-2xl ${widthClass}`}>
         <form onSubmit={onSubmit}>
           <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
@@ -1310,7 +1310,7 @@ function MentoringShell({
       </main>
 
       {noticeModal ? (
-        <div className="modal-overlay active fixed inset-0 z-[1040] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
+        <div className="mentoring-workspace-modal-overlay fixed inset-0 z-[1040] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
           <div className="modal-content w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
               <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
@@ -1448,8 +1448,8 @@ function DashboardPage({
       </section>
 
       <div className="mentoring-dashboard-grid grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="mentoring-dashboard-main-col space-y-6 lg:col-span-2">
-            <SectionCard title="이번 주 미션" icon="fas fa-flag-checkered text-[#7C3AED]" className="mentoring-dashboard-card mentoring-dashboard-mission-card">
+          <div className="mentoring-dashboard-main-col space-y-6 lg:col-span-2 lg:contents!">
+            <SectionCard title="이번 주 미션" icon="fas fa-flag-checkered text-[#7C3AED]" className="mentoring-dashboard-card mentoring-dashboard-mission-card lg:order-2! lg:col-span-2!">
               {activeTask ? (
                 <div className="rounded-2xl border-l-4 border-l-[#7C3AED] bg-white p-1">
                   <div className="rounded-xl bg-gray-50 p-5">
@@ -1467,7 +1467,7 @@ function DashboardPage({
                     <p className="line-clamp-3 text-sm leading-relaxed text-gray-600">
                       {activeTask.description ?? '상세 설명이 등록되지 않았습니다.'}
                     </p>
-                    <div className="mentoring-dashboard-mission-footer mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-5 text-[10px] font-bold text-gray-400">
+                    <div className="mentoring-dashboard-mission-footer mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-5 text-[10px] font-bold text-gray-400 max-[767px]:flex-col! max-[767px]:items-stretch!">
                       <div className="flex items-center gap-3">
                         <span>
                           <i className="far fa-clock mr-1"></i>
@@ -1478,7 +1478,7 @@ function DashboardPage({
                           {priorityLabel(activeTask.priority)}
                         </span>
                       </div>
-                      <a href={buildHref('curriculum', workspaceId)} className="mentoring-dashboard-submit-button">
+                      <a href={buildHref('curriculum', workspaceId)} className="mentoring-dashboard-submit-button max-[767px]:w-full!">
                         <i className="fas fa-upload"></i>
                         과제 제출하기
                       </a>
@@ -1502,7 +1502,7 @@ function DashboardPage({
             <SectionCard
               title="최근 자료"
               icon="fas fa-folder-open text-yellow-500"
-              className="mentoring-dashboard-card mentoring-dashboard-files-card"
+              className="mentoring-dashboard-card mentoring-dashboard-files-card lg:order-4! lg:col-span-2!"
               action={
                 <a href={buildHref('files', workspaceId)} className="mentoring-dashboard-card-link">
                   전체보기 <i className="fas fa-chevron-right ml-0.5 text-[10px]"></i>
@@ -1542,8 +1542,8 @@ function DashboardPage({
             </SectionCard>
           </div>
 
-          <div className="mentoring-dashboard-side-col space-y-6">
-            <SectionCard title="내 과제 피드백 현황" icon="fas fa-code-branch text-[#00C471]" className="mentoring-dashboard-card mentoring-dashboard-summary-card">
+          <div className="mentoring-dashboard-side-col space-y-6 lg:contents!">
+            <SectionCard title="내 과제 피드백 현황" icon="fas fa-code-branch text-[#00C471]" className="mentoring-dashboard-card mentoring-dashboard-summary-card lg:order-1! lg:col-span-1!">
               {answeredQuestions.length > 0 ? (
                 <div className="space-y-3">
                   {answeredQuestions.map((question) => (
@@ -1573,7 +1573,7 @@ function DashboardPage({
             <SectionCard
               title="멘토 공지사항"
               icon="fas fa-bullhorn text-yellow-500"
-              className="mentoring-dashboard-card mentoring-dashboard-notice-card"
+              className="mentoring-dashboard-card mentoring-dashboard-notice-card lg:order-0! lg:col-span-2!"
               action={
                 <a href={buildHref('curriculum', workspaceId)} className="mentoring-dashboard-card-link">
                   전체보기 <i className="fas fa-chevron-right"></i>
@@ -1603,7 +1603,7 @@ function DashboardPage({
             <SectionCard
               title="오늘의 개인 할 일"
               icon="fas fa-columns text-green-500"
-              className="mentoring-dashboard-card mentoring-dashboard-live-card"
+              className="mentoring-dashboard-card mentoring-dashboard-live-card lg:order-3! lg:col-span-1!"
               action={<span className={activeTasks.length > 0 ? 'mentoring-dashboard-count-badge active' : 'mentoring-dashboard-count-badge'}>진행 중 {activeTasks.length}</span>}
             >
               {activeTasks.length > 0 ? (
@@ -1635,7 +1635,7 @@ function DashboardPage({
               </a>
             </SectionCard>
 
-            <SectionCard title="멘토 Q&A" icon="fas fa-question-circle text-blue-500" className="mentoring-dashboard-card mentoring-dashboard-note-card">
+            <SectionCard title="멘토 Q&A" icon="fas fa-question-circle text-blue-500" className="mentoring-dashboard-card mentoring-dashboard-note-card lg:order-5! lg:col-span-1!">
               {recentQuestions.length > 0 ? (
                 <div className="space-y-4">
                   {recentQuestions.map((question) => {
@@ -1667,7 +1667,7 @@ function DashboardPage({
       </div>
 
       {dmModalOpen ? (
-        <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
+        <div className="mentoring-workspace-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
           <form onSubmit={submitMentorDm} className="modal-content w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
             <div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-4">
               <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
@@ -3903,7 +3903,7 @@ function ErdPage({
       </div>
 
       {relationModalOpen ? (
-        <div className="modal-overlay active fixed inset-0 z-[1100] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
+        <div className="mentoring-workspace-modal-overlay fixed inset-0 z-[1100] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
           <div className="modal-content w-full max-w-xs overflow-hidden rounded-3xl bg-white p-6 text-center shadow-2xl">
             <h3 className="mb-4 text-lg font-extrabold text-gray-900">관계 타입 선택</h3>
             <p className="mb-6 text-xs text-gray-500">두 테이블 간의 관계(Relation)를 선택하세요.</p>
@@ -3940,7 +3940,7 @@ function ErdPage({
       ) : null}
 
       {saveModalOpen ? (
-        <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
+        <div className="mentoring-workspace-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
           <div className="modal-content w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6">
               <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900">
@@ -4117,7 +4117,7 @@ function MeetingPage({
       </div>
 
       {selectedSummary ? (
-        <div className="modal-overlay active fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
+        <div className="mentoring-workspace-modal-overlay fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
           <div className="modal-content relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
             <div className="flex shrink-0 items-start justify-between border-b border-gray-100 bg-gray-50 p-6">
               <div className="pr-8">
