@@ -1,4 +1,4 @@
-import { projectAsideItems, type ProjectAsideKey } from '../project-shell'
+import { projectAsideItems, type ProjectAsideKey } from '../features/project/shell'
 
 export type { ProjectAsideKey }
 

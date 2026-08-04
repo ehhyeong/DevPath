@@ -1,4 +1,4 @@
-import MyRoadmapBuilderPage from './pages/MyRoadmapBuilderPage'
+import MyRoadmapBuilderPage from './MyRoadmapBuilderPage'
 
 function MyRoadmapBuilderApp() {
   return <MyRoadmapBuilderPage />

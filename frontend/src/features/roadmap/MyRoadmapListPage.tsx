@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import AuthModal, { type AuthView } from '../components/AuthModal'
-import LoginRequiredView from '../components/LoginRequiredView'
-import SiteHeader from '../components/SiteHeader'
-import { authApi, roadmapApi, userApi } from '../lib/api'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import SiteHeader from '../../components/SiteHeader'
+import { authApi, roadmapApi, userApi } from '../../lib/api'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
   getPostLoginRedirect,
   readStoredAuthSession,
-} from '../lib/auth-session'
-import type { MyRoadmapSummary, RoadmapNodeItem } from '../types/roadmap'
+} from '../../lib/auth-session'
+import type { MyRoadmapSummary, RoadmapNodeItem } from '../../types/roadmap'
 
 type RoadmapTab = 'learning' | 'created' | 'completed'
 type NextLearningNode = Pick<RoadmapNodeItem, 'customNodeId' | 'title'> | null

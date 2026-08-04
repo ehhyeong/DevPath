@@ -11,18 +11,18 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
-import AuthModal, { type AuthView } from '../components/AuthModal'
-import LoginRequiredView from '../components/LoginRequiredView'
-import SiteHeader from '../components/SiteHeader'
-import { authApi, roadmapApi, userApi } from '../lib/api'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import SiteHeader from '../../components/SiteHeader'
+import { authApi, roadmapApi, userApi } from '../../lib/api'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
   readStoredAuthSession,
-} from '../lib/auth-session'
-import { getRoadmapNodeVisual } from '../lib/roadmap-icons'
-import type { RoadmapHubCatalog, RoadmapHubItem } from '../types/roadmap-hub'
-import type { OfficialRoadmapDetail, OfficialRoadmapNode } from '../types/roadmap'
+} from '../../lib/auth-session'
+import { getRoadmapNodeVisual } from '../../lib/roadmap-icons'
+import type { RoadmapHubCatalog, RoadmapHubItem } from '../../types/roadmap-hub'
+import type { OfficialRoadmapDetail, OfficialRoadmapNode } from '../../types/roadmap'
 
 // ────────────────────────────────────────────
 // 타입 정의

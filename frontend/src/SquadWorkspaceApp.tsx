@@ -4,7 +4,7 @@ import SquadWorkspaceAside from './components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
-import { projectApiRequest } from './project-api'
+import { projectApiRequest } from './features/project/api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
 import type {

@@ -6,7 +6,7 @@ import ProjectHeader from './components/ProjectHeader'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import LoginRequiredView from './components/LoginRequiredView'
 import { showAuthToast } from './lib/auth-toast'
-import { projectApiRequest } from './project-api'
+import { projectApiRequest } from './features/project/api'
 
 type CategoryFilter =
   | 'all'

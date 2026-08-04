@@ -7,7 +7,7 @@ import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, 
 import LoginRequiredView from '../../components/LoginRequiredView'
 import UserAvatar from '../../components/UserAvatar'
 import { showAuthToast } from '../../lib/auth-toast'
-import { projectApiRequest } from '../../project-api'
+import { projectApiRequest } from '../project/api'
 
 type ShowcaseCategory = 'FRONTEND' | 'BACKEND' | 'FULLSTACK' | 'MOBILE' | 'AI' | 'DATA' | 'DEVOPS' | 'ETC'
 type CategoryFilter = 'all' | 'web' | 'app' | 'ai' | 'game'

@@ -1,9 +1,9 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
-import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
-import { showAuthToast } from './lib/auth-toast'
-import LoginRequiredView from './components/LoginRequiredView'
-import { projectApiRequest } from './project-api'
+import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import { projectApiRequest } from './api'
 
 type ProjectVisibility = 'PUBLIC' | 'PRIVATE'
 

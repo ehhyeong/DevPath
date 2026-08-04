@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ErrorCard, LoadingCard } from '../../account/ui'
 import { instructorMentoringApi } from '../../lib/api'
-import { projectApiRequest } from '../../project-api'
+import { projectApiRequest } from '../../features/project/api'
 import type { InstructorMentoringBoard } from '../../types/instructor'
 
 type MentoringTab = 'recruiting' | 'requests' | 'ongoing' | 'completed'

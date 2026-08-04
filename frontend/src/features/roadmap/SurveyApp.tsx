@@ -1,4 +1,4 @@
-import SurveyPage from './pages/SurveyPage'
+import SurveyPage from './SurveyPage'
 
 function SurveyApp() {
   return <SurveyPage />

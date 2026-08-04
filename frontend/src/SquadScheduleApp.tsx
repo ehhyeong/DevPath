@@ -4,7 +4,7 @@ import SquadWorkspaceAside from './components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
-import { projectApiRequest } from './project-api'
+import { projectApiRequest } from './features/project/api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'

@@ -3,7 +3,7 @@ import LoginRequiredView from './components/LoginRequiredView'
 import TeamWorkspaceHeader from './components/TeamWorkspaceHeader'
 import UserAvatar from './components/UserAvatar'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
-import { projectApiRequest } from './project-api'
+import { projectApiRequest } from './features/project/api'
 import { TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME } from './team-workspace-constants'
 
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'

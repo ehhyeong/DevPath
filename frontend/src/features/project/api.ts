@@ -1,4 +1,4 @@
-import { expireStoredAuthSession, readStoredAuthSession, refreshStoredAuthSession } from './lib/auth-session'
+import { expireStoredAuthSession, readStoredAuthSession, refreshStoredAuthSession } from '../../lib/auth-session'
 
 export type ApiEnvelope<T> = {
   success: boolean

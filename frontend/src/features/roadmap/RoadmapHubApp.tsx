@@ -1,4 +1,4 @@
-import RoadmapHubPage from './pages/RoadmapHubPage'
+import RoadmapHubPage from './RoadmapHubPage'
 
 function RoadmapHubApp() {
   return <RoadmapHubPage />

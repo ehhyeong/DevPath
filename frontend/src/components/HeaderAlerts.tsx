@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { projectApiRequest } from '../project-api'
+import { projectApiRequest } from '../features/project/api'
 import type { AuthSession } from '../types/auth'
 import { showAuthToast } from '../lib/auth-toast'
 

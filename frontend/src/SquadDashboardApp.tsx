@@ -7,7 +7,7 @@ import UserAvatar from './components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
 import { showAuthToast } from './lib/auth-toast'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
-import { projectApiRequest } from './project-api'
+import { projectApiRequest } from './features/project/api'
 import { createSquadNotification, squadActorName } from './squad-notifications'
 
 import type {

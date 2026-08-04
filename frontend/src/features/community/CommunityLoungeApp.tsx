@@ -8,7 +8,7 @@ import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, 
 import LoginRequiredView from '../../components/LoginRequiredView'
 import { showAuthToast } from '../../lib/auth-toast'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
-import { projectApiRequest } from '../../project-api'
+import { projectApiRequest } from '../project/api'
 
 type LoungeType = 'project' | 'join_wish' | 'study' | 'networking'
 type ActiveFilter = 'all' | 'my_posts' | LoungeType

@@ -1,17 +1,17 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import AuthModal, { type AuthView } from '../components/AuthModal'
-import LoginRequiredView from '../components/LoginRequiredView'
-import RoadmapInfoContent from '../components/RoadmapInfoContent'
-import SiteHeader from '../components/SiteHeader'
-import { authApi, roadmapApi, userApi } from '../lib/api'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import RoadmapInfoContent from '../../components/RoadmapInfoContent'
+import SiteHeader from '../../components/SiteHeader'
+import { authApi, roadmapApi, userApi } from '../../lib/api'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
   getPostLoginRedirect,
   readStoredAuthSession,
-} from '../lib/auth-session'
-import { useInternalPageScroll } from '../lib/useInternalPageScroll'
-import type { ProofCardSummary } from '../types/learner'
+} from '../../lib/auth-session'
+import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
+import type { ProofCardSummary } from '../../types/learner'
 import type {
   RoadmapDetail,
   RoadmapNodeItem,
@@ -21,7 +21,7 @@ import type {
   NodeStatus,
   ChangeType,
   MyRoadmapSummary,
-} from '../types/roadmap'
+} from '../../types/roadmap'
 
 function readAuthViewFromLocation(): AuthView | null {
   const value = new URLSearchParams(window.location.search).get('auth')

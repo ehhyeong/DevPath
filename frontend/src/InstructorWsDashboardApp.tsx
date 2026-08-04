@@ -18,7 +18,7 @@ import {
   updateInstructorWorkspaceTask,
   uploadInstructorWorkspaceFile,
 } from './instructor-workspace-api'
-import type { ApiEnvelope } from './project-api'
+import type { ApiEnvelope } from './features/project/api'
 import { getVoiceIceServers } from './voice-webrtc'
 
 import type {

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import LoginRequiredView from '../components/LoginRequiredView'
-import SiteHeader from '../components/SiteHeader'
-import { authApi, roadmapApi, userApi } from '../lib/api'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import SiteHeader from '../../components/SiteHeader'
+import { authApi, roadmapApi, userApi } from '../../lib/api'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
   readStoredAuthSession,
-} from '../lib/auth-session'
-import type { AuthSession } from '../types/auth'
+} from '../../lib/auth-session'
+import type { AuthSession } from '../../types/auth'
 
 type Screen = 'start' | 'question' | 'loading' | 'result'
 

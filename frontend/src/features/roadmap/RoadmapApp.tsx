@@ -1,4 +1,4 @@
-import RoadmapDetailPage from './pages/RoadmapDetailPage'
+import RoadmapDetailPage from './RoadmapDetailPage'
 
 function RoadmapApp() {
   return <RoadmapDetailPage />

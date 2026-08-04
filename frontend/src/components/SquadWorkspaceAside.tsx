@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { showAuthToast } from '../lib/auth-toast'
-import { projectApiRequest } from '../project-api'
+import { projectApiRequest } from '../features/project/api'
 
 export type SquadWorkspaceAsidePage =
   | 'dashboard'

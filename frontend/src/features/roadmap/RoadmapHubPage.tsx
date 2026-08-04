@@ -1,17 +1,17 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
-import AuthModal, { type AuthView } from '../components/AuthModal'
-import SiteHeader from '../components/SiteHeader'
-import { authApi, roadmapApi, userApi } from '../lib/api'
-import { showAuthToast } from '../lib/auth-toast'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SiteHeader from '../../components/SiteHeader'
+import { authApi, roadmapApi, userApi } from '../../lib/api'
+import { showAuthToast } from '../../lib/auth-toast'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
   getPostLoginRedirect,
   readStoredAuthSession,
-} from '../lib/auth-session'
-import { useInternalPageScroll } from '../lib/useInternalPageScroll'
-import { getRoadmapHubIconClass } from '../lib/roadmap-icons'
-import type { RoadmapHubCatalog, RoadmapHubItem } from '../types/roadmap-hub'
+} from '../../lib/auth-session'
+import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
+import { getRoadmapHubIconClass } from '../../lib/roadmap-icons'
+import type { RoadmapHubCatalog, RoadmapHubItem } from '../../types/roadmap-hub'
 
 type RoadmapHubSection = RoadmapHubCatalog['sections'][number]
 
