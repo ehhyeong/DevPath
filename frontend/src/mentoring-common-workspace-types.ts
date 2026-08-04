@@ -156,27 +156,6 @@ export type VoiceChannel = {
   createdAt?: string | null
 }
 
-export type VoiceParticipant = {
-  participantId: number
-  channelId: number
-  userId: number
-  userName?: string | null
-  active?: boolean | null
-  muted?: boolean | null
-  handRaised?: boolean | null
-  speaking?: boolean | null
-  joinedAt?: string | null
-}
-
-export type VoiceChatMessage = {
-  messageId: number
-  channelId: number
-  senderId: number
-  senderName?: string | null
-  content: string
-  createdAt?: string | null
-}
-
 export type DirectMessageResponse = {
   messageId: number
   senderId: number
@@ -200,16 +179,6 @@ export type MentoringHeaderNotification = {
   modalTitle?: string | null
   modalBody?: string | null
   createdAt?: string | null
-}
-
-export type VoiceMinutes = {
-  channelId: number
-  recording?: boolean | null
-  transcript?: string | null
-  summary?: string | null
-  updatedByUserId?: number | null
-  updatedByUserName?: string | null
-  updatedAt?: string | null
 }
 
 export type WorkspaceNotice = {

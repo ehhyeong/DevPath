@@ -24,14 +24,10 @@ import {
   createMentoringTask,
   createMentoringVoiceChannel,
   fetchMentoringQuestionDetail,
-  joinMentoringVoiceChannel,
-  leaveMentoringVoiceChannel,
   loadMentoringHeaderNotifications,
-  loadMentoringLiveChannelData,
   loadMentoringWorkspaceData,
   saveMentoringErd,
   sendMentoringDirectMessage,
-  sendMentoringVoiceMessage,
   updateMentoringTaskStatus,
   uploadMentoringWorkspaceFile,
 } from './mentoring-common-workspace-api'
@@ -48,9 +44,6 @@ import type {
   TaskPriority,
   TaskStatus,
   VoiceChannel,
-  VoiceChatMessage,
-  VoiceMinutes,
-  VoiceParticipant,
   WorkspaceDashboard,
   WorkspaceErdDocument,
   WorkspaceErdVersion,
@@ -58,6 +51,8 @@ import type {
   WorkspaceMember,
   WorkspaceTask,
 } from './mentoring-common-workspace-types'
+
+type RenderedMentoringCommonPage = Exclude<MentoringCommonPage, 'live-meeting'>
 
 const MENTORING_COMMON_PAGE_LOCK_CLASS_NAME = [
   'bg-[#F3F4F6]!',
@@ -500,13 +495,6 @@ const STATUS_COLUMNS: Array<{ status: TaskStatus; label: string; tone: string; c
 function getWorkspaceIdFromUrl() {
   const params = new URLSearchParams(window.location.search)
   const parsed = Number(params.get('workspaceId') ?? params.get('mentoringId'))
-
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-}
-
-function getChannelIdFromUrl() {
-  const params = new URLSearchParams(window.location.search)
-  const parsed = Number(params.get('channelId'))
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null
 }
@@ -4176,167 +4164,8 @@ function MeetingPage({
   )
 }
 
-function LiveMeetingPage({
-  workspaceId,
-  channels,
-  selectedChannelId,
-  participants,
-  messages,
-  minutes,
-  onJoin,
-  onLeave,
-  onSendMessage,
-  submitting,
-}: {
-  workspaceId: number | null
-  channels: VoiceChannel[]
-  selectedChannelId: number | null
-  participants: VoiceParticipant[]
-  messages: VoiceChatMessage[]
-  minutes: VoiceMinutes | null
-  onJoin: (channelId: number) => Promise<void>
-  onLeave: (channelId: number) => Promise<void>
-  onSendMessage: (channelId: number, content: string) => Promise<void>
-  submitting: boolean
-}) {
-  const [message, setMessage] = useState('')
-  const selectedChannel =
-    channels.find((channel) => channel.channelId === selectedChannelId) ?? channels[0] ?? null
-
-  async function submitMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    if (!selectedChannel || !message.trim()) {
-      return
-    }
-
-    await onSendMessage(selectedChannel.channelId, message)
-    setMessage('')
-  }
-
-  if (!selectedChannel) {
-    return (
-      <EmptyPanel
-        icon="fas fa-video-slash"
-        title="열 수 있는 라이브 채널이 없습니다"
-        description="화상 멘토링 채널을 먼저 생성하면 이 페이지에서 실제 참여자와 채팅 기록을 확인할 수 있습니다."
-        action={
-          <a href={buildHref('meeting', workspaceId)} className="inline-flex h-[42px] items-center justify-center rounded-xl bg-[#00C471] px-5 text-sm font-bold text-white">
-            회의 관리로 이동
-          </a>
-        }
-      />
-    )
-  }
-
-  return (
-    <div className="grid h-[calc(100dvh-220px)] min-h-[620px] gap-6 lg:grid-cols-[1fr_360px]">
-      <section className="flex min-h-0 flex-col overflow-hidden rounded-3xl bg-gray-950 text-white shadow-xl">
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-6">
-          <div>
-            <p className="text-sm font-extrabold">{selectedChannel.name}</p>
-            <p className="text-xs text-gray-400">{selectedChannel.description ?? '라이브 멘토링 룸'}</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => void onJoin(selectedChannel.channelId)}
-              disabled={submitting}
-              className="h-9 rounded-lg bg-[#00C471] px-4 text-xs font-bold text-white transition hover:bg-green-600 disabled:opacity-60"
-            >
-              참여
-            </button>
-            <button
-              type="button"
-              onClick={() => void onLeave(selectedChannel.channelId)}
-              disabled={submitting}
-              className="h-9 rounded-lg bg-white/10 px-4 text-xs font-bold text-white transition hover:bg-white/20 disabled:opacity-60"
-            >
-              나가기
-            </button>
-          </div>
-        </div>
-
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 p-6 md:grid-cols-2">
-          {participants.length > 0 ? (
-            participants.map((participant) => (
-              <div key={participant.participantId} className="flex min-h-[180px] flex-col items-center justify-center rounded-3xl border border-white/10 bg-white/5">
-                <Avatar name={participant.userName} className="h-20 w-20 border border-white/10 bg-white/10 text-white" textClassName="text-xl" />
-                <p className="mt-4 text-sm font-extrabold">{participant.userName ?? `사용자 ${participant.userId}`}</p>
-                <p className="mt-1 text-xs text-gray-400">{participant.muted ? '마이크 꺼짐' : '마이크 켜짐'}</p>
-              </div>
-            ))
-          ) : (
-            <div className="col-span-full flex flex-col items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/5 text-center">
-              <i className="fas fa-user-friends mb-3 text-3xl text-white/20"></i>
-              <p className="text-sm font-bold text-gray-300">현재 참여자가 없습니다.</p>
-              <p className="mt-2 text-xs text-gray-500">참여 버튼을 누르면 실제 음성 채널 참여 API가 호출됩니다.</p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <aside className="flex min-h-0 flex-col gap-6">
-        <section className="flex min-h-0 flex-1 flex-col rounded-2xl border border-gray-100 bg-white shadow-sm">
-          <div className="border-b border-gray-100 p-4">
-            <h3 className="text-sm font-extrabold text-gray-900">
-              <i className="fas fa-comments mr-2 text-[#7C3AED]"></i>
-              라이브 채팅
-            </h3>
-          </div>
-          <div className="custom-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-            {messages.length > 0 ? (
-              messages.map((chat) => (
-                <div key={chat.messageId} className="rounded-xl bg-gray-50 p-3">
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-gray-900">{chat.senderName ?? `#${chat.senderId}`}</span>
-                    <span className="text-[10px] font-bold text-gray-400">{formatRelativeTime(chat.createdAt)}</span>
-                  </div>
-                  <p className="text-sm leading-relaxed text-gray-600">{chat.content}</p>
-                </div>
-              ))
-            ) : (
-              <p className="flex h-full items-center justify-center text-center text-xs font-bold text-gray-400">
-                아직 채팅 메시지가 없습니다.
-              </p>
-            )}
-          </div>
-          <form onSubmit={submitMessage} className="border-t border-gray-100 p-3">
-            <div className="flex gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-1.5">
-              <input
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent px-3 text-sm font-medium outline-none"
-                placeholder="메시지 보내기"
-              />
-              <button
-                type="submit"
-                disabled={submitting || !message.trim()}
-                className="h-8 w-8 shrink-0 rounded-xl bg-[#00C471] text-xs text-white disabled:opacity-60"
-              >
-                <i className="fas fa-paper-plane"></i>
-              </button>
-            </div>
-          </form>
-        </section>
-
-        <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-extrabold text-gray-900">
-            <i className="fas fa-clipboard-list mr-2 text-[#00C471]"></i>
-            AI 회의록
-          </h3>
-          <p className="line-clamp-5 whitespace-pre-line text-xs leading-relaxed text-gray-500">
-            {minutes?.summary || minutes?.transcript || '회의록 데이터가 아직 없습니다.'}
-          </p>
-        </section>
-      </aside>
-    </div>
-  )
-}
-
-function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
+function MentoringCommonWorkspaceApp({ page }: { page: RenderedMentoringCommonPage }) {
   const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
-  const selectedChannelId = useMemo(getChannelIdFromUrl, [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [data, setData] = useState<MentoringWorkspaceData>(EMPTY_DATA)
@@ -4347,10 +4176,6 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
   const [taskSearch, setTaskSearch] = useState('')
   const [expandedQuestionId, setExpandedQuestionId] = useState<number | null>(null)
   const [questionDetails, setQuestionDetails] = useState<Map<number, QuestionDetail>>(new Map())
-  const [liveParticipants, setLiveParticipants] = useState<VoiceParticipant[]>([])
-  const [liveMessages, setLiveMessages] = useState<VoiceChatMessage[]>([])
-  const [liveMinutes, setLiveMinutes] = useState<VoiceMinutes | null>(null)
-  const [liveReloadKey, setLiveReloadKey] = useState(0)
   const [accountProfile, setAccountProfile] = useState<{ name: string | null; profileImage: string | null } | null>(null)
 
   useEffect(() => {
@@ -4512,44 +4337,6 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
     }
   }, [session?.userId])
 
-  const selectedChannel =
-    data.voiceChannels.find((channel) => channel.channelId === selectedChannelId) ?? data.voiceChannels[0] ?? null
-  const selectedLiveChannelId = selectedChannel?.channelId ?? null
-
-  useEffect(() => {
-    if (page !== 'live-meeting' || !selectedLiveChannelId || !session?.accessToken) {
-      setLiveParticipants([])
-      setLiveMessages([])
-      setLiveMinutes(null)
-      return undefined
-    }
-
-    const controller = new AbortController()
-
-    async function loadLiveData() {
-      try {
-        const { participants, messages, minutes } = await loadMentoringLiveChannelData(selectedLiveChannelId, controller.signal)
-
-        if (!controller.signal.aborted) {
-          setLiveParticipants(participants ?? [])
-          setLiveMessages(messages ?? [])
-          setLiveMinutes(minutes)
-        }
-      } catch (liveError) {
-        if (!controller.signal.aborted) {
-          showAuthToast({
-            message: liveError instanceof Error ? liveError.message : '라이브 데이터를 불러오지 못했습니다.',
-            variant: 'error',
-          })
-        }
-      }
-    }
-
-    void loadLiveData()
-
-    return () => controller.abort()
-  }, [page, selectedLiveChannelId, session?.accessToken, liveReloadKey])
-
   const memberById = useMemo(() => {
     const map = new Map<number, WorkspaceMember>()
     data.dashboard?.members.forEach((member) => {
@@ -4581,11 +4368,6 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
 
   function refreshAll() {
     setReloadKey((key) => key + 1)
-  }
-
-  function refreshLive() {
-    setLiveReloadKey((key) => key + 1)
-    refreshAll()
   }
 
   async function withSubmit(action: () => Promise<void>, successMessage: string) {
@@ -4777,40 +4559,6 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
     )
   }
 
-  async function joinChannel(channelId: number) {
-    await withSubmit(
-      () =>
-        joinMentoringVoiceChannel(channelId).then(() => undefined),
-      '라이브 채널에 참여했습니다.',
-    )
-    refreshLive()
-  }
-
-  async function leaveChannel(channelId: number) {
-    await withSubmit(
-      () =>
-        leaveMentoringVoiceChannel(channelId).then(() => undefined),
-      '라이브 채널에서 나갔습니다.',
-    )
-    refreshLive()
-  }
-
-  async function sendLiveMessage(channelId: number, content: string) {
-    setSubmitting(true)
-
-    try {
-      await sendMentoringVoiceMessage(channelId, content)
-      setLiveReloadKey((key) => key + 1)
-    } catch (messageError) {
-      showAuthToast({
-        message: messageError instanceof Error ? messageError.message : '메시지를 보내지 못했습니다.',
-        variant: 'error',
-      })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   function handleAuthenticated() {
     const nextSession = readStoredAuthSession()
 
@@ -4886,21 +4634,6 @@ function MentoringCommonWorkspaceApp({ page }: { page: MentoringCommonPage }) {
             workspaceId={workspaceId}
             onCreateMeetingNote={createMeetingNote}
             onCreateVoiceChannel={createVoiceChannel}
-            submitting={submitting}
-          />
-        )
-      case 'live-meeting':
-        return (
-          <LiveMeetingPage
-            workspaceId={workspaceId}
-            channels={data.voiceChannels}
-            selectedChannelId={selectedChannelId}
-            participants={liveParticipants}
-            messages={liveMessages}
-            minutes={liveMinutes}
-            onJoin={joinChannel}
-            onLeave={leaveChannel}
-            onSendMessage={sendLiveMessage}
             submitting={submitting}
           />
         )
