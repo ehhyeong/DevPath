@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import UserAvatar from './UserAvatar'
-import { projectApiRequest } from '../project-api'
+import { projectApiRequest } from '../features/project/api'
 
 type TeamWorkspaceHeaderMember = {
   memberId: number

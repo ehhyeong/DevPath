@@ -4,11 +4,11 @@ import UserAvatar from '../../components/UserAvatar'
 import {
   buildInstructorCourseOptions,
   normalizeInstructorCourseTitle,
-} from '../../instructor/course-display'
+} from '../course-display'
 import {
   readInstructorChannelCustomization,
   sanitizeInstructorProfileImageUrl,
-} from '../../instructor-channel-customization'
+} from '../channel/customization'
 import { instructorCourseApi, instructorQnaApi, userApi } from '../../lib/api'
 import type { AuthSession } from '../../types/auth'
 import type {

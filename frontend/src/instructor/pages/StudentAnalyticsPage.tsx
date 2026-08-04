@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ErrorCard, LoadingCard } from '../../account/ui'
 import { formatNumber } from '../../account/ui-utils'
-import { buildInstructorCourseOptions } from '../../instructor/course-display'
+import { buildInstructorCourseOptions } from '../course-display'
 import { instructorAnalyticsApi } from '../../lib/api'
 import type { InstructorAnalyticsDashboard } from '../../types/instructor'
 

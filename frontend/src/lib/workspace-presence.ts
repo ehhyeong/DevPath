@@ -1,4 +1,4 @@
-import { projectApiRequest } from '../project-api'
+import { projectApiRequest } from '../features/project/api'
 
 const WORKSPACE_PRESENCE_INTERVAL_MS = 30_000
 

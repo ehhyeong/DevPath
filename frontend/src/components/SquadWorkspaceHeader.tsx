@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import UserAvatar from './UserAvatar'
-import { projectApiRequest } from '../project-api'
+import { projectApiRequest } from '../features/project/api'
 import {
   SQUAD_NOTIFICATION_CREATED_EVENT,
   type SquadHeaderNotification,
-} from '../squad-notifications'
+} from '../features/squad/notifications'
 
 type SquadHeaderMember = {
   memberId: number
