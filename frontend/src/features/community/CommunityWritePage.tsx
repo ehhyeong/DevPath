@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import LoginRequiredView from '../components/LoginRequiredView'
-import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../lib/auth-session'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
 
 type Category = 'qa' | 'tech' | 'career' | 'free'
 

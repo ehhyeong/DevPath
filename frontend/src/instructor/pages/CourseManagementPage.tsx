@@ -8,7 +8,7 @@ import {
   normalizeInstructorCourseTitle,
   normalizeInstructorLevelLabel,
   resolveInstructorCourseThumbnailUrl,
-} from '../../instructor/course-display'
+} from '../course-display'
 import { instructorAnnouncementApi, instructorCourseApi, instructorQnaApi } from '../../lib/api'
 import type {
   InstructorAnnouncementDetail,

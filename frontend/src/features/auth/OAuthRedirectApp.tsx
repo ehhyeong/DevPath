@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
-import { userApi } from './lib/api'
+import { userApi } from '../../lib/api'
 import {
   consumePostLoginReturnPath,
   getPostLoginRedirect,
   getRoleLabel,
   persistAuthSession,
   updateStoredAuthSession,
-} from './lib/auth-session'
-import { queueAuthToast } from './lib/auth-toast'
-import type { AuthTokenResponse } from './types/auth'
-import type { UserProfile } from './types/learner'
+} from '../../lib/auth-session'
+import { queueAuthToast } from '../../lib/auth-toast'
+import type { AuthTokenResponse } from '../../types/auth'
+import type { UserProfile } from '../../types/learner'
 
 type NicknamePrompt = {
   profile: UserProfile

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import ProjectAside from './components/ProjectAside'
-import ProjectHeader from './components/ProjectHeader'
-import UserAvatar from './components/UserAvatar'
-import { authApi } from './lib/api'
-import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
-import LoginRequiredView from './components/LoginRequiredView'
-import { showAuthToast } from './lib/auth-toast'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import ProjectAside from '../../components/ProjectAside'
+import ProjectHeader from '../../components/ProjectHeader'
+import UserAvatar from '../../components/UserAvatar'
+import { authApi } from '../../lib/api'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import { showAuthToast } from '../../lib/auth-toast'
 
 type ApiEnvelope<T> = {
   success: boolean

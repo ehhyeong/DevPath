@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import AuthModal, { type AuthView } from '../components/AuthModal'
-import LoginRequiredView from '../components/LoginRequiredView'
-import SiteHeader from '../components/SiteHeader'
-import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../lib/auth-session'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import SiteHeader from '../../components/SiteHeader'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 
 type View = 'list' | 'detail'
 type CategoryFilter = 'all' | 'qa' | 'tech' | 'career' | 'free'

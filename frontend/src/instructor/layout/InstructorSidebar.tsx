@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { buildInstructorCourseOptions } from '../../instructor/course-display'
+import { buildInstructorCourseOptions } from '../course-display'
 import { instructorCourseApi, instructorQnaApi } from '../../lib/api'
 import { instructorNavItems, type InstructorNavItem, type InstructorPageKey } from '../navigation'
 

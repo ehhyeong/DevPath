@@ -1,7 +1,7 @@
 import { Chart, registerables } from 'chart.js'
-import { adminApi } from './lib/admin-api'
-import { authApi } from './lib/api'
-import { clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
+import { adminApi } from '../../lib/admin-api'
+import { authApi } from '../../lib/api'
+import { clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { prepareAdminDashboardDocument } from './admin-dashboard-markup'
 import type {
   AdminAccount,
@@ -15,20 +15,20 @@ import type {
   AdminRoadmapNode,
   AdminRoadmapNodeResource,
   AdminTag,
-} from './types/admin'
+} from '../../types/admin'
 import type {
   CourseCatalogCategory,
   CourseCatalogGroup,
   CourseCatalogGroupItem,
   CourseCatalogMegaMenuItem,
   CourseCatalogMenu,
-} from './types/course-catalog'
+} from '../../types/course-catalog'
 import type {
   AdminRoadmapHubCatalog,
   RoadmapHubItem,
   RoadmapHubSection,
-} from './types/roadmap-hub'
-import './index.css'
+} from '../../types/roadmap-hub'
+import '../../index.css'
 
 Chart.register(...registerables)
 

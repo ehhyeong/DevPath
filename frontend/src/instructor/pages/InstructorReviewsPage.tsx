@@ -5,7 +5,7 @@ import UserAvatar from '../../components/UserAvatar'
 import {
   buildInstructorCourseOptions,
   normalizeInstructorCourseTitle,
-} from '../../instructor/course-display'
+} from '../course-display'
 import { instructorCourseApi, instructorReviewApi, userApi } from '../../lib/api'
 import type { AuthSession } from '../../types/auth'
 import type {

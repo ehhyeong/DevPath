@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { readStoredAuthSession } from './lib/auth-session'
+import { readStoredAuthSession } from '../../lib/auth-session'
 
 function SignupApp() {
   useEffect(() => {

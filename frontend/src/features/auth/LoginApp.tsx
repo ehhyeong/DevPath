@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
+import { getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 
 function LoginApp() {
   useEffect(() => {
