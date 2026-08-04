@@ -369,13 +369,13 @@ function TeamShell({ page, workspaceId, data, children }: { page: InstructorTeam
         <nav className="custom-scrollbar mt-4 flex-1 space-y-1 overflow-y-auto px-3">
           {NAV_SECTIONS.map((section) => (
             <div key={section.title}>
-              <p className="sidebar-section-title px-4 text-[10px] font-bold tracking-widest text-gray-400 uppercase">{section.title}</p>
+              <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold tracking-widest text-gray-400 uppercase">{section.title}</p>
               {section.pages.map((item) => {
                 const config = PAGE_CONFIG[item]
                 const active = item === page
                 const count = item === 'milestone' ? pendingMilestones : item === 'qna' ? unanswered : 0
                 return (
-                  <a key={item} href={buildHref(item, workspaceId)} className={`nav-item ${active ? 'active' : ''}`}>
+                  <a key={item} href={buildHref(item, workspaceId)} className={`workspace-nav-item ${active ? 'active' : ''}`}>
                     <div className="relative w-6 text-center text-lg">
                       <i className={config.icon} />
                       {count > 0 ? <span className="absolute -top-1 -right-1 h-2 w-2 animate-pulse rounded-full border border-white bg-red-500" /> : null}

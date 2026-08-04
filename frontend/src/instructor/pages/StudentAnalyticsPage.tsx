@@ -359,17 +359,17 @@ export default function StudentAnalyticsPage() {
   return (
     <div className={`student-analytics-page bg-gray-50 p-6 ${STUDENT_ANALYTICS_UI_LOCK_CLASSES}`}>
       <div className="student-analytics-content mx-auto max-w-[1400px]">
-        <div className="student-analytics-header mb-6 flex items-center justify-between">
+        <div className="student-analytics-header mb-6 flex items-center justify-between max-[767px]:flex-col!">
           <div>
             <h1 className="text-xl font-bold text-gray-900">학생 분석 리포트</h1>
             <p className="mt-1 text-sm text-gray-600">AI 기반 이탈 구간 분석 및 개선 포인트 제공</p>
           </div>
 
-          <div className="student-analytics-controls flex items-center gap-3">
+          <div className="student-analytics-controls flex items-center gap-3 max-[767px]:flex-col! max-[767px]:items-stretch!">
             <select
               value={courseId ?? 'all'}
               onChange={(event) => changeCourse(event.target.value === 'all' ? null : Number(event.target.value))}
-              className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300"
+              className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 max-[767px]:w-full!"
             >
               <option value="all">전체 강의</option>
               {courseOptions.map(([value, label]) => (
@@ -378,7 +378,7 @@ export default function StudentAnalyticsPage() {
                 </option>
               ))}
             </select>
-            <select className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300">
+            <select className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 max-[767px]:w-full!">
               <option>최근 30일</option>
             </select>
           </div>

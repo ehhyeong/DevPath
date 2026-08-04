@@ -77,13 +77,13 @@ const INSTRUCTOR_WS_UI_LOCK_CLASSES = [
   '[&_.text-2xl]:text-[24px]! [&_.text-2xl]:leading-[32px]! [&_.text-xl]:text-[20px]! [&_.text-xl]:leading-[28px]! [&_.text-lg]:text-[18px]! [&_.text-lg]:leading-[28px]!',
   '[&_.text-sm]:text-[14px]! [&_.text-sm]:leading-[20px]! [&_button]:text-[14px]! [&_button]:leading-[20px]! [&_input]:text-[14px]! [&_input]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]!',
   String.raw`[&_.text-xs]:text-[12px]! [&_.text-xs]:leading-[16px]! [&_.text-\[11px\]]:text-[11px]! [&_.text-\[11px\]]:leading-[16px]! [&_.text-\[10px\]]:text-[10px]! [&_.text-\[10px\]]:leading-[14px]! [&_.text-\[9px\]]:text-[9px]! [&_.text-\[9px\]]:leading-[12px]!`,
-  '[&_.nav-item]:flex! [&_.nav-item]:items-center! [&_.nav-item]:rounded-[0.75rem]! [&_.nav-item]:px-[1rem]! [&_.nav-item]:py-[0.75rem]! [&_.nav-item]:text-[#6B7280]! [&_.nav-item]:text-[14px]! [&_.nav-item]:leading-[20px]! [&_.nav-item]:font-[500]! [&_.nav-item]:[transition:color_0.2s_ease,background_0.2s_ease,transform_0.2s_ease]!',
-  '[&_.nav-item:hover]:bg-[#F9FAFB]! [&_.nav-item:hover]:text-[#111827]! [&_.nav-item:hover]:[transform:translateX(2px)]!',
-  '[&_.nav-item.active]:bg-[#111827]! [&_.nav-item.active]:text-[#ffffff]! [&_.nav-item.active]:font-[700]! [&_.nav-item.active_i]:text-[#A78BFA]!',
+  '[&_.workspace-nav-item]:flex! [&_.workspace-nav-item]:items-center! [&_.workspace-nav-item]:rounded-[0.75rem]! [&_.workspace-nav-item]:px-[1rem]! [&_.workspace-nav-item]:py-[0.75rem]! [&_.workspace-nav-item]:text-[#6B7280]! [&_.workspace-nav-item]:text-[14px]! [&_.workspace-nav-item]:leading-[20px]! [&_.workspace-nav-item]:font-[500]! [&_.workspace-nav-item]:[transition:color_0.2s_ease,background_0.2s_ease,transform_0.2s_ease]!',
+  '[&_.workspace-nav-item:hover]:bg-[#F9FAFB]! [&_.workspace-nav-item:hover]:text-[#111827]! [&_.workspace-nav-item:hover]:[transform:translateX(2px)]!',
+  '[&_.workspace-nav-item.active]:bg-[#111827]! [&_.workspace-nav-item.active]:text-[#ffffff]! [&_.workspace-nav-item.active]:font-[700]! [&_.workspace-nav-item.active_i]:text-[#A78BFA]!',
   '[&_.sidebar-text]:w-0! [&_.sidebar-text]:ml-0! [&_.sidebar-text]:overflow-hidden! [&_.sidebar-text]:whitespace-nowrap! [&_.sidebar-text]:opacity-0! [&_.sidebar-text]:[transition:width_0.25s_ease,margin-left_0.25s_ease,opacity_0.2s_ease]!',
   '[&_.instructor-ws-sidebar:hover_.sidebar-text]:w-auto! [&_.instructor-ws-sidebar:hover_.sidebar-text]:ml-[0.75rem]! [&_.instructor-ws-sidebar:hover_.sidebar-text]:opacity-100!',
-  '[&_.sidebar-section-title]:h-0! [&_.sidebar-section-title]:overflow-hidden! [&_.sidebar-section-title]:opacity-0! [&_.sidebar-section-title]:[transition:height_0.3s_ease,margin_0.3s_ease,opacity_0.3s_ease]!',
-  '[&_.instructor-ws-sidebar:hover_.sidebar-section-title]:h-auto! [&_.instructor-ws-sidebar:hover_.sidebar-section-title]:mt-[1.5rem]! [&_.instructor-ws-sidebar:hover_.sidebar-section-title]:mb-[0.5rem]! [&_.instructor-ws-sidebar:hover_.sidebar-section-title]:opacity-100!',
+  '[&_.workspace-sidebar-section-title]:h-0! [&_.workspace-sidebar-section-title]:overflow-hidden! [&_.workspace-sidebar-section-title]:opacity-0! [&_.workspace-sidebar-section-title]:[transition:height_0.3s_ease,margin_0.3s_ease,opacity_0.3s_ease]!',
+  '[&_.instructor-ws-sidebar:hover_.workspace-sidebar-section-title]:h-auto! [&_.instructor-ws-sidebar:hover_.workspace-sidebar-section-title]:mt-[1.5rem]! [&_.instructor-ws-sidebar:hover_.workspace-sidebar-section-title]:mb-[0.5rem]! [&_.instructor-ws-sidebar:hover_.workspace-sidebar-section-title]:opacity-100!',
 ].join(' ')
 
 function getWorkspaceIdFromUrl(): number | null {
@@ -548,13 +548,13 @@ function InstructorWsShell({
             ['Resources & Live', ['schedule', 'files', 'meeting'] as InstructorWsPage[]],
           ].map(([title, pages]) => (
             <div key={title as string}>
-              <p className="sidebar-section-title px-4 text-[10px] font-bold tracking-widest text-gray-400 uppercase">{title}</p>
+              <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold tracking-widest text-gray-400 uppercase">{title}</p>
               {(pages as InstructorWsPage[]).map((item) => {
                 const config = PAGE_CONFIG[item]
                 const active = item === page
                 const count = item === 'assignments' ? waitingCount : item === 'qna' ? unansweredCount : 0
                 return (
-                  <a key={item} href={buildHref(item, workspaceId)} className={`nav-item ${active ? 'active' : ''}`}>
+                  <a key={item} href={buildHref(item, workspaceId)} className={`workspace-nav-item ${active ? 'active' : ''}`}>
                     <div className="relative w-6 text-center text-lg">
                       <i className={config.icon} />
                       {count > 0 ? <span className="absolute -top-1 -right-1 h-2 w-2 animate-pulse rounded-full border border-white bg-red-500" /> : null}

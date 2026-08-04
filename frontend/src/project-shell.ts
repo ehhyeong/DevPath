@@ -25,7 +25,7 @@ export function createProjectAsideHtml(activeKey: ProjectAsideKey) {
   const menuHtml = projectAsideItems.map((item) => {
     const active = item.key === activeKey ? ' active' : ''
 
-    return `<a href="${item.href}" target="_top" class="nav-item${active}"><i class="fas ${item.icon} w-6 text-center text-lg"></i><span class="sidebar-text">${item.label}</span></a>`
+    return `<a href="${item.href}" target="_top" class="workspace-nav-item${active}"><i class="fas ${item.icon} w-6 text-center text-lg"></i><span class="sidebar-text">${item.label}</span></a>`
   }).join('')
 
   return `<aside class="w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-xl">
@@ -40,12 +40,12 @@ export function createProjectAsideHtml(activeKey: ProjectAsideKey) {
     </div>
 
     <nav class="flex-1 px-3 space-y-2 mt-4 overflow-y-auto overflow-x-hidden">
-      <p class="px-4 text-xs font-bold text-gray-400 sidebar-section-title">MENU</p>
+      <p class="workspace-sidebar-section-title px-4 text-xs font-bold text-gray-400">MENU</p>
       ${menuHtml}
 
-      <p class="px-4 text-xs font-bold text-gray-400 sidebar-section-title">MY PROJECTS</p>
+      <p class="workspace-sidebar-section-title px-4 text-xs font-bold text-gray-400">MY PROJECTS</p>
       <div id="mySquadList">
-        <div class="nav-item opacity-50 cursor-default hover:bg-transparent">
+        <div class="workspace-nav-item opacity-50 cursor-default hover:bg-transparent">
           <i class="fas fa-ghost w-6 text-center text-sm"></i>
           <span class="sidebar-text text-[11px]">참여 중인 프로젝트 없음</span>
         </div>

@@ -334,7 +334,7 @@ function SurveyPage() {
         )}
 
         {screen === 'start' && (
-          <div className="fade-in py-10 text-center">
+          <div className="survey-fade-in py-10 text-center">
             <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
               <i className="fas fa-compass text-4xl text-brand" />
             </div>
@@ -356,7 +356,7 @@ function SurveyPage() {
         )}
 
         {screen === 'question' && (
-          <div key={currentStep} className="fade-in w-full">
+          <div key={currentStep} className="survey-fade-in w-full">
             <div className="mb-8">
               <span className="mb-2 block text-sm font-bold tracking-widest text-brand uppercase">
                 Question {currentStep + 1}
@@ -381,7 +381,7 @@ function SurveyPage() {
         )}
 
         {screen === 'loading' && (
-          <div className="fade-in py-20 text-center">
+          <div className="survey-fade-in py-20 text-center">
             <div className="border-brand mb-6 inline-block h-16 w-16 animate-spin rounded-full border-t-4 border-b-4" />
             <h2 className="mb-2 text-2xl font-bold text-gray-900">결과 분석 중...</h2>
             <p className="text-gray-500">당신의 성향을 로드맵 데이터베이스와 매칭하고 있습니다.</p>
@@ -389,7 +389,7 @@ function SurveyPage() {
         )}
 
         {screen === 'result' && topResult && (
-          <div className="fade-in w-full text-center">
+          <div className="survey-fade-in w-full text-center">
             <h2 className="mb-2 text-3xl font-bold text-gray-900">분석 완료!</h2>
             <p className="mb-10 text-gray-500">당신에게 가장 추천하는 로드맵입니다.</p>
 

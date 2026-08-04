@@ -66,12 +66,12 @@ export default function InstructorSidebar({
 
   return (
     <>
-      <aside className="instructor-sidebar">
+      <aside className="instructor-sidebar box-border hidden h-[calc(100dvh-var(--app-header-height))] min-h-[calc(100dvh-var(--app-header-height))] w-[250px] shrink-0 self-stretch flex-col border-r border-[#e2e8f0] bg-white px-4 py-6 font-['Pretendard',-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,Helvetica,Arial,sans-serif] lg:flex">
         <div className="sidebar-sticky-content">
           <nav className="sidebar-nav hide-scroll">
             {sections.map((section) => (
               <div key={section} className="sidebar-section">
-                <p className="sidebar-section-title">{section}</p>
+                <p className="workspace-sidebar-section-title">{section}</p>
                 <ul className="sidebar-menu-list">
                   {instructorNavItems
                     .filter((item) => item.section === section)

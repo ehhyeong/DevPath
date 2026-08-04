@@ -91,19 +91,51 @@ jobs:
           username: ${{ secrets.ORACLE_USER }}
           key: ${{ secrets.ORACLE_SSH_KEY }}
           port: 22
+          command_timeout: 20m
           script: |
+            set -euo pipefail
             cd ${{ secrets.PROJECT_PATH }}
 
             # 서버 로컬 변경사항 무시하고 remote master 기준으로 강제 동기화
             git fetch origin master
             git reset --hard origin/master
 
-            # HTTPS 종단 Nginx가 WebSocket Upgrade 헤더를 백엔드로 전달하도록 보장
+            # HTTPS 종단 Nginx의 업로드 한도와 WebSocket Upgrade 전달을 보장
             chmod +x scripts/configure-host-nginx-websocket.sh
             ./scripts/configure-host-nginx-websocket.sh
 
+            # TURN 미설정은 배포를 막지 않지만 제한적인 NAT 환경에서 P2P 연결이 실패할 수 있음
+            if ! grep -Eq '^VITE_VOICE_TURN_URLS=.+$' .env 2>/dev/null; then
+              echo "WARNING: VITE_VOICE_TURN_URLS가 없어 STUN 전용으로 빌드합니다."
+            elif ! grep -Eq '^VITE_VOICE_TURN_USERNAME=.+$' .env 2>/dev/null || ! grep -Eq '^VITE_VOICE_TURN_CREDENTIAL=.+$' .env 2>/dev/null; then
+              echo "WARNING: TURN URL은 있지만 사용자 이름 또는 자격 증명이 비어 있습니다."
+            else
+              echo "TURN relay build variables are configured."
+            fi
+
+            # Compose 환경변수와 서비스 구성을 빌드 전에 검증
+            docker compose --profile frontend-static config --quiet
+
             # 프론트엔드 컨테이너 재빌드
             docker compose --profile frontend-static up -d --build frontend
+
+            # 컨테이너가 실제 정적 페이지를 제공하는지 최대 60초 확인
+            frontend_ready=false
+            for i in $(seq 1 12); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8084/ || true)
+              if [ "$code" = "200" ]; then
+                echo "Frontend up on 8084 (attempt $i)"
+                frontend_ready=true
+                break
+              fi
+              sleep 5
+            done
+
+            if [ "$frontend_ready" != "true" ]; then
+              echo "Frontend health check FAILED"
+              docker compose --profile frontend-static logs --tail=50 frontend || true
+              exit 1
+            fi
 
             # 빌드 후 쓸모없는 이미지 정리
             docker image prune -f

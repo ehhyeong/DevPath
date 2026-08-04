@@ -778,7 +778,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
       ) : null}
 
       <div className="instructor-qna-main flex min-h-[calc(100vh-64px)] flex-col xl:flex-row">
-        <section className="instructor-qna-inbox w-full shrink-0 border-r border-gray-200 bg-white xl:w-[390px]">
+        <section className="instructor-qna-inbox w-full shrink-0 border-r border-gray-200 bg-white xl:w-[400px]! xl:flex-[0_0_400px]!">
           <div className="border-b border-gray-100 p-6">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-xl font-black text-gray-900">수강생 Q&amp;A</h2>

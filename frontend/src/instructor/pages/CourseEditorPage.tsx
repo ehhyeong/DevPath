@@ -1185,8 +1185,8 @@ export default function CourseEditorPage() {
         </div>
       ) : null}
 
-      <div className="course-editor-layout grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="course-editor-main-column space-y-8 lg:col-span-2">
+      <div className="course-editor-layout grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1180px)_360px]! lg:justify-start!">
+        <div className="course-editor-main-column space-y-8 lg:max-w-[1180px]! lg:[grid-column:auto/span_1]!">
           <section className="course-editor-card rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h3 className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-2 font-bold text-gray-900">
               <i className="fas fa-info-circle text-gray-400" /> 기본 정보
@@ -1555,7 +1555,7 @@ export default function CourseEditorPage() {
           </section>
         </div>
 
-        <div className="course-editor-side-column space-y-6">
+        <div className="course-editor-side-column space-y-6 lg:w-[360px]! lg:max-w-[360px]! lg:[grid-column:auto/span_1]!">
           <section className="course-editor-media-card sticky rounded-xl border border-gray-200 bg-white p-6 shadow-sm" style={sideCardStickyStyle}>
             <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-gray-900">
               <i className="fas fa-photo-video text-gray-400" /> 미디어 설정

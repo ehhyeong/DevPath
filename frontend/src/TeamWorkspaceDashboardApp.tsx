@@ -509,12 +509,12 @@ export default function TeamWorkspaceDashboardApp() {
         </div>
 
         <nav className="custom-scrollbar flex-1 space-y-2 overflow-y-auto overflow-x-hidden px-3">
-          <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Team Dashboard</p>
-          <a href={navHref('/team-ws-dashboard', workspaceId)} className="nav-item active">
+          <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Team Dashboard</p>
+          <a href={navHref('/team-ws-dashboard', workspaceId)} className="workspace-nav-item active">
             <i className="fas fa-chart-line w-6 text-center text-lg"></i>
             <span className="sidebar-text">프로젝트 대시보드</span>
           </a>
-          <a href={navHref('/team-ws-milestone', workspaceId)} className="nav-item">
+          <a href={navHref('/team-ws-milestone', workspaceId)} className="workspace-nav-item">
             <div className="relative w-6 text-center text-lg">
               <i className="fas fa-flag-checkered"></i>
               {hasDashboardData ? <span className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full border border-white bg-red-500"></span> : null}
@@ -523,20 +523,20 @@ export default function TeamWorkspaceDashboardApp() {
           </a>
 
           <div className="mx-2 my-2 h-px bg-gray-100"></div>
-          <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Collaboration</p>
+          <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Collaboration</p>
 
           {TEAM_WORKSPACE_COLLABORATION_NAV.map((item) => (
-            <a key={item.key} href={navHref(item.path, workspaceId)} className="nav-item">
+            <a key={item.key} href={navHref(item.path, workspaceId)} className="workspace-nav-item">
               <i className={`fas ${item.icon} w-6 text-center text-lg`}></i>
               <span className="sidebar-text">{item.title}</span>
             </a>
           ))}
 
           <div className="mx-2 my-2 h-px bg-gray-100"></div>
-          <p className="sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Resources & Live</p>
+          <p className="workspace-sidebar-section-title px-4 text-[10px] font-bold uppercase text-gray-400">Resources & Live</p>
 
           {TEAM_WORKSPACE_RESOURCE_NAV.map((item) => (
-            <a key={item.key} href={navHref(item.path, workspaceId)} className="nav-item">
+            <a key={item.key} href={navHref(item.path, workspaceId)} className="workspace-nav-item">
               <i className={`fas ${item.icon} w-6 text-center text-lg`}></i>
               <span className="sidebar-text">{item.title}</span>
             </a>

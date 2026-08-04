@@ -1467,7 +1467,7 @@ export default function SquadErdApp() {
   }
 
   return (
-    <div className="squad-dashboard-page squad-erd-page flex h-screen w-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[#374151] [&_.fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards] [&_.modal-enter]:[animation:modalScaleIn_0.2s_ease-out_forwards]">
+    <div className="squad-dashboard-page squad-erd-page flex h-screen w-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[#374151] [&_.squad-erd-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards] [&_.squad-erd-modal-enter]:[animation:modalScaleIn_0.2s_ease-out_forwards]">
       <SquadWorkspaceAside activePage="erd" workspaceId={workspaceId} projectName={projectName} />
 
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
@@ -1566,7 +1566,7 @@ export default function SquadErdApp() {
                     </div>
                   ) : (
                     schema.tables.map((table, tableIndex) => (
-                      <div key={table.id} className={`erd-table-card fade-in overflow-hidden rounded-[12px]! border border-gray-200 bg-white shadow-sm ${tableIndex > 0 ? 'mt-[16px]!' : ''}`}>
+                      <div key={table.id} className={`erd-table-card squad-erd-fade-in overflow-hidden rounded-[12px]! border border-gray-200 bg-white shadow-sm ${tableIndex > 0 ? 'mt-[16px]!' : ''}`}>
                         <div className="erd-table-card-header group flex min-h-[41px] items-center justify-between border-b border-gray-100 bg-gray-50 p-[12px]!">
                           <input
                             type="text"

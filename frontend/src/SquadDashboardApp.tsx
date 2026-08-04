@@ -841,7 +841,7 @@ export default function SquadDashboardApp() {
 
     if (message.isMine) {
       return (
-        <div key={message.messageId} className="flex flex-col items-end gap-1 fade-in">
+        <div key={message.messageId} className="squad-dashboard-fade-in flex flex-col items-end gap-1">
           <div className="flex items-baseline gap-1.5 mb-0.5">
             <span className="text-[9px] font-bold text-gray-400">{formatChatTime(message.createdAt)}</span>
           </div>
@@ -853,7 +853,7 @@ export default function SquadDashboardApp() {
     }
 
     return (
-      <div key={message.messageId} className="flex gap-2.5 items-start fade-in">
+      <div key={message.messageId} className="squad-dashboard-fade-in flex items-start gap-2.5">
         <UserAvatar
           name={senderName}
           imageUrl={imageUrl}
@@ -880,7 +880,7 @@ export default function SquadDashboardApp() {
 
     if (message.isMine) {
       return (
-        <div key={message.messageId} className="flex flex-col items-end gap-1 fade-in">
+        <div key={message.messageId} className="squad-dashboard-fade-in flex flex-col items-end gap-1">
           <span className="text-[9px] font-bold text-gray-400">{formatChatTime(message.createdAt)}</span>
           <div className="bg-gray-900 text-white text-sm px-3.5 py-2 rounded-2xl rounded-tr-none shadow-sm inline-block max-w-[80%] leading-relaxed">
             {message.content}
@@ -890,7 +890,7 @@ export default function SquadDashboardApp() {
     }
 
     return (
-      <div key={message.messageId} className="flex gap-2.5 items-start fade-in">
+      <div key={message.messageId} className="squad-dashboard-fade-in flex items-start gap-2.5">
         <UserAvatar
           name={senderName}
           imageUrl={imageUrl}
@@ -912,7 +912,7 @@ export default function SquadDashboardApp() {
 
   function renderPipChat() {
     return (
-      <div className="squad-dashboard-page flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
+      <div className="squad-dashboard-page flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.squad-dashboard-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
         <div className="h-12 border-b border-gray-100 flex items-center justify-between px-4 bg-white shrink-0">
           <h2 className="font-extrabold text-sm text-gray-900 flex items-center gap-2 truncate">
             <i className="fas fa-comments text-brand"></i>
@@ -1105,7 +1105,7 @@ export default function SquadDashboardApp() {
   const showChatPanel = chatOpen && !chatInPip
 
   return (
-    <div className="squad-dashboard-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
+    <div className="squad-dashboard-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.squad-dashboard-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
       <SquadWorkspaceAside
         activePage="dashboard"
         workspaceId={workspaceId}
@@ -1252,7 +1252,7 @@ export default function SquadDashboardApp() {
                       {erdChanges.slice(0, 3).map(renderErdChange)}
                     </div>
                   ) : (
-                    <div className="fade-in flex flex-col items-center justify-center py-6 text-center border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
+                    <div className="squad-dashboard-fade-in flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-100 bg-gray-50/50 py-6 text-center">
                       <i className="fas fa-project-diagram text-xl text-gray-200 mb-2"></i>
                       <p className="text-gray-500 font-bold text-sm">설계 변경 내역이 없습니다</p>
                     </div>
@@ -1320,7 +1320,7 @@ export default function SquadDashboardApp() {
                       </a>
                     </div>
                   ) : (
-                    <div className="squad-dashboard-empty-panel squad-dashboard-compact-empty-panel fade-in flex box-border flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-100 bg-gray-50/50 py-[16px]! text-center">
+                    <div className="squad-dashboard-empty-panel squad-dashboard-compact-empty-panel squad-dashboard-fade-in flex box-border flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-100 bg-gray-50/50 py-[16px]! text-center">
                       <i className="fas fa-headset mb-[6px]! text-[16px]! leading-[20px]! text-gray-200"></i>
                       <p className="mb-[4px]! text-[12px]! leading-[16px]! font-bold text-gray-500">진행 중인 회의가 없습니다</p>
                       <a href={navHref('/squad-meeting', workspaceId)} className="squad-dashboard-compact-button mt-[8px]! inline-flex min-h-[26px]! box-border items-center justify-center whitespace-nowrap rounded-[8px]! border border-gray-200 bg-white px-[10px]! py-0! text-[11px]! leading-[14px]! font-bold text-gray-600 shadow-sm transition hover:bg-gray-50">

@@ -825,7 +825,7 @@ export default function SquadFilesApp() {
             }
           }
         }}
-        className="file-row squad-files-row group/file-row grid min-h-[56px] grid-cols-12 items-center gap-[16px]! border-b border-gray-50 p-[16px]! cursor-pointer fade-in [transition:background-color_0.15s_ease] hover:bg-[#F9FAFB]"
+        className="file-row squad-files-row squad-files-fade-in group/file-row grid min-h-[56px] cursor-pointer grid-cols-12 items-center gap-[16px]! border-b border-gray-50 p-[16px]! [transition:background-color_0.15s_ease] hover:bg-[#F9FAFB]"
       >
         <div className="col-span-6 flex items-center gap-3 pl-2 min-w-0">
           <i className={`${iconClass(item)} text-xl w-[24px]! shrink-0 text-center text-[20px]! leading-[28px]!`}></i>
@@ -929,7 +929,7 @@ export default function SquadFilesApp() {
   }
 
   return (
-    <div className="squad-dashboard-page squad-files-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[16px] text-gray-800 [&_.fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
+    <div className="squad-dashboard-page squad-files-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[16px] text-gray-800 [&_.squad-files-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
       <SquadWorkspaceAside activePage="files" workspaceId={workspaceId} projectName={projectName} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
@@ -1075,7 +1075,7 @@ export default function SquadFilesApp() {
                   {visibleFiles.length > 0 ? (
                     visibleFiles.map((item) => renderFileRow(item))
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-48 text-gray-400 fade-in">
+                    <div className="squad-files-fade-in flex h-48 flex-col items-center justify-center text-gray-400">
                       <i className="fas fa-folder-open text-4xl mb-3 opacity-50"></i>
                       <p className="text-sm font-bold">이 폴더가 비어있거나 조건에 맞는 파일이 없습니다.</p>
                     </div>
@@ -1115,7 +1115,7 @@ export default function SquadFilesApp() {
 
       {previewItem ? (
         <div className="modal active squad-files-preview-modal fixed inset-0 z-[1200] flex items-center justify-center bg-gray-900/80 p-[16px]! backdrop-blur-md">
-          <div className="squad-files-preview-panel relative flex h-[85vh]! max-h-[85vh]! w-[min(1024px,calc(100vw-32px))]! max-w-[1024px]! flex-col overflow-hidden rounded-[16px]! bg-white shadow-2xl fade-in">
+          <div className="squad-files-preview-panel squad-files-fade-in relative flex h-[85vh]! max-h-[85vh]! w-[min(1024px,calc(100vw-32px))]! max-w-[1024px]! flex-col overflow-hidden rounded-[16px]! bg-white shadow-2xl">
             <div className="squad-files-preview-header flex min-h-[65px] shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 px-[24px]! py-[16px]!">
               <div className="flex items-center gap-3 min-w-0">
                 <i className={`${iconClass(previewItem)} text-xl w-6 text-center shrink-0`}></i>
@@ -1267,7 +1267,7 @@ export default function SquadFilesApp() {
 
       {uploadModalOpen ? (
         <div className="modal active squad-files-upload-modal fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-[16px]! backdrop-blur-sm">
-          <form onSubmit={uploadFile} className="squad-files-upload-panel relative flex w-[min(512px,calc(100vw-32px))]! max-w-[512px]! flex-col overflow-hidden rounded-[24px]! bg-white p-[32px]! shadow-2xl fade-in">
+          <form onSubmit={uploadFile} className="squad-files-upload-panel squad-files-fade-in relative flex w-[min(512px,calc(100vw-32px))]! max-w-[512px]! flex-col overflow-hidden rounded-[24px]! bg-white p-[32px]! shadow-2xl">
             <div className="mb-[24px]! flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-[20px]! leading-[28px]! font-extrabold text-gray-900">
                 <i className="fas fa-cloud-upload-alt text-brand"></i> 현재 폴더에 업로드
@@ -1333,7 +1333,7 @@ export default function SquadFilesApp() {
 
       {folderModalOpen ? (
         <div className="modal active squad-files-folder-modal fixed inset-0 z-[1050] flex items-center justify-center bg-gray-900/60 p-[16px]! backdrop-blur-sm">
-          <form onSubmit={createFolder} className="squad-files-folder-panel relative flex w-[min(384px,calc(100vw-32px))]! max-w-[384px]! flex-col overflow-hidden rounded-[24px]! bg-white p-[24px]! shadow-2xl fade-in">
+          <form onSubmit={createFolder} className="squad-files-folder-panel squad-files-fade-in relative flex w-[min(384px,calc(100vw-32px))]! max-w-[384px]! flex-col overflow-hidden rounded-[24px]! bg-white p-[24px]! shadow-2xl">
             <h3 className="mb-[16px]! flex items-center gap-2 text-[18px]! leading-[28px]! font-extrabold text-gray-900">
               <i className="fas fa-folder-plus text-yellow-500"></i> 새 폴더 만들기
             </h3>

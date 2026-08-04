@@ -829,7 +829,7 @@ export default function SquadScheduleApp() {
       </div>
 
       {modalOpen ? (
-        <div className="modal active squad-schedule-modal fixed inset-0 z-[1050]! flex items-center justify-center bg-gray-900/60 p-4 opacity-100 visible [transition:opacity_0.2s,visibility_0.2s] backdrop-blur-sm">
+        <div className="squad-schedule-modal fixed inset-0 z-[1050]! flex items-center justify-center bg-gray-900/60 p-4 opacity-100 visible [transition:opacity_0.2s,visibility_0.2s] backdrop-blur-sm">
           <form onSubmit={saveSchedule} className="squad-schedule-modal-content relative flex max-h-[calc(100vh-32px)] w-[448px]! max-w-[calc(100vw-32px)]! flex-col overflow-hidden rounded-[16px] bg-white shadow-2xl">
             <div className="squad-schedule-modal-header flex min-h-[72px] shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 px-[24px]! py-[20px]!">
               <h3 className="squad-schedule-modal-title m-0 flex items-center gap-2 text-[18px]! leading-[28px]! font-extrabold text-gray-900">
