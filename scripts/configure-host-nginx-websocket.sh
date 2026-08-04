@@ -69,17 +69,20 @@ done
 
 snippet_file="${backup_dir}/devpath-websocket.conf"
 cat > "${snippet_file}" <<'EOF'
+client_max_body_size 55m;
+
 location /ws/ {
     proxy_pass http://127.0.0.1:8083;
     proxy_http_version 1.1;
+    access_log off;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_read_timeout 3600s;
-    proxy_send_timeout 3600s;
+    proxy_read_timeout 86400s;
+    proxy_send_timeout 86400s;
 }
 EOF
 
@@ -89,4 +92,4 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 rollback_required=false
-echo "devpath.kr WebSocket 프록시 설정을 적용했습니다."
+echo "devpath.kr 업로드와 WebSocket 프록시 설정을 적용했습니다."
