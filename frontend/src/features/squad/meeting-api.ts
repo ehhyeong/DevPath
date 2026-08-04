@@ -1,4 +1,4 @@
-import { projectApiRequest } from './features/project/api'
+import { projectApiRequest } from '../project/api'
 
 import type {
   VoiceChannel,
@@ -10,7 +10,7 @@ import type {
   VoiceParticipant,
   VoicePresence,
   WorkspaceDashboard,
-} from './squad-meeting-types'
+} from './meeting-types'
 
 export async function loadSquadMeetingInitialData(workspaceId: number) {
   const dashboard = await projectApiRequest<WorkspaceDashboard>(`/api/workspaces/${workspaceId}/dashboard`, {}, 'required')

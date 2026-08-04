@@ -1,4 +1,4 @@
-import type { TaskPriority, WorkspaceMember, WorkspaceTask } from './team-workspace-types'
+import type { TaskPriority, WorkspaceMember, WorkspaceTask } from './types'
 export function getWorkspaceIdFromUrl() {
   const params = new URLSearchParams(window.location.search)
   const value = params.get('workspaceId') ?? params.get('squadId')

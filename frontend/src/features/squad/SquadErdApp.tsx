@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import SquadWorkspaceAside from './components/SquadWorkspaceAside'
-import UserAvatar from './components/UserAvatar'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
-import { showAuthToast } from './lib/auth-toast'
-import { projectApiRequest } from './features/project/api'
-import { createSquadNotification, squadActorName } from './squad-notifications'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
+import UserAvatar from '../../components/UserAvatar'
+import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
+import { projectApiRequest } from '../project/api'
+import { createSquadNotification, squadActorName } from './notifications'
 
 import type {
   ErdColumn,
@@ -19,7 +19,7 @@ import type {
   MermaidApi,
   TeamMessage,
   WorkspaceMember,
-} from './squad-erd-types'
+} from './erd-types'
 
 const EMPTY_SCHEMA: ErdSchema = {
   tables: [],

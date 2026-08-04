@@ -1,4 +1,4 @@
-import { projectApiRequest } from './features/project/api'
+import { projectApiRequest } from '../project/api'
 
 import type {
   ActivityLogItem,
@@ -14,7 +14,7 @@ import type {
   WorkspaceDoc,
   WorkspaceFile,
   WorkspaceTask,
-} from './instructor-team-workspace-types'
+} from './instructor-types'
 
 export type InstructorTeamTaskPayload = {
   title: string

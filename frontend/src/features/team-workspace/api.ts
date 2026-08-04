@@ -1,5 +1,5 @@
-import { readStoredAuthSession } from './lib/auth-session'
-import { projectApiRequest } from './features/project/api'
+import { readStoredAuthSession } from '../../lib/auth-session'
+import { projectApiRequest } from '../project/api'
 import type {
   ActivityLog,
   CalendarEvent,
@@ -15,7 +15,7 @@ import type {
   WorkspaceFile,
   WorkspaceFileStorage,
   WorkspaceTask,
-} from './team-workspace-types'
+} from './types'
 
 type TaskPayload = {
   title: string

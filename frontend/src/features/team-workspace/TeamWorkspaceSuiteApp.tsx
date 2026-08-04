@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type WheelEvent as ReactWheelEvent } from 'react'
-import LoginRequiredView from './components/LoginRequiredView'
-import TeamWorkspaceHeader from './components/TeamWorkspaceHeader'
-import UserAvatar from './components/UserAvatar'
-import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import TeamWorkspaceHeader from '../../components/TeamWorkspaceHeader'
+import UserAvatar from '../../components/UserAvatar'
+import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
 import {
   TEAM_WORKSPACE_COLLABORATION_NAV,
   TEAM_WORKSPACE_PAGE_META,
   TEAM_WORKSPACE_RESOURCE_NAV,
-} from './team-workspace-nav'
+} from './nav'
 
 import {
   KANBAN_COLUMNS,
@@ -16,7 +16,7 @@ import {
   QUESTION_TAGS,
   ROLE_FILTERS,
   TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME,
-} from './team-workspace-constants'
+} from './constants'
 import {
   adoptTeamWorkspaceAnswer,
   createTeamWorkspaceEvent,
@@ -37,7 +37,7 @@ import {
   updateTeamWorkspaceTaskAssignee,
   updateTeamWorkspaceTaskStatus,
   uploadTeamWorkspaceFile,
-} from './team-workspace-api'
+} from './api'
 import {
   clampNumber,
   fallbackMemberPosition,
@@ -64,7 +64,7 @@ import {
   stripTaskRolePrefix,
   taskRoleBadgeClass,
   taskTicketCode,
-} from './team-workspace-utils'
+} from './utils'
 import type {
   ArchitectureApiEndpoint,
   CalendarEvent,
@@ -86,7 +86,7 @@ import type {
   WorkspaceFile,
   WorkspaceMember,
   WorkspaceTask,
-} from './team-workspace-types'
+} from './types'
 
 const PAGE_META = TEAM_WORKSPACE_PAGE_META
 

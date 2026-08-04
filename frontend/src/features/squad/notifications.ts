@@ -1,4 +1,4 @@
-import { projectApiRequest } from './features/project/api'
+import { projectApiRequest } from '../project/api'
 
 export const SQUAD_NOTIFICATION_CREATED_EVENT = 'squad-notification-created'
 

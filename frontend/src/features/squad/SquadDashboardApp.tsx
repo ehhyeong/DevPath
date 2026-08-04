@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import SquadWorkspaceAside from './components/SquadWorkspaceAside'
-import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
-import UserAvatar from './components/UserAvatar'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
-import { showAuthToast } from './lib/auth-toast'
-import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
-import { projectApiRequest } from './features/project/api'
-import { createSquadNotification, squadActorName } from './squad-notifications'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
+import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
+import UserAvatar from '../../components/UserAvatar'
+import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
+import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
+import { projectApiRequest } from '../project/api'
+import { createSquadNotification, squadActorName } from './notifications'
 
 import type {
   ActivityLog,
@@ -23,7 +23,7 @@ import type {
   WorkspaceMember,
   WorkspaceStatus,
   WorkspaceTask,
-} from './squad-dashboard-types'
+} from './dashboard-types'
 
 function copyDocumentPictureInPictureStyles(pipWindow: Window) {
   const baseStyle = pipWindow.document.createElement('style')

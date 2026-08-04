@@ -18,14 +18,14 @@ function useLatest<T>(value: T) {
 
   return ref
 }
-import AuthModal, { type AuthView } from './components/AuthModal'
-import SquadWorkspaceAside from './components/SquadWorkspaceAside'
-import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
-import UserAvatar from './components/UserAvatar'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
-import { showAuthToast } from './lib/auth-toast'
-import { createSquadNotification, squadActorName } from './squad-notifications'
-import { getVoiceIceServers } from './voice-webrtc'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
+import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
+import UserAvatar from '../../components/UserAvatar'
+import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
+import { createSquadNotification, squadActorName } from './notifications'
+import { getVoiceIceServers } from '../../lib/voice-webrtc'
 import {
   appendSquadVoiceMinutesTranscriptLine,
   clearSquadVoiceChatMessages,
@@ -42,7 +42,7 @@ import {
   sendSquadVoiceChatMessage,
   touchSquadVoicePresence,
   updateSquadVoiceMinutes,
-} from './squad-meeting-api'
+} from './meeting-api'
 
 import type {
   AudioDeviceOption,
@@ -77,7 +77,7 @@ import type {
   WindowWithSpeechRecognition,
   WorkspaceDashboard,
   WorkspaceMember,
-} from './squad-meeting-types'
+} from './meeting-types'
 
 function MediaStreamVideo({
   stream,

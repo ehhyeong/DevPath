@@ -4,7 +4,7 @@ import { projectApiRequest } from '../features/project/api'
 import {
   SQUAD_NOTIFICATION_CREATED_EVENT,
   type SquadHeaderNotification,
-} from '../squad-notifications'
+} from '../features/squad/notifications'
 
 type SquadHeaderMember = {
   memberId: number

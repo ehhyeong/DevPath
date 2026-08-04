@@ -1,4 +1,4 @@
-import { projectApiRequest } from './features/project/api'
+import { projectApiRequest } from '../project/api'
 
 import type {
   CalendarEvent,
@@ -18,7 +18,7 @@ import type {
   WorkspaceFile,
   WorkspaceNotice,
   WorkspaceTask,
-} from './mentoring-common-workspace-types'
+} from './common-types'
 
 type Nullable<T> = T | null
 

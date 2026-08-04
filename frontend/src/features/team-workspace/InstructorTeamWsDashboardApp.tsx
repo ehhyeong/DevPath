@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import { clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
-import { showAuthToast } from './lib/auth-toast'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import { clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
 import {
   createInstructorTeamCalendarEvent,
   createInstructorTeamFileLink,
@@ -23,7 +23,7 @@ import {
   updateInstructorTeamTaskStatus,
   updateInstructorTeamWorkspaceFile,
   uploadInstructorTeamWorkspaceFile,
-} from './instructor-team-workspace-api'
+} from './instructor-api'
 
 import type {
   ActivityLogItem,
@@ -42,7 +42,7 @@ import type {
   WorkspaceFile,
   WorkspaceMember,
   WorkspaceTask,
-} from './instructor-team-workspace-types'
+} from './instructor-types'
 
 const EMPTY_DATA: TeamData = {
   dashboard: null,

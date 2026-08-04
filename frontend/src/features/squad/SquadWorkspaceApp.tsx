@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import SquadWorkspaceAside from './components/SquadWorkspaceAside'
-import SquadWorkspaceHeader from './components/SquadWorkspaceHeader'
-import UserAvatar from './components/UserAvatar'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
-import { projectApiRequest } from './features/project/api'
-import { createSquadNotification, squadActorName } from './squad-notifications'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
+import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
+import UserAvatar from '../../components/UserAvatar'
+import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
+import { projectApiRequest } from '../project/api'
+import { createSquadNotification, squadActorName } from './notifications'
 
 import type {
   FilterType,
@@ -14,7 +14,7 @@ import type {
   TaskStatus,
   WorkspaceDashboard,
   WorkspaceTask,
-} from './squad-workspace-types'
+} from './workspace-types'
 
 const TASK_COLUMNS: Array<{
   id: TaskStatus

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import { clearStoredAuthSession, readStoredAuthSession, refreshStoredAuthSession } from './lib/auth-session'
-import { showAuthToast } from './lib/auth-toast'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import { clearStoredAuthSession, readStoredAuthSession, refreshStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
 import {
   createInstructorWorkspaceCalendarEvent,
   createInstructorWorkspaceFileLink,
@@ -18,8 +18,8 @@ import {
   updateInstructorWorkspaceTask,
   uploadInstructorWorkspaceFile,
 } from './instructor-workspace-api'
-import type { ApiEnvelope } from './features/project/api'
-import { getVoiceIceServers } from './voice-webrtc'
+import type { ApiEnvelope } from '../project/api'
+import { getVoiceIceServers } from '../../lib/voice-webrtc'
 
 import type {
   ActivityLogItem,

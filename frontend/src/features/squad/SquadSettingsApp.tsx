@@ -1,11 +1,11 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import SquadWorkspaceAside from './components/SquadWorkspaceAside'
-import UserAvatar from './components/UserAvatar'
-import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from './lib/auth-session'
-import { showAuthToast } from './lib/auth-toast'
-import { projectApiRequest } from './features/project/api'
-import { createSquadNotification, squadActorName } from './squad-notifications'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
+import UserAvatar from '../../components/UserAvatar'
+import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
+import { projectApiRequest } from '../project/api'
+import { createSquadNotification, squadActorName } from './notifications'
 
 import type {
   ExternalIntegration,
@@ -16,7 +16,7 @@ import type {
   WorkspaceSettings,
   WorkspaceStatus,
   WorkspaceType,
-} from './squad-settings-types'
+} from './settings-types'
 
 const settingsTabs: Array<{ id: SettingsTab; label: string; icon: string }> = [
   { id: 'general', label: '일반 설정', icon: 'fas fa-sliders-h' },

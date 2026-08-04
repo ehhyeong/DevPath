@@ -1,4 +1,4 @@
-import type { TeamWorkspaceNavKey } from './team-workspace-nav'
+import type { TeamWorkspaceNavKey } from './nav'
 
 export type TeamWorkspacePage = TeamWorkspaceNavKey
 

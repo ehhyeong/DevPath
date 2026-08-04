@@ -7,15 +7,15 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import UserAvatar from './components/UserAvatar'
-import { userApi } from './lib/api'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import UserAvatar from '../../components/UserAvatar'
+import { userApi } from '../../lib/api'
 import {
   getPostLoginRedirect,
   readStoredAuthSession,
-} from './lib/auth-session'
-import { showAuthToast } from './lib/auth-toast'
-import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
+} from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
+import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
 import {
   createMentoringCalendarEvent,
   createMentoringFileLink,
@@ -30,7 +30,7 @@ import {
   sendMentoringDirectMessage,
   updateMentoringTaskStatus,
   uploadMentoringWorkspaceFile,
-} from './mentoring-common-workspace-api'
+} from './common-api'
 
 import type {
   CalendarEvent,
@@ -50,7 +50,7 @@ import type {
   WorkspaceFile,
   WorkspaceMember,
   WorkspaceTask,
-} from './mentoring-common-workspace-types'
+} from './common-types'
 
 type RenderedMentoringCommonPage = Exclude<MentoringCommonPage, 'live-meeting'>
 

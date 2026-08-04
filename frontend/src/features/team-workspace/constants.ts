@@ -1,4 +1,4 @@
-import type { TaskStatus } from './team-workspace-types'
+import type { TaskStatus } from './types'
 
 export const TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME = [
   '[--team-ws-primary:#4F46E5]',

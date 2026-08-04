@@ -1,7 +1,7 @@
 import { Fragment, type ReactElement } from 'react'
 import { createRoot } from 'react-dom/client'
-import AuthToastViewport from './components/AuthToastViewport'
-import './index.css'
+import AuthToastViewport from '../components/AuthToastViewport'
+import '../index.css'
 
 type RenderPageOptions = {
   rootId?: string
