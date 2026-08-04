@@ -1,5 +1,5 @@
-import type { AuthSession } from './types/auth'
-import type { InstructorChannel, InstructorFeaturedCourse } from './types/instructor'
+import type { AuthSession } from '../../types/auth'
+import type { InstructorChannel, InstructorFeaturedCourse } from '../../types/instructor'
 
 const CUSTOMIZATION_STORAGE_PREFIX = 'devpath.instructor-channel.customization'
 const LEGACY_INSTRUCTOR_PROFILE_IMAGE_URLS = new Set([

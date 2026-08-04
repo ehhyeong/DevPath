@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
-import LoginRequiredGate from './components/LoginRequiredView'
-import SiteHeader from './components/SiteHeader'
-import UserAvatar from './components/UserAvatar'
+import LoginRequiredGate from '../../components/LoginRequiredView'
+import SiteHeader from '../../components/SiteHeader'
+import UserAvatar from '../../components/UserAvatar'
 import {
   buildMyInstructorProfileHref,
   defaultInstructorBannerImageUrl,
@@ -13,18 +13,18 @@ import {
   writeInstructorChannelCustomization,
   type InstructorChannelListItem,
   type InstructorChannelNoticeItem,
-} from './instructor-channel-customization'
-import { authApi, instructorCourseApi, publicInstructorApi, userApi } from './lib/api'
+} from '../channel/customization'
+import { authApi, instructorCourseApi, publicInstructorApi, userApi } from '../../lib/api'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
   readStoredAuthSession,
   updateStoredAuthSession,
-} from './lib/auth-session'
-import { notifyProfileUpdated } from './lib/profile-sync'
-import type { AuthSession } from './types/auth'
-import type { InstructorChannel, InstructorCourseListItem, InstructorFeaturedCourse } from './types/instructor'
-import type { UserProfile } from './types/learner'
+} from '../../lib/auth-session'
+import { notifyProfileUpdated } from '../../lib/profile-sync'
+import type { AuthSession } from '../../types/auth'
+import type { InstructorChannel, InstructorCourseListItem, InstructorFeaturedCourse } from '../../types/instructor'
+import type { UserProfile } from '../../types/learner'
 
 type EditFormState = {
   displayName: string

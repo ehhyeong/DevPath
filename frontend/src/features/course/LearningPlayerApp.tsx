@@ -1,8 +1,8 @@
 import { startTransition, type DragEvent, useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
-import { captureAndOcr, warmupOcrWorker, type ScreenRegion } from './lib/videoOcr'
-import { courseApi, learnerAssignmentApi, learningPlayerApi, lessonNoteApi, lessonSessionApi, nodeClearanceApi, qnaApi } from './lib/api'
-import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './lib/auth-session'
-import LoginRequiredGate from './components/LoginRequiredView'
+import { captureAndOcr, warmupOcrWorker, type ScreenRegion } from '../../lib/videoOcr'
+import { courseApi, learnerAssignmentApi, learningPlayerApi, lessonNoteApi, lessonSessionApi, nodeClearanceApi, qnaApi } from '../../lib/api'
+import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
+import LoginRequiredGate from '../../components/LoginRequiredView'
 import {
   createDefaultProgress,
   formatDateLabel,
@@ -19,7 +19,7 @@ import {
   type FlattenedLesson,
   writeJsonStorage,
 } from './learning-player-support'
-import type { AuthSession } from './types/auth'
+import type { AuthSession } from '../../types/auth'
 import type {
   AssignmentPrecheckResponse,
   AssignmentSubmissionResponse,
@@ -33,14 +33,14 @@ import type {
   LearningVideoSource,
   SubmissionHistoryItem,
   TimestampNote,
-} from './types/learning'
+} from '../../types/learning'
 import type {
   CreateQnaQuestionRequest,
   QnaDifficulty,
   QnaQuestionDetail,
   QnaQuestionSummary,
   QnaQuestionTemplate,
-} from './types/qna'
+} from '../../types/qna'
 
 type TabKey = 'curriculum' | 'qna' | 'notes'
 type QnaStatusFilter = 'ALL' | 'MINE' | 'UNANSWERED'

@@ -1,5 +1,5 @@
-import { sanitizeInstructorProfileImageUrl } from './instructor-channel-customization'
-import type { InstructorChannel, InstructorFeaturedCourse } from './types/instructor'
+import { sanitizeInstructorProfileImageUrl } from './customization'
+import type { InstructorChannel, InstructorFeaturedCourse } from '../../types/instructor'
 
 export type InstructorChannelTabKey = 'home' | 'playlist' | 'community' | 'reviews'
 export type PlaylistFilterKey = 'all' | 'beginner' | 'intermediate' | 'advanced' | 'project' | 'bestseller'

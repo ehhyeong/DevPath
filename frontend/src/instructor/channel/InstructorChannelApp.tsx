@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import SiteHeader from './components/SiteHeader'
-import UserAvatar from './components/UserAvatar'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SiteHeader from '../../components/SiteHeader'
+import UserAvatar from '../../components/UserAvatar'
 import {
   applyInstructorChannelCustomization,
   buildMyInstructorEditProfileHref,
@@ -9,7 +9,7 @@ import {
   readInstructorChannelCustomization,
   type InstructorChannelListItem,
   type InstructorChannelNoticeItem,
-} from './instructor-channel-customization'
+} from './customization'
 import {
   buildPlaylistSections,
   buildRatingFilterKey,
@@ -35,11 +35,11 @@ import {
   type PlaylistFilterKey,
   type ReviewFilterKey,
   type ReviewSortKey,
-} from './instructor-channel-support'
-import { authApi, instructorSubscriptionApi, publicInstructorApi, userApi } from './lib/api'
-import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
-import { useInternalPageScroll } from './lib/useInternalPageScroll'
-import type { InstructorChannel } from './types/instructor'
+} from './support'
+import { authApi, instructorSubscriptionApi, publicInstructorApi, userApi } from '../../lib/api'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
+import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
+import type { InstructorChannel } from '../../types/instructor'
 
 type WriteCategory = Exclude<CommunityCategory, 'notice'>
 

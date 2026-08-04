@@ -1,4 +1,4 @@
-import type { LearningCourseDetail, LearningLesson, LearningLessonProgress } from './types/learning'
+import type { LearningCourseDetail, LearningLesson, LearningLessonProgress } from '../../types/learning'
 
 export type FlattenedLesson = LearningLesson & {
   sectionId: number

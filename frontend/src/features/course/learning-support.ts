@@ -10,7 +10,7 @@ import type {
   LearningQuizDraft,
   QuizAttemptResultResponse,
   SubmissionHistoryItem,
-} from './types/learning'
+} from '../../types/learning'
 
 export type FlattenedLesson = LearningLesson & {
   sectionId: number

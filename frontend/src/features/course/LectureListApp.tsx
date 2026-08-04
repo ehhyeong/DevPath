@@ -1,6 +1,6 @@
 import { startTransition, useDeferredValue, useEffect, useRef, useState } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import SiteHeader from './components/SiteHeader'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SiteHeader from '../../components/SiteHeader'
 import {
   fallbackLectureCourses,
   formatCoursePrice,
@@ -16,10 +16,10 @@ import {
   type LecturePriceFilter,
   type LectureSortKey,
 } from './lecture-list-support'
-import { authApi, courseApi, userApi, wishlistApi } from './lib/api'
-import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
-import { useInternalPageScroll } from './lib/useInternalPageScroll'
-import type { CourseCatalogMenu } from './types/course-catalog'
+import { authApi, courseApi, userApi, wishlistApi } from '../../lib/api'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
+import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
+import type { CourseCatalogMenu } from '../../types/course-catalog'
 
 const COURSES_PER_PAGE = 8
 

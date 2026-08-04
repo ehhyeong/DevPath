@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
-import LoginRequiredGate from './components/LoginRequiredView'
-import InstructorLayout from './instructor/layout/InstructorLayout'
-import ContentAssignmentEditorPage from './instructor/pages/ContentAssignmentEditorPage'
-import { authApi, userApi } from './lib/api'
-import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
-import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
-import type { AuthSession } from './types/auth'
+import LoginRequiredGate from '../../components/LoginRequiredView'
+import InstructorLayout from '../../instructor/layout/InstructorLayout'
+import QuizCreatorPage from '../../instructor/pages/QuizCreatorPage'
+import { authApi, userApi } from '../../lib/api'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
+import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
+import type { AuthSession } from '../../types/auth'
 
 function LoginRequiredView() {
-  return <LoginRequiredGate message="과제 편집기는 로그인한 강사 계정으로만 접근할 수 있습니다." />
+  return <LoginRequiredGate message="퀴즈 생성기는 로그인한 강사 계정으로만 접근할 수 있습니다." />
 }
 
 function InstructorOnlyView() {
@@ -37,12 +37,12 @@ function InstructorOnlyView() {
   )
 }
 
-export default function ContentAssignmentEditorApp() {
+export default function QuizCreatorApp() {
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
   useEffect(() => {
-    document.title = 'DevPath - 과제 생성 및 자동 채점 설정'
+    document.title = 'DevPath - 퀴즈 생성기'
   }, [])
 
   useEffect(() => {
@@ -128,7 +128,7 @@ export default function ContentAssignmentEditorApp() {
       currentPageKey="course-management"
       onLogout={handleLogout}
     >
-      <ContentAssignmentEditorPage />
+      <QuizCreatorPage />
     </InstructorLayout>
   )
 }

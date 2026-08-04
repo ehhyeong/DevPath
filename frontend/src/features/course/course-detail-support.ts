@@ -1,6 +1,6 @@
 import { fallbackCourseDetail, normalizeCourseDetail } from './learning-support'
-import type { CourseReview } from './types/course'
-import type { LearningCourseDetail, LearningLesson, LearningSection } from './types/learning'
+import type { CourseReview } from '../../types/course'
+import type { LearningCourseDetail, LearningLesson, LearningSection } from '../../types/learning'
 
 export type CourseQuestionStatus = 'pending' | 'answered'
 

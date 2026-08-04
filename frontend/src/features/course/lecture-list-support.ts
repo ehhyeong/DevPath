@@ -1,5 +1,5 @@
-import type { CourseCatalogCategory, CourseCatalogMenu } from './types/course-catalog'
-import type { CourseDifficulty, CourseListItem } from './types/course'
+import type { CourseCatalogCategory, CourseCatalogMenu } from '../../types/course-catalog'
+import type { CourseDifficulty, CourseListItem } from '../../types/course'
 
 export type LectureCategoryKey = string
 export type LectureSortKey = 'recommended' | 'latest' | 'priceAsc' | 'priceDesc' | 'title'

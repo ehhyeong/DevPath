@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { authApi, userApi } from './lib/api'
-import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
-import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from './lib/profile-sync'
-import type { AuthSession } from './types/auth'
-import LoginRequiredGate from './components/LoginRequiredView'
-import InstructorLayout from './instructor/layout/InstructorLayout'
-import InstructorCourseDetailPage from './instructor/pages/InstructorCourseDetailPage'
+import { authApi, userApi } from '../../lib/api'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
+import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
+import type { AuthSession } from '../../types/auth'
+import LoginRequiredGate from '../../components/LoginRequiredView'
+import InstructorLayout from '../layout/InstructorLayout'
+import InstructorCourseDetailPage from '../pages/InstructorCourseDetailPage'
 
 function LoginRequiredView() {
   return <LoginRequiredGate message="강의 상세 관리 화면은 로그인한 강사 계정으로만 접근할 수 있습니다." />

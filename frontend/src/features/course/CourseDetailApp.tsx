@@ -1,6 +1,6 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react'
-import AuthModal, { type AuthView } from './components/AuthModal'
-import SiteHeader from './components/SiteHeader'
+import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SiteHeader from '../../components/SiteHeader'
 import {
   buildCourseJobCards,
   buildCourseNewsCards,
@@ -23,13 +23,13 @@ import {
   type CourseQuestionItem,
   type CourseQuestionStatus,
 } from './course-detail-support'
-import { buildInstructorChannelHref } from './instructor-channel-support'
-import { authApi, courseApi, enrollmentApi, instructorCourseApi, qnaApi, reviewApi, userApi } from './lib/api'
-import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from './lib/auth-session'
-import { useInternalPageScroll } from './lib/useInternalPageScroll'
-import type { CourseReview } from './types/course'
-import type { LearningCourseDetail } from './types/learning'
-import type { CreateQnaQuestionRequest, QnaQuestionDetail, QnaQuestionSummary } from './types/qna'
+import { buildInstructorChannelHref } from '../../instructor/channel/support'
+import { authApi, courseApi, enrollmentApi, instructorCourseApi, qnaApi, reviewApi, userApi } from '../../lib/api'
+import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
+import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
+import type { CourseReview } from '../../types/course'
+import type { LearningCourseDetail } from '../../types/learning'
+import type { CreateQnaQuestionRequest, QnaQuestionDetail, QnaQuestionSummary } from '../../types/qna'
 
 type TabKey = 'info' | 'news' | 'reviews' | 'qna'
 type ReviewFilterKey = 'all' | 'five' | 'fourPlus'
