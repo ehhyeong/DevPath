@@ -211,7 +211,7 @@ export default function MyPostsPage({ session }: { session: AuthSession }) {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar currentPageKey="my-posts" wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0" />
+        <MyMenuSidebar currentPageKey="my-posts" />
 
         <section className="min-w-0 flex-1">
           {selectedPost ? (

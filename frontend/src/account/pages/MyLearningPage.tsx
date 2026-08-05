@@ -279,10 +279,7 @@ export default function MyLearningPage() {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar
-          currentPageKey="my-learning"
-          wrapperClassName="w-60 shrink-0 hidden -translate-x-[7.5px] lg:block -ml-0"
-        />
+        <MyMenuSidebar currentPageKey="my-learning" />
 
         <section className="min-w-0 flex-1">
           <h2 className="mb-6 pt-[5px] text-2xl font-bold leading-none text-gray-900">내 학습</h2>

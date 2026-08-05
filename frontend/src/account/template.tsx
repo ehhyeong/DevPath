@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import SiteHeader from '../components/SiteHeader'
 import type { AccountPageKey } from '../lib/account-navigation'
 import { useInternalPageScroll } from '../lib/useInternalPageScroll'
@@ -53,21 +53,13 @@ export function LearnerContentRow({ children }: { children: ReactNode }) {
 
 export function MyMenuSidebar({
   currentPageKey,
-  wrapperClassName = 'w-60 shrink-0 hidden lg:block -ml-0',
-  asideClassName = 'sticky top-24 pt-1.5',
-  spacerClassName,
-  wrapperStyle,
 }: {
   currentPageKey: AccountPageKey
-  wrapperClassName?: string
-  asideClassName?: string
-  spacerClassName?: string
-  wrapperStyle?: CSSProperties
 }) {
   return (
-    <div className={wrapperClassName} style={wrapperStyle}>
-      {spacerClassName ? <div className={spacerClassName} /> : null}
-      <aside className={asideClassName}>
+    <div className="hidden w-60 shrink-0 lg:block">
+      <div className="h-16" />
+      <aside className="sticky top-24 pt-1.5">
         {accountMenuSections.map((section, sectionIndex) => (
           <div key={section.title}>
             {sectionIndex > 0 ? <div className="mx-3 my-5 border-t border-gray-200" /> : null}

@@ -194,7 +194,7 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar currentPageKey="profile" wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0" />
+        <MyMenuSidebar currentPageKey="profile" />
 
         <section className="min-w-0 flex-1">
           <h2 className="mb-6 pt-[5px] text-2xl font-bold leading-none text-gray-900">프로필 관리</h2>

@@ -164,7 +164,7 @@ export default function SettingsPage(props: { session: AuthSession }) {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar currentPageKey="settings" wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0" />
+        <MyMenuSidebar currentPageKey="settings" />
 
         <section className="min-w-0 flex-1">
           <div className="mx-auto max-w-2xl space-y-6">

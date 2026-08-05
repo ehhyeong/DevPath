@@ -259,7 +259,7 @@ export default function LearningLogGalleryPage() {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar currentPageKey="learning-log-gallery" wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0" />
+        <MyMenuSidebar currentPageKey="learning-log-gallery" />
 
         <section className="min-w-0 flex-1">
           <div className="mb-8 flex flex-col items-end justify-between gap-4 md:flex-row">

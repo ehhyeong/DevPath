@@ -92,11 +92,7 @@ export default function PurchasePage() {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar
-          currentPageKey="purchase"
-          wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0"
-          spacerClassName="h-[64px]"
-        />
+        <MyMenuSidebar currentPageKey="purchase" />
 
         <section className="min-w-0 flex-1">
           <h2 className="mb-6 pt-[5px] text-2xl leading-none font-bold text-gray-900">

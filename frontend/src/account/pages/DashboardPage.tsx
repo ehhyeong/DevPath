@@ -296,7 +296,7 @@ function navigateTo(path: string) {
 function DashboardEmptyReference({ displayName }: { displayName: string }) {
   return (
     <>
-      <MyMenuSidebar currentPageKey="dashboard" wrapperClassName="w-60 shrink-0 hidden lg:block" />
+      <MyMenuSidebar currentPageKey="dashboard" />
 
       <section className="dashboard-empty-reference-main flex-1 min-w-0 space-y-6">
         <header className="mb-2 flex items-center justify-between">
@@ -743,10 +743,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar
-          currentPageKey="dashboard"
-          wrapperClassName="w-60 shrink-0 hidden lg:block"
-        />
+        <MyMenuSidebar currentPageKey="dashboard" />
 
         <section className="dashboard-populated-reference-main min-w-0 flex-1 space-y-6">
           <header className="mb-2 flex items-center justify-between">
