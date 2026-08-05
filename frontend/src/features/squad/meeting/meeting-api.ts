@@ -1,4 +1,4 @@
-import { projectApiRequest } from '../project/api'
+import { projectApiRequest } from '../../project/api'
 
 import type {
   VoiceChannel,

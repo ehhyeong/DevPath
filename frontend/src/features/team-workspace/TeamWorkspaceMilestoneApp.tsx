@@ -1,86 +1,11 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect,useMemo,useState,type FormEvent } from 'react'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import TeamWorkspaceHeader from '../../components/TeamWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
-import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT,readStoredAuthSession } from '../../lib/auth-session'
 import { projectApiRequest } from '../project/api'
-import { TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME } from './constants'
-
-type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE'
-type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-type MilestoneStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'CLOSED'
-
-type WorkspaceMember = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-  joinedAt?: string | null
-  lastActiveAt?: string | null
-  online?: boolean
-}
-
-type WorkspaceDashboard = {
-  workspaceId: number
-  name: string
-  description?: string | null
-  type: WorkspaceType
-  status: WorkspaceStatus
-  ownerId: number
-  ownerName?: string | null
-  ownerProfileImage?: string | null
-  members: WorkspaceMember[]
-  unresolvedTaskCount: number
-  activeMilestoneCount: number
-  createdAt?: string | null
-}
-
-type WorkspaceTask = {
-  taskId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  status: TaskStatus
-  priority?: TaskPriority | null
-  assigneeId?: number | null
-  dueDate?: string | null
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type Milestone = {
-  milestoneId: number
-  workspaceId: number
-  title: string
-  description?: string | null
-  startDate?: string | null
-  dueDate?: string | null
-  status: MilestoneStatus
-  createdById?: number | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type Notice = {
-  id: number
-  workspaceId: number
-  title: string
-  content?: string | null
-  createdAt?: string | null
-  updatedAt?: string | null
-}
-
-type ActivityLog = {
-  logId: number
-  workspaceId: number
-  actorId?: number | null
-  activityType: string
-  description: string
-  createdAt?: string | null
-}
+import { TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME } from './suite/constants'
+import type { ActivityLog,Milestone,Notice,WorkspaceDashboard,WorkspaceMember,WorkspaceTask } from './suite/types'
 
 type RoleKey = 'frontend' | 'backend' | 'design' | 'planning'
 type SubmissionMode = 'new' | 'resubmit'

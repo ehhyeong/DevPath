@@ -6,6 +6,7 @@ export type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
 export type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
+export type MilestoneStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'CLOSED'
 export type WorkspaceFileType = 'FILE' | 'FOLDER' | 'LINK'
 
 export type WorkspaceMember = {
@@ -18,6 +19,7 @@ export type WorkspaceMember = {
   roleLabel?: string | null
   position?: string | null
   positionLabel?: string | null
+  joinedAt?: string | null
   online?: boolean
   lastActiveAt?: string | null
 }
@@ -29,6 +31,8 @@ export type WorkspaceDashboard = {
   type: WorkspaceType
   status: WorkspaceStatus
   ownerId: number
+  ownerName?: string | null
+  ownerProfileImage?: string | null
   members: WorkspaceMember[]
   unresolvedTaskCount: number
   activeMilestoneCount: number
@@ -57,6 +61,28 @@ export type CalendarEvent = {
   startAt: string
   endAt?: string | null
   createdById?: number | null
+  createdAt?: string | null
+  updatedAt?: string | null
+}
+
+export type Milestone = {
+  milestoneId: number
+  workspaceId: number
+  title: string
+  description?: string | null
+  startDate?: string | null
+  dueDate?: string | null
+  status: MilestoneStatus
+  createdById?: number | null
+  createdAt?: string | null
+  updatedAt?: string | null
+}
+
+export type Notice = {
+  id: number
+  workspaceId: number
+  title: string
+  content?: string | null
   createdAt?: string | null
   updatedAt?: string | null
 }

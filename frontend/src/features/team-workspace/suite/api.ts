@@ -1,5 +1,5 @@
-import { readStoredAuthSession } from '../../lib/auth-session'
-import { projectApiRequest } from '../project/api'
+import { readStoredAuthSession } from '../../../lib/auth-session'
+import { projectApiRequest } from '../../project/api'
 import type {
   ActivityLog,
   CalendarEvent,
