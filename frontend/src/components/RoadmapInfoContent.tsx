@@ -1,12 +1,7 @@
+import { sanitizeHtml } from '../lib/html-sanitizer'
+
 type RoadmapInfoContentProps = {
   content: string | null | undefined
-}
-
-function sanitizeHtml(content: string) {
-  return content
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/\son\w+="[^"]*"/gi, '')
-    .replace(/\son\w+='[^']*'/gi, '')
 }
 
 export default function RoadmapInfoContent({ content }: RoadmapInfoContentProps) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { instructorLessonEvaluationApi } from '../../lib/api'
+import { instructorLessonEvaluationApi } from '../../lib/api/instructor'
 import type {
   GenerateInstructorQuizRequest,
   InstructorQuizEditor,

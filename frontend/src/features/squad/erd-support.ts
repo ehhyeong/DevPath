@@ -1,4 +1,4 @@
-import type { ErdColumn,ErdRelationship,ErdSchema,ErdTable,MermaidApi } from './erd-types'
+import type { ErdColumn,ErdRelationship,ErdSchema,ErdTable } from './erd-types'
 
 
 export const EMPTY_SCHEMA: ErdSchema = {
@@ -7,7 +7,6 @@ export const EMPTY_SCHEMA: ErdSchema = {
 }
 
 export const DEFAULT_MERMAID_CODE = 'erDiagram\n'
-export const MERMAID_CDN = 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js'
 export const ERD_DRAFT_KEY_PREFIX = 'workspace-erd-backup-'
 export const ERD_HISTORY_KEY_PREFIX = 'workspace-erd-history-'
 export const ERD_HISTORY_LIMIT = 30
@@ -23,6 +22,8 @@ export const RELATIONSHIP_TYPE_OPTIONS = [
 ]
 
 export const ON_DELETE_OPTIONS = ['RESTRICT', 'CASCADE', 'SET NULL', 'NO ACTION'] as const
+
+type MermaidApi = typeof import('mermaid')['default']
 
 export let mermaidLoadPromise: Promise<MermaidApi> | null = null
 
@@ -600,29 +601,13 @@ export function schemaStats(schema: ErdSchema) {
 }
 
 export function loadMermaid() {
-  if (window.mermaid) {
-    return Promise.resolve(window.mermaid)
-  }
-
   if (mermaidLoadPromise) {
     return mermaidLoadPromise
   }
 
-  mermaidLoadPromise = new Promise<MermaidApi>((resolve, reject) => {
-    const script = document.createElement('script')
-    script.src = MERMAID_CDN
-    script.async = true
-    script.onload = () => {
-      if (!window.mermaid) {
-        reject(new Error('Mermaid failed to load'))
-        return
-      }
-
-      window.mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' })
-      resolve(window.mermaid)
-    }
-    script.onerror = () => reject(new Error('Mermaid failed to load'))
-    document.head.appendChild(script)
+  mermaidLoadPromise = import('mermaid').then(({ default: mermaid }) => {
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' })
+    return mermaid
   })
 
   return mermaidLoadPromise

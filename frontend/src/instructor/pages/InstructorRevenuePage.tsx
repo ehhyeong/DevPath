@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import Chart from 'chart.js/auto'
 import { ErrorCard, LoadingCard } from '../../account/ui'
 import { formatCurrency, formatDateTime, formatNumber } from '../../account/ui-utils'
-import { instructorRevenueApi } from '../../lib/api'
+import { instructorRevenueApi } from '../../lib/api/instructor'
 import type {
   InstructorRevenueCourseBreakdownItem,
   InstructorRevenueMonthlyItem,

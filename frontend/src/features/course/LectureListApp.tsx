@@ -16,7 +16,8 @@ import {
   type LecturePriceFilter,
   type LectureSortKey,
 } from './lecture-list-support'
-import { authApi, courseApi, userApi, wishlistApi } from '../../lib/api'
+import { authApi, userApi } from '../../lib/api/auth'
+import { courseApi, wishlistApi } from '../../lib/api/learner'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import type { CourseCatalogMenu } from '../../types/course-catalog'

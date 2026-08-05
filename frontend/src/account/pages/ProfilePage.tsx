@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import UserAvatar from '../../components/UserAvatar'
 import { updateStoredAuthSession } from '../../lib/auth-session'
-import { userApi } from '../../lib/api'
+import { userApi } from '../../lib/api/auth'
 import { notifyProfileUpdated } from '../../lib/profile-sync'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { AuthSession } from '../../types/auth'

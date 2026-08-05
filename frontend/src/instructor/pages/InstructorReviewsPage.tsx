@@ -6,7 +6,8 @@ import {
   buildInstructorCourseOptions,
   normalizeInstructorCourseTitle,
 } from '../course-display'
-import { instructorCourseApi, instructorReviewApi, userApi } from '../../lib/api'
+import { instructorCourseApi, instructorReviewApi } from '../../lib/api/instructor'
+import { userApi } from '../../lib/api/auth'
 import type { AuthSession } from '../../types/auth'
 import type {
   InstructorCourseListItem,

@@ -24,7 +24,9 @@ import {
   type CourseQuestionStatus,
 } from './course-detail-support'
 import { buildInstructorChannelHref } from '../../instructor/channel/support'
-import { authApi, courseApi, enrollmentApi, instructorCourseApi, qnaApi, reviewApi, userApi } from '../../lib/api'
+import { authApi, userApi } from '../../lib/api/auth'
+import { courseApi, enrollmentApi, qnaApi, reviewApi } from '../../lib/api/learner'
+import { instructorCourseApi } from '../../lib/api/instructor'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import type { CourseReview } from '../../types/course'

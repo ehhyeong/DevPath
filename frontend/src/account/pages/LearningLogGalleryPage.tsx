@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { certificateApi, proofCardApi } from '../../lib/api'
+import { certificateApi, proofCardApi } from '../../lib/api/learner'
+import { buildLearningLogShareUrl,getSharedProofCardId } from '../learning-log-share'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import { downloadBase64File } from '../ui-utils'
 import type { ProofCardDetail, ProofCardGalleryItem } from '../../types/learner'
@@ -141,6 +142,10 @@ export default function LearningLogGalleryPage() {
   const [sortOrder, setSortOrder] = useState<'latest' | 'score'>('latest')
   const [selectedCard, setSelectedCard] = useState<ProofCardViewItem | null>(null)
   const [message, setMessage] = useState('')
+  const sharedProofCardId = useMemo(() => getSharedProofCardId(window.location), [])
+  const [flippedCardIds, setFlippedCardIds] = useState<Set<number>>(
+    () => new Set(sharedProofCardId ? [sharedProofCardId] : []),
+  )
   const prefetchedDetailIds = useRef<Set<number>>(new Set())
 
   useEffect(() => {
@@ -237,8 +242,18 @@ export default function LearningLogGalleryPage() {
     })
   }, [categoryFilter, items, sortOrder])
 
-  function handleFlip(cardElement: HTMLDivElement) {
-    cardElement.classList.toggle('flipped')
+  function handleFlip(proofCardId: number) {
+    setFlippedCardIds((current) => {
+      const next = new Set(current)
+
+      if (next.has(proofCardId)) {
+        next.delete(proofCardId)
+      } else {
+        next.add(proofCardId)
+      }
+
+      return next
+    })
   }
 
   async function handleDownloadCertificate(card: ProofCardViewItem) {
@@ -307,8 +322,9 @@ export default function LearningLogGalleryPage() {
                 return (
                   <div
                     key={item.proofCardId}
-                    className="group h-[420px] w-full cursor-pointer [perspective:1000px]"
-                    onClick={(event) => handleFlip(event.currentTarget)}
+                    data-proof-card-id={item.proofCardId}
+                    className={`group h-[420px] w-full cursor-pointer [perspective:1000px] ${flippedCardIds.has(item.proofCardId) ? 'flipped' : ''}`}
+                    onClick={() => handleFlip(item.proofCardId)}
                   >
                     <div className="relative h-full w-full rounded-2xl shadow-xl [transition:transform_0.6s] [transform-style:preserve-3d] [.flipped_&]:[transform:rotateY(180deg)]">
                       <div className="absolute inset-0 flex h-full w-full flex-col overflow-hidden rounded-[1rem] border border-gray-200 bg-white [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
@@ -533,7 +549,7 @@ export default function LearningLogGalleryPage() {
                   return
                 }
 
-                await navigator.clipboard.writeText(`${window.location.origin}/learning-log-gallery.html#${selectedCard.proofCardId}`)
+                await navigator.clipboard.writeText(buildLearningLogShareUrl(window.location.origin, selectedCard.proofCardId))
                 setMessage('링크가 복사되었습니다.')
               }}
               className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gray-100"

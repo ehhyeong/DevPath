@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { enrollmentApi, proofCardApi, wishlistApi } from '../../lib/api'
+import { enrollmentApi, proofCardApi, wishlistApi } from '../../lib/api/learner'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { Enrollment, ProofCardGalleryItem, WishlistCourse } from '../../types/learner'
 

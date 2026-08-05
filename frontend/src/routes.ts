@@ -19,10 +19,16 @@ export const INSTRUCTOR_PAGE_ROUTES = new Set([
   '/instructor-marketing',
 ])
 
-export function getCurrentPathname() {
-  const pathname = window.location.pathname.replace(/\/+$/, '') || '/'
+export function normalizePathname(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, '') || '/'
+  return normalized === '/singup' ? '/signup' : normalized
+}
 
-  if (pathname !== '/singup') {
+export function getCurrentPathname() {
+  const currentPathname = window.location.pathname.replace(/\/+$/, '') || '/'
+  const pathname = normalizePathname(currentPathname)
+
+  if (currentPathname !== '/singup') {
     return pathname
   }
 

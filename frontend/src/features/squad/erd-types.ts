@@ -93,14 +93,3 @@ export type ErdCommentTarget = {
   targetId: string
   targetLabel: string
 }
-
-export type MermaidApi = {
-  initialize: (options: Record<string, unknown>) => void
-  render: (id: string, code: string) => Promise<{ svg: string }> | { svg: string }
-}
-
-declare global {
-  interface Window {
-    mermaid?: MermaidApi
-  }
-}

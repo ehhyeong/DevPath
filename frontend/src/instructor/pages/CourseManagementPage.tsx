@@ -9,7 +9,7 @@ import {
   normalizeInstructorLevelLabel,
   resolveInstructorCourseThumbnailUrl,
 } from '../course-display'
-import { instructorAnnouncementApi, instructorCourseApi, instructorQnaApi } from '../../lib/api'
+import { instructorAnnouncementApi, instructorCourseApi, instructorQnaApi } from '../../lib/api/instructor'
 import type {
   InstructorAnnouncementDetail,
   InstructorCourseListItem,

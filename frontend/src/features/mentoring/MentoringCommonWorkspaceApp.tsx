@@ -4,7 +4,7 @@ useMemo,
 useState
 } from 'react'
 import AuthModal,{ type AuthView } from '../../components/AuthModal'
-import { userApi } from '../../lib/api'
+import { userApi } from '../../lib/api/auth'
 import {
 getPostLoginRedirect,
 readStoredAuthSession,

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import CourseQuizEditorOverlay from '../course-editor/CourseQuizEditorOverlay'
 import { buildCourseEditorHref, readLessonEditorContextFromUrl } from '../course-editor/editor-routing'
-import { instructorCourseApi } from '../../lib/api'
+import { instructorCourseApi } from '../../lib/api/instructor'
 
 const QUIZ_CREATOR_UI_LOCK_CLASSES = [
   "h-[calc(100dvh-var(--app-header-height))]! min-h-0! w-full! overflow-hidden! bg-[#f0f2f5]! text-[#1f2937]! font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]!",

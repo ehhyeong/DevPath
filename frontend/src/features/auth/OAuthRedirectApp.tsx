@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { userApi } from '../../lib/api'
+import { userApi } from '../../lib/api/auth'
 import {
   consumePostLoginReturnPath,
   getPostLoginRedirect,

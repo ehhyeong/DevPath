@@ -11,13 +11,7 @@ import {
 } from 'chart.js'
 import { ErrorCard, LoadingCard } from '../../account/ui'
 import { formatNumber } from '../../account/ui-utils'
-import {
-  instructorAnalyticsApi,
-  instructorCourseApi,
-  instructorMentoringApi,
-  instructorQnaApi,
-  instructorReviewApi,
-} from '../../lib/api'
+import { instructorAnalyticsApi, instructorCourseApi, instructorMentoringApi, instructorQnaApi, instructorReviewApi } from '../../lib/api/instructor'
 import type { AuthSession } from '../../types/auth'
 import type {
   InstructorAnalyticsDashboard,

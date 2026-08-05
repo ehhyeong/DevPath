@@ -36,7 +36,8 @@ import {
   type ReviewFilterKey,
   type ReviewSortKey,
 } from './support'
-import { authApi, instructorSubscriptionApi, publicInstructorApi, userApi } from '../../lib/api'
+import { authApi, userApi } from '../../lib/api/auth'
+import { instructorSubscriptionApi, publicInstructorApi } from '../../lib/api/instructor'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import type { InstructorChannel } from '../../types/instructor'

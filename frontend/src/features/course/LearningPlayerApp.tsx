@@ -1,85 +1,13 @@
-import { startTransition,useCallback,useDeferredValue,useEffect,useEffectEvent,useMemo,useRef,useState,type DragEvent } from 'react'
-import LoginRequiredGate from '../../components/LoginRequiredView'
-import { courseApi,learnerAssignmentApi,learningPlayerApi,lessonNoteApi,lessonSessionApi,nodeClearanceApi,qnaApi } from '../../lib/api'
-import { AUTH_SESSION_SYNC_EVENT,readStoredAuthSession } from '../../lib/auth-session'
-import { captureAndOcr,warmupOcrWorker,type ScreenRegion } from '../../lib/videoOcr'
+import { startTransition, useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState, type DragEvent } from 'react'
+import { courseApi, learnerAssignmentApi, learningPlayerApi, lessonNoteApi, lessonSessionApi, nodeClearanceApi, qnaApi } from '../../lib/api/learner'
+import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
+import { captureAndOcr, warmupOcrWorker, type ScreenRegion } from '../../lib/videoOcr'
 import type { AuthSession } from '../../types/auth'
-import type {
-LearningCourseDetail,
-LearningLesson,
-LearningLessonProgress,
-LearningPlayerConfig,
-LearningVideoQuality,
-SubmissionHistoryItem,
-TimestampNote,
-} from '../../types/learning'
-import type {
-CreateQnaQuestionRequest,
-QnaDifficulty,
-QnaQuestionDetail,
-QnaQuestionSummary,
-QnaQuestionTemplate,
-} from '../../types/qna'
-import { ASSIGNMENT_LOADING_MESSAGES,buildAssignmentResultReportRows,buildAssignmentSubmissionPayload,buildCelebrationParticles,buildCompletionProofCard,buildQnaRealtimeWebSocketUrl,buildQuizModalQuestions,clampPercent,COURSE_LOAD_TIMEOUT_MS,createAssignmentFormState,createDefaultPlayerConfig,createQuestionFormState,formatOcrSourceLabel,formatRelativeTime,formatShortDate,getAvailableVideoQuality,getProofCardTheme,getVideoErrorMessage,isAbortError,isAssignmentLesson,isAssignmentSubmissionFormReady,isCourse127DemoCourse,isLessonProgressCompleted,isNativeKeyboardControlTarget,isOwnQnaQuestion,isPlaybackBlockedError,isQuestionAnswered,isQuizLesson,isSampleVideoUrl,LESSON_LOAD_TIMEOUT_MS,QNA_LOAD_TIMEOUT_MS,readEnabledSearchParam,readNonNegativeNumberSearchParam,readOptionalSafeReturnHref,readSafeReturnHref,readStudentPreviewFromLocation,readVideoDuration,requestWithTimeout,resolveAssignmentHistoryScorePercent,resolveAssignmentResultBadge,resolveAssignmentResultPassed,resolveAssignmentResultScore,resolveAssignmentResultScorePercent,resolveAssignmentReviewFeedback,resolveAssignmentSubmissionEmptyMessage,resolveAssignmentSubmissionMethods,resolveLessonAssignment,resolveVideoQualitySources,resolveVideoUrl,toQuestionSummary,VIDEO_QUALITY_OPTIONS,type AssignmentGradingResultState,type AssignmentSubmissionFormState,type CompletionProofCardState,type PersistCompletionOptions,type PipDocument,type PipVideoElement,type QnaRealtimeEvent,type QnaStatusFilter,type QuestionFormState,type TabKey } from './learning-player-model'
-import {
-createDefaultProgress,
-formatDateLabel,
-formatTime,
-getFlattenedLessons,
-getNotesStorageKey,
-getProgressStorageKey,
-normalizeCourseDetail,
-PLAYER_SPEEDS,
-readJsonStorage,
-readNumberSearchParam,
-resolveMaterialDownloadHref,
-syncLearningUrl,
-writeJsonStorage,
-} from './learning-player-support'
-
-
-function EmptyState(props: { iconClassName: string; title: string; description: string; className?: string }) {
-  return (
-    <div className={`learning-empty-state rounded-[24px] border border-dashed border-gray-200 bg-white px-6 py-10 text-center shadow-sm ${props.className ?? ''}`}>
-      <div className="learning-empty-state-icon mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
-        <i className={props.iconClassName} />
-      </div>
-      <h3 className="learning-empty-state-title mt-4 text-sm font-semibold text-gray-900">{props.title}</h3>
-      <p className="learning-empty-state-description mt-2 text-sm leading-6 text-gray-500">{props.description}</p>
-    </div>
-  )
-}
-
-function LoadingOverlay() {
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/65 backdrop-blur-sm">
-      <div className="h-14 w-14 animate-spin rounded-full border-4 border-[#00c471] border-t-transparent" />
-    </div>
-  )
-}
-
-function LoginRequiredView() {
-  return <LoginRequiredGate message="학습 플레이어는 로그인한 사용자만 이용할 수 있습니다." />
-}
-
-function ErrorView(props: { title: string; message: string; actionHref: string; actionLabel: string }) {
-  return (
-    <div className="min-h-screen bg-[#0a100f] px-4 py-16 text-white">
-      <div className="mx-auto max-w-xl rounded-[32px] border border-white/10 bg-white/5 px-8 py-10 text-center backdrop-blur">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-rose-500/15 text-rose-300">
-          <i className="fas fa-circle-exclamation text-2xl" />
-        </div>
-        <h1 className="mt-6 text-3xl font-semibold">{props.title}</h1>
-        <p className="mt-3 text-sm leading-7 text-white/70">{props.message}</p>
-        <div className="mt-8">
-          <a href={props.actionHref} className="inline-flex rounded-full bg-[#00c471] px-6 py-3 text-sm font-bold text-white">
-            {props.actionLabel}
-          </a>
-        </div>
-      </div>
-    </div>
-  )
-}
+import type { LearningCourseDetail, LearningLesson, LearningLessonProgress, LearningPlayerConfig, LearningVideoQuality, SubmissionHistoryItem, TimestampNote } from '../../types/learning'
+import type { CreateQnaQuestionRequest, QnaDifficulty, QnaQuestionDetail, QnaQuestionSummary, QnaQuestionTemplate } from '../../types/qna'
+import { ASSIGNMENT_LOADING_MESSAGES, buildAssignmentResultReportRows, buildAssignmentSubmissionPayload, buildCelebrationParticles, buildCompletionProofCard, buildQnaRealtimeWebSocketUrl, buildQuizModalQuestions, clampPercent, COURSE_LOAD_TIMEOUT_MS, createAssignmentFormState, createDefaultPlayerConfig, createQuestionFormState, formatOcrSourceLabel, formatRelativeTime, formatShortDate, getAvailableVideoQuality, getProofCardTheme, getVideoErrorMessage, isAbortError, isAssignmentLesson, isAssignmentSubmissionFormReady, isCourse127DemoCourse, isLessonProgressCompleted, isNativeKeyboardControlTarget, isOwnQnaQuestion, isPlaybackBlockedError, isQuestionAnswered, isQuizLesson, isSampleVideoUrl, LESSON_LOAD_TIMEOUT_MS, QNA_LOAD_TIMEOUT_MS, readEnabledSearchParam, readNonNegativeNumberSearchParam, readOptionalSafeReturnHref, readSafeReturnHref, readStudentPreviewFromLocation, readVideoDuration, requestWithTimeout, resolveAssignmentHistoryScorePercent, resolveAssignmentResultBadge, resolveAssignmentResultPassed, resolveAssignmentResultScore, resolveAssignmentResultScorePercent, resolveAssignmentReviewFeedback, resolveAssignmentSubmissionEmptyMessage, resolveAssignmentSubmissionMethods, resolveLessonAssignment, resolveVideoQualitySources, resolveVideoUrl, toQuestionSummary, VIDEO_QUALITY_OPTIONS, type AssignmentGradingResultState, type AssignmentSubmissionFormState, type CompletionProofCardState, type PersistCompletionOptions, type PipDocument, type PipVideoElement, type QnaRealtimeEvent, type QnaStatusFilter, type QuestionFormState, type TabKey } from './learning-player-model'
+import { createDefaultProgress, formatDateLabel, formatTime, getFlattenedLessons, getNotesStorageKey, getProgressStorageKey, normalizeCourseDetail, PLAYER_SPEEDS, readJsonStorage, readNumberSearchParam, resolveMaterialDownloadHref, syncLearningUrl, writeJsonStorage } from './learning-player-support'
+import { EmptyState, LoadingOverlay, LoginRequiredView, ErrorView } from './learning-player-states'
 
 export default function LearningPlayerApp() {
   const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])

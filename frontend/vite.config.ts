@@ -15,7 +15,9 @@ const proxyToBackend = {
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    rollupOptions: {
+    // Mermaid ships one optional parser module that Rolldown cannot split further.
+    chunkSizeWarningLimit: 700,
+    rolldownOptions: {
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
       },

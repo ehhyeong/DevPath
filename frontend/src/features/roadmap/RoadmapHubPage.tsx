@@ -1,7 +1,8 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SiteHeader from '../../components/SiteHeader'
-import { authApi, roadmapApi, userApi } from '../../lib/api'
+import { authApi, userApi } from '../../lib/api/auth'
+import { roadmapApi } from '../../lib/api/roadmap'
 import { showAuthToast } from '../../lib/auth-toast'
 import {
   AUTH_SESSION_SYNC_EVENT,

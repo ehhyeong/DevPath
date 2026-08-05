@@ -1,4 +1,5 @@
 import { Suspense,lazy,type ReactElement } from 'react'
+import { NotFoundPage,RouteErrorBoundary,RouteLoadingView } from './components/AppRouteStates'
 import { ACCOUNT_PAGE_ROUTES,INSTRUCTOR_PAGE_ROUTES } from './routes'
 
 const App = lazy(() => import('./App'))
@@ -127,7 +128,11 @@ export default function AppRouter({ pathname }: { pathname: string }) {
     ? <LearnerApp />
     : INSTRUCTOR_PAGE_ROUTES.has(pathname)
       ? <InstructorApp />
-      : ROUTE_PAGES[pathname] ?? <App />
+      : ROUTE_PAGES[pathname] ?? <NotFoundPage pathname={pathname} />
 
-  return <Suspense fallback={null}>{page}</Suspense>
+  return (
+    <RouteErrorBoundary key={pathname}>
+      <Suspense fallback={<RouteLoadingView />}>{page}</Suspense>
+    </RouteErrorBoundary>
+  )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import { enrollmentApi, wishlistApi } from '../../lib/api'
+import { enrollmentApi, wishlistApi } from '../../lib/api/learner'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { Enrollment, WishlistCourse } from '../../types/learner'
 

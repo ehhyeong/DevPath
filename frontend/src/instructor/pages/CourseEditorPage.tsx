@@ -1,6 +1,7 @@
 ﻿import { useEffect,useRef,useState } from 'react'
 import { ErrorCard,LoadingCard } from '../../account/ui'
-import { instructorCourseApi,userApi } from '../../lib/api'
+import { instructorCourseApi } from '../../lib/api/instructor'
+import { userApi } from '../../lib/api/auth'
 import type { TechTag } from '../../types/learner'
 import type { LearningCourseDetail } from '../../types/learning'
 import { type EditorInfoSection,type EditorJobCard,type EditorLesson,type EditorSection,type LessonKind,type PersistedCourseStatus,type PreparedSection,type SaveToastState,COURSE_EDITOR_PAGE_UI_LOCK_CLASSES,createCustomInfoSection,createDefaultInfoSections,createEmptyJobCard,createLesson,createSection,EDITOR_ACTION_BUTTONS_STICKY_TOP_PX,EDITOR_SIDE_CARD_STICKY_TOP_PX,formatPriceInput,getAssetLabel,getCourseIdFromUrl,getInfoSectionPlaceholder,getPreparedLessonTitle,getStatusChip,lessonKindMeta,lessonKindToApiType,mapCourseInfoSections,mapSection,normalizeSectionTitle,normalizeTagName,parseBulletItems,parseJobCard,parsePriceInput,prepareSections,SAVE_TOAST_DURATION_MS,serializeJobCard } from '../course-editor/course-editor-model'

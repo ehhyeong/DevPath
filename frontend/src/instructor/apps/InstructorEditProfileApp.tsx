@@ -14,7 +14,8 @@ import {
   type InstructorChannelListItem,
   type InstructorChannelNoticeItem,
 } from '../channel/customization'
-import { authApi, instructorCourseApi, publicInstructorApi, userApi } from '../../lib/api'
+import { authApi, userApi } from '../../lib/api/auth'
+import { instructorCourseApi, publicInstructorApi } from '../../lib/api/instructor'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,

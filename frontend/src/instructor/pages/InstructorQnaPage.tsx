@@ -9,7 +9,8 @@ import {
   readInstructorChannelCustomization,
   sanitizeInstructorProfileImageUrl,
 } from '../channel/customization'
-import { instructorCourseApi, instructorQnaApi, userApi } from '../../lib/api'
+import { instructorCourseApi, instructorQnaApi } from '../../lib/api/instructor'
+import { userApi } from '../../lib/api/auth'
 import type { AuthSession } from '../../types/auth'
 import type {
   InstructorCourseListItem,

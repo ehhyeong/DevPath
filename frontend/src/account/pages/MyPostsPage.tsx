@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { communityApi } from '../../lib/api'
+import { communityApi } from '../../lib/api/learner'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { AuthSession } from '../../types/auth'
 import type { CommunityComment, CommunityPost } from '../../types/learner'

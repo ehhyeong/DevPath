@@ -1,0 +1,357 @@
+/* 사이드바 스타일 (기존 유지) */
+.workspace-sidebar-section-title { opacity: 0; height: 0; overflow: hidden; transition: all 0.3s ease; }
+aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
+
+.hover-card { transition: all 0.3s ease; border: 1px solid #E5E7EB; }
+.hover-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); border-color: #D1D5DB; }
+
+@keyframes borderGlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+@keyframes devShowcaseModalSlideUp {
+  from { transform: translateY(18px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Workspace hub styles from the supplied head block */
+.text-mentor { color: #7C3AED; }
+.bg-mentor { background-color: #7C3AED; }
+
+.project-card { transition: all 0.2s; border: 1px solid #E5E7EB; }
+.project-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); border-color: #00C471; }
+
+@keyframes workspaceHubFadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.accent-brand {
+  accent-color: #00C471;
+}
+
+@keyframes mentoringModalSlideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+
+.account-profile-dropdown-enter {
+  animation: accountDropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+}
+
+@keyframes accountDropdownFade {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.account-profile-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.account-profile-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.account-profile-scroll::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 4px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes squadDashboardFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes squadDashboardPlusMenuIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes squadMeetingParticipantPulse {
+  0% {
+    transform: scale(0.86);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes squadMeetingFloatUp {
+  0% {
+    transform: translate(-50%, 0) scale(0.5);
+    opacity: 0;
+  }
+
+  20% {
+    transform: translate(calc(-50% + var(--dx)), -30px) scale(1.2);
+    opacity: 1;
+  }
+
+  80% {
+    transform: translate(calc(-50% + var(--dx)), -150px) scale(1);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translate(calc(-50% + var(--dx)), -250px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes squadMeetingMeterBounce {
+  0% {
+    width: 10%;
+  }
+
+  100% {
+    width: 80%;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes teamWsSpeakingGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    border-color: #22C55E;
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+    border-color: #4ADE80;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    border-color: #22C55E;
+  }
+}
+
+@keyframes teamWsAvatarFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes mentoringTimelinePulse {
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.35); }
+  70% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+/* Quiz creator source UI lock. Backend, DB, shared header, and instructor aside stay untouched. */
+.app-main:has(.course-quiz-editor-page) {
+  overflow-y: hidden !important;
+}
+
+.app-main:has(.course-quiz-editor-page) > .app-responsive-main {
+  height: calc(100dvh - var(--app-header-height)) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+/* Content assignment editor source UI lock. Backend, DB, shared header, and instructor aside stay untouched. */
+.app-main:has(.content-assignment-editor-page) {
+  overflow-y: hidden !important;
+}
+
+.app-main:has(.content-assignment-editor-page) > .app-responsive-main {
+  height: calc(100dvh - var(--app-header-height)) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+@keyframes instructor-team-live-recording-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
+}

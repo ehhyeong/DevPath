@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ErrorCard, LoadingCard } from '../../account/ui'
 import { formatDate, formatNumber } from '../../account/ui-utils'
-import { instructorCourseApi, instructorMarketingApi } from '../../lib/api'
+import { instructorCourseApi, instructorMarketingApi } from '../../lib/api/instructor'
 import type {
   InstructorCouponItem,
   InstructorCourseListItem,

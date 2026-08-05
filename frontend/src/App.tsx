@@ -2,7 +2,7 @@ import { type CSSProperties, useEffect, useState } from 'react'
 import AccountUserMenu from './components/AccountUserMenu'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import SiteHeader from './components/SiteHeader'
-import { authApi, userApi } from './lib/api'
+import { authApi, userApi } from './lib/api/auth'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,

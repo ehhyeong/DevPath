@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { authApi, userApi } from '../../lib/api'
+import { authApi, userApi } from '../../lib/api/auth'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
 import type { AuthSession } from '../../types/auth'

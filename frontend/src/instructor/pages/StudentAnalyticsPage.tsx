@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ErrorCard, LoadingCard } from '../../account/ui'
 import { formatNumber } from '../../account/ui-utils'
 import { buildInstructorCourseOptions } from '../course-display'
-import { instructorAnalyticsApi } from '../../lib/api'
+import { instructorAnalyticsApi } from '../../lib/api/instructor'
 import type { InstructorAnalyticsDashboard } from '../../types/instructor'
 
 type Tone = 'safe' | 'warn' | 'danger'

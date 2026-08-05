@@ -4,6 +4,7 @@ import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession,getPostLoginRedirect,readStoredAuthSession } from '../../lib/auth-session'
 import { showAuthToast } from '../../lib/auth-toast'
+import { sanitizeSvg } from '../../lib/html-sanitizer'
 import { projectApiRequest } from '../project/api'
 import { createSquadNotification,squadActorName } from './notifications'
 
@@ -81,7 +82,7 @@ export default function SquadErdApp() {
     try {
       const mermaid = await loadMermaid()
       const result = await mermaid.render(`erd-${Date.now()}`, code)
-      setDiagramSvg(result.svg)
+      setDiagramSvg(sanitizeSvg(result.svg))
       setDiagramError(null)
     } catch {
       setDiagramSvg(null)

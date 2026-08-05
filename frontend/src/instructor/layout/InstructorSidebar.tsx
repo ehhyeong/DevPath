@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { buildInstructorCourseOptions } from '../course-display'
-import { instructorCourseApi, instructorQnaApi } from '../../lib/api'
+import { instructorCourseApi, instructorQnaApi } from '../../lib/api/instructor'
 import { instructorNavItems, type InstructorNavItem, type InstructorPageKey } from '../navigation'
 
 type SidebarColorTheme = 'blue' | 'orange' | 'teal' | 'purple' | 'yellow' | 'slate'

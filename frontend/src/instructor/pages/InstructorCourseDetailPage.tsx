@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { EmptyCard, ErrorCard, LoadingCard } from '../../account/ui'
 import { formatCurrency, formatDate, formatDateTime, formatNumber } from '../../account/ui-utils'
-import { instructorAnalyticsApi, instructorCourseApi, instructorReviewApi } from '../../lib/api'
+import { instructorAnalyticsApi, instructorCourseApi, instructorReviewApi } from '../../lib/api/instructor'
 import type {
   InstructorAnalyticsDashboard,
   InstructorAnalyticsStudentItem,
