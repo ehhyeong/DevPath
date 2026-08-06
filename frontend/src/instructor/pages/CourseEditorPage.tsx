@@ -546,7 +546,9 @@ export default function CourseEditorPage() {
       return asset.url
     } catch (nextError) {
       setSaveToast(null)
-      throw new Error(nextError instanceof Error ? nextError.message : '파일 업로드에 실패했습니다.')
+      throw new Error(nextError instanceof Error ? nextError.message : '파일 업로드에 실패했습니다.', {
+        cause: nextError,
+      })
     }
   }
 

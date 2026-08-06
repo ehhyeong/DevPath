@@ -48,7 +48,7 @@ export async function request<T>(
     headers,
   })
 
-  let payload: ApiResponse<T> | null = null
+  let payload: ApiResponse<T> | null
 
   try {
     payload = (await response.json()) as ApiResponse<T>
