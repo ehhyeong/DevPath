@@ -145,7 +145,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
 }
 
 export default function SquadReviewApp() {
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [board, setBoard] = useState<CodeReviewBoard | null>(null)

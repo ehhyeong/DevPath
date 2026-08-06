@@ -119,7 +119,7 @@ function isIntegrationActive(integration?: ExternalIntegration) {
 }
 
 export default function SquadSettingsApp() {
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')

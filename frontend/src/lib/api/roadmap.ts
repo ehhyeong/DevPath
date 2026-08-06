@@ -114,7 +114,7 @@ export const roadmapApi = {
     return request<void>(`/api/my-roadmaps/${customRoadmapId}`, { method: 'DELETE' }, { auth: true })
   },
 
-  // [TEST] 노드 완료 시 동적 추천 생성을 백그라운드로 트리거 — 실 서비스 전 삭제 대상
+  // 노드 완료 시 동적 추천 생성을 백그라운드로 트리거한다.
   testRunDiagnosis(originalRoadmapId: number, originalNodeId: number, customRoadmapId?: number | null) {
     return request<void>(
       `/api/me/roadmaps/${originalRoadmapId}/diagnosis/test-run${buildQueryString({

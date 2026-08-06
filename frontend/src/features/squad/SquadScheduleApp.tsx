@@ -316,7 +316,7 @@ function sortEvents(events: CalendarEvent[]) {
 }
 
 export default function SquadScheduleApp() {
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)

@@ -280,7 +280,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 export default function TeamWorkspaceMilestoneApp() {
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [tasks, setTasks] = useState<WorkspaceTask[]>([])
@@ -458,7 +458,7 @@ export default function TeamWorkspaceMilestoneApp() {
     if (!session?.userId) return []
 
     return weekTasks.filter((task) => task.assigneeId === session.userId)
-  }, [session?.userId, weekTasks])
+  }, [session, weekTasks])
 
   const myPrimaryTask = myTasks[0] ?? null
   const myRoleKey = myPrimaryTask ? roleKeyForTask(myPrimaryTask) : 'frontend'
@@ -544,7 +544,7 @@ export default function TeamWorkspaceMilestoneApp() {
         status: teamTaskStatus(memberTasks),
       }
     })
-  }, [members, session?.userId, weekTasks])
+  }, [members, session, weekTasks])
 
   const submittedTeamCount = teamStatus.filter((status) => status.status === 'pass' || status.status === 'wait').length
   const teamSubmitPercent = percent(submittedTeamCount, teamStatus.length)

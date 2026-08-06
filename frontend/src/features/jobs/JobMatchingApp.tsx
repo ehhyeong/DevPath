@@ -342,7 +342,7 @@ export default function JobMatchingApp() {
       if (result.mode === 'CREATED') {
         // 학습 중인 로드맵이 없어 기술 로드맵을 새로 생성한 경우 → 바로 이동
         showAuthToast({ message: `'${skill}' 학습 로드맵을 새로 만들었어요.`, durationMs: 2000 })
-        window.location.href = result.redirectUrl
+        window.location.assign(result.redirectUrl)
         return
       }
 

@@ -177,7 +177,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 export default function TeamWorkspaceDashboardApp() {
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [tasks, setTasks] = useState<WorkspaceTask[]>([])

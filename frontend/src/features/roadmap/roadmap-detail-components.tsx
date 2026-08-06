@@ -437,8 +437,7 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode,
     try {
       await roadmapApi.clearNode(customRoadmapId, node.customNodeId)
 
-      // ── [TEST] 노드 완료 시 동적 추천 생성을 백그라운드로 트리거 ─────────────
-      // 실 서비스에서는 진단 퀴즈 제출(submitQuizAnswer) 흐름으로 대체 예정
+      // 노드 완료 시 동적 추천 생성을 백그라운드로 트리거한다.
       const recommendationRoadmapId = originalRoadmapId ?? customRoadmapId
       const recommendationCustomRoadmapId = originalRoadmapId == null ? customRoadmapId : null
       if (node.originalNodeId != null) {
@@ -448,8 +447,8 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode,
             node.originalNodeId,
             recommendationCustomRoadmapId,
           )
-        } catch (recErr) {
-          console.warn('[TEST] 진단 추천 트리거 실패 (무시):', (recErr as Error).message)
+        } catch {
+          // Recommendation generation must not block node completion.
         }
       }
       // ────────────────────────────────────────────────────────────────────────

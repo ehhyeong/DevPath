@@ -26,7 +26,7 @@ import { EMPTY_DATA,PAGE_CONFIG,TEAM_WORKSPACE_REFRESH_INTERVAL_MS,getWorkspaceI
 
 export default function InstructorTeamWsDashboardApp({ page = 'dashboard' }: { page?: InstructorTeamWsPage }) {
   const session = useMemo(() => readStoredAuthSession(), [])
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [data, setData] = useState<TeamData>(EMPTY_DATA)
   const [loading, setLoading] = useState(true)

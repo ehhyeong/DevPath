@@ -11,7 +11,7 @@ export type MentoringCommonPage =
 
 export type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 export type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE'
+export type TaskStatus = WorkspaceTaskStatus
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 export type QnaStatus = 'OPEN' | 'ANSWERED' | 'CLOSED'
 
@@ -209,3 +209,4 @@ export type PageConfig = {
   title: string
   icon: string
 }
+import type { WorkspaceTaskStatus } from '../../../types/workspace'

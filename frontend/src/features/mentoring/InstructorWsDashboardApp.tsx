@@ -35,7 +35,7 @@ WorkspaceTask
 
 export default function InstructorWsDashboardApp({ page = 'dashboard' }: { page?: InstructorWsPage }) {
   const session = useMemo(() => readStoredAuthSession(), [])
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [data, setData] = useState<WorkspaceData>(EMPTY_DATA)
   const [loading, setLoading] = useState(true)

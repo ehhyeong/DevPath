@@ -1,7 +1,11 @@
+import { useSquadMeetingMinutes } from './useSquadMeetingMinutes'
+import { useScreenSharePlayer } from './useScreenSharePlayer'
+import { useAudioDeviceDiagnostics } from './useAudioDeviceDiagnostics'
+import { useSquadMeetingNetworkStatus } from './useSquadMeetingNetworkStatus'
+import { useSquadMeetingViewport } from './useSquadMeetingViewport'
 import {
 type MouseEvent as ReactMouseEvent,
 type PointerEvent as ReactPointerEvent,
-type WheelEvent as ReactWheelEvent,
 useEffect,
 useMemo,
 useRef,
@@ -12,54 +16,36 @@ import { clearStoredAuthSession,getPostLoginRedirect,readStoredAuthSession } fro
 import { showAuthToast } from '../../../lib/auth-toast'
 import { getVoiceIceServers } from '../../../lib/voice-webrtc'
 import {
-appendSquadVoiceMinutesTranscriptLine,
-clearSquadVoiceChatMessages,
-createSquadVoiceEvent,
-createSquadVoiceMinutesKanbanTasks,
-createSquadVoiceMinutesSummary,
-fetchSquadVoiceChatMessages,
-fetchSquadVoiceMinutes,
 fetchSquadVoiceParticipants,
 fetchSquadVoicePresence,
 joinSquadVoiceChannel,
 leaveSquadVoiceChannel,
 loadSquadMeetingInitialData,
-sendSquadVoiceChatMessage,
 touchSquadVoicePresence,
-updateSquadVoiceMinutes,
 } from './meeting-api'
 import { createSquadNotification,squadActorName } from '../notifications'
-import { FALLBACK_AUDIO_INPUTS,FALLBACK_AUDIO_OUTPUTS,FLOATING_REACTION_VISIBLE_MS,INITIAL_AUDIO_PROCESSING_STATUS,INITIAL_NETWORK_STATUS,SCREEN_SHARE_MIN_ZOOM,SCREEN_SHARE_WHEEL_ZOOM_STEP,type VoicePeerTransceivers,buildNetworkStatus,buildSecurityStatus,buildVoiceSignalingUrl,clampScreenShareZoom,createFloatingReactionId,formatElapsedTime,getBrowserNetworkInformation,getNetworkBadgeClass,getNetworkIconClass,getSecurityBadgeClass,getSecurityIconClass,getUserMediaWithTimeout,getVoiceMeetingSessionStartedAt,getWorkspaceIdFromUrl,normalizeVoiceMeetingSummaryResponse,normalizeVoiceReaction,useLatest } from './meeting-support'
+import { FALLBACK_AUDIO_INPUTS,FLOATING_REACTION_VISIBLE_MS,type VoicePeerTransceivers,buildSecurityStatus,buildVoiceSignalingUrl,createFloatingReactionId,formatElapsedTime,getNetworkBadgeClass,getNetworkIconClass,getSecurityBadgeClass,getSecurityIconClass,getUserMediaWithTimeout,getVoiceMeetingSessionStartedAt,getWorkspaceIdFromUrl,normalizeVoiceReaction,useLatest } from './meeting-support'
 import type {
-AudioDeviceOption,
-AudioProcessingStatus,
 CameraView,
 FloatingReaction,
-NetworkStatus,
 RoomPanelTab,
-ScreenShareDragState,
-ScreenSharePan,
 ScreenShareView,
 SinkAudioElement,
-SpeechRecognitionLike,
 VoiceChannel,
-VoiceChatMessage,
 VoiceConnectionStatus,
 VoiceEventType,
-VoiceMeetingActionItem,
-VoiceMeetingMinutes,
 VoiceMeetingSyncPayload,
 VoiceParticipant,
 VoicePresence,
 VoiceReactionPayload,
 VoiceSignalingMessage,
 VoiceSignalingPeer,
-WindowWithSpeechRecognition,
 WorkspaceDashboard
 } from './meeting-types'
 
 export function useSquadMeetingController() {
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  useSquadMeetingViewport()
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
@@ -70,35 +56,12 @@ export function useSquadMeetingController() {
   const [presentUsers, setPresentUsers] = useState<VoicePresence[]>([])
   const [roomPanelTab, setRoomPanelTab] = useState<RoomPanelTab>('minutes')
   const [roomSidePanelOpen, setRoomSidePanelOpen] = useState(true)
-  const [voiceChatMessages, setVoiceChatMessages] = useState<VoiceChatMessage[]>([])
-  const [voiceChatInput, setVoiceChatInput] = useState('')
-  const [voiceMinutes, setVoiceMinutes] = useState<VoiceMeetingMinutes | null>(null)
-  const [minutesDraft, setMinutesDraft] = useState('')
-  const [minutesActionItems, setMinutesActionItems] = useState<VoiceMeetingActionItem[]>([])
-  const [selectedMinutesActionItems, setSelectedMinutesActionItems] = useState<number[]>([])
-  const [minutesSummaryReportOpen, setMinutesSummaryReportOpen] = useState(false)
-  const [chatSending, setChatSending] = useState(false)
-  const [chatClearing, setChatClearing] = useState(false)
-  const [minutesSaving, setMinutesSaving] = useState(false)
-  const [kanbanTaskCreating, setKanbanTaskCreating] = useState(false)
-  const [speechRecognitionActive, setSpeechRecognitionActive] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [joining, setJoining] = useState(false)
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false)
-  const [audioInputs, setAudioInputs] = useState<AudioDeviceOption[]>(FALLBACK_AUDIO_INPUTS)
-  const [audioOutputs, setAudioOutputs] = useState<AudioDeviceOption[]>(FALLBACK_AUDIO_OUTPUTS)
-  const [selectedInputId, setSelectedInputId] = useState(FALLBACK_AUDIO_INPUTS[0].deviceId)
-  const [selectedOutputId, setSelectedOutputId] = useState(FALLBACK_AUDIO_OUTPUTS[0].deviceId)
   const [remoteAudioMuted, setRemoteAudioMuted] = useState(false)
-  const [audioDeviceError, setAudioDeviceError] = useState<string | null>(null)
-  const [audioProcessingStatus, setAudioProcessingStatus] = useState<AudioProcessingStatus>(INITIAL_AUDIO_PROCESSING_STATUS)
-  const [micLevel, setMicLevel] = useState(0)
-  const [speakerLevel, setSpeakerLevel] = useState(0)
-  const [micTesting, setMicTesting] = useState(false)
-  const [soundTesting, setSoundTesting] = useState(false)
   const [waitingMicMuted, setWaitingMicMuted] = useState(false)
-  const [networkStatus, setNetworkStatus] = useState<NetworkStatus>(INITIAL_NETWORK_STATUS)
   const [voiceConnectionStatus, setVoiceConnectionStatus] = useState<VoiceConnectionStatus>('idle')
   const [voiceConnectionError, setVoiceConnectionError] = useState<string | null>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -107,13 +70,7 @@ export function useSquadMeetingController() {
   const [remoteCameraStreams, setRemoteCameraStreams] = useState<Map<number, CameraView>>(() => new Map())
   const [localScreenShareStream, setLocalScreenShareStream] = useState<MediaStream | null>(null)
   const [remoteScreenShares, setRemoteScreenShares] = useState<Map<number, ScreenShareView>>(() => new Map())
-  const [screenSharePlayerOpen, setScreenSharePlayerOpen] = useState(false)
-  const [screenSharePlayerUserId, setScreenSharePlayerUserId] = useState<number | null>(null)
-  const [screenShareZoom, setScreenShareZoom] = useState(SCREEN_SHARE_MIN_ZOOM)
-  const [screenSharePan, setScreenSharePan] = useState<ScreenSharePan>({ x: 0, y: 0 })
-  const [screenShareDragging, setScreenShareDragging] = useState(false)
   const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([])
-  const micStreamRef = useRef<MediaStream | null>(null)
   const localVoiceStreamRef = useRef<MediaStream | null>(null)
   const localVoiceRawStreamRef = useRef<MediaStream | null>(null)
   const localCameraStreamRef = useRef<MediaStream | null>(null)
@@ -122,7 +79,6 @@ export function useSquadMeetingController() {
   const remoteCameraPendingRef = useRef<Set<number>>(new Set())
   const remoteScreenShareViewsRef = useRef<Map<number, ScreenShareView>>(new Map())
   const remoteScreenSharePendingRef = useRef<Set<number>>(new Set())
-  const screenShareDragRef = useRef<ScreenShareDragState | null>(null)
   const signalingSocketRef = useRef<WebSocket | null>(null)
   const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map())
   const peerTransceiversRef = useRef<Map<number, VoicePeerTransceivers>>(new Map())
@@ -135,54 +91,48 @@ export function useSquadMeetingController() {
   const joiningRef = useRef(false)
   const reactionTimerIdsRef = useRef<number[]>([])
   const pendingIceCandidatesRef = useRef<Map<number, RTCIceCandidateInit[]>>(new Map())
-  const audioContextRef = useRef<AudioContext | null>(null)
-  const micLoopbackAudioRef = useRef<SinkAudioElement | null>(null)
-  const soundTestAudioRef = useRef<SinkAudioElement | null>(null)
-  const soundTestContextRef = useRef<AudioContext | null>(null)
-  const soundTestOscillatorRef = useRef<OscillatorNode | null>(null)
-  const soundTestGainRef = useRef<GainNode | null>(null)
-  const speakerMeterIntervalRef = useRef<number | null>(null)
-  const animationFrameRef = useRef<number | null>(null)
   const voiceNoiseGateContextRef = useRef<AudioContext | null>(null)
   const voiceNoiseGateFrameRef = useRef<number | null>(null)
   const voiceActivityContextRef = useRef<AudioContext | null>(null)
   const voiceActivityFrameRef = useRef<number | null>(null)
   const localSpeakingRef = useRef(false)
-  const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null)
-  const speechRecognitionRestartRef = useRef(false)
-  const minutesTextareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const minutesAppendErrorShownRef = useRef(false)
   const restoredVoiceChannelRef = useRef<number | null>(null)
   const disconnectVoiceSessionRef = useLatest(disconnectVoiceSession)
-  const closeScreenSharePlayerRef = useLatest(closeScreenSharePlayer)
   const applySelectedOutputToRemoteAudioRef = useLatest(applySelectedOutputToRemoteAudio)
-  const applySelectedOutputToTestAudioRef = useLatest(applySelectedOutputToTestAudio)
-  const loadAudioDevicesRef = useLatest(loadAudioDevices)
-  const stopMicMonitorRef = useLatest(stopMicMonitor)
   const reconnectExistingVoiceSessionRef = useLatest(reconnectExistingVoiceSession)
-  const startMinutesSpeechRecognitionRef = useLatest(startMinutesSpeechRecognition)
-  const startMicMonitorRef = useLatest(startMicMonitor)
-  const shouldSyncMinutesDraftFromServerRef = useLatest(shouldSyncMinutesDraftFromServer)
-
-  useEffect(() => {
-    document.title = 'DevPath - 음성 회의'
-    const html = document.documentElement
-    const body = document.body
-
-    const root = document.getElementById('root')
-    const appViewport = document.querySelector<HTMLElement>('.app-viewport')
-    html.classList.add('h-full!', 'overflow-hidden!')
-    body.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
-    root?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
-    appViewport?.classList.add('h-dvh!', 'min-h-0!', 'overflow-hidden!')
-
-    return () => {
-      html.classList.remove('h-full!', 'overflow-hidden!')
-      body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
-      root?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
-      appViewport?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
-    }
-  }, [])
+  const currentParticipant = participants.find((participant) => participant.userId === session?.userId) ?? null
+  const isJoined = Boolean(currentParticipant?.active)
+  const {
+    audioInputs,audioOutputs,selectedInputId,setSelectedInputId,selectedOutputId,setSelectedOutputId,
+    audioDeviceError,setAudioDeviceError,audioProcessingStatus,setAudioProcessingStatus,
+    micLevel,speakerLevel,micTesting,soundTesting,
+    loadAudioDevices,toggleMicTest,playSoundTest,startMicMonitor,
+  } = useAudioDeviceDiagnostics({
+    accessToken: session?.accessToken,
+    activeChannelId,
+    audioSettingsOpen,
+    isJoined,
+    waitingMicMuted,
+    applyAudioProcessingConstraints,
+    applySelectedOutputToAudio,
+    getAudioConstraints,
+    updateAudioProcessingStatus,
+  })
+  const networkStatus = useSquadMeetingNetworkStatus({
+    accessToken: session?.accessToken,
+    activeChannelId,
+    tokenType: session?.tokenType,
+  })
+  const {
+    screenSharePlayerOpen,setScreenSharePlayerOpen,screenSharePlayerUserId,setScreenSharePlayerUserId,
+    screenShareZoom,setScreenShareZoom,screenSharePan,setScreenSharePan,screenShareDragging,setScreenShareDragging,
+    screenShareDragRef,resetScreenSharePlayer,openScreenSharePlayer,closeScreenSharePlayer,
+    updateScreenShareZoom,handleScreenShareWheel,handleScreenSharePointerDown,handleScreenSharePointerMove,endScreenShareDrag,
+  } = useScreenSharePlayer({
+    currentUserId: session?.userId ?? undefined,
+    localScreenShareStream,
+    remoteScreenShares,
+  })
 
   useEffect(() => () => disconnectVoiceSessionRef.current(), [disconnectVoiceSessionRef])
 
@@ -192,148 +142,8 @@ export function useSquadMeetingController() {
   }, [])
 
   useEffect(() => {
-    const selectedScreenShareExists = screenSharePlayerUserId != null
-      && (screenSharePlayerUserId === session?.userId
-        ? Boolean(localScreenShareStream)
-        : remoteScreenShares.has(screenSharePlayerUserId))
-
-    if ((!localScreenShareStream && remoteScreenShares.size === 0) || (screenSharePlayerOpen && !selectedScreenShareExists)) {
-      resetScreenSharePlayer()
-      setScreenSharePlayerOpen(false)
-      setScreenSharePlayerUserId(null)
-    }
-  }, [localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, session?.userId])
-
-  useEffect(() => {
-    if (!screenSharePlayerOpen) {
-      return undefined
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        closeScreenSharePlayerRef.current()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [closeScreenSharePlayerRef, screenSharePlayerOpen])
-
-  useEffect(() => {
-    if (!screenSharePlayerOpen) {
-      return undefined
-    }
-
-    function handleFullscreenChange() {
-      if (!document.fullscreenElement) {
-        resetScreenSharePlayer()
-        setScreenSharePlayerOpen(false)
-        setScreenSharePlayerUserId(null)
-      }
-    }
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }
-  }, [screenSharePlayerOpen])
-
-  useEffect(() => {
     void applySelectedOutputToRemoteAudioRef.current()
-    void applySelectedOutputToTestAudioRef.current()
-  }, [applySelectedOutputToRemoteAudioRef, applySelectedOutputToTestAudioRef, selectedOutputId])
-
-  useEffect(() => {
-    const stopCurrentMicMonitor = stopMicMonitorRef.current
-    void loadAudioDevicesRef.current(false)
-
-    function handleDeviceChange() {
-      void loadAudioDevicesRef.current(false)
-    }
-
-    navigator.mediaDevices?.addEventListener?.('devicechange', handleDeviceChange)
-
-    return () => {
-      navigator.mediaDevices?.removeEventListener?.('devicechange', handleDeviceChange)
-      stopCurrentMicMonitor()
-      stopSoundTest()
-    }
-  }, [loadAudioDevicesRef, stopMicMonitorRef])
-
-  useEffect(() => {
-    if (!audioSettingsOpen) {
-      stopSoundTest()
-    }
-  }, [audioSettingsOpen])
-
-  useEffect(() => {
-    const connection = getBrowserNetworkInformation()
-    let stopped = false
-    let controller: AbortController | null = null
-
-    async function measureNetwork() {
-      controller?.abort()
-      controller = new AbortController()
-
-      if (!navigator.onLine) {
-        setNetworkStatus(buildNetworkStatus(null))
-        return
-      }
-
-      const startedAt = performance.now()
-      const probePath = activeChannelId
-        ? `/api/voice-channels/${activeChannelId}/participants`
-        : '/api/lounge/shell'
-      const headers = new Headers({ Accept: 'application/json' })
-
-      if (session?.accessToken) {
-        headers.set('Authorization', `${session.tokenType} ${session.accessToken}`)
-      }
-
-      try {
-        await fetch(`${probePath}?networkCheck=${Date.now()}`, {
-          cache: 'no-store',
-          credentials: 'same-origin',
-          headers,
-          signal: controller.signal,
-        })
-
-        if (!stopped) {
-          setNetworkStatus(buildNetworkStatus(Math.round(performance.now() - startedAt)))
-        }
-      } catch (networkError) {
-        if (!stopped && !(networkError instanceof DOMException && networkError.name === 'AbortError')) {
-          setNetworkStatus(buildNetworkStatus(null, true))
-        }
-      }
-    }
-
-    function handleNetworkChange() {
-      void measureNetwork()
-    }
-
-    window.addEventListener('online', handleNetworkChange)
-    window.addEventListener('offline', handleNetworkChange)
-    connection?.addEventListener('change', handleNetworkChange)
-    void measureNetwork()
-
-    const intervalId = window.setInterval(() => {
-      void measureNetwork()
-    }, 15000)
-
-    return () => {
-      stopped = true
-      controller?.abort()
-      window.clearInterval(intervalId)
-      window.removeEventListener('online', handleNetworkChange)
-      window.removeEventListener('offline', handleNetworkChange)
-      connection?.removeEventListener('change', handleNetworkChange)
-    }
-  }, [activeChannelId, session?.accessToken, session?.tokenType])
+  }, [applySelectedOutputToRemoteAudioRef, selectedOutputId])
 
   useEffect(() => {
     if (!workspaceId) {
@@ -391,8 +201,6 @@ export function useSquadMeetingController() {
 
   const members = dashboard?.members ?? []
   const projectName = dashboard?.name ?? '스쿼드 프로젝트'
-  const currentParticipant = participants.find((participant) => participant.userId === session?.userId) ?? null
-  const isJoined = Boolean(currentParticipant?.active)
   const isMuted = currentParticipant?.muted ?? false
   const micMuted = isJoined ? isMuted : waitingMicMuted
   const selectedInputLabel =
@@ -421,6 +229,7 @@ export function useSquadMeetingController() {
   const roomParticipants = activeParticipants.length > 0 ? activeParticipants : participants
   const meetingSessionStartedAt = getVoiceMeetingSessionStartedAt(activeParticipants)
   const meetingElapsedLabel = formatElapsedTime(meetingSessionStartedAt, now)
+  const { voiceChatMessages,voiceChatInput,setVoiceChatInput,voiceMinutes,minutesDraft,setMinutesDraft,minutesActionItems,selectedMinutesActionItems,minutesSummaryReportOpen,setMinutesSummaryReportOpen,chatSending,chatClearing,minutesSaving,kanbanTaskCreating,speechRecognitionActive,minutesTextareaRef,appendVoiceChatMessage,applyVoiceMinutes,refreshVoiceMeetingPanel,voiceEventLabel,createVoiceEvent,stopMinutesSpeechRecognition,sendVoiceChatMessage,clearVoiceChatMessages,toggleMinutesRecording,saveMinutesDraft,toggleMinutesActionItem,generateMinutesSummary,createKanbanTasksFromMinutes } = useSquadMeetingMinutes({ workspaceId,activeChannel,isJoined,isMuted,session,broadcastMeetingSync,setRoomPanelTab })
 
   useEffect(() => {
     if (!isJoined) {
@@ -478,52 +287,6 @@ export function useSquadMeetingController() {
   }, [isJoined])
 
   useEffect(() => {
-    if (!isJoined) {
-      stopMinutesSpeechRecognition()
-    }
-  }, [isJoined])
-
-  useEffect(() => {
-    if (!isJoined || !voiceMinutes?.recording || isMuted) {
-      stopMinutesSpeechRecognition()
-      return
-    }
-
-    if (!speechRecognitionRef.current) {
-      startMinutesSpeechRecognitionRef.current()
-    }
-  }, [activeChannel?.channelId, isJoined, isMuted, startMinutesSpeechRecognitionRef, voiceMinutes?.recording])
-
-  useEffect(() => {
-    const stopCurrentMicMonitor = stopMicMonitorRef.current
-
-    if (!session?.accessToken || !activeChannel?.channelId) {
-      stopCurrentMicMonitor()
-      return
-    }
-
-    const shouldMonitorMic = audioSettingsOpen || (!isJoined && !waitingMicMuted)
-
-    if (!shouldMonitorMic) {
-      stopCurrentMicMonitor()
-      return
-    }
-
-    let stopped = false
-
-    void loadAudioDevicesRef.current(true).then(() => {
-      if (!stopped) {
-        void startMicMonitorRef.current(selectedInputId)
-      }
-    })
-
-    return () => {
-      stopped = true
-      stopCurrentMicMonitor()
-    }
-  }, [activeChannel?.channelId, audioSettingsOpen, isJoined, loadAudioDevicesRef, selectedInputId, session?.accessToken, startMicMonitorRef, stopMicMonitorRef, waitingMicMuted])
-
-  useEffect(() => {
     if (!activeChannel?.channelId || !session?.accessToken) {
       setPresentUsers([])
       return
@@ -577,76 +340,6 @@ export function useSquadMeetingController() {
     }
   }, [activeChannel?.channelId, session?.accessToken])
 
-  useEffect(() => {
-    if (!activeChannel?.channelId || !isJoined || !session?.accessToken) {
-      setVoiceChatMessages([])
-      setVoiceChatInput('')
-      setVoiceMinutes(null)
-      setMinutesDraft('')
-      setMinutesActionItems([])
-      setSelectedMinutesActionItems([])
-      setMinutesSummaryReportOpen(false)
-      setRoomPanelTab('minutes')
-      return
-    }
-
-    const channelId = activeChannel.channelId
-    let stopped = false
-
-    async function syncMeetingPanel() {
-      try {
-        const [messages, minutes] = await Promise.all([
-          fetchVoiceChatMessages(channelId),
-          fetchVoiceMinutes(channelId),
-        ])
-
-        if (stopped) {
-          return
-        }
-
-        setVoiceChatMessages(messages)
-        setVoiceMinutes(minutes)
-        if (shouldSyncMinutesDraftFromServerRef.current()) {
-          setMinutesDraft(minutes.transcript ?? '')
-        }
-      } catch {
-        // The call itself should stay usable even if the side panel refresh misses once.
-      }
-    }
-
-    async function syncRoomPanel() {
-      try {
-        const [messages, minutes] = await Promise.all([
-          fetchVoiceChatMessages(channelId),
-          fetchVoiceMinutes(channelId),
-        ])
-
-        if (stopped) {
-          return
-        }
-
-        setVoiceChatMessages(messages)
-        setVoiceMinutes(minutes)
-
-        if (shouldSyncMinutesDraftFromServerRef.current()) {
-          setMinutesDraft(minutes.transcript ?? '')
-        }
-      } catch {
-        // Room panel polling is a convenience layer.
-      }
-    }
-
-    void syncMeetingPanel()
-    const refreshId = window.setInterval(() => {
-      void syncRoomPanel()
-    }, 4000)
-
-    return () => {
-      stopped = true
-      window.clearInterval(refreshId)
-    }
-  }, [activeChannel?.channelId, isJoined, session?.accessToken, shouldSyncMinutesDraftFromServerRef])
-
   function handleLogout() {
     clearStoredAuthSession()
     setSession(null)
@@ -664,116 +357,6 @@ export function useSquadMeetingController() {
     setSession(nextSession)
     setAuthView(null)
     window.location.reload()
-  }
-
-  function toDeviceOption(device: MediaDeviceInfo, index: number, fallbackLabel: string): AudioDeviceOption {
-    return {
-      deviceId: device.deviceId || 'default',
-      label: device.label || `${fallbackLabel} ${index + 1}`,
-    }
-  }
-
-  async function loadAudioDevices(requestPermission: boolean) {
-    if (!navigator.mediaDevices?.enumerateDevices) {
-      setAudioInputs(FALLBACK_AUDIO_INPUTS)
-      setAudioOutputs(FALLBACK_AUDIO_OUTPUTS)
-      setAudioDeviceError('이 브라우저에서는 오디오 장치 목록을 가져올 수 없습니다.')
-      return
-    }
-
-    let permissionStream: MediaStream | null = null
-
-    try {
-      if (requestPermission) {
-        permissionStream = await getUserMediaWithTimeout({ audio: true })
-      }
-
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const nextInputs = devices
-        .filter((device) => device.kind === 'audioinput')
-        .map((device, index) => toDeviceOption(device, index, '마이크'))
-      const nextOutputs = devices
-        .filter((device) => device.kind === 'audiooutput')
-        .map((device, index) => toDeviceOption(device, index, '스피커'))
-      const normalizedInputs = nextInputs.length > 0 ? nextInputs : FALLBACK_AUDIO_INPUTS
-      const normalizedOutputs = nextOutputs.length > 0 ? nextOutputs : FALLBACK_AUDIO_OUTPUTS
-
-      setAudioInputs(normalizedInputs)
-      setAudioOutputs(normalizedOutputs)
-      setSelectedInputId((current) =>
-        normalizedInputs.some((device) => device.deviceId === current)
-          ? current
-          : normalizedInputs[0].deviceId,
-      )
-      setSelectedOutputId((current) =>
-        normalizedOutputs.some((device) => device.deviceId === current)
-          ? current
-          : normalizedOutputs[0].deviceId,
-      )
-      setAudioDeviceError(null)
-    } catch {
-      setAudioInputs(FALLBACK_AUDIO_INPUTS)
-      setAudioOutputs(FALLBACK_AUDIO_OUTPUTS)
-      setAudioDeviceError('마이크 권한을 허용해야 실제 PC 오디오 장치명이 표시됩니다.')
-    } finally {
-      permissionStream?.getTracks().forEach((track) => track.stop())
-    }
-  }
-
-  function stopMicMonitor() {
-    if (animationFrameRef.current != null) {
-      window.cancelAnimationFrame(animationFrameRef.current)
-      animationFrameRef.current = null
-    }
-
-    stopMicLoopback()
-    micStreamRef.current?.getTracks().forEach((track) => track.stop())
-    micStreamRef.current = null
-
-    void audioContextRef.current?.close().catch(() => undefined)
-    audioContextRef.current = null
-    setMicLevel(0)
-  }
-
-  function stopMicLoopback() {
-    if (!micLoopbackAudioRef.current) {
-      setMicTesting(false)
-      return
-    }
-
-    micLoopbackAudioRef.current.pause()
-    micLoopbackAudioRef.current.srcObject = null
-    micLoopbackAudioRef.current = null
-    setMicTesting(false)
-  }
-
-  function stopSoundTest() {
-    if (speakerMeterIntervalRef.current != null) {
-      window.clearInterval(speakerMeterIntervalRef.current)
-      speakerMeterIntervalRef.current = null
-    }
-
-    try {
-      soundTestOscillatorRef.current?.stop()
-    } catch {
-      // The oscillator may already be stopped when cleanup runs after a failed start.
-    }
-
-    soundTestOscillatorRef.current?.disconnect()
-    soundTestGainRef.current?.disconnect()
-    soundTestAudioRef.current?.pause()
-
-    if (soundTestAudioRef.current) {
-      soundTestAudioRef.current.srcObject = null
-    }
-
-    void soundTestContextRef.current?.close().catch(() => undefined)
-    soundTestAudioRef.current = null
-    soundTestContextRef.current = null
-    soundTestOscillatorRef.current = null
-    soundTestGainRef.current = null
-    setSpeakerLevel(0)
-    setSoundTesting(false)
   }
 
   function closeSignalingSocket() {
@@ -1251,14 +834,6 @@ export function useSquadMeetingController() {
   async function applySelectedOutputToRemoteAudio() {
     await Promise.all(
       Array.from(remoteAudioElementsRef.current.values()).map((audio) => applySelectedOutputToAudio(audio)),
-    )
-  }
-
-  async function applySelectedOutputToTestAudio() {
-    await Promise.all(
-      [micLoopbackAudioRef.current, soundTestAudioRef.current]
-        .filter((audio): audio is SinkAudioElement => Boolean(audio))
-        .map((audio) => applySelectedOutputToAudio(audio, '선택한 스피커로 테스트 출력을 전환하지 못했습니다.')),
     )
   }
 
@@ -2145,173 +1720,6 @@ export function useSquadMeetingController() {
     }
   }
 
-  async function startMicLoopback(stream = micStreamRef.current) {
-    if (!stream) {
-      setAudioDeviceError('마이크 테스트를 시작할 수 없습니다. 입력 장치를 다시 확인해 주세요.')
-      return
-    }
-
-    stopMicLoopback()
-
-    try {
-      const audio = new Audio() as SinkAudioElement
-
-      audio.srcObject = stream
-      audio.autoplay = true
-      audio.volume = 0.85
-      micLoopbackAudioRef.current = audio
-
-      await applySelectedOutputToAudio(audio, '선택한 스피커로 마이크 테스트 출력을 전환하지 못했습니다.')
-      await audio.play()
-      setMicTesting(true)
-      setAudioDeviceError(null)
-    } catch {
-      stopMicLoopback()
-      setAudioDeviceError('마이크 테스트 소리를 재생하지 못했습니다. 브라우저 권한과 출력 장치를 확인해 주세요.')
-    }
-  }
-
-  async function toggleMicTest() {
-    if (micTesting) {
-      stopMicLoopback()
-      return
-    }
-
-    if (!micStreamRef.current) {
-      await startMicMonitor(selectedInputId)
-    }
-
-    await startMicLoopback()
-  }
-
-  async function playSoundTest() {
-    if (soundTesting || soundTestAudioRef.current) {
-      stopSoundTest()
-      return
-    }
-
-    const AudioContextClass =
-      window.AudioContext
-      || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-
-    if (!AudioContextClass) {
-      setAudioDeviceError('이 브라우저에서는 스피커 테스트를 지원하지 않습니다.')
-      return
-    }
-
-    stopSoundTest()
-
-    try {
-      const testAudioContext = new AudioContextClass()
-      const oscillator = testAudioContext.createOscillator()
-      const gain = testAudioContext.createGain()
-      const destination = testAudioContext.createMediaStreamDestination()
-      const audio = new Audio() as SinkAudioElement
-
-      oscillator.type = 'sine'
-      oscillator.frequency.value = 880
-      gain.gain.setValueAtTime(0.11, testAudioContext.currentTime)
-      oscillator.connect(gain)
-      gain.connect(destination)
-
-      audio.srcObject = destination.stream
-      audio.autoplay = true
-      audio.volume = 0.85
-      soundTestAudioRef.current = audio
-      soundTestContextRef.current = testAudioContext
-      soundTestOscillatorRef.current = oscillator
-      soundTestGainRef.current = gain
-
-      await applySelectedOutputToAudio(audio, '선택한 스피커로 테스트음을 전환하지 못했습니다.')
-      oscillator.start()
-      await audio.play()
-      setSoundTesting(true)
-      setSpeakerLevel(80)
-      speakerMeterIntervalRef.current = window.setInterval(() => {
-        setSpeakerLevel((current) => (current > 65 ? 42 : 82))
-      }, 500)
-      setAudioDeviceError(null)
-    } catch {
-      stopSoundTest()
-      setAudioDeviceError('스피커 테스트음을 재생하지 못했습니다. 브라우저 권한과 출력 장치를 확인해 주세요.')
-    }
-  }
-
-  async function startMicMonitor(deviceId: string) {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setAudioDeviceError('이 브라우저에서는 마이크 입력을 테스트할 수 없습니다.')
-      return
-    }
-
-    stopMicMonitor()
-
-    try {
-      const stream = await getUserMediaWithTimeout(getAudioConstraints(deviceId))
-      await applyAudioProcessingConstraints(stream)
-      updateAudioProcessingStatus(stream, audioProcessingStatus.noiseGate)
-      const AudioContextClass =
-        window.AudioContext
-        || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-
-      if (!AudioContextClass) {
-        stream.getTracks().forEach((track) => track.stop())
-        setAudioDeviceError('이 브라우저에서는 마이크 레벨 테스트를 지원하지 않습니다.')
-        return
-      }
-
-      const audioContext = new AudioContextClass()
-      const source = audioContext.createMediaStreamSource(stream)
-      const analyser = audioContext.createAnalyser()
-      const data = new Uint8Array(analyser.frequencyBinCount)
-      let ambientRms = 0.006
-      let peakSignal = 0.035
-      let smoothedMeterLevel = 0
-
-      analyser.fftSize = 256
-      source.connect(analyser)
-      micStreamRef.current = stream
-      audioContextRef.current = audioContext
-
-      function tick() {
-        analyser.getByteTimeDomainData(data)
-        let mean = 0
-
-        for (const value of data) {
-          mean += value
-        }
-
-        mean /= data.length
-
-        let sum = 0
-
-        for (const value of data) {
-          const normalized = (value - mean) / 128
-          sum += normalized * normalized
-        }
-
-        const rms = Math.sqrt(sum / data.length)
-        const ambientSample = Math.min(rms, ambientRms + 0.012)
-        ambientRms = ambientRms * 0.97 + ambientSample * 0.03
-
-        const signal = Math.max(0, rms - ambientRms * 1.35)
-        peakSignal = Math.max(0.035, signal, peakSignal * 0.985)
-
-        const nextMeterLevel = Math.max(0, Math.min(100, Math.round((signal / peakSignal) * 100)))
-        smoothedMeterLevel = smoothedMeterLevel * 0.72 + nextMeterLevel * 0.28
-        setMicLevel(Math.round(smoothedMeterLevel))
-        animationFrameRef.current = window.requestAnimationFrame(tick)
-      }
-
-      tick()
-      if (micTesting) {
-        await startMicLoopback(stream)
-      }
-      setAudioDeviceError(null)
-    } catch {
-      setAudioDeviceError('선택한 마이크를 열 수 없습니다. 브라우저 권한과 장치 연결 상태를 확인해 주세요.')
-    }
-  }
-
   async function fetchParticipants(channelId: number) {
     return fetchSquadVoiceParticipants(channelId)
   }
@@ -2322,46 +1730,6 @@ export function useSquadMeetingController() {
 
   async function touchPresence(channelId: number) {
     return touchSquadVoicePresence(channelId)
-  }
-
-  async function fetchVoiceChatMessages(channelId: number) {
-    return fetchSquadVoiceChatMessages(channelId)
-  }
-
-  async function fetchVoiceMinutes(channelId: number) {
-    return fetchSquadVoiceMinutes(channelId)
-  }
-
-  function appendVoiceChatMessage(message: VoiceChatMessage) {
-    setVoiceChatMessages((current) => {
-      if (current.some((item) => item.messageId === message.messageId)) {
-        return current
-      }
-
-      return [...current, message]
-    })
-  }
-
-  function applyVoiceMinutes(minutes: VoiceMeetingMinutes, syncDraft = false) {
-    setVoiceMinutes(minutes)
-
-    if (syncDraft || shouldSyncMinutesDraftFromServer()) {
-      setMinutesDraft(minutes.transcript ?? '')
-    }
-  }
-
-  async function refreshVoiceMeetingPanel(channelId = activeChannel?.channelId, syncDraft = false) {
-    if (!channelId) {
-      return
-    }
-
-    const [messages, minutes] = await Promise.all([
-      fetchVoiceChatMessages(channelId),
-      fetchVoiceMinutes(channelId),
-    ])
-
-    setVoiceChatMessages(messages)
-    applyVoiceMinutes(minutes, syncDraft)
   }
 
   async function refreshVoiceRoomState(channelId = activeChannel?.channelId) {
@@ -2403,386 +1771,6 @@ export function useSquadMeetingController() {
         message: selectError instanceof Error ? selectError.message : '참가자 목록을 불러오지 못했습니다.',
         durationMs: 2200,
       })
-    }
-  }
-
-  function voiceEventLabel(type: VoiceEventType) {
-    if (type === 'MUTE') return '마이크를 음소거했습니다.'
-    if (type === 'UNMUTE') return '마이크 음소거를 해제했습니다.'
-    if (type === 'SPEAKING') return '발언을 시작했습니다.'
-    return '발언을 종료했습니다.'
-  }
-
-  async function createVoiceEvent(type: VoiceEventType, memo: string) {
-    if (!activeChannel) {
-      return
-    }
-
-    await createSquadVoiceEvent(activeChannel.channelId, type, memo)
-  }
-
-  function getSpeechRecognitionConstructor() {
-    const browserWindow = window as WindowWithSpeechRecognition
-
-    return browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition ?? null
-  }
-
-  function shouldSyncMinutesDraftFromServer() {
-    return Boolean(voiceMinutes?.recording) || document.activeElement !== minutesTextareaRef.current
-  }
-
-  function formatLocalTranscriptLine(text: string) {
-    const time = new Date().toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-    const speakerName = session?.name?.trim() || '나'
-
-    return `[${time}] ${speakerName}: ${text}`
-  }
-
-  function appendMinutesTranscript(text: string) {
-    const transcript = text.trim()
-
-    if (!transcript) {
-      return
-    }
-
-    const optimisticLine = formatLocalTranscriptLine(transcript)
-
-    setMinutesDraft((current) => {
-      if (!current.trim()) {
-        return optimisticLine
-      }
-
-      return `${current.trimEnd()}\n${optimisticLine}`
-    })
-
-    void appendMinutesTranscriptToServer(transcript)
-  }
-
-  async function appendMinutesTranscriptToServer(text: string) {
-    if (!activeChannel) {
-      return
-    }
-
-    try {
-      const minutes = await appendSquadVoiceMinutesTranscriptLine(activeChannel.channelId, text)
-
-      minutesAppendErrorShownRef.current = false
-      applyVoiceMinutes(minutes)
-      broadcastMeetingSync('minutes-updated', { minutes })
-    } catch {
-      if (!minutesAppendErrorShownRef.current) {
-        minutesAppendErrorShownRef.current = true
-        showAuthToast({ message: '자동 기록을 회의록에 붙이지 못했습니다.', durationMs: 2200 })
-      }
-    }
-  }
-
-  function startMinutesSpeechRecognition() {
-    if (isMuted) {
-      stopMinutesSpeechRecognition()
-      return false
-    }
-
-    const SpeechRecognition = getSpeechRecognitionConstructor()
-
-    if (!SpeechRecognition) {
-      showAuthToast({ message: '이 브라우저에서는 음성 자동 기록을 지원하지 않습니다.', durationMs: 2200 })
-      return false
-    }
-
-    stopMinutesSpeechRecognition()
-
-    try {
-      const recognition = new SpeechRecognition()
-
-      recognition.lang = 'ko-KR'
-      recognition.continuous = true
-      recognition.interimResults = false
-      recognition.onresult = (event) => {
-        for (let index = event.resultIndex; index < event.results.length; index += 1) {
-          const result = event.results[index]
-
-          if (result?.isFinal) {
-            appendMinutesTranscript(result[0]?.transcript ?? '')
-          }
-        }
-      }
-      recognition.onerror = () => {
-        setSpeechRecognitionActive(false)
-      }
-      recognition.onend = () => {
-        setSpeechRecognitionActive(false)
-
-        if (!speechRecognitionRestartRef.current || speechRecognitionRef.current !== recognition) {
-          return
-        }
-
-        window.setTimeout(() => {
-          if (!speechRecognitionRestartRef.current || speechRecognitionRef.current !== recognition) {
-            return
-          }
-
-          try {
-            recognition.start()
-            setSpeechRecognitionActive(true)
-          } catch {
-            setSpeechRecognitionActive(false)
-          }
-        }, 300)
-      }
-
-      speechRecognitionRef.current = recognition
-      speechRecognitionRestartRef.current = true
-      recognition.start()
-      setSpeechRecognitionActive(true)
-      return true
-    } catch {
-      speechRecognitionRestartRef.current = false
-      speechRecognitionRef.current = null
-      setSpeechRecognitionActive(false)
-      showAuthToast({ message: '음성 기록을 시작하지 못했습니다.', durationMs: 2200 })
-      return false
-    }
-  }
-
-  function stopMinutesSpeechRecognition() {
-    speechRecognitionRestartRef.current = false
-    const recognition = speechRecognitionRef.current
-    speechRecognitionRef.current = null
-
-    if (recognition) {
-      recognition.onresult = null
-      recognition.onend = null
-      recognition.onerror = null
-
-      try {
-        recognition.stop()
-      } catch {
-        recognition.abort()
-      }
-    }
-
-    setSpeechRecognitionActive(false)
-  }
-
-  async function sendVoiceChatMessage() {
-    if (!activeChannel) {
-      return
-    }
-
-    const content = voiceChatInput.trim()
-
-    if (!content) {
-      return
-    }
-
-    setChatSending(true)
-
-    try {
-      const message = await sendSquadVoiceChatMessage(activeChannel.channelId, content)
-
-      setVoiceChatInput('')
-      appendVoiceChatMessage(message)
-      broadcastMeetingSync('chat-message', { chatMessage: message })
-      void refreshVoiceMeetingPanel(activeChannel.channelId).catch(() => undefined)
-      void createSquadNotification(workspaceId, {
-        pageKey: 'squad-meeting',
-        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 회의 채팅에 메시지를 보냈습니다.`,
-        targetPath: '/squad-meeting',
-      })
-    } catch (chatError) {
-      showAuthToast({
-        message: chatError instanceof Error ? chatError.message : '회의 채팅을 보내지 못했습니다.',
-        durationMs: 2200,
-      })
-    } finally {
-      setChatSending(false)
-    }
-  }
-
-  async function clearVoiceChatMessages() {
-    if (!activeChannel || chatClearing) {
-      return
-    }
-
-    setChatClearing(true)
-
-    try {
-      await clearSquadVoiceChatMessages(activeChannel.channelId)
-      setVoiceChatMessages([])
-      void createSquadNotification(workspaceId, {
-        pageKey: 'squad-meeting',
-        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 회의 채팅 기록을 비웠습니다.`,
-        targetPath: '/squad-meeting',
-      })
-      showAuthToast({
-        message: '내 화면의 이전 회의 채팅을 지웠습니다. 다른 팀원에게는 그대로 보입니다.',
-        durationMs: 2200,
-      })
-    } catch (clearError) {
-      showAuthToast({
-        message: clearError instanceof Error ? clearError.message : '회의 채팅 기록을 지우지 못했습니다.',
-        durationMs: 2200,
-      })
-    } finally {
-      setChatClearing(false)
-    }
-  }
-
-  async function updateVoiceMinutes(payload: Partial<VoiceMeetingMinutes>, syncDraft = false) {
-    if (!activeChannel) {
-      return false
-    }
-
-    setMinutesSaving(true)
-
-    try {
-      const minutes = await updateSquadVoiceMinutes(activeChannel.channelId, payload)
-
-      applyVoiceMinutes(minutes, syncDraft)
-      broadcastMeetingSync('minutes-updated', { minutes })
-
-      return true
-    } catch (minutesError) {
-      showAuthToast({
-        message: minutesError instanceof Error ? minutesError.message : '회의록을 저장하지 못했습니다.',
-        durationMs: 2200,
-      })
-      return false
-    } finally {
-      setMinutesSaving(false)
-    }
-  }
-
-  async function toggleMinutesRecording() {
-    const nextRecording = !(voiceMinutes?.recording ?? false)
-    const updated = await updateVoiceMinutes({ recording: nextRecording })
-
-    if (!updated) {
-      return
-    }
-
-    if (!nextRecording) {
-      stopMinutesSpeechRecognition()
-    }
-    void createSquadNotification(workspaceId, {
-      pageKey: 'squad-meeting',
-      message: `${squadActorName(session?.name)}님이 "${activeChannel?.name ?? '음성 회의'}" 회의록 녹음을 ${nextRecording ? '시작' : '종료'}했습니다.`,
-      targetPath: '/squad-meeting',
-    })
-  }
-
-  async function saveMinutesDraft(showSavedToast = true) {
-    if (await updateVoiceMinutes({ transcript: minutesDraft }, true)) {
-      if (showSavedToast) {
-        void createSquadNotification(workspaceId, {
-          pageKey: 'squad-meeting',
-          message: `${squadActorName(session?.name)}님이 "${activeChannel?.name ?? '음성 회의'}" 회의록을 저장했습니다.`,
-          targetPath: '/squad-meeting',
-        })
-      }
-      if (showSavedToast) {
-        showAuthToast({ message: '회의록이 저장되었습니다.', durationMs: 1600 })
-      }
-    }
-  }
-
-  function toggleMinutesActionItem(index: number) {
-    setSelectedMinutesActionItems((current) => {
-      if (current.includes(index)) {
-        return current.filter((itemIndex) => itemIndex !== index)
-      }
-
-      return [...current, index]
-    })
-  }
-
-  async function generateMinutesSummary() {
-    if (!activeChannel) {
-      return
-    }
-
-    if (minutesDraft !== (voiceMinutes?.transcript ?? '')) {
-      const saved = await updateVoiceMinutes({ transcript: minutesDraft }, true)
-
-      if (!saved) {
-        return
-      }
-    }
-
-    setMinutesSaving(true)
-
-    try {
-      const response = await createSquadVoiceMinutesSummary(activeChannel.channelId)
-
-      const analysis = normalizeVoiceMeetingSummaryResponse(response)
-      const minutes = analysis.minutes
-      const actionItems = analysis.actionItems ?? []
-
-      if (!minutes?.channelId) {
-        throw new Error('회의 요약 응답을 읽지 못했습니다.')
-      }
-
-      applyVoiceMinutes(minutes, true)
-      broadcastMeetingSync('minutes-updated', { minutes })
-      setMinutesActionItems(actionItems)
-      setSelectedMinutesActionItems(actionItems.map((_, index) => index))
-      setMinutesSummaryReportOpen(true)
-      void createSquadNotification(workspaceId, {
-        pageKey: 'squad-meeting',
-        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 회의록 요약을 생성했습니다.`,
-        targetPath: '/squad-meeting',
-      })
-    } catch (summaryError) {
-      showAuthToast({
-        message: summaryError instanceof Error ? summaryError.message : '회의 요약을 만들지 못했습니다.',
-        durationMs: 2200,
-      })
-    } finally {
-      setMinutesSaving(false)
-    }
-  }
-
-  async function createKanbanTasksFromMinutes() {
-    if (!activeChannel || kanbanTaskCreating) {
-      return
-    }
-
-    const actionItems = minutesActionItems.filter((_, index) =>
-      selectedMinutesActionItems.includes(index),
-    )
-
-    if (actionItems.length === 0) {
-      showAuthToast({ message: '칸반에 등록할 할 일을 선택해 주세요.', durationMs: 1800 })
-      return
-    }
-
-    setKanbanTaskCreating(true)
-
-    try {
-      const result = await createSquadVoiceMinutesKanbanTasks(activeChannel.channelId, actionItems)
-
-      showAuthToast({
-        message: `${result.tasks.length}개의 할 일을 칸반 보드에 등록했습니다.`,
-        durationMs: 2200,
-      })
-      setMinutesSummaryReportOpen(false)
-      void createSquadNotification(workspaceId, {
-        pageKey: 'squad-meeting',
-        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}" 회의록에서 칸반 작업 ${result.tasks.length}개를 만들었습니다.`,
-        targetPath: '/squad-workspace',
-      })
-    } catch (taskError) {
-      showAuthToast({
-        message: taskError instanceof Error ? taskError.message : '칸반 보드에 할 일을 등록하지 못했습니다.',
-        durationMs: 2200,
-      })
-    } finally {
-      setKanbanTaskCreating(false)
     }
   }
 
@@ -2990,117 +1978,6 @@ export function useSquadMeetingController() {
         message: eventError instanceof Error ? eventError.message : '음성 상태를 변경하지 못했습니다.',
         durationMs: 2200,
       })
-    }
-  }
-
-  function resetScreenSharePlayer() {
-    screenShareDragRef.current = null
-    setScreenShareDragging(false)
-    setScreenShareZoom(SCREEN_SHARE_MIN_ZOOM)
-    setScreenSharePan({ x: 0, y: 0 })
-  }
-
-  function openScreenSharePlayer(userId: number) {
-    resetScreenSharePlayer()
-    setScreenSharePlayerUserId(userId)
-    setScreenSharePlayerOpen(true)
-
-    if (document.fullscreenElement || !document.documentElement.requestFullscreen) {
-      return
-    }
-
-    void document.documentElement.requestFullscreen().catch(() => undefined)
-  }
-
-  function closeScreenSharePlayer() {
-    resetScreenSharePlayer()
-    setScreenSharePlayerOpen(false)
-    setScreenSharePlayerUserId(null)
-
-    if (!document.fullscreenElement) {
-      return
-    }
-
-    void document.exitFullscreen().catch(() => undefined)
-  }
-
-  function updateScreenShareZoom(nextValue: number, pivot?: { x: number; y: number }) {
-    const nextZoom = clampScreenShareZoom(nextValue)
-
-    if (nextZoom <= SCREEN_SHARE_MIN_ZOOM) {
-      setScreenSharePan({ x: 0, y: 0 })
-      setScreenShareZoom(SCREEN_SHARE_MIN_ZOOM)
-      return
-    }
-
-    if (pivot) {
-      const ratio = nextZoom / screenShareZoom
-
-      setScreenSharePan((current) => ({
-        x: current.x - pivot.x * (ratio - 1),
-        y: current.y - pivot.y * (ratio - 1),
-      }))
-    }
-
-    setScreenShareZoom(nextZoom)
-  }
-
-  function handleScreenShareWheel(event: ReactWheelEvent<HTMLDivElement>) {
-    event.preventDefault()
-
-    const rect = event.currentTarget.getBoundingClientRect()
-    const pivot = {
-      x: event.clientX - rect.left - rect.width / 2,
-      y: event.clientY - rect.top - rect.height / 2,
-    }
-    const direction = event.deltaY < 0 ? 1 : -1
-
-    updateScreenShareZoom(screenShareZoom + direction * SCREEN_SHARE_WHEEL_ZOOM_STEP, pivot)
-  }
-
-  function handleScreenSharePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (screenShareZoom <= SCREEN_SHARE_MIN_ZOOM) {
-      return
-    }
-
-    if (event.target instanceof HTMLElement && event.target.closest('button, a, input, textarea, select')) {
-      return
-    }
-
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    screenShareDragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      originX: screenSharePan.x,
-      originY: screenSharePan.y,
-    }
-    setScreenShareDragging(true)
-  }
-
-  function handleScreenSharePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
-    const dragState = screenShareDragRef.current
-
-    if (!dragState || dragState.pointerId !== event.pointerId) {
-      return
-    }
-
-    event.preventDefault()
-    setScreenSharePan({
-      x: dragState.originX + event.clientX - dragState.startX,
-      y: dragState.originY + event.clientY - dragState.startY,
-    })
-  }
-
-  function endScreenShareDrag(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
-
-    if (screenShareDragRef.current?.pointerId === event.pointerId) {
-      screenShareDragRef.current = null
-      setScreenShareDragging(false)
     }
   }
 

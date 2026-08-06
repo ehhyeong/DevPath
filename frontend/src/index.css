@@ -2,7 +2,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap');
 @import "tailwindcss";
 @import './styles/base.css';
-@import './styles/workspaces.css';
-@import './styles/roadmaps.css';
-@import './styles/instructor.css';
 @import './styles/compatibility.css';

@@ -35,7 +35,7 @@ getWorkspaceIdFromUrl
 
 export default function TeamWorkspaceSuiteApp({ page }: { page?: TeamWorkspacePage }) {
   const activePage = page ?? 'kanban'
-  const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session, setSession] = useState(() => readStoredAuthSession())
   const [data, setData] = useState<SuiteData>(DEFAULT_DATA)
   const [loading, setLoading] = useState(true)

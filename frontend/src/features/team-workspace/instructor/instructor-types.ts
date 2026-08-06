@@ -11,7 +11,7 @@ export type InstructorTeamWsPage =
   | 'voice-channel'
 
 export type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
+export type TaskStatus = WorkspaceTaskStatus
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 export type WorkspaceFileType = 'FILE' | 'FOLDER' | 'LINK'
 
@@ -190,3 +190,4 @@ export type TeamData = {
 }
 
 export type PageConfig = { path: string; label: string; title: string; icon: string; section: 'admin' | 'team' | 'resources' }
+import type { WorkspaceTaskStatus } from '../../../types/workspace'

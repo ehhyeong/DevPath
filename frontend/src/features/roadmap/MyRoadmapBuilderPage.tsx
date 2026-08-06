@@ -532,7 +532,7 @@ function MyRoadmapBuilderPage() {
     } finally {
       setSaving(false)
     }
-  }, [session?.accessToken, session?.userId, roadmapTitle, nodes, editMyRoadmapId])
+  }, [session, roadmapTitle, nodes, editMyRoadmapId])
 
   // ── 드래그 핸들러 ──
   function handleDragStart(event: DragStartEvent) {

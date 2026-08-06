@@ -8,7 +8,7 @@ export type InstructorWsPage =
   | 'meeting'
   | 'live-meeting'
 
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
+export type TaskStatus = WorkspaceTaskStatus
 export type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
 export type QnaStatus = 'UNANSWERED' | 'ANSWERED' | 'CLOSED' | 'OPEN'
 
@@ -176,3 +176,4 @@ export type WorkspaceData = {
   activityLogs: ActivityLogItem[]
   voiceChannels: VoiceChannelSummary[]
 }
+import type { WorkspaceTaskStatus } from '../../../types/workspace'

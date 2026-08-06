@@ -347,7 +347,7 @@ export default function LectureListApp() {
       return
     }
 
-    window.location.href = buildCourseDetailHref(courseId)
+    window.location.assign(buildCourseDetailHref(courseId))
   }
 
   async function handleToggleBookmark(courseId: number) {

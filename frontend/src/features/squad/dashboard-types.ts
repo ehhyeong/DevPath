@@ -1,6 +1,6 @@
 export type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 export type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE'
+export type TaskStatus = WorkspaceTaskStatus
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 export type ChatTab = 'team' | 'dm'
 
@@ -124,3 +124,4 @@ export type DirectMessage = {
   content: string
   createdAt: string
 }
+import type { WorkspaceTaskStatus } from '../../types/workspace'

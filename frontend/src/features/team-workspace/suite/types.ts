@@ -1,10 +1,11 @@
 import type { TeamWorkspaceNavKey } from './nav'
+import type { WorkspaceTaskStatus } from '../../../types/workspace'
 
 export type TeamWorkspacePage = TeamWorkspaceNavKey
 
 export type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
 export type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
+export type TaskStatus = WorkspaceTaskStatus
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 export type MilestoneStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'CLOSED'
 export type WorkspaceFileType = 'FILE' | 'FOLDER' | 'LINK'

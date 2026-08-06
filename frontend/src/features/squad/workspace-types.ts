@@ -1,6 +1,6 @@
 export type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 export type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
+export type TaskStatus = WorkspaceTaskStatus
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 export type FilterType = 'all' | 'me' | 'urgent'
 
@@ -40,3 +40,4 @@ export type TaskFormState = {
   assigneeId: string
   dueDate: string
 }
+import type { WorkspaceTaskStatus } from '../../types/workspace'

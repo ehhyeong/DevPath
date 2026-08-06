@@ -1,6 +1,8 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SiteHeader from '../../components/SiteHeader'
+import { CourseDescription,LoadingOverlay,StarRating } from './CourseDetailViewComponents'
+import { readNumberSearchParam,readAuthViewFromLocation,readStudentPreviewFromLocation,readStudentPreviewReturnHref,readSafeReturnToFromLocation,syncAuthViewInLocation,buildQuestionFilterClass,buildQuestionBadgeClass,buildQuestionCardClass,buildReviewFilterClass,toQuestionSummary,mapQnaQuestionToCourseQuestion,createQnaQuestionSearchText,getPlainDescription } from './course-detail-view-support'
 import {
   buildCourseJobCards,
   buildCourseNewsCards,
@@ -20,7 +22,6 @@ import {
   isCourseDetailVideoLesson,
   mergeCourseDetailWithFallback,
   type CourseNewsCard,
-  type CourseQuestionItem,
   type CourseQuestionStatus,
 } from './course-detail-support'
 import { buildInstructorChannelHref } from '../../instructor/channel/support'
@@ -43,230 +44,6 @@ const qnaInputBaseClassName = 'qna-input w-full rounded-[12px] border-[1px] bord
 const qnaInputClassName = `${qnaInputBaseClassName} text-[14px]!`
 const qnaTextareaClassName = 'qna-textarea min-h-[140px] w-full resize-none rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white p-[12px] text-[14px]! [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
 const qnaMetaIconClassName = 'inline-flex items-center gap-[6px] text-[12px] font-[800] text-[#6b7280] [&_i]:text-[#9ca3af]'
-
-function readNumberSearchParam(name: string) {
-  const value = new URLSearchParams(window.location.search).get(name)
-  const parsed = value ? Number(value) : NaN
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-}
-
-function readAuthViewFromLocation(): AuthView | null {
-  const value = new URLSearchParams(window.location.search).get('auth')
-  return value === 'login' || value === 'signup' ? value : null
-}
-
-function readStudentPreviewFromLocation() {
-  return new URLSearchParams(window.location.search).get('preview') === 'student'
-}
-
-function readStudentPreviewReturnHref(courseId: number | null) {
-  const fallbackHref = courseId ? `/course-editor?courseId=${courseId}` : '/course-editor'
-  const value = new URLSearchParams(window.location.search).get('returnTo')
-
-  if (!value) {
-    return fallbackHref
-  }
-
-  try {
-    const nextUrl = new URL(value, window.location.origin)
-
-    if (nextUrl.origin !== window.location.origin) {
-      return fallbackHref
-    }
-
-    return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
-  } catch {
-    return fallbackHref
-  }
-}
-
-function readSafeReturnToFromLocation() {
-  const value = new URLSearchParams(window.location.search).get('returnTo')
-  if (!value) return null
-
-  try {
-    const nextUrl = new URL(value, window.location.origin)
-    if (nextUrl.origin !== window.location.origin) return null
-    return `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`
-  } catch {
-    return null
-  }
-}
-
-function syncAuthViewInLocation(view: AuthView | null) {
-  const url = new URL(window.location.href)
-  if (view) url.searchParams.set('auth', view)
-  else url.searchParams.delete('auth')
-  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
-}
-
-function buildQuestionFilterClass(active: boolean) {
-  return `qna-filter-btn inline-flex! h-[36px]! items-center! justify-center! rounded-[12px]! border px-[14px]! py-0! text-[13px]! leading-[18px]! font-extrabold! transition ${
-    active
-      ? 'border-[#111827] bg-[#111827] text-white'
-      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-  }`
-}
-
-function buildQuestionBadgeClass(status: CourseQuestionStatus) {
-  return `inline-flex items-center gap-[6px] whitespace-nowrap rounded-[999px] border-[1px] border-solid px-[8px] py-[4px] text-[10px] font-[900] ${
-    status === 'answered'
-      ? 'border-[#bbf7d0] bg-[#ecfdf5] text-[#065f46] [&_i]:text-[#00c471]'
-      : 'border-[#fed7aa] bg-[#fff7ed] text-[#9a3412] [&_i]:text-[#f97316]'
-  }`
-}
-
-function buildQuestionCardClass(opened: boolean) {
-  return `qna-card cursor-pointer p-6 [transition:transform_0.15s,_box-shadow_0.15s,_border-color_0.15s,_background-color_0.15s] hover:[box-shadow:0_12px_28px_rgba(17,24,39,0.08)]! hover:[transform:translateY(-1px)] ${
-    opened ? 'hover:border-[#e5e7eb]!' : 'hover:border-[rgba(0,196,113,0.35)]!'
-  }`
-}
-
-function buildReviewFilterClass(active: boolean) {
-  return `rounded-lg px-3 py-1.5 text-xs transition ${
-    active
-      ? 'bg-gray-800 font-bold text-white'
-      : 'bg-gray-100 font-medium text-gray-600 hover:bg-gray-200'
-  }`
-}
-
-function toQuestionSummary(question: QnaQuestionDetail): QnaQuestionSummary {
-  return {
-    id: question.id,
-    authorId: question.authorId,
-    authorName: question.authorName,
-    courseId: question.courseId,
-    lessonId: question.lessonId,
-    templateType: question.templateType,
-    difficulty: question.difficulty,
-    title: question.title,
-    adoptedAnswerId: question.adoptedAnswerId,
-    lectureTimestamp: question.lectureTimestamp,
-    qnaStatus: question.qnaStatus,
-    answerCount: question.answers.length,
-    viewCount: question.viewCount,
-    createdAt: question.createdAt,
-  }
-}
-
-function getQnaQuestionStatus(question: QnaQuestionSummary | QnaQuestionDetail): CourseQuestionStatus {
-  return question.qnaStatus === 'ANSWERED' || Boolean(question.adoptedAnswerId) || question.answerCount > 0
-    ? 'answered'
-    : 'pending'
-}
-
-function getQnaQuestionTag(question: QnaQuestionSummary) {
-  return question.lectureTimestamp || question.templateType || question.difficulty || 'Q&A'
-}
-
-function mapQnaQuestionToCourseQuestion(
-  question: QnaQuestionSummary,
-  detail: QnaQuestionDetail | undefined,
-): CourseQuestionItem {
-  const answers = detail?.answers ?? []
-  return {
-    id: question.id,
-    status: getQnaQuestionStatus(detail ?? question),
-    authorName: question.authorName,
-    tag: getQnaQuestionTag(question),
-    title: question.title,
-    body: detail?.content ?? '질문 내용을 불러오는 중입니다.',
-    views: question.viewCount,
-    createdAt: question.createdAt ?? new Date(0).toISOString(),
-    commentCount: detail ? answers.length : question.answerCount,
-    comments: answers.map((answer) => ({
-      id: answer.id,
-      authorName: answer.authorName,
-      content: answer.content,
-      createdAt: answer.createdAt ?? '',
-    })),
-  }
-}
-
-function createQnaQuestionSearchText(question: QnaQuestionSummary, detail: QnaQuestionDetail | undefined) {
-  return `${question.authorName} ${getQnaQuestionTag(question)} ${question.title} ${detail?.content ?? ''}`.toLowerCase()
-}
-
-function StarRating({ rating, className = 'text-xs' }: { rating: number; className?: string }) {
-  const whole = Math.floor(rating)
-  const hasHalf = rating - whole >= 0.5
-  return (
-    <div className={`flex text-yellow-400 ${className}`}>
-      {Array.from({ length: 5 }).map((_, index) => {
-        const starIndex = index + 1
-        const iconClassName = starIndex <= whole
-          ? 'fas fa-star'
-          : starIndex === whole + 1 && hasHalf
-            ? 'fas fa-star-half-alt'
-            : 'far fa-star'
-        return <i key={index} className={iconClassName} />
-      })}
-    </div>
-  )
-}
-
-function LoadingOverlay() {
-  return (
-    <div className="fixed inset-0 z-[2001] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="h-14 w-14 animate-spin rounded-full border-4 border-[#00c471] border-t-transparent" />
-    </div>
-  )
-}
-
-const markdownImagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g
-
-function getPlainDescription(description: string) {
-  return description.replace(markdownImagePattern, '').replace(/\n{3,}/g, '\n\n').trim()
-}
-
-function renderCourseDescription(description: string) {
-  const nodes: Array<{ type: 'text'; value: string } | { type: 'image'; alt: string; src: string }> = []
-  let lastIndex = 0
-
-  for (const match of description.matchAll(markdownImagePattern)) {
-    const matchIndex = match.index ?? 0
-    const textBefore = description.slice(lastIndex, matchIndex).trim()
-
-    if (textBefore) {
-      nodes.push({ type: 'text', value: textBefore })
-    }
-
-    nodes.push({ type: 'image', alt: match[1] || '강의 소개 이미지', src: match[2] })
-    lastIndex = matchIndex + match[0].length
-  }
-
-  const textAfter = description.slice(lastIndex).trim()
-  if (textAfter) {
-    nodes.push({ type: 'text', value: textAfter })
-  }
-
-  if (!nodes.length) {
-    return <p className="mb-4">{description}</p>
-  }
-
-  return (
-    <>
-      {nodes.map((node, index) => {
-        if (node.type === 'image') {
-          return (
-            <img
-              key={`course-description-image-${index}`}
-              src={node.src}
-              alt={node.alt}
-              className="my-6 w-full rounded-xl border border-gray-100 object-cover"
-            />
-          )
-        }
-
-        return node.value.split(/\n{2,}/).map((paragraph, paragraphIndex) => (
-          <p key={`course-description-text-${index}-${paragraphIndex}`} className="mb-4 whitespace-pre-line">
-            {paragraph}
-          </p>
-        ))
-      })}
-    </>
-  )
-}
 
 export default function CourseDetailApp() {
   useInternalPageScroll()
@@ -963,7 +740,7 @@ export default function CourseDetailApp() {
 
                 <div className="prose mb-12 max-w-none border-t border-gray-100 pt-10 text-gray-700 leading-relaxed">
                   <h3 className="mb-4 text-xl font-bold text-gray-900">강의 요약</h3>
-                  {renderCourseDescription(displayCourse.description ?? '')}
+                  <CourseDescription description={displayCourse.description ?? ''} />
                   {courseInfoSections.map((section) => (
                     <div key={`${section.sectionKey}-${section.title}`}>
                       <h3 className="mt-8 mb-4 text-xl font-bold text-gray-900">{section.title}</h3>

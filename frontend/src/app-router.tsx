@@ -1,8 +1,22 @@
-import { Suspense,lazy,type ReactElement } from 'react'
+import { Suspense,lazy,type ComponentType,type ReactElement } from 'react'
 import { NotFoundPage,RouteErrorBoundary,RouteLoadingView } from './components/AppRouteStates'
 import { ACCOUNT_PAGE_ROUTES,INSTRUCTOR_PAGE_ROUTES } from './routes'
 
 const App = lazy(() => import('./App'))
+
+function lazyWithStyle<Props>(
+  loadStyle: () => Promise<unknown>,
+  loadComponent: () => Promise<{ default: ComponentType<Props> }>,
+) {
+  return lazy(async () => {
+    await loadStyle()
+    return loadComponent()
+  })
+}
+
+const loadInstructorStyles = () => import('./styles/instructor.css')
+const loadRoadmapStyles = () => import('./styles/roadmaps.css')
+const loadWorkspaceStyles = () => import('./styles/workspaces.css')
 const ContentAssignmentEditorApp = lazy(() => import('./features/course/ContentAssignmentEditorApp'))
 const CourseDetailApp = lazy(() => import('./features/course/CourseDetailApp'))
 const CourseEditorApp = lazy(() => import('./features/course/CourseEditorApp'))
@@ -10,41 +24,41 @@ const CommunityLoungeApp = lazy(() => import('./features/community/CommunityLoun
 const CommunityListPage = lazy(() => import('./features/community/CommunityListPage'))
 const CommunityWritePage = lazy(() => import('./features/community/CommunityWritePage'))
 const DevShowcaseApp = lazy(() => import('./features/community/DevShowcaseApp'))
-const InstructorApp = lazy(() => import('./instructor/apps/InstructorApp'))
-const InstructorChannelApp = lazy(() => import('./instructor/channel/InstructorChannelApp'))
-const InstructorCourseDetailApp = lazy(() => import('./instructor/apps/InstructorCourseDetailApp'))
-const InstructorEditProfileApp = lazy(() => import('./instructor/apps/InstructorEditProfileApp'))
-const InstructorTeamWsDashboardApp = lazy(() => import('./features/team-workspace/InstructorTeamWsDashboardApp'))
-const InstructorWsDashboardApp = lazy(() => import('./features/mentoring/InstructorWsDashboardApp'))
+const InstructorApp = lazyWithStyle(loadInstructorStyles, () => import('./instructor/apps/InstructorApp'))
+const InstructorChannelApp = lazyWithStyle(loadInstructorStyles, () => import('./instructor/channel/InstructorChannelApp'))
+const InstructorCourseDetailApp = lazyWithStyle(loadInstructorStyles, () => import('./instructor/apps/InstructorCourseDetailApp'))
+const InstructorEditProfileApp = lazyWithStyle(loadInstructorStyles, () => import('./instructor/apps/InstructorEditProfileApp'))
+const InstructorTeamWsDashboardApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/InstructorTeamWsDashboardApp'))
+const InstructorWsDashboardApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/mentoring/InstructorWsDashboardApp'))
 const JobMatchingApp = lazy(() => import('./features/jobs/JobMatchingApp'))
 const LearnerApp = lazy(() => import('./features/course/LearnerApp'))
 const LearningPlayerApp = lazy(() => import('./features/course/LearningPlayerApp'))
 const LectureListApp = lazy(() => import('./features/course/LectureListApp'))
 const LoginApp = lazy(() => import('./features/auth/LoginApp'))
 const LoungeDashboardApp = lazy(() => import('./features/community/LoungeDashboardApp'))
-const MentoringCommonWorkspaceApp = lazy(() => import('./features/mentoring/MentoringCommonWorkspaceApp'))
-const MentoringHubApp = lazy(() => import('./features/mentoring/MentoringHubApp'))
-const MyRoadmapBuilderApp = lazy(() => import('./features/roadmap/MyRoadmapBuilderApp'))
-const MyRoadmapListPage = lazy(() => import('./features/roadmap/MyRoadmapListPage'))
+const MentoringCommonWorkspaceApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/mentoring/MentoringCommonWorkspaceApp'))
+const MentoringHubApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/mentoring/MentoringHubApp'))
+const MyRoadmapBuilderApp = lazyWithStyle(loadRoadmapStyles, () => import('./features/roadmap/MyRoadmapBuilderApp'))
+const MyRoadmapListPage = lazyWithStyle(loadRoadmapStyles, () => import('./features/roadmap/MyRoadmapListPage'))
 const OAuthRedirectApp = lazy(() => import('./features/auth/OAuthRedirectApp'))
 const ProjectCreateApp = lazy(() => import('./features/project/ProjectCreateApp'))
 const QuizCreatorApp = lazy(() => import('./features/course/QuizCreatorApp'))
-const RoadmapApp = lazy(() => import('./features/roadmap/RoadmapApp'))
-const RoadmapHubApp = lazy(() => import('./features/roadmap/RoadmapHubApp'))
+const RoadmapApp = lazyWithStyle(loadRoadmapStyles, () => import('./features/roadmap/RoadmapApp'))
+const RoadmapHubApp = lazyWithStyle(loadRoadmapStyles, () => import('./features/roadmap/RoadmapHubApp'))
 const SignupApp = lazy(() => import('./features/auth/SignupApp'))
-const SquadDashboardApp = lazy(() => import('./features/squad/SquadDashboardApp'))
-const SquadErdApp = lazy(() => import('./features/squad/SquadErdApp'))
-const SquadFilesApp = lazy(() => import('./features/squad/SquadFilesApp'))
-const SquadMeetingApp = lazy(() => import('./features/squad/SquadMeetingApp'))
-const SquadReviewApp = lazy(() => import('./features/squad/SquadReviewApp'))
-const SquadScheduleApp = lazy(() => import('./features/squad/SquadScheduleApp'))
-const SquadSettingsApp = lazy(() => import('./features/squad/SquadSettingsApp'))
-const SquadWorkspaceApp = lazy(() => import('./features/squad/SquadWorkspaceApp'))
-const SurveyApp = lazy(() => import('./features/roadmap/SurveyApp'))
-const TeamWorkspaceDashboardApp = lazy(() => import('./features/team-workspace/TeamWorkspaceDashboardApp'))
-const TeamWorkspaceMilestoneApp = lazy(() => import('./features/team-workspace/TeamWorkspaceMilestoneApp'))
-const TeamWorkspaceSuiteApp = lazy(() => import('./features/team-workspace/TeamWorkspaceSuiteApp'))
-const WorkspaceHubApp = lazy(() => import('./features/project/WorkspaceHubApp'))
+const SquadDashboardApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadDashboardApp'))
+const SquadErdApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadErdApp'))
+const SquadFilesApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadFilesApp'))
+const SquadMeetingApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadMeetingApp'))
+const SquadReviewApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadReviewApp'))
+const SquadScheduleApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadScheduleApp'))
+const SquadSettingsApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadSettingsApp'))
+const SquadWorkspaceApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadWorkspaceApp'))
+const SurveyApp = lazyWithStyle(loadRoadmapStyles, () => import('./features/roadmap/SurveyApp'))
+const TeamWorkspaceDashboardApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/TeamWorkspaceDashboardApp'))
+const TeamWorkspaceMilestoneApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/TeamWorkspaceMilestoneApp'))
+const TeamWorkspaceSuiteApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/TeamWorkspaceSuiteApp'))
+const WorkspaceHubApp = lazyWithStyle(loadWorkspaceStyles, () => import('./features/project/WorkspaceHubApp'))
 
 const ROUTE_PAGES: Record<string, ReactElement> = {
   '/': <App />,
