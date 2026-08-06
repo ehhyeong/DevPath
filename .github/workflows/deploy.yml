@@ -6,12 +6,41 @@ on:
       - master  # master 브랜치에 코드가 push되면 자동으로 배포가 시작됩니다.
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect deployment targets
+        id: changes
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            DEPLOY_ALL=true node scripts/detect-deployment-targets.mjs < /dev/null
+          else
+            git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" | node scripts/detect-deployment-targets.mjs
+          fi
+
   # ─────────────────────────────────────────────
   # Job 1. 오라클 서버에서 직접 pull·빌드 후 재시작
   #   (러너→서버 SCP push 경로가 ~15KB/s로 무너져, 서버가 GitHub에서 직접 pull·빌드하는 방식으로 전환)
   # ─────────────────────────────────────────────
   deploy-backend:
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
 
     steps:
       # 서버 접속 → 최신 master pull → 빌드 → systemd 실행 경로로 복사 → 재시작
@@ -72,11 +101,20 @@ jobs:
             exit 1
 
   # ─────────────────────────────────────────────
-  # Job 2. 프론트엔드 Docker 재빌드 (백엔드 완료 후 실행)
+  # Job 2. 프론트엔드 Docker 재빌드 (백엔드 변경이 함께 있으면 완료 후 실행)
   # ─────────────────────────────────────────────
   deploy-frontend:
     runs-on: ubuntu-latest
-    needs: deploy-backend  # 백엔드 배포가 끝난 후에 실행 (서버 자원 과부하 방지)
+    needs:
+      - detect-changes
+      - deploy-backend
+    if: >-
+      always()
+      && needs.detect-changes.outputs.frontend == 'true'
+      && (
+        needs.detect-changes.outputs.backend != 'true'
+        || needs.deploy-backend.result == 'success'
+      )
 
     steps:
       # 1. 소스코드 체크아웃
