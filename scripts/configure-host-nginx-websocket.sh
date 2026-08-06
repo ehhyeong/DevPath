@@ -4,6 +4,8 @@ set -euo pipefail
 
 readonly snippet_path="/etc/nginx/snippets/devpath-websocket.conf"
 readonly include_line="include ${snippet_path};"
+readonly upload_limit_line="client_max_body_size 55m;"
+readonly upload_limit_pattern='^[[:space:]]*client_max_body_size[[:space:]]+[^;]+;([[:space:]]*#.*)?$'
 backup_dir="$(mktemp -d)"
 rollback_required=true
 had_snippet=false
@@ -53,24 +55,30 @@ for index in "${!site_files[@]}"; do
   sudo cp "${site_file}" "${backup_dir}/site-${index}.conf"
   backed_up_site_count=$((backed_up_site_count + 1))
 
-  if sudo grep -Fq "${include_line}" "${site_file}"; then
-    continue
-  fi
-
   if ! sudo grep -Eq '^[[:space:]]*location[[:space:]]+/[[:space:]]*\{' "${site_file}"; then
     echo "${site_file}에서 기본 location 블록을 찾지 못했습니다." >&2
     exit 1
   fi
 
-  sudo sed -i -E \
-    "/^[[:space:]]*location[[:space:]]+\/[[:space:]]*\{/i\\        ${include_line}" \
-    "${site_file}"
+  if sudo grep -Eq "${upload_limit_pattern}" "${site_file}"; then
+    sudo sed -i -E \
+      "s|${upload_limit_pattern}|        ${upload_limit_line}|" \
+      "${site_file}"
+  else
+    sudo sed -i -E \
+      "/^[[:space:]]*location[[:space:]]+\/[[:space:]]*\{/i\\        ${upload_limit_line}" \
+      "${site_file}"
+  fi
+
+  if ! sudo grep -Fq "${include_line}" "${site_file}"; then
+    sudo sed -i -E \
+      "/^[[:space:]]*location[[:space:]]+\/[[:space:]]*\{/i\\        ${include_line}" \
+      "${site_file}"
+  fi
 done
 
 snippet_file="${backup_dir}/devpath-websocket.conf"
 cat > "${snippet_file}" <<'EOF'
-client_max_body_size 55m;
-
 location /ws/ {
     proxy_pass http://127.0.0.1:8083;
     proxy_http_version 1.1;
