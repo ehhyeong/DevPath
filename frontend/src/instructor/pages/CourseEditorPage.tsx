@@ -1,5 +1,6 @@
 ﻿import { useEffect,useRef,useState } from 'react'
 import { ErrorCard,LoadingCard } from '../../account/ui'
+import { navigateTo } from '../../lib/spa-navigation'
 import { instructorCourseApi } from '../../lib/api/instructor'
 import { userApi } from '../../lib/api/auth'
 import type { TechTag } from '../../types/learner'
@@ -487,7 +488,7 @@ export default function CourseEditorPage() {
     try {
       await persistCourse('IN_REVIEW')
       window.alert('심사 요청이 완료되었습니다.')
-      window.location.href = '/course-management'
+      navigateTo('/course-management')
     } catch (nextError) {
       if (nextError instanceof CourseEditorValidationError) {
         setSaveToast({ message: nextError.message, persistent: false, variant: 'error' })
@@ -585,7 +586,7 @@ export default function CourseEditorPage() {
       })
 
       setSaveToast({ message: '저장되었습니다.', persistent: false })
-      window.location.assign(editorHref)
+      navigateTo(editorHref)
     } catch (nextError) {
       if (nextError instanceof CourseEditorValidationError) {
         setSaveToast({ message: nextError.message, persistent: false, variant: 'error' })
@@ -696,7 +697,7 @@ export default function CourseEditorPage() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => window.location.assign('/course-management')}
+            onClick={() => navigateTo('/course-management')}
             className="course-editor-back-button text-gray-400 transition hover:text-gray-800"
           >
             <i className="fas fa-arrow-left text-xl" />

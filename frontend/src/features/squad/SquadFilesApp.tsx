@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type DragEvent, type FormEvent } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
@@ -550,7 +551,7 @@ export default function SquadFilesApp() {
 
   function handleLogout() {
     clearStoredAuthSession()
-    window.location.href = '/'
+    navigateTo('/')
   }
 
   function handleAuthenticated() {
@@ -559,7 +560,7 @@ export default function SquadFilesApp() {
     setAuthView(null)
 
     if (!nextSession) {
-      window.location.href = getPostLoginRedirect(null)
+      navigateTo(getPostLoginRedirect(null))
       return
     }
 

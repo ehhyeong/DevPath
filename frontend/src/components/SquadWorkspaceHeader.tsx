@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import UserAvatar from './UserAvatar'
 import { projectApiRequest } from '../features/project/api'
+import { navigateTo } from '../lib/spa-navigation'
 import {
   SQUAD_NOTIFICATION_CREATED_EVENT,
   type SquadHeaderNotification,
@@ -81,7 +82,7 @@ export default function SquadWorkspaceHeader({
 
   function openNotification(notification: SquadHeaderNotification) {
     if (notification.targetPath) {
-      window.location.assign(navHref(notification.targetPath, workspaceId))
+      navigateTo(navHref(notification.targetPath, workspaceId))
     }
   }
 

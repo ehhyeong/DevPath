@@ -1,5 +1,6 @@
 import { useEffect,useMemo,useState,type ReactNode } from 'react'
 import { ErrorCard,LoadingCard } from '../../account/ui'
+import { navigateTo } from '../../lib/spa-navigation'
 import { projectApiRequest } from '../../features/project/api'
 import { instructorMentoringApi } from '../../lib/api/instructor'
 import type { InstructorMentoringBoard } from '../../types/instructor'
@@ -512,7 +513,7 @@ export default function InstructorMentoringPage() {
       }
       const route = project.mode === 'team' ? teamRoutes[actionLabel] : commonRoutes[actionLabel]
       if (route) {
-        window.location.assign(`${route}?workspaceId=${project.workspaceId}`)
+        navigateTo(`${route}?workspaceId=${project.workspaceId}`)
         return
       }
     }

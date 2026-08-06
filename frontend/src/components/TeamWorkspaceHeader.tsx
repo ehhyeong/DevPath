@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import UserAvatar from './UserAvatar'
 import { projectApiRequest } from '../features/project/api'
+import { navigateTo } from '../lib/spa-navigation'
 
 type TeamWorkspaceHeaderMember = {
   memberId: number
@@ -76,7 +77,7 @@ export default function TeamWorkspaceHeader({
 
   function openNotification(notification: TeamWorkspaceHeaderNotification) {
     if (notification.targetPath) {
-      window.location.assign(navHref(notification.targetPath, workspaceId))
+      navigateTo(navHref(notification.targetPath, workspaceId))
     }
   }
 

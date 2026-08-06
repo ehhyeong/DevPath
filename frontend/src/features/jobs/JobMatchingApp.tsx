@@ -1,4 +1,5 @@
 import { useEffect,useMemo,useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal,{ type AuthView } from '../../components/AuthModal'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import SiteHeader from '../../components/SiteHeader'
@@ -342,7 +343,7 @@ export default function JobMatchingApp() {
       if (result.mode === 'CREATED') {
         // 학습 중인 로드맵이 없어 기술 로드맵을 새로 생성한 경우 → 바로 이동
         showAuthToast({ message: `'${skill}' 학습 로드맵을 새로 만들었어요.`, durationMs: 2000 })
-        window.location.assign(result.redirectUrl)
+        navigateTo(result.redirectUrl)
         return
       }
 
@@ -369,7 +370,7 @@ export default function JobMatchingApp() {
         'required',
       )
       showAuthToast({ message: '로드맵에 학습 노드를 추가했어요.', durationMs: 1500 })
-      window.location.href = skillSuggestion.redirectUrl
+      navigateTo(skillSuggestion.redirectUrl)
     } catch (error) {
       showAuthToast({
         message: error instanceof Error ? error.message : '노드 추가에 실패했습니다.',

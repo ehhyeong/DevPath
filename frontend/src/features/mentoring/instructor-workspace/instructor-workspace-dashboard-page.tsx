@@ -1,4 +1,5 @@
 import { useMemo,useState,type ReactNode } from 'react';
+import { navigateTo } from '../../../lib/spa-navigation';
 import { PageHeading,StatCard } from './instructor-workspace-shared';
 import { avatarUrl,buildAssignmentStudentRow,buildHref,buildStudentWeekProgress,compareTasksByAssignmentOrder,eventTypeOf,formatDate,formatTime,inferAssignmentWeek,inferCurrentAssignmentWeek,isQuestionAnswered,isSameDay,noticeContent,noticeImportant,relativeTime } from './instructor-workspace-support';
 import type { WorkspaceData } from './instructor-workspace-types';
@@ -58,9 +59,9 @@ export function DashboardPage({ data, workspaceId, onOpenNotice }: { data: Works
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon="fas fa-users" label="참여 수강생" value={totalLearners} suffix="명" tone={totalLearners > 0 ? 'text-blue-500' : 'text-gray-400'} onClick={() => { window.location.href = buildHref('students', workspaceId) }} />
-        <StatCard icon="fas fa-code-branch" label="리뷰 대기중 과제" value={reviewWaiting} suffix="건" tone={reviewWaiting > 0 ? 'text-red-500' : 'text-gray-400'} onClick={() => { window.location.href = buildHref('assignments', workspaceId) }} />
-        <StatCard icon="fas fa-question-circle" label="미답변 Q&A" value={unanswered} suffix="건" tone={unanswered > 0 ? 'text-yellow-500' : 'text-gray-400'} onClick={() => { window.location.href = buildHref('qna', workspaceId) }} />
+        <StatCard icon="fas fa-users" label="참여 수강생" value={totalLearners} suffix="명" tone={totalLearners > 0 ? 'text-blue-500' : 'text-gray-400'} onClick={() => { navigateTo(buildHref('students', workspaceId)) }} />
+        <StatCard icon="fas fa-code-branch" label="리뷰 대기중 과제" value={reviewWaiting} suffix="건" tone={reviewWaiting > 0 ? 'text-red-500' : 'text-gray-400'} onClick={() => { navigateTo(buildHref('assignments', workspaceId)) }} />
+        <StatCard icon="fas fa-question-circle" label="미답변 Q&A" value={unanswered} suffix="건" tone={unanswered > 0 ? 'text-yellow-500' : 'text-gray-400'} onClick={() => { navigateTo(buildHref('qna', workspaceId)) }} />
         <StatCard icon="fas fa-flag-checkered" label="평균 진도율" value={progress} suffix="%" tone="text-[#00C471]" />
       </div>
 

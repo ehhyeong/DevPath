@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { projectApiRequest } from '../features/project/api'
 import type { AuthSession } from '../types/auth'
 import { showAuthToast } from '../lib/auth-toast'
+import { navigateTo } from '../lib/spa-navigation'
 
 type HeaderMessage = {
   source?: string | null
@@ -274,7 +275,7 @@ export default function HeaderAlerts({ session }: HeaderAlertsProps) {
     }
 
     if (notification.targetPath) {
-      window.location.assign(notification.targetPath)
+      navigateTo(notification.targetPath)
     }
   }
 

@@ -2,6 +2,7 @@ import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
 import { showAuthToast } from '../../lib/auth-toast'
+import { navigateTo } from '../../lib/spa-navigation'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import { projectApiRequest } from './api'
 
@@ -73,7 +74,7 @@ export function ProjectCreatePanel({ onClose, onCreated }: ProjectCreatePanelPro
       return
     }
 
-    window.location.assign('/workspace-hub')
+    navigateTo('/workspace-hub')
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -153,7 +154,7 @@ export function ProjectCreatePanel({ onClose, onCreated }: ProjectCreatePanelPro
         return
       }
 
-      window.location.assign('/workspace-hub')
+      navigateTo('/workspace-hub')
     } catch (error) {
       console.error(error)
       setErrorMessage(error instanceof Error ? error.message : '프로젝트 생성에 실패했습니다.')

@@ -1,4 +1,5 @@
 import { useCallback,useEffect,useMemo,useRef,useState } from 'react'
+import { navigateTo as navigateSpa } from '../../../lib/spa-navigation'
 import { readStoredAuthSession } from '../../../lib/auth-session'
 import { getVoiceIceServers } from '../../../lib/voice-webrtc'
 import { avatarUrl,buildHref,buildVoiceSignalingUrl,type LivePeer,type LivePeerTransceivers,type LiveSignalMessage } from './instructor-workspace-support'
@@ -422,7 +423,7 @@ export function LiveMeetingPage({ data, workspaceId }: { data: WorkspaceData; wo
     const navigateToMeeting = () => {
       if (navigationStarted) return
       navigationStarted = true
-      window.location.assign(meetingHref)
+      navigateSpa(meetingHref)
     }
 
     mediaRecorderRef.current?.stop()

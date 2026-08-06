@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from '../../components/ProjectAside'
 import { ProjectCreatePanel } from './ProjectCreateApp'
@@ -375,7 +376,7 @@ export default function WorkspaceHubApp() {
   }
 
   function handleProjectCreated() {
-    window.location.assign('/workspace-hub')
+    navigateTo('/workspace-hub')
   }
 
   if (!session) return <LoginRequiredView />
@@ -514,7 +515,7 @@ function WorkspaceProjectCard({
   function goToProject(event: MouseEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement
     if (!target.closest('button') && !target.closest('.dropdown-menu') && !target.closest('a')) {
-      window.location.assign(project.dashboardUrl)
+      navigateTo(project.dashboardUrl)
     }
   }
 

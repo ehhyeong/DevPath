@@ -3,6 +3,7 @@ import AuthModal, { type AuthView } from '../../components/AuthModal'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import SiteHeader from '../../components/SiteHeader'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
+import { navigateTo } from '../../lib/spa-navigation'
 
 type View = 'list' | 'detail'
 type CategoryFilter = 'all' | 'qa' | 'tech' | 'career' | 'free'
@@ -88,7 +89,7 @@ export default function CommunityListPage() {
         <aside className="hidden lg:block w-48 shrink-0 sticky top-24 h-fit">
           <button
             type="button"
-            onClick={() => { window.location.href = '/community-write' }}
+            onClick={() => { navigateTo('/community-write') }}
             className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#00C471] py-3 font-bold text-white shadow-md transition hover:bg-green-600"
           >
             <i className="fas fa-pen" /> 글쓰기

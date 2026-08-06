@@ -1,4 +1,5 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SiteHeader from '../../components/SiteHeader'
 import { CourseDescription,LoadingOverlay,StarRating } from './CourseDetailViewComponents'
@@ -435,7 +436,7 @@ export default function CourseDetailApp() {
       return
     }
 
-    window.location.href = learningHref
+    navigateTo(learningHref)
   }
 
   async function handleEnroll() {
@@ -445,7 +446,7 @@ export default function CourseDetailApp() {
     }
 
     if (isEnrolled) {
-      window.location.href = learningHref
+      navigateTo(learningHref)
       return
     }
 
@@ -560,7 +561,7 @@ export default function CourseDetailApp() {
   }
 
   function handleExitStudentPreview() {
-    window.location.assign(studentPreviewReturnHref)
+    navigateTo(studentPreviewReturnHref)
   }
 
   return (
@@ -1114,7 +1115,7 @@ export default function CourseDetailApp() {
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href = learningHref
+                  navigateTo(learningHref)
                 }}
                 className="rounded-xl bg-brand py-3 text-sm font-bold text-white shadow-md transition hover:bg-green-600 hover:shadow-lg"
               >

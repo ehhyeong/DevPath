@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import ProjectAside from '../../components/ProjectAside'
 import ProjectHeader from '../../components/ProjectHeader'
@@ -125,7 +126,7 @@ async function apiGet<T>(path: string, signal: AbortSignal, auth = false): Promi
 }
 
 function goTo(path: string) {
-  window.location.href = path
+  navigateTo(path)
 }
 
 function getRecommendationTarget(project: ProjectRecommendationResponse) {

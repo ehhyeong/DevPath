@@ -1,4 +1,5 @@
 import { useEffect,useMemo,useRef,useState,type FormEvent,type WheelEvent as ReactWheelEvent } from 'react'
+import { navigateTo } from '../../../lib/spa-navigation'
 import UserAvatar from '../../../components/UserAvatar'
 import { readStoredAuthSession } from '../../../lib/auth-session'
 import { TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME } from './constants'
@@ -444,7 +445,7 @@ export function RealtimePage({
 
   function leaveVoiceChannel() {
     if (window.confirm('음성 채널 연결을 끊으시겠습니까?')) {
-      window.location.assign(navHref('/team-ws-meeting', workspaceId))
+      navigateTo(navHref('/team-ws-meeting', workspaceId))
     }
   }
 

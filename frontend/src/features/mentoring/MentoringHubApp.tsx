@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from '../../components/ProjectAside'
 import ProjectHeader from '../../components/ProjectHeader'
@@ -332,7 +333,7 @@ export default function MentoringHubApp() {
 
     const redirect = getPostLoginRedirect(nextSession?.role ?? null)
     if (redirect !== '/') {
-      window.location.href = redirect
+      navigateTo(redirect)
       return
     }
 

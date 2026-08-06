@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
+import { navigateTo } from '../../lib/spa-navigation'
 
 type Category = 'qa' | 'tech' | 'career' | 'free'
 
@@ -67,7 +68,7 @@ export default function CommunityWritePage() {
   function handleSubmit() {
     if (confirm('게시글을 등록하시겠습니까?')) {
       alert('등록되었습니다!')
-      window.location.href = '/community-list'
+      navigateTo('/community-list')
     }
   }
 

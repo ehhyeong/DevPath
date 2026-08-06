@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import { enrollmentApi, wishlistApi } from '../../lib/api/learner'
+import { navigateTo } from '../../lib/spa-navigation'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { Enrollment, WishlistCourse } from '../../types/learner'
 
@@ -125,7 +126,7 @@ function formatPrice(price: number | null | undefined, currency: string | null |
 }
 
 function openCourseDetail(courseId: number) {
-  window.location.href = `/course-detail?courseId=${courseId}`
+  navigateTo(`/course-detail?courseId=${courseId}`)
 }
 
 function handleCardKeyDown(event: KeyboardEvent<HTMLElement>, courseId: number) {

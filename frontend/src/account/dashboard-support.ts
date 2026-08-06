@@ -1,5 +1,8 @@
 import type { DashboardMentoring, DashboardStudyGroup, DashboardSummary, CommunityPost, Enrollment, GrowthRecommendation, HeatmapEntry, LearningHistorySummary, NotificationItem, ProofCardGalleryItem, WorkspaceHubProject } from '../types/learner'
 import type { MyRoadmapSummary, RoadmapDetail } from '../types/roadmap'
+import { navigateTo } from '../lib/spa-navigation'
+
+export { navigateTo }
 
 export type DashboardState = {
   summary: DashboardSummary
@@ -270,8 +273,4 @@ export function hasDashboardContent(state: DashboardState) {
       state.mentoring.latestApplication ||
       state.studyGroup.groups.length > 0,
   )
-}
-
-export function navigateTo(path: string) {
-  window.location.assign(path)
 }

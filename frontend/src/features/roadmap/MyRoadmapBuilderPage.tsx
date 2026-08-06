@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import LoginRequiredView from '../../components/LoginRequiredView'
@@ -676,7 +677,7 @@ function MyRoadmapBuilderPage() {
               {savedCustomRoadmapId != null && (
                 <button
                   type="button"
-                    onClick={() => { window.location.href = `/roadmap?id=${savedCustomRoadmapId}` }}
+                    onClick={() => { navigateTo(`/roadmap?id=${savedCustomRoadmapId}`) }}
                   className="w-full rounded-lg bg-[#00C471] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-600"
                 >
                   <i className="fas fa-map mr-2" />나의 학습 로드맵으로 이동
@@ -685,7 +686,7 @@ function MyRoadmapBuilderPage() {
               {editMyRoadmapId && (
                 <button
                   type="button"
-                  onClick={() => { window.location.href = '/my-roadmap-list' }}
+                  onClick={() => { navigateTo('/my-roadmap-list') }}
                   className="w-full rounded-lg border border-blue-200 bg-blue-50 px-5 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
                 >
                   <i className="fas fa-list mr-2" />내 로드맵 관리

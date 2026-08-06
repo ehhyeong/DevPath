@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import { EmptyCard, ErrorCard, LoadingCard } from '../../account/ui'
 import { formatCurrency, formatDate, formatDateTime, formatNumber } from '../../account/ui-utils'
 import { instructorAnalyticsApi, instructorCourseApi, instructorReviewApi } from '../../lib/api/instructor'
@@ -282,7 +283,7 @@ export default function InstructorCourseDetailPage() {
             <button
               type="button"
               onClick={() => {
-                window.location.href = `/course-editor?courseId=${courseId}`
+                navigateTo(`/course-editor?courseId=${courseId}`)
               }}
               className="instructor-course-detail-edit-button flex h-[40px]! items-center gap-[8px]! rounded-[8px]! bg-[#00c471]! px-[20px]! py-[10px]! text-[14px]! leading-[20px]! font-[700]! text-[#ffffff]! [box-shadow:0_4px_6px_-1px_rgba(15,23,42,0.12)]! transition hover:bg-green-600"
             >
@@ -337,7 +338,7 @@ export default function InstructorCourseDetailPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    window.location.href = '/instructor-qna'
+                    navigateTo('/instructor-qna')
                   }}
                   className="mt-2 text-xs text-gray-500 underline"
                 >
@@ -404,7 +405,7 @@ export default function InstructorCourseDetailPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              window.location.href = '/instructor-qna'
+                              navigateTo('/instructor-qna')
                             }}
                             className="text-gray-400 transition hover:text-brand"
                             aria-label={`${student.studentName} 수강생 문의 보기`}

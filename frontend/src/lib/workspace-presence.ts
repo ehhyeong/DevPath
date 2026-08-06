@@ -11,12 +11,12 @@ function getWorkspaceIdFromUrl() {
 
 export function installWorkspacePresenceHeartbeat(pathname: string) {
   if (!pathname.startsWith('/squad-')) {
-    return
+    return undefined
   }
 
   const workspaceId = getWorkspaceIdFromUrl()
   if (!workspaceId) {
-    return
+    return undefined
   }
 
   let stopped = false
@@ -35,12 +35,15 @@ export function installWorkspacePresenceHeartbeat(pathname: string) {
   touch()
   const timer = window.setInterval(touch, WORKSPACE_PRESENCE_INTERVAL_MS)
 
-  window.addEventListener(
-    'pagehide',
-    () => {
-      stopped = true
-      window.clearInterval(timer)
-    },
-    { once: true },
-  )
+  const stop = () => {
+    stopped = true
+    window.clearInterval(timer)
+  }
+
+  window.addEventListener('pagehide', stop, { once: true })
+
+  return () => {
+    window.removeEventListener('pagehide', stop)
+    stop()
+  }
 }

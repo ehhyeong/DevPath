@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import LoginRequiredGate from '../../components/LoginRequiredView'
 import SiteHeader from '../../components/SiteHeader'
 import UserAvatar from '../../components/UserAvatar'
@@ -452,7 +453,7 @@ export default function InstructorEditProfileApp() {
       notifyProfileUpdated({ name: updatedProfile.name, profileImage: normalizedProfileImageUrl || null })
       setToastMessage('채널 정보가 저장되었습니다.')
       window.setTimeout(() => {
-        window.location.href = buildMyInstructorProfileHref(session)
+        navigateTo(buildMyInstructorProfileHref(session))
       }, 700)
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : '저장 중 문제가 발생했습니다.')
@@ -473,7 +474,7 @@ export default function InstructorEditProfileApp() {
   if (session.role !== 'ROLE_INSTRUCTOR') {
     return (
       <div className="min-h-screen bg-[#f9fafb] text-gray-800">
-        <SiteHeader session={session} profileImage={profileImage} onLogout={handleLogout} onLoginClick={() => { window.location.href = '/home?auth=login' }} />
+        <SiteHeader session={session} profileImage={profileImage} onLogout={handleLogout} onLoginClick={() => { navigateTo('/home?auth=login') }} />
         <main className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-6 pt-24">
           <div className="w-full rounded-3xl border border-gray-200 bg-white p-10 text-center shadow-sm">
             <h1 className="text-2xl font-extrabold text-gray-900">강사 계정이 필요합니다.</h1>
@@ -487,7 +488,7 @@ export default function InstructorEditProfileApp() {
 
   return (
     <div className="min-h-screen bg-[#f9fafb] text-gray-800">
-      <SiteHeader session={session} profileImage={profileImage} onLogout={handleLogout} onLoginClick={() => { window.location.href = '/home?auth=login' }} />
+      <SiteHeader session={session} profileImage={profileImage} onLogout={handleLogout} onLoginClick={() => { navigateTo('/home?auth=login') }} />
       <main className="px-6 pb-20 pt-24">
         <div className="mx-auto max-w-5xl">
           <div className="mb-8 flex items-start justify-between gap-4">

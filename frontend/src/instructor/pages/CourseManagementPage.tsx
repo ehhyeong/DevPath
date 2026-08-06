@@ -1,4 +1,5 @@
 import { useEffect, useState, type SyntheticEvent } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import { EmptyCard, ErrorCard, LoadingCard } from '../../account/ui'
 import {
   DEFAULT_INSTRUCTOR_COURSE_THUMBNAIL,
@@ -277,7 +278,7 @@ function PublishedCourseCard(_: {
                 type="button"
                 title="통계"
                 onClick={() => {
-                  window.location.href = `/student-analytics?courseId=${course.courseId}`
+                  navigateTo(`/student-analytics?courseId=${course.courseId}`)
                 }}
                 className="flex h-8 w-8 items-center justify-center rounded-[8px] text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
               >
@@ -329,7 +330,7 @@ function PublishedCourseCard(_: {
             <button
               type="button"
               onClick={() => {
-                window.location.href = `/instructor-course-detail?courseId=${course.courseId}`
+                navigateTo(`/instructor-course-detail?courseId=${course.courseId}`)
               }}
               className="inline-flex h-[34px]! min-h-[34px]! items-center justify-center rounded-[12px]! bg-[#111827]! px-[16px]! py-[8px]! text-[12px]! leading-[16px]! font-[900]! tracking-[0]! text-[#ffffff]! [box-shadow:0_6px_14px_rgba(17,24,39,0.12)]! transition hover:bg-black! [&:hover]:[box-shadow:0_8px_18px_rgba(17,24,39,0.16)]!"
             >
@@ -450,7 +451,7 @@ function DraftCourseCard(_: { course: CourseCardModel }) {
             <button
               type="button"
               onClick={() => {
-                window.location.href = `/course-editor?courseId=${course.courseId}`
+                navigateTo(`/course-editor?courseId=${course.courseId}`)
               }}
               className="inline-flex h-[34px] items-center rounded-[10px] border border-emerald-500 px-[14px] text-[12px] font-semibold text-emerald-600 transition hover:bg-emerald-50"
             >
@@ -712,7 +713,7 @@ export default function CourseManagementPage() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = '/course-editor'
+              navigateTo('/course-editor')
             }}
             className="inline-flex h-[40px]! min-h-[40px]! items-center gap-2 rounded-[14px]! bg-[#00c471]! px-[15px]! py-[10px]! text-[13px]! leading-[18px]! font-[900]! tracking-[0]! text-[#ffffff]! [box-shadow:0_10px_20px_rgba(0,196,113,0.18)]! transition hover:bg-[#00b565]! hover:[transform:translateY(-1px)]! active:[transform:translateY(0)_scale(0.99)]!"
           >

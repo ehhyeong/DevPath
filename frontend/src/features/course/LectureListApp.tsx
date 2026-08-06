@@ -1,4 +1,5 @@
 import { startTransition, useDeferredValue, useEffect, useRef, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SiteHeader from '../../components/SiteHeader'
 import {
@@ -347,7 +348,7 @@ export default function LectureListApp() {
       return
     }
 
-    window.location.assign(buildCourseDetailHref(courseId))
+    navigateTo(buildCourseDetailHref(courseId))
   }
 
   async function handleToggleBookmark(courseId: number) {

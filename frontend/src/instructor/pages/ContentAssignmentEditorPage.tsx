@@ -1,5 +1,6 @@
 import CourseAssignmentEditorOverlay from '../course-editor/CourseAssignmentEditorOverlay'
 import { buildCourseEditorHref, readLessonEditorContextFromUrl } from '../course-editor/editor-routing'
+import { navigateTo } from '../../lib/spa-navigation'
 
 const CONTENT_ASSIGNMENT_EDITOR_UI_LOCK_CLASSES = [
   "h-[calc(100dvh-var(--app-header-height))]! min-h-0! w-full! overflow-hidden! bg-[#f8f9fa]! text-[#1f2937]! font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]!",
@@ -83,7 +84,7 @@ export default function ContentAssignmentEditorPage() {
     <CourseAssignmentEditorOverlay
       lessonId={lessonId}
       lessonTitle={lessonTitle || '새 과제'}
-      onClose={() => window.location.assign(buildCourseEditorHref(courseId))}
+      onClose={() => navigateTo(buildCourseEditorHref(courseId))}
       standalone
       standaloneClassName={CONTENT_ASSIGNMENT_EDITOR_UI_LOCK_CLASSES}
     />

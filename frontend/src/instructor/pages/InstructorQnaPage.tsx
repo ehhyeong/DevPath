@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import MarkdownContent from '../../components/MarkdownContent'
 import UserAvatar from '../../components/UserAvatar'
 import {
@@ -479,7 +480,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
     }
 
     if (!opened) {
-      window.location.assign(url.toString())
+      navigateTo(url.toString())
     }
   }
 

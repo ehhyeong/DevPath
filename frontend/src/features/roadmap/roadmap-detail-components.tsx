@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import { roadmapApi } from '../../lib/api/roadmap'
 import type { MyRoadmapSummary } from '../../types/roadmap'
 import { type ChangeLabelProps, type ChangesPanelProps, type FilterType, type GhostAddCardProps, type LayoutSlot, type NodeDrawerProps, type ProofCardBadgeProps, type RoadmapGraphProps, type RoadmapMetricsProps, type RoadmapNodeCardProps, type RoadmapPageToolbarProps, type SlotRect, areSlotRectsEqual, buildCourseDetailUrl, buildLectureListUrl, buildRoadmapReturnHref, changeBadgeStyle, changeChipLabel, changeChipStyle, changesPanelActiveTabClassName, changesPanelInactiveTabClassName, changesPanelTabClassName, changeTypeIcon, changeTypeLabel, getBranchBadgeMeta, getChangeItemClass, getNodeBoxClass, getNodeLessonProgressPercent, inferHistoryChangeType, isNodeReadyToClear, isPendingNodeStatus, makeEdgePath, nodeResourceSourceLabel, parseEssentialConcept, ROADMAP_LANE_COLUMN, roadmapCanvasScrollClassName, roadmapDoneNodeCountCardClassName, roadmapEdgeBaseClassName, roadmapEdgeLayerClassName, roadmapEdgeStrokeClassName, roadmapGraphClassName, roadmapHeaderMetricsClassName, roadmapNodeBoxClassName, roadmapNodeCountCardClassName, roadmapNodeCountLabelClassName, roadmapNodeCountNumberClassName, roadmapNodeCountWrapClassName, roadmapNodeDescriptionClassName, roadmapNodeHeaderClassName, roadmapNodeMetaClassName, roadmapNodeMetaTagClassName, roadmapNodeTitleGroupClassName, roadmapNodeTitleTextClassName, roadmapProofCardBadgeClassName, roadmapRuleBadgeClassName, roadmapSlotBaseClassName, roadmapSuggestionEdgeClassName, roadmapTotalNodeCountCardClassName, splitNodeDescription } from './roadmap-detail-support'
@@ -584,12 +585,12 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode,
                         try {
                           const courseId = await roadmapApi.getRecommendedFreeCourse(customRoadmapId, node.customNodeId)
                           if (courseId) {
-                            window.location.href = buildCourseDetailUrl(courseId, roadmapReturnHref, originalRoadmapId, node.originalNodeId)
+                            navigateTo(buildCourseDetailUrl(courseId, roadmapReturnHref, originalRoadmapId, node.originalNodeId))
                           } else {
-                            window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
+                            navigateTo(buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref))
                           }
                         } catch {
-                          window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)
+                          navigateTo(buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref))
                         }
                       }}
                       className="w-full bg-[#00c471] hover:bg-green-600 text-white py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
@@ -600,7 +601,7 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode,
                   )
               )}
               <button
-                onClick={() => { window.location.href = buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref) }}
+                onClick={() => { navigateTo(buildLectureListUrl(node.requiredTags ?? [], roadmapReturnHref)) }}
                 className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-4 rounded-xl font-bold text-sm flex justify-center items-center gap-2 transition"
               >
                 <i className="fas fa-list" /> 전체 강좌 목록 보기
@@ -966,7 +967,7 @@ export function RoadmapSwitcherDropdown({
                   onClick={() => {
                     setOpen(false)
                     if (rm.customRoadmapId !== currentCustomRoadmapId) {
-    window.location.assign(`/roadmap?id=${rm.customRoadmapId}`)
+    navigateTo(`/roadmap?id=${rm.customRoadmapId}`)
                     }
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-50 transition ${rm.customRoadmapId === currentCustomRoadmapId ? 'bg-green-50' : ''}`}

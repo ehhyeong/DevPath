@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SiteHeader from '../../components/SiteHeader'
 import { authApi, userApi } from '../../lib/api/auth'
@@ -534,7 +535,7 @@ function RoadmapHubPage() {
                     showAuthToast('로그인 후 이용할 수 있습니다.')
                     return
                   }
-                  window.location.href = '/my-roadmap-list'
+                  navigateTo('/my-roadmap-list')
                 }}
                 className="bg-brand group relative flex min-h-[60px] items-center justify-center gap-3 rounded-[9999px] px-[32px] py-[16px] text-[18px]! leading-[28px]! font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-green-600 hover:shadow-xl max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px]! max-[767px]:leading-[24px]!"
               >
@@ -552,7 +553,7 @@ function RoadmapHubPage() {
                     if (list.roadmaps.length === 0) {
                       showAuthToast('아직 학습 로드맵이 없습니다. 아래에서 로드맵을 선택해 시작해보세요.')
                     } else {
-                      window.location.href = '/roadmap'
+                      navigateTo('/roadmap')
                     }
                   }).catch(() => {
                     showAuthToast('로드맵 정보를 불러오는 데 실패했습니다. 다시 시도해주세요.')
@@ -567,7 +568,7 @@ function RoadmapHubPage() {
             <button
               type="button"
               onClick={() => {
-                window.location.href = '/my-roadmap'
+                navigateTo('/my-roadmap')
               }}
               className="border-brand text-brand group relative flex min-h-[60px] items-center justify-center gap-3 rounded-[9999px] border-2 bg-white px-[32px] py-[16px] text-[18px]! leading-[28px]! font-bold shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-green-50 hover:shadow-md max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px]! max-[767px]:leading-[24px]!"
             >

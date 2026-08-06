@@ -9,6 +9,7 @@ import {
   getPostLoginRedirect,
   readStoredAuthSession,
 } from './lib/auth-session'
+import { navigateTo } from './lib/spa-navigation'
 
 const headerLinks = [
   { key: 'roadmap', href: '/roadmap-hub', label: '로드맵' },
@@ -50,7 +51,7 @@ const supportLinks = [
 ]
 
 function go(path: string) {
-  window.location.href = path
+  navigateTo(path)
 }
 
 function readAuthViewFromLocation(): AuthView | null {

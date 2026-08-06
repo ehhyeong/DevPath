@@ -34,6 +34,8 @@ function token() {
 
 function responseData(pathname: string) {
   if (pathname === '/api/users/me/profile') return profile
+  if (pathname === '/api/users/tags/official') return []
+  if (pathname === '/api/me/wishlist/courses') return []
   if (pathname === '/api/me/proof-cards/gallery') return [proofCard]
   if (pathname === '/api/me/proof-cards/14') return proofCard
   if (pathname === '/api/my-roadmaps') return { roadmaps: [] }
@@ -137,6 +139,37 @@ test('로그인 후 계정 메뉴를 이동할 수 있다', async ({ page }) => 
   for (const menuName of ['프로필 관리', '내 학습 현황', '학습일지', '내 게시글', '구매 및 보관함', '계정 설정']) {
     await expect(page.getByRole('link', { name: menuName })).toBeVisible()
   }
+})
+
+test('계정 메뉴는 문서 새로고침 없이 이동하고 공통 프로필 요청을 재사용한다', async ({ page }) => {
+  let profileRequestCount = 0
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/users/me/profile') {
+      profileRequestCount += 1
+    }
+  })
+
+  await login(page)
+  await page.goto('/dashboard')
+  await expect(page.getByRole('heading', { name: /반가워요, E2E 학습자님/ })).toBeVisible()
+  await page.evaluate(() => {
+    Object.assign(window, { __devpathSpaMarker: 'same-document' })
+  })
+  const profileRequestBaseline = profileRequestCount
+
+  await page.getByRole('link', { name: '프로필 관리' }).click()
+  await expect(page).toHaveURL(/\/profile$/)
+  await expect(page.getByRole('heading', { name: '프로필 관리' })).toBeVisible()
+  expect(await page.evaluate(() => Reflect.get(window, '__devpathSpaMarker'))).toBe('same-document')
+
+  await page.getByRole('link', { name: '내 학습 현황' }).click()
+  await expect(page).toHaveURL(/\/my-learning$/)
+  expect(await page.evaluate(() => Reflect.get(window, '__devpathSpaMarker'))).toBe('same-document')
+
+  await page.goBack()
+  await expect(page).toHaveURL(/\/profile$/)
+  expect(await page.evaluate(() => Reflect.get(window, '__devpathSpaMarker'))).toBe('same-document')
+  expect(profileRequestCount).toBe(profileRequestBaseline)
 })
 
 test('공유 주소로 진입하면 대상 Proof Card가 자동으로 열린다', async ({ page }) => {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import CourseQuizEditorOverlay from '../course-editor/CourseQuizEditorOverlay'
 import { buildCourseEditorHref, readLessonEditorContextFromUrl } from '../course-editor/editor-routing'
 import { instructorCourseApi } from '../../lib/api/instructor'
+import { navigateTo } from '../../lib/spa-navigation'
 
 const QUIZ_CREATOR_UI_LOCK_CLASSES = [
   "h-[calc(100dvh-var(--app-header-height))]! min-h-0! w-full! overflow-hidden! bg-[#f0f2f5]! text-[#1f2937]! font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]!",
@@ -125,7 +126,7 @@ export default function QuizCreatorPage() {
       lessonId={lessonId}
       lessonTitle={lessonTitle || '새 퀴즈'}
       courseTags={courseTags}
-      onClose={() => window.location.assign(buildCourseEditorHref(courseId))}
+      onClose={() => navigateTo(buildCourseEditorHref(courseId))}
       standalone
       standaloneClassName={QUIZ_CREATOR_UI_LOCK_CLASSES}
     />

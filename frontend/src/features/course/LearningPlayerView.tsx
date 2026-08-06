@@ -1,4 +1,5 @@
 import type { LearningPlayerReadyModel } from './useLearningPlayerController'
+import { navigateTo } from '../../lib/spa-navigation'
 import type { QnaDifficulty } from '../../types/qna'
 import { EmptyState } from './learning-player-states'
 import { formatRelativeTime,formatShortDate,getVideoErrorMessage,isLessonProgressCompleted,isOwnQnaQuestion,isQuestionAnswered,isQuizLesson,resolveLessonAssignment,VIDEO_QUALITY_OPTIONS } from './learning-player-model'
@@ -174,7 +175,7 @@ export default function LearningPlayerView({ model }: LearningPlayerViewProps) {
         <div className="learning-player-top-header-left flex min-w-0 items-center gap-[16px]">
           <button
             type="button"
-            onClick={() => window.location.assign(isStudentPreview ? studentPreviewReturnHref : learningBackHref)}
+            onClick={() => navigateTo(isStudentPreview ? studentPreviewReturnHref : learningBackHref)}
             className="learning-player-back-link m-0 inline-flex shrink-0 appearance-none items-center whitespace-nowrap border-0 bg-transparent p-0 font-['Pretendard',sans-serif] text-[14px]! leading-[20px]! font-normal text-[#9CA3AF] transition hover:text-white"
           >
             <i className="learning-player-back-icon fas fa-chevron-left mr-[8px] text-[14px] leading-[14px]" />
@@ -1761,14 +1762,14 @@ export default function LearningPlayerView({ model }: LearningPlayerViewProps) {
             <div className="[animation:completion-fade-up_0.7s_cubic-bezier(0.16,1,0.3,1)_0.18s_both] mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <button
                 type="button"
-                onClick={() => { window.location.href = completionRoadmapReturnHref }}
+                onClick={() => { navigateTo(completionRoadmapReturnHref) }}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-800 px-8 py-3.5 font-bold text-white transition hover:bg-gray-700 sm:w-auto"
               >
                 <i className="fas fa-map-marked-alt" /> 로드맵으로 돌아가기
               </button>
               <button
                 type="button"
-                onClick={() => { window.location.href = '/learning-log-gallery' }}
+                onClick={() => { navigateTo('/learning-log-gallery') }}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00C471] px-8 py-3.5 font-bold text-white shadow-[0_0_20px_rgba(0,196,113,0.3)] transition hover:-translate-y-1 hover:bg-green-600 sm:w-auto"
               >
                 <i className="fas fa-file-signature" /> 내 증명 카드 보기

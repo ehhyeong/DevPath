@@ -1,4 +1,5 @@
 import { useEffect,useMemo,useRef,useState } from 'react';
+import { navigateTo } from '../../../lib/spa-navigation';
 import { readStoredAuthSession } from '../../../lib/auth-session';
 import type { TeamData,WorkspaceMember } from './instructor-types';
 import { avatarUrl,buildHref,formatTime,INSTRUCTOR_TEAM_LIVE_MEETING_UI_LOCK_CLASSES,shortRoleLabel } from './instructor-workspace-support';
@@ -104,7 +105,7 @@ export function LiveMeetingPage({ data, workspaceId }: { data: TeamData; workspa
     mediaRecorderRef.current?.stop()
     stopStream(localStreamRef.current)
     stopStream(screenStreamRef.current)
-    window.location.href = buildHref('meeting', workspaceId)
+    navigateTo(buildHref('meeting', workspaceId))
   }
 
   async function toggleMic() {

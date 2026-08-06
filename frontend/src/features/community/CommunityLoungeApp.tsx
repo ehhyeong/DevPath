@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import { useEffect,useMemo,useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal,{ type AuthView } from '../../components/AuthModal'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import ProjectAside,{ type ProjectAsideSquad } from '../../components/ProjectAside'
@@ -216,7 +217,7 @@ export default function CommunityLoungeApp() {
 
     const redirect = getPostLoginRedirect(nextSession?.role ?? null)
     if (redirect !== '/') {
-      window.location.href = redirect
+      navigateTo(redirect)
       return
     }
 
@@ -358,7 +359,7 @@ export default function CommunityLoungeApp() {
     }
 
     if (detailSquad.workspaceUrl) {
-      window.location.href = detailSquad.workspaceUrl
+      navigateTo(detailSquad.workspaceUrl)
       return
     }
 
@@ -377,7 +378,7 @@ export default function CommunityLoungeApp() {
       tech: detailSquad.tags.join(','),
       desc: detailSquad.desc,
     })
-    window.location.href = `/project-create?${params.toString()}`
+    navigateTo(`/project-create?${params.toString()}`)
   }
 
   function openApplyForm() {

@@ -3,42 +3,49 @@ import type { CourseCatalogMenu } from '../../types/course-catalog'
 import type { AssignmentPrecheckRequest, AssignmentPrecheckResponse, AssignmentSubmissionResponse, CreateSubmissionRequest, LearningCourseDetail, LearningLessonProgress, LearningPlayerConfig, QuizAttemptResultResponse, SubmissionHistoryResponse, SubmitQuizAttemptRequest, TimestampNote, TimestampNotePayload } from '../../types/learning'
 import type { CertificateDetail, CertificateDownloadHistoryDetail, CertificatePdfDetail, CommunityComment, DashboardMentoring, DashboardStudyGroup, DashboardSummary, Enrollment, GrowthRecommendation, GrowthRecommendationAddResult, HeatmapEntry, LearningHistoryDetail, LearningHistorySummary, NotificationItem, PostPage, ProofCardDetail, ProofCardGalleryItem, ProofCardSummary, RefundItem, WorkspaceHubProject, WishlistCourse } from '../../types/learner'
 import type { CreateQnaAnswerRequest, CreateQnaQuestionRequest, QnaAnswer, QnaQuestionDetail, QnaQuestionSummary, QnaQuestionTemplate } from '../../types/qna'
-import { request, buildQueryString } from './client'
+import { invalidateRequestCache,request,buildQueryString } from './client'
+
+const accountCache = (key: string, ttlMs = 30_000) => ({
+  auth: true,
+  cache: { key: `account:${key}`, ttlMs },
+}) as const
 
 export const dashboardApi = {
   getSummary(signal?: AbortSignal) {
-    return request<DashboardSummary>('/api/me/dashboard/summary', { method: 'GET', signal }, { auth: true })
+    return request<DashboardSummary>('/api/me/dashboard/summary', { method: 'GET', signal }, accountCache('dashboard-summary'))
   },
   getHeatmap(signal?: AbortSignal) {
-    return request<HeatmapEntry[]>('/api/me/dashboard/heatmap', { method: 'GET', signal }, { auth: true })
+    return request<HeatmapEntry[]>('/api/me/dashboard/heatmap', { method: 'GET', signal }, accountCache('dashboard-heatmap'))
   },
   getStudyGroup(signal?: AbortSignal) {
     return request<DashboardStudyGroup>(
       '/api/me/dashboard/study-group',
       { method: 'GET', signal },
-      { auth: true },
+      accountCache('dashboard-study-group'),
     )
   },
   getMentoring(signal?: AbortSignal) {
     return request<DashboardMentoring>(
       '/api/me/dashboard/mentoring',
       { method: 'GET', signal },
-      { auth: true },
+      accountCache('dashboard-mentoring'),
     )
   },
   getGrowthRecommendation(signal?: AbortSignal) {
     return request<GrowthRecommendation>(
       '/api/me/dashboard/growth-recommendation',
       { method: 'GET', signal },
-      { auth: true },
+      accountCache('dashboard-growth'),
     )
   },
-  addGrowthRecommendationNode(nodeId: number) {
-    return request<GrowthRecommendationAddResult>(
+  async addGrowthRecommendationNode(nodeId: number) {
+    const result = await request<GrowthRecommendationAddResult>(
       `/api/me/dashboard/growth-recommendation/nodes/${nodeId}/add-to-roadmap`,
       { method: 'POST' },
       { auth: true },
     )
+    invalidateRequestCache('account:dashboard-growth')
+    return result
   },
 }
 
@@ -47,14 +54,14 @@ export const workspaceHubApi = {
     return request<WorkspaceHubProject[]>(
       '/api/workspaces/hub/projects',
       { method: 'GET', signal },
-      { auth: true },
+      accountCache('workspace-projects'),
     )
   },
 }
 
 export const enrollmentApi = {
-  enroll(courseId: number) {
-    return request<CourseEnrollResponse>(
+  async enroll(courseId: number) {
+    const result = await request<CourseEnrollResponse>(
       '/api/me/enrollments',
       {
         method: 'POST',
@@ -62,9 +69,11 @@ export const enrollmentApi = {
       },
       { auth: true },
     )
+    invalidateRequestCache('account:enrollments', 'account:dashboard-summary')
+    return result
   },
   getMyEnrollments(signal?: AbortSignal) {
-    return request<Enrollment[]>('/api/me/enrollments', { method: 'GET', signal }, { auth: true })
+    return request<Enrollment[]>('/api/me/enrollments', { method: 'GET', signal }, accountCache('enrollments'))
   },
 }
 
@@ -229,14 +238,14 @@ export const learningHistoryApi = {
     return request<LearningHistoryDetail>(
       '/api/me/learning-histories',
       { method: 'GET', signal },
-      { auth: true },
+      accountCache('learning-history-detail'),
     )
   },
   getSummary(signal?: AbortSignal) {
     return request<LearningHistorySummary>(
       '/api/me/learning-histories/summary',
       { method: 'GET', signal },
-      { auth: true },
+      accountCache('learning-history-summary'),
     )
   },
 }
@@ -260,20 +269,20 @@ export const nodeClearanceApi = {
 
 export const proofCardApi = {
   getCards(signal?: AbortSignal) {
-    return request<ProofCardSummary[]>('/api/me/proof-cards', { method: 'GET', signal }, { auth: true })
+    return request<ProofCardSummary[]>('/api/me/proof-cards', { method: 'GET', signal }, accountCache('proof-cards'))
   },
   getCard(proofCardId: number, signal?: AbortSignal) {
     return request<ProofCardDetail>(
       `/api/me/proof-cards/${proofCardId}`,
       { method: 'GET', signal },
-      { auth: true },
+      accountCache(`proof-card-${proofCardId}`),
     )
   },
   getGallery(signal?: AbortSignal) {
     return request<ProofCardGalleryItem[]>(
       '/api/me/proof-cards/gallery',
       { method: 'GET', signal },
-      { auth: true },
+      accountCache('proof-card-gallery'),
     )
   },
 }
@@ -306,41 +315,47 @@ export const certificateApi = {
 }
 
 export const wishlistApi = {
-  addCourse(courseId: number) {
-    return request<CourseWishlistMutationResponse>(
+  async addCourse(courseId: number) {
+    const result = await request<CourseWishlistMutationResponse>(
       `/api/me/wishlist/courses/${courseId}`,
       { method: 'POST' },
       { auth: true },
     )
+    invalidateRequestCache('account:wishlist')
+    return result
   },
-  removeCourse(courseId: number) {
-    return request<CourseWishlistMutationResponse>(
+  async removeCourse(courseId: number) {
+    const result = await request<CourseWishlistMutationResponse>(
       `/api/me/wishlist/courses/${courseId}`,
       { method: 'DELETE' },
       { auth: true },
     )
+    invalidateRequestCache('account:wishlist')
+    return result
   },
   getCourses(signal?: AbortSignal) {
     return request<WishlistCourse[]>(
       '/api/me/wishlist/courses',
       { method: 'GET', signal },
-      { auth: true },
+      accountCache('wishlist'),
     )
   },
 }
 
 export const notificationApi = {
   getMine(signal?: AbortSignal) {
-    return request<NotificationItem[]>('/api/notifications', { method: 'GET', signal }, { auth: true })
+    return request<NotificationItem[]>('/api/notifications', { method: 'GET', signal }, accountCache('notifications'))
   },
-  markAsRead(notificationId: number) {
-    return request<void>(`/api/notifications/${notificationId}/read`, { method: 'PATCH' }, { auth: true })
+  async markAsRead(notificationId: number) {
+    const result = await request<void>(`/api/notifications/${notificationId}/read`, { method: 'PATCH' }, { auth: true })
+    invalidateRequestCache('account:notifications')
+    return result
   },
 }
 
 export const refundApi = {
   getMine(signal?: AbortSignal) {
-    return request<RefundItem[]>('/api/refunds/me', { method: 'GET', signal }, { auth: true })
+    return request<RefundItem[]>('/api/refunds/me', { method: 'GET', signal }, accountCache('refunds'))
   },
 }
 

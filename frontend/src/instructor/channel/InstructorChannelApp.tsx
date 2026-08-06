@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SiteHeader from '../../components/SiteHeader'
 import UserAvatar from '../../components/UserAvatar'
@@ -292,7 +293,7 @@ export default function InstructorChannelApp() {
   }
 
   function handleOpenCourse(courseId: number) {
-    window.location.href = `/course-detail?courseId=${courseId}`
+    navigateTo(`/course-detail?courseId=${courseId}`)
   }
 
   function handleToggleBookmark(courseId: number) {

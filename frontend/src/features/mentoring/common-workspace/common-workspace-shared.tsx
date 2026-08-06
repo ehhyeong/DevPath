@@ -1,4 +1,5 @@
 import { useEffect,useState,type FormEvent,type ReactNode } from 'react'
+import { navigateTo } from '../../../lib/spa-navigation'
 import UserAvatar from '../../../components/UserAvatar'
 import { loadMentoringHeaderNotifications } from './common-api'
 import type { MentoringCommonPage,MentoringHeaderNotification,WorkspaceDashboard } from './common-types'
@@ -260,7 +261,7 @@ export function MentoringShell({
     }
 
     if (notification.targetPath) {
-      window.location.assign(buildMentoringNotificationHref(notification.targetPath, workspaceId))
+      navigateTo(buildMentoringNotificationHref(notification.targetPath, workspaceId))
     }
   }
 

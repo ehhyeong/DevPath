@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { certificateApi, proofCardApi } from '../../lib/api/learner'
+import { navigateTo } from '../../lib/spa-navigation'
 import { buildLearningLogShareUrl,getSharedProofCardId } from '../learning-log-share'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import { downloadBase64File } from '../ui-utils'
@@ -384,7 +385,7 @@ export default function LearningLogGalleryPage() {
                         <button
                           onClick={(event) => {
                             event.stopPropagation()
-                            window.location.href = '/roadmap-hub'
+                            navigateTo('/roadmap-hub')
                           }}
                           className="rounded-lg border border-gray-600 bg-gray-800 py-2 text-xs font-bold text-white transition hover:bg-gray-700"
                         >

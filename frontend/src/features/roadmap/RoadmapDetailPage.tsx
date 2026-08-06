@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import RoadmapInfoContent from '../../components/RoadmapInfoContent'
@@ -193,7 +194,7 @@ export default function RoadmapDetailPage() {
           if (originalRoadmapId) {
             try {
               const data = await roadmapApi.copyRoadmap(originalRoadmapId)
-      window.location.replace(`/roadmap?id=${data.customRoadmapId}`)
+      navigateTo(`/roadmap?id=${data.customRoadmapId}`, { replace: true })
             } catch (copyError) {
               const isAlreadyExists =
                 typeof copyError === 'object'
@@ -205,7 +206,7 @@ export default function RoadmapDetailPage() {
                 const list = await roadmapApi.getMyRoadmaps(ctrl.signal)
                 const existingRoadmap = findRoadmapByOriginalId(list.roadmaps, originalRoadmapId)
                 if (existingRoadmap) {
-                  window.location.replace(`/roadmap?id=${existingRoadmap.customRoadmapId}`)
+                  navigateTo(`/roadmap?id=${existingRoadmap.customRoadmapId}`, { replace: true })
                 } else {
                   setError('이미 복사된 로드맵을 찾을 수 없습니다.')
                   setLoading(false)
@@ -218,13 +219,13 @@ export default function RoadmapDetailPage() {
           } else {
             const list = await roadmapApi.getMyRoadmaps(ctrl.signal)
             if (list.roadmaps.length > 0) {
-        window.location.replace(`/roadmap?id=${list.roadmaps[0].customRoadmapId}`)
+        navigateTo(`/roadmap?id=${list.roadmaps[0].customRoadmapId}`, { replace: true })
             } else {
-              window.location.replace('/roadmap-hub')
+              navigateTo('/roadmap-hub', { replace: true })
             }
           }
         } catch {
-          window.location.replace('/roadmap-hub')
+          navigateTo('/roadmap-hub', { replace: true })
         }
       })()
       return () => ctrl.abort()
@@ -574,7 +575,7 @@ export default function RoadmapDetailPage() {
             {/* 프로필 */}
             <div
               className="flex items-center gap-2 cursor-pointer ml-1"
-                onClick={() => { window.location.href = '/profile' }}
+                onClick={() => { navigateTo('/profile') }}
             >
               <img
                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
@@ -739,13 +740,13 @@ export default function RoadmapDetailPage() {
                 </p>
                 <div className="mt-8 flex gap-3 justify-center">
                   <button
-                    onClick={() => { window.location.href = '/project-list' }}
+                    onClick={() => { navigateTo('/project-list') }}
                     className="px-6 py-3 bg-[#00c471] hover:bg-green-600 text-white rounded-xl font-bold text-sm shadow-lg transition flex items-center gap-2"
                   >
                     <i className="fas fa-rocket" /> 프로젝트 시작하기
                   </button>
                   <button
-                    onClick={() => { window.location.href = '/roadmap-hub' }}
+                    onClick={() => { navigateTo('/roadmap-hub') }}
                     className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 rounded-xl font-bold text-sm border-2 border-gray-200 transition flex items-center gap-2"
                   >
                     <i className="fas fa-map" /> 다른 로드맵 보러가기

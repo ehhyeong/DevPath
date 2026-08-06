@@ -1,4 +1,5 @@
 import { useEffect,useMemo,useState,type FormEvent } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import TeamWorkspaceHeader from '../../components/TeamWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
@@ -550,7 +551,7 @@ export default function TeamWorkspaceMilestoneApp() {
   const teamSubmitPercent = percent(submittedTeamCount, teamStatus.length)
 
   function goTo(path: string) {
-    window.location.assign(navHref(path, workspaceId))
+    navigateTo(navHref(path, workspaceId))
   }
 
   function openSubmitModal(mode: SubmissionMode, task: WorkspaceTask | null) {
