@@ -18,7 +18,7 @@
     <img src="https://img.shields.io/badge/Java-21-007396?style=flat-square&logo=openjdk&logoColor=white" alt="Java 21" />
     <img src="https://img.shields.io/badge/Spring%20Boot-4.0.3-6DB33F?style=flat-square&logo=springboot&logoColor=white" alt="Spring Boot 4.0.3" />
     <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=111111" alt="React 19" />
-    <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5.9" />
+    <img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 6.0" />
     <img src="https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 15" />
     <img src="https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis 7" />
     <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker Compose" />
@@ -48,7 +48,7 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 | 🧩 | 팀 프로젝트 | 워크스페이스, 칸반, 일정, 파일, 회의, ERD, 코드 리뷰 |
 | 💼 | 커리어 | 채용 분석, 이력서, 포트폴리오, Proof Card, 쇼케이스 |
 | 💬 | 커뮤니티 | 라운지, 게시글, 댓글, 좋아요, 멘토링 허브 |
-| 🛡️ | 관리자 | 계정 관리, 로드맵 거버넌스, 신고 처리, 공지, 정산 |
+| 🛡️ | 관리자 | 계정 관리, 로드맵 거버넌스, 강의 검수, 신고 처리 |
 | 🤖 | AI/OCR | AI 코드 리뷰, AI 디자인 리뷰, 영상 학습 OCR, EasyOCR 연동 |
 
 ## 자세히 보기
@@ -81,8 +81,8 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 
 ### 관리자
 
-- 관리자 대시보드에서 계정, 콘텐츠, 강의, 로드맵, 신고, 공지, 정산을 운영합니다.
-- 로드맵 노드, 태그, 정책, 강의 매핑을 관리합니다.
+- 관리자 대시보드에서 계정, 기술 태그, 공식 로드맵, 노드 추천 자료, 강의 메뉴, 강의 검수와 신고를 운영합니다.
+- 공지, 정산, 정책, 강의 매핑은 백엔드 관리자 API를 제공하며 프론트엔드 운영 화면과는 범위가 다릅니다.
 
 </details>
 
@@ -93,7 +93,7 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 flowchart LR
     U[User Browser] --> F[Vite React Frontend]
     F -->|/api, /ws proxy| B[Spring Boot API]
-    B --> P[(PostgreSQL)]
+    B --> P[(PostgreSQL / Oracle)]
     B --> R[(Redis)]
     B --> O[Python OCR Server]
     B --> X[External APIs]
@@ -104,7 +104,7 @@ flowchart LR
 | --- | --- |
 | Vite React Frontend | 사용자 화면, 라우팅, API 프록시 |
 | Spring Boot API | 인증, 도메인 API, 관리자 기능, 실시간 기능 |
-| PostgreSQL | 핵심 서비스 데이터 저장 |
+| PostgreSQL / Oracle | 로컬 PostgreSQL과 운영 프로필 기반 관계형 데이터 저장 |
 | Redis | 캐시와 세션성 데이터 처리 |
 | Python OCR Server | 학습 영상과 이미지 기반 OCR 처리 |
 | External APIs | OAuth, AI, 채용 정보 등 외부 연동 |
@@ -117,12 +117,12 @@ flowchart LR
 | 구분 | 기술 |
 | --- | --- |
 | Backend | Java 21, Spring Boot 4, Spring Web MVC, Spring Security, OAuth2 Client, JWT, JPA |
-| Frontend | React 19, TypeScript 5.9, Vite 8, Tailwind CSS 4, Axios, Chart.js |
-| Database | PostgreSQL 15, Redis 7 |
+| Frontend | React 19, TypeScript 6.0, Vite 8, Tailwind CSS 4, Axios, Chart.js |
+| Database | PostgreSQL 15 로컬 환경, Oracle 운영 프로필, Redis 7 |
 | AI/OCR | Gemini API 연동, Flask, EasyOCR, OpenCV, Tesseract.js |
 | Docs | Springdoc OpenAPI, Swagger UI |
 | Infra | Docker, Docker Compose, Nginx |
-| Quality | JUnit Platform, H2 테스트 런타임, Spotless, ESLint |
+| Quality | JUnit Platform, H2 테스트 런타임, Spotless, ESLint, Vitest, React Testing Library, Playwright |
 
 </details>
 
@@ -132,7 +132,7 @@ flowchart LR
 ### 사전 준비
 
 - JDK 21
-- Node.js 20 이상
+- Node.js 22 이상, Node.js 24 권장
 - Docker Desktop 또는 Docker Compose
 - PostgreSQL과 Redis를 직접 띄우거나 Docker Compose 사용
 
@@ -170,6 +170,8 @@ DEVPATH_REQUIRE_HTTPS=false
 OCR_SERVER_URL=http://localhost:5000
 GEMINI_API_KEY=<gemini-api-key>
 ```
+
+위 예시는 기본 로컬 프로필의 PostgreSQL 설정입니다. 운영 프로필은 `DB_URL`을 사용하고 `DB_DRIVER`를 지정하지 않으면 Oracle JDBC 드라이버를 기본값으로 사용합니다.
 
 ### 인프라 실행
 
@@ -282,6 +284,8 @@ DevPath
 | 프론트엔드 개발 서버 | `cd frontend && npm run dev` |
 | 프론트엔드 빌드 | `cd frontend && npm run build` |
 | 프론트엔드 린트 | `cd frontend && npm run lint` |
+| 프론트엔드 단위 테스트 | `cd frontend && npm test` |
+| 프론트엔드 E2E 테스트 | `cd frontend && npm run test:e2e` |
 
 </details>
 

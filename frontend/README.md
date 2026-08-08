@@ -8,7 +8,7 @@ DevPath의 Vite 기반 React 프론트엔드입니다.
 | 구분 | 기술 |
 | --- | --- |
 | UI | React 19 |
-| Language | TypeScript 5.9 |
+| Language | TypeScript 6.0 |
 | Build | Vite 8 |
 | Style | Tailwind CSS 4 |
 | HTTP | Axios |
@@ -19,6 +19,7 @@ DevPath의 Vite 기반 React 프론트엔드입니다.
 ## 로컬 실행
 
 프론트엔드만 로컬에서 실행할 때 사용합니다.
+Node.js 22 이상이 필요하며 프로젝트 Docker 개발 환경과 같은 Node.js 24 사용을 권장합니다.
 
 ```bash
 cd frontend
@@ -106,6 +107,10 @@ docker compose up --build --watch frontend
 | 개발 서버 실행 | `npm run dev` |
 | 프로덕션 빌드 | `npm run build` |
 | 린트 | `npm run lint` |
+| 단위 테스트 | `npm test` |
+| 단위 테스트 감시 모드 | `npm run test:watch` |
+| E2E 테스트 | `npm run test:e2e` |
+| 브라우저 표시 E2E 테스트 | `npm run test:e2e:headed` |
 | 빌드 결과 미리보기 | `npm run preview` |
 
 ## 참고
