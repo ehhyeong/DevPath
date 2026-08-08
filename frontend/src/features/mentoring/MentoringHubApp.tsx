@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import type { FormEvent } from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
@@ -193,7 +194,7 @@ function matchesProject(project: MentoringProject, query: string) {
 }
 
 export default function MentoringHubApp() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [asideSquads, setAsideSquads] = useState<ProjectAsideSquad[]>([])
@@ -263,7 +264,7 @@ export default function MentoringHubApp() {
     return () => {
       controller.abort()
     }
-  }, [reloadKey])
+  }, [reloadKey, setSession])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -277,7 +278,7 @@ export default function MentoringHubApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   const filteredProjects = useMemo(() => {
     const query = search.trim().toLowerCase()

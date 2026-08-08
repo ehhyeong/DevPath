@@ -1,0 +1,279 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+      body {
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+        letter-spacing: 0;
+      }
+
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
+      .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+      }
+
+      .doughnut-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+      }
+
+      .admin-content-shell {
+        width: min(100%, 1680px);
+        margin-inline: auto;
+        padding: clamp(1rem, 1.8vw, 2rem);
+      }
+
+      .admin-page-header {
+        padding-inline: clamp(1rem, 1.8vw, 2rem);
+      }
+
+      .admin-filter-bar {
+        display: grid;
+        min-width: 0;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+
+      .admin-filter-bar > * {
+        min-width: 0;
+      }
+
+      .admin-filter-actions {
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
+      .admin-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%2364758B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-position: right 0.85rem center;
+        background-repeat: no-repeat;
+        background-size: 0.875rem 0.875rem;
+        padding-right: 2.6rem;
+        text-overflow: ellipsis;
+      }
+
+      .admin-select:disabled {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      }
+
+      .admin-select-readout {
+        min-height: 2.25rem;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #475569;
+        overflow-wrap: anywhere;
+        word-break: keep-all;
+      }
+
+      .admin-sidebar {
+        background: #ffffff;
+        border-color: #e2e8f0;
+        color: #334155;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+      }
+
+      .admin-sidebar-brand {
+        color: #0f766e;
+      }
+
+      .admin-sidebar-badge {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        color: #64748b;
+      }
+
+      .admin-nav-section {
+        color: #94a3b8;
+        font-weight: 600;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+
+      .admin-nav-btn {
+        --menu-accent: #2563eb;
+        --menu-bg: #eff6ff;
+        --menu-border: #bfdbfe;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border: 1px solid transparent;
+        color: #475569;
+        background: transparent;
+        font-size: 0.94rem;
+        font-weight: 500;
+        letter-spacing: 0;
+      }
+
+      .admin-nav-btn:hover,
+      .admin-nav-btn.is-active {
+        border-color: var(--menu-border);
+        background: var(--menu-bg);
+        color: #0f172a;
+      }
+
+      .admin-nav-btn:hover {
+        transform: translateX(2px);
+      }
+
+      .admin-nav-btn.is-active {
+        box-shadow:
+          inset 3px 0 0 var(--menu-accent),
+          0 10px 22px rgba(15, 23, 42, 0.08);
+        font-weight: 600;
+      }
+
+      .admin-nav-icon {
+        display: inline-flex;
+        width: 2rem;
+        height: 2rem;
+        flex: 0 0 2rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--menu-bg);
+        color: var(--menu-accent);
+      }
+
+      .admin-nav-btn.is-active .admin-nav-icon {
+        background: var(--menu-accent);
+        color: #ffffff;
+      }
+
+      .admin-nav-label {
+        display: flex;
+        min-width: 0;
+        flex: 1;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .view-section.block + .view-section.block {
+        margin-top: 1rem;
+      }
+
+      .admin-logout-button {
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #64748b;
+      }
+
+      .admin-logout-button:hover {
+        border-color: #fecaca;
+        background: #fef2f2;
+        color: #dc2626;
+      }
+
+      .nav-btn[data-target="dashboard"] {
+        --menu-accent: #2563eb;
+        --menu-bg: #eff6ff;
+        --menu-border: #bfdbfe;
+      }
+
+      .nav-btn[data-target="tags"] {
+        --menu-accent: #059669;
+        --menu-bg: #ecfdf5;
+        --menu-border: #a7f3d0;
+      }
+
+      .nav-btn[data-target="official-roadmaps"] {
+        --menu-accent: #7c3aed;
+        --menu-bg: #f5f3ff;
+        --menu-border: #ddd6fe;
+      }
+
+      .nav-btn[data-target="roadmap-info"] {
+        --menu-accent: #0891b2;
+        --menu-bg: #ecfeff;
+        --menu-border: #a5f3fc;
+      }
+
+      .nav-btn[data-target="roadmaps"] {
+        --menu-accent: #d97706;
+        --menu-bg: #fffbeb;
+        --menu-border: #fde68a;
+      }
+
+      .nav-btn[data-target="node-resources"] {
+        --menu-accent: #0f766e;
+        --menu-bg: #f0fdfa;
+        --menu-border: #99f6e4;
+      }
+
+      .nav-btn[data-target="catalog-menu"] {
+        --menu-accent: #db2777;
+        --menu-bg: #fdf2f8;
+        --menu-border: #fbcfe8;
+      }
+
+      .nav-btn[data-target="roadmap-hub"] {
+        --menu-accent: #0d9488;
+        --menu-bg: #f0fdfa;
+        --menu-border: #99f6e4;
+      }
+
+      .nav-btn[data-target="users"] {
+        --menu-accent: #0284c7;
+        --menu-bg: #f0f9ff;
+        --menu-border: #bae6fd;
+      }
+
+      .nav-btn[data-target="reports"] {
+        --menu-accent: #dc2626;
+        --menu-bg: #fef2f2;
+        --menu-border: #fecaca;
+      }
+
+      @media (min-width: 768px) {
+        .admin-filter-bar {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 1536px) {
+        .admin-filter-bar {
+          display: flex;
+          align-items: center;
+          flex-wrap: nowrap;
+        }
+
+        .admin-filter-search {
+          flex: 1 1 240px;
+          min-width: 220px;
+        }
+
+        .admin-filter-control-sm {
+          flex: 0 0 124px;
+        }
+
+        .admin-filter-control-md {
+          flex: 0 0 146px;
+        }
+
+        .admin-filter-control-lg {
+          flex: 0 0 176px;
+        }
+      }
+
+      @media (max-width: 1535px) {
+        .admin-filter-actions {
+          justify-content: flex-start;
+        }
+      }

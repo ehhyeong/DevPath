@@ -1,13 +1,17 @@
-import { startTransition, useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState, type DragEvent } from 'react'
-import { courseApi, learnerAssignmentApi, learningPlayerApi, lessonNoteApi, lessonSessionApi, nodeClearanceApi, qnaApi } from '../../lib/api/learner'
-import { readStoredAuthSession } from '../../lib/auth-session'
-import { captureAndOcr, warmupOcrWorker, type ScreenRegion } from '../../lib/videoOcr'
-import type { AuthSession } from '../../types/auth'
-import type { LearningCourseDetail, LearningLesson, LearningLessonProgress, LearningPlayerConfig, LearningVideoQuality, SubmissionHistoryItem, TimestampNote } from '../../types/learning'
-import type { CreateQnaQuestionRequest, QnaQuestionDetail, QnaQuestionSummary, QnaQuestionTemplate } from '../../types/qna'
-import { ASSIGNMENT_LOADING_MESSAGES, buildAssignmentResultReportRows, buildAssignmentSubmissionPayload, buildCelebrationParticles, buildCompletionProofCard, buildQnaRealtimeWebSocketUrl, buildQuizModalQuestions, clampPercent, COURSE_LOAD_TIMEOUT_MS, createAssignmentFormState, createDefaultPlayerConfig, createQuestionFormState, formatOcrSourceLabel, getAvailableVideoQuality, getProofCardTheme, getVideoErrorMessage, isAbortError, isAssignmentLesson, isAssignmentSubmissionFormReady, isCourse127DemoCourse, isLessonProgressCompleted, isNativeKeyboardControlTarget, isOwnQnaQuestion, isPlaybackBlockedError, isQuestionAnswered, isQuizLesson, isSampleVideoUrl, LESSON_LOAD_TIMEOUT_MS, QNA_LOAD_TIMEOUT_MS, readEnabledSearchParam, readNonNegativeNumberSearchParam, readOptionalSafeReturnHref, readSafeReturnHref, readStudentPreviewFromLocation, readVideoDuration, requestWithTimeout, resolveAssignmentHistoryScorePercent, resolveAssignmentResultBadge, resolveAssignmentResultPassed, resolveAssignmentResultScore, resolveAssignmentResultScorePercent, resolveAssignmentReviewFeedback, resolveAssignmentSubmissionEmptyMessage, resolveAssignmentSubmissionMethods, resolveLessonAssignment, resolveVideoQualitySources, resolveVideoUrl, toQuestionSummary, type AssignmentGradingResultState, type AssignmentSubmissionFormState, type CompletionProofCardState, type PersistCompletionOptions, type PipDocument, type PipVideoElement, type QnaRealtimeEvent, type QnaStatusFilter, type QuestionFormState, type TabKey } from './learning-player-model'
-import { createDefaultProgress, formatTime, getFlattenedLessons, getNotesStorageKey, getProgressStorageKey, normalizeCourseDetail, PLAYER_SPEEDS, readJsonStorage, readNumberSearchParam, writeJsonStorage } from './learning-player-support'
+import { useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef } from 'react'
+import { lessonSessionApi, nodeClearanceApi, qnaApi } from '../../lib/api/learner'
+import { warmupOcrWorker } from '../../lib/videoOcr'
+import type { LearningLesson, LearningLessonProgress } from '../../types/learning'
+import type { QnaQuestionDetail } from '../../types/qna'
+import { ASSIGNMENT_LOADING_MESSAGES, buildAssignmentResultReportRows, buildCelebrationParticles, buildCompletionProofCard, buildQuizModalQuestions, clampPercent, createAssignmentFormState, getAvailableVideoQuality, getProofCardTheme, getVideoErrorMessage, isAbortError, isAssignmentLesson, isAssignmentSubmissionFormReady, isCourse127DemoCourse, isLessonProgressCompleted, isNativeKeyboardControlTarget, isOwnQnaQuestion, isPlaybackBlockedError, isQuestionAnswered, isQuizLesson, isSampleVideoUrl, readEnabledSearchParam, readNonNegativeNumberSearchParam, readOptionalSafeReturnHref, readSafeReturnHref, readStudentPreviewFromLocation, readVideoDuration, resolveAssignmentHistoryScorePercent, resolveAssignmentResultBadge, resolveAssignmentResultPassed, resolveAssignmentResultScore, resolveAssignmentResultScorePercent, resolveAssignmentReviewFeedback, resolveAssignmentSubmissionMethods, resolveLessonAssignment, resolveVideoQualitySources, resolveVideoUrl, toQuestionSummary, type AssignmentGradingResultState, type PersistCompletionOptions } from './learning-player-model'
+import { createDefaultProgress, getFlattenedLessons, getProgressStorageKey, readNumberSearchParam, writeJsonStorage } from './learning-player-support'
 import { useLearningPlayerEnvironment } from './useLearningPlayerEnvironment'
+import { useLearningCourseLoader } from './useLearningCourseLoader'
+import { useLearningSupplementalLoader } from './useLearningSupplementalLoader'
+import { useLearningAssessmentState,useLearningCourseState,useLearningNotesAndQnaState,useLearningPlaybackState } from './useLearningPlayerState'
+import { useLearningNotesAndQnaActions } from './useLearningNotesAndQnaActions'
+import { useLearningAssessmentActions } from './useLearningAssessmentActions'
+import { useLearningPlaybackActions } from './useLearningPlaybackActions'
 
 export function useLearningPlayerController() {
 const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
@@ -16,69 +20,14 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const initialTimestampSeconds = useMemo(() => readNonNegativeNumberSearchParam('t'), [])
   const shouldAutoplayPreview = useMemo(() => isStudentPreview && readEnabledSearchParam('autoplay'), [isStudentPreview])
 
-  const [session, setSession] = useState<AuthSession | null>(() => readStoredAuthSession())
-  const [course, setCourse] = useState<LearningCourseDetail | null>(null)
-  const [courseError, setCourseError] = useState<string | null>(null)
-  const [selectedLessonId, setSelectedLessonId] = useState<number | null>(initialLessonId)
-  const [activeTab, setActiveTab] = useState<TabKey>('curriculum')
-  const [openSectionIds, setOpenSectionIds] = useState<Set<number>>(() => new Set())
-  const [notice, setNotice] = useState<string | null>(null)
-  const [loadingCourse, setLoadingCourse] = useState(true)
-  const [loadingLesson, setLoadingLesson] = useState(false)
-  const [loadingLessonProgressMap, setLoadingLessonProgressMap] = useState(false)
-  const [progress, setProgress] = useState<LearningLessonProgress | null>(null)
-  const [lessonProgressById, setLessonProgressById] = useState<Record<number, LearningLessonProgress>>({})
-  const [playerConfig, setPlayerConfig] = useState<LearningPlayerConfig | null>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [selectedVideoQuality, setSelectedVideoQuality] = useState<LearningVideoQuality>('1080')
-  const [notes, setNotes] = useState<TimestampNote[]>([])
-  const [noteContent, setNoteContent] = useState('')
-  const [noteComposerOpen, setNoteComposerOpen] = useState(false)
-  const [noteMessage, setNoteMessage] = useState<string | null>(null)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
-  const [actualDurationByLessonId, setActualDurationByLessonId] = useState<Record<number, number>>({})
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isMuted, setIsMuted] = useState(false)
-  const [volume, setVolume] = useState(1)
-  const [isPipActive, setIsPipActive] = useState(false)
-  const [isFrameFullscreen, setIsFrameFullscreen] = useState(false)
-  const [ocrBusy, setOcrBusy] = useState(false)
-  const [isSelectMode, setIsSelectMode] = useState(false)
-  const [selectDrag, setSelectDrag] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null)
-  const [videoFailed, setVideoFailed] = useState(false)
-  const [qnaTemplates, setQnaTemplates] = useState<QnaQuestionTemplate[]>([])
-  const [qnaQuestions, setQnaQuestions] = useState<QnaQuestionSummary[]>([])
-  const [qnaDetails, setQnaDetails] = useState<Record<number, QnaQuestionDetail>>({})
-  const [loadingQna, setLoadingQna] = useState(false)
-  const [qnaError, setQnaError] = useState<string | null>(null)
-  const [qnaStatusFilter, setQnaStatusFilter] = useState<QnaStatusFilter>('ALL')
-  const [qnaSearch, setQnaSearch] = useState('')
-  const [openQuestionId, setOpenQuestionId] = useState<number | null>(null)
-  const [loadingQuestionId, setLoadingQuestionId] = useState<number | null>(null)
-  const [questionForm, setQuestionForm] = useState<QuestionFormState>(createQuestionFormState)
-  const [questionMessage, setQuestionMessage] = useState<string | null>(null)
-  const [questionBusy, setQuestionBusy] = useState(false)
-  const [questionComposerOpen, setQuestionComposerOpen] = useState(false)
-  const [openNoteId, setOpenNoteId] = useState<number | null>(null)
-  const [editingNoteContent, setEditingNoteContent] = useState('')
-  const [quizModalLessonId, setQuizModalLessonId] = useState<number | null>(null)
-  const [quizQuestionIndex, setQuizQuestionIndex] = useState(0)
-  const [quizSelectedOptionIndex, setQuizSelectedOptionIndex] = useState<number | null>(null)
-  const [quizFeedback, setQuizFeedback] = useState<'correct' | 'wrong' | null>(null)
-  const [assignmentModalLessonId, setAssignmentModalLessonId] = useState<number | null>(null)
-  const [assignmentForm, setAssignmentForm] = useState<AssignmentSubmissionFormState>(() => createAssignmentFormState())
-  const [assignmentFileDragActive, setAssignmentFileDragActive] = useState(false)
-  const [assignmentSubmitBusy, setAssignmentSubmitBusy] = useState(false)
-  const [assignmentMessage, setAssignmentMessage] = useState<string | null>(null)
-  const [assignmentLoadingVisible, setAssignmentLoadingVisible] = useState(false)
-  const [assignmentLoadingText, setAssignmentLoadingText] = useState(ASSIGNMENT_LOADING_MESSAGES[0])
-  const [assignmentGradingResult, setAssignmentGradingResult] = useState<AssignmentGradingResultState | null>(null)
-  const [assignmentHistoryByAssignmentId, setAssignmentHistoryByAssignmentId] = useState<Record<number, SubmissionHistoryItem>>({})
-  const [completionProofCard, setCompletionProofCard] = useState<CompletionProofCardState | null>(null)
-  const [completionVisible, setCompletionVisible] = useState(false)
-  const [completionCardFlipped, setCompletionCardFlipped] = useState(false)
-  const [completionBurstKey, setCompletionBurstKey] = useState(0)
+  const courseState = useLearningCourseState(initialLessonId)
+  const { session,setSession,course,courseError,selectedLessonId,setSelectedLessonId,activeTab,setActiveTab,openSectionIds,setOpenSectionIds,notice,setNotice,loadingCourse,loadingLesson,loadingLessonProgressMap,progress,setProgress,lessonProgressById,setLessonProgressById,playerConfig,setPlayerConfig } = courseState
+  const playbackState = useLearningPlaybackState()
+  const { settingsOpen,setSettingsOpen,selectedVideoQuality,setSelectedVideoQuality,currentTime,setCurrentTime,duration,setDuration,actualDurationByLessonId,setActualDurationByLessonId,isPlaying,setIsPlaying,isMuted,setIsMuted,volume,isPipActive,setIsPipActive,isFrameFullscreen,setIsFrameFullscreen,ocrBusy,isSelectMode,setIsSelectMode,selectDrag,setSelectDrag,videoFailed,setVideoFailed } = playbackState
+  const notesAndQnaState = useLearningNotesAndQnaState()
+  const { notes,noteContent,setNoteContent,noteComposerOpen,setNoteComposerOpen,noteMessage,setNoteMessage,qnaTemplates,qnaQuestions,setQnaQuestions,qnaDetails,setQnaDetails,loadingQna,qnaError,setQnaError,qnaStatusFilter,setQnaStatusFilter,qnaSearch,setQnaSearch,openQuestionId,setOpenQuestionId,loadingQuestionId,setLoadingQuestionId,questionForm,setQuestionForm,questionMessage,setQuestionMessage,questionBusy,questionComposerOpen,setQuestionComposerOpen,openNoteId,setOpenNoteId,editingNoteContent,setEditingNoteContent } = notesAndQnaState
+  const assessmentState = useLearningAssessmentState()
+  const { quizModalLessonId,quizQuestionIndex,setQuizQuestionIndex,quizSelectedOptionIndex,setQuizSelectedOptionIndex,quizFeedback,setQuizFeedback,assignmentModalLessonId,setAssignmentModalLessonId,assignmentForm,setAssignmentForm,assignmentFileDragActive,assignmentSubmitBusy,assignmentMessage,setAssignmentMessage,assignmentLoadingVisible,setAssignmentLoadingVisible,assignmentLoadingText,setAssignmentLoadingText,assignmentGradingResult,setAssignmentGradingResult,assignmentHistoryByAssignmentId,completionProofCard,setCompletionProofCard,completionVisible,setCompletionVisible,completionCardFlipped,setCompletionCardFlipped,completionBurstKey,setCompletionBurstKey } = assessmentState
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const frameRef = useRef<HTMLDivElement | null>(null)
@@ -242,7 +191,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
       next.add(activeSection.sectionId)
       return next
     })
-  }, [course, lesson])
+  }, [course, lesson, setOpenSectionIds])
   const assignmentResultCompletesCourse = assignmentGradingResult
     ? lessons.length > 0 && lessons.every((item) => isLessonProgressCompleted(assignmentResultProgressById[item.lessonId]))
     : false
@@ -259,7 +208,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   useEffect(() => {
     if (!activeVideoQuality || selectedVideoQuality === activeVideoQuality) return
     setSelectedVideoQuality(activeVideoQuality)
-  }, [activeVideoQuality, selectedVideoQuality])
+  }, [activeVideoQuality, selectedVideoQuality, setSelectedVideoQuality])
   useEffect(() => {
     if (!course || !lessons.length) return
 
@@ -279,7 +228,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     })
 
     return () => controller.abort()
-  }, [course, lessons, selectedVideoQuality])
+  }, [course, lessons, selectedVideoQuality, setActualDurationByLessonId])
   const completionTheme = completionProofCard ? getProofCardTheme(completionProofCard.type) : null
   const completionParticles = useMemo(() => buildCelebrationParticles(completionBurstKey), [completionBurstKey])
   const sessionUserId = session?.userId ?? null
@@ -333,7 +282,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         setLoadingQuestionId((current) => (current === questionId ? null : current))
       }
     }
-  }, [])
+  }, [setLoadingQuestionId, setQnaDetails, setQnaError, setQnaQuestions])
 
   const getPlaybackLimit = useCallback((video: HTMLVideoElement | null) => {
     // Math.floor 제거 — float 그대로 사용해야 영상 끝에서 강제 정지되지 않음
@@ -440,7 +389,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         .recalculateByCourse(course.courseId)
         .catch(() => undefined)
     }
-  }, [calculateCourseCompletionScore, course, isCourseCompletedByProgress, lessons])
+  }, [calculateCourseCompletionScore, course, isCourseCompletedByProgress, lessons, setCompletionBurstKey, setCompletionCardFlipped, setCompletionProofCard, setCompletionVisible])
 
   const persistCompletedLesson = useCallback((
     lessonId: number,
@@ -495,13 +444,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
       .catch(() => {
         completedPersistedLessonIdRef.current = null
       })
-  }, [
-    isStudentPreview,
-    mergeLessonProgress,
-    openCourseCompletionOverlay,
-    playerConfig?.defaultPlaybackRate,
-    playerConfig?.pipEnabled,
-  ])
+  }, [isStudentPreview, mergeLessonProgress, openCourseCompletionOverlay, playerConfig?.defaultPlaybackRate, playerConfig?.pipEnabled, setLessonProgressById, setProgress])
 
   useEffect(() => {
     lessonProgressByIdRef.current = lessonProgressById
@@ -520,94 +463,8 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   }, [course?.courseId])
 
   useLearningPlayerEnvironment({ course, lesson, setSession, setAssignmentMessage })
-
-  useEffect(() => {
-    if (!session) {
-      setLoadingCourse(false)
-      return
-    }
-    let cancelled = false
-
-    async function loadCourse() {
-      setLoadingCourse(true)
-      setCourseError(null)
-      if (!initialCourseId) {
-        setCourse(null)
-        setCourseError('courseId가 없습니다.')
-        setLoadingCourse(false)
-        return
-      }
-      try {
-        const response = await requestWithTimeout(COURSE_LOAD_TIMEOUT_MS, (signal) => courseApi.getCourseDetail(initialCourseId, signal))
-        if (cancelled) return
-        const normalizedCourse = normalizeCourseDetail(response)
-        const nextLessons = getFlattenedLessons(normalizedCourse)
-        if (!nextLessons.length) {
-          setCourse(null)
-          setCourseError('이 강의에는 공개된 강의 영상이 없습니다.')
-          return
-        }
-        setCourse(normalizedCourse)
-        setSelectedLessonId(
-          (initialLessonId && nextLessons.some((item) => item.lessonId === initialLessonId))
-            ? initialLessonId
-            : nextLessons[0].lessonId,
-        )
-      } catch (error) {
-        if (cancelled) return
-        setCourse(null)
-        setCourseError(isAbortError(error) ? '강의 데이터를 불러오는 데 시간이 초과됐습니다.' : '강의 데이터를 불러오지 못했습니다.')
-      } finally {
-        if (!cancelled) setLoadingCourse(false)
-      }
-    }
-
-    void loadCourse()
-    return () => { cancelled = true }
-  }, [initialCourseId, initialLessonId, session])
-
-  useEffect(() => {
-    if (!session || !lessons.length) {
-      setLessonProgressById({})
-      setLoadingLessonProgressMap(false)
-      return
-    }
-
-    if (isStudentPreview) {
-      setLessonProgressById(Object.fromEntries(
-        lessons.map((item) => [item.lessonId, createDefaultProgress(item.lessonId)]),
-      ))
-      setLoadingLessonProgressMap(false)
-      return
-    }
-
-    let cancelled = false
-
-    async function loadLessonProgressMap() {
-      setLoadingLessonProgressMap(true)
-      const progressEntries = await Promise.all(
-        lessons.map(async (item) => {
-          try {
-            const nextProgress = await requestWithTimeout(
-              LESSON_LOAD_TIMEOUT_MS,
-              (signal) => lessonSessionApi.getProgress(item.lessonId, signal),
-            )
-            return [item.lessonId, nextProgress] as const
-          } catch {
-            return [item.lessonId, createDefaultProgress(item.lessonId)] as const
-          }
-        }),
-      )
-
-      if (cancelled) return
-
-      setLessonProgressById(Object.fromEntries(progressEntries))
-      setLoadingLessonProgressMap(false)
-    }
-
-    void loadLessonProgressMap()
-    return () => { cancelled = true }
-  }, [isStudentPreview, lessons, session])
+  useLearningCourseLoader({ courseState, playbackState, notesState: notesAndQnaState, initialCourseId, initialLessonId, isStudentPreview, lessons, lesson, selectedLessonLocked, shouldResumePlayback, resolveInitialPlaybackSeconds, mergeLessonProgress, resumeTimeRef, lastRenderedSecondRef, completedPersistedLessonIdRef })
+  useLearningSupplementalLoader({ courseState, notesState: notesAndQnaState, assessmentState, isStudentPreview, sessionUserId, openQuestionIdRef, qnaDetailsRef, refreshQnaQuestion })
 
   useEffect(() => {
     if (!course || loadingLessonProgressMap || !selectedLessonId) return
@@ -627,160 +484,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         ? `"${lockState.prerequisiteLessonTitle}" 강의를 끝까지 보면 열립니다.`
         : '이전 강의를 끝까지 보면 열립니다.',
       )
-  }, [course, firstUnlockedLessonId, lessonLockMap, lessons, loadingLessonProgressMap, selectedLessonId])
-
-  useEffect(() => {
-    if (isStudentPreview || !sessionUserId) {
-      setAssignmentHistoryByAssignmentId({})
-      return
-    }
-
-    let cancelled = false
-    const userId = sessionUserId
-
-    async function loadAssignmentHistory() {
-      try {
-        const history = await requestWithTimeout(
-          LESSON_LOAD_TIMEOUT_MS,
-          (signal) => learnerAssignmentApi.getSubmissionHistory(userId, signal),
-        )
-        if (cancelled) return
-
-        const nextHistoryByAssignmentId = history.submissions.reduce<Record<number, SubmissionHistoryItem>>((acc, item) => {
-          const current = acc[item.assignmentId]
-          const currentSubmittedAt = current?.submittedAt ?? ''
-          const nextSubmittedAt = item.submittedAt ?? ''
-          if (!current || nextSubmittedAt > currentSubmittedAt || item.submissionId > current.submissionId) {
-            acc[item.assignmentId] = item
-          }
-          return acc
-        }, {})
-
-        setAssignmentHistoryByAssignmentId(nextHistoryByAssignmentId)
-      } catch {
-        if (!cancelled) setAssignmentHistoryByAssignmentId({})
-      }
-    }
-
-    void loadAssignmentHistory()
-    return () => { cancelled = true }
-  }, [isStudentPreview, sessionUserId])
-
-  useEffect(() => {
-    if (isStudentPreview) {
-      setQnaQuestions([])
-      setQnaDetails({})
-      setQnaError(null)
-      setLoadingQna(false)
-      return
-    }
-
-    if (!session?.accessToken || !course?.courseId) return
-    let cancelled = false
-    const courseId = course.courseId
-
-    async function loadQna() {
-      setLoadingQna(true)
-      setQnaError(null)
-      setQuestionForm(createQuestionFormState())
-
-      const [questionsResult, templatesResult] = await Promise.allSettled([
-        requestWithTimeout(QNA_LOAD_TIMEOUT_MS, (signal) => qnaApi.getQuestions(courseId, signal)),
-        requestWithTimeout(QNA_LOAD_TIMEOUT_MS, (signal) => qnaApi.getTemplates(signal)),
-      ])
-
-      if (cancelled) return
-
-      if (questionsResult.status === 'fulfilled') {
-        setQnaQuestions(questionsResult.value)
-        setQnaError(null)
-      } else {
-        setQnaQuestions([])
-        setQnaError('Q&A 데이터를 불러오지 못했습니다.')
-      }
-
-      if (templatesResult.status === 'fulfilled') {
-        setQnaTemplates(templatesResult.value)
-        setQuestionForm((current) => ({
-          ...current,
-          templateType: current.templateType || templatesResult.value[0]?.templateType || '',
-        }))
-      } else {
-        setQnaTemplates([])
-      }
-
-      setLoadingQna(false)
-    }
-
-    void loadQna()
-    return () => { cancelled = true }
-  }, [course?.courseId, isStudentPreview, session?.accessToken, sessionUserId])
-
-  useEffect(() => {
-    if (isStudentPreview || !course?.courseId || !session?.accessToken) return
-
-    let closed = false
-    let reconnectTimeoutId = 0
-    let socket: WebSocket | null = null
-    const courseId = course.courseId
-    const accessToken = session.accessToken
-
-    const connect = () => {
-      if (closed) return
-
-      try {
-        socket = new WebSocket(buildQnaRealtimeWebSocketUrl(courseId, accessToken))
-      } catch {
-        reconnectTimeoutId = window.setTimeout(connect, 3000)
-        return
-      }
-
-      socket.onmessage = (message) => {
-        let event: QnaRealtimeEvent
-
-        try {
-          event = JSON.parse(message.data) as QnaRealtimeEvent
-        } catch {
-          return
-        }
-
-        if (event.courseId !== courseId || typeof event.questionId !== 'number') {
-          return
-        }
-
-        setQnaQuestions((current) => current.map((item) => {
-          if (item.id !== event.questionId) return item
-          return {
-            ...item,
-            qnaStatus: 'ANSWERED',
-            answerCount: Math.max(item.answerCount, 1),
-          }
-        }))
-
-        if (openQuestionIdRef.current === event.questionId || qnaDetailsRef.current[event.questionId]) {
-          void refreshQnaQuestion(event.questionId)
-        }
-      }
-
-      socket.onclose = () => {
-        if (!closed) {
-          reconnectTimeoutId = window.setTimeout(connect, 3000)
-        }
-      }
-
-      socket.onerror = () => {
-        socket?.close()
-      }
-    }
-
-    connect()
-
-    return () => {
-      closed = true
-      window.clearTimeout(reconnectTimeoutId)
-      socket?.close()
-    }
-  }, [course?.courseId, isStudentPreview, refreshQnaQuestion, session?.accessToken])
+  }, [course, firstUnlockedLessonId, lessonLockMap, lessons, loadingLessonProgressMap, selectedLessonId, setNotice, setSelectedLessonId])
 
   useEffect(() => {
     if (!lesson || selectedLessonLocked || !isAssignmentLesson(lesson)) {
@@ -796,7 +500,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     setAssignmentMessage(null)
     setAssignmentLoadingVisible(false)
     setAssignmentGradingResult(null)
-  }, [lesson, selectedLessonLocked])
+  }, [lesson, selectedLessonLocked, setAssignmentForm, setAssignmentGradingResult, setAssignmentLoadingVisible, setAssignmentMessage, setAssignmentModalLessonId])
 
   useEffect(() => {
     if (!assignmentLoadingVisible) {
@@ -810,122 +514,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
       800 + (index * 1000),
     ))
     return () => timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId))
-  }, [assignmentLoadingVisible])
-
-  useEffect(() => {
-    if (!lesson) {
-      setProgress(null)
-      setPlayerConfig(null)
-      setNotes([])
-      setDuration(0)
-      setCurrentTime(0)
-      setIsPipActive(false)
-      return
-    }
-    if (selectedLessonLocked) {
-      setProgress(createDefaultProgress(lesson.lessonId))
-      setPlayerConfig(createDefaultPlayerConfig(lesson.lessonId))
-      setNotes([])
-      setDuration(lesson.durationSeconds ?? 0)
-      setCurrentTime(0)
-      setIsPlaying(false)
-      setIsPipActive(false)
-      setLoadingLesson(false)
-      return
-    }
-    let cancelled = false
-
-    async function loadLessonState() {
-      setLoadingLesson(true)
-      setNotice(null)
-      setVideoFailed(false)
-      setNoteContent('')
-      setNoteMessage(null)
-      completedPersistedLessonIdRef.current = null
-
-      const storedProgress = readJsonStorage(getProgressStorageKey(lesson.lessonId), createDefaultProgress(lesson.lessonId))
-      const storedNotes = readJsonStorage(getNotesStorageKey(lesson.lessonId), [] as TimestampNote[])
-
-      const lessonDuration = lesson.durationSeconds ?? 0
-      const storedFullyWatched = lessonDuration > 0 && storedProgress.progressSeconds >= lessonDuration
-      const initialProgressSeconds = resolveInitialPlaybackSeconds(
-        lesson.lessonId,
-        shouldResumePlayback && !storedFullyWatched ? storedProgress.progressSeconds : 0,
-      )
-      resumeTimeRef.current = initialProgressSeconds
-      lastRenderedSecondRef.current = initialProgressSeconds
-      setProgress(storedProgress)
-      setPlayerConfig(createDefaultPlayerConfig(lesson.lessonId))
-      setNotes(storedNotes)
-      setCurrentTime(initialProgressSeconds)
-      setDuration(lesson.durationSeconds ?? 0)
-
-      if (isStudentPreview) {
-        const previewProgress: LearningLessonProgress = {
-          ...createDefaultProgress(lesson.lessonId),
-          progressPercent: lesson.durationSeconds && lesson.durationSeconds > 0
-            ? Math.max(0, Math.min(100, Math.round((initialProgressSeconds / lesson.durationSeconds) * 100)))
-            : 0,
-          progressSeconds: initialProgressSeconds,
-        }
-        setProgress(previewProgress)
-        setLessonProgressById((current) => ({
-          ...current,
-          [lesson.lessonId]: previewProgress,
-        }))
-        setLoadingLesson(false)
-        return
-      }
-
-      try {
-        const [sessionProgress, config, fetchedNotes] = await Promise.all([
-          requestWithTimeout(LESSON_LOAD_TIMEOUT_MS, (signal) => lessonSessionApi.startSession(lesson.lessonId, signal)),
-          requestWithTimeout(LESSON_LOAD_TIMEOUT_MS, (signal) => learningPlayerApi.getPlayerConfig(lesson.lessonId, signal)).catch(() => null),
-          requestWithTimeout(LESSON_LOAD_TIMEOUT_MS, (signal) => lessonNoteApi.getNotes(lesson.lessonId, signal)).catch(() => null),
-        ])
-
-        if (cancelled) return
-
-        const nextProgress = {
-          ...sessionProgress,
-          defaultPlaybackRate: config?.defaultPlaybackRate ?? sessionProgress.defaultPlaybackRate ?? 1,
-          pipEnabled: config?.pipEnabled ?? sessionProgress.pipEnabled ?? false,
-        }
-
-        const sessionFullyWatched = lessonDuration > 0 && nextProgress.progressSeconds >= lessonDuration
-        const nextResumeSeconds = resolveInitialPlaybackSeconds(
-          lesson.lessonId,
-          shouldResumePlayback && !sessionFullyWatched ? nextProgress.progressSeconds : 0,
-        )
-        resumeTimeRef.current = nextResumeSeconds
-        lastRenderedSecondRef.current = nextResumeSeconds
-        setProgress(nextProgress)
-        setLessonProgressById((current) => ({
-          ...current,
-          [lesson.lessonId]: mergeLessonProgress(lesson.lessonId, nextProgress, current[lesson.lessonId]),
-        }))
-        setPlayerConfig({
-          lessonId: lesson.lessonId,
-          defaultPlaybackRate: nextProgress.defaultPlaybackRate,
-          pipEnabled: nextProgress.pipEnabled,
-        })
-        setCurrentTime(nextResumeSeconds)
-        writeJsonStorage(getProgressStorageKey(lesson.lessonId), nextProgress)
-
-        if (fetchedNotes) {
-          setNotes(fetchedNotes)
-          writeJsonStorage(getNotesStorageKey(lesson.lessonId), fetchedNotes)
-        }
-      } catch (error) {
-        if (!cancelled && isAbortError(error)) setNotice('강의 상태 불러오기가 오래 걸립니다. 캐시된 값을 표시합니다.')
-      } finally {
-        if (!cancelled) setLoadingLesson(false)
-      }
-    }
-
-    void loadLessonState()
-    return () => { cancelled = true }
-  }, [isStudentPreview, lesson, mergeLessonProgress, resolveInitialPlaybackSeconds, selectedLessonLocked, shouldResumePlayback])
+  }, [assignmentLoadingVisible, setAssignmentLoadingText])
 
   useEffect(() => {
     const video = videoRef.current
@@ -1049,7 +638,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
       video.removeEventListener('enterpictureinpicture', handleEnterPip)
       video.removeEventListener('leavepictureinpicture', handleLeavePip)
     }
-  }, [getPlaybackLimit, isStudentPreview, lesson, persistCompletedLesson, playerConfig?.defaultPlaybackRate, resolvedVideoUrl, shouldAutoplayPreview, shouldResumePlayback])
+  }, [getPlaybackLimit, isStudentPreview, lesson, persistCompletedLesson, playerConfig?.defaultPlaybackRate, resolvedVideoUrl, setActualDurationByLessonId, setCurrentTime, setDuration, setIsMuted, setIsPipActive, setIsPlaying, setNotice, setVideoFailed, shouldAutoplayPreview, shouldResumePlayback])
 
   const persistProgress = useEffectEvent(async (lessonId: number) => {
     if (isStudentPreview) return
@@ -1112,10 +701,12 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
       setQuestionMessage(null)
     }, 2600)
     return () => window.clearTimeout(timeoutId)
-  }, [noteMessage, notice, questionMessage])
+  }, [noteMessage, notice, questionMessage, setNoteMessage, setNotice, setQuestionMessage])
 
   // OCR 워커 미리 초기화 (첫 클릭 지연 최소화)
   useEffect(() => { warmupOcrWorker() }, [])
+
+  const { handleTogglePlaySafe,handleRetryVideoLoad,handleOcr,handleToggleMute,handleVolumeChange,handleSeek,handleTogglePip,handleToggleFullscreen,handleCyclePlaybackRate,handleSetPlaybackRate,handleSetVideoQuality } = useLearningPlaybackActions({ state: playbackState, lesson, resolvedVideoUrl, playerConfig, setPlayerConfig, videoQualitySources, activeVideoQuality, setNotice, getPlaybackLimit, videoRef, frameRef, resumeTimeRef, lastRenderedSecondRef, pendingVideoLoadRef, resumePlaybackAfterQualitySwitchRef })
 
   const handleKeyboardTogglePlay = useEffectEvent(() => {
     void handleTogglePlaySafe()
@@ -1129,7 +720,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     syncFullscreenState()
     document.addEventListener('fullscreenchange', syncFullscreenState)
     return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
-  }, [])
+  }, [setIsFrameFullscreen])
 
   // ESC 키로 구간 선택 모드 취소
   useEffect(() => {
@@ -1149,648 +740,12 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [
-    assignmentModalLessonId,
-    completionVisible,
-    quizModalLessonId,
-    resolvedVideoUrl,
-    selectedLessonIsQuiz,
-  ])
+  }, [assignmentModalLessonId, completionVisible, quizModalLessonId, resolvedVideoUrl, selectedLessonIsQuiz, setIsSelectMode, setSelectDrag])
 
-  async function handleTogglePlaySafe() {
-    const video = videoRef.current
-    if (!video || !resolvedVideoUrl) return
+  const assessmentActions = useLearningAssessmentActions({ state: assessmentState, lesson, lessons, course, duration, lessonLockMap, selectedLessonLocked, previousLesson, nextLesson, quizModalLesson, quizModalLessonId, quizModalQuestions, activeQuizQuestion, assignmentModalLesson, assignmentModal, assignmentResultNextLesson, assignmentResultProgressById, assignmentResultCompletesCourse, isStudentPreview, sessionUserId, quizScoreByLessonIdRef, setSelectedLessonId, setNotice, persistCompletedLesson, openCourseCompletionOverlay })
+  const { openAssignmentModal,closeAssignmentModal,closeAssignmentGradingResult,closeCompletionOverlay,handleAssignmentResultPrimaryAction,openQuizModal,closeQuizModal,handleSelectLesson,handlePreviousLesson,handleNextLesson,handleQuizOptionSelect,handleQuizCheckAnswer,handleQuizNextQuestion,handleAssignmentFilesSelected,handleAssignmentFileDragOver,handleAssignmentFileDragLeave,handleAssignmentFileDrop,handleAssignmentFileRemove,handleAssignmentSubmit } = assessmentActions
 
-    if (videoFailed) {
-      pendingVideoLoadRef.current = true
-      setVideoFailed(false)
-      setNotice('영상 재생 준비 중입니다.')
-      video.load()
-      return
-    }
-
-    if (videoFailed) {
-      setVideoFailed(false)
-      setNotice('영상을 다시 불러오는 중입니다.')
-      video.load()
-    }
-
-    if (video.paused) {
-      const playbackLimit = getPlaybackLimit(video)
-      if (playbackLimit > 0 && video.currentTime >= playbackLimit) {
-        video.currentTime = 0
-        lastRenderedSecondRef.current = 0
-        setCurrentTime(0)
-      }
-
-      if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
-        pendingVideoLoadRef.current = true
-        setNotice('영상 재생 준비 중입니다.')
-        if (video.networkState === HTMLMediaElement.NETWORK_EMPTY) video.load()
-        return
-      }
-
-      try {
-        await video.play()
-        setNotice(null)
-      } catch (error) {
-        if (isPlaybackBlockedError(error)) {
-          try {
-            video.muted = true
-            setIsMuted(true)
-            await video.play()
-            setNotice('브라우저 정책 때문에 음소거 상태로 먼저 재생했습니다. 필요하면 음소거를 해제해 주세요.')
-            return
-          } catch (mutedError) {
-            if (!isPlaybackBlockedError(mutedError) && !isAbortError(mutedError)) {
-              setNotice(getVideoErrorMessage(video, resolvedVideoUrl))
-              return
-            }
-          }
-
-          setNotice('브라우저 자동 재생 정책 때문에 재생이 막혔습니다. 재생 버튼을 다시 눌러 주세요.')
-          return
-        }
-
-        if (isAbortError(error)) {
-          setNotice('영상을 아직 불러오는 중입니다. 잠시 후 다시 시도해 주세요.')
-          return
-        }
-
-        setNotice(getVideoErrorMessage(video, resolvedVideoUrl))
-      }
-      return
-    }
-
-    video.pause()
-  }
-
-  function handleRetryVideoLoad() {
-    const video = videoRef.current
-    if (!video || !resolvedVideoUrl) return
-    pendingVideoLoadRef.current = true
-    setVideoFailed(false)
-    setIsPlaying(false)
-    setNotice('영상을 다시 불러오는 중입니다.')
-    video.load()
-  }
-
-  async function handleOcr(region?: ScreenRegion) {
-    const video = videoRef.current
-    if (!video || ocrBusy) return
-    setOcrBusy(true)
-    setIsSelectMode(false)
-    setSelectDrag(null)
-    setNotice(region ? '선택한 영역의 글자를 읽는 중...' : '화면의 글자를 읽는 중...')
-    try {
-      const { text, source } = await captureAndOcr(video, region, (msg) => setNotice(msg))
-      if (!text.trim()) {
-        setNotice(`${formatOcrSourceLabel(source)} · 인식한 글자가 없습니다.`)
-        return
-      }
-      await navigator.clipboard.writeText(text)
-      setNotice('클립보드에 복사가 완료되었습니다.')
-    } catch (err) {
-      setNotice(`글자를 읽지 못했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
-    } finally {
-      setOcrBusy(false)
-    }
-  }
-
-  function handleToggleMute() {
-    const video = videoRef.current
-    if (!video) return
-    const next = !video.muted
-    video.muted = next
-    setIsMuted(next)
-  }
-
-  function handleVolumeChange(next: number) {
-    const video = videoRef.current
-    if (!video) return
-    video.volume = next
-    video.muted = next === 0
-    setVolume(next)
-    setIsMuted(next === 0)
-  }
-
-  function handleSeek(nextSeconds: number) {
-    const video = videoRef.current
-    if (!video) return
-    const upperBound = getPlaybackLimit(video) || (lesson?.durationSeconds ?? 0) || nextSeconds
-    const bounded = Math.max(0, Math.min(upperBound, nextSeconds))
-    video.currentTime = bounded
-    lastRenderedSecondRef.current = Math.floor(bounded)
-    setCurrentTime(Math.floor(bounded))
-  }
-
-  function markLessonCompletedForNavigation(item: LearningLesson, options?: PersistCompletionOptions) {
-    const totalSeconds = Math.max(1, duration || item.durationSeconds || 1)
-    persistCompletedLesson(item.lessonId, totalSeconds, options)
-  }
-
-  function openAssignmentModal(item: LearningLesson) {
-    if (!isAssignmentLesson(item)) return
-    setAssignmentModalLessonId(item.lessonId)
-    setAssignmentForm(createAssignmentFormState(resolveLessonAssignment(item)))
-    setAssignmentFileDragActive(false)
-    setAssignmentMessage(null)
-    setAssignmentLoadingVisible(false)
-    setAssignmentGradingResult(null)
-  }
-
-  function closeAssignmentModal() {
-    setAssignmentModalLessonId(null)
-    setAssignmentForm(createAssignmentFormState())
-    setAssignmentFileDragActive(false)
-    setAssignmentMessage(null)
-    setAssignmentLoadingVisible(false)
-  }
-
-  function closeAssignmentGradingResult() {
-    setAssignmentGradingResult(null)
-  }
-
-  function openCompletionOverlay() {
-    if (!course || !assignmentGradingResult) {
-      closeAssignmentGradingResult()
-      return
-    }
-
-    openCourseCompletionOverlay(assignmentResultProgressById, assignmentGradingResult)
-    closeAssignmentGradingResult()
-  }
-
-  function closeCompletionOverlay() {
-    setCompletionVisible(false)
-    setCompletionCardFlipped(false)
-  }
-
-  function handleAssignmentResultPrimaryAction() {
-    if (assignmentResultCompletesCourse) {
-      openCompletionOverlay()
-      return
-    }
-
-    if (!assignmentResultNextLesson || selectedLessonLocked) {
-      closeAssignmentGradingResult()
-      return
-    }
-
-    closeAssignmentGradingResult()
-    setSelectedLessonId(assignmentResultNextLesson.lessonId)
-    setNotice(`"${assignmentResultNextLesson.title}" 강의로 이동했습니다.`)
-  }
-
-  function openQuizModal(item: LearningLesson) {
-    setQuizModalLessonId(item.lessonId)
-    setQuizQuestionIndex(0)
-    setQuizSelectedOptionIndex(null)
-    setQuizFeedback(null)
-  }
-
-  function closeQuizModal() {
-    setQuizModalLessonId(null)
-    setQuizQuestionIndex(0)
-    setQuizSelectedOptionIndex(null)
-    setQuizFeedback(null)
-  }
-
-  function handleSelectLesson(lessonId: number) {
-    const lockState = lessonLockMap.get(lessonId)
-    if (lockState?.locked) {
-      setNotice(
-        lockState.prerequisiteLessonTitle
-          ? `"${lockState.prerequisiteLessonTitle}" 강의를 끝까지 보면 열립니다.`
-          : '이전 강의를 끝까지 보면 열립니다.',
-      )
-      return
-    }
-
-    const targetLesson = lessons.find((item) => item.lessonId === lessonId) ?? null
-    setSelectedLessonId(lessonId)
-    if (!targetLesson || targetLesson.lessonId !== quizModalLessonId) {
-      closeQuizModal()
-    }
-    if (!targetLesson || targetLesson.lessonId !== assignmentModalLessonId) {
-      closeAssignmentModal()
-    }
-    setAssignmentLoadingVisible(false)
-    setAssignmentGradingResult(null)
-  }
-
-  function handlePreviousLesson() {
-    if (!previousLesson) return
-    setSelectedLessonId(previousLesson.lessonId)
-    closeQuizModal()
-    closeAssignmentModal()
-    closeAssignmentGradingResult()
-    setAssignmentLoadingVisible(false)
-  }
-
-  function handleNextLesson() {
-    if (!lesson || !nextLesson || selectedLessonLocked) return
-    markLessonCompletedForNavigation(lesson)
-    setSelectedLessonId(nextLesson.lessonId)
-    setNotice(`"${nextLesson.title}" 강의를 열었습니다.`)
-    closeQuizModal()
-    closeAssignmentModal()
-    closeAssignmentGradingResult()
-    setAssignmentLoadingVisible(false)
-  }
-
-  function handleQuizOptionSelect(optionIndex: number) {
-    setQuizSelectedOptionIndex(optionIndex)
-    setQuizFeedback(null)
-  }
-
-  function handleQuizCheckAnswer() {
-    if (!activeQuizQuestion) return
-    if (quizSelectedOptionIndex === null) {
-      setNotice('답안을 선택해 주세요.')
-      return
-    }
-    setQuizFeedback(quizSelectedOptionIndex === activeQuizQuestion.correctOptionIndex ? 'correct' : 'wrong')
-  }
-
-  function handleQuizNextQuestion() {
-    if (!quizModalLesson || !activeQuizQuestion || quizFeedback !== 'correct') {
-      handleQuizCheckAnswer()
-      return
-    }
-
-    if (quizQuestionIndex < quizModalQuestions.length - 1) {
-      setQuizQuestionIndex((current) => current + 1)
-      setQuizSelectedOptionIndex(null)
-      setQuizFeedback(null)
-      return
-    }
-
-    const currentQuizLessonIndex = lessons.findIndex((item) => item.lessonId === quizModalLesson.lessonId)
-    const nextSectionFirstLesson = currentQuizLessonIndex >= 0
-      ? lessons.slice(currentQuizLessonIndex + 1).find((item) => item.sectionId !== quizModalLesson.sectionId) ?? null
-      : null
-
-    quizScoreByLessonIdRef.current = {
-      ...quizScoreByLessonIdRef.current,
-      [quizModalLesson.lessonId]: 100,
-    }
-    markLessonCompletedForNavigation(quizModalLesson)
-    if (nextSectionFirstLesson) {
-      setSelectedLessonId(nextSectionFirstLesson.lessonId)
-      closeQuizModal()
-      setNotice(`"${nextSectionFirstLesson.sectionTitle}" 섹션의 첫 강의로 이동했습니다.`)
-      return
-    }
-
-    closeQuizModal()
-    setNotice('퀴즈를 완료했습니다. 마지막 섹션입니다.')
-  }
-
-  function handleAssignmentFilesSelected(fileList: FileList | null) {
-    const nextFiles = Array.from(fileList ?? [])
-    setAssignmentForm((current) => {
-      const mergedFiles = [...current.files]
-      nextFiles.forEach((file) => {
-        const existingIndex = mergedFiles.findIndex((item) => item.name === file.name && item.size === file.size)
-        if (existingIndex >= 0) mergedFiles[existingIndex] = file
-        else mergedFiles.push(file)
-      })
-      return { ...current, files: mergedFiles }
-    })
-    setAssignmentMessage(null)
-  }
-
-  function handleAssignmentFileDragOver(event: DragEvent<HTMLLabelElement>) {
-    event.preventDefault()
-    event.stopPropagation()
-    event.dataTransfer.dropEffect = 'copy'
-    setAssignmentFileDragActive(true)
-  }
-
-  function handleAssignmentFileDragLeave(event: DragEvent<HTMLLabelElement>) {
-    event.preventDefault()
-    event.stopPropagation()
-    setAssignmentFileDragActive(false)
-  }
-
-  function handleAssignmentFileDrop(event: DragEvent<HTMLLabelElement>) {
-    event.preventDefault()
-    event.stopPropagation()
-    setAssignmentFileDragActive(false)
-    handleAssignmentFilesSelected(event.dataTransfer.files)
-  }
-
-  function handleAssignmentFileRemove(fileName: string) {
-    setAssignmentForm((current) => ({
-      ...current,
-      files: current.files.filter((file) => file.name !== fileName),
-    }))
-    setAssignmentMessage(null)
-  }
-
-  async function handleAssignmentSubmit() {
-    if (isStudentPreview) {
-      setAssignmentMessage('미리보기에서는 과제를 제출할 수 없습니다.')
-      return
-    }
-
-    if (!sessionUserId) {
-      setAssignmentMessage('로그인이 필요합니다.')
-      return
-    }
-    if (!assignmentModal || !assignmentModalLesson) return
-    if (assignmentModal.assignmentId <= 0) {
-      setAssignmentMessage('이 강의에는 아직 연결된 과제 제출 스키마가 없습니다.')
-      return
-    }
-
-    if (!isAssignmentSubmissionFormReady(assignmentModal, assignmentForm)) {
-      setAssignmentMessage(resolveAssignmentSubmissionEmptyMessage(assignmentModal))
-      return
-    }
-
-    const payload = await buildAssignmentSubmissionPayload(assignmentModal, assignmentForm)
-
-    setAssignmentSubmitBusy(true)
-    setAssignmentMessage('과제를 제출하는 중입니다.')
-
-    try {
-      const precheck = await learnerAssignmentApi.precheck(assignmentModal.assignmentId, sessionUserId, payload)
-      if (!precheck.passed) {
-        const failedLabels = [
-          precheck.readmePassed ? null : 'README',
-          precheck.testPassed ? null : '테스트',
-          precheck.lintPassed ? null : '린트',
-          precheck.fileFormatPassed ? null : '파일 형식',
-        ].filter((item): item is string => Boolean(item))
-        setAssignmentMessage(
-          failedLabels.length
-            ? `제출 조건을 충족하지 않았습니다. ${failedLabels.join(', ')}`
-            : (precheck.message ?? '제출 파일을 다시 확인해 주세요.'),
-        )
-        return
-      }
-
-      setAssignmentLoadingVisible(true)
-      const submission = await learnerAssignmentApi.submit(assignmentModal.assignmentId, sessionUserId, payload)
-      setAssignmentHistoryByAssignmentId((current) => ({
-        ...current,
-        [submission.assignmentId]: {
-          submissionId: submission.submissionId,
-          assignmentId: submission.assignmentId,
-          assignmentTitle: assignmentModal.title,
-          submissionStatus: submission.submissionStatus,
-          qualityScore: submission.qualityScore,
-          totalScore: submission.totalScore,
-          isLate: submission.isLate,
-          submittedAt: submission.submittedAt,
-        },
-      }))
-      setAssignmentMessage('과제가 제출되었습니다.')
-      setAssignmentGradingResult({
-        lessonId: assignmentModalLesson.lessonId,
-        lessonTitle: assignmentModalLesson.title,
-        assignment: assignmentModal,
-        precheck,
-        submission,
-      })
-      markLessonCompletedForNavigation(assignmentModalLesson, { showCourseCompletion: false })
-      closeAssignmentModal()
-    } catch (error) {
-      setAssignmentMessage(error instanceof Error ? error.message : '과제 제출에 실패했습니다.')
-    } finally {
-      setAssignmentSubmitBusy(false)
-      setAssignmentLoadingVisible(false)
-    }
-  }
-
-  async function handleTogglePip() {
-    const pipDocument = document as PipDocument
-    const video = videoRef.current as PipVideoElement | null
-    if (!video) return
-
-    // 브라우저 PIP 미지원
-    if (!pipDocument.pictureInPictureEnabled || !video.requestPictureInPicture) {
-      setNotice('이 브라우저는 PIP 모드를 지원하지 않습니다.')
-      return
-    }
-
-    try {
-      if (pipDocument.pictureInPictureElement) {
-        // 현재 PIP 활성 → 종료
-        if (pipDocument.exitPictureInPicture) await pipDocument.exitPictureInPicture()
-      } else {
-        // 영상 메타데이터 로드 확인 (readyState 0=HAVE_NOTHING)
-        if (video.readyState < 1) {
-          setNotice('영상이 아직 로드되지 않았습니다. 잠시 후 다시 시도해 주세요.')
-          return
-        }
-        await video.requestPictureInPicture()
-      }
-      // 상태는 enterpictureinpicture / leavepictureinpicture 이벤트로 자동 반영
-      // 백엔드에 선호 설정 저장
-      if (lesson) {
-        learningPlayerApi.updatePipMode(lesson.lessonId, !isPipActive).catch(() => {})
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        setNotice('영상을 먼저 재생한 뒤 PIP 모드를 사용해 주세요.')
-      } else {
-        setNotice('PIP 모드 전환에 실패했습니다.')
-      }
-    }
-  }
-
-  async function handleToggleFullscreen() {
-    const frame = frameRef.current
-    if (!frame) return
-
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen()
-        return
-      }
-
-      await frame.requestFullscreen()
-    } catch {
-      setNotice('전체 화면 전환에 실패했습니다.')
-    }
-  }
-
-  async function handleCyclePlaybackRate() {
-    if (!lesson || !playerConfig) return
-    const currentIndex = PLAYER_SPEEDS.indexOf(playerConfig.defaultPlaybackRate as (typeof PLAYER_SPEEDS)[number])
-    const nextRate = PLAYER_SPEEDS[(currentIndex + 1 + PLAYER_SPEEDS.length) % PLAYER_SPEEDS.length]
-    setPlayerConfig({ ...playerConfig, defaultPlaybackRate: nextRate })
-    if (videoRef.current) videoRef.current.playbackRate = nextRate
-    try {
-      await learningPlayerApi.updatePlaybackRate(lesson.lessonId, nextRate)
-    } catch {
-      // 로컬 설정 유지
-    }
-  }
-
-  async function handleSetPlaybackRate(nextRate: number) {
-    if (!lesson || !playerConfig) return
-    setPlayerConfig({ ...playerConfig, defaultPlaybackRate: nextRate })
-    setSettingsOpen(false)
-    if (videoRef.current) videoRef.current.playbackRate = nextRate
-    try {
-      await learningPlayerApi.updatePlaybackRate(lesson.lessonId, nextRate)
-    } catch {
-      // Keep the local setting if persistence fails.
-    }
-  }
-
-  function handleSetVideoQuality(nextQuality: LearningVideoQuality) {
-    const nextSource = videoQualitySources[nextQuality]
-    if (!nextSource) {
-      setNotice(`${nextQuality}p 영상 소스가 이 강의에 등록되어 있지 않습니다.`)
-      return
-    }
-
-    if (activeVideoQuality === nextQuality) {
-      setSettingsOpen(false)
-      return
-    }
-
-    const video = videoRef.current
-    if (video) {
-      const restoreSecond = Math.max(0, Math.floor(video.currentTime || currentTime))
-      resumeTimeRef.current = restoreSecond
-      lastRenderedSecondRef.current = restoreSecond
-      resumePlaybackAfterQualitySwitchRef.current = !video.paused
-      pendingVideoLoadRef.current = true
-      setVideoFailed(false)
-      setNotice(`${nextQuality}p로 전환 중입니다.`)
-    }
-
-    setSelectedVideoQuality(nextQuality)
-    setSettingsOpen(false)
-  }
-
-  async function handleToggleQuestion(questionId: number) {
-    setOpenQuestionId((current) => (current === questionId ? null : questionId))
-    if (qnaDetails[questionId] || loadingQuestionId === questionId) return
-    setLoadingQuestionId(questionId)
-    try {
-      const detail = await qnaApi.getQuestionDetail(questionId)
-      setQnaDetails((current) => ({ ...current, [questionId]: detail }))
-      setQnaQuestions((current) => current.map((item) => (item.id === questionId ? toQuestionSummary(detail) : item)))
-    } catch {
-      setQnaError('질문 상세 정보를 불러오지 못했습니다.')
-    } finally {
-      setLoadingQuestionId((current) => (current === questionId ? null : current))
-    }
-  }
-
-  async function handleSaveNote() {
-    if (!lesson || !noteContent.trim()) return
-    try {
-      const created = await lessonNoteApi.createNote(lesson.lessonId, {
-        timestampSecond: Math.floor(currentTime),
-        content: noteContent.trim(),
-      })
-      const nextNotes = [...notes, created].sort((a, b) => a.timestampSecond - b.timestampSecond)
-      setNotes(nextNotes)
-      writeJsonStorage(getNotesStorageKey(lesson.lessonId), nextNotes)
-      setNoteContent('')
-      setNoteComposerOpen(false)
-      setNoteMessage('노트가 저장되었습니다.')
-    } catch {
-      setNoteMessage('노트 저장에 실패했습니다.')
-    }
-  }
-
-  async function handleDeleteNote(note: TimestampNote) {
-    if (!lesson) return
-    try {
-      await lessonNoteApi.deleteNote(lesson.lessonId, note.noteId)
-      const nextNotes = notes.filter((item) => item.noteId !== note.noteId)
-      setNotes(nextNotes)
-      writeJsonStorage(getNotesStorageKey(lesson.lessonId), nextNotes)
-      setNoteMessage('노트가 삭제되었습니다.')
-    } catch {
-      setNoteMessage('노트 삭제에 실패했습니다.')
-    }
-  }
-
-  async function handleUpdateNote() {
-    if (!lesson || !openNoteId || !editingNoteContent.trim()) return
-    const targetNote = notes.find((item) => item.noteId === openNoteId)
-    if (!targetNote) return
-    try {
-      const updated = await lessonNoteApi.updateNote(lesson.lessonId, openNoteId, {
-        timestampSecond: targetNote.timestampSecond,
-        content: editingNoteContent.trim(),
-      })
-      const nextNotes = notes.map((item) => (item.noteId === updated.noteId ? updated : item))
-      setNotes(nextNotes)
-      writeJsonStorage(getNotesStorageKey(lesson.lessonId), nextNotes)
-      setOpenNoteId(null)
-      setEditingNoteContent('')
-      setNoteMessage('노트가 수정되었습니다.')
-    } catch {
-      setNoteMessage('노트 수정에 실패했습니다.')
-    }
-  }
-
-  async function handleSubmitQuestion() {
-    if (isStudentPreview) {
-      setQuestionMessage('미리보기에서는 질문을 등록할 수 없습니다.')
-      return
-    }
-
-    if (!course) {
-      setQuestionMessage('강의 정보를 불러온 뒤 다시 시도해 주세요.')
-      return
-    }
-    if (!sessionUserId) {
-      setQuestionMessage('로그인이 필요합니다.')
-      return
-    }
-    if (!questionForm.templateType) {
-      setQuestionMessage('질문 템플릿을 불러온 뒤 다시 시도해 주세요.')
-      return
-    }
-    const content = questionForm.content.trim()
-    if (!content) {
-      setQuestionMessage('질문 내용을 입력해 주세요.')
-      return
-    }
-    const title = questionForm.title.trim()
-      || content.split('\n')[0].trim().slice(0, 48)
-      || `질문 ${formatTime(currentTime)}`
-
-    const payload: CreateQnaQuestionRequest = {
-      templateType: questionForm.templateType,
-      difficulty: questionForm.difficulty,
-      title,
-      content,
-      courseId: course.courseId,
-      lessonId: lesson?.lessonId ?? null,
-      lectureTimestamp: questionForm.attachTimestamp ? formatTime(currentTime) : null,
-    }
-
-    setQuestionBusy(true)
-    try {
-      const created = await qnaApi.createQuestion(payload, sessionUserId)
-      setQnaDetails((current) => ({ ...current, [created.id]: created }))
-      setQnaQuestions((current) => [toQuestionSummary(created), ...current.filter((item) => item.id !== created.id)])
-      setQuestionForm((current) => ({ ...current, title: '', content: '' }))
-      setQuestionMessage('질문이 등록되었습니다.')
-      startTransition(() => {
-        setActiveTab('qna')
-        setOpenQuestionId(created.id)
-      })
-      setQuestionComposerOpen(false)
-    } catch (error) {
-      setQuestionMessage(error instanceof Error ? error.message : '질문 등록에 실패했습니다.')
-    } finally {
-      setQuestionBusy(false)
-    }
-  }
+  const { handleToggleQuestion,handleSaveNote,handleDeleteNote,handleUpdateNote,handleSubmitQuestion } = useLearningNotesAndQnaActions({ state: notesAndQnaState, lesson, course, currentTime, isStudentPreview, sessionUserId, setActiveTab })
 
   if (!session) return { status: 'login' as const }
 

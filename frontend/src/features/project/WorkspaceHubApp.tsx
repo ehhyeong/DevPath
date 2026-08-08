@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import axios from 'axios'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
@@ -97,7 +98,7 @@ function asideSquadMatchesProject(squad: ProjectAsideSquad, projectId: number) {
 }
 
 export default function WorkspaceHubApp() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dataReloadKey, setDataReloadKey] = useState(0)
   const [asideSquads, setAsideSquads] = useState<ProjectAsideSquad[]>([])
@@ -167,7 +168,7 @@ export default function WorkspaceHubApp() {
     void load()
 
     return () => controller.abort()
-  }, [dataReloadKey])
+  }, [dataReloadKey, setSession])
 
   useEffect(() => {
     const syncProfile = (event: Event) => {
@@ -191,7 +192,7 @@ export default function WorkspaceHubApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('inviteToken')

@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { startTransition, useDeferredValue, useEffect, useRef, useState } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
@@ -22,13 +23,9 @@ import { courseApi, wishlistApi } from '../../lib/api/learner'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import type { CourseCatalogMenu } from '../../types/course-catalog'
+import { readAuthViewFromLocation,syncAuthViewInLocation } from '../../lib/location-state'
 
 const COURSES_PER_PAGE = 8
-
-function readAuthViewFromLocation(): AuthView | null {
-  const value = new URLSearchParams(window.location.search).get('auth')
-  return value === 'login' || value === 'signup' ? value : null
-}
 
 function readNodeTagsFromLocation(): string[] {
   const raw = new URLSearchParams(window.location.search).get('tags')
@@ -53,13 +50,6 @@ function buildCourseDetailHref(courseId: number) {
   const returnTo = readSafeReturnToFromLocation()
   if (returnTo) params.set('returnTo', returnTo)
   return `/course-detail?${params.toString()}`
-}
-
-function syncAuthViewInLocation(view: AuthView | null) {
-  const url = new URL(window.location.href)
-  if (view) url.searchParams.set('auth', view)
-  else url.searchParams.delete('auth')
-  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
 }
 
 function LoadingCards() {
@@ -110,7 +100,7 @@ function getCourseDisplayTitle(title: string) {
 export default function LectureListApp() {
   useInternalPageScroll()
 
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
   const [rawCourses, setRawCourses] = useState(fallbackLectureCourses)
@@ -191,7 +181,7 @@ export default function LectureListApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     syncAuthViewInLocation(authView)

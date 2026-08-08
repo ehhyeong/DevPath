@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useCallback,useEffect,useMemo,useRef,useState,type FormEvent } from 'react'
 import { type AuthView } from '../../components/AuthModal'
 import UserAvatar from '../../components/UserAvatar'
@@ -22,7 +23,7 @@ WorkspaceMember,
 
 export function useSquadErdController() {
 const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [projectName, setProjectName] = useState('스쿼드 프로젝트')
   const [members, setMembers] = useState<WorkspaceMember[]>([])

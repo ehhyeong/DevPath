@@ -1,3 +1,5 @@
+import { renderAdminMarkup } from './admin-react-renderer'
+import { adminActions } from './admin-action-registry'
 import { adminApi } from "../../lib/admin-api";
 import type {
   AdminRoadmapHubCatalog,
@@ -189,9 +191,9 @@ function updateRoadmapHubSaveButton() {
   button.disabled = roadmapHubSaving;
   button.classList.toggle("opacity-70", roadmapHubSaving);
   button.classList.toggle("cursor-not-allowed", roadmapHubSaving);
-  button.innerHTML = roadmapHubSaving
+  renderAdminMarkup(button, roadmapHubSaving
     ? '<i class="fas fa-circle-notch fa-spin mr-1"></i> 저장 중'
-    : '<i class="fas fa-save mr-1"></i> 전체 저장';
+    : '<i class="fas fa-save mr-1"></i> 전체 저장');
 }
 
 function updateRoadmapHubSummary() {
@@ -347,7 +349,7 @@ function updateRoadmapHubSectionFilterOptions() {
     roadmapHubFilterState.sectionKey = "";
   }
 
-  select.innerHTML = [
+  renderAdminMarkup(select, [
     '<option value="">전체 섹션</option>',
     ...roadmapHubCatalog.sections.map(
       (section) => `
@@ -355,7 +357,7 @@ function updateRoadmapHubSectionFilterOptions() {
           ${escapeHtml(section.title)} (${escapeHtml(section.sectionKey)})
         </option>`,
     ),
-  ].join("");
+  ].join(""));
   select.value = roadmapHubFilterState.sectionKey;
 }
 
@@ -386,7 +388,7 @@ function updateRoadmapHubRoadmapFilterOptions() {
     roadmapHubFilterState.linkedRoadmapId = "";
   }
 
-  select.innerHTML = [
+  renderAdminMarkup(select, [
     '<option value="">전체 연결 로드맵</option>',
     ...Array.from(linkedRoadmapById.entries())
       .sort(([, leftTitle], [, rightTitle]) =>
@@ -396,7 +398,7 @@ function updateRoadmapHubRoadmapFilterOptions() {
         ([roadmapId, title]) =>
           `<option value="${roadmapId}" ${roadmapHubFilterState.linkedRoadmapId === String(roadmapId) ? "selected" : ""}>${escapeHtml(title)}</option>`,
       ),
-  ].join("");
+  ].join(""));
   select.value = roadmapHubFilterState.linkedRoadmapId;
 }
 
@@ -439,34 +441,34 @@ export function renderRoadmapHubEditor() {
 
   if (roadmapHubLoading) {
     updateRoadmapHubFilterSummary(0, 0, hasRoadmapHubFilter());
-    container.innerHTML = `
+    renderAdminMarkup(container, `
       <div class="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-400">
         <i class="fas fa-circle-notch fa-spin mr-2"></i> 로드맵 허브 구성을 불러오는 중입니다.
       </div>
-    `;
+    `);
     return;
   }
 
   if (roadmapHubError) {
     updateRoadmapHubFilterSummary(0, 0, hasRoadmapHubFilter());
-    container.innerHTML = `
+    renderAdminMarkup(container, `
       <div class="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-10 text-center text-sm text-rose-600">
         <div class="font-semibold">${escapeHtml(roadmapHubError)}</div>
-        <button onclick="refreshCurrentTab()" class="mt-4 rounded-lg border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50" type="button">
+        <button data-admin-click="refreshCurrentTab()" class="mt-4 rounded-lg border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50" type="button">
           다시 불러오기
         </button>
       </div>
-    `;
+    `);
     return;
   }
 
   if (roadmapHubCatalog.sections.length === 0) {
     updateRoadmapHubFilterSummary(0, 0, hasRoadmapHubFilter());
-    container.innerHTML = `
+    renderAdminMarkup(container, `
       <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
         등록된 로드맵 허브 섹션이 없습니다.
       </div>
-    `;
+    `);
     return;
   }
 
@@ -478,15 +480,15 @@ export function renderRoadmapHubEditor() {
   );
 
   if (filterResult.visibleSections.length === 0) {
-    container.innerHTML = `
+    renderAdminMarkup(container, `
       <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
         조건에 맞는 섹션이 없습니다.
       </div>
-    `;
+    `);
     return;
   }
 
-  container.innerHTML = filterResult.visibleSections
+  renderAdminMarkup(container, filterResult.visibleSections
     .map(({ section, sectionIndex, visibleItems }) =>
       renderRoadmapHubSectionCard(
         section,
@@ -495,7 +497,7 @@ export function renderRoadmapHubEditor() {
         filterResult.filtered,
       ),
     )
-    .join("");
+    .join(""));
 }
 
 function renderRoadmapHubSectionCard(
@@ -554,7 +556,7 @@ function renderRoadmapHubSectionCard(
         <label class="block">
           <span class="mb-1 block text-[11px] font-bold text-slate-500">레이아웃</span>
           <select
-            onchange="updateRoadmapHubSectionField(${sectionIndex}, 'layoutType', this.value)"
+            data-admin-change="updateRoadmapHubSectionField(${sectionIndex}, 'layoutType', this.value)"
             class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
           >
             ${buildRoadmapHubLayoutOptions(section.layoutType)}
@@ -563,7 +565,7 @@ function renderRoadmapHubSectionCard(
         <label class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
           <input
             ${section.active ? "checked" : ""}
-            onchange="updateRoadmapHubSectionActive(${sectionIndex}, this.checked)"
+            data-admin-change="updateRoadmapHubSectionActive(${sectionIndex}, this.checked)"
             type="checkbox"
             class="h-4 w-4 accent-indigo-600"
           />
@@ -586,7 +588,7 @@ function renderRoadmapHubSectionCard(
             <h4 class="text-sm font-bold text-slate-800">섹션 항목</h4>
             <p class="mt-1 text-xs text-slate-500">항목 제목, 아이콘, 연결 로드맵, 강조 여부를 수정합니다.</p>
           </div>
-          <button onclick="addRoadmapHubItem(${sectionIndex})" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50" type="button">
+          <button data-admin-click="addRoadmapHubItem(${sectionIndex})" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50" type="button">
             <i class="fas fa-plus mr-1"></i> 항목 추가
           </button>
         </div>
@@ -609,16 +611,16 @@ function renderRoadmapHubSectionCard(
           <p class="mt-1 text-xs text-slate-500">key: ${escapeHtml(section.sectionKey || "-")}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="toggleRoadmapHubSectionCollapsed(${sectionIndex})" aria-expanded="${!collapsed}" class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100" type="button">
+          <button data-admin-click="toggleRoadmapHubSectionCollapsed(${sectionIndex})" aria-expanded="${!collapsed}" class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100" type="button">
             <i class="fas ${collapsed ? "fa-chevron-down" : "fa-chevron-up"} mr-1"></i> ${collapsed ? "펼치기" : "접기"}
           </button>
-          <button onclick="moveRoadmapHubSection(${sectionIndex}, -1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
+          <button data-admin-click="moveRoadmapHubSection(${sectionIndex}, -1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
             <i class="fas fa-arrow-up mr-1"></i> 위로
           </button>
-          <button onclick="moveRoadmapHubSection(${sectionIndex}, 1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
+          <button data-admin-click="moveRoadmapHubSection(${sectionIndex}, 1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
             <i class="fas fa-arrow-down mr-1"></i> 아래로
           </button>
-          <button onclick="deleteRoadmapHubSection(${sectionIndex})" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100" type="button">
+          <button data-admin-click="deleteRoadmapHubSection(${sectionIndex})" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100" type="button">
             <i class="fas fa-trash mr-1"></i> 삭제
           </button>
         </div>
@@ -642,13 +644,13 @@ function renderRoadmapHubItemRow(
           ${item.featured ? '<span class="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-600">강조</span>' : ""}
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="moveRoadmapHubItem(${sectionIndex}, ${itemIndex}, -1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
+          <button data-admin-click="moveRoadmapHubItem(${sectionIndex}, ${itemIndex}, -1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
             <i class="fas fa-arrow-up mr-1"></i> 위로
           </button>
-          <button onclick="moveRoadmapHubItem(${sectionIndex}, ${itemIndex}, 1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
+          <button data-admin-click="moveRoadmapHubItem(${sectionIndex}, ${itemIndex}, 1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
             <i class="fas fa-arrow-down mr-1"></i> 아래로
           </button>
-          <button onclick="removeRoadmapHubItem(${sectionIndex}, ${itemIndex})" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100" type="button">
+          <button data-admin-click="removeRoadmapHubItem(${sectionIndex}, ${itemIndex})" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100" type="button">
             <i class="fas fa-trash mr-1"></i> 삭제
           </button>
         </div>
@@ -688,7 +690,7 @@ function renderRoadmapHubItemRow(
         <label class="block">
           <span class="mb-1 block text-[11px] font-bold text-slate-500">연결 공식 로드맵</span>
           <select
-            onchange="updateRoadmapHubItemField(${sectionIndex}, ${itemIndex}, 'linkedRoadmapId', this.value)"
+            data-admin-change="updateRoadmapHubItemField(${sectionIndex}, ${itemIndex}, 'linkedRoadmapId', this.value)"
             class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
           >
             ${buildRoadmapHubOfficialRoadmapOptions(item.linkedRoadmapId)}
@@ -720,7 +722,7 @@ function renderRoadmapHubItemRow(
         <label class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
           <input
             ${item.active ? "checked" : ""}
-            onchange="updateRoadmapHubItemToggle(${sectionIndex}, ${itemIndex}, 'active', this.checked)"
+            data-admin-change="updateRoadmapHubItemToggle(${sectionIndex}, ${itemIndex}, 'active', this.checked)"
             type="checkbox"
             class="h-4 w-4 accent-indigo-600"
           />
@@ -729,7 +731,7 @@ function renderRoadmapHubItemRow(
         <label class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
           <input
             ${item.featured ? "checked" : ""}
-            onchange="updateRoadmapHubItemToggle(${sectionIndex}, ${itemIndex}, 'featured', this.checked)"
+            data-admin-change="updateRoadmapHubItemToggle(${sectionIndex}, ${itemIndex}, 'featured', this.checked)"
             type="checkbox"
             class="h-4 w-4 accent-indigo-600"
           />
@@ -800,7 +802,7 @@ async function saveRoadmapHubCatalog() {
 }
 
 export function installRoadmapHubActions() {
-  window.createRoadmapHubSection = () => {
+  adminActions.createRoadmapHubSection = () => {
     updateRoadmapHubCatalog((catalog) => {
       catalog.sections.push(
         createEmptyRoadmapHubSection(catalog.sections.length),
@@ -808,25 +810,25 @@ export function installRoadmapHubActions() {
     });
   };
 
-  window.saveRoadmapHubCatalog = async () => {
+  adminActions.saveRoadmapHubCatalog = async () => {
     await saveRoadmapHubCatalog();
   };
 
-  window.setAllRoadmapHubSectionsCollapsed = (collapsed: boolean) => {
+  adminActions.setAllRoadmapHubSectionsCollapsed = (collapsed: boolean) => {
     setAllRoadmapHubSectionsCollapsed(collapsed);
   };
 
-  window.toggleRoadmapHubSectionCollapsed = (sectionIndex: number) => {
+  adminActions.toggleRoadmapHubSectionCollapsed = (sectionIndex: number) => {
     toggleRoadmapHubSectionCollapsed(sectionIndex);
   };
 
-  window.moveRoadmapHubSection = (sectionIndex: number, direction: number) => {
+  adminActions.moveRoadmapHubSection = (sectionIndex: number, direction: number) => {
     updateRoadmapHubCatalog((catalog) => {
       moveArrayItem(catalog.sections, sectionIndex, direction);
     });
   };
 
-  window.deleteRoadmapHubSection = (sectionIndex: number) => {
+  adminActions.deleteRoadmapHubSection = (sectionIndex: number) => {
     if (!window.confirm("이 로드맵 허브 섹션을 삭제하시겠습니까?")) {
       return;
     }
@@ -836,7 +838,7 @@ export function installRoadmapHubActions() {
     });
   };
 
-  window.updateRoadmapHubSectionField = (
+  adminActions.updateRoadmapHubSectionField = (
     sectionIndex: number,
     field: string,
     value: string,
@@ -864,7 +866,7 @@ export function installRoadmapHubActions() {
     });
   };
 
-  window.updateRoadmapHubSectionActive = (
+  adminActions.updateRoadmapHubSectionActive = (
     sectionIndex: number,
     checked: boolean,
   ) => {
@@ -876,7 +878,7 @@ export function installRoadmapHubActions() {
     });
   };
 
-  window.addRoadmapHubItem = (sectionIndex: number) => {
+  adminActions.addRoadmapHubItem = (sectionIndex: number) => {
     updateRoadmapHubCatalog((catalog) => {
       const section = catalog.sections[sectionIndex];
       if (!section) {
@@ -887,7 +889,7 @@ export function installRoadmapHubActions() {
     });
   };
 
-  window.moveRoadmapHubItem = (
+  adminActions.moveRoadmapHubItem = (
     sectionIndex: number,
     itemIndex: number,
     direction: number,
@@ -900,13 +902,13 @@ export function installRoadmapHubActions() {
     });
   };
 
-  window.removeRoadmapHubItem = (sectionIndex: number, itemIndex: number) => {
+  adminActions.removeRoadmapHubItem = (sectionIndex: number, itemIndex: number) => {
     updateRoadmapHubCatalog((catalog) => {
       catalog.sections[sectionIndex]?.items.splice(itemIndex, 1);
     });
   };
 
-  window.updateRoadmapHubItemField = (
+  adminActions.updateRoadmapHubItemField = (
     sectionIndex: number,
     itemIndex: number,
     field: string,
@@ -948,7 +950,7 @@ export function installRoadmapHubActions() {
     });
   };
 
-  window.updateRoadmapHubItemToggle = (
+  adminActions.updateRoadmapHubItemToggle = (
     sectionIndex: number,
     itemIndex: number,
     field: string,

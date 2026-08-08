@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect,useMemo,useState } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
 import LoginRequiredView from '../../components/LoginRequiredView'
@@ -8,6 +9,7 @@ import { projectApiRequest } from '../project/api'
 import { TEAM_WORKSPACE_PAGE_LOCK_CLASS_NAME } from './suite/constants'
 import { TEAM_WORKSPACE_COLLABORATION_NAV,TEAM_WORKSPACE_RESOURCE_NAV } from './suite/nav'
 import type { ActivityLog,CalendarEvent,Milestone,Notice,WorkspaceDashboard,WorkspaceMember,WorkspaceTask } from './suite/types'
+import { buildWorkspaceHref as navHref,readWorkspaceIdFromLocation } from '../../lib/location-state'
 
 type RoleKey = 'frontend' | 'backend' | 'design' | 'planning'
 
@@ -58,17 +60,6 @@ const TEAM_TECH_CANDIDATES = [
   { label: 'Figma', keywords: ['figma', 'design', '디자인'] },
   { label: 'REST API', keywords: ['api', 'rest'] },
 ]
-
-function getWorkspaceIdFromUrl() {
-  const value = new URLSearchParams(window.location.search).get('workspaceId')
-  const parsed = value ? Number(value) : NaN
-
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-}
-
-function navHref(path: string, workspaceId: number | null) {
-  return workspaceId ? `${path}?workspaceId=${workspaceId}` : path
-}
 
 function percent(done: number, total: number) {
   return total > 0 ? Math.round((done / total) * 100) : 0
@@ -178,8 +169,8 @@ function ErrorState({ message }: { message: string }) {
 }
 
 export default function TeamWorkspaceDashboardApp() {
-  const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const workspaceId = useMemo(() => readWorkspaceIdFromLocation(), [])
+  const [session,setSession] = useAuthSession()
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [tasks, setTasks] = useState<WorkspaceTask[]>([])
   const [milestones, setMilestones] = useState<Milestone[]>([])
@@ -214,7 +205,7 @@ export default function TeamWorkspaceDashboardApp() {
 
     window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     return () => window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     if (!session || !workspaceId) {

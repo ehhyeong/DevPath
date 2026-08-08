@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useState } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import LoginRequiredView from '../../components/LoginRequiredView'
@@ -18,7 +19,7 @@ function readCategoryFilterFromLocation(): CategoryFilter {
 }
 
 export default function CommunityListPage() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [view, setView] = useState<View>('list')
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>(() => readCategoryFilterFromLocation())
@@ -29,7 +30,7 @@ export default function CommunityListPage() {
     }
     window.addEventListener(AUTH_SESSION_SYNC_EVENT, handleSessionSync)
     return () => window.removeEventListener(AUTH_SESSION_SYNC_EVENT, handleSessionSync)
-  }, [])
+  }, [setSession])
 
   function handleLogout() {
     clearStoredAuthSession()

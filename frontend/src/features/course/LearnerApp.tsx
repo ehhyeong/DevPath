@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useAuthSession } from '../../lib/useAuthSession'
+import { useEffect } from 'react'
 import LearnerLayout from '../../account/LearnerLayout'
 import DashboardPage from '../../account/pages/DashboardPage'
 import LearningLogGalleryPage from '../../account/pages/LearningLogGalleryPage'
@@ -48,7 +49,7 @@ function LearnerPageRouter({
 export default function LearnerApp() {
   const currentPageKey = getCurrentAccountPageKey()
   const pageMeta = getAccountPageMeta(currentPageKey)
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
 
   useEffect(() => {
     document.title = `DevPath - ${pageMeta.label}`
@@ -82,7 +83,7 @@ export default function LearnerApp() {
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
       window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
     }
-  }, [])
+  }, [setSession])
 
   async function handleLogout() {
     const currentSession = readStoredAuthSession()

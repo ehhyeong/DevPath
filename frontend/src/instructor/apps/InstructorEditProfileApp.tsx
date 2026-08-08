@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
 import LoginRequiredGate from '../../components/LoginRequiredView'
@@ -24,7 +25,6 @@ import {
   updateStoredAuthSession,
 } from '../../lib/auth-session'
 import { notifyProfileUpdated } from '../../lib/profile-sync'
-import type { AuthSession } from '../../types/auth'
 import type { InstructorChannel, InstructorCourseListItem, InstructorFeaturedCourse } from '../../types/instructor'
 import type { UserProfile } from '../../types/learner'
 
@@ -186,7 +186,7 @@ function EditableListSection({
 
 export default function InstructorEditProfileApp() {
   const queryInstructorId = useMemo(() => readNumberSearchParam('instructorId'), [])
-  const [session, setSession] = useState<AuthSession | null>(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const instructorId = queryInstructorId ?? session?.userId ?? null
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [courses, setCourses] = useState<InstructorCourseListItem[]>([])
@@ -207,7 +207,7 @@ export default function InstructorEditProfileApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     if (!session || session.role !== 'ROLE_INSTRUCTOR' || !instructorId) {

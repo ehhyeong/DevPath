@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
@@ -6,6 +7,7 @@ import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import { projectApiRequest } from '../project/api'
 import { createSquadNotification, squadActorName } from './notifications'
+import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
 
 import type {
   FilterType,
@@ -57,14 +59,6 @@ const TASK_COLUMNS: Array<{
     dotClass: 'bg-green-500',
   },
 ]
-
-function getWorkspaceIdFromUrl() {
-  const params = new URLSearchParams(window.location.search)
-  const value = params.get('workspaceId') ?? params.get('squadId')
-  const parsed = Number(value)
-
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-}
 
 function createEmptyForm(): TaskFormState {
   return {
@@ -202,7 +196,7 @@ function taskToForm(task: WorkspaceTask): TaskFormState {
 
 export default function SquadWorkspaceApp() {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [tasks, setTasks] = useState<WorkspaceTask[]>([])

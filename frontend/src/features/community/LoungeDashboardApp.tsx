@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useState } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
@@ -291,7 +292,7 @@ const loungeAiRecommendationCardClassName =
   "relative rounded-[1rem] bg-white bg-clip-padding [border:1px_solid_transparent] [transition:all_0.3s] hover:[transform:translateY(-3px)] hover:[box-shadow:0_10px_25px_-5px_rgba(0,196,113,0.2)] before:absolute before:top-[-2px] before:right-[-2px] before:bottom-[-2px] before:left-[-2px] before:z-[-1] before:rounded-[1.1rem] before:[background-image:linear-gradient(45deg,_#00C471,_#3B82F6,_#00C471,_#8B5CF6)] before:[background-size:300%] before:[animation:borderGlow_3s_linear_infinite] before:content-['']"
 
 export default function LoungeDashboardApp() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dataReloadKey, setDataReloadKey] = useState(0)
   const [profile, setProfile] = useState<UserProfileResponse | null>(null)
@@ -398,7 +399,7 @@ export default function LoungeDashboardApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   async function handleLogout() {
     const currentSession = readStoredAuthSession()

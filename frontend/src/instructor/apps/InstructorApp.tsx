@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useState } from 'react'
 import { authApi, userApi } from '../../lib/api/auth'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
@@ -77,7 +78,7 @@ function InstructorPageRouter({
 export default function InstructorApp() {
   const currentPageKey = getCurrentInstructorPageKey()
   const pageMeta = getInstructorPageMeta(currentPageKey)
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -113,7 +114,7 @@ export default function InstructorApp() {
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
       window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     if (!session) {

@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect,useMemo,useState } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal,{ type AuthView } from '../../components/AuthModal'
@@ -14,7 +15,7 @@ import { type ActivityProfile,buildQuery,type CareerFilter,careerOptions,clearJo
 export default function JobMatchingApp() {
   useInternalPageScroll()
 
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   // 탭 세션에 보존된 이전 분석 결과 (현재 로그인 계정과 일치할 때만 복원)
   const [snapshot] = useState<JobMatchingSnapshot | null>(() => loadJobMatchingSnapshot(session?.userId ?? null))
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -105,7 +106,7 @@ export default function JobMatchingApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   // 분석 결과/필터를 탭 세션에 저장해 페이지 이동 후 복귀 시 복원되도록 한다.
   useEffect(() => {

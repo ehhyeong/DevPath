@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useState } from 'react'
 import { authApi, userApi } from '../../lib/api/auth'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
@@ -38,7 +39,7 @@ function InstructorOnlyView() {
 }
 
 export default function CourseEditorApp() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function CourseEditorApp() {
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
       window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     if (!session) {

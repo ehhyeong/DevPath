@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import {
 useEffect,
 useMemo,
@@ -48,7 +49,7 @@ import { WorkspacePage } from './common-workspace/common-workspace-workspace-pag
 
 function MentoringCommonWorkspaceApp({ page }: { page: RenderedMentoringCommonPage }) {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [data, setData] = useState<MentoringWorkspaceData>(EMPTY_DATA)
   const [loading, setLoading] = useState(true)
@@ -151,7 +152,7 @@ function MentoringCommonWorkspaceApp({ page }: { page: RenderedMentoringCommonPa
     void loadData()
 
     return () => controller.abort()
-  }, [workspaceId, reloadKey])
+  }, [workspaceId, reloadKey, setSession])
 
   useEffect(() => {
     if (!session?.userId) {

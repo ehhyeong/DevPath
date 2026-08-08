@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
@@ -6,6 +7,7 @@ import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } f
 import { showAuthToast } from '../../lib/auth-toast'
 import { projectApiRequest } from '../project/api'
 import { createSquadNotification, squadActorName } from './notifications'
+import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
@@ -97,14 +99,6 @@ const CATEGORY_PREFIX_PATTERN = /^\[schedule-category:(milestone|meeting|task-fe
 const DEADLINE_PREFIX_PATTERN = /^\[schedule-deadline:(true|false)\]\n?/
 const DEADLINE_METADATA_PATTERN = /(^|\n)\[schedule-deadline:true\](\n|$)/
 const WEEKDAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-
-function getWorkspaceIdFromUrl() {
-  const params = new URLSearchParams(window.location.search)
-  const value = params.get('workspaceId') ?? params.get('squadId')
-  const parsed = Number(value)
-
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null
-}
 
 function isScheduleCategory(value: string): value is ScheduleCategory {
   return SCHEDULE_CATEGORIES.includes(value as ScheduleCategory)
@@ -317,7 +311,7 @@ function sortEvents(events: CalendarEvent[]) {
 
 export default function SquadScheduleApp() {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [events, setEvents] = useState<CalendarEvent[]>([])

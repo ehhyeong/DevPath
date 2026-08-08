@@ -1,9 +1,13 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
+import CourseDetailHero from './CourseDetailHero'
+import CourseDetailOverlays from './CourseDetailOverlays'
+import CourseDetailTabNav from './CourseDetailTabNav'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SiteHeader from '../../components/SiteHeader'
 import { CourseDescription,LoadingOverlay,StarRating } from './CourseDetailViewComponents'
-import { readNumberSearchParam,readAuthViewFromLocation,readStudentPreviewFromLocation,readStudentPreviewReturnHref,readSafeReturnToFromLocation,syncAuthViewInLocation,buildQuestionFilterClass,buildQuestionBadgeClass,buildQuestionCardClass,buildReviewFilterClass,toQuestionSummary,mapQnaQuestionToCourseQuestion,createQnaQuestionSearchText,getPlainDescription } from './course-detail-view-support'
+import { readNumberSearchParam,readAuthViewFromLocation,readStudentPreviewFromLocation,readStudentPreviewReturnHref,readSafeReturnToFromLocation,syncAuthViewInLocation,buildQuestionFilterClass,buildQuestionBadgeClass,buildQuestionCardClass,buildReviewFilterClass,toQuestionSummary,mapQnaQuestionToCourseQuestion,createQnaQuestionSearchText } from './course-detail-view-support'
 import {
   buildCourseJobCards,
   buildCourseNewsCards,
@@ -13,7 +17,6 @@ import {
   buildReviewAvatarSeed,
   buildReviewStats,
   formatCourseDate,
-  formatCoursePrice,
   formatRelativeTime,
   formatSectionMeta,
   getCourseDetailLessonIconClassName,
@@ -43,7 +46,6 @@ const APP_HEADER_HEIGHT_PX = 64
 const STUDENT_PREVIEW_BANNER_HEIGHT_PX = 44
 const qnaInputBaseClassName = 'qna-input w-full rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white px-[12px] py-[10px] [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
 const qnaInputClassName = `${qnaInputBaseClassName} text-[14px]!`
-const qnaTextareaClassName = 'qna-textarea min-h-[140px] w-full resize-none rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white p-[12px] text-[14px]! [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
 const qnaMetaIconClassName = 'inline-flex items-center gap-[6px] text-[12px] font-[800] text-[#6b7280] [&_i]:text-[#9ca3af]'
 
 export default function CourseDetailApp() {
@@ -55,7 +57,7 @@ export default function CourseDetailApp() {
   const isStudentPreview = useMemo(() => readStudentPreviewFromLocation(), [])
   const studentPreviewReturnHref = useMemo(() => readStudentPreviewReturnHref(courseId), [courseId])
   const returnToHref = useMemo(() => readSafeReturnToFromLocation(), [])
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
   const [course, setCourse] = useState<LearningCourseDetail | null>(null)
@@ -183,7 +185,7 @@ export default function CourseDetailApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     syncAuthViewInLocation(authView)
@@ -599,116 +601,11 @@ export default function CourseDetailApp() {
           </div>
         ) : null}
 
-        <section className="bg-gray-900 py-12 text-white">
-          <div className="container mx-auto flex flex-col items-center gap-10 px-6 lg:px-20 md:flex-row">
-            <div className="flex-1 space-y-4">
-              <div className="course-detail-hero-tags mb-2 flex flex-wrap items-center! gap-2">
-                <span className="course-detail-hero-badge inline-flex! min-h-[26px]! box-border items-center! justify-center! rounded bg-primary px-2 py-1 text-xs leading-[16px]! font-bold text-white">Best Seller</span>
-                {heroTags.map((tag) => (
-                  <span key={tag} className="job-tag inline-flex min-h-[26px] box-border items-center justify-center rounded-[6px] border-[1px] border-solid border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.1)] px-[10px] py-[4px] text-[12px] leading-[16px] font-[600] text-[#e5e7eb]">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-
-              <h1 className="text-3xl leading-tight font-bold md:text-4xl">{displayCourse.title}</h1>
-              <p className="text-sm text-gray-300 md:text-base">
-                {getPlainDescription(displayCourse.subtitle ?? displayCourse.description ?? '')}
-              </p>
-
-              <div className="mt-4 flex items-center gap-4 text-sm">
-                <StarRating rating={reviewStats.average} className="text-sm" />
-                <span className="text-gray-300">
-                  {reviewStats.average.toFixed(1)} ({reviewStats.count}개 수강평)
-                </span>
-              </div>
-
-              <a href={instructorChannelHref} className="group inline-flex items-center gap-3 pt-4">
-                <img
-                  src={instructor?.profileImage ?? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=100'}
-                  className="h-10 w-10 rounded-full border-2 border-gray-700 transition group-hover:border-brand"
-                  alt={instructor?.channelName ?? '강사 프로필'}
-                />
-                <div>
-                  <p className="text-sm font-bold transition group-hover:text-white">{instructor?.channelName ?? '박강사'}</p>
-                  <p className="text-xs text-gray-400 transition group-hover:text-gray-200">{instructor?.headline ?? '10년차 백엔드 개발자 · 실무 중심 자바 멘토'}</p>
-                </div>
-              </a>
-            </div>
-
-            <div className="w-full rounded-xl bg-white p-6 text-gray-900 shadow-2xl md:w-80">
-              <button
-                type="button"
-                onClick={handlePreviewClick}
-                className="group relative mb-4 aspect-video w-full overflow-hidden rounded-lg bg-gray-100 text-left"
-              >
-                <img
-                  src={displayCourse.thumbnailUrl ?? 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                  alt={displayCourse.title}
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition group-hover:bg-black/40">
-                  <i className="fas fa-play-circle text-5xl text-white opacity-80 shadow-xl transition group-hover:opacity-100" />
-                </div>
-                <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-1 text-xs text-white">미리보기</span>
-              </button>
-
-              <div className="mb-6">
-                <span className="text-3xl font-extrabold text-gray-900">{formatCoursePrice(displayCourse.price, displayCourse.currency)}</span>
-                {displayCourse.originalPrice && displayCourse.originalPrice > (displayCourse.price ?? 0) ? (
-                  <span className="ml-2 text-sm text-gray-400 line-through">{formatCoursePrice(displayCourse.originalPrice, displayCourse.currency)}</span>
-                ) : null}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void handleEnroll()}
-                disabled={enrollmentBusy}
-                className="mb-3 w-full rounded-lg bg-primary py-3 text-lg font-bold text-white shadow-lg transition active:scale-95 hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isEnrolled ? '학습하러 가기' : enrollmentBusy ? '처리 중...' : '수강 신청하기'}
-              </button>
-
-              <div className="mt-4 space-y-2 text-xs text-gray-500">
-                <p><i className="fas fa-check mr-2 text-primary" />무제한 수강 가능</p>
-                <p><i className="fas fa-check mr-2 text-primary" />수료증 발급</p>
-              </div>
-            </div>
-          </div>
-        </section>
+        <CourseDetailHero displayCourse={displayCourse} heroTags={heroTags} reviewStats={reviewStats} instructorChannelHref={instructorChannelHref} instructor={instructor} handlePreviewClick={handlePreviewClick} handleEnroll={handleEnroll} enrollmentBusy={enrollmentBusy} isEnrolled={isEnrolled} />
 
         <section className="container mx-auto flex flex-col gap-12 px-6 py-12 lg:px-20 md:flex-row">
           <div className="flex-1">
-            <div className="course-detail-tab-bar static! top-auto! z-auto mb-8 flex border-b border-gray-200 bg-white">
-              <button
-                type="button"
-                onClick={() => startTransition(() => setActiveTab('info'))}
-                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'info' ? 'border-b-[2px] border-[#00c471] font-bold! text-primary' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                강의 정보
-              </button>
-              <button
-                type="button"
-                onClick={() => startTransition(() => setActiveTab('news'))}
-                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'news' ? 'border-b-[2px] border-[#00c471] font-bold! text-primary' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                새소식
-              </button>
-              <button
-                type="button"
-                onClick={() => startTransition(() => setActiveTab('reviews'))}
-                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'reviews' ? 'border-b-[2px] border-[#00c471] font-bold! text-primary' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                수강평 <span className="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs">{reviewStats.count}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => startTransition(() => setActiveTab('qna'))}
-                className={`course-detail-tab-btn px-6 py-4 font-medium transition ${activeTab === 'qna' ? 'border-b-[2px] border-[#00c471] font-bold! text-primary' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                질문 게시판
-              </button>
-            </div>
+            <CourseDetailTabNav activeTab={activeTab} reviewCount={reviewStats.count} onChange={(tab) => startTransition(() => setActiveTab(tab))} />
 
             {activeTab === 'info' ? (
               <div className="course-detail-tab-panel">
@@ -1068,220 +965,21 @@ export default function CourseDetailApp() {
         </div>
       </div>
 
-      {enrollModalOpen ? (
-        <div
-          className="fixed inset-0 z-[2000] flex items-center justify-center"
-          aria-hidden="false"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setEnrollModalOpen(false)
-          }}
-        >
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setEnrollModalOpen(false)}
-          />
-          <div className="[animation:popIn_0.2s_cubic-bezier(0.16,1,0.3,1)_forwards] relative mx-4 w-full max-w-[380px] overflow-hidden rounded-2xl bg-white px-8 py-10 shadow-2xl">
-            <div className="mb-8 flex justify-center">
-              <div className="flex h-[72px] w-[72px] animate-bounce items-center justify-center rounded-full bg-green-50 duration-1000">
-                <svg className="h-10 w-10 text-brand" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M5 12.5L9.2 16.5L19 7"
-                    stroke="currentColor"
-                    strokeWidth="2.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            <div className="mb-8 text-center">
-              <h3 className="mb-2 text-2xl font-extrabold text-gray-900">수강신청 완료!</h3>
-              <p className="text-sm leading-relaxed text-gray-500">
-                성공적으로 신청되었습니다.
-                <br />
-                지금 바로 학습을 시작해보세요.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setEnrollModalOpen(false)}
-                className="rounded-xl border border-gray-200 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50 hover:text-gray-900"
-              >
-                나중에
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  navigateTo(learningHref)
-                }}
-                className="rounded-xl bg-brand py-3 text-sm font-bold text-white shadow-md transition hover:bg-green-600 hover:shadow-lg"
-              >
-                바로 학습하기
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {selectedNews ? (
-        <div
-          className="fixed inset-0 z-[2100] flex items-center justify-center px-4 py-6"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="courseNewsModalTitle"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setSelectedNews(null)
-          }}
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            aria-label="공지 닫기"
-            onClick={() => setSelectedNews(null)}
-          />
-          <div className="[animation:popIn_0.2s_cubic-bezier(0.16,1,0.3,1)_forwards] relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
-              <div className="min-w-0">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${selectedNews.badgeClassName}`}>
-                    {selectedNews.badgeLabel}
-                  </span>
-                  <span className="text-xs font-bold text-gray-400">{selectedNews.dateLabel}</span>
-                </div>
-                <h3 id="courseNewsModalTitle" className="text-lg font-extrabold leading-snug text-gray-900">
-                  {selectedNews.title}
-                </h3>
-              </div>
-              <button
-                type="button"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition hover:bg-gray-50 hover:text-gray-900"
-                aria-label="공지 닫기"
-                onClick={() => setSelectedNews(null)}
-              >
-                <i className="fas fa-times" />
-              </button>
-            </div>
-            <div className="max-h-[52vh] overflow-y-auto px-6 py-5">
-              <p className="whitespace-pre-line text-sm font-medium leading-7 text-gray-700">{selectedNews.summary}</p>
-            </div>
-            <div className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 px-6 py-4">
-              {selectedNews.href ? (
-                <a
-                  href={selectedNews.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-xs font-black text-white transition hover:bg-black"
-                >
-                  원문 보기
-                  <i className="fas fa-arrow-up-right-from-square text-[10px]" />
-                </a>
-              ) : null}
-              <button
-                type="button"
-                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-100"
-                onClick={() => setSelectedNews(null)}
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {askModalOpen ? (
-        <div
-          className="qna-modal-backdrop show fixed inset-0 z-[2500] flex items-center justify-center bg-[rgba(17,24,39,0.55)] p-[16px]"
-          id="askModal"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setAskModalOpen(false)
-          }}
-        >
-          <div className="qna-modal w-[min(680px,96vw)] overflow-hidden rounded-[18px] border-[1px] border-solid border-[#e5e7eb] bg-white [box-shadow:0_24px_72px_rgba(17,24,39,0.18)]" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="qna-modal-header flex items-center justify-between bg-white px-[16px] py-[14px] [border-bottom:1px_solid_#f3f4f6]">
-              <div className="qna-modal-title flex items-center gap-[8px] text-[14px] font-[900] text-[#111827]"><i className="fas fa-pen-to-square text-primary" /> 새 질문 작성</div>
-              <button
-                type="button"
-                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-50"
-                onClick={() => setAskModalOpen(false)}
-              >
-                닫기
-              </button>
-            </div>
-
-            <div className="qna-modal-body p-[16px]">
-              <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-xs font-bold text-gray-700">제목</label>
-                  <input
-                    id="qnaTitle"
-                    value={questionDraft.title}
-                    onChange={(event) => setQuestionDraft((current) => ({ ...current, title: event.target.value }))}
-                    className={qnaInputClassName}
-                    placeholder="예: 클래스와 프로세스 차이가 궁금합니다"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-xs font-bold text-gray-700">구간/키워드 (선택)</label>
-                  <input
-                    id="qnaTag"
-                    value={questionDraft.tag}
-                    onChange={(event) => setQuestionDraft((current) => ({ ...current, tag: event.target.value }))}
-                    className={qnaInputClassName}
-                    placeholder="예: Unit 3 / 12:40 / 상속"
-                  />
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="mb-2 block text-xs font-bold text-gray-700">내용</label>
-                <textarea
-                  id="qnaBody"
-                  maxLength={1000}
-                  value={questionDraft.body}
-                  onChange={(event) => setQuestionDraft((current) => ({ ...current, body: event.target.value }))}
-                  className={qnaTextareaClassName}
-                  placeholder="질문 내용을 자세하게 적어주세요."
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-[11px] font-bold text-gray-400" id="qnaCount">
-                  {questionDraft.body.length} / 1000
-                </div>
-                {questionErrors ? <div className="text-[11px] font-bold text-rose-500">{questionErrors}</div> : null}
-              </div>
-            </div>
-
-            <div className="qna-modal-footer flex justify-end gap-[8px] bg-[#f9fafb] px-[16px] py-[12px] [border-top:1px_solid_#f3f4f6]">
-              <button
-                type="button"
-                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-black text-gray-700 transition hover:bg-gray-50"
-                onClick={() => setAskModalOpen(false)}
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                id="qnaSubmitBtn"
-                disabled={questionBusy}
-                className="rounded-xl bg-brand px-5 py-2 text-xs font-black text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
-                onClick={handleSubmitQuestion}
-              >
-                {questionBusy ? '등록 중' : '질문 등록'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {toastMessage ? (
-        <div className="fixed bottom-6 right-6 z-[2200] rounded-full bg-gray-900 px-4 py-3 text-sm font-semibold text-white shadow-2xl">
-          {toastMessage}
-        </div>
-      ) : null}
+      <CourseDetailOverlays
+        enrollModalOpen={enrollModalOpen}
+        setEnrollModalOpen={setEnrollModalOpen}
+        learningHref={learningHref}
+        selectedNews={selectedNews}
+        setSelectedNews={setSelectedNews}
+        askModalOpen={askModalOpen}
+        setAskModalOpen={setAskModalOpen}
+        questionDraft={questionDraft}
+        setQuestionDraft={setQuestionDraft}
+        questionErrors={questionErrors}
+        questionBusy={questionBusy}
+        handleSubmitQuestion={handleSubmitQuestion}
+        toastMessage={toastMessage}
+      />
 
       {authView ? (
         <AuthModal

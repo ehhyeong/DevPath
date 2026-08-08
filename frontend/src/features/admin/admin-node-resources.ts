@@ -1,3 +1,5 @@
+import { renderAdminMarkup } from './admin-react-renderer'
+import { adminActions } from './admin-action-registry'
 import { adminApi } from "../../lib/admin-api";
 import type {
   AdminOfficialRoadmapOption,
@@ -202,7 +204,7 @@ function renderNodeResourceRoadmapOptions(selectedRoadmapId?: number | null) {
     ? currentValue
     : null;
 
-  select.innerHTML = [
+  renderAdminMarkup(select, [
     '<option value="">로드맵을 선택하세요</option>',
     ...roadmapOptions.map(
       (roadmap) => `
@@ -210,7 +212,7 @@ function renderNodeResourceRoadmapOptions(selectedRoadmapId?: number | null) {
           ${escapeHtml(roadmap.title)} (${formatNumber(roadmap.nodeCount)}개 노드)
         </option>`,
     ),
-  ].join("");
+  ].join(""));
   select.value = validCurrentValue ? String(validCurrentValue) : "";
   updateNodeResourceFormReadouts();
 }
@@ -240,7 +242,7 @@ function renderNodeResourceNodeOptions(
     ? currentValue
     : null;
 
-  select.innerHTML = [
+  renderAdminMarkup(select, [
     `<option value="">${roadmapId ? (nodeOptions.length > 0 ? "노드를 선택하세요" : "선택한 로드맵에 노드가 없습니다") : "로드맵을 먼저 선택하세요"}</option>`,
     ...nodeOptions.map(
       (node) => `
@@ -248,7 +250,7 @@ function renderNodeResourceNodeOptions(
           ${escapeHtml(formatNodeStructure(node))} · ${escapeHtml(node.title)}
         </option>`,
     ),
-  ].join("");
+  ].join(""));
 
   select.disabled = !roadmapId || nodeOptions.length === 0;
   select.value = validCurrentValue ? String(validCurrentValue) : "";
@@ -293,13 +295,13 @@ function renderNodeResourceFilterOptions() {
     nodeResourceFilterState.NodeId = "";
   }
 
-  roadmapSelect.innerHTML = [
+  renderAdminMarkup(roadmapSelect, [
     '<option value="">전체 로드맵</option>',
     ...roadmapOptions.map(
       (roadmap) =>
         `<option value="${roadmap.roadmapId}" title="${escapeHtml(roadmap.title)}" ${nodeResourceFilterState.RoadmapId === String(roadmap.roadmapId) ? "selected" : ""}>${escapeHtml(roadmap.title)}</option>`,
     ),
-  ].join("");
+  ].join(""));
   roadmapSelect.value = nodeResourceFilterState.RoadmapId;
 
   const roadmapId = nodeResourceFilterState.RoadmapId
@@ -315,7 +317,7 @@ function renderNodeResourceFilterOptions() {
     nodeResourceFilterState.NodeId = "";
   }
 
-  nodeSelect.innerHTML = [
+  renderAdminMarkup(nodeSelect, [
     '<option value="">전체 노드</option>',
     ...nodeOptions.map(
       (node) => `
@@ -323,7 +325,7 @@ function renderNodeResourceFilterOptions() {
           ${escapeHtml(node.roadmapTitle)} · ${escapeHtml(node.title)}
         </option>`,
     ),
-  ].join("");
+  ].join(""));
   nodeSelect.value = nodeResourceFilterState.NodeId;
   sourceSelect.value = nodeResourceFilterState.SourceType;
   statusSelect.value = nodeResourceFilterState.Status;
@@ -420,11 +422,11 @@ function syncNodeResourceFormState() {
   saveButton.disabled = nodeResourceSaving;
   saveButton.classList.toggle("opacity-70", nodeResourceSaving);
   saveButton.classList.toggle("cursor-not-allowed", nodeResourceSaving);
-  saveButton.innerHTML = nodeResourceSaving
+  renderAdminMarkup(saveButton, nodeResourceSaving
     ? '<i class="fas fa-circle-notch fa-spin mr-1"></i> 저장 중'
     : isEditing
       ? '<i class="fas fa-save mr-1"></i> 변경 저장'
-      : '<i class="fas fa-plus mr-1"></i> 자료 등록';
+      : '<i class="fas fa-plus mr-1"></i> 자료 등록');
   cancelButton.classList.toggle("hidden", !isEditing);
 }
 
@@ -565,7 +567,7 @@ function getNodeResourceFormPayload(): RoadmapNodeResourcePayload | null {
 
 function renderNodeResourceRows(resources: AdminRoadmapNodeResource[]) {
   const tbody = getElement("nodeResourceTableBody");
-  tbody.innerHTML = resources.length
+  renderAdminMarkup(tbody, resources.length
     ? resources
         .map((resource) => {
           const selected = nodeResourceEditingId === resource.resourceId;
@@ -592,14 +594,14 @@ function renderNodeResourceRows(resources: AdminRoadmapNodeResource[]) {
               </td>
               <td class="px-5 py-3 align-middle text-right">
                 <div class="flex flex-wrap justify-end gap-1">
-                  <button onclick="editRoadmapNodeResource(${resource.resourceId})" class="whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">수정</button>
-                  <button onclick="deleteRoadmapNodeResource(${resource.resourceId})" class="whitespace-nowrap rounded bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100 hover:text-rose-800" type="button">삭제</button>
+                  <button data-admin-click="editRoadmapNodeResource(${resource.resourceId})" class="whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">수정</button>
+                  <button data-admin-click="deleteRoadmapNodeResource(${resource.resourceId})" class="whitespace-nowrap rounded bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100 hover:text-rose-800" type="button">삭제</button>
                 </div>
               </td>
             </tr>`;
         })
         .join("")
-    : buildEmptyRow(5, "조건에 맞는 추천 자료가 없습니다.");
+    : buildEmptyRow(5, "조건에 맞는 추천 자료가 없습니다."));
 }
 
 function applyNodeResourceFilters() {
@@ -651,7 +653,7 @@ function applyNodeResourceFilters() {
 
 export async function fetchNodeResources() {
   const tbody = getElement("nodeResourceTableBody");
-  tbody.innerHTML = buildLoadingRow(5);
+  renderAdminMarkup(tbody, buildLoadingRow(5));
 
   try {
     const [resources, nodes, roadmaps] = await Promise.all([
@@ -683,12 +685,12 @@ export async function fetchNodeResources() {
       applyNodeResourceFilters();
     }
   } catch (error) {
-    tbody.innerHTML = buildErrorRow(
+    renderAdminMarkup(tbody, buildErrorRow(
       5,
       error instanceof Error
         ? error.message
         : "추천 자료를 불러오지 못했습니다.",
-    );
+    ));
     updateFilterSummary("nodeResourceSummary", 0, 0);
   }
 }
@@ -852,7 +854,7 @@ export function installNodeResourceBindings(runAdminAction: RunAdminAction) {
 }
 
 export function installNodeResourceActions(runAdminAction: RunAdminAction) {
-  window.editRoadmapNodeResource = (resourceId: number) => {
+  adminActions.editRoadmapNodeResource = (resourceId: number) => {
     const resource = nodeResourceItems.find(
       (item) => item.resourceId === resourceId,
     );
@@ -864,7 +866,7 @@ export function installNodeResourceActions(runAdminAction: RunAdminAction) {
     setNodeResourceForm(resource);
   };
 
-  window.deleteRoadmapNodeResource = async (resourceId: number) => {
+  adminActions.deleteRoadmapNodeResource = async (resourceId: number) => {
     await runAdminAction(async () => {
       await deleteNodeResourceById(resourceId);
     });

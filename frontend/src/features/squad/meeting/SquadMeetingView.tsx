@@ -1,5 +1,6 @@
 import { type CSSProperties } from 'react'
 import AuthModal from '../../../components/AuthModal'
+import MeetingAudioSettings from './MeetingAudioSettings'
 import SquadWorkspaceAside from '../../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../../components/UserAvatar'
@@ -8,28 +9,8 @@ import { MediaStreamVideo } from './meeting-media-stream-video'
 import { SCREEN_SHARE_BUTTON_ZOOM_STEP,SCREEN_SHARE_MIN_ZOOM,VOICE_REACTIONS,formatMeetingTime,navHref } from './meeting-support'
 import type { CameraView,ScreenShareView,VoiceParticipant,WorkspaceMember } from './meeting-types'
 import type { SquadMeetingViewModel } from './useSquadMeetingController'
-
 export default function SquadMeetingView(model: SquadMeetingViewModel) {
-  const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, audioSettingsOpen, setAudioSettingsOpen, audioInputs, audioOutputs, selectedInputId, setSelectedInputId, selectedOutputId, setSelectedOutputId, remoteAudioMuted, audioDeviceError, setAudioDeviceError, audioProcessingStatus, micLevel, speakerLevel, micTesting, soundTesting, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, localVoiceStreamRef, remoteAudioContainerRef, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, loadAudioDevices, replaceLocalVoiceInput, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, toggleMicTest, playSoundTest, startMicMonitor, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
-
-
-  function renderAudioProcessingBadge(label: string, enabled: boolean | null) {
-    return (
-      <span
-        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${
-          enabled === true
-            ? 'border-green-100 bg-green-50 text-green-700'
-            : enabled === false
-              ? 'border-gray-200 bg-gray-50 text-gray-500'
-              : 'border-yellow-100 bg-yellow-50 text-yellow-700'
-        }`}
-      >
-        <i className={`fas ${enabled === true ? 'fa-check' : enabled === false ? 'fa-minus' : 'fa-spinner fa-spin'} text-[9px]`}></i>
-        {label} {enabled === true ? '켜짐' : enabled === false ? '꺼짐' : '확인 중'}
-      </span>
-    )
-  }
-
+  const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
   function renderMemberAvatar(member: WorkspaceMember, className = 'w-8 h-8') {
     return (
       <UserAvatar
@@ -41,10 +22,8 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
       />
     )
   }
-
   function renderParticipant(participant: VoiceParticipant) {
     const member = members.find((item) => item.learnerId === participant.userId)
-
     return (
       <div key={participant.participantId} className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-100 shadow-sm">
         <div className="flex items-center gap-3 min-w-0">
@@ -70,7 +49,6 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
       </div>
     )
   }
-
   function renderChatPanel() {
     return (
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-900">
@@ -97,7 +75,6 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 dark-scrollbar">
           {voiceChatMessages.length > 0 ? voiceChatMessages.map((message) => {
             const mine = message.senderId === session?.userId
-
             return (
               <div key={message.messageId} className={`flex flex-col gap-1.5 ${mine ? 'items-end' : ''}`}>
                 <span className={`text-[11px] text-gray-400 font-bold ${mine ? 'mr-1' : 'ml-1'}`}>
@@ -122,7 +99,6 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
             </div>
           )}
         </div>
-
         <div className="p-4 border-t border-gray-800 bg-gray-800 shrink-0">
           <div className="flex gap-2 bg-gray-900 rounded-xl px-3 py-2 border border-gray-700 focus-within:border-blue-500 transition shadow-inner">
             <input
@@ -1011,124 +987,8 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
       </div>
       )}
 
-      {audioSettingsOpen ? (
-        <div className="squad-meeting-audio-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
-          <div className="squad-meeting-audio-panel w-[min(448px,calc(100vw-32px))]! max-w-[448px]! animate-[modalScaleIn_0.2s_ease-out_forwards] overflow-hidden rounded-[16px]! bg-white shadow-2xl">
-            <div className="squad-meeting-audio-header flex h-[69px]! items-center justify-between border-b border-gray-100 bg-gray-50 p-[20px]!">
-              <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
-                <i className="fas fa-sliders-h text-brand"></i> 오디오 설정
-              </h3>
-              <button
-                type="button"
-                onClick={() => setAudioSettingsOpen(false)}
-                className="squad-meeting-audio-close h-[28px]! w-[20px]! flex-[0_0_20px] p-0! leading-[28px]! text-gray-400 hover:text-gray-600"
-              >
-                <i className="fas fa-times text-xl"></i>
-              </button>
-            </div>
-            <div className="squad-meeting-audio-body p-[24px]! [&>*+*]:mt-[24px]!">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">마이크 (입력)</label>
-                <select
-                  value={selectedInputId}
-                  onChange={(event) => setSelectedInputId(event.target.value)}
-                  className="squad-meeting-audio-select mb-3 h-[46px]! w-full cursor-pointer rounded-[12px]! border border-gray-200 bg-white px-[16px]! py-0! text-[14px]! leading-[20px]! font-medium shadow-sm outline-none transition focus:border-brand"
-                >
-                  {audioInputs.map((option) => (
-                    <option key={option.deviceId} value={option.deviceId}>{option.label}</option>
-                  ))}
-                </select>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => void toggleMicTest()}
-                    className={`squad-meeting-audio-test-button h-[34px]! w-[112px]! shrink-0 whitespace-nowrap rounded-[8px]! border px-[16px]! py-0! text-[12px]! leading-[16px]! font-bold transition ${
-                      micTesting
-                        ? 'bg-green-50 border-green-200 text-brand hover:bg-green-100'
-                        : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    {micTesting ? '테스트 중지' : '마이크 테스트'}
-                  </button>
-                  <div className={`flex-1 bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner relative ${micLevel > 0 || micTesting ? 'audio-testing' : ''}`}>
-                    <div className={`audio-meter-bar h-full w-0 bg-brand [transition:width_0.1s_ease-out] ${micLevel > 0 || micTesting ? '[animation:squadMeetingMeterBounce_0.5s_infinite_alternate_ease-in-out]' : ''}`} style={{ width: `${micLevel}%` }}></div>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {renderAudioProcessingBadge('에코 제거', audioProcessingStatus.echoCancellation)}
-                  {renderAudioProcessingBadge('잡음 억제', audioProcessingStatus.noiseSuppression)}
-                  {renderAudioProcessingBadge('자동 게인', audioProcessingStatus.autoGainControl)}
-                  {renderAudioProcessingBadge('노이즈 게이트', audioProcessingStatus.noiseGate)}
-                </div>
-                <p className="mt-2 text-[11px] font-bold text-gray-400">
-                  브라우저가 지원하는 항목만 실제로 켜집니다.
-                </p>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">스피커 (출력)</label>
-                <select
-                  value={selectedOutputId}
-                  onChange={(event) => setSelectedOutputId(event.target.value)}
-                  className="squad-meeting-audio-select mb-3 h-[46px]! w-full cursor-pointer rounded-[12px]! border border-gray-200 bg-white px-[16px]! py-0! text-[14px]! leading-[20px]! font-medium shadow-sm outline-none transition focus:border-brand"
-                >
-                  {audioOutputs.map((option) => (
-                    <option key={option.deviceId} value={option.deviceId}>{option.label}</option>
-                  ))}
-                </select>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => void playSoundTest()}
-                    className="squad-meeting-audio-sound-button flex h-[34px]! w-[122px]! shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[8px]! border border-blue-200 bg-blue-50 px-[16px]! py-0! text-[12px]! leading-[16px]! font-bold text-blue-600 transition hover:bg-blue-100 disabled:opacity-60"
-                  >
-                    <i className={`fas ${soundTesting ? 'fa-stop' : 'fa-play'} text-[10px]`}></i>
-                    {soundTesting ? '테스트 중지' : '사운드 테스트'}
-                  </button>
-                  <div className={`flex-1 bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner relative ${soundTesting ? 'audio-testing' : ''}`}>
-                    <div className={`audio-meter-bar h-full w-0 bg-blue-500 [transition:width_0.1s_ease-out] ${soundTesting ? '[animation:squadMeetingMeterBounce_0.5s_infinite_alternate_ease-in-out]' : ''}`} style={{ width: `${speakerLevel}%` }}></div>
-                  </div>
-                </div>
-              </div>
-              {audioDeviceError ? (
-                <p className="sr-only" role="status">{audioDeviceError}</p>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => void loadAudioDevices(true).then(() => startMicMonitor(selectedInputId))}
-                className="squad-meeting-device-refresh-button flex h-[38px]! w-full items-center justify-center gap-2 rounded-[12px]! border border-gray-200 bg-white px-[16px]! py-0! text-[12px]! leading-[16px]! font-bold text-gray-700 transition hover:border-brand hover:text-brand"
-              >
-                <i className="fas fa-sync-alt"></i> 장치 다시 검색
-              </button>
-            </div>
-            <div className="squad-meeting-audio-footer flex h-[73px]! justify-end gap-2 border-t border-gray-100 bg-gray-50 p-[20px]!">
-              <button
-                type="button"
-                onClick={() => setAudioSettingsOpen(false)}
-                className="squad-meeting-audio-cancel h-[36px]! rounded-[12px]! border border-gray-200 bg-white px-5 pt-0! pb-0! text-[14px]! leading-[20px]! font-bold text-gray-600 shadow-sm transition hover:bg-gray-50"
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAudioSettingsOpen(false)
-                  if (localVoiceStreamRef.current) {
-                    void replaceLocalVoiceInput().catch(() => {
-                      setAudioDeviceError('음성 회의 마이크 입력 장치를 변경하지 못했습니다.')
-                    })
-                  }
-                  showAuthToast({ message: '오디오 설정을 적용했습니다.', durationMs: 1600 })
-                }}
-                className="squad-meeting-audio-apply h-[36px]! rounded-[12px]! bg-gray-900 px-6 pt-0! pb-0! text-[14px]! leading-[20px]! font-bold text-white shadow-md transition hover:bg-black"
-              >
-                설정 적용
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <MeetingAudioSettings model={model} />
 
-      <div ref={remoteAudioContainerRef} className="hidden" aria-hidden="true"></div>
       {renderAuthModal()}
     </div>
   )

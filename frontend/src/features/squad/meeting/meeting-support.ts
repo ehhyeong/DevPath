@@ -1,5 +1,5 @@
 import { useEffect,useRef } from 'react'
-import type { AudioDeviceOption,AudioProcessingStatus,NavigatorWithNetworkInformation,NetworkStatus,NetworkTone,SecurityStatus,SecurityTone,VoiceMeetingAnalysis,VoiceMeetingMinutes,VoiceMeetingSummaryResponse,VoiceParticipant } from './meeting-types'
+import type { AudioDeviceOption,AudioProcessingStatus,NavigatorWithNetworkInformation,NetworkStatus,NetworkTone,SecurityStatus,SecurityTone,VoiceMeetingAnalysis,VoiceMeetingMinutes,VoiceMeetingSummaryResponse,VoiceParticipant,VoiceSignalingPeer } from './meeting-types'
 
 
 export function useLatest<T>(value: T) {
@@ -26,6 +26,22 @@ export const INITIAL_NETWORK_STATUS: NetworkStatus = {
   detail: '실시간 API 왕복 시간을 확인하고 있습니다.',
   latencyMs: null,
   tone: 'checking',
+}
+
+export function collectRemoteVoicePeers(
+  participantGroups: VoiceParticipant[][],
+  currentUserId: number | null | undefined,
+  getDisplayName: (userId: number, fallbackName?: string) => string,
+) {
+  const peers = new Map<number, VoiceSignalingPeer>()
+  participantGroups.flat().forEach((participant) => {
+    if (!participant.active || !participant.userId || participant.userId === currentUserId || peers.has(participant.userId)) return
+    peers.set(participant.userId, {
+      userId: participant.userId,
+      userName: participant.userName ?? getDisplayName(participant.userId),
+    })
+  })
+  return Array.from(peers.values())
 }
 
 export const VOICE_REACTIONS = ['👍', '👏', '❤️', '🎉', '💡'] as const

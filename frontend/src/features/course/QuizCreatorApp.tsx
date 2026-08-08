@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useState } from 'react'
 import LoginRequiredGate from '../../components/LoginRequiredView'
 import InstructorLayout from '../../instructor/layout/InstructorLayout'
@@ -38,7 +39,7 @@ function InstructorOnlyView() {
 }
 
 export default function QuizCreatorApp() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function QuizCreatorApp() {
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
       window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     if (!session) {

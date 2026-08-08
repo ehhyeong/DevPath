@@ -32,6 +32,44 @@ export function buildQueryString(params: Record<string, string | number | boolea
   return query ? `?${query}` : ''
 }
 
+export async function requestRaw(
+  path: string,
+  init: RequestInit = {},
+  options: Pick<RequestOptions, 'auth'> = {},
+): Promise<Response> {
+  const headers = new Headers(init.headers)
+
+  if (options.auth) {
+    const session = await refreshStoredAuthSession()
+    if (session?.accessToken) {
+      headers.set('Authorization', `${session.tokenType} ${session.accessToken}`)
+    }
+  }
+
+  let response = await fetch(`${API_BASE_URL}${path}`, { ...init,headers })
+
+  if (options.auth && response.status === 401) {
+    const refreshedSession = await refreshStoredAuthSession({ force: true }).catch(() => null)
+    if (refreshedSession?.accessToken) {
+      headers.set('Authorization', `${refreshedSession.tokenType} ${refreshedSession.accessToken}`)
+      response = await fetch(`${API_BASE_URL}${path}`, { ...init,headers })
+    }
+
+    if (response.status === 401) {
+      expireStoredAuthSession({ reload: true,force: true })
+      throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요.')
+    }
+  }
+
+  if (!response.ok) {
+    const error = new Error(`Request failed with status ${response.status}`) as Error & { status: number }
+    error.status = response.status
+    throw error
+  }
+
+  return response
+}
+
 export async function request<T>(
   path: string,
   init: RequestInit = {},

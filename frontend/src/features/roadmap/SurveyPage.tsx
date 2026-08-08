@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useState } from 'react'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import SiteHeader from '../../components/SiteHeader'
@@ -9,7 +10,6 @@ import {
   clearStoredAuthSession,
   readStoredAuthSession,
 } from '../../lib/auth-session'
-import type { AuthSession } from '../../types/auth'
 
 type Screen = 'start' | 'question' | 'loading' | 'result'
 
@@ -163,7 +163,7 @@ function initScores(): Record<string, number> {
 }
 
 function SurveyPage() {
-  const [session, setSession] = useState<AuthSession | null>(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [screen, setScreen] = useState<Screen>('start')
   const [currentStep, setCurrentStep] = useState(0)
@@ -200,7 +200,7 @@ function SurveyPage() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     if (!session) {

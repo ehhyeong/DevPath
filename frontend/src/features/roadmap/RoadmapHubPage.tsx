@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
@@ -13,6 +14,7 @@ import {
 } from '../../lib/auth-session'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import { getRoadmapHubIconClass } from '../../lib/roadmap-icons'
+import { readAuthViewFromLocation,syncAuthViewInLocation } from '../../lib/location-state'
 import type { RoadmapHubCatalog, RoadmapHubItem } from '../../types/roadmap-hub'
 
 type RoadmapHubSection = RoadmapHubCatalog['sections'][number]
@@ -128,24 +130,6 @@ function RoadmapHubSectionContent({ section }: { section: RoadmapHubSection }) {
   }
 
   return <div className={gridClassName}>{section.items.map(renderItem)}</div>
-}
-
-function readAuthViewFromLocation(): AuthView | null {
-  const value = new URLSearchParams(window.location.search).get('auth')
-
-  return value === 'login' || value === 'signup' ? value : null
-}
-
-function syncAuthViewInLocation(view: AuthView | null) {
-  const url = new URL(window.location.href)
-
-  if (view) {
-    url.searchParams.set('auth', view)
-  } else {
-    url.searchParams.delete('auth')
-  }
-
-  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
 }
 
 function renderRoleCard(item: RoadmapHubItem) {
@@ -368,7 +352,7 @@ function RoadmapHubSections({
 function RoadmapHubPage() {
   useInternalPageScroll()
 
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
   const [catalog, setCatalog] = useState<RoadmapHubCatalog | null>(null)
@@ -392,7 +376,7 @@ function RoadmapHubPage() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     syncAuthViewInLocation(authView)

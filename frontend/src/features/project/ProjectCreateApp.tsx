@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
@@ -22,7 +23,7 @@ type ProjectCreatePanelProps = {
 }
 
 export default function ProjectCreateApp() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
 
   useEffect(() => {
     document.title = 'DevPath - 새 스쿼드 결성'
@@ -45,7 +46,7 @@ export default function ProjectCreateApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   if (!session) return <LoginRequiredView />
 

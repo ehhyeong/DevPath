@@ -1,3 +1,4 @@
+import { useAuthSession } from './lib/useAuthSession'
 import { type CSSProperties, useEffect, useState } from 'react'
 import AccountUserMenu from './components/AccountUserMenu'
 import AuthModal, { type AuthView } from './components/AuthModal'
@@ -10,6 +11,7 @@ import {
   readStoredAuthSession,
 } from './lib/auth-session'
 import { navigateTo } from './lib/spa-navigation'
+import { readAuthViewFromLocation,syncAuthViewInLocation } from './lib/location-state'
 
 const headerLinks = [
   { key: 'roadmap', href: '/roadmap-hub', label: '로드맵' },
@@ -52,28 +54,6 @@ const supportLinks = [
 
 function go(path: string) {
   navigateTo(path)
-}
-
-function readAuthViewFromLocation(): AuthView | null {
-  const value = new URLSearchParams(window.location.search).get('auth')
-
-  if (value === 'login' || value === 'signup') {
-    return value
-  }
-
-  return null
-}
-
-function syncAuthViewInLocation(view: AuthView | null) {
-  const url = new URL(window.location.href)
-
-  if (view) {
-    url.searchParams.set('auth', view)
-  } else {
-    url.searchParams.delete('auth')
-  }
-
-  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
 }
 
 function initAos() {
@@ -136,7 +116,7 @@ function getHeaderMoveStyle(key: HeaderMoveKey): CSSProperties {
 const glassPanelClassName = 'glass-panel border-[1px] border-solid border-[rgba(255,255,255,0.5)] bg-[rgba(255,255,255,0.7)] [backdrop-filter:blur(12px)] [box-shadow:0_8px_32px_rgba(0,0,0,0.05)]'
 
 function App() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
   const showInstructorDashboard = session?.role === 'ROLE_INSTRUCTOR'
@@ -180,7 +160,7 @@ function App() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     // 홈에서 모달을 직접 열고 닫을 수 있도록 URL 상태도 함께 맞춥니다.

@@ -1,3 +1,5 @@
+import { renderAdminMarkup } from './admin-react-renderer'
+import { adminActions } from './admin-action-registry'
 import { adminApi } from "../../lib/admin-api";
 import type { AdminOfficialRoadmap } from "../../types/admin";
 import {
@@ -75,7 +77,7 @@ function getFilteredRoadmapInfoItems() {
 
 function renderRoadmapInfoOptions() {
   const select = getElement<HTMLSelectElement>("roadmapInfoRoadmapSelect");
-  select.innerHTML = [
+  renderAdminMarkup(select, [
     '<option value="">로드맵을 선택하세요</option>',
     ...roadmapInfoItems.map(
       (roadmap) => `
@@ -83,14 +85,14 @@ function renderRoadmapInfoOptions() {
           ${escapeHtml(roadmap.title)}
         </option>`,
     ),
-  ].join("");
+  ].join(""));
   select.value =
     roadmapInfoEditingId === null ? "" : String(roadmapInfoEditingId);
 }
 
 function renderRoadmapInfoRows(roadmaps: AdminOfficialRoadmap[]) {
   const tbody = getElement("roadmapInfoTableBody");
-  tbody.innerHTML = roadmaps.length
+  renderAdminMarkup(tbody, roadmaps.length
     ? roadmaps
         .map((roadmap) => {
           const selected = roadmapInfoEditingId === roadmap.roadmapId;
@@ -113,14 +115,14 @@ function renderRoadmapInfoRows(roadmaps: AdminOfficialRoadmap[]) {
               </td>
               <td class="px-5 py-3 text-right">
                 <div class="flex flex-nowrap justify-end gap-1">
-                  <button onclick="editRoadmapInfo(${roadmap.roadmapId})" class="whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">편집</button>
-                  <button onclick="clearRoadmapInfo(${roadmap.roadmapId})" class="whitespace-nowrap rounded bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100 hover:text-rose-800 ${hasInfo ? "" : "opacity-50"}" type="button" ${hasInfo ? "" : "disabled"}>삭제</button>
+                  <button data-admin-click="editRoadmapInfo(${roadmap.roadmapId})" class="whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">편집</button>
+                  <button data-admin-click="clearRoadmapInfo(${roadmap.roadmapId})" class="whitespace-nowrap rounded bg-rose-50 px-2 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100 hover:text-rose-800 ${hasInfo ? "" : "opacity-50"}" type="button" ${hasInfo ? "" : "disabled"}>삭제</button>
                 </div>
               </td>
             </tr>`;
         })
         .join("")
-    : buildEmptyRow(5, "조건에 맞는 로드맵 소개가 없습니다.");
+    : buildEmptyRow(5, "조건에 맞는 로드맵 소개가 없습니다."));
 }
 
 function syncRoadmapInfoFormState() {
@@ -157,9 +159,9 @@ function syncRoadmapInfoFormState() {
     "cursor-not-allowed",
     !hasSelection || roadmapInfoSaving,
   );
-  saveButton.innerHTML = roadmapInfoSaving
+  renderAdminMarkup(saveButton, roadmapInfoSaving
     ? '<i class="fas fa-circle-notch fa-spin mr-1"></i> 저장 중'
-    : '<i class="fas fa-save mr-1"></i> 소개 저장';
+    : '<i class="fas fa-save mr-1"></i> 소개 저장');
 
   selectedTitle.textContent = selectedRoadmap?.title ?? "로드맵을 선택하세요";
   selectedDescription.textContent =
@@ -191,9 +193,9 @@ function renderRoadmapInfoPreview() {
   }
 
   const html = buildRoadmapInfoContentHtml(contentInput.value);
-  preview.innerHTML = html.trim()
+  renderAdminMarkup(preview, html.trim()
     ? sanitizePreviewHtml(html)
-    : '<p class="text-slate-400">소개 본문을 입력하면 미리보기가 표시됩니다.</p>';
+    : '<p class="text-slate-400">소개 본문을 입력하면 미리보기가 표시됩니다.</p>');
 }
 
 function renderRoadmapInfoManager() {
@@ -205,16 +207,16 @@ function renderRoadmapInfoManager() {
   renderRoadmapInfoOptions();
 
   if (roadmapInfoLoading) {
-    getElement("roadmapInfoTableBody").innerHTML = buildLoadingRow(5);
+    renderAdminMarkup(getElement("roadmapInfoTableBody"), buildLoadingRow(5));
     syncRoadmapInfoFormState();
     return;
   }
 
   if (roadmapInfoError) {
-    getElement("roadmapInfoTableBody").innerHTML = buildErrorRow(
+    renderAdminMarkup(getElement("roadmapInfoTableBody"), buildErrorRow(
       5,
       roadmapInfoError,
-    );
+    ));
     syncRoadmapInfoFormState();
     return;
   }
@@ -390,11 +392,11 @@ export function installRoadmapInfoBindings(runAdminAction: RunAdminAction) {
 }
 
 export function installRoadmapInfoActions(runAdminAction: RunAdminAction) {
-  window.editRoadmapInfo = (roadmapId: number) => {
+  adminActions.editRoadmapInfo = (roadmapId: number) => {
     setRoadmapInfoForm(roadmapId);
   };
 
-  window.clearRoadmapInfo = async (roadmapId: number) => {
+  adminActions.clearRoadmapInfo = async (roadmapId: number) => {
     await runAdminAction(async () => {
       await clearRoadmapInfoById(roadmapId);
     });

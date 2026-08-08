@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import type { FormEvent,ReactNode } from 'react'
 import { useEffect,useMemo,useState } from 'react'
 import AuthModal,{ type AuthView } from '../../components/AuthModal'
@@ -12,7 +13,7 @@ import { type CategoryFilter,type CompletedWorkspaceProject,type LoungeShellResp
 
 
 export default function DevShowcaseApp() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dataReloadKey, setDataReloadKey] = useState(0)
   const [showcases, setShowcases] = useState<ShowcaseSummary[]>([])
@@ -88,7 +89,7 @@ export default function DevShowcaseApp() {
 
     void load()
     return () => controller.abort()
-  }, [category, dataReloadKey, sort])
+  }, [category, dataReloadKey, setSession, sort])
 
   useEffect(() => {
     const syncSession = () => setSession(readStoredAuthSession())
@@ -98,7 +99,7 @@ export default function DevShowcaseApp() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   const visibleShowcases = useMemo(() => {
     const lowered = search.trim().toLowerCase()

@@ -9,9 +9,7 @@ type PointerEvent as ReactPointerEvent,
 useEffect,
 useMemo,
 useRef,
-useState
 } from 'react'
-import { type AuthView } from '../../../components/AuthModal'
 import { clearStoredAuthSession,getPostLoginRedirect,readStoredAuthSession } from '../../../lib/auth-session'
 import { showAuthToast } from '../../../lib/auth-toast'
 import { getVoiceIceServers } from '../../../lib/voice-webrtc'
@@ -21,56 +19,34 @@ fetchSquadVoicePresence,
 joinSquadVoiceChannel,
 leaveSquadVoiceChannel,
 loadSquadMeetingInitialData,
-touchSquadVoicePresence,
 } from './meeting-api'
 import { createSquadNotification,squadActorName } from '../notifications'
-import { FALLBACK_AUDIO_INPUTS,FLOATING_REACTION_VISIBLE_MS,type VoicePeerTransceivers,buildSecurityStatus,buildVoiceSignalingUrl,createFloatingReactionId,formatElapsedTime,getNetworkBadgeClass,getNetworkIconClass,getSecurityBadgeClass,getSecurityIconClass,getUserMediaWithTimeout,getVoiceMeetingSessionStartedAt,getWorkspaceIdFromUrl,normalizeVoiceReaction,useLatest } from './meeting-support'
+import { FALLBACK_AUDIO_INPUTS,buildSecurityStatus,collectRemoteVoicePeers,formatElapsedTime,getNetworkBadgeClass,getNetworkIconClass,getSecurityBadgeClass,getSecurityIconClass,getVoiceMeetingSessionStartedAt,getWorkspaceIdFromUrl,normalizeVoiceReaction,useLatest } from './meeting-support'
 import type {
 CameraView,
-FloatingReaction,
-RoomPanelTab,
 ScreenShareView,
 SinkAudioElement,
 VoiceChannel,
-VoiceConnectionStatus,
 VoiceEventType,
 VoiceMeetingSyncPayload,
-VoiceParticipant,
-VoicePresence,
 VoiceReactionPayload,
 VoiceSignalingMessage,
 VoiceSignalingPeer,
-WorkspaceDashboard
 } from './meeting-types'
-
+import { useSquadMeetingMediaState,useSquadMeetingRoomState } from './useSquadMeetingState'
+import { applyAudioProcessingConstraints,getAudioConstraints,readAudioProcessingStatus } from './meeting-media'
+import { useVoiceTransport } from './useVoiceTransport'
+import { useMeetingPresence } from './useMeetingPresence'
+import { useMeetingVoiceInput } from './useMeetingVoiceInput'
+import { useMeetingMediaTracks } from './useMeetingMediaTracks'
+import { useMeetingRemoteMedia } from './useMeetingRemoteMedia'
+import { useMeetingReactions } from './useMeetingReactions'
 export function useSquadMeetingController() {
   useSquadMeetingViewport()
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
-  const [session, setSession] = useState(() => readStoredAuthSession())
-  const [authView, setAuthView] = useState<AuthView | null>(null)
-  const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
-  const [channels, setChannels] = useState<VoiceChannel[]>([])
-  const [activeChannel, setActiveChannel] = useState<VoiceChannel | null>(null)
+  const { session,setSession,authView,setAuthView,dashboard,setDashboard,channels,setChannels,activeChannel,setActiveChannel,participants,setParticipants,presentUsers,setPresentUsers,roomPanelTab,setRoomPanelTab,roomSidePanelOpen,setRoomSidePanelOpen,loading,setLoading,error,setError,joining,setJoining,audioSettingsOpen,setAudioSettingsOpen,now,setNow } = useSquadMeetingRoomState()
   const activeChannelId = activeChannel?.channelId ?? null
-  const [participants, setParticipants] = useState<VoiceParticipant[]>([])
-  const [presentUsers, setPresentUsers] = useState<VoicePresence[]>([])
-  const [roomPanelTab, setRoomPanelTab] = useState<RoomPanelTab>('minutes')
-  const [roomSidePanelOpen, setRoomSidePanelOpen] = useState(true)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [joining, setJoining] = useState(false)
-  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false)
-  const [remoteAudioMuted, setRemoteAudioMuted] = useState(false)
-  const [waitingMicMuted, setWaitingMicMuted] = useState(false)
-  const [voiceConnectionStatus, setVoiceConnectionStatus] = useState<VoiceConnectionStatus>('idle')
-  const [voiceConnectionError, setVoiceConnectionError] = useState<string | null>(null)
-  const [now, setNow] = useState(() => Date.now())
-  const [, setLocalSpeaking] = useState(false)
-  const [localCameraStream, setLocalCameraStream] = useState<MediaStream | null>(null)
-  const [remoteCameraStreams, setRemoteCameraStreams] = useState<Map<number, CameraView>>(() => new Map())
-  const [localScreenShareStream, setLocalScreenShareStream] = useState<MediaStream | null>(null)
-  const [remoteScreenShares, setRemoteScreenShares] = useState<Map<number, ScreenShareView>>(() => new Map())
-  const [floatingReactions, setFloatingReactions] = useState<FloatingReaction[]>([])
+  const { remoteAudioMuted,setRemoteAudioMuted,waitingMicMuted,setWaitingMicMuted,voiceConnectionStatus,setVoiceConnectionStatus,voiceConnectionError,setVoiceConnectionError,setLocalSpeaking,localCameraStream,setLocalCameraStream,remoteCameraStreams,setRemoteCameraStreams,localScreenShareStream,setLocalScreenShareStream,remoteScreenShares,setRemoteScreenShares,floatingReactions,setFloatingReactions } = useSquadMeetingMediaState()
   const localVoiceStreamRef = useRef<MediaStream | null>(null)
   const localVoiceRawStreamRef = useRef<MediaStream | null>(null)
   const localCameraStreamRef = useRef<MediaStream | null>(null)
@@ -79,24 +55,23 @@ export function useSquadMeetingController() {
   const remoteCameraPendingRef = useRef<Set<number>>(new Set())
   const remoteScreenShareViewsRef = useRef<Map<number, ScreenShareView>>(new Map())
   const remoteScreenSharePendingRef = useRef<Set<number>>(new Set())
-  const signalingSocketRef = useRef<WebSocket | null>(null)
-  const peerConnectionsRef = useRef<Map<number, RTCPeerConnection>>(new Map())
-  const peerTransceiversRef = useRef<Map<number, VoicePeerTransceivers>>(new Map())
-  const makingOffersRef = useRef<Set<number>>(new Set())
-  const departedPeerIdsRef = useRef<Set<number>>(new Set())
   const remoteAudioElementsRef = useRef<Map<number, SinkAudioElement>>(new Map())
   const remoteAudioMutedRef = useRef(false)
   const remoteAudioContainerRef = useRef<HTMLDivElement | null>(null)
   const controlBoxRef = useRef<HTMLDivElement | null>(null)
   const joiningRef = useRef(false)
   const reactionTimerIdsRef = useRef<number[]>([])
-  const pendingIceCandidatesRef = useRef<Map<number, RTCIceCandidateInit[]>>(new Map())
-  const voiceNoiseGateContextRef = useRef<AudioContext | null>(null)
-  const voiceNoiseGateFrameRef = useRef<number | null>(null)
-  const voiceActivityContextRef = useRef<AudioContext | null>(null)
-  const voiceActivityFrameRef = useRef<number | null>(null)
+  const voiceNoiseGateStopRef = useRef<(() => void) | null>(null)
+  const voiceActivityStopRef = useRef<(() => void) | null>(null)
   const localSpeakingRef = useRef(false)
   const restoredVoiceChannelRef = useRef<number | null>(null)
+  const { signalingSocketRef,peerConnectionsRef,peerTransceiversRef,makingOffersRef,departedPeerIdsRef,pendingIceCandidatesRef,closeSignalingSocket,closePeerConnections,connect: connectVoiceTransport,send: sendVoiceTransportMessage } = useVoiceTransport({
+    onMessage: handleVoiceSignalingMessage,
+    onPeersClosed: handlePeersClosed,
+    onStatusChange: setVoiceConnectionStatus,
+    onError: setVoiceConnectionError,
+  })
+  const { showFloatingReaction,sendRoomReaction } = useMeetingReactions({ currentUserId: session?.userId, currentUserName: session?.name, controlBoxRef, reactionTimerIdsRef, setFloatingReactions, sendReaction: (reaction) => sendVoiceTransportMessage({ type: 'reaction', payload: { reaction } }) })
   const disconnectVoiceSessionRef = useLatest(disconnectVoiceSession)
   const applySelectedOutputToRemoteAudioRef = useLatest(applySelectedOutputToRemoteAudio)
   const reconnectExistingVoiceSessionRef = useLatest(reconnectExistingVoiceSession)
@@ -197,7 +172,9 @@ export function useSquadMeetingController() {
     return () => {
       ignore = true
     }
-  }, [workspaceId])
+  }, [setActiveChannel, setAuthView, setChannels, setDashboard, setError, setLoading, setParticipants, setSession, workspaceId])
+
+  useMeetingPresence({ channelId: activeChannelId, accessToken: session?.accessToken, setParticipants, setPresentUsers })
 
   const members = dashboard?.members ?? []
   const projectName = dashboard?.name ?? '스쿼드 프로젝트'
@@ -206,6 +183,7 @@ export function useSquadMeetingController() {
   const selectedInputLabel =
     audioInputs.find((device) => device.deviceId === selectedInputId)?.label ?? FALLBACK_AUDIO_INPUTS[0].label
   const activeParticipants = participants.filter((participant) => participant.active)
+  const { handlePeersClosed: handleRemotePeersClosed,getVoiceDisplayName,attachRemoteTrack,removeRemotePeer,clearRemoteCameraStream,clearRemoteScreenShare } = useMeetingRemoteMedia({ members, participants, activeParticipants, remoteAudioElementsRef, remoteAudioMutedRef, remoteAudioContainerRef, remoteCameraStreamsRef, remoteCameraPendingRef, remoteScreenShareViewsRef, remoteScreenSharePendingRef, peerConnectionsRef, peerTransceiversRef, makingOffersRef, pendingIceCandidatesRef, setRemoteCameraStreams, setRemoteScreenShares, applySelectedOutputToAudio })
   const activeUserIds = new Set(activeParticipants.map((participant) => participant.userId))
   const presentUserIds = new Set(presentUsers.map((presence) => presence.userId))
   const waitingMembers = members.filter(
@@ -230,6 +208,8 @@ export function useSquadMeetingController() {
   const meetingSessionStartedAt = getVoiceMeetingSessionStartedAt(activeParticipants)
   const meetingElapsedLabel = formatElapsedTime(meetingSessionStartedAt, now)
   const { voiceChatMessages,voiceChatInput,setVoiceChatInput,voiceMinutes,minutesDraft,setMinutesDraft,minutesActionItems,selectedMinutesActionItems,minutesSummaryReportOpen,setMinutesSummaryReportOpen,chatSending,chatClearing,minutesSaving,kanbanTaskCreating,speechRecognitionActive,minutesTextareaRef,appendVoiceChatMessage,applyVoiceMinutes,refreshVoiceMeetingPanel,voiceEventLabel,createVoiceEvent,stopMinutesSpeechRecognition,sendVoiceChatMessage,clearVoiceChatMessages,toggleMinutesRecording,saveMinutesDraft,toggleMinutesActionItem,generateMinutesSummary,createKanbanTasksFromMinutes } = useSquadMeetingMinutes({ workspaceId,activeChannel,isJoined,isMuted,session,broadcastMeetingSync,setRoomPanelTab })
+  const { stopLocalVoiceStream,setLocalVoiceMuted,startLocalVoiceStreamIfAvailable,replaceLocalVoiceInput } = useMeetingVoiceInput({ selectedInputId, micMuted, currentUserId: session?.userId, localVoiceStreamRef, localVoiceRawStreamRef, voiceNoiseGateStopRef, voiceActivityStopRef, localSpeakingRef, peerTransceiversRef, setLocalSpeaking, setParticipants, setAudioProcessingStatus, setAudioDeviceError, setWaitingMicMuted, stopMinutesSpeechRecognition, createVoiceEvent, broadcastSpeakingState })
+  const { clearLocalCameraStream,clearLocalScreenShareStream,attachLocalVoiceTrackToPeers,toggleCamera,toggleScreenShare } = useMeetingMediaTracks({ workspaceId, activeChannel, isJoined, currentUserName: session?.name, localCameraStreamRef, localScreenShareStreamRef, peerTransceiversRef, setLocalCameraStream, setLocalScreenShareStream, ensurePeerConnections: ensurePeerConnectionsForCurrentParticipants, broadcastCameraState, broadcastScreenShareState })
 
   useEffect(() => {
     if (!isJoined) {
@@ -251,7 +231,7 @@ export function useSquadMeetingController() {
 
     restoredVoiceChannelRef.current = activeChannel.channelId
     void reconnectExistingVoiceSessionRef.current()
-  }, [activeChannel?.channelId, isJoined, reconnectExistingVoiceSessionRef, session?.accessToken])
+  }, [activeChannel?.channelId, isJoined, reconnectExistingVoiceSessionRef, session?.accessToken, signalingSocketRef])
 
   useEffect(() => {
     if (!isJoined) {
@@ -284,68 +264,13 @@ export function useSquadMeetingController() {
     const intervalId = window.setInterval(() => setNow(Date.now()), 1000)
 
     return () => window.clearInterval(intervalId)
-  }, [isJoined])
-
-  useEffect(() => {
-    if (!activeChannel?.channelId || !session?.accessToken) {
-      setPresentUsers([])
-      return
-    }
-
-    let stopped = false
-    const channelId = activeChannel.channelId
-
-    async function syncWaitingRoom() {
-      try {
-        await touchPresence(channelId)
-        const [participantData, presenceData] = await Promise.all([
-          fetchParticipants(channelId),
-          fetchPresence(channelId),
-        ])
-
-        if (stopped) {
-          return
-        }
-
-        setParticipants(participantData)
-        setPresentUsers(presenceData)
-      } catch {
-        // Presence is a convenience layer for the waiting room; keep the page usable if it misses a beat.
-      }
-    }
-
-    void syncWaitingRoom()
-
-    const heartbeatId = window.setInterval(() => {
-      void touchPresence(channelId).catch(() => undefined)
-    }, 10000)
-    const refreshId = window.setInterval(() => {
-      void syncWaitingRoom()
-    }, 5000)
-    const handleFocus = () => {
-      if (!document.hidden) {
-        void syncWaitingRoom()
-      }
-    }
-
-    window.addEventListener('focus', handleFocus)
-    document.addEventListener('visibilitychange', handleFocus)
-
-    return () => {
-      stopped = true
-      window.clearInterval(heartbeatId)
-      window.clearInterval(refreshId)
-      window.removeEventListener('focus', handleFocus)
-      document.removeEventListener('visibilitychange', handleFocus)
-    }
-  }, [activeChannel?.channelId, session?.accessToken])
+  }, [isJoined, setNow])
 
   function handleLogout() {
     clearStoredAuthSession()
     setSession(null)
     setAuthView('login')
   }
-
   function handleAuthenticated() {
     const nextSession = readStoredAuthSession()
 
@@ -358,211 +283,9 @@ export function useSquadMeetingController() {
     setAuthView(null)
     window.location.reload()
   }
-
-  function closeSignalingSocket() {
-    const socket = signalingSocketRef.current
-
-    signalingSocketRef.current = null
-
-    if (socket) {
-      socket.onopen = null
-      socket.onmessage = null
-      socket.onerror = null
-      socket.onclose = null
-
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'leave' }))
-        socket.close(1000, 'leave')
-      } else if (socket.readyState === WebSocket.CONNECTING) {
-        socket.close()
-      }
-    }
+  function handlePeersClosed() {
+    handleRemotePeersClosed()
   }
-
-  function stopLocalVoiceStream() {
-    stopVoiceActivityMonitor()
-    stopVoiceNoiseGate()
-    const tracks = new Set([
-      ...(localVoiceRawStreamRef.current?.getTracks() ?? []),
-      ...(localVoiceStreamRef.current?.getTracks() ?? []),
-    ])
-
-    tracks.forEach((track) => track.stop())
-    localVoiceRawStreamRef.current = null
-    localVoiceStreamRef.current = null
-    setAudioProcessingStatus((current) => ({ ...current, noiseGate: false }))
-  }
-
-  function clearLocalScreenShareStream() {
-    const stream = localScreenShareStreamRef.current
-
-    stream?.getTracks().forEach((track) => {
-      track.onended = null
-      track.stop()
-    })
-    localScreenShareStreamRef.current = null
-    setLocalScreenShareStream(null)
-  }
-
-  function clearLocalCameraStream() {
-    const stream = localCameraStreamRef.current
-
-    stream?.getTracks().forEach((track) => {
-      track.onended = null
-      track.stop()
-    })
-    localCameraStreamRef.current = null
-    setLocalCameraStream(null)
-  }
-
-  function stopVoiceNoiseGate() {
-    if (voiceNoiseGateFrameRef.current != null) {
-      window.cancelAnimationFrame(voiceNoiseGateFrameRef.current)
-      voiceNoiseGateFrameRef.current = null
-    }
-
-    void voiceNoiseGateContextRef.current?.close().catch(() => undefined)
-    voiceNoiseGateContextRef.current = null
-  }
-
-  function stopVoiceActivityMonitor() {
-    if (voiceActivityFrameRef.current != null) {
-      window.cancelAnimationFrame(voiceActivityFrameRef.current)
-      voiceActivityFrameRef.current = null
-    }
-
-    void voiceActivityContextRef.current?.close().catch(() => undefined)
-    voiceActivityContextRef.current = null
-    publishLocalSpeaking(false)
-  }
-
-  function publishLocalSpeaking(nextSpeaking: boolean) {
-    if (localSpeakingRef.current === nextSpeaking) {
-      return
-    }
-
-    localSpeakingRef.current = nextSpeaking
-    setLocalSpeaking(nextSpeaking)
-    setParticipants((currentParticipants) =>
-      currentParticipants.map((participant) =>
-        participant.userId === session?.userId
-          ? { ...participant, speaking: nextSpeaking }
-          : participant,
-      ),
-    )
-
-    void createVoiceEvent(
-      nextSpeaking ? 'SPEAKING' : 'STOP_SPEAKING',
-      nextSpeaking ? '마이크 입력 감지' : '마이크 입력 종료',
-    ).catch(() => undefined)
-    broadcastSpeakingState(nextSpeaking)
-  }
-
-  function startVoiceActivityMonitor(stream: MediaStream) {
-    const AudioContextClass =
-      window.AudioContext
-      || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-
-    stopVoiceActivityMonitor()
-
-    if (!AudioContextClass) {
-      return
-    }
-
-    const audioContext = new AudioContextClass()
-    const source = audioContext.createMediaStreamSource(stream)
-    const analyser = audioContext.createAnalyser()
-    const data = new Uint8Array(analyser.frequencyBinCount)
-    let ambientLevel = 3
-    let speechFrames = 0
-    let silentFrames = 0
-
-    analyser.fftSize = 512
-    analyser.smoothingTimeConstant = 0.75
-    source.connect(analyser)
-    voiceActivityContextRef.current = audioContext
-
-    function tick() {
-      if (localVoiceStreamRef.current !== stream) {
-        return
-      }
-
-      const hasEnabledTrack = stream.getAudioTracks().some((track) => track.enabled && track.readyState === 'live')
-
-      if (!hasEnabledTrack) {
-        publishLocalSpeaking(false)
-        voiceActivityFrameRef.current = window.requestAnimationFrame(tick)
-        return
-      }
-
-      analyser.getByteTimeDomainData(data)
-      let sum = 0
-
-      for (const value of data) {
-        const normalized = (value - 128) / 128
-        sum += normalized * normalized
-      }
-
-      const level = Math.round(Math.sqrt(sum / data.length) * 240)
-      const threshold = Math.max(10, Math.min(42, ambientLevel * 2.6 + 6))
-
-      if (!localSpeakingRef.current || level < threshold) {
-        ambientLevel = ambientLevel * 0.96 + Math.min(level, threshold) * 0.04
-      }
-
-      if (level >= threshold) {
-        speechFrames += 1
-        silentFrames = 0
-
-        if (speechFrames >= 3) {
-          publishLocalSpeaking(true)
-        }
-      } else {
-        speechFrames = 0
-        silentFrames += 1
-
-        if (silentFrames >= 12) {
-          publishLocalSpeaking(false)
-        }
-      }
-
-      voiceActivityFrameRef.current = window.requestAnimationFrame(tick)
-    }
-
-    tick()
-  }
-
-  function stopRemoteAudioElements() {
-    remoteAudioElementsRef.current.forEach((audio) => {
-      audio.pause()
-      audio.srcObject = null
-      audio.remove()
-    })
-    remoteAudioElementsRef.current.clear()
-  }
-
-  function closePeerConnections() {
-    peerConnectionsRef.current.forEach((peerConnection) => {
-      peerConnection.ontrack = null
-      peerConnection.onicecandidate = null
-      peerConnection.onconnectionstatechange = null
-      peerConnection.onsignalingstatechange = null
-      peerConnection.close()
-    })
-    peerConnectionsRef.current.clear()
-    peerTransceiversRef.current.clear()
-    pendingIceCandidatesRef.current.clear()
-    makingOffersRef.current.clear()
-    departedPeerIdsRef.current.clear()
-    stopRemoteAudioElements()
-    remoteCameraStreamsRef.current.clear()
-    remoteCameraPendingRef.current.clear()
-    remoteScreenShareViewsRef.current.clear()
-    remoteScreenSharePendingRef.current.clear()
-    setRemoteCameraStreams(new Map())
-    setRemoteScreenShares(new Map())
-  }
-
   function disconnectVoiceSession() {
     closeSignalingSocket()
     closePeerConnections()
@@ -574,217 +297,8 @@ export function useSquadMeetingController() {
     setVoiceConnectionError(null)
   }
 
-  function setLocalVoiceMuted(muted: boolean) {
-    localVoiceStreamRef.current?.getAudioTracks().forEach((track) => {
-      track.enabled = !muted
-    })
-
-    if (muted) {
-      stopMinutesSpeechRecognition()
-      publishLocalSpeaking(false)
-    }
-  }
-
-  function getAudioConstraints(deviceId: string): MediaStreamConstraints {
-    const baseConstraints: MediaTrackConstraints = {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-    }
-
-    return {
-      audio:
-        deviceId && deviceId !== 'default'
-          ? { ...baseConstraints, deviceId: { exact: deviceId } }
-          : baseConstraints,
-    }
-  }
-
-  function getCameraConstraints(): MediaStreamConstraints {
-    return {
-      audio: false,
-      video: {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        facingMode: 'user',
-      },
-    }
-  }
-
   function updateAudioProcessingStatus(stream: MediaStream, noiseGate: boolean) {
-    const settings = stream.getAudioTracks()[0]?.getSettings() as MediaTrackSettings & {
-      echoCancellation?: boolean
-      noiseSuppression?: boolean
-      autoGainControl?: boolean
-    }
-
-    setAudioProcessingStatus({
-      echoCancellation: settings.echoCancellation ?? null,
-      noiseSuppression: settings.noiseSuppression ?? null,
-      autoGainControl: settings.autoGainControl ?? null,
-      noiseGate,
-    })
-  }
-
-  async function applyAudioProcessingConstraints(stream: MediaStream) {
-    await Promise.all(
-      stream.getAudioTracks().map((track) =>
-        track.applyConstraints({
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        }).catch(() => undefined),
-      ),
-    )
-  }
-
-  function createNoiseGatedVoiceStream(rawStream: MediaStream) {
-    const AudioContextClass =
-      window.AudioContext
-      || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-
-    stopVoiceNoiseGate()
-
-    if (!AudioContextClass) {
-      return rawStream
-    }
-
-    const audioContext = new AudioContextClass()
-    const source = audioContext.createMediaStreamSource(rawStream)
-    const analyser = audioContext.createAnalyser()
-    const gate = audioContext.createGain()
-    const destination = audioContext.createMediaStreamDestination()
-    const data = new Uint8Array(analyser.frequencyBinCount)
-    let ambientRms = 0.006
-
-    analyser.fftSize = 512
-    analyser.smoothingTimeConstant = 0.65
-    gate.gain.setValueAtTime(1, audioContext.currentTime)
-    source.connect(analyser)
-    source.connect(gate)
-    gate.connect(destination)
-    voiceNoiseGateContextRef.current = audioContext
-
-    function tick() {
-      analyser.getByteTimeDomainData(data)
-      let mean = 0
-
-      for (const value of data) {
-        mean += value
-      }
-
-      mean /= data.length
-
-      let sum = 0
-
-      for (const value of data) {
-        const normalized = (value - mean) / 128
-        sum += normalized * normalized
-      }
-
-      const rms = Math.sqrt(sum / data.length)
-      const ambientSample = Math.min(rms, ambientRms + 0.008)
-      ambientRms = ambientRms * 0.985 + ambientSample * 0.015
-
-      const threshold = Math.max(0.014, ambientRms * 2.3)
-      const targetGain = rms > threshold ? 1 : 0.08
-
-      gate.gain.setTargetAtTime(targetGain, audioContext.currentTime, targetGain === 1 ? 0.015 : 0.08)
-      voiceNoiseGateFrameRef.current = window.requestAnimationFrame(tick)
-    }
-
-    tick()
-
-    return destination.stream
-  }
-
-  async function startLocalVoiceStream(muted: boolean) {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error('이 브라우저에서는 음성 회의 마이크를 사용할 수 없습니다.')
-    }
-
-    stopLocalVoiceStream()
-
-    const rawStream = await getUserMediaWithTimeout(getAudioConstraints(selectedInputId))
-    await applyAudioProcessingConstraints(rawStream)
-    const stream = createNoiseGatedVoiceStream(rawStream)
-
-    localVoiceRawStreamRef.current = rawStream
-    localVoiceStreamRef.current = stream
-    updateAudioProcessingStatus(rawStream, stream !== rawStream)
-    setLocalVoiceMuted(muted)
-    startVoiceActivityMonitor(stream)
-
-    return stream
-  }
-
-  async function startLocalVoiceStreamIfAvailable(muted: boolean) {
-    try {
-      await startLocalVoiceStream(muted)
-      return true
-    } catch (voiceError) {
-      stopLocalVoiceStream()
-      setAudioDeviceError(voiceError instanceof Error ? voiceError.message : '마이크를 사용할 수 없습니다.')
-      setWaitingMicMuted(true)
-      return false
-    }
-  }
-
-  async function replaceLocalVoiceInput() {
-    if (!localVoiceStreamRef.current || !navigator.mediaDevices?.getUserMedia) {
-      return
-    }
-
-    const nextRawStream = await getUserMediaWithTimeout(getAudioConstraints(selectedInputId))
-    await applyAudioProcessingConstraints(nextRawStream)
-    const nextStream = createNoiseGatedVoiceStream(nextRawStream)
-    const [nextTrack] = nextStream.getAudioTracks()
-
-    if (!nextTrack) {
-      nextRawStream.getTracks().forEach((track) => track.stop())
-      nextStream.getTracks().forEach((track) => track.stop())
-      return
-    }
-
-    nextTrack.enabled = !micMuted
-
-    await Promise.all(
-      Array.from(peerTransceiversRef.current.values()).map(({ microphone }) => {
-        microphone.sender.setStreams(nextStream)
-        return microphone.sender.replaceTrack(nextTrack)
-      }),
-    )
-
-    const oldTracks = new Set([
-      ...(localVoiceRawStreamRef.current?.getTracks() ?? []),
-      ...(localVoiceStreamRef.current?.getTracks() ?? []),
-    ])
-
-    oldTracks.forEach((track) => track.stop())
-    localVoiceRawStreamRef.current = nextRawStream
-    localVoiceStreamRef.current = nextStream
-    updateAudioProcessingStatus(nextRawStream, nextStream !== nextRawStream)
-    startVoiceActivityMonitor(nextStream)
-  }
-
-  function createRemoteAudioElement(userId: number) {
-    const existingAudio = remoteAudioElementsRef.current.get(userId)
-
-    if (existingAudio) {
-      existingAudio.muted = remoteAudioMutedRef.current
-      return existingAudio
-    }
-
-    const audio = document.createElement('audio') as SinkAudioElement
-
-    audio.autoplay = true
-    audio.muted = remoteAudioMutedRef.current
-    audio.dataset.voicePeerId = String(userId)
-    remoteAudioElementsRef.current.set(userId, audio)
-    remoteAudioContainerRef.current?.appendChild(audio)
-    void applySelectedOutputToAudio(audio)
-
-    return audio
+    setAudioProcessingStatus(readAudioProcessingStatus(stream, noiseGate))
   }
 
   function applyRemoteAudioMuted(muted: boolean) {
@@ -837,512 +351,51 @@ export function useSquadMeetingController() {
     )
   }
 
-  function getVoiceDisplayName(userId: number, fallbackName?: string) {
-    return members.find((member) => member.learnerId === userId)?.learnerName
-      ?? participants.find((participant) => participant.userId === userId)?.userName
-      ?? activeParticipants.find((participant) => participant.userId === userId)?.userName
-      ?? fallbackName
-      ?? '참가자'
-  }
-
-  function clearRemoteScreenShare(userId: number, removeTrack = false) {
-    if (removeTrack) {
-      remoteScreenShareViewsRef.current.delete(userId)
-    }
-    remoteScreenSharePendingRef.current.delete(userId)
-    setRemoteScreenShares((current) => {
-      if (!current.has(userId)) {
-        return current
-      }
-
-      const next = new Map(current)
-
-      next.delete(userId)
-      return next
-    })
-  }
-
-  function clearRemoteCameraStream(userId: number, removeTrack = false) {
-    if (removeTrack) {
-      remoteCameraStreamsRef.current.delete(userId)
-    }
-    remoteCameraPendingRef.current.delete(userId)
-
-    setRemoteCameraStreams((current) => {
-      if (!current.has(userId)) {
-        return current
-      }
-
-      const next = new Map(current)
-
-      next.delete(userId)
-      return next
-    })
-  }
-
-  function attachRemoteScreenStream(userId: number, userName: string, stream: MediaStream, track: MediaStreamTrack) {
-    const screenStream = stream.getVideoTracks().includes(track) ? stream : new MediaStream([track])
-    const screenShareView = {
-      userId,
-      userName: getVoiceDisplayName(userId, userName),
-      stream: screenStream,
-      local: false,
-    }
-
-    remoteScreenShareViewsRef.current.set(userId, screenShareView)
-    if (remoteScreenSharePendingRef.current.has(userId)) {
-      setRemoteScreenShares((current) => new Map(current).set(userId, screenShareView))
-    }
-
-    track.onended = () => {
-      clearRemoteScreenShare(userId, true)
-    }
-    track.onunmute = () => {
-      if (remoteScreenSharePendingRef.current.has(userId)) {
-        setRemoteScreenShares((current) => new Map(current).set(userId, screenShareView))
-      }
-    }
-  }
-
-  function attachRemoteCameraStream(userId: number, userName: string, stream: MediaStream, track: MediaStreamTrack) {
-    const cameraStream = stream.getVideoTracks().includes(track) ? stream : new MediaStream([track])
-    const cameraView = {
-      userId,
-      userName: getVoiceDisplayName(userId, userName),
-      stream: cameraStream,
-      local: false,
-    }
-
-    remoteCameraStreamsRef.current.set(userId, cameraView)
-    if (remoteCameraPendingRef.current.has(userId)) {
-      setRemoteCameraStreams((current) => {
-        const next = new Map(current)
-
-        next.set(userId, cameraView)
-        return next
-      })
-    }
-
-    track.onended = () => {
-      clearRemoteCameraStream(userId, true)
-    }
-    track.onunmute = () => {
-      if (remoteCameraPendingRef.current.has(userId)) {
-        setRemoteCameraStreams((current) => new Map(current).set(userId, cameraView))
-      }
-    }
-  }
-
-  function attachRemoteTrack(
-    userId: number,
-    userName: string,
-    stream: MediaStream,
-    track: MediaStreamTrack,
-    transceiverIndex: number,
-  ) {
-    if (transceiverIndex === 1) {
-      attachRemoteCameraStream(userId, userName, stream, track)
-      return
-    }
-
-    if (transceiverIndex === 2) {
-      attachRemoteScreenStream(userId, userName, stream, track)
-      return
-    }
-
-    const audio = createRemoteAudioElement(userId)
-
-    audio.muted = remoteAudioMutedRef.current
-    audio.srcObject = stream
-    void audio.play().catch(() => undefined)
-  }
-
-  function removeRemotePeer(userId: number) {
-    const peerConnection = peerConnectionsRef.current.get(userId)
-
-    if (peerConnection) {
-      peerConnection.close()
-      peerConnectionsRef.current.delete(userId)
-    }
-
-    peerTransceiversRef.current.delete(userId)
-    makingOffersRef.current.delete(userId)
-    pendingIceCandidatesRef.current.delete(userId)
-
-    const audio = remoteAudioElementsRef.current.get(userId)
-
-    if (audio) {
-      audio.pause()
-      audio.srcObject = null
-      audio.remove()
-      remoteAudioElementsRef.current.delete(userId)
-    }
-
-    clearRemoteCameraStream(userId, true)
-    clearRemoteScreenShare(userId, true)
-  }
-
   function sendSignalingMessage(
     type: 'offer' | 'answer' | 'ice-candidate',
     targetUserId: number,
     payload: RTCSessionDescriptionInit | RTCIceCandidateInit,
   ) {
-    const socket = signalingSocketRef.current
-
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      return
-    }
-
-    socket.send(JSON.stringify({ type, targetUserId, payload }))
+    sendVoiceTransportMessage({ type, targetUserId, payload })
   }
 
   function broadcastScreenShareState(type: 'screen-share-start' | 'screen-share-stop') {
-    const socket = signalingSocketRef.current
-
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      return
-    }
-
-    socket.send(JSON.stringify({
+    sendVoiceTransportMessage({
       type,
       payload: {
         sharing: type === 'screen-share-start',
         streamId: localScreenShareStreamRef.current?.id,
         trackId: localScreenShareStreamRef.current?.getVideoTracks()[0]?.id,
       },
-    }))
+    })
   }
 
   function broadcastMeetingSync(type: 'chat-message' | 'minutes-updated', payload: VoiceMeetingSyncPayload) {
-    const socket = signalingSocketRef.current
-
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      return
-    }
-
-    socket.send(JSON.stringify({ type, payload }))
+    sendVoiceTransportMessage({ type, payload })
   }
 
   function broadcastCameraState(type: 'camera-start' | 'camera-stop') {
-    const socket = signalingSocketRef.current
-
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      return
-    }
-
-    socket.send(JSON.stringify({
+    sendVoiceTransportMessage({
       type,
       payload: {
         enabled: type === 'camera-start',
         streamId: localCameraStreamRef.current?.id,
       },
-    }))
+    })
   }
 
   function broadcastSpeakingState(speaking: boolean) {
-    const socket = signalingSocketRef.current
-
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      return
-    }
-
-    socket.send(JSON.stringify({ type: speaking ? 'speaking' : 'stop-speaking', payload: { speaking } }))
+    sendVoiceTransportMessage({ type: speaking ? 'speaking' : 'stop-speaking', payload: { speaking } })
   }
 
   function getCurrentRemoteVoicePeers() {
-    const peers = new Map<number, VoiceSignalingPeer>()
-
-    function collectPeer(userId: number | null | undefined, userName: string | null | undefined, active = true) {
-      if (!active || !userId || userId === session?.userId || peers.has(userId)) {
-        return
-      }
-
-      peers.set(userId, {
-        userId,
-        userName: userName ?? getVoiceDisplayName(userId),
-      })
-    }
-
-    roomParticipants.forEach((participant) => {
-      collectPeer(participant.userId, participant.userName, participant.active)
-    })
-    participants.forEach((participant) => {
-      collectPeer(participant.userId, participant.userName, participant.active)
-    })
-    activeParticipants.forEach((participant) => {
-      collectPeer(participant.userId, participant.userName, participant.active)
-    })
-
-    return Array.from(peers.values())
+    return collectRemoteVoicePeers([roomParticipants, participants, activeParticipants], session?.userId, getVoiceDisplayName)
   }
 
   function ensurePeerConnectionsForCurrentParticipants() {
     getCurrentRemoteVoicePeers().forEach((peer) => {
       getOrCreatePeerConnection(peer)
     })
-  }
-
-  async function addCameraTrackToPeers(stream: MediaStream) {
-    const [videoTrack] = stream.getVideoTracks()
-
-    if (!videoTrack) {
-      return
-    }
-
-    ensurePeerConnectionsForCurrentParticipants()
-    await Promise.all(
-      Array.from(peerTransceiversRef.current.values()).map(({ camera }) => {
-        camera.sender.setStreams(stream)
-        return camera.sender.replaceTrack(videoTrack)
-      }),
-    )
-  }
-
-  async function removeCameraTracksFromPeers() {
-    await Promise.all(
-      Array.from(peerTransceiversRef.current.values()).map(({ camera }) => camera.sender.replaceTrack(null)),
-    )
-  }
-
-  async function addScreenShareTrackToPeers(stream: MediaStream) {
-    const [videoTrack] = stream.getVideoTracks()
-
-    if (!videoTrack) {
-      return
-    }
-
-    ensurePeerConnectionsForCurrentParticipants()
-    await Promise.all(
-      Array.from(peerTransceiversRef.current.values()).map(({ screen }) => {
-        screen.sender.setStreams(stream)
-        return screen.sender.replaceTrack(videoTrack)
-      }),
-    )
-  }
-
-  async function removeScreenShareTracksFromPeers() {
-    await Promise.all(
-      Array.from(peerTransceiversRef.current.values()).map(({ screen }) => screen.sender.replaceTrack(null)),
-    )
-  }
-
-  async function attachLocalVoiceTrackToPeers(stream: MediaStream) {
-    const [audioTrack] = stream.getAudioTracks()
-
-    if (!audioTrack) {
-      return
-    }
-
-    ensurePeerConnectionsForCurrentParticipants()
-    await Promise.all(
-      Array.from(peerTransceiversRef.current.values()).map(({ microphone }) => {
-        microphone.sender.setStreams(stream)
-        return microphone.sender.replaceTrack(audioTrack)
-      }),
-    )
-  }
-
-  async function stopLocalCamera({
-    notify = true,
-    renegotiate = true,
-  }: {
-    notify?: boolean
-    renegotiate?: boolean
-  } = {}) {
-    if (!localCameraStreamRef.current) {
-      return
-    }
-
-    if (notify) {
-      broadcastCameraState('camera-stop')
-    }
-
-    if (renegotiate) {
-      await removeCameraTracksFromPeers()
-    }
-
-    clearLocalCameraStream()
-  }
-
-  async function startLocalCamera() {
-    if (!activeChannel || !isJoined) {
-      showAuthToast({ message: 'Join the meeting before turning on camera.', durationMs: 1800 })
-      return
-    }
-
-    if (!navigator.mediaDevices?.getUserMedia) {
-      showAuthToast({ message: 'Camera is not available in this browser.', durationMs: 2200 })
-      return
-    }
-
-    try {
-      const stream = await getUserMediaWithTimeout(getCameraConstraints())
-      const [videoTrack] = stream.getVideoTracks()
-
-      if (!videoTrack) {
-        stream.getTracks().forEach((track) => track.stop())
-        showAuthToast({ message: 'No camera video track was found.', durationMs: 2200 })
-        return
-      }
-
-      await stopLocalCamera({ notify: false })
-      localCameraStreamRef.current = stream
-      setLocalCameraStream(stream)
-      videoTrack.onended = () => {
-        void stopLocalCamera()
-      }
-
-      broadcastCameraState('camera-start')
-      await addCameraTrackToPeers(stream)
-      showAuthToast({ message: 'Camera turned on.', durationMs: 1600 })
-    } catch (cameraError) {
-      clearLocalCameraStream()
-
-      if (cameraError instanceof DOMException && cameraError.name === 'NotAllowedError') {
-        showAuthToast({ message: 'Camera permission was denied.', durationMs: 1800 })
-        return
-      }
-
-      showAuthToast({ message: 'Could not turn on camera.', durationMs: 2200 })
-    }
-  }
-
-  async function toggleCamera() {
-    if (localCameraStreamRef.current) {
-      await stopLocalCamera()
-      showAuthToast({ message: 'Camera turned off.', durationMs: 1600 })
-      return
-    }
-
-    await startLocalCamera()
-  }
-
-  async function stopScreenShare({
-    notify = true,
-    renegotiate = true,
-  }: {
-    notify?: boolean
-    renegotiate?: boolean
-  } = {}) {
-    if (!localScreenShareStreamRef.current) {
-      return
-    }
-
-    if (notify) {
-      broadcastScreenShareState('screen-share-stop')
-      void createSquadNotification(workspaceId, {
-        pageKey: 'squad-meeting',
-        message: `${squadActorName(session?.name)}님이 "${activeChannel?.name ?? '음성 회의'}" 화면 공유를 종료했습니다.`,
-        targetPath: '/squad-meeting',
-      })
-    }
-
-    if (renegotiate) {
-      await removeScreenShareTracksFromPeers()
-    }
-
-    clearLocalScreenShareStream()
-  }
-
-  async function startScreenShare() {
-    if (!activeChannel || !isJoined) {
-      showAuthToast({ message: '먼저 음성 회의에 입장해 주세요.', durationMs: 1800 })
-      return
-    }
-
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      showAuthToast({ message: '이 브라우저에서는 화면 공유를 사용할 수 없습니다.', durationMs: 2200 })
-      return
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
-      const [videoTrack] = stream.getVideoTracks()
-
-      if (!videoTrack) {
-        stream.getTracks().forEach((track) => track.stop())
-        showAuthToast({ message: '공유할 화면 비디오를 찾지 못했습니다.', durationMs: 2200 })
-        return
-      }
-
-      await stopScreenShare({ notify: false })
-
-      localScreenShareStreamRef.current = stream
-      setLocalScreenShareStream(stream)
-      videoTrack.onended = () => {
-        void stopScreenShare()
-      }
-
-      broadcastScreenShareState('screen-share-start')
-      await addScreenShareTrackToPeers(stream)
-      void createSquadNotification(workspaceId, {
-        pageKey: 'squad-meeting',
-        message: `${squadActorName(session?.name)}님이 "${activeChannel.name}"에서 화면 공유를 시작했습니다.`,
-        targetPath: '/squad-meeting',
-      })
-      showAuthToast({ message: '화면 공유를 시작했습니다.', durationMs: 1800 })
-    } catch (shareError) {
-      if (shareError instanceof DOMException && shareError.name === 'NotAllowedError') {
-        showAuthToast({ message: '화면 공유가 취소되었습니다.', durationMs: 1800 })
-        return
-      }
-
-      showAuthToast({ message: '화면 공유를 시작하지 못했습니다.', durationMs: 2200 })
-    }
-  }
-
-  async function toggleScreenShare() {
-    if (localScreenShareStreamRef.current) {
-      await stopScreenShare()
-      showAuthToast({ message: '화면 공유를 종료했습니다.', durationMs: 1600 })
-      return
-    }
-
-    await startScreenShare()
-  }
-
-  function showFloatingReaction(reaction: string, fromUserId?: number, fromUserName?: string) {
-    const normalizedReaction = normalizeVoiceReaction(reaction)
-
-    if (!normalizedReaction) {
-      return
-    }
-
-    const controlRect = controlBoxRef.current?.getBoundingClientRect()
-    const id = createFloatingReactionId()
-    const timerId = window.setTimeout(() => {
-      setFloatingReactions((current) => current.filter((item) => item.id !== id))
-      reactionTimerIdsRef.current = reactionTimerIdsRef.current.filter((item) => item !== timerId)
-    }, FLOATING_REACTION_VISIBLE_MS)
-
-    reactionTimerIdsRef.current.push(timerId)
-    setFloatingReactions((current) => [
-      ...current.slice(-7),
-      {
-        id,
-        reaction: normalizedReaction,
-        left: controlRect ? controlRect.left + controlRect.width / 2 : window.innerWidth / 2,
-        dx: (Math.random() - 0.5) * 300,
-        fromUserId,
-        fromUserName,
-      },
-    ])
-  }
-
-  function broadcastVoiceReaction(reaction: string) {
-    const socket = signalingSocketRef.current
-    const normalizedReaction = normalizeVoiceReaction(reaction)
-
-    if (!socket || socket.readyState !== WebSocket.OPEN || !normalizedReaction) {
-      return
-    }
-
-    socket.send(JSON.stringify({ type: 'reaction', payload: { reaction: normalizedReaction } }))
-  }
-
-  function sendRoomReaction(reaction: string) {
-    showFloatingReaction(reaction, session?.userId ?? undefined, session?.name)
-    broadcastVoiceReaction(reaction)
   }
 
   function getOrCreatePeerConnection(peer: VoiceSignalingPeer) {
@@ -1680,44 +733,7 @@ export function useSquadMeetingController() {
   }
 
   function connectVoiceSignaling(channelId: number) {
-    if (!session?.accessToken) {
-      setVoiceConnectionStatus('error')
-      setVoiceConnectionError('로그인 세션이 없어 음성 시그널링에 연결할 수 없습니다.')
-      return
-    }
-
-    closeSignalingSocket()
-    closePeerConnections()
-    setVoiceConnectionStatus('connecting')
-    setVoiceConnectionError(null)
-
-    const socket = new WebSocket(buildVoiceSignalingUrl(channelId, session.accessToken))
-
-    signalingSocketRef.current = socket
-    socket.onopen = () => {
-      if (signalingSocketRef.current === socket) {
-        setVoiceConnectionStatus('connected')
-      }
-    }
-    socket.onmessage = (event) => {
-      void handleVoiceSignalingMessage(event.data).catch(() => {
-        setVoiceConnectionStatus('error')
-        setVoiceConnectionError('음성 회의 연결 정보를 처리하지 못했습니다.')
-      })
-    }
-    socket.onerror = () => {
-      if (signalingSocketRef.current === socket) {
-        setVoiceConnectionStatus('error')
-        setVoiceConnectionError('음성 시그널링 서버에 연결하지 못했습니다.')
-      }
-    }
-    socket.onclose = () => {
-      if (signalingSocketRef.current === socket) {
-        signalingSocketRef.current = null
-        closePeerConnections()
-        setVoiceConnectionStatus('idle')
-      }
-    }
+    connectVoiceTransport(channelId, session?.accessToken)
   }
 
   async function fetchParticipants(channelId: number) {
@@ -1726,10 +742,6 @@ export function useSquadMeetingController() {
 
   async function fetchPresence(channelId: number) {
     return fetchSquadVoicePresence(channelId)
-  }
-
-  async function touchPresence(channelId: number) {
-    return touchSquadVoicePresence(channelId)
   }
 
   async function refreshVoiceRoomState(channelId = activeChannel?.channelId) {

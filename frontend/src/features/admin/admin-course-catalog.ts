@@ -1,3 +1,5 @@
+import { renderAdminMarkup } from './admin-react-renderer'
+import { adminActions } from './admin-action-registry'
 import { adminApi } from "../../lib/admin-api";
 import type {
   CourseCatalogCategory,
@@ -163,9 +165,9 @@ function updateCatalogMenuSaveButton() {
   button.disabled = courseCatalogMenuSaving;
   button.classList.toggle("opacity-70", courseCatalogMenuSaving);
   button.classList.toggle("cursor-not-allowed", courseCatalogMenuSaving);
-  button.innerHTML = courseCatalogMenuSaving
+  renderAdminMarkup(button, courseCatalogMenuSaving
     ? '<i class="fas fa-circle-notch fa-spin mr-1"></i> 저장 중'
-    : '<i class="fas fa-save mr-1"></i> 전체 저장';
+    : '<i class="fas fa-save mr-1"></i> 전체 저장');
 }
 
 function updateCatalogMenuSummary() {
@@ -197,40 +199,40 @@ function renderCourseCatalogMenuEditor() {
   updateCatalogMenuSummary();
 
   if (courseCatalogMenuLoading) {
-    container.innerHTML = `
+    renderAdminMarkup(container, `
       <div class="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-400">
         <i class="fas fa-circle-notch fa-spin mr-2"></i> 강의 메뉴를 불러오는 중입니다.
       </div>
-    `;
+    `);
     return;
   }
 
   if (courseCatalogMenuError) {
-    container.innerHTML = `
+    renderAdminMarkup(container, `
       <div class="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-10 text-center text-sm text-rose-600">
         <div class="font-semibold">${escapeHtml(courseCatalogMenuError)}</div>
-        <button onclick="refreshCurrentTab()" class="mt-4 rounded-lg border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50" type="button">
+        <button data-admin-click="refreshCurrentTab()" class="mt-4 rounded-lg border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50" type="button">
           다시 불러오기
         </button>
       </div>
-    `;
+    `);
     return;
   }
 
   if (courseCatalogMenu.categories.length === 0) {
-    container.innerHTML = `
+    renderAdminMarkup(container, `
       <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
         등록된 강의 메뉴가 없습니다.
       </div>
-    `;
+    `);
     return;
   }
 
-  container.innerHTML = courseCatalogMenu.categories
+  renderAdminMarkup(container, courseCatalogMenu.categories
     .map((category, categoryIndex) =>
       renderCatalogCategoryCard(category, categoryIndex),
     )
-    .join("");
+    .join(""));
 }
 
 function renderCatalogCategoryCard(
@@ -276,13 +278,13 @@ function renderCatalogCategoryCard(
                   placeholder="메가메뉴 라벨"
                 />
                 <div class="flex items-center gap-1 text-slate-400">
-                  <button onclick="moveCatalogMegaMenuItem(${categoryIndex}, ${itemIndex}, -1)" class="rounded p-1 transition hover:bg-slate-100 hover:text-slate-700" type="button">
+                  <button data-admin-click="moveCatalogMegaMenuItem(${categoryIndex}, ${itemIndex}, -1)" class="rounded p-1 transition hover:bg-slate-100 hover:text-slate-700" type="button">
                     <i class="fas fa-arrow-up text-xs"></i>
                   </button>
-                  <button onclick="moveCatalogMegaMenuItem(${categoryIndex}, ${itemIndex}, 1)" class="rounded p-1 transition hover:bg-slate-100 hover:text-slate-700" type="button">
+                  <button data-admin-click="moveCatalogMegaMenuItem(${categoryIndex}, ${itemIndex}, 1)" class="rounded p-1 transition hover:bg-slate-100 hover:text-slate-700" type="button">
                     <i class="fas fa-arrow-down text-xs"></i>
                   </button>
-                  <button onclick="removeCatalogMegaMenuItem(${categoryIndex}, ${itemIndex})" class="rounded p-1 transition hover:bg-rose-50 hover:text-rose-600" type="button">
+                  <button data-admin-click="removeCatalogMegaMenuItem(${categoryIndex}, ${itemIndex})" class="rounded p-1 transition hover:bg-rose-50 hover:text-rose-600" type="button">
                     <i class="fas fa-trash text-xs"></i>
                   </button>
                 </div>
@@ -340,7 +342,7 @@ function renderCatalogCategoryCard(
         <label class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
           <input
             ${category.active ? "checked" : ""}
-            onchange="updateCatalogCategoryActive(${categoryIndex}, this.checked)"
+            data-admin-change="updateCatalogCategoryActive(${categoryIndex}, this.checked)"
             type="checkbox"
             class="h-4 w-4 accent-indigo-600"
           />
@@ -352,7 +354,7 @@ function renderCatalogCategoryCard(
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div class="mb-3 flex items-center justify-between">
             <h4 class="text-sm font-bold text-slate-800">메가메뉴 항목</h4>
-            <button onclick="addCatalogMegaMenuItem(${categoryIndex})" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50" type="button">
+            <button data-admin-click="addCatalogMegaMenuItem(${categoryIndex})" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50" type="button">
               <i class="fas fa-plus mr-1"></i> 항목 추가
             </button>
           </div>
@@ -362,7 +364,7 @@ function renderCatalogCategoryCard(
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div class="mb-3 flex items-center justify-between">
             <h4 class="text-sm font-bold text-slate-800">필터 그룹</h4>
-            <button onclick="addCatalogGroup(${categoryIndex})" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50" type="button">
+            <button data-admin-click="addCatalogGroup(${categoryIndex})" class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50" type="button">
               <i class="fas fa-plus mr-1"></i> 그룹 추가
             </button>
           </div>
@@ -385,16 +387,16 @@ function renderCatalogCategoryCard(
           <p class="mt-1 text-xs text-slate-500">key: ${escapeHtml(category.categoryKey || "-")}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="toggleCatalogCategoryCollapsed(${categoryIndex})" aria-expanded="${!collapsed}" class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100" type="button">
+          <button data-admin-click="toggleCatalogCategoryCollapsed(${categoryIndex})" aria-expanded="${!collapsed}" class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-600 transition hover:bg-indigo-100" type="button">
             <i class="fas ${collapsed ? "fa-chevron-down" : "fa-chevron-up"} mr-1"></i> ${collapsed ? "펼치기" : "접기"}
           </button>
-          <button onclick="moveCatalogCategory(${categoryIndex}, -1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
+          <button data-admin-click="moveCatalogCategory(${categoryIndex}, -1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
             <i class="fas fa-arrow-up mr-1"></i> 위로
           </button>
-          <button onclick="moveCatalogCategory(${categoryIndex}, 1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
+          <button data-admin-click="moveCatalogCategory(${categoryIndex}, 1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
             <i class="fas fa-arrow-down mr-1"></i> 아래로
           </button>
-          <button onclick="deleteCatalogCategory(${categoryIndex})" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100" type="button">
+          <button data-admin-click="deleteCatalogCategory(${categoryIndex})" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100" type="button">
             <i class="fas fa-trash mr-1"></i> 삭제
           </button>
         </div>
@@ -449,16 +451,16 @@ function renderCatalogGroupCard(
           />
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="moveCatalogGroup(${categoryIndex}, ${groupIndex}, -1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
+          <button data-admin-click="moveCatalogGroup(${categoryIndex}, ${groupIndex}, -1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
             <i class="fas fa-arrow-up mr-1"></i> 위로
           </button>
-          <button onclick="moveCatalogGroup(${categoryIndex}, ${groupIndex}, 1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
+          <button data-admin-click="moveCatalogGroup(${categoryIndex}, ${groupIndex}, 1)" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" type="button">
             <i class="fas fa-arrow-down mr-1"></i> 아래로
           </button>
-          <button onclick="addCatalogGroupItem(${categoryIndex}, ${groupIndex})" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50" type="button">
+          <button data-admin-click="addCatalogGroupItem(${categoryIndex}, ${groupIndex})" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50" type="button">
             <i class="fas fa-plus mr-1"></i> 항목 추가
           </button>
-          <button onclick="removeCatalogGroup(${categoryIndex}, ${groupIndex})" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100" type="button">
+          <button data-admin-click="removeCatalogGroup(${categoryIndex}, ${groupIndex})" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100" type="button">
             <i class="fas fa-trash mr-1"></i> 그룹 삭제
           </button>
         </div>
@@ -491,20 +493,20 @@ function renderCatalogGroupItemRow(
         <label class="block">
           <span class="mb-1 block text-[11px] font-bold text-slate-500">연결 카테고리</span>
           <select
-            onchange="updateCatalogGroupItemField(${categoryIndex}, ${groupIndex}, ${itemIndex}, 'linkedCategoryKey', this.value)"
+            data-admin-change="updateCatalogGroupItemField(${categoryIndex}, ${groupIndex}, ${itemIndex}, 'linkedCategoryKey', this.value)"
             class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
           >
             ${buildCatalogCategoryOptions(item.linkedCategoryKey)}
           </select>
         </label>
         <div class="flex items-end justify-end gap-1 text-slate-400">
-          <button onclick="moveCatalogGroupItem(${categoryIndex}, ${groupIndex}, ${itemIndex}, -1)" class="rounded p-2 transition hover:bg-white hover:text-slate-700" type="button">
+          <button data-admin-click="moveCatalogGroupItem(${categoryIndex}, ${groupIndex}, ${itemIndex}, -1)" class="rounded p-2 transition hover:bg-white hover:text-slate-700" type="button">
             <i class="fas fa-arrow-up text-xs"></i>
           </button>
-          <button onclick="moveCatalogGroupItem(${categoryIndex}, ${groupIndex}, ${itemIndex}, 1)" class="rounded p-2 transition hover:bg-white hover:text-slate-700" type="button">
+          <button data-admin-click="moveCatalogGroupItem(${categoryIndex}, ${groupIndex}, ${itemIndex}, 1)" class="rounded p-2 transition hover:bg-white hover:text-slate-700" type="button">
             <i class="fas fa-arrow-down text-xs"></i>
           </button>
-          <button onclick="removeCatalogGroupItem(${categoryIndex}, ${groupIndex}, ${itemIndex})" class="rounded p-2 transition hover:bg-rose-50 hover:text-rose-600" type="button">
+          <button data-admin-click="removeCatalogGroupItem(${categoryIndex}, ${groupIndex}, ${itemIndex})" class="rounded p-2 transition hover:bg-rose-50 hover:text-rose-600" type="button">
             <i class="fas fa-trash text-xs"></i>
           </button>
         </div>
@@ -570,31 +572,31 @@ async function saveCourseCatalogMenu() {
 }
 
 export function installCourseCatalogActions() {
-  window.createCatalogCategory = () => {
+  adminActions.createCatalogCategory = () => {
     updateCatalogMenu((menu) => {
       menu.categories.push(createEmptyCatalogCategory(menu.categories.length));
     });
   };
 
-  window.saveCourseCatalogMenu = async () => {
+  adminActions.saveCourseCatalogMenu = async () => {
     await saveCourseCatalogMenu();
   };
 
-  window.setAllCatalogCategoriesCollapsed = (collapsed: boolean) => {
+  adminActions.setAllCatalogCategoriesCollapsed = (collapsed: boolean) => {
     setAllCatalogCategoriesCollapsed(collapsed);
   };
 
-  window.toggleCatalogCategoryCollapsed = (categoryIndex: number) => {
+  adminActions.toggleCatalogCategoryCollapsed = (categoryIndex: number) => {
     toggleCatalogCategoryCollapsed(categoryIndex);
   };
 
-  window.moveCatalogCategory = (categoryIndex: number, direction: number) => {
+  adminActions.moveCatalogCategory = (categoryIndex: number, direction: number) => {
     updateCatalogMenu((menu) => {
       moveArrayItem(menu.categories, categoryIndex, direction);
     });
   };
 
-  window.deleteCatalogCategory = (categoryIndex: number) => {
+  adminActions.deleteCatalogCategory = (categoryIndex: number) => {
     if (!window.confirm("이 카테고리를 삭제하시겠습니까?")) {
       return;
     }
@@ -604,7 +606,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.updateCatalogCategoryField = (
+  adminActions.updateCatalogCategoryField = (
     categoryIndex: number,
     field: string,
     value: string,
@@ -632,7 +634,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.updateCatalogCategoryActive = (
+  adminActions.updateCatalogCategoryActive = (
     categoryIndex: number,
     checked: boolean,
   ) => {
@@ -644,7 +646,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.addCatalogMegaMenuItem = (categoryIndex: number) => {
+  adminActions.addCatalogMegaMenuItem = (categoryIndex: number) => {
     updateCatalogMenu((menu) => {
       menu.categories[categoryIndex]?.megaMenuItems.push(
         createEmptyCatalogMegaMenuItem(),
@@ -652,7 +654,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.updateCatalogMegaMenuItemLabel = (
+  adminActions.updateCatalogMegaMenuItemLabel = (
     categoryIndex: number,
     itemIndex: number,
     value: string,
@@ -665,7 +667,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.moveCatalogMegaMenuItem = (
+  adminActions.moveCatalogMegaMenuItem = (
     categoryIndex: number,
     itemIndex: number,
     direction: number,
@@ -678,7 +680,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.removeCatalogMegaMenuItem = (
+  adminActions.removeCatalogMegaMenuItem = (
     categoryIndex: number,
     itemIndex: number,
   ) => {
@@ -687,13 +689,13 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.addCatalogGroup = (categoryIndex: number) => {
+  adminActions.addCatalogGroup = (categoryIndex: number) => {
     updateCatalogMenu((menu) => {
       menu.categories[categoryIndex]?.groups.push(createEmptyCatalogGroup());
     });
   };
 
-  window.updateCatalogGroupField = (
+  adminActions.updateCatalogGroupField = (
     categoryIndex: number,
     groupIndex: number,
     field: string,
@@ -711,7 +713,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.moveCatalogGroup = (
+  adminActions.moveCatalogGroup = (
     categoryIndex: number,
     groupIndex: number,
     direction: number,
@@ -724,7 +726,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.removeCatalogGroup = (categoryIndex: number, groupIndex: number) => {
+  adminActions.removeCatalogGroup = (categoryIndex: number, groupIndex: number) => {
     if (!window.confirm("이 그룹을 삭제하시겠습니까?")) {
       return;
     }
@@ -734,7 +736,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.addCatalogGroupItem = (categoryIndex: number, groupIndex: number) => {
+  adminActions.addCatalogGroupItem = (categoryIndex: number, groupIndex: number) => {
     updateCatalogMenu((menu) => {
       menu.categories[categoryIndex]?.groups[groupIndex]?.items.push(
         createEmptyCatalogGroupItem(),
@@ -742,7 +744,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.updateCatalogGroupItemField = (
+  adminActions.updateCatalogGroupItemField = (
     categoryIndex: number,
     groupIndex: number,
     itemIndex: number,
@@ -766,7 +768,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.moveCatalogGroupItem = (
+  adminActions.moveCatalogGroupItem = (
     categoryIndex: number,
     groupIndex: number,
     itemIndex: number,
@@ -780,7 +782,7 @@ export function installCourseCatalogActions() {
     });
   };
 
-  window.removeCatalogGroupItem = (
+  adminActions.removeCatalogGroupItem = (
     categoryIndex: number,
     groupIndex: number,
     itemIndex: number,

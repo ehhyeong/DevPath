@@ -358,3 +358,23 @@ export function parseNodeIdList(value: string | null) {
 
   return nodeIds
 }
+
+export function buildLoadingRow(colspan: number, message = '데이터를 불러오는 중입니다...') {
+  return `<tr><td colspan="${colspan}" class="py-10 text-center text-xs text-slate-400"><i class="fas fa-circle-notch fa-spin mr-2"></i>${escapeHtml(message)}</td></tr>`
+}
+
+export function buildEmptyRow(colspan: number, message = '표시할 데이터가 없습니다.') {
+  return `<tr><td colspan="${colspan}" class="py-10 text-center text-xs text-slate-400">${escapeHtml(message)}</td></tr>`
+}
+
+export function buildErrorRow(colspan: number, message = '데이터를 불러오지 못했습니다.') {
+  return `<tr><td colspan="${colspan}" class="py-10 text-center text-xs text-rose-500">${escapeHtml(message)}</td></tr>`
+}
+
+export function updateFilterSummary(elementId: string, totalCount: number, filteredCount: number) {
+  const message = totalCount === filteredCount
+    ? `전체 ${formatNumber(totalCount)}개`
+    : `전체 ${formatNumber(totalCount)}개 중 ${formatNumber(filteredCount)}개`
+  const element = document.getElementById(elementId)
+  if (element) element.textContent = message
+}

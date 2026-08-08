@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect,useMemo,useState } from 'react'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import { AUTH_SESSION_SYNC_EVENT,readStoredAuthSession } from '../../lib/auth-session'
@@ -36,7 +37,7 @@ getWorkspaceIdFromUrl
 export default function TeamWorkspaceSuiteApp({ page }: { page?: TeamWorkspacePage }) {
   const activePage = page ?? 'kanban'
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [data, setData] = useState<SuiteData>(DEFAULT_DATA)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -65,7 +66,7 @@ export default function TeamWorkspaceSuiteApp({ page }: { page?: TeamWorkspacePa
 
     window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     return () => window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
-  }, [])
+  }, [setSession])
 
   const reload = useMemo(() => {
     return async () => {

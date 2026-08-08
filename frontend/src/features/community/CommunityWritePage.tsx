@@ -1,3 +1,4 @@
+import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useState } from 'react'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../../lib/auth-session'
@@ -25,7 +26,7 @@ const templates: Record<Category, { placeholder: string; content: string }> = {
 }
 
 export default function CommunityWritePage() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [category, setCategory] = useState<Category>('qa')
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
@@ -37,7 +38,7 @@ export default function CommunityWritePage() {
     }
     window.addEventListener(AUTH_SESSION_SYNC_EVENT, handleSessionSync)
     return () => window.removeEventListener(AUTH_SESSION_SYNC_EVENT, handleSessionSync)
-  }, [])
+  }, [setSession])
 
   if (!session) return <LoginRequiredView />
 
