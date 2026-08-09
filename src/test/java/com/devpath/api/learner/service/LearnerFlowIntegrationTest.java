@@ -5,8 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
 import com.devpath.api.common.dto.CourseListItemResponse;
+import com.devpath.api.common.service.CourseDetailMetadataMapper;
 import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.learner.dto.SkillCheckDto;
+import com.devpath.api.recommendation.service.NodeRecommendationArtifacts;
+import com.devpath.api.recommendation.service.NodeRecommendationPlanner;
 import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
 import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.api.roadmap.service.RoadmapProgressService;
@@ -83,10 +86,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @ActiveProfiles("test")
 @Import({
   LearnerCourseService.class,
+  LearnerCourseAssessmentAssembler.class,
+  CourseDetailMetadataMapper.class,
   CourseWishlistService.class,
   CourseEnrollmentService.class,
   SkillCheckService.class,
   com.devpath.api.recommendation.service.NodeRecommendationService.class,
+  NodeRecommendationPlanner.class,
+  NodeRecommendationArtifacts.class,
   CustomRoadmapCopyService.class,
   CustomRoadmapPrerequisiteSyncService.class,
   JpaOfficialRoadmapReader.class,

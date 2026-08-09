@@ -1,6 +1,5 @@
 package com.devpath.api.workspace.service;
 
-import com.devpath.api.ai.dto.AiCodeReviewRequest;
 import com.devpath.api.ai.dto.AiCodeReviewResponse;
 import com.devpath.api.ai.service.AiCodeReviewService;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewRequest;
@@ -8,16 +7,8 @@ import com.devpath.api.workspace.dto.WorkspaceCodeReviewResponse;
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
-import jakarta.annotation.PostConstruct;
-import java.sql.PreparedStatement;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -27,21 +18,17 @@ import org.springframework.util.StringUtils;
 @Transactional(readOnly = true)
 public class WorkspaceCodeReviewService {
 
-  private final JdbcTemplate jdbcTemplate;
+  private final WorkspaceCodeReviewStore codeReviewStore;
   private final WorkspaceService workspaceService;
   private final AiCodeReviewService aiCodeReviewService;
-
-  @PostConstruct
-  void initializeSchema() {
-    ensureSchema();
-  }
+  private final WorkspaceCodeReviewAiReviewer aiReviewer;
 
   @Transactional(readOnly = true)
   public WorkspaceCodeReviewResponse.Board getBoard(Long workspaceId, Long userId) {
-    ensureSchema();
+    codeReviewStore.ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
-    List<WorkspaceCodeReviewResponse.Summary> reviews = findSummaries(workspaceId);
+    List<WorkspaceCodeReviewResponse.Summary> reviews = codeReviewStore.findSummaries(workspaceId);
 
     return new WorkspaceCodeReviewResponse.Board(
         dashboard.getWorkspaceId(),
@@ -54,18 +41,16 @@ public class WorkspaceCodeReviewService {
   @Transactional(readOnly = true)
   public WorkspaceCodeReviewResponse.Detail getDetail(
       Long workspaceId, Long reviewId, Long userId) {
-    ensureSchema();
+    codeReviewStore.ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
-    DetailRow row = findDetailRow(workspaceId, reviewId);
-
-    return toDetail(row, dashboard);
+    return toDetail(codeReviewStore.findDetailRow(workspaceId, reviewId), dashboard);
   }
 
   @Transactional
   public WorkspaceCodeReviewResponse.Detail createReviewRequest(
       Long workspaceId, Long userId, WorkspaceCodeReviewRequest.Create request) {
-    ensureSchema();
+    codeReviewStore.ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
     LineStats stats = countLineStats(request.diffText());
@@ -73,52 +58,23 @@ public class WorkspaceCodeReviewService {
     String targetBranch = defaultText(request.targetBranch(), "main");
     String filePath =
         defaultText(request.filePath(), "src/main/java/com/devpath/auth/AuthService.java");
+    String diffText = request.diffText().trim();
 
-    KeyHolder keyHolder = new GeneratedKeyHolder();
-    jdbcTemplate.update(
-        connection -> {
-          PreparedStatement statement =
-              connection.prepareStatement(
-                  """
-                  INSERT INTO workspace_code_reviews (
-                      workspace_id, title, description, pr_url, file_path, diff_text,
-                      source_branch, target_branch, author_id, status,
-                      additions, deletions, ai_code_review_id, is_deleted, created_at, updated_at
-                  )
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?, ?, NULL, FALSE, now(), now())
-                  """,
-                  new String[] {"id"});
-          statement.setLong(1, workspaceId);
-          statement.setString(2, request.title().trim());
-          statement.setString(3, trimToNull(request.description()));
-          statement.setString(4, trimToNull(request.prUrl()));
-          statement.setString(5, filePath);
-          statement.setString(6, request.diffText().trim());
-          statement.setString(7, sourceBranch);
-          statement.setString(8, targetBranch);
-          statement.setLong(9, userId);
-          statement.setInt(10, stats.additions());
-          statement.setInt(11, stats.deletions());
-          return statement;
-        },
-        keyHolder);
+    Long reviewId =
+        codeReviewStore.createReview(
+            workspaceId,
+            userId,
+            request.title().trim(),
+            trimToNull(request.description()),
+            trimToNull(request.prUrl()),
+            filePath,
+            diffText,
+            sourceBranch,
+            targetBranch,
+            stats.additions(),
+            stats.deletions());
 
-    Number key = keyHolder.getKey();
-    if (key == null) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-
-    insertFileDiff(
-        workspaceId,
-        key.longValue(),
-        filePath,
-        request.diffText().trim(),
-        stats.additions(),
-        stats.deletions(),
-        "manual",
-        0);
-
-    return toDetail(findDetailRow(workspaceId, key.longValue()), dashboard);
+    return toDetail(codeReviewStore.findDetailRow(workspaceId, reviewId), dashboard);
   }
 
   @Transactional
@@ -127,161 +83,13 @@ public class WorkspaceCodeReviewService {
       Long reviewId,
       Long userId,
       WorkspaceCodeReviewRequest.AiReviewCreate request) {
-    ensureSchema();
+    codeReviewStore.ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
-    DetailRow row = findDetailRow(workspaceId, reviewId);
-    String selectedFilePath =
-        resolveSelectedFilePath(row, request == null ? null : request.filePath());
-    String reviewDiff = buildAiReviewDiff(row, selectedFilePath);
+    WorkspaceCodeReviewStore.DetailRow row = codeReviewStore.findDetailRow(workspaceId, reviewId);
+    aiReviewer.createReview(workspaceId, reviewId, userId, request, row);
 
-    if (isDemoFrontendCommerceReview(workspaceId, row)) {
-      return createDemoAiReview(
-          workspaceId, reviewId, userId, row, selectedFilePath, reviewDiff, dashboard);
-    }
-
-    AiCodeReviewResponse.Detail aiReview =
-        aiCodeReviewService.createReview(
-            userId,
-            new AiCodeReviewRequest.Create(
-                null, null, "AI 시니어 멘토 리뷰 - " + row.summary().title(), reviewDiff));
-
-    jdbcTemplate.update(
-        """
-        UPDATE workspace_code_reviews
-           SET ai_code_review_id = ?,
-               updated_at = now()
-         WHERE id = ?
-           AND workspace_id = ?
-           AND is_deleted = FALSE
-        """,
-        aiReview.reviewId(),
-        reviewId,
-        workspaceId);
-
-    jdbcTemplate.update(
-        """
-        UPDATE workspace_code_reviews
-           SET file_path = ?,
-               updated_at = now()
-         WHERE id = ?
-           AND workspace_id = ?
-           AND is_deleted = FALSE
-        """,
-        selectedFilePath,
-        reviewId,
-        workspaceId);
-
-    return toDetail(findDetailRow(workspaceId, reviewId), dashboard);
-  }
-
-  private WorkspaceCodeReviewResponse.Detail createDemoAiReview(
-      Long workspaceId,
-      Long reviewId,
-      Long userId,
-      DetailRow row,
-      String selectedFilePath,
-      String reviewDiff,
-      WorkspaceDashboardResponse dashboard) {
-    delayDemoAiReview();
-
-    Long aiReviewId =
-        jdbcTemplate.queryForObject(
-            """
-            INSERT INTO ai_code_reviews (
-                requester_id, pull_request_submission_id, title, diff_text, summary,
-                comment_count, provider_name, is_deleted, created_at, updated_at
-            )
-            VALUES (?, NULL, ?, ?, ?, 3, 'GEMINI_FALLBACK', FALSE, now(), now())
-            RETURNING ai_code_review_id
-            """,
-            Long.class,
-            userId,
-            "AI 시니어 멘토 리뷰 - " + row.summary().title(),
-            reviewDiff,
-            "PR은 시연 가능한 상태지만 품절 상태 처리, 접근성 라벨, 장바구니 side effect 분리를 더 명확히 해야 합니다.");
-
-    if (aiReviewId == null) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-
-    insertDemoAiReviewComment(
-        aiReviewId,
-        "상태 관리",
-        42,
-        "장바구니 변경은 카드 밖에서 처리",
-        "ProductCard는 표시용 컴포넌트로 유지해야 상품 목록과 상세 화면에서 재사용하기 좋습니다.",
-        "부모 컨테이너에서 onAddToCart와 disabledReason을 props로 넘겨주세요.");
-    insertDemoAiReviewComment(
-        aiReviewId,
-        "접근성",
-        48,
-        "품절 사유를 스크린리더에도 노출",
-        "disabled 버튼은 키보드 탐색 중에도 품절 이유를 이해할 수 있어야 합니다.",
-        "간단한 재고 상태 메시지에 연결되는 aria-describedby를 추가해 주세요.");
-    insertDemoAiReviewComment(
-        aiReviewId,
-        "테스트",
-        55,
-        "상호작용 테스트 1개 추가",
-        "정상 흐름은 데모 데이터로 보이지만 품절 상태는 쉽게 회귀할 수 있습니다.",
-        "품절 버튼 비활성화와 장바구니 추가 callback을 확인하는 컴포넌트 테스트를 추가해 주세요.");
-
-    jdbcTemplate.update(
-        """
-        UPDATE workspace_code_reviews
-           SET ai_code_review_id = ?,
-               file_path = ?,
-               updated_at = now()
-         WHERE id = ?
-           AND workspace_id = ?
-           AND is_deleted = FALSE
-        """,
-        aiReviewId,
-        selectedFilePath,
-        reviewId,
-        workspaceId);
-
-    return toDetail(findDetailRow(workspaceId, reviewId), dashboard);
-  }
-
-  private void insertDemoAiReviewComment(
-      Long aiReviewId,
-      String category,
-      Integer lineNumber,
-      String title,
-      String message,
-      String suggestion) {
-    jdbcTemplate.update(
-        """
-        INSERT INTO ai_review_comments (
-            ai_code_review_id, category, line_number, title, message, suggestion,
-            status, decided_at, is_deleted, created_at, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, 'PENDING', NULL, FALSE, now(), now())
-        """,
-        aiReviewId,
-        category,
-        lineNumber,
-        title,
-        message,
-        suggestion);
-  }
-
-  private void delayDemoAiReview() {
-    try {
-      Thread.sleep(ThreadLocalRandom.current().nextLong(7000L, 10001L));
-    } catch (InterruptedException exception) {
-      Thread.currentThread().interrupt();
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-  }
-
-  private boolean isDemoFrontendCommerceReview(Long workspaceId, DetailRow row) {
-    return Long.valueOf(6L).equals(workspaceId)
-        && "GITHUB".equals(row.externalProvider())
-        && "devpath/frontend-commerce#17".equals(row.externalId())
-        && row.summary().aiCodeReviewId() == null;
+    return toDetail(codeReviewStore.findDetailRow(workspaceId, reviewId), dashboard);
   }
 
   @Transactional
@@ -302,58 +110,34 @@ public class WorkspaceCodeReviewService {
       Long reviewId,
       Long userId,
       WorkspaceCodeReviewRequest.CommentCreate request) {
-    ensureSchema();
+    codeReviewStore.ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
-    DetailRow row = findDetailRow(workspaceId, reviewId);
+    WorkspaceCodeReviewStore.DetailRow row = codeReviewStore.findDetailRow(workspaceId, reviewId);
     String selectedFilePath = resolveSelectedFilePath(row, request.filePath());
 
-    jdbcTemplate.update(
-        """
-        INSERT INTO workspace_code_review_comments (
-            review_id, workspace_id, author_id, file_path, body, status_label,
-            is_deleted, created_at, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, 'Commented', FALSE, now(), now())
-        """,
-        reviewId,
-        workspaceId,
-        userId,
-        selectedFilePath,
-        request.body().trim());
-
-    return toDetail(findDetailRow(workspaceId, reviewId), dashboard);
+    codeReviewStore.insertMemberComment(
+        workspaceId, reviewId, userId, selectedFilePath, request.body().trim());
+    return toDetail(codeReviewStore.findDetailRow(workspaceId, reviewId), dashboard);
   }
 
   private WorkspaceCodeReviewResponse.Detail updateStatus(
       Long workspaceId, Long reviewId, Long userId, String status) {
-    ensureSchema();
+    codeReviewStore.ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
-    DetailRow row = findDetailRow(workspaceId, reviewId);
+    WorkspaceCodeReviewStore.DetailRow row = codeReviewStore.findDetailRow(workspaceId, reviewId);
 
     if ("MERGED".equals(status) && row.summary().aiCodeReviewId() == null) {
       throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
     }
 
-    jdbcTemplate.update(
-        """
-        UPDATE workspace_code_reviews
-           SET status = ?,
-               updated_at = now()
-         WHERE id = ?
-           AND workspace_id = ?
-           AND is_deleted = FALSE
-        """,
-        status,
-        reviewId,
-        workspaceId);
-
-    return toDetail(findDetailRow(workspaceId, reviewId), dashboard);
+    codeReviewStore.updateStatus(workspaceId, reviewId, status);
+    return toDetail(codeReviewStore.findDetailRow(workspaceId, reviewId), dashboard);
   }
 
   private WorkspaceCodeReviewResponse.Detail toDetail(
-      DetailRow row, WorkspaceDashboardResponse dashboard) {
+      WorkspaceCodeReviewStore.DetailRow row, WorkspaceDashboardResponse dashboard) {
     AiCodeReviewResponse.Detail aiReview =
         row.summary().aiCodeReviewId() == null
             ? null
@@ -367,286 +151,15 @@ public class WorkspaceCodeReviewService {
         row.files(),
         aiReview,
         dashboard.getMembers(),
-        findComments(row.summary().workspaceId(), row.summary().reviewId()));
+        codeReviewStore.findComments(row.summary().workspaceId(), row.summary().reviewId()));
   }
 
-  private List<WorkspaceCodeReviewResponse.Summary> findSummaries(Long workspaceId) {
-    return jdbcTemplate.query(
-        """
-        SELECT r.id, r.workspace_id, r.title, r.status, r.author_id,
-               r.external_provider, r.external_id,
-               COALESCE(r.external_author_name, u.name, '팀원') AS author_name,
-               CASE
-                 WHEN r.external_author_avatar_url IS NOT NULL THEN r.external_author_avatar_url
-                 WHEN up.profile_image LIKE '/images/profiles/%' THEN NULL
-                 ELSE up.profile_image
-               END AS author_profile_image,
-               r.file_path, COALESCE(fc.file_count, 1) AS file_count,
-               r.source_branch, r.target_branch, r.additions, r.deletions,
-               COALESCE(ai.comment_count, 0) AS ai_comment_count,
-               r.ai_code_review_id, r.created_at, r.updated_at
-          FROM workspace_code_reviews r
-          LEFT JOIN users u ON u.user_id = r.author_id
-          LEFT JOIN user_profiles up ON up.user_id = r.author_id
-          LEFT JOIN ai_code_reviews ai ON ai.ai_code_review_id = r.ai_code_review_id
-          LEFT JOIN (
-              SELECT workspace_id, review_id, COUNT(*) AS file_count
-                FROM workspace_code_review_files
-               GROUP BY workspace_id, review_id
-          ) fc ON fc.workspace_id = r.workspace_id AND fc.review_id = r.id
-         WHERE r.workspace_id = ?
-           AND r.is_deleted = FALSE
-         ORDER BY CASE WHEN r.status = 'OPEN' THEN 0 ELSE 1 END, r.created_at DESC, r.id DESC
-        """,
-        (rs, rowNum) ->
-            new WorkspaceCodeReviewResponse.Summary(
-                rs.getLong("id"),
-                rs.getLong("workspace_id"),
-                toIssueKey(
-                    rs.getLong("id"),
-                    rs.getString("external_provider"),
-                    rs.getString("external_id")),
-                rs.getString("title"),
-                rs.getString("status"),
-                rs.getLong("author_id"),
-                rs.getString("author_name"),
-                rs.getString("author_profile_image"),
-                inferAuthorRole(rs.getString("title"), rs.getString("file_path")),
-                rs.getString("file_path"),
-                rs.getInt("file_count"),
-                rs.getString("source_branch"),
-                rs.getString("target_branch"),
-                rs.getInt("additions"),
-                rs.getInt("deletions"),
-                rs.getInt("ai_comment_count"),
-                getNullableLong(rs.getObject("ai_code_review_id")),
-                toLocalDateTime(rs.getTimestamp("created_at")),
-                toLocalDateTime(rs.getTimestamp("updated_at"))),
-        workspaceId);
-  }
-
-  private List<WorkspaceCodeReviewResponse.MemberComment> findComments(
-      Long workspaceId, Long reviewId) {
-    return jdbcTemplate.query(
-        """
-        SELECT c.id, c.review_id, c.author_id,
-               COALESCE(u.name, '팀원') AS author_name,
-               CASE
-                 WHEN up.profile_image LIKE '/images/profiles/%' THEN NULL
-                 ELSE up.profile_image
-               END AS author_profile_image,
-               c.body, c.file_path, c.status_label, c.created_at
-          FROM workspace_code_review_comments c
-          LEFT JOIN users u ON u.user_id = c.author_id
-          LEFT JOIN user_profiles up ON up.user_id = c.author_id
-         WHERE c.workspace_id = ?
-           AND c.review_id = ?
-           AND c.is_deleted = FALSE
-         ORDER BY c.created_at ASC, c.id ASC
-        """,
-        (rs, rowNum) ->
-            new WorkspaceCodeReviewResponse.MemberComment(
-                rs.getLong("id"),
-                rs.getLong("review_id"),
-                rs.getLong("author_id"),
-                rs.getString("author_name"),
-                rs.getString("author_profile_image"),
-                rs.getString("body"),
-                rs.getString("file_path"),
-                rs.getString("status_label"),
-                toLocalDateTime(rs.getTimestamp("created_at"))),
-        workspaceId,
-        reviewId);
-  }
-
-  private DetailRow findDetailRow(Long workspaceId, Long reviewId) {
-    List<DetailRow> rows =
-        jdbcTemplate.query(
-            """
-            SELECT r.id, r.workspace_id, r.title, r.description, r.pr_url, r.file_path,
-                   r.diff_text, r.status, r.author_id,
-                   r.external_provider, r.external_id,
-                   COALESCE(r.external_author_name, u.name, '팀원') AS author_name,
-                   CASE
-                     WHEN r.external_author_avatar_url IS NOT NULL THEN r.external_author_avatar_url
-                     WHEN up.profile_image LIKE '/images/profiles/%' THEN NULL
-                     ELSE up.profile_image
-                   END AS author_profile_image,
-                   r.source_branch, r.target_branch, r.additions, r.deletions,
-                   COALESCE(fc.file_count, 1) AS file_count,
-                   COALESCE(ai.comment_count, 0) AS ai_comment_count,
-                   r.ai_code_review_id, r.created_at, r.updated_at
-              FROM workspace_code_reviews r
-              LEFT JOIN users u ON u.user_id = r.author_id
-              LEFT JOIN user_profiles up ON up.user_id = r.author_id
-              LEFT JOIN ai_code_reviews ai ON ai.ai_code_review_id = r.ai_code_review_id
-              LEFT JOIN (
-                  SELECT workspace_id, review_id, COUNT(*) AS file_count
-                    FROM workspace_code_review_files
-                   GROUP BY workspace_id, review_id
-              ) fc ON fc.workspace_id = r.workspace_id AND fc.review_id = r.id
-             WHERE r.workspace_id = ?
-               AND r.id = ?
-               AND r.is_deleted = FALSE
-            """,
-            (rs, rowNum) -> {
-              WorkspaceCodeReviewResponse.Summary summary =
-                  new WorkspaceCodeReviewResponse.Summary(
-                      rs.getLong("id"),
-                      rs.getLong("workspace_id"),
-                      toIssueKey(
-                          rs.getLong("id"),
-                          rs.getString("external_provider"),
-                          rs.getString("external_id")),
-                      rs.getString("title"),
-                      rs.getString("status"),
-                      rs.getLong("author_id"),
-                      rs.getString("author_name"),
-                      rs.getString("author_profile_image"),
-                      inferAuthorRole(rs.getString("title"), rs.getString("file_path")),
-                      rs.getString("file_path"),
-                      rs.getInt("file_count"),
-                      rs.getString("source_branch"),
-                      rs.getString("target_branch"),
-                      rs.getInt("additions"),
-                      rs.getInt("deletions"),
-                      rs.getInt("ai_comment_count"),
-                      getNullableLong(rs.getObject("ai_code_review_id")),
-                      toLocalDateTime(rs.getTimestamp("created_at")),
-                      toLocalDateTime(rs.getTimestamp("updated_at")));
-              return new DetailRow(
-                  summary,
-                  rs.getString("external_provider"),
-                  rs.getString("external_id"),
-                  rs.getString("description"),
-                  rs.getString("pr_url"),
-                  rs.getString("diff_text"),
-                  findFiles(
-                      workspaceId, reviewId, rs.getString("file_path"), rs.getString("diff_text")));
-            },
-            workspaceId,
-            reviewId);
-
-    if (rows.isEmpty()) {
-      throw new CustomException(ErrorCode.REVIEW_PULL_REQUEST_NOT_FOUND);
-    }
-
-    return rows.get(0);
-  }
-
-  private List<WorkspaceCodeReviewResponse.FileDiff> findFiles(
-      Long workspaceId, Long reviewId, String fallbackFilePath, String fallbackDiffText) {
-    List<WorkspaceCodeReviewResponse.FileDiff> files =
-        jdbcTemplate.query(
-            """
-            SELECT id, review_id, file_path, diff_text, additions, deletions, change_type
-              FROM workspace_code_review_files
-             WHERE workspace_id = ?
-               AND review_id = ?
-             ORDER BY display_order ASC, id ASC
-            """,
-            (rs, rowNum) ->
-                new WorkspaceCodeReviewResponse.FileDiff(
-                    rs.getLong("id"),
-                    rs.getLong("review_id"),
-                    rs.getString("file_path"),
-                    rs.getString("diff_text"),
-                    rs.getInt("additions"),
-                    rs.getInt("deletions"),
-                    rs.getString("change_type")),
-            workspaceId,
-            reviewId);
-
-    if (!files.isEmpty()) {
-      return files;
-    }
-
-    LineStats stats = countLineStats(fallbackDiffText == null ? "" : fallbackDiffText);
-    return List.of(
-        new WorkspaceCodeReviewResponse.FileDiff(
-            null,
-            reviewId,
-            defaultText(fallbackFilePath, "src/main/java/com/devpath/auth/AuthService.java"),
-            defaultText(fallbackDiffText, ""),
-            stats.additions(),
-            stats.deletions(),
-            "legacy"));
-  }
-
-  private void insertFileDiff(
-      Long workspaceId,
-      Long reviewId,
-      String filePath,
-      String diffText,
-      int additions,
-      int deletions,
-      String changeType,
-      int displayOrder) {
-    jdbcTemplate.update(
-        """
-        INSERT INTO workspace_code_review_files (
-            review_id, workspace_id, file_path, diff_text, additions,
-            deletions, change_type, display_order, created_at, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, now(), now())
-        """,
-        reviewId,
-        workspaceId,
-        filePath,
-        diffText,
-        additions,
-        deletions,
-        changeType,
-        displayOrder);
-  }
-
-  private String buildAiReviewDiff(DetailRow row, String selectedFilePath) {
-    StringBuilder builder = new StringBuilder();
-    builder
-        .append("Review scope: full Pull Request. File sections below are explicit review targets.")
-        .append("\n")
-        .append("Primary display file: ")
-        .append(selectedFilePath)
-        .append("\n\n");
-
-    List<WorkspaceCodeReviewResponse.FileDiff> orderedFiles =
-        row.files().stream()
-            .sorted(
-                (left, right) -> {
-                  boolean leftSelected = left.filePath().equals(selectedFilePath);
-                  boolean rightSelected = right.filePath().equals(selectedFilePath);
-                  if (leftSelected == rightSelected) {
-                    return 0;
-                  }
-                  return leftSelected ? -1 : 1;
-                })
-            .toList();
-
-    for (WorkspaceCodeReviewResponse.FileDiff file : orderedFiles) {
-      builder
-          .append("### FILE: ")
-          .append(file.filePath())
-          .append(" (+")
-          .append(file.additions())
-          .append(" -")
-          .append(file.deletions())
-          .append(")")
-          .append("\n")
-          .append(file.diffText())
-          .append("\n\n");
-    }
-
-    return builder.toString().trim();
-  }
-
-  private String resolveSelectedFilePath(DetailRow row, String requestedFilePath) {
+  private String resolveSelectedFilePath(
+      WorkspaceCodeReviewStore.DetailRow row, String requestedFilePath) {
     String normalized = trimToNull(requestedFilePath);
-
-    if (normalized != null) {
-      boolean exists = row.files().stream().anyMatch(file -> file.filePath().equals(normalized));
-      if (exists) {
-        return normalized;
-      }
+    if (normalized != null
+        && row.files().stream().anyMatch(file -> file.filePath().equals(normalized))) {
+      return normalized;
     }
 
     String current = trimToNull(row.summary().filePath());
@@ -654,11 +167,7 @@ public class WorkspaceCodeReviewService {
       return current;
     }
 
-    return row.files().isEmpty() ? row.summary().filePath() : row.files().get(0).filePath();
-  }
-
-  private void ensureSchema() {
-    WorkspaceCodeReviewSchema.ensure(jdbcTemplate);
+    return row.files().isEmpty() ? row.summary().filePath() : row.files().getFirst().filePath();
   }
 
   private LineStats countLineStats(String diffText) {
@@ -670,7 +179,6 @@ public class WorkspaceCodeReviewService {
       if (StringUtils.hasText(line)) {
         nonBlankLines++;
       }
-
       if (line.startsWith("+") && !line.startsWith("+++")) {
         additions++;
       } else if (line.startsWith("-") && !line.startsWith("---")) {
@@ -681,7 +189,6 @@ public class WorkspaceCodeReviewService {
     if (additions == 0 && deletions == 0) {
       additions = nonBlankLines;
     }
-
     return new LineStats(additions, deletions);
   }
 
@@ -694,59 +201,5 @@ public class WorkspaceCodeReviewService {
     return StringUtils.hasText(value) ? value.trim() : null;
   }
 
-  private String toIssueKey(Long id, String externalProvider, String externalId) {
-    if ("GITHUB".equals(externalProvider) && StringUtils.hasText(externalId)) {
-      int markerIndex = externalId.lastIndexOf('#');
-      if (markerIndex >= 0 && markerIndex < externalId.length() - 1) {
-        return "#PR-" + externalId.substring(markerIndex + 1);
-      }
-    }
-
-    return "#DP-" + String.format("%02d", id);
-  }
-
-  private String inferAuthorRole(String title, String filePath) {
-    String haystack =
-        ((title == null ? "" : title) + " " + (filePath == null ? "" : filePath)).toLowerCase();
-
-    if (haystack.contains("tsx")
-        || haystack.contains("jsx")
-        || haystack.contains("react")
-        || haystack.contains("frontend")
-        || haystack.contains("ui")) {
-      return "FE";
-    }
-
-    if (haystack.contains("docker")
-        || haystack.contains("deploy")
-        || haystack.contains("infra")
-        || haystack.contains("nginx")) {
-      return "DevOps";
-    }
-
-    return "BE";
-  }
-
-  private Long getNullableLong(Object value) {
-    if (value instanceof Number number) {
-      return number.longValue();
-    }
-
-    return null;
-  }
-
-  private LocalDateTime toLocalDateTime(Timestamp timestamp) {
-    return timestamp == null ? null : timestamp.toLocalDateTime();
-  }
-
   private record LineStats(int additions, int deletions) {}
-
-  private record DetailRow(
-      WorkspaceCodeReviewResponse.Summary summary,
-      String externalProvider,
-      String externalId,
-      String description,
-      String prUrl,
-      String diffText,
-      List<WorkspaceCodeReviewResponse.FileDiff> files) {}
 }

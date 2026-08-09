@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
+import com.devpath.api.common.service.CourseDetailMetadataMapper;
 import com.devpath.api.instructor.dto.InstructorAnnouncementDto;
 import com.devpath.api.instructor.dto.InstructorCourseDto;
 import com.devpath.api.instructor.dto.InstructorLessonDto;
@@ -57,7 +58,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Import({
   InstructorCourseService.class,
+  InstructorCourseAssetStorage.class,
+  InstructorCourseMetadataEditor.class,
   InstructorCourseQueryService.class,
+  CourseDetailMetadataMapper.class,
   InstructorAnnouncementService.class,
   InstructorAnnouncementQueryService.class,
   InstructorNodeClassificationQueryService.class,

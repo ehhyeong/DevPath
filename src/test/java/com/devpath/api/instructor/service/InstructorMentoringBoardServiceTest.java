@@ -55,16 +55,23 @@ class InstructorMentoringBoardServiceTest {
 
   @BeforeEach
   void setUp() {
-    service =
-        new InstructorMentoringBoardService(
-            boardRepository,
-            userRepository,
+    InstructorMentoringWorkspaceSynchronizer workspaceSynchronizer =
+        new InstructorMentoringWorkspaceSynchronizer(
             workspaceRepository,
             workspaceMemberRepository,
             milestoneRepository,
             workspaceTaskRepository,
             mentoringApplicationRepository,
-            mentoringPostRepository,
+            mentoringPostRepository);
+    InstructorMentoringBoardLiveDataAssembler liveDataAssembler =
+        new InstructorMentoringBoardLiveDataAssembler(
+            mentoringApplicationRepository, mentoringPostRepository);
+    service =
+        new InstructorMentoringBoardService(
+            boardRepository,
+            userRepository,
+            workspaceSynchronizer,
+            liveDataAssembler,
             Optional.of(new ObjectMapper().findAndRegisterModules()));
   }
 

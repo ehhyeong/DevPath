@@ -23,12 +23,9 @@ import com.devpath.domain.learning.repository.recommendation.RecommendationHisto
 import com.devpath.domain.learning.repository.recommendation.RiskWarningRepository;
 import com.devpath.domain.learning.repository.recommendation.SupplementRecommendationRepository;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
-import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
-import com.devpath.domain.user.repository.UserTechStackRepository;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -46,11 +43,10 @@ public class SupplementRecommendationService {
 
   private final SupplementRecommendationRepository supplementRecommendationRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
-  private final NodeRequiredTagRepository nodeRequiredTagRepository;
   private final RecommendationHistoryRepository recommendationHistoryRepository;
   private final RiskWarningRepository riskWarningRepository;
   private final UserRepository userRepository;
-  private final UserTechStackRepository userTechStackRepository;
+  private final SupplementRecommendationMetrics recommendationMetrics;
   private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final CourseTagMapRepository courseTagMapRepository;
   private final LessonProgressRepository lessonProgressRepository;
@@ -220,7 +216,7 @@ public class SupplementRecommendationService {
           roadmapNodeRepository
               .findById(nodeId)
               .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NODE_NOT_FOUND));
-      return ResolvedCandidate.manual(node, calculateMetrics(userId, nodeId));
+      return ResolvedCandidate.manual(node, recommendationMetrics.calculate(userId, nodeId));
     }
     return selectAutomaticCandidate(userId);
   }
@@ -236,7 +232,7 @@ public class SupplementRecommendationService {
           ErrorCode.LESSON_PROGRESS_NOT_FOUND, "학습 진행 데이터가 없어 자동 보강 후보를 생성할 수 없습니다.");
     }
 
-    Set<String> userSkills = loadUserSkills(userId);
+    Set<String> userSkills = recommendationMetrics.loadUserSkills(userId);
     List<Long> courseIds =
         progresses.stream()
             .map(progress -> progress.getLesson().getSection().getCourse().getCourseId())
@@ -256,7 +252,8 @@ public class SupplementRecommendationService {
         officialNodes.stream()
             .map(RoadmapNode::getNodeId)
             .collect(Collectors.toCollection(LinkedHashSet::new));
-    Map<Long, Set<String>> requiredTagsByNodeId = loadRequiredTagsByNodeId(officialNodeIds);
+    Map<Long, Set<String>> requiredTagsByNodeId =
+        recommendationMetrics.loadRequiredTagsByNodeId(officialNodeIds);
 
     Map<Long, ResolvedCandidate> candidateByNodeId = new LinkedHashMap<>();
     for (LessonProgress progress : progresses) {
@@ -283,7 +280,8 @@ public class SupplementRecommendationService {
         }
 
         Set<String> requiredTags = requiredTagsByNodeId.getOrDefault(node.getNodeId(), Set.of());
-        RecommendationMetrics metrics = calculateMetrics(userSkills, requiredTags);
+        SupplementRecommendationMetrics.Metrics metrics =
+            recommendationMetrics.calculate(userSkills, requiredTags);
         ResolvedCandidate candidate =
             ResolvedCandidate.automatic(
                 node,
@@ -368,7 +366,7 @@ public class SupplementRecommendationService {
       long noteCount,
       long ocrCount,
       long tilCount,
-      RecommendationMetrics metrics,
+      SupplementRecommendationMetrics.Metrics metrics,
       Set<String> courseTags,
       Set<String> requiredTags) {
     int progressPercent = safeInt(progress.getProgressPercent());
@@ -383,32 +381,6 @@ public class SupplementRecommendationService {
     double courseAlignmentScore = alignedTagCount * 14.0;
     double noAlignmentPenalty = requiredTags.isEmpty() ? 0.0 : (alignedTagCount == 0 ? 12.0 : 0.0);
     return stalledScore + activityScore + skillGapScore + courseAlignmentScore - noAlignmentPenalty;
-  }
-
-  private RecommendationMetrics calculateMetrics(Long userId, Long nodeId) {
-    return calculateMetrics(
-        loadUserSkills(userId), nodeRequiredTagRepository.findTagNamesByNodeId(nodeId));
-  }
-
-  private RecommendationMetrics calculateMetrics(
-      Set<String> userSkills, Collection<String> requiredTags) {
-    long matchedCount = requiredTags.stream().filter(userSkills::contains).count();
-    int missingTagCount = requiredTags.size() - (int) matchedCount;
-    double coveragePercent =
-        requiredTags.isEmpty() ? 100.0 : (matchedCount * 100.0) / requiredTags.size();
-
-    return new RecommendationMetrics(
-        determinePriority(missingTagCount, coveragePercent), coveragePercent, missingTagCount);
-  }
-
-  private Integer determinePriority(int missingTagCount, double coveragePercent) {
-    if (missingTagCount > 0 && coveragePercent < 50.0) {
-      return 1;
-    }
-    if (missingTagCount > 0 || coveragePercent < 80.0) {
-      return 2;
-    }
-    return 3;
   }
 
   private String resolveReason(ResolvedCandidate candidate, String reason) {
@@ -458,7 +430,7 @@ public class SupplementRecommendationService {
   }
 
   private void createRiskWarningIfNeeded(
-      User user, RoadmapNode node, RecommendationMetrics metrics) {
+      User user, RoadmapNode node, SupplementRecommendationMetrics.Metrics metrics) {
     if (metrics.missingTagCount() > 0 && metrics.coveragePercent() < 50.0) {
       riskWarningRepository.save(
           RiskWarning.builder()
@@ -497,10 +469,6 @@ public class SupplementRecommendationService {
         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
   }
 
-  private Set<String> loadUserSkills(Long userId) {
-    return new LinkedHashSet<>(userTechStackRepository.findTagNamesByUserId(userId));
-  }
-
   private Map<Long, Set<String>> loadCourseTagsByCourseId(List<Long> courseIds) {
     Map<Long, Set<String>> courseTagsByCourseId = new LinkedHashMap<>();
     for (Long courseId : courseIds) {
@@ -510,32 +478,13 @@ public class SupplementRecommendationService {
     return courseTagsByCourseId;
   }
 
-  private Map<Long, Set<String>> loadRequiredTagsByNodeId(Set<Long> nodeIds) {
-    if (nodeIds.isEmpty()) {
-      return Map.of();
-    }
-
-    Map<Long, Set<String>> requiredTagsByNodeId = new LinkedHashMap<>();
-    nodeRequiredTagRepository
-        .findTagNamesByNodeIds(nodeIds)
-        .forEach(
-            projection ->
-                requiredTagsByNodeId
-                    .computeIfAbsent(projection.getNodeId(), ignored -> new LinkedHashSet<>())
-                    .add(projection.getTagName()));
-    return requiredTagsByNodeId;
-  }
-
   private int safeInt(Integer value) {
     return value == null ? 0 : value;
   }
 
-  private record RecommendationMetrics(
-      Integer priority, double coveragePercent, int missingTagCount) {}
-
   private record ResolvedCandidate(
       RoadmapNode node,
-      RecommendationMetrics metrics,
+      SupplementRecommendationMetrics.Metrics metrics,
       double score,
       Long lessonId,
       int progressPercent,
@@ -543,13 +492,14 @@ public class SupplementRecommendationService {
       long ocrCount,
       long tilCount,
       boolean automatic) {
-    private static ResolvedCandidate manual(RoadmapNode node, RecommendationMetrics metrics) {
+    private static ResolvedCandidate manual(
+        RoadmapNode node, SupplementRecommendationMetrics.Metrics metrics) {
       return new ResolvedCandidate(node, metrics, 0.0, null, 0, 0, 0, 0, false);
     }
 
     private static ResolvedCandidate automatic(
         RoadmapNode node,
-        RecommendationMetrics metrics,
+        SupplementRecommendationMetrics.Metrics metrics,
         double score,
         Long lessonId,
         int progressPercent,
