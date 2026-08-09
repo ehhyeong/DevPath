@@ -5,7 +5,6 @@ import com.devpath.api.voice.dto.VoiceResponse;
 import com.devpath.api.workspace.dto.WorkspaceTaskResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
-import com.devpath.common.provider.GeminiProvider;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.voice.entity.VoiceChannel;
@@ -28,17 +27,12 @@ import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -68,8 +62,7 @@ public class VoiceChannelService {
   private final UserRepository userRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final WorkspaceRepository workspaceRepository;
-  private final GeminiProvider geminiProvider;
-  private final ObjectMapper objectMapper;
+  private final VoiceMinutesAnalyzer voiceMinutesAnalyzer;
 
   @Transactional
   public VoiceResponse.ChannelDetail createChannel(
@@ -267,10 +260,10 @@ public class VoiceChannelService {
     Collections.reverse(messages);
 
     String fallbackSummary = buildMinutesSummary(minutes, messages);
-    MinutesAnalysis analysis =
+    VoiceMinutesAnalyzer.Analysis analysis =
         hasMinutesInput(minutes, messages)
-            ? analyzeMinutesWithGemini(minutes, messages, fallbackSummary)
-            : new MinutesAnalysis(fallbackSummary, List.of());
+            ? voiceMinutesAnalyzer.analyze(minutes, messages, fallbackSummary)
+            : new VoiceMinutesAnalyzer.Analysis(fallbackSummary, List.of());
 
     minutes.update(user, null, null, analysis.summary());
 
@@ -416,161 +409,6 @@ public class VoiceChannelService {
 
   private boolean hasMinutesInput(VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
     return !normalizeText(minutes.getTranscript()).isBlank() || !messages.isEmpty();
-  }
-
-  private MinutesAnalysis analyzeMinutesWithGemini(
-      VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages, String fallbackSummary) {
-    String response = geminiProvider.generate(buildGeminiMinutesPrompt(minutes, messages));
-
-    if (normalizeText(response).isBlank()) {
-      return new MinutesAnalysis(fallbackSummary, List.of());
-    }
-
-    try {
-      JsonNode root = objectMapper.readTree(extractJsonObject(response));
-      String summary = normalizeMultiline(root.path("summary").asText());
-      List<VoiceResponse.MinutesActionItem> actionItems = parseActionItems(root);
-
-      if (summary.isBlank()) {
-        summary = fallbackSummary;
-      }
-
-      return new MinutesAnalysis(summary, actionItems);
-    } catch (JsonProcessingException | IllegalArgumentException e) {
-      return new MinutesAnalysis(fallbackSummary, List.of());
-    }
-  }
-
-  private String buildGeminiMinutesPrompt(
-      VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
-    String transcript = shorten(normalizeMultiline(minutes.getTranscript()), 12000);
-    String chatLines = buildMinutesChatLines(messages);
-
-    return """
-        너는 스쿼드 음성 회의록을 정리하는 한국어 AI 비서다.
-        아래 회의 기록과 회의 채팅을 읽고 JSON만 반환한다.
-        summary는 일반 사용자가 바로 읽기 쉽게 결정 사항, 핵심 논의, 다음 진행을 짧은 문단 또는 불릿으로 정리한다.
-        actionItems는 칸반 보드에 등록할 수 있는 실행 가능한 할 일만 넣는다.
-        담당자나 마감일이 명확하지 않으면 assigneeName과 dueDate는 null로 둔다.
-        priority는 LOW, MEDIUM, HIGH 중 하나만 사용한다.
-        반환 형식은 반드시 다음 JSON 구조를 따른다.
-        {
-          "summary": "회의 핵심 요약",
-          "actionItems": [
-            {
-              "title": "할 일 제목",
-              "description": "작업 설명",
-              "priority": "MEDIUM",
-              "assigneeName": "담당자 이름 또는 null",
-              "dueDate": "YYYY-MM-DD 또는 null"
-            }
-          ]
-        }
-
-        회의 기록:
-        %s
-
-        회의 채팅:
-        %s
-        """
-        .formatted(transcript.isBlank() ? "(없음)" : transcript, chatLines);
-  }
-
-  private String buildMinutesChatLines(List<VoiceChatMessage> messages) {
-    if (messages.isEmpty()) {
-      return "(없음)";
-    }
-
-    return messages.stream()
-        .limit(80)
-        .map(
-            message ->
-                message.getSender().getName()
-                    + ": "
-                    + shorten(normalizeText(message.getContent()), 250))
-        .collect(Collectors.joining("\n"));
-  }
-
-  private String extractJsonObject(String response) {
-    String trimmed = response.trim();
-    int start = trimmed.indexOf('{');
-    int end = trimmed.lastIndexOf('}');
-
-    if (start < 0 || end <= start) {
-      throw new IllegalArgumentException("Gemini response does not contain a JSON object.");
-    }
-
-    return trimmed.substring(start, end + 1);
-  }
-
-  private List<VoiceResponse.MinutesActionItem> parseActionItems(JsonNode root) {
-    JsonNode itemsNode = root.path("actionItems");
-
-    if (!itemsNode.isArray()) {
-      return List.of();
-    }
-
-    List<VoiceResponse.MinutesActionItem> actionItems = new ArrayList<>();
-
-    for (JsonNode itemNode : itemsNode) {
-      if (actionItems.size() >= VOICE_MINUTES_ACTION_ITEM_LIMIT) {
-        break;
-      }
-
-      String title = shorten(normalizeText(itemNode.path("title").asText()), 150);
-
-      if (title.isBlank()) {
-        continue;
-      }
-
-      String description = parseNullableText(itemNode.path("description").asText());
-      if (description != null) {
-        description = shorten(normalizeMultiline(description), 1000);
-      }
-
-      actionItems.add(
-          new VoiceResponse.MinutesActionItem(
-              title,
-              description,
-              parseTaskPriority(itemNode.path("priority").asText()),
-              parseNullableText(itemNode.path("assigneeName").asText()),
-              parseNullableDate(itemNode.path("dueDate").asText())));
-    }
-
-    return actionItems;
-  }
-
-  private WorkspaceTaskPriority parseTaskPriority(String value) {
-    String normalized = normalizeText(value);
-
-    if (normalized.isBlank()) {
-      return WorkspaceTaskPriority.MEDIUM;
-    }
-
-    try {
-      return WorkspaceTaskPriority.valueOf(normalized.toUpperCase(Locale.ROOT));
-    } catch (IllegalArgumentException e) {
-      return WorkspaceTaskPriority.MEDIUM;
-    }
-  }
-
-  private String parseNullableText(String value) {
-    String normalized = normalizeText(value);
-    return normalized.isBlank() || "null".equalsIgnoreCase(normalized) ? null : normalized;
-  }
-
-  private LocalDate parseNullableDate(String value) {
-    String normalized = normalizeText(value);
-
-    if (normalized.isBlank() || "null".equalsIgnoreCase(normalized)) {
-      return null;
-    }
-
-    try {
-      return LocalDate.parse(normalized);
-    } catch (RuntimeException e) {
-      return null;
-    }
   }
 
   private VoiceChannel getActiveChannel(Long channelId) {
@@ -733,7 +571,4 @@ public class VoiceChannelService {
       case STOP_SPEAKING -> participant.stopSpeaking();
     }
   }
-
-  private record MinutesAnalysis(
-      String summary, List<VoiceResponse.MinutesActionItem> actionItems) {}
 }

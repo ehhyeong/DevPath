@@ -1,5 +1,6 @@
 package com.devpath.api.instructor.service;
 
+import com.devpath.api.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.api.instructor.dto.analytics.InstructorAnalyticsDashboardResponse;
 import com.devpath.api.instructor.dto.course.InstructorCourseListResponse;
 import com.devpath.domain.course.entity.Course;
@@ -46,6 +47,7 @@ public class InstructorAnalyticsService {
   private final QuizAttemptRepository quizAttemptRepository;
   private final SubmissionRepository submissionRepository;
   private final InstructorCourseQueryService instructorCourseQueryService;
+  private final InstructorAnalyticsMetrics metrics;
 
   public InstructorAnalyticsDashboardResponse getDashboard(Long instructorId, Long courseId) {
     List<InstructorCourseListResponse> courseOptions =
@@ -687,28 +689,23 @@ public class InstructorAnalyticsService {
   }
 
   private double calculateAssignmentScoreRate(Submission submission) {
-    int maxScore = Math.max(defaultInt(submission.getAssignment().getTotalScore()), 1);
-    return roundToOneDecimal((defaultInt(submission.getTotalScore()) * 100.0) / maxScore);
+    return metrics.assignmentScoreRate(submission, 1);
   }
 
   private double calculateScoreRate(QuizAttempt attempt) {
-    int maxScore = Math.max(defaultInt(attempt.getMaxScore()), 1);
-    return roundToOneDecimal((defaultInt(attempt.getScore()) * 100.0) / maxScore);
+    return metrics.quizScoreRate(attempt, 1);
   }
 
   private double calculateRate(long denominator, long numerator) {
-    if (denominator <= 0) {
-      return 0.0;
-    }
-    return roundToOneDecimal((numerator * 100.0) / denominator);
+    return metrics.percent(numerator, denominator, 1);
   }
 
   private int defaultInt(Integer value) {
-    return value == null ? 0 : value;
+    return metrics.safeInt(value);
   }
 
   private double roundToOneDecimal(double value) {
-    return Math.round(value * 10.0) / 10.0;
+    return metrics.round(value, 1);
   }
 
   private LocalDateTime maxTime(LocalDateTime left, LocalDateTime right) {

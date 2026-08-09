@@ -191,6 +191,16 @@ Windows PowerShell에서는 아래 명령을 사용할 수 있습니다.
 .\gradlew.bat bootRun
 ```
 
+### 로컬 데이터 초기화
+
+기본 `local` 프로필에서는 PostgreSQL 스키마와 졸업작품 데모 데이터를 다음 순서로 준비합니다.
+
+1. `db/local/project-schema-prep.sql`이 프로젝트 관련 스키마를 먼저 보정합니다.
+2. `db/legacy/seed-data.sql`은 사용자, 강의, 로드맵 등의 기본 데이터가 없을 때 복원됩니다.
+3. `db/local/learner-workspace`의 SQL은 워크스페이스, 멘토링, ERD, 코드 리뷰 데모 데이터를 정규화합니다.
+
+각 SQL 묶음은 실행 시점과 복원 조건이 다르므로 임의로 합치거나 삭제하지 않습니다. 이 자동 초기화는 `local`, `dev` 프로필에 한정됩니다.
+
 ### 프론트엔드 실행
 
 ```bash
@@ -258,11 +268,15 @@ Vite 개발 서버에서는 프록시가 설정되어 있어 `/api`, `/ws`, `/sw
 ```text
 DevPath
 ├─ src/main/java/com/devpath
-│  ├─ api              # 도메인별 REST API, 서비스, DTO, 엔티티
+│  ├─ api              # 도메인별 Controller, Service, DTO
+│  ├─ domain           # Entity와 Repository
+│  ├─ config           # 프로필별 설정과 로컬 초기화 구성
 │  └─ DevPathApplication.java
 ├─ src/main/resources
-│  ├─ application.yaml # 공통 설정과 환경 변수 매핑
-│  └─ db               # 로컬과 레거시 SQL 리소스
+│  ├─ application*.yaml          # 공통 설정과 프로필별 환경 변수 매핑
+│  └─ db
+│     ├─ legacy                  # 기본 레거시 시드와 보정 SQL
+│     └─ local                   # 로컬 스키마와 데모 데이터 정규화 SQL
 ├─ frontend
 │  ├─ src              # React 페이지, 컴포넌트, API 클라이언트
 │  ├─ public           # 정적 리소스
@@ -281,6 +295,7 @@ DevPath
 | --- | --- |
 | 백엔드 테스트 | `.\gradlew.bat test` |
 | 백엔드 포맷 | `.\gradlew.bat spotlessApply` |
+| 백엔드 전체 검증 | `.\gradlew.bat test spotlessCheck --no-daemon` |
 | 프론트엔드 개발 서버 | `cd frontend && npm run dev` |
 | 프론트엔드 빌드 | `cd frontend && npm run build` |
 | 프론트엔드 린트 | `cd frontend && npm run lint` |
