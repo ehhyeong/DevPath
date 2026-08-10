@@ -195,11 +195,14 @@ Windows PowerShell에서는 아래 명령을 사용할 수 있습니다.
 
 기본 `local` 프로필에서는 PostgreSQL 스키마와 졸업작품 데모 데이터를 다음 순서로 준비합니다.
 
-1. `db/local/project-schema-prep.sql`이 프로젝트 관련 스키마를 먼저 보정합니다.
-2. `db/legacy/seed-data.sql`은 사용자, 강의, 로드맵 등의 기본 데이터가 없을 때 복원됩니다.
-3. `db/local/learner-workspace`의 SQL은 워크스페이스, 멘토링, ERD, 코드 리뷰 데모 데이터를 정규화합니다.
+1. Spring SQL 초기화가 `db/local/project-schema-prep.sql`을 실행해 Hibernate 시작 전에 프로젝트 관련 보조 스키마와 조건부 데이터를 준비합니다.
+2. 애플리케이션 시작 후 Java 초기화기가 사용자, 강의, 로드맵 등의 기준 데이터를 확인합니다. 기준 데이터가 없으면 `db/legacy/seed-data.sql`을 복원하고, 빈 DB에서도 완성된 데모 상태가 되도록 프로젝트 시드를 다시 적용합니다.
+3. 나머지 초기화기가 테스트 계정과 권한, 비밀번호, 프론트엔드 초안 강의, 라운지, 멘토링 허브, 프로젝트 경험, 워크스페이스 허브와 스쿼드 데이터를 기능별 `db/local` SQL로 보정합니다.
+4. `db/local/learner-workspace`의 SQL은 학습자 워크스페이스, 멘토링, ERD, 코드 리뷰 데모 데이터를 정규화합니다.
 
-각 SQL 묶음은 실행 시점과 복원 조건이 다르므로 임의로 합치거나 삭제하지 않습니다. 이 자동 초기화는 `local`, `dev` 프로필에 한정됩니다.
+정적인 시드 행과 조회문은 SQL 리소스에 두고, Java 초기화기는 실행 순서와 조건 검사, 트랜잭션, BCrypt 비밀번호 생성, 엔티티 기반 복원을 담당합니다. `LocalSeedSqlExecutor`는 이 SQL들을 UTF-8로 읽어 실행합니다.
+
+기능별 Java 초기화기는 `local`, `dev` 프로필에서만 동작합니다. Hibernate 시작 전 `project-schema-prep.sql` 실행은 기본 `local` 설정에 포함됩니다. 각 SQL 묶음은 실행 시점과 복원 조건이 다르고 서버 재시작 시 필요한 데이터를 안전하게 보정하도록 작성되어 있으므로 임의로 합치거나 삭제하지 않습니다.
 
 ### 프론트엔드 실행
 
@@ -276,7 +279,7 @@ DevPath
 │  ├─ application*.yaml          # 공통 설정과 프로필별 환경 변수 매핑
 │  └─ db
 │     ├─ legacy                  # 기본 레거시 시드와 보정 SQL
-│     └─ local                   # 로컬 스키마와 데모 데이터 정규화 SQL
+│     └─ local                   # 로컬 스키마 보정과 기능별 데모 시드 SQL
 ├─ frontend
 │  ├─ src              # React 페이지, 컴포넌트, API 클라이언트
 │  ├─ public           # 정적 리소스

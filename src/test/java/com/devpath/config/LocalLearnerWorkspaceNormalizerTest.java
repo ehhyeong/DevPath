@@ -1,6 +1,7 @@
 package com.devpath.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,9 +24,11 @@ class LocalLearnerWorkspaceNormalizerTest {
 
   @Test
   void runExecutesWorkspaceNormalizationSqlInRequiredOrder() {
-    when(passwordEncoder.encode(anyString())).thenReturn("encoded-password");
+    when(jdbcTemplate.query(anyString(), any(org.springframework.jdbc.core.RowMapper.class)))
+        .thenReturn(List.of());
+    LocalSeedSqlExecutor seedSqlExecutor = new LocalSeedSqlExecutor(jdbcTemplate);
     LocalLearnerWorkspaceNormalizer normalizer =
-        new LocalLearnerWorkspaceNormalizer(jdbcTemplate, passwordEncoder);
+        new LocalLearnerWorkspaceNormalizer(jdbcTemplate, passwordEncoder, seedSqlExecutor);
 
     normalizer.run();
 
