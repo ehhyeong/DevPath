@@ -11,6 +11,8 @@ const ATTRIBUTE_NAMES: Record<string, string> = {
   autocomplete: 'autoComplete',
 }
 
+const TABLE_STRUCTURE_TAGS = new Set(['table', 'thead', 'tbody', 'tfoot', 'tr', 'colgroup'])
+
 function parseStyle(value: string) {
   return value.split(';').reduce<CSSProperties>((style, declaration) => {
     const separator = declaration.indexOf(':')
@@ -33,6 +35,7 @@ function elementProps(element: Element, key: string) {
     let value: string | boolean | CSSProperties = attribute.value
     if (name === 'onclick') name = 'data-admin-click'
     if (name === 'onchange') name = 'data-admin-change'
+    if (name === 'oninput') name = 'data-admin-input'
     if (name === 'style') value = parseStyle(attribute.value)
     if (['checked', 'disabled', 'multiple', 'required', 'selected', 'readOnly'].includes(name)) value = true
     if (name === 'value' && (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement)) {
@@ -47,11 +50,21 @@ function elementProps(element: Element, key: string) {
 function toReactNode(node: Node, key: string): ReactNode {
   if (node.nodeType === Node.TEXT_NODE) return node.textContent
   if (!(node instanceof Element)) return null
-  const children = Array.from(node.childNodes).map((child, index) => toReactNode(child, `${key}-${index}`))
-  return createElement(node.tagName.toLowerCase(), elementProps(node, key), ...children)
+  const tagName = node.tagName.toLowerCase()
+  const children = Array.from(node.childNodes)
+    .filter((child) => !TABLE_STRUCTURE_TAGS.has(tagName) || child.nodeType !== Node.TEXT_NODE || child.textContent?.trim())
+    .map((child, index) => toReactNode(child, `${key}-${index}`))
+  return createElement(tagName, elementProps(node, key), ...children)
 }
 
-export function AdminMarkup({ html }: { html: string }) {
-  const parsed = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html')
-  return createElement(Fragment, null, ...Array.from(parsed.body.childNodes).map((node, index) => toReactNode(node, String(index))))
+export function AdminMarkup({ html, contextTagName }: { html: string; contextTagName: string }) {
+  const context = document.createElement(contextTagName)
+  const range = document.createRange()
+  range.selectNodeContents(context)
+  // Table rows and select options must be parsed in their target context or the browser removes their wrapper tags.
+  const fragment = range.createContextualFragment(html)
+  const nodes = Array.from(fragment.childNodes).filter(
+    (node) => !TABLE_STRUCTURE_TAGS.has(contextTagName) || node.nodeType !== Node.TEXT_NODE || node.textContent?.trim(),
+  )
+  return createElement(Fragment, null, ...nodes.map((node, index) => toReactNode(node, String(index))))
 }

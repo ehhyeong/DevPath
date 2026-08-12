@@ -34,4 +34,18 @@ describe('admin action delegation', () => {
     expect(input.hasAttribute('onchange')).toBe(false)
     expect(updateField).toHaveBeenCalledWith(2, 'title', '백엔드')
   })
+
+  it('delegates React-compatible input events without leaving an oninput attribute', () => {
+    const updateField = vi.fn()
+    adminActions.updateRoadmapHubSectionField = updateField
+    document.body.innerHTML = '<input value="기존값" oninput="updateRoadmapHubSectionField(1, \'title\', this.value)">'
+
+    installAdminActionDelegation(document.body)
+    const input = document.querySelector('input') as HTMLInputElement
+    input.value = '수정된 제목'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+
+    expect(input.hasAttribute('oninput')).toBe(false)
+    expect(updateField).toHaveBeenCalledWith(1, 'title', '수정된 제목')
+  })
 })

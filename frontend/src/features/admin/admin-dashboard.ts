@@ -10,15 +10,19 @@ import { fetchRoadmapHubCatalog,renderRoadmapHubEditor,roadmapHubFilterState } f
 import { adminApi } from '../../lib/admin-api'
 import { readStoredAuthSession } from '../../lib/auth-session'
 import { prepareAdminDashboardDocument } from './admin-dashboard-markup'
-import type { AdminAccount, AdminModerationReport, AdminOfficialRoadmap, AdminOfficialRoadmapOption, AdminPendingCourse, AdminRoadmapNode, AdminTag } from '../../types/admin'
+import type { AdminAccount, AdminCourseReviewHistory, AdminModerationReport, AdminOfficialRoadmap, AdminOfficialRoadmapOption, AdminPendingCourse, AdminRoadmapNode, AdminRole, AdminTag } from '../../types/admin'
 import type { AdminRoadmapHubCatalog, RoadmapHubItem } from '../../types/roadmap-hub'
 import '../../index.css'
 import type { AdminTabKey, DashboardFilterState, NodeHubEntry } from './admin-dashboard-support'
-import { NODE_HUB_UNLINKED_FILTER, buildEmptyRow, buildErrorRow, buildLoadingRow, escapeHtml, normalizeText, matchesKeyword, formatNumber, formatDateTime, roleLabel, roleBadgeClassName, nodeTypeLabel, formatNodePrerequisites, formatNodeStructure, normalizeOptionalString, updateFilterSummary } from './admin-dashboard-support'
+import { NODE_HUB_UNLINKED_FILTER, buildEmptyRow, buildErrorRow, buildLoadingRow, escapeHtml, normalizeText, matchesKeyword, formatNumber, formatDateTime, roleLabel, roleBadgeClassName, nodeTypeLabel, formatNodePrerequisites, formatNodeStructure, normalizeOptionalString, shouldLoadAdminTab, updateFilterSummary } from './admin-dashboard-support'
+import { installAccountDetailModalBindings } from './admin-account-detail'
+import { fetchAdminGovernance, installAdminGovernanceBindings } from './admin-governance'
+import { paginateAdminItems, type AdminPagination } from './admin-pagination'
 
 const TAB_META: Record<AdminTabKey, { title: string; description: string }> = {
   dashboard: { title: '플랫폼 실시간 현황', description: 'DevPath 관리자 운영 지표 요약' },
   tags: { title: '기술 태그 데이터베이스', description: '공식 태그를 조회하고 병합합니다.' },
+  governance: { title: '정책 및 강의 매핑', description: '플랫폼 정책과 강의·로드맵 노드 연결을 관리합니다.' },
   'official-roadmaps': { title: '로드맵 기본 정보', description: '공식 로드맵 생성과 상세 소개 콘텐츠를 한 화면에서 관리합니다.' },
   'roadmap-info': { title: '로드맵 소개 관리', description: '로드맵 상세 상단 소개 아코디언 콘텐츠를 수정합니다.' },
   roadmaps: { title: '마스터 로드맵 노드', description: '공식 로드맵 노드 생성, 수정, 선수 조건과 완료 기준을 관리합니다.' },
@@ -27,13 +31,22 @@ const TAB_META: Record<AdminTabKey, { title: string; description: string }> = {
   'roadmap-hub': { title: '로드맵 허브 관리', description: 'roadmap-hub 섹션과 연결 로드맵 구성을 수정합니다.' },
   users: { title: '회원 통합 관리', description: '회원 상태와 권한을 운영 관점에서 관리합니다.' },
   reports: { title: '검수 및 신고', description: '강의 검수와 사용자 신고를 처리합니다.' },
+  operations: { title: '통합 운영 센터', description: '채용, 학습 자동화, 추천 분석, 공지, 환불과 정산을 관리합니다.' },
 }
 
 let currentActiveTab: AdminTabKey = 'dashboard'
 
+const loadedTabs = new Set<AdminTabKey>()
+
+let tagPage = 1
+
+let nodePage = 1
+
 let roadmapNodeMap = new Map<number, AdminRoadmapNode>()
 
 let reportMap = new Map<number, AdminModerationReport>()
+
+let reportItems: AdminModerationReport[] = []
 
 let tagItems: AdminTag[] = []
 
@@ -53,6 +66,8 @@ let nodeHubEntriesByRoadmapId = new Map<number, NodeHubEntry[]>()
 
 let accountItems: AdminAccount[] = []
 
+let adminRoleItems: AdminRole[] = []
+
 const filterState: DashboardFilterState = {
   tagQuery: '',
   officialRoadmapQuery: '',
@@ -70,6 +85,10 @@ const filterState: DashboardFilterState = {
   accountQuery: '',
   accountRole: '',
   accountStatus: '',
+  reportQuery: '',
+  reportTargetLabel: '',
+  reportContentLink: '',
+  reportStatus: 'PENDING',
 }
 
 function getElement<T extends HTMLElement>(id: string) {
@@ -80,6 +99,18 @@ function getElement<T extends HTMLElement>(id: string) {
   }
 
   return element as T
+}
+
+function updatePaginationControls(prefix: 'tag' | 'node', pagination: AdminPagination<unknown>) {
+  const previousButton = getElement<HTMLButtonElement>(`${prefix}PagePrevious`)
+  const nextButton = getElement<HTMLButtonElement>(`${prefix}PageNext`)
+  const summary = getElement(`${prefix}PageSummary`)
+
+  previousButton.disabled = pagination.currentPage <= 1
+  nextButton.disabled = pagination.currentPage >= pagination.totalPages
+  summary.textContent = pagination.totalItems
+    ? `${formatNumber(pagination.startIndex)}–${formatNumber(pagination.endIndex)} / ${formatNumber(pagination.totalItems)}개 · ${pagination.currentPage}/${pagination.totalPages} 페이지`
+    : '0개 표시'
 }
 
 function buildNodeHubItemKey(sectionKey: string, item: RoadmapHubItem) {
@@ -199,23 +230,23 @@ function renderNodeHubBadges(node: AdminRoadmapNode) {
   const entries = getNodeHubEntries(node.roadmapId)
 
   if (entries.length === 0) {
-    return '<div class="mt-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-400">허브 미연결</div>'
+    return '<div class="admin-node-hub-badges"><span class="admin-node-hub-empty"><i class="fas fa-link-slash"></i> 허브 미연결</span></div>'
   }
 
   const visibleEntries = entries.slice(0, 3)
   const extraCount = entries.length - visibleEntries.length
 
   return `
-    <div class="mt-2 flex max-w-full flex-wrap gap-1">
+    <div class="admin-node-hub-badges">
       ${visibleEntries
         .map(
           (entry) => `
-            <span class="max-w-full truncate whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold ${nodeHubBadgeClassName(entry.layoutType)}">
+            <span class="admin-node-hub-badge ${nodeHubBadgeClassName(entry.layoutType)}">
               ${escapeHtml(entry.sectionTitle)} · ${escapeHtml(entry.itemTitle)}
             </span>`,
         )
         .join('')}
-      ${extraCount > 0 ? `<span class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-slate-400">+${extraCount}</span>` : ''}
+      ${extraCount > 0 ? `<span class="admin-node-hub-badge border border-slate-200 bg-white text-slate-400">+${extraCount}</span>` : ''}
     </div>
   `
 }
@@ -235,7 +266,7 @@ function renderTagRows(tags: AdminTag[]) {
               <td class="px-6 py-3 font-bold text-slate-800">${escapeHtml(tag.name)}</td>
               <td class="px-6 py-3 text-slate-500">${escapeHtml(tag.description || '설명 없음')}</td>
               <td class="px-6 py-3"><span class="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold tracking-wide text-emerald-600">ACTIVE</span></td>
-              <td class="px-6 py-3 text-right"><button data-admin-click="mergeTag(${tag.id})" class="rounded bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 hover:text-indigo-800" type="button">병합</button></td>
+              <td class="px-6 py-3 text-right"><div class="flex justify-end gap-1"><button data-admin-click="editTag(${tag.id})" class="rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">수정</button><button data-admin-click="mergeTag(${tag.id})" class="rounded bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 hover:text-indigo-800" type="button">병합</button><button data-admin-click="deleteTag(${tag.id})" class="rounded bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 transition hover:bg-rose-100" type="button">삭제</button></div></td>
             </tr>`,
         )
         .join('')
@@ -245,8 +276,12 @@ function renderTagRows(tags: AdminTag[]) {
 function applyTagFilters() {
   const keyword = normalizeText(filterState.tagQuery)
   const filteredTags = tagItems.filter((tag) => matchesKeyword(keyword, [tag.id, tag.name, tag.description]))
+  const pagination = paginateAdminItems(filteredTags, tagPage)
 
-  renderTagRows(filteredTags)
+  tagPage = pagination.currentPage
+  renderTagRows(pagination.items)
+  getElement('tagTableScroll').scrollTop = 0
+  updatePaginationControls('tag', pagination)
   updateFilterSummary('tagFilterSummary', tagItems.length, filteredTags.length)
 }
 
@@ -402,17 +437,53 @@ function renderNodeRows(nodes: AdminRoadmapNode[]) {
     ? nodes
         .map(
           (node) => `
-            <tr class="border-b border-slate-100 transition-colors hover:bg-slate-50/70">
-              <td class="px-5 py-3 align-middle font-mono text-xs whitespace-nowrap text-slate-400">#${node.nodeId}</td>
-              <td class="px-5 py-3 align-middle"><div class="truncate font-bold text-slate-800">${escapeHtml(node.title)}</div><div class="mt-1 truncate text-xs text-slate-400">${escapeHtml(node.content || '설명 없음')}</div></td>
-              <td class="px-5 py-3 align-middle"><div class="truncate font-medium text-slate-700">${escapeHtml(node.roadmapTitle)}</div><div class="mt-0.5 inline-flex rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold tracking-wide whitespace-nowrap text-blue-600">${escapeHtml(nodeTypeLabel(node.nodeType))}</div>${renderNodeHubBadges(node)}</td>
-              <td class="px-5 py-3 align-middle text-xs text-slate-500"><div class="truncate whitespace-nowrap">${escapeHtml(formatNodeStructure(node))}</div><div class="mt-1 truncate whitespace-nowrap">${escapeHtml(formatNodePrerequisites(node))}</div>${node.subTopics ? `<div class="mt-1 truncate text-[11px] text-slate-400">${escapeHtml(node.subTopics)}</div>` : ''}</td>
-              <td class="px-4 py-3 align-middle text-xs whitespace-nowrap text-slate-500"><div>${node.requiredTagCount > 0 ? `필수 태그 ${node.requiredTagCount}개` : '필수 태그 없음'}</div><div class="mt-1">${escapeHtml(node.completionRuleDescription || '완료 기준 없음')}${node.requiredProgressRate !== null ? ` / ${node.requiredProgressRate}%` : ''}</div></td>
-              <td class="px-4 py-3 align-middle text-right"><div class="flex flex-nowrap justify-end gap-1"><button data-admin-click="editRoadmapNode(${node.nodeId})" class="whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">노드 수정</button><button data-admin-click="updateNodePrerequisites(${node.nodeId})" class="whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">선수 조건</button><button data-admin-click="updateNodeTags(${node.nodeId})" class="whitespace-nowrap rounded border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">태그 매핑</button><button data-admin-click="updateNodeRules(${node.nodeId})" class="whitespace-nowrap rounded bg-indigo-50 px-2 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-100 hover:text-indigo-800" type="button">완료 기준</button></div></td>
+            <tr class="admin-node-row">
+              <td><span class="admin-node-id">#${node.nodeId}</span></td>
+              <td>
+                <div class="admin-node-title">${escapeHtml(node.title)}</div>
+                <div class="admin-node-description">${escapeHtml(node.content || '등록된 설명이 없습니다.')}</div>
+              </td>
+              <td>
+                <div class="admin-node-roadmap"><i class="fas fa-route"></i><span>${escapeHtml(node.roadmapTitle)}</span></div>
+                <span class="admin-node-type">${escapeHtml(nodeTypeLabel(node.nodeType))}</span>
+                ${renderNodeHubBadges(node)}
+              </td>
+              <td>
+                <div class="admin-node-detail"><span>구조</span><strong>${escapeHtml(formatNodeStructure(node))}</strong></div>
+                <div class="admin-node-detail"><span>선수</span><strong>${escapeHtml(formatNodePrerequisites(node))}</strong></div>
+                ${node.subTopics ? `<div class="admin-node-subtopics">${escapeHtml(node.subTopics)}</div>` : ''}
+              </td>
+              <td>
+                <div class="admin-node-requirement"><i class="fas fa-tags"></i>${node.requiredTagCount > 0 ? `필수 태그 ${node.requiredTagCount}개` : '필수 태그 없음'}</div>
+                <div class="admin-node-requirement"><i class="fas fa-flag-checkered"></i>${escapeHtml(node.completionRuleDescription || '완료 기준 없음')}${node.requiredProgressRate !== null ? ` · ${node.requiredProgressRate}%` : ''}</div>
+              </td>
+              <td>
+                <div class="admin-node-action-grid">
+                  <button data-admin-click="editRoadmapNode(${node.nodeId})" type="button"><i class="fas fa-pen"></i>기본 정보</button>
+                  <button data-admin-click="updateNodePrerequisites(${node.nodeId})" type="button"><i class="fas fa-diagram-project"></i>선수 조건</button>
+                  <button data-admin-click="updateNodeTags(${node.nodeId})" type="button"><i class="fas fa-tags"></i>태그 매핑</button>
+                  <button data-admin-click="updateNodeRules(${node.nodeId})" class="is-primary" type="button"><i class="fas fa-check-double"></i>완료 기준</button>
+                  <button data-admin-click="deleteRoadmapNode(${node.nodeId})" class="is-danger" type="button"><i class="fas fa-trash"></i>노드 삭제</button>
+                </div>
+              </td>
             </tr>`,
         )
         .join('')
     : buildEmptyRow(6, '조건에 맞는 노드가 없습니다.'))
+}
+
+function resetNodeFilters() {
+  filterState.nodeQuery = ''
+  filterState.nodeHubSectionKey = ''
+  filterState.nodeHubItemKey = ''
+  filterState.nodeRoadmapId = ''
+  filterState.nodeType = ''
+  nodePage = 1
+
+  getElement<HTMLInputElement>('nodeFilterInput').value = ''
+  getElement<HTMLSelectElement>('nodeTypeFilter').value = ''
+  updateNodeFilterControls()
+  applyNodeFilters()
 }
 
 function applyNodeFilters() {
@@ -434,8 +505,12 @@ function applyNodeFilters() {
 
     return matchesText && matchesHub && matchesRoadmap && matchesType
   })
+  const pagination = paginateAdminItems(filteredNodes, nodePage)
 
-  renderNodeRows(filteredNodes)
+  nodePage = pagination.currentPage
+  renderNodeRows(pagination.items)
+  getElement('nodeTableScroll').scrollTop = 0
+  updatePaginationControls('node', pagination)
   updateFilterSummary('nodeFilterSummary', nodeItems.length, filteredNodes.length)
 }
 
@@ -525,8 +600,8 @@ function updateNodeHubQuickFilters() {
 
   const makeButtonClass = (active: boolean) =>
     active
-      ? 'rounded-full bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-sm'
-      : 'rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:border-slate-300 hover:text-slate-800'
+      ? 'admin-node-quick-filter is-active'
+      : 'admin-node-quick-filter'
   const countNodesByRoadmapIds = (roadmapIds: Set<number>) =>
     nodeItems.filter((node) => roadmapIds.has(node.roadmapId)).length
   const unlinkedCount = nodeItems.filter((node) => getNodeHubEntries(node.roadmapId).length === 0).length
@@ -545,6 +620,7 @@ function updateNodeHubQuickFilters() {
       filterState.nodeHubSectionKey = button.dataset.nodeHubSection ?? ''
       filterState.nodeHubItemKey = ''
       filterState.nodeRoadmapId = ''
+      nodePage = 1
       updateNodeFilterControls()
       applyNodeFilters()
     })
@@ -581,6 +657,54 @@ async function fetchNodes() {
   }
 }
 
+function accountStatusClassName(status: string | null) {
+  switch ((status ?? '').toUpperCase()) {
+    case 'ACTIVE': return 'border-emerald-100 bg-emerald-50 text-emerald-600'
+    case 'RESTRICTED': return 'border-amber-100 bg-amber-50 text-amber-700'
+    case 'DEACTIVATED': return 'border-slate-200 bg-slate-100 text-slate-600'
+    case 'WITHDRAWN': return 'border-rose-100 bg-rose-50 text-rose-600'
+    default: return 'border-slate-200 bg-white text-slate-500'
+  }
+}
+
+function instructorApprovalLabel(account: AdminAccount) {
+  if (account.role !== 'ROLE_INSTRUCTOR') return '일반 회원'
+  switch ((account.instructorStatus ?? '').toUpperCase()) {
+    case 'APPROVED': return '강사 승인 완료'
+    case 'REJECTED': return '강사 승인 거절'
+    default: return '강사 승인 대기'
+  }
+}
+
+function renderAccountActions(account: AdminAccount) {
+  const status = (account.accountStatus ?? '').toUpperCase()
+  const actions = [
+    `<button data-admin-click="viewAccountDetails(${account.userId})" class="admin-account-action" type="button"><i class="fas fa-clock-rotate-left"></i>상세·이력</button>`,
+  ]
+
+  if (account.role === 'ROLE_ADMIN') {
+    actions.push(`<button data-admin-click="assignAdminRole(${account.userId})" class="admin-account-action" type="button"><i class="fas fa-key"></i>Role 배정</button>`)
+    actions.push(`<button data-admin-click="clearAdminRole(${account.userId})" class="admin-account-action is-warning" type="button"><i class="fas fa-key"></i>Role 해제</button>`)
+  }
+
+  if (status === 'ACTIVE') {
+    if (account.role === 'ROLE_INSTRUCTOR' && account.instructorStatus !== 'APPROVED') {
+      actions.push(`<button data-admin-click="approveInstructor(${account.userId})" class="admin-account-action is-approve" type="button"><i class="fas fa-user-check"></i>강사 승인</button>`)
+    }
+    if (account.role === 'ROLE_INSTRUCTOR') {
+      actions.push(`<button data-admin-click="changeInstructorGrade(${account.userId})" class="admin-account-action" type="button"><i class="fas fa-ranking-star"></i>등급 변경</button>`)
+    }
+    actions.push(`<button data-admin-click="changeAccountStatus(${account.userId}, 'RESTRICT')" class="admin-account-action is-warning" type="button">제한</button>`)
+    actions.push(`<button data-admin-click="changeAccountStatus(${account.userId}, 'DEACTIVATE')" class="admin-account-action" type="button">비활성</button>`)
+    actions.push(`<button data-admin-click="changeAccountStatus(${account.userId}, 'WITHDRAW')" class="admin-account-action is-danger" type="button">탈퇴</button>`)
+  } else if (status === 'RESTRICTED' || status === 'DEACTIVATED' || status === 'INACTIVE') {
+    actions.push(`<button data-admin-click="changeAccountStatus(${account.userId}, 'RESTORE')" class="admin-account-action is-approve" type="button">복구</button>`)
+    actions.push(`<button data-admin-click="changeAccountStatus(${account.userId}, 'WITHDRAW')" class="admin-account-action is-danger" type="button">탈퇴</button>`)
+  }
+
+  return actions.join('')
+}
+
 function renderAccountRows(accounts: AdminAccount[]) {
   const tbody = getElement('accountTableBody')
   renderAdminMarkup(tbody, accounts.length
@@ -591,9 +715,9 @@ function renderAccountRows(accounts: AdminAccount[]) {
               <td class="px-6 py-3 font-mono text-xs text-slate-400">#${account.userId}</td>
               <td class="px-6 py-3 font-medium text-slate-600">${escapeHtml(account.email)}</td>
               <td class="px-6 py-3 font-bold text-slate-800">${escapeHtml(account.nickname)}</td>
-              <td class="px-6 py-3"><span class="rounded px-2 py-0.5 text-[10px] font-bold tracking-wide ${roleBadgeClassName(account.role)}">${escapeHtml(roleLabel(account.role))}</span></td>
-              <td class="px-6 py-3"><span class="${account.accountStatus === 'ACTIVE' ? 'text-emerald-500' : 'text-rose-500'} text-xs font-bold"><i class="fas fa-circle mr-1 text-[8px]"></i>${escapeHtml(accountStatusLabel(account.accountStatus))}</span></td>
-              <td class="px-6 py-3 text-right"><button data-admin-click="toggleAccountStatus(${account.userId}, '${escapeHtml(account.accountStatus || 'INACTIVE')}')" class="rounded ${account.accountStatus === 'ACTIVE' ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-800' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-800'} px-3 py-1.5 text-xs font-medium transition" type="button">${account.accountStatus === 'ACTIVE' ? '제한' : '복구'}</button></td>
+              <td class="px-6 py-3"><span class="rounded px-2 py-0.5 text-[10px] font-bold tracking-wide ${roleBadgeClassName(account.role)}">${escapeHtml(roleLabel(account.role))}</span><div class="mt-1 text-[10px] font-medium text-slate-400">${escapeHtml(instructorApprovalLabel(account))}</div></td>
+              <td class="px-6 py-3"><span class="inline-flex rounded-full border px-2 py-1 text-[10px] font-bold ${accountStatusClassName(account.accountStatus)}">${escapeHtml(accountStatusLabel(account.accountStatus))}</span></td>
+              <td class="px-6 py-3"><div class="admin-account-actions">${renderAccountActions(account)}</div></td>
             </tr>`,
         )
         .join('')
@@ -629,12 +753,39 @@ async function fetchAccounts() {
   }
 }
 
+function renderAdminRoleRows(roles: AdminRole[]) {
+  const tbody = getElement('adminRoleTableBody')
+  renderAdminMarkup(tbody, roles.length
+    ? roles.map((role) => `
+      <tr class="border-b border-slate-100 transition-colors hover:bg-violet-50/30">
+        <td class="px-6 py-3 font-mono text-xs font-bold text-violet-700">${escapeHtml(role.roleName)}</td>
+        <td class="px-6 py-3 text-xs text-slate-600">${escapeHtml(role.description || '설명 없음')}</td>
+        <td class="px-6 py-3"><div class="flex max-w-xl flex-wrap gap-1">${role.permissionCodes.length ? role.permissionCodes.map((code) => `<span class="rounded bg-slate-100 px-2 py-1 font-mono text-[10px] text-slate-600">${escapeHtml(code)}</span>`).join('') : '<span class="text-xs text-slate-400">권한 코드 없음</span>'}</div></td>
+        <td class="px-6 py-3"><div class="flex gap-2"><button data-admin-click="editAdminRole(${role.id})" class="admin-account-action" type="button">수정</button><button data-admin-click="deleteAdminRole(${role.id})" class="admin-account-action is-danger" type="button">삭제</button></div></td>
+      </tr>`).join('')
+    : buildEmptyRow(4, '등록된 관리자 Role이 없습니다.'))
+}
+
+async function fetchAdminRoles() {
+  const tbody = getElement('adminRoleTableBody')
+  renderAdminMarkup(tbody, buildLoadingRow(4, '관리자 Role을 불러오는 중입니다...'))
+  try {
+    adminRoleItems = await adminApi.getRoles()
+    renderAdminRoleRows(adminRoleItems)
+  } catch (error) {
+    renderAdminMarkup(tbody, buildErrorRow(4, error instanceof Error ? error.message : '관리자 Role을 불러오지 못했습니다.'))
+  }
+}
+
 async function fetchPendingCourses() {
   const tbody = getElement('courseTableBody')
   renderAdminMarkup(tbody, buildLoadingRow(3, '강의 검수 목록을 불러오는 중입니다...'))
 
   try {
-    const courses = await adminApi.getPendingCourses()
+    const [courses, history] = await Promise.all([
+      adminApi.getPendingCourses(),
+      adminApi.getCourseReviewHistory(),
+    ])
     renderAdminMarkup(tbody, courses.length
       ? courses
           .map(
@@ -647,9 +798,122 @@ async function fetchPendingCourses() {
           )
           .join('')
       : buildEmptyRow(3, '검수 대기 중인 강의가 없습니다.'))
+    renderCourseReviewHistory(history)
   } catch (error) {
     renderAdminMarkup(tbody, buildErrorRow(3, error instanceof Error ? error.message : '강의 검수 목록을 불러오지 못했습니다.'))
+    renderAdminMarkup(getElement('courseReviewHistoryBody'), buildErrorRow(5, '강의 검수 이력을 불러오지 못했습니다.'))
   }
+}
+
+function renderCourseReviewHistory(history: AdminCourseReviewHistory[]) {
+  const tbody = getElement('courseReviewHistoryBody')
+  renderAdminMarkup(tbody, history.length
+    ? history.map((item) => `
+      <tr class="border-b border-slate-100">
+        <td class="px-6 py-3 font-mono text-xs text-slate-500">#${item.courseId}</td>
+        <td class="px-6 py-3 text-xs text-slate-600">강사 #${item.instructorId}</td>
+        <td class="px-6 py-3"><span class="rounded-full px-2 py-1 text-[10px] font-bold ${item.action === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHtml(item.action)}</span></td>
+        <td class="px-6 py-3 text-xs text-slate-600">${escapeHtml(item.reason)}</td>
+        <td class="px-6 py-3 text-xs text-slate-400">관리자 #${item.adminId}<small class="mt-1 block">${escapeHtml(formatDateTime(item.processedAt))}</small></td>
+      </tr>`).join('')
+    : buildEmptyRow(5, '처리된 강의 검수 이력이 없습니다.'))
+}
+
+function getReportTargetFilterLabel(report: AdminModerationReport) {
+  return report.targetLabel?.trim() || reportTargetLabel(report)
+}
+
+function renderReportTargetOptions() {
+  const select = getElement<HTMLSelectElement>('reportTargetFilter')
+  const labels = [...new Set(reportItems.map(getReportTargetFilterLabel))].sort((left, right) => left.localeCompare(right, 'ko'))
+
+  if (filterState.reportTargetLabel && !labels.includes(filterState.reportTargetLabel)) {
+    filterState.reportTargetLabel = ''
+  }
+
+  renderAdminMarkup(select, [
+    '<option value="">전체 신고 대상</option>',
+    ...labels.map((label) => `<option value="${escapeHtml(label)}">${escapeHtml(label)}</option>`),
+  ].join(''))
+  select.value = filterState.reportTargetLabel
+}
+
+function renderReportRows(reports: AdminModerationReport[]) {
+  const tbody = getElement('reportTableBody')
+  renderAdminMarkup(tbody, reports.length
+    ? reports
+        .map((report: AdminModerationReport) => {
+          const isPending = report.status === 'PENDING'
+          const blindAction = isPending && report.contentId
+            ? `<button data-admin-click="blindContent(${report.reportId})" class="rounded bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 transition hover:bg-rose-100 hover:text-rose-800" type="button">블라인드</button>`
+            : ''
+          const unblindAction = report.blinded && report.contentId
+            ? `<button data-admin-click="unblindContent(${report.reportId})" class="rounded bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 transition hover:bg-blue-100" type="button">블라인드 해제</button>`
+            : ''
+          const actionLabels: Record<string, string> = { WARNING: '경고', SUSPEND: '계정 정지', DISMISS: '기각' }
+          const managementActions = isPending
+            ? `${blindAction}${unblindAction}<button data-admin-click="resolveReport(${report.reportId}, 'WARNING')" class="admin-report-action is-warning" type="button">경고</button><button data-admin-click="resolveReport(${report.reportId}, 'SUSPEND')" class="admin-report-action is-danger" type="button">정지</button><button data-admin-click="resolveReport(${report.reportId}, 'DISMISS')" class="admin-report-action" type="button">기각</button>`
+            : `${unblindAction}<div class="admin-report-resolution"><strong>${escapeHtml(actionLabels[report.actionTaken ?? ''] ?? report.actionTaken ?? '처리 완료')}</strong><span>${escapeHtml(report.resolutionReason || '')}</span><span>${escapeHtml(formatDateTime(report.resolvedAt))}</span></div>`
+
+          const contentContext = reportContentContext(report)
+          const contentContextRow = contentContext
+            ? `<div class="mt-1 text-[11px] leading-5 text-slate-400">${escapeHtml(contentContext)}</div>`
+            : ''
+
+          return `
+            <tr class="border-b border-slate-100 transition-colors hover:bg-rose-50/40">
+              <td class="px-6 py-3">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">${escapeHtml(reportTargetLabel(report))}</span>
+                  <span class="font-mono text-[10px] text-slate-400">신고 #${report.reportId}</span>
+                </div>
+                <div class="mt-1 text-xs font-semibold text-slate-700">${escapeHtml(reportTargetSummary(report))}</div>
+                <div class="mt-1 text-[11px] text-slate-500">신고자 ${escapeHtml(reportReporterSummary(report))}</div>
+                ${contentContextRow}
+                <div class="mt-1 text-[10px] text-slate-400">${escapeHtml(formatDateTime(report.createdAt))}</div>
+              </td>
+              <td class="px-6 py-3 text-xs font-medium leading-5 text-slate-800">${escapeHtml(report.reason)}</td>
+              <td class="space-x-1 px-6 py-3 text-right">
+                <div class="admin-report-actions">${managementActions}</div>
+              </td>
+            </tr>`
+        })
+        .join('')
+    : buildEmptyRow(3, '조건에 맞는 신고가 없습니다.'))
+}
+
+function applyReportFilters() {
+  const keyword = normalizeText(filterState.reportQuery)
+  const filteredReports = reportItems.filter((report) => {
+    const matchesText = matchesKeyword(keyword, [
+      report.reportId,
+      reportTargetLabel(report),
+      reportTargetSummary(report),
+      reportReporterSummary(report),
+      report.contentTitle,
+      report.contentPreview,
+      report.reason,
+    ])
+    const matchesTarget = !filterState.reportTargetLabel
+      || getReportTargetFilterLabel(report) === filterState.reportTargetLabel
+    const matchesContent = !filterState.reportContentLink
+      || (filterState.reportContentLink === 'LINKED' ? Boolean(report.contentId) : !report.contentId)
+
+    return matchesText && matchesTarget && matchesContent
+  })
+
+  renderReportRows(filteredReports)
+  updateFilterSummary('reportFilterSummary', reportItems.length, filteredReports.length)
+}
+
+function resetReportFilters() {
+  filterState.reportQuery = ''
+  filterState.reportTargetLabel = ''
+  filterState.reportContentLink = ''
+  getElement<HTMLInputElement>('reportFilterInput').value = ''
+  getElement<HTMLSelectElement>('reportTargetFilter').value = ''
+  getElement<HTMLSelectElement>('reportContentFilter').value = ''
+  applyReportFilters()
 }
 
 async function fetchReports() {
@@ -657,53 +921,40 @@ async function fetchReports() {
   renderAdminMarkup(tbody, buildLoadingRow(3, '신고 목록을 불러오는 중입니다...'))
 
   try {
-    const reports = await adminApi.getReports()
-    reportMap = new Map(reports.map((report) => [report.reportId, report]))
-    renderAdminMarkup(tbody, reports.length
-      ? reports
-          .map((report: AdminModerationReport) => {
-            const blindAction = report.contentId
-              ? `<button data-admin-click="blindContent(${report.reportId})" class="rounded bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 transition hover:bg-rose-100 hover:text-rose-800" type="button">블라인드</button>`
-              : '<span class="px-3 py-1.5 text-xs text-slate-300">콘텐츠 없음</span>'
-
-            const contentContext = reportContentContext(report)
-            const contentContextRow = contentContext
-              ? `<div class="mt-1 text-[11px] leading-5 text-slate-400">${escapeHtml(contentContext)}</div>`
-              : ''
-
-            return `
-              <tr class="border-b border-slate-100 transition-colors hover:bg-rose-50/40">
-                <td class="px-6 py-3">
-                  <div class="flex flex-wrap items-center gap-1.5">
-                    <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">${escapeHtml(reportTargetLabel(report))}</span>
-                    <span class="font-mono text-[10px] text-slate-400">신고 #${report.reportId}</span>
-                  </div>
-                  <div class="mt-1 text-xs font-semibold text-slate-700">${escapeHtml(reportTargetSummary(report))}</div>
-                  <div class="mt-1 text-[11px] text-slate-500">신고자 ${escapeHtml(reportReporterSummary(report))}</div>
-                  ${contentContextRow}
-                  <div class="mt-1 text-[10px] text-slate-400">${escapeHtml(formatDateTime(report.createdAt))}</div>
-                </td>
-                <td class="px-6 py-3 text-xs font-medium leading-5 text-slate-800">${escapeHtml(report.reason)}</td>
-                <td class="space-x-1 px-6 py-3 text-right">
-                  ${blindAction}
-                  <button data-admin-click="resolveReport(${report.reportId})" class="rounded px-3 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" type="button">무시</button>
-                </td>
-              </tr>`
-          })
-          .join('')
-      : buildEmptyRow(3, '접수된 신고가 없습니다.'))
+    reportItems = await adminApi.getReports(filterState.reportStatus)
+    reportMap = new Map(reportItems.map((report) => [report.reportId, report]))
+    renderReportTargetOptions()
+    applyReportFilters()
   } catch (error) {
     renderAdminMarkup(tbody, buildErrorRow(3, error instanceof Error ? error.message : '신고 목록을 불러오지 못했습니다.'))
+    updateFilterSummary('reportFilterSummary', 0, 0)
   }
 }
 
-async function refreshActiveTab() {
-  switch (currentActiveTab) {
+async function fetchModerationStats() {
+  const stats = await adminApi.getModerationStats()
+  getElement('moderationTotalReports').textContent = formatNumber(stats.totalReports)
+  getElement('moderationPendingReports').textContent = formatNumber(stats.pendingReports)
+  getElement('moderationResolvedReports').textContent = formatNumber(stats.resolvedReports)
+  getElement('moderationBlindedContents').textContent = formatNumber(stats.blindedContents)
+  getElement('moderationSuspendedUsers').textContent = formatNumber(stats.suspendedUsers)
+}
+
+async function refreshActiveTab(force = false) {
+  const tab = currentActiveTab
+  if (!shouldLoadAdminTab(loadedTabs, tab, force)) {
+    return
+  }
+
+  switch (tab) {
     case 'dashboard':
       await fetchOverview()
       break
     case 'tags':
       await fetchTags()
+      break
+    case 'governance':
+      await fetchAdminGovernance()
       break
     case 'official-roadmaps':
       await fetchRoadmapBaseInfo()
@@ -724,16 +975,21 @@ async function refreshActiveTab() {
       await fetchRoadmapHubCatalog()
       break
     case 'users':
-      await fetchAccounts()
+      await Promise.all([fetchAccounts(), fetchAdminRoles()])
       break
     case 'reports':
-      await Promise.all([fetchPendingCourses(), fetchReports(), fetchOverview()])
+      await Promise.all([fetchPendingCourses(), fetchReports(), fetchModerationStats()])
+      break
+    case 'operations':
       break
   }
+
+  loadedTabs.add(tab)
 }
 
 function setActiveTab(nextTab: AdminTabKey) {
   currentActiveTab = nextTab
+  window.dispatchEvent(new CustomEvent('devpath:admin-tab-change', { detail: nextTab }))
 
   document.querySelectorAll<HTMLElement>('.nav-btn').forEach((button) => {
     const isActive = button.dataset.target === nextTab
@@ -785,6 +1041,15 @@ function initFilters() {
   const tagFilterInput = getElement<HTMLInputElement>('tagFilterInput')
   tagFilterInput.addEventListener('input', () => {
     filterState.tagQuery = tagFilterInput.value
+    tagPage = 1
+    applyTagFilters()
+  })
+  getElement<HTMLButtonElement>('tagPagePrevious').addEventListener('click', () => {
+    tagPage -= 1
+    applyTagFilters()
+  })
+  getElement<HTMLButtonElement>('tagPageNext').addEventListener('click', () => {
+    tagPage += 1
     applyTagFilters()
   })
 
@@ -809,14 +1074,27 @@ function initFilters() {
   const nodeFilterInput = getElement<HTMLInputElement>('nodeFilterInput')
   nodeFilterInput.addEventListener('input', () => {
     filterState.nodeQuery = nodeFilterInput.value
+    nodePage = 1
     applyNodeFilters()
   })
+
+  getElement<HTMLButtonElement>('nodePagePrevious').addEventListener('click', () => {
+    nodePage -= 1
+    applyNodeFilters()
+  })
+  getElement<HTMLButtonElement>('nodePageNext').addEventListener('click', () => {
+    nodePage += 1
+    applyNodeFilters()
+  })
+
+  getElement<HTMLButtonElement>('nodeFilterReset').addEventListener('click', resetNodeFilters)
 
   const nodeHubSectionFilter = getElement<HTMLSelectElement>('nodeHubSectionFilter')
   nodeHubSectionFilter.addEventListener('change', () => {
     filterState.nodeHubSectionKey = nodeHubSectionFilter.value
     filterState.nodeHubItemKey = ''
     filterState.nodeRoadmapId = ''
+    nodePage = 1
     updateNodeFilterControls()
     applyNodeFilters()
   })
@@ -825,6 +1103,7 @@ function initFilters() {
   nodeHubItemFilter.addEventListener('change', () => {
     filterState.nodeHubItemKey = nodeHubItemFilter.value
     filterState.nodeRoadmapId = ''
+    nodePage = 1
     updateNodeFilterControls()
     applyNodeFilters()
   })
@@ -832,12 +1111,14 @@ function initFilters() {
   const nodeRoadmapFilter = getElement<HTMLSelectElement>('nodeRoadmapFilter')
   nodeRoadmapFilter.addEventListener('change', () => {
     filterState.nodeRoadmapId = nodeRoadmapFilter.value
+    nodePage = 1
     applyNodeFilters()
   })
 
   const nodeTypeFilter = getElement<HTMLSelectElement>('nodeTypeFilter')
   nodeTypeFilter.addEventListener('change', () => {
     filterState.nodeType = nodeTypeFilter.value
+    nodePage = 1
     applyNodeFilters()
   })
 
@@ -858,6 +1139,32 @@ function initFilters() {
     filterState.accountStatus = accountStatusFilter.value
     applyAccountFilters()
   })
+
+  const reportFilterInput = getElement<HTMLInputElement>('reportFilterInput')
+  reportFilterInput.addEventListener('input', () => {
+    filterState.reportQuery = reportFilterInput.value
+    applyReportFilters()
+  })
+
+  const reportTargetFilter = getElement<HTMLSelectElement>('reportTargetFilter')
+  reportTargetFilter.addEventListener('change', () => {
+    filterState.reportTargetLabel = reportTargetFilter.value
+    applyReportFilters()
+  })
+
+  const reportContentFilter = getElement<HTMLSelectElement>('reportContentFilter')
+  reportContentFilter.addEventListener('change', () => {
+    filterState.reportContentLink = reportContentFilter.value
+    applyReportFilters()
+  })
+
+  const reportStatusFilter = getElement<HTMLSelectElement>('reportStatusFilter')
+  reportStatusFilter.addEventListener('change', () => {
+    filterState.reportStatus = reportStatusFilter.value
+    void runAdminAction(fetchReports)
+  })
+
+  getElement<HTMLButtonElement>('reportFilterReset').addEventListener('click', resetReportFilters)
 
   const roadmapHubFilterInput = getElement<HTMLInputElement>('roadmapHubFilterInput')
   roadmapHubFilterInput.addEventListener('input', () => {
@@ -933,7 +1240,9 @@ async function bootstrap() {
     return
   }
 
-  installAdminDashboardActions({ refreshActiveTab, fetchTags, getOfficialRoadmaps: () => officialRoadmapItems, getOfficialRoadmapEditingId: () => officialRoadmapEditingId, setOfficialRoadmapForm, resetOfficialRoadmapForm, fetchRoadmapBaseInfo, openRoadmapNodeModal: (node) => openRoadmapNodeModal(node, filterState.nodeRoadmapId), getRoadmapNode: (nodeId) => roadmapNodeMap.get(nodeId), fetchNodes, fetchAccounts, fetchOverview, fetchPendingCourses, fetchReports, getReport: (reportId) => reportMap.get(reportId) })
+  installAdminDashboardActions({ refreshActiveTab: () => refreshActiveTab(true), fetchTags, getTags: () => tagItems, getOfficialRoadmaps: () => officialRoadmapItems, getOfficialRoadmapEditingId: () => officialRoadmapEditingId, setOfficialRoadmapForm, resetOfficialRoadmapForm, fetchRoadmapBaseInfo, openRoadmapNodeModal: (node) => openRoadmapNodeModal(node, filterState.nodeRoadmapId), getRoadmapNode: (nodeId) => roadmapNodeMap.get(nodeId), fetchNodes, fetchAccounts, getAccount: (userId) => accountItems.find((account) => account.userId === userId), fetchRoles: fetchAdminRoles, getRoles: () => adminRoleItems, fetchOverview, fetchPendingCourses, fetchReports, getReport: (reportId) => reportMap.get(reportId) })
+  installAccountDetailModalBindings()
+  installAdminGovernanceBindings(runAdminAction)
   initNavigation()
   initFilters()
   setActiveTab('dashboard')

@@ -61,6 +61,8 @@ let officialRoadmapOptions: AdminOfficialRoadmapOption[] = [];
 let nodeResourceItems: AdminRoadmapNodeResource[] = [];
 let nodeResourceEditingId: number | null = null;
 let nodeResourceSaving = false;
+let nodeResourcePage = 1;
+const NODE_RESOURCE_PAGE_SIZE = 40;
 const nodeResourceFilterState = {
   Query: "",
   RoadmapId: "",
@@ -642,7 +644,13 @@ function applyNodeResourceFilters() {
     );
   });
 
-  renderNodeResourceRows(filteredResources);
+  const totalPages = Math.max(1, Math.ceil(filteredResources.length / NODE_RESOURCE_PAGE_SIZE));
+  nodeResourcePage = Math.min(Math.max(nodeResourcePage, 1), totalPages);
+  const startIndex = (nodeResourcePage - 1) * NODE_RESOURCE_PAGE_SIZE;
+  renderNodeResourceRows(filteredResources.slice(startIndex, startIndex + NODE_RESOURCE_PAGE_SIZE));
+  getElement<HTMLButtonElement>("nodeResourcePagePrevious").disabled = nodeResourcePage <= 1;
+  getElement<HTMLButtonElement>("nodeResourcePageNext").disabled = nodeResourcePage >= totalPages;
+  getElement("nodeResourcePageSummary").textContent = `${nodeResourcePage} / ${totalPages} 페이지`;
   updateFilterSummary(
     "nodeResourceSummary",
     nodeResourceItems.length,
@@ -750,6 +758,7 @@ export function installNodeResourceBindings(runAdminAction: RunAdminAction) {
 
   nodeResourceFilterInput.addEventListener("input", () => {
     nodeResourceFilterState.Query = nodeResourceFilterInput.value;
+    nodeResourcePage = 1;
     applyNodeResourceFilters();
   });
 
@@ -759,6 +768,7 @@ export function installNodeResourceBindings(runAdminAction: RunAdminAction) {
 
   nodeResourceRoadmapFilter.addEventListener("change", () => {
     nodeResourceFilterState.RoadmapId = nodeResourceRoadmapFilter.value;
+    nodeResourcePage = 1;
     nodeResourceFilterState.NodeId = "";
     renderNodeResourceFilterOptions();
     applyNodeResourceFilters();
@@ -770,6 +780,7 @@ export function installNodeResourceBindings(runAdminAction: RunAdminAction) {
 
   nodeResourceNodeFilter.addEventListener("change", () => {
     nodeResourceFilterState.NodeId = nodeResourceNodeFilter.value;
+    nodeResourcePage = 1;
     applyNodeResourceFilters();
   });
 
@@ -779,6 +790,7 @@ export function installNodeResourceBindings(runAdminAction: RunAdminAction) {
 
   nodeResourceSourceFilter.addEventListener("change", () => {
     nodeResourceFilterState.SourceType = nodeResourceSourceFilter.value;
+    nodeResourcePage = 1;
     applyNodeResourceFilters();
   });
 
@@ -788,6 +800,7 @@ export function installNodeResourceBindings(runAdminAction: RunAdminAction) {
 
   nodeResourceStatusFilter.addEventListener("change", () => {
     nodeResourceFilterState.Status = nodeResourceStatusFilter.value;
+    nodeResourcePage = 1;
     applyNodeResourceFilters();
   });
 
@@ -799,11 +812,21 @@ export function installNodeResourceBindings(runAdminAction: RunAdminAction) {
       nodeResourceFilterState.NodeId = "";
       nodeResourceFilterState.SourceType = "";
       nodeResourceFilterState.Status = "";
+      nodeResourcePage = 1;
       nodeResourceFilterInput.value = "";
       renderNodeResourceFilterOptions();
       applyNodeResourceFilters();
     },
   );
+
+  getElement<HTMLButtonElement>("nodeResourcePagePrevious").addEventListener("click", () => {
+    nodeResourcePage -= 1;
+    applyNodeResourceFilters();
+  });
+  getElement<HTMLButtonElement>("nodeResourcePageNext").addEventListener("click", () => {
+    nodeResourcePage += 1;
+    applyNodeResourceFilters();
+  });
 
   const nodeResourceRoadmapSelect = getElement<HTMLSelectElement>(
     "nodeResourceRoadmapSelect",

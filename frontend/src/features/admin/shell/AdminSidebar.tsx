@@ -32,6 +32,12 @@ export default function AdminSidebar() {
             {"기술 태그 관리"}
           </span>
         </button>
+        <button data-target="governance" className="nav-btn admin-nav-btn w-full rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-all duration-200" type="button">
+          <span className="admin-nav-icon">
+            <i className="fas fa-sliders"></i>
+          </span>
+          <span>정책 및 매핑</span>
+        </button>
         <div className="admin-nav-section px-4 pt-6 pb-2 text-[10px] font-bold tracking-widest">
           {"학습 로드맵"}
         </div>
@@ -101,6 +107,10 @@ export default function AdminSidebar() {
           <span id="nav-report-badge" className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm">
             {"0"}
           </span>
+        </button>
+        <button data-target="operations" className="nav-btn admin-nav-btn w-full rounded-lg px-3 py-2.5 text-left text-sm font-bold transition-all duration-200" type="button">
+          <span className="admin-nav-icon"><i className="fas fa-gears"></i></span>
+          <span>통합 운영 센터</span>
         </button>
       </nav>
       <div className="border-t border-slate-200 p-4">

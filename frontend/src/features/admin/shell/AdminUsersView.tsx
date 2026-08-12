@@ -1,81 +1,86 @@
 export default function AdminUsersView() {
   return (
-    <div id="view-users" className="view-section hidden space-y-4">
-      <div className="overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 bg-white p-5">
-          <h3 className="text-sm font-bold text-slate-800">
-            {"플랫폼 계정 목록"}
-          </h3>
-        </div>
-        <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-4">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="admin-filter-bar flex-1">
-              <label className="admin-filter-search relative block">
-                <i className="fas fa-search pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs text-slate-400"></i>
-                <input id="accountFilterInput" className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" type="text" placeholder="이메일 또는 이름으로 필터" />
-              </label>
-              <select id="accountRoleFilter" className="admin-filter-control-md rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                <option value="">
-                  {"전체 권한"}
-                </option>
-                <option value="ROLE_ADMIN">
-                  {"관리자"}
-                </option>
-                <option value="ROLE_INSTRUCTOR">
-                  {"강사"}
-                </option>
-                <option value="ROLE_LEARNER">
-                  {"학습자"}
-                </option>
-              </select>
-              <select id="accountStatusFilter" className="admin-filter-control-md rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                <option value="">
-                  {"전체 상태"}
-                </option>
-                <option value="ACTIVE">
-                  {"활성"}
-                </option>
-                <option value="RESTRICTED">
-                  {"제한"}
-                </option>
-                <option value="INACTIVE">
-                  {"비활성"}
-                </option>
-              </select>
-            </div>
-            <div id="accountFilterSummary" className="text-xs font-medium text-slate-500">
-              {"전체 0개"}
+    <div id="view-users" className="admin-operations-view view-section hidden space-y-5">
+      <section className="admin-panel">
+        <header className="admin-panel-header">
+          <div className="admin-panel-heading">
+            <span className="admin-panel-icon bg-sky-50 text-sky-600">
+              <i className="fas fa-users"></i>
+            </span>
+            <div>
+              <h3>플랫폼 계정</h3>
+              <p>이메일과 이름을 검색하고 권한·상태별로 계정을 관리합니다.</p>
             </div>
           </div>
+          <div id="accountFilterSummary" className="admin-result-count">전체 0개</div>
+        </header>
+
+        <div className="admin-filter-surface">
+          <div className="admin-account-filters">
+            <label className="admin-search-field admin-filter-field">
+              <span>계정 검색</span>
+              <i className="fas fa-search"></i>
+              <input id="accountFilterInput" type="text" placeholder="이메일 또는 이름을 입력하세요" />
+            </label>
+            <label className="admin-filter-field">
+              <span>권한</span>
+              <select id="accountRoleFilter" className="admin-select">
+                <option value="">전체 권한</option>
+                <option value="ROLE_ADMIN">관리자</option>
+                <option value="ROLE_INSTRUCTOR">강사</option>
+                <option value="ROLE_LEARNER">학습자</option>
+              </select>
+            </label>
+            <label className="admin-filter-field">
+              <span>계정 상태</span>
+              <select id="accountStatusFilter" className="admin-select">
+                <option value="">전체 상태</option>
+                <option value="ACTIVE">활성</option>
+                <option value="RESTRICTED">제한</option>
+                <option value="DEACTIVATED">비활성</option>
+                <option value="WITHDRAWN">탈퇴</option>
+              </select>
+            </label>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+
+        <div className="admin-table-scroll admin-table-scroll-tall">
+          <table className="w-full min-w-[1120px] border-collapse text-left">
             <thead>
               <tr>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"ID"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"계정"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"이름"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"권한"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"상태"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-right text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"관리"}
-                </th>
+                <th>ID</th>
+                <th>계정</th>
+                <th>이름</th>
+                <th>권한</th>
+                <th>상태</th>
+                <th>관리 작업</th>
               </tr>
             </thead>
-            <tbody id="accountTableBody" className="bg-white text-sm"></tbody>
+            <tbody id="accountTableBody" className="bg-white"></tbody>
           </table>
         </div>
-      </div>
+      </section>
+
+      <section className="admin-panel">
+        <header className="admin-panel-header">
+          <div className="admin-panel-heading">
+            <span className="admin-panel-icon bg-violet-50 text-violet-600"><i className="fas fa-user-shield"></i></span>
+            <div>
+              <h3>관리자 Role과 권한 코드</h3>
+              <p>운영 역할별 권한 코드 묶음을 등록하고 수정합니다.</p>
+            </div>
+          </div>
+          <button data-admin-click="createAdminRole()" className="admin-primary-action bg-violet-600 hover:bg-violet-700" type="button">
+            <i className="fas fa-plus"></i>Role 추가
+          </button>
+        </header>
+        <div className="admin-table-scroll admin-table-scroll-short">
+          <table className="w-full min-w-[780px] border-collapse text-left">
+            <thead><tr><th>Role</th><th>설명</th><th>권한 코드</th><th>관리</th></tr></thead>
+            <tbody id="adminRoleTableBody" className="bg-white"></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   )
 }

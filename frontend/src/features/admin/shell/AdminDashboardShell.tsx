@@ -11,6 +11,9 @@ import AdminRoadmapHubView from './AdminRoadmapHubView'
 import AdminUsersView from './AdminUsersView'
 import AdminReportsView from './AdminReportsView'
 import AdminNodeModal from './AdminNodeModal'
+import AdminAccountDetailModal from './AdminAccountDetailModal'
+import AdminGovernanceView from './AdminGovernanceView'
+import AdminOperationsView from './AdminOperationsView'
 
 export default function AdminDashboardShell() {
   return (
@@ -21,6 +24,7 @@ export default function AdminDashboardShell() {
         <div className="admin-content-shell">
           <AdminDashboardView />
           <AdminTagsView />
+          <AdminGovernanceView />
           <AdminOfficialRoadmapsView />
           <AdminRoadmapInfoView />
           <AdminRoadmapsView />
@@ -29,9 +33,11 @@ export default function AdminDashboardShell() {
           <AdminRoadmapHubView />
           <AdminUsersView />
           <AdminReportsView />
+          <AdminOperationsView />
         </div>
       </main>
       <AdminNodeModal />
+      <AdminAccountDetailModal />
     </>
   )
 }

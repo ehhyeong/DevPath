@@ -1,112 +1,118 @@
 export default function AdminRoadmapsView() {
   return (
-    <div id="view-roadmaps" className="view-section hidden space-y-4">
-      <div className="overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 bg-white p-5">
-          <h3 className="text-sm font-bold text-slate-800">
-            {"마스터 로드맵 노드"}
-          </h3>
-          <button data-admin-click="createRoadmapNode()" className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50" type="button">
-            <i className="fas fa-plus mr-1"></i>
-            {"노드 추가"}
-          </button>
-        </div>
-        <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-4">
-          <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-center 2xl:justify-between">
-            <div className="admin-filter-bar flex-1">
-              <label className="admin-filter-search relative block">
-                <i className="fas fa-search pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs text-slate-400"></i>
-                <input id="nodeFilterInput" className="w-full rounded-lg border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" type="text" placeholder="로드맵명 또는 노드명으로 필터" />
-              </label>
-              <select id="nodeHubSectionFilter" className="admin-filter-control-lg rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                <option value="">
-                  {"전체 허브 분류"}
-                </option>
-              </select>
-              <select id="nodeHubItemFilter" className="admin-filter-control-lg rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                <option value="">
-                  {"전체 허브 항목"}
-                </option>
-              </select>
-              <select id="nodeRoadmapFilter" className="admin-filter-control-lg rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                <option value="">
-                  {"전체 로드맵"}
-                </option>
-              </select>
-              <select id="nodeTypeFilter" className="admin-filter-control-sm rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                <option value="">
-                  {"전체 유형"}
-                </option>
-                <option value="CONCEPT">
-                  {"개념"}
-                </option>
-                <option value="PRACTICE">
-                  {"실습"}
-                </option>
-                <option value="PROJECT">
-                  {"프로젝트"}
-                </option>
-                <option value="REVIEW">
-                  {"복습"}
-                </option>
-                <option value="EXAM">
-                  {"평가"}
-                </option>
-                <option value="QUIZ">
-                  {"퀴즈"}
-                </option>
-                <option value="ASSIGNMENT">
-                  {"과제"}
-                </option>
-              </select>
-            </div>
-            <div id="nodeFilterSummary" className="text-xs font-medium text-slate-500">
-              {"전체 0개"}
+    <div id="view-roadmaps" className="admin-operations-view view-section hidden">
+      <section className="admin-panel">
+        <header className="admin-panel-header admin-panel-header-actions">
+          <div className="admin-panel-heading">
+            <span className="admin-panel-icon bg-amber-50 text-amber-600">
+              <i className="fas fa-sitemap"></i>
+            </span>
+            <div>
+              <h3>마스터 로드맵 노드</h3>
+              <p>로드맵별 학습 노드와 연결 구조, 선수 조건, 완료 기준을 관리합니다.</p>
             </div>
           </div>
-          <div className="mt-3 rounded-xl border border-slate-200 bg-white/70 px-3 py-2">
-            <div className="mb-2 text-[11px] font-bold tracking-wide text-slate-400 uppercase">
-              {"허브 메가 필터"}
+          <div className="admin-header-action-area">
+            <div id="nodeFilterSummary" className="admin-result-count">전체 0개</div>
+            <button data-admin-click="createRoadmapNode()" className="admin-primary-action" type="button">
+              <i className="fas fa-plus"></i>
+              새 노드 추가
+            </button>
+          </div>
+        </header>
+
+        <div className="admin-guidance-banner admin-guidance-banner-amber">
+          <i className="fas fa-circle-info"></i>
+          <span>노드 수정은 기본 정보, 선수 조건, 기술 태그, 완료 기준으로 나뉩니다. 필요한 항목만 선택해 변경할 수 있습니다.</span>
+        </div>
+
+        <div className="admin-filter-surface admin-filter-surface-stacked">
+          <div className="admin-node-search-row">
+            <label className="admin-search-field">
+              <span className="sr-only">마스터 노드 검색</span>
+              <i className="fas fa-search"></i>
+              <input id="nodeFilterInput" type="text" placeholder="노드명, 설명, 로드맵명으로 검색" autoComplete="off" />
+            </label>
+            <button id="nodeFilterReset" className="admin-secondary-action" type="button">
+              <i className="fas fa-rotate-left"></i>
+              필터 초기화
+            </button>
+          </div>
+
+          <div className="admin-node-filter-grid">
+            <label className="admin-filter-field">
+              <span>허브 분류</span>
+              <select id="nodeHubSectionFilter">
+                <option value="">전체 허브 분류</option>
+              </select>
+            </label>
+            <label className="admin-filter-field">
+              <span>허브 항목</span>
+              <select id="nodeHubItemFilter">
+                <option value="">전체 허브 항목</option>
+              </select>
+            </label>
+            <label className="admin-filter-field">
+              <span>공식 로드맵</span>
+              <select id="nodeRoadmapFilter">
+                <option value="">전체 로드맵</option>
+              </select>
+            </label>
+            <label className="admin-filter-field">
+              <span>노드 유형</span>
+              <select id="nodeTypeFilter">
+                <option value="">전체 유형</option>
+                <option value="CONCEPT">개념</option>
+                <option value="PRACTICE">실습</option>
+                <option value="PROJECT">프로젝트</option>
+                <option value="REVIEW">복습</option>
+                <option value="EXAM">평가</option>
+                <option value="QUIZ">퀴즈</option>
+                <option value="ASSIGNMENT">과제</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="admin-node-quick-filter-area">
+            <div className="admin-node-quick-filter-heading">
+              <span><i className="fas fa-bolt"></i> 허브 빠른 필터</span>
+              <small>허브 노출 위치를 기준으로 즉시 좁혀봅니다.</small>
             </div>
-            <div id="nodeHubQuickFilters" className="flex flex-wrap gap-2"></div>
+            <div id="nodeHubQuickFilters" className="admin-node-quick-filters"></div>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] table-fixed border-collapse text-left">
+
+        <div id="nodeTableScroll" className="admin-table-scroll admin-table-scroll-tall admin-node-table-scroll">
+          <table className="w-full min-w-[1240px] table-fixed border-collapse text-left">
             <colgroup>
-              <col className="w-[5%]" />
-              <col className="w-[26%]" />
-              <col className="w-[17%]" />
-              <col className="w-[17%]" />
-              <col className="w-[10%]" />
-              <col className="w-[25%]" />
+              <col className="w-[7%]" />
+              <col className="w-[23%]" />
+              <col className="w-[22%]" />
+              <col className="w-[19%]" />
+              <col className="w-[15%]" />
+              <col className="w-[14%]" />
             </colgroup>
             <thead>
               <tr>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"노드 ID"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"노드명"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"로드맵 / 유형"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"구조"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"필수 정보"}
-                </th>
-                <th className="border-b border-slate-100 bg-slate-50/50 px-6 py-3 text-right text-[11px] font-bold tracking-wider text-slate-400 uppercase">
-                  {"관리"}
-                </th>
+                <th>노드 ID</th>
+                <th>노드 정보</th>
+                <th>로드맵과 허브 노출</th>
+                <th>학습 구조</th>
+                <th>완료 조건</th>
+                <th className="text-right">관리 작업</th>
               </tr>
             </thead>
-            <tbody id="nodeTableBody" className="bg-white text-sm"></tbody>
+            <tbody id="nodeTableBody" className="bg-white"></tbody>
           </table>
         </div>
-      </div>
+        <footer className="admin-table-footer">
+          <span id="nodePageSummary">0개 표시</span>
+          <div className="admin-pagination" aria-label="마스터 노드 페이지 이동">
+            <button id="nodePagePrevious" type="button" disabled><i className="fas fa-chevron-left"></i>이전</button>
+            <button id="nodePageNext" type="button" disabled>다음<i className="fas fa-chevron-right"></i></button>
+          </div>
+        </footer>
+      </section>
     </div>
   )
 }

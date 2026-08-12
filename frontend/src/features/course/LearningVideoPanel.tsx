@@ -1,6 +1,7 @@
 import type { LearningPlayerReadyModel } from './useLearningPlayerController'
 import { getVideoErrorMessage, VIDEO_QUALITY_OPTIONS } from './learning-player-model'
 import { formatDateLabel, formatTime, PLAYER_SPEEDS } from './learning-player-support'
+import { useHlsVideoSource } from './useHlsVideoSource'
 
 type Props = { model: LearningPlayerReadyModel }
 
@@ -57,7 +58,10 @@ export default function LearningVideoPanel({ model }: Props) {
     previousLesson,
     handleNextLesson,
     nextLesson,
+    sessionUserId,
   } = model
+
+  const isHlsSource = useHlsVideoSource(videoRef, resolvedVideoUrl, setVideoFailed)
 
   return (
     <>
@@ -91,7 +95,7 @@ export default function LearningVideoPanel({ model }: Props) {
                     <video
                       key={`${lesson.lessonId}-${activeVideoQuality ?? 'source'}`}
                       ref={videoRef}
-                      src={resolvedVideoUrl ?? undefined}
+                      src={isHlsSource ? undefined : resolvedVideoUrl ?? undefined}
                       poster={lesson.thumbnailUrl ?? course.thumbnailUrl ?? undefined}
                       className="learning-player-video-element h-full w-full max-w-none object-contain object-center"
                       playsInline
@@ -99,7 +103,17 @@ export default function LearningVideoPanel({ model }: Props) {
                       onLoadedData={() => setVideoFailed(false)}
                       onCanPlay={() => setVideoFailed(false)}
                       onClick={() => { if (!isSelectMode) void handleTogglePlaySafe() }}
+                      data-hls-encrypted={lesson.hlsEncrypted ? 'true' : 'false'}
                     />
+                    {lesson.watermarkEnabled ? (
+                      <div className="pointer-events-none absolute inset-0 z-10 grid grid-cols-3 grid-rows-3 select-none overflow-hidden opacity-[0.16]" aria-hidden="true">
+                        {Array.from({ length: 9 }, (_, index) => (
+                          <span key={index} className="flex -rotate-12 items-center justify-center whitespace-nowrap text-xs font-bold tracking-widest text-white">
+                            DevPath · 회원 #{sessionUserId ?? 'preview'}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     {showVideoErrorOverlay ? (
                       <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/65 px-6">
                         <div className="w-full max-w-lg rounded-[28px] border border-white/10 bg-black/70 px-6 py-7 text-center shadow-2xl backdrop-blur">

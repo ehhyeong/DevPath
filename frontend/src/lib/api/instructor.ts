@@ -10,6 +10,9 @@ export interface InstructorUploadedAsset {
   storedFileName: string
   contentType: string | null
   fileSize: number
+  originalUrl: string
+  originalAssetKey: string
+  transcoded: boolean
 }
 
 function toNumber(value: unknown, fallback = 0) {

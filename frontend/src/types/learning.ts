@@ -110,6 +110,9 @@ export interface LearningLesson {
   isPreview: boolean | null
   isPublished: boolean | null
   sortOrder: number | null
+  hlsEncrypted?: boolean | null
+  maxResolution?: string | null
+  watermarkEnabled?: boolean | null
   materials: LearningMaterial[]
   assignment?: LearningLessonAssignment | null
   quiz?: LearningQuizDraft | null

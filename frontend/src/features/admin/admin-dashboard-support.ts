@@ -4,6 +4,7 @@ import type { RoadmapHubItem, RoadmapHubSection } from '../../types/roadmap-hub'
 export type AdminTabKey =
   | 'dashboard'
   | 'tags'
+  | 'governance'
   | 'official-roadmaps'
   | 'roadmap-info'
   | 'roadmaps'
@@ -12,6 +13,15 @@ export type AdminTabKey =
   | 'roadmap-hub'
   | 'users'
   | 'reports'
+  | 'operations'
+
+export function shouldLoadAdminTab(
+  loadedTabs: ReadonlySet<AdminTabKey>,
+  tab: AdminTabKey,
+  force = false,
+) {
+  return force || !loadedTabs.has(tab)
+}
 
 export type DashboardFilterState = {
   tagQuery: string
@@ -30,6 +40,10 @@ export type DashboardFilterState = {
   accountQuery: string
   accountRole: string
   accountStatus: string
+  reportQuery: string
+  reportTargetLabel: string
+  reportContentLink: string
+  reportStatus: string
 }
 
 export type RoadmapHubFilterState = {

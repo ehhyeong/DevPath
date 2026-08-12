@@ -396,6 +396,16 @@ export const reviewApi = {
   },
 }
 
+export const reportApi = {
+  submit(targetType: 'REVIEW' | 'USER', targetId: number, reason: string) {
+    return request<{ reportId: number; status: string }>(
+      '/api/reports',
+      { method: 'POST', body: JSON.stringify({ targetType, targetId, reason }) },
+      { auth: true },
+    )
+  },
+}
+
 export const qnaApi = {
   getQuestions(courseId?: number, signal?: AbortSignal) {
     return request<QnaQuestionSummary[]>(
