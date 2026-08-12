@@ -18,6 +18,7 @@ import com.devpath.domain.learning.repository.ocr.OcrResultRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
 import com.devpath.domain.learning.repository.recommendation.RiskWarningRepository;
 import com.devpath.domain.learning.repository.recommendation.SupplementRecommendationRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.NodeRecommendation;
 import com.devpath.domain.roadmap.entity.RecommendationStatus;
@@ -63,6 +64,7 @@ class NodeRecommendationServiceTest {
   @Mock private TimestampNoteRepository timestampNoteRepository;
   @Mock private TilDraftRepository tilDraftRepository;
   @Mock private OcrResultRepository ocrResultRepository;
+  @Mock private LearningAutomationPolicyService learningAutomationPolicyService;
 
   private NodeRecommendationService service;
 
@@ -81,7 +83,8 @@ class NodeRecommendationServiceTest {
             lessonProgressRepository,
             timestampNoteRepository,
             tilDraftRepository,
-            ocrResultRepository);
+            ocrResultRepository,
+            learningAutomationPolicyService);
     NodeRecommendationArtifacts recommendationArtifacts =
         new NodeRecommendationArtifacts(
             recommendationHistoryRepository,

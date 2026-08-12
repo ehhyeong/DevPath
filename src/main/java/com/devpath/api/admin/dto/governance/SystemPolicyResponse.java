@@ -11,5 +11,8 @@ public class SystemPolicyResponse {
   private Integer platformFeeRate;
   private Integer refundPolicyDays;
   private Long maxCoursePrice;
+  private Boolean hlsEnabled;
+  private String maxResolution;
+  private Boolean watermarkEnabled;
   private LocalDateTime updatedAt;
 }

@@ -12,6 +12,15 @@ import {
 } from './lib/auth-session'
 import { navigateTo } from './lib/spa-navigation'
 import { readAuthViewFromLocation,syncAuthViewInLocation } from './lib/location-state'
+import type { ApiResponse } from './types/home'
+
+type PlatformNotice = {
+  id: number
+  title: string
+  content: string
+  pinned: boolean
+  createdAt: string | null
+}
 
 const headerLinks = [
   { key: 'roadmap', href: '/roadmap-hub', label: '로드맵' },
@@ -119,6 +128,9 @@ function App() {
   const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
+  const [platformNotices, setPlatformNotices] = useState<PlatformNotice[]>([])
+  const [noticesOpen, setNoticesOpen] = useState(false)
+  const [noticesError, setNoticesError] = useState('')
   const showInstructorDashboard = session?.role === 'ROLE_INSTRUCTOR'
   const navGroupOffset = headerMoveOffsets.navGroup
   const headerUserStyle = { transform: 'translateX(-20px)' }
@@ -211,6 +223,20 @@ function App() {
 
   function closeAuthModal() {
     setAuthView(null)
+  }
+
+  async function openPlatformNotices() {
+    setNoticesOpen(true)
+    setNoticesError('')
+    if (platformNotices.length) return
+    try {
+      const response = await fetch('/api/notices', { headers: { Accept: 'application/json' } })
+      const payload = await response.json() as ApiResponse<PlatformNotice[]>
+      if (!response.ok || !payload.success) throw new Error(payload.message || '공지를 불러오지 못했습니다.')
+      setPlatformNotices(payload.data)
+    } catch (error) {
+      setNoticesError(error instanceof Error ? error.message : '공지를 불러오지 못했습니다.')
+    }
   }
 
   // 관리자 세션은 일반 홈 대신 전용 대시보드로 즉시 이동시킨다.
@@ -709,9 +735,9 @@ function App() {
               <ul className="space-y-2 text-sm text-gray-500">
                 {supportLinks.map((item) => (
                   <li key={item.label}>
-                    <a href={item.href} className="hover:text-brand">
-                      {item.label}
-                    </a>
+                    {item.label === '공지사항'
+                      ? <button type="button" className="hover:text-brand" onClick={() => void openPlatformNotices()}>{item.label}</button>
+                      : <a href={item.href} className="hover:text-brand">{item.label}</a>}
                   </li>
                 ))}
               </ul>
@@ -733,6 +759,18 @@ function App() {
           onViewChange={setAuthView}
           onAuthenticated={handleAuthenticated}
         />
+      ) : null}
+      {noticesOpen ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-5" role="dialog" aria-modal="true" aria-labelledby="platform-notice-title" onClick={(event) => { if (event.target === event.currentTarget) setNoticesOpen(false) }}>
+          <section className="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <header className="flex items-center justify-between border-b border-gray-100 px-6 py-5"><div><h2 id="platform-notice-title" className="text-xl font-extrabold text-gray-900">DevPath 공지사항</h2><p className="mt-1 text-sm text-gray-500">서비스 운영 소식을 확인하세요.</p></div><button type="button" className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500" aria-label="공지 닫기" onClick={() => setNoticesOpen(false)}><i className="fas fa-xmark" /></button></header>
+            <div className="max-h-[calc(80vh-96px)] space-y-3 overflow-y-auto p-6">
+              {noticesError ? <p className="rounded-xl bg-rose-50 p-4 text-sm font-semibold text-rose-700">{noticesError}</p> : null}
+              {!noticesError && platformNotices.length === 0 ? <p className="py-12 text-center text-sm text-gray-400">등록된 공지사항이 없습니다.</p> : null}
+              {platformNotices.map((notice) => <article key={notice.id} className="rounded-2xl border border-gray-100 p-5"><div className="flex items-center gap-2"><h3 className="font-bold text-gray-900">{notice.title}</h3>{notice.pinned ? <span className="rounded-full bg-orange-50 px-2 py-1 text-[10px] font-bold text-orange-700">중요</span> : null}</div><p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-600">{notice.content}</p><time className="mt-3 block text-xs text-gray-400">{notice.createdAt ? new Date(notice.createdAt).toLocaleDateString('ko-KR') : ''}</time></article>)}
+            </div>
+          </section>
+        </div>
       ) : null}
     </div>
   )

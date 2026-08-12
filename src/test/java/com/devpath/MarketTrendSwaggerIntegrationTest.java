@@ -195,6 +195,6 @@ class MarketTrendSwaggerIntegrationTest {
 
   private UsernamePasswordAuthenticationToken adminAuthentication() {
     return new UsernamePasswordAuthenticationToken(
-        2L, null, AuthorityUtils.createAuthorityList("ROLE_ADMIN"));
+        2L, null, AuthorityUtils.createAuthorityList("ROLE_ADMIN", "ADMIN_SUPER"));
   }
 }

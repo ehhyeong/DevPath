@@ -6,6 +6,7 @@ import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.learning.entity.automation.LearningAutomationRule;
 import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
+import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class AdminLearningRuleService {
 
   @Transactional
   public AdminLearningRuleResponse.Detail createRule(AdminLearningRuleRequest.Upsert request) {
+    LearningAutomationRuleCatalog.validate(request.getRuleKey(), request.getRuleValue());
     learningAutomationRuleRepository
         .findByRuleKey(request.getRuleKey())
         .ifPresent(
@@ -50,6 +52,7 @@ public class AdminLearningRuleService {
   @Transactional
   public AdminLearningRuleResponse.Detail updateRule(
       Long ruleId, AdminLearningRuleRequest.Upsert request) {
+    LearningAutomationRuleCatalog.validate(request.getRuleKey(), request.getRuleValue());
     LearningAutomationRule rule =
         learningAutomationRuleRepository
             .findById(ruleId)
@@ -80,6 +83,9 @@ public class AdminLearningRuleService {
             .findById(ruleId)
             .orElseThrow(() -> new CustomException(ErrorCode.LEARNING_RULE_NOT_FOUND));
 
+    if (LearningAutomationRuleCatalog.isBooleanRule(rule.getRuleKey())) {
+      rule.changeRuleValue("true");
+    }
     rule.enable();
     return toDetail(rule);
   }
@@ -91,6 +97,9 @@ public class AdminLearningRuleService {
             .findById(ruleId)
             .orElseThrow(() -> new CustomException(ErrorCode.LEARNING_RULE_NOT_FOUND));
 
+    if (LearningAutomationRuleCatalog.isBooleanRule(rule.getRuleKey())) {
+      rule.changeRuleValue("false");
+    }
     rule.disable();
     return toDetail(rule);
   }

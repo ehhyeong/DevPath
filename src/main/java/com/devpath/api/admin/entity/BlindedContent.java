@@ -50,4 +50,10 @@ public class BlindedContent {
     this.reason = reason;
     this.isActive = true;
   }
+
+  public void unblind(Long adminId, String reason) {
+    this.adminId = adminId;
+    this.reason = reason;
+    this.isActive = false;
+  }
 }

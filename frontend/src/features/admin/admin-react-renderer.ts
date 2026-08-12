@@ -11,5 +11,5 @@ export function renderAdminMarkup(container: Element, html: string) {
     root = createRoot(container)
     roots.set(container, root)
   }
-  flushSync(() => root?.render(createElement(AdminMarkup, { html })))
+  flushSync(() => root?.render(createElement(AdminMarkup, { html, contextTagName: container.tagName.toLowerCase() })))
 }

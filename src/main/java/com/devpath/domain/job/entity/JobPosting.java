@@ -143,4 +143,8 @@ public class JobPosting {
     this.isDeleted = true;
     this.status = JobPostingStatus.CLOSED;
   }
+
+  public void restore() {
+    this.isDeleted = false;
+  }
 }

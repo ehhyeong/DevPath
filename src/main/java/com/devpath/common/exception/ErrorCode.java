@@ -38,6 +38,7 @@ public enum ErrorCode {
   TIL_NOT_FOUND(HttpStatus.NOT_FOUND, "TIL 초안을 찾을 수 없습니다."),
   WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "찜한 강의를 찾을 수 없습니다."),
   ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 이력을 찾을 수 없습니다."),
+  PLAYBACK_DEVICE_LIMIT_EXCEEDED(HttpStatus.FORBIDDEN, "허용된 동시 학습 기기 수를 초과했습니다."),
 
   BUILDER_MODULE_NOT_FOUND(HttpStatus.NOT_FOUND, "빌더 모듈을 찾을 수 없습니다."),
   MY_ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "나만의 로드맵을 찾을 수 없습니다."),
@@ -93,6 +94,7 @@ public enum ErrorCode {
   SETTLEMENT_NOT_PENDING(HttpStatus.BAD_REQUEST, "PENDING 상태의 정산만 처리할 수 있습니다."),
   ACCOUNT_ALREADY_RESTRICTED(HttpStatus.BAD_REQUEST, "이미 제한된 계정입니다."),
   ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "계정을 찾을 수 없습니다."),
+  ACCOUNT_ACCESS_BLOCKED(HttpStatus.FORBIDDEN, "비활성화되었거나 이용이 제한된 계정입니다."),
   NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "N001", "해당 공지사항을 찾을 수 없습니다."),
   QNA_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "QnA 질문을 찾을 수 없습니다."),
   QNA_ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "QnA 답변을 찾을 수 없습니다."),

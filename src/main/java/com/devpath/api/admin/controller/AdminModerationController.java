@@ -53,6 +53,15 @@ public class AdminModerationController {
     return ApiResponse.success("콘텐츠를 블라인드 처리했습니다.", null);
   }
 
+  @PostMapping("/contents/{contentId}/unblind")
+  public ApiResponse<Void> unblindContent(
+      @PathVariable Long contentId,
+      @RequestBody @Valid ContentBlindRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long adminId) {
+    adminModerationService.unblindContent(contentId, adminId, request);
+    return ApiResponse.success("콘텐츠 블라인드를 해제했습니다.", null);
+  }
+
   @Operation(summary = "제재 통계 조회")
   @GetMapping("/stats")
   public ApiResponse<ModerationStatsResponse> getModerationStats() {

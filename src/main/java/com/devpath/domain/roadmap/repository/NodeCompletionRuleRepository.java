@@ -12,4 +12,6 @@ public interface NodeCompletionRuleRepository extends JpaRepository<NodeCompleti
 
   // 관리자 표를 그릴 때 여러 노드의 완료 규칙을 한 번에 읽는다.
   List<NodeCompletionRule> findAllByNodeNodeIdIn(Collection<Long> nodeIds);
+
+  void deleteAllByNodeNodeId(Long nodeId);
 }

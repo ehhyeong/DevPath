@@ -3,6 +3,7 @@ package com.devpath.api.learner.service;
 import com.devpath.api.common.dto.CourseDetailResponse;
 import com.devpath.api.common.dto.CourseListItemResponse;
 import com.devpath.api.common.service.CourseDetailMetadataMapper;
+import com.devpath.api.course.service.HlsPlaybackService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -26,6 +27,8 @@ import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.CourseTargetAudienceRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.learning.service.PlaybackDeviceRegistry;
+import com.devpath.domain.system.service.SystemPolicyService;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
@@ -61,6 +64,9 @@ public class LearnerCourseService {
   private final CourseWishlistService courseWishlistService;
   private final CourseEnrollmentService courseEnrollmentService;
   private final CourseDetailMetadataMapper metadataMapper;
+  private final SystemPolicyService systemPolicyService;
+  private final PlaybackDeviceRegistry playbackDeviceRegistry;
+  private final HlsPlaybackService hlsPlaybackService;
 
   public List<CourseListItemResponse> getCourseList(Long userId) {
     List<Course> courses =
@@ -109,6 +115,10 @@ public class LearnerCourseService {
   }
 
   public CourseDetailResponse getCourseDetail(Long userId, Long courseId) {
+    return getCourseDetail(userId, courseId, null);
+  }
+
+  public CourseDetailResponse getCourseDetail(Long userId, Long courseId, String deviceId) {
     Course course =
         courseRepository
             .findByCourseIdAndStatus(courseId, CourseStatus.PUBLISHED)
@@ -154,6 +164,11 @@ public class LearnerCourseService {
         isAuthenticated(userId) && courseWishlistService.isWishlisted(userId, courseId);
     boolean isEnrolled =
         isAuthenticated(userId) && courseEnrollmentService.isEnrolled(userId, courseId);
+    SystemPolicyService.Policy playbackPolicy = systemPolicyService.currentPolicy();
+    if (isEnrolled && containsProtectedVideo(lessons)) {
+      playbackDeviceRegistry.register(
+          userId, deviceId, Math.max(1, playbackPolicy.maxConcurrentDevices()));
+    }
 
     return CourseDetailResponse.builder()
         .courseId(course.getCourseId())
@@ -182,7 +197,15 @@ public class LearnerCourseService {
         .isBookmarked(isBookmarked)
         .isEnrolled(isEnrolled)
         .instructor(mapInstructor(course, userProfile, specialties))
-        .sections(mapSections(sections, lessonsBySectionId, materialsByLessonId, assessments))
+        .sections(
+            mapSections(
+                sections,
+                lessonsBySectionId,
+                materialsByLessonId,
+                assessments,
+                isEnrolled,
+                playbackPolicy,
+                userId))
         .news(mapNews(courseId, news))
         .build();
   }
@@ -246,7 +269,10 @@ public class LearnerCourseService {
       List<CourseSection> sections,
       Map<Long, List<Lesson>> lessonsBySectionId,
       Map<Long, List<CourseMaterial>> materialsByLessonId,
-      LearnerCourseAssessmentAssembler.AssessmentMapping assessments) {
+      LearnerCourseAssessmentAssembler.AssessmentMapping assessments,
+      boolean canAccessProtectedVideos,
+      SystemPolicyService.Policy playbackPolicy,
+      Long userId) {
     return sections.stream()
         .filter(section -> Boolean.TRUE.equals(section.getIsPublished()))
         .map(
@@ -260,7 +286,14 @@ public class LearnerCourseService {
                   .description(section.getDescription())
                   .sortOrder(section.getOrderIndex())
                   .isPublished(section.getIsPublished())
-                  .lessons(mapLessons(lessons, materialsByLessonId, assessments))
+                  .lessons(
+                      mapLessons(
+                          lessons,
+                          materialsByLessonId,
+                          assessments,
+                          canAccessProtectedVideos,
+                          playbackPolicy,
+                          userId))
                   .build();
             })
         .toList();
@@ -269,20 +302,32 @@ public class LearnerCourseService {
   private List<CourseDetailResponse.LessonItem> mapLessons(
       List<Lesson> lessons,
       Map<Long, List<CourseMaterial>> materialsByLessonId,
-      LearnerCourseAssessmentAssembler.AssessmentMapping assessments) {
+      LearnerCourseAssessmentAssembler.AssessmentMapping assessments,
+      boolean canAccessProtectedVideos,
+      SystemPolicyService.Policy playbackPolicy,
+      Long userId) {
     return lessons.stream()
         .filter(lesson -> Boolean.TRUE.equals(lesson.getIsPublished()))
         .map(
             lesson -> {
               List<CourseMaterial> materials =
                   materialsByLessonId.getOrDefault(lesson.getLessonId(), List.of());
+              boolean canAccessVideo =
+                  Boolean.TRUE.equals(lesson.getIsPreview())
+                      || canAccessProtectedVideos
+                      || isHlsSource(lesson.getVideoUrl());
+              String videoUrl =
+                  canAccessVideo ? hlsPlaybackService.issuePlaybackUrl(lesson, userId) : null;
               return CourseDetailResponse.LessonItem.builder()
                   .lessonId(lesson.getLessonId())
                   .title(lesson.getTitle())
                   .description(lesson.getDescription())
                   .lessonType(lesson.getLessonType() == null ? null : lesson.getLessonType().name())
-                  .videoUrl(lesson.getVideoUrl())
-                  .videoAssetKey(lesson.getVideoId())
+                  .videoUrl(videoUrl)
+                  .videoAssetKey(videoUrl != null ? lesson.getVideoId() : null)
+                  .hlsEncrypted(playbackPolicy.hlsEncrypted() && isHlsSource(videoUrl))
+                  .maxResolution(playbackPolicy.maxResolution())
+                  .watermarkEnabled(playbackPolicy.watermarkEnabled())
                   .thumbnailUrl(lesson.getThumbnailUrl())
                   .durationSeconds(lesson.getDurationSeconds())
                   .isPreview(lesson.getIsPreview())
@@ -294,6 +339,23 @@ public class LearnerCourseService {
                   .build();
             })
         .toList();
+  }
+
+  private boolean containsProtectedVideo(List<Lesson> lessons) {
+    return lessons.stream()
+        .anyMatch(
+            lesson ->
+                !Boolean.TRUE.equals(lesson.getIsPreview())
+                    && lesson.getVideoUrl() != null
+                    && !lesson.getVideoUrl().isBlank());
+  }
+
+  private boolean isHlsSource(String videoUrl) {
+    if (videoUrl == null) {
+      return false;
+    }
+    String normalized = videoUrl.toLowerCase();
+    return normalized.contains(".m3u8") || normalized.startsWith("hls://");
   }
 
   private List<CourseDetailResponse.MaterialItem> mapMaterials(List<CourseMaterial> materials) {

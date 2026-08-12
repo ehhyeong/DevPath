@@ -53,13 +53,17 @@ public class ModerationReport {
 
   @Column private LocalDateTime resolvedAt;
 
+  @Column(columnDefinition = "TEXT")
+  private String resolutionReason;
+
   @CreatedDate private LocalDateTime createdAt;
 
   // 신고 처리 시 액션과 처리자, 처리 시각을 함께 남긴다.
-  public void resolve(Long adminId, ModerationActionType actionType) {
+  public void resolve(Long adminId, ModerationActionType actionType, String resolutionReason) {
     this.status = ModerationReportStatus.RESOLVED;
     this.actionTaken = actionType;
     this.resolvedBy = adminId;
     this.resolvedAt = LocalDateTime.now();
+    this.resolutionReason = resolutionReason;
   }
 }

@@ -8,6 +8,7 @@ import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.TilDraftRepository;
 import com.devpath.domain.learning.repository.TimestampNoteRepository;
 import com.devpath.domain.learning.repository.ocr.OcrResultRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import com.devpath.domain.roadmap.entity.NodeRecommendation;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
@@ -35,6 +36,7 @@ class NodeRecommendationPlannerTest {
   @Mock private TimestampNoteRepository timestampNoteRepository;
   @Mock private TilDraftRepository tilDraftRepository;
   @Mock private OcrResultRepository ocrResultRepository;
+  @Mock private LearningAutomationPolicyService learningAutomationPolicyService;
 
   @InjectMocks private NodeRecommendationPlanner planner;
 
@@ -66,6 +68,7 @@ class NodeRecommendationPlannerTest {
 
   @Test
   void plan_selectsAdvancedNodeWhenLearningMomentumIsHigh() {
+    when(learningAutomationPolicyService.getTagMatchThreshold()).thenReturn(0.80);
     LessonProgress progress = LessonProgress.builder().build();
     progress.updateProgress(60, 600);
     when(lessonProgressRepository.findAllByUserId(1L)).thenReturn(List.of(progress));

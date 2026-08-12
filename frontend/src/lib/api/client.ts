@@ -3,6 +3,19 @@ import { expireStoredAuthSession, refreshStoredAuthSession } from '../auth-sessi
 import { getCachedQuery,invalidateCachedQueries } from '../memory-query-cache'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
+const DEVICE_STORAGE_KEY = 'devpath.playback.device-id'
+
+function getPlaybackDeviceId() {
+  try {
+    const stored = window.localStorage.getItem(DEVICE_STORAGE_KEY)
+    if (stored) return stored
+    const generated = window.crypto?.randomUUID?.() ?? `device-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    window.localStorage.setItem(DEVICE_STORAGE_KEY, generated)
+    return generated
+  } catch {
+    return 'browser-default'
+  }
+}
 
 type RequestOptions = {
   auth?: boolean
@@ -40,6 +53,7 @@ export async function requestRaw(
   const headers = new Headers(init.headers)
 
   if (options.auth) {
+    headers.set('X-DevPath-Device-Id', getPlaybackDeviceId())
     const session = await refreshStoredAuthSession()
     if (session?.accessToken) {
       headers.set('Authorization', `${session.tokenType} ${session.accessToken}`)
@@ -85,6 +99,7 @@ export async function request<T>(
   let cacheIdentity = 'public'
 
   if (options.auth) {
+    headers.set('X-DevPath-Device-Id', getPlaybackDeviceId())
     const session = await refreshStoredAuthSession()
     cacheIdentity = session?.userId ? `user-${session.userId}` : 'anonymous'
 

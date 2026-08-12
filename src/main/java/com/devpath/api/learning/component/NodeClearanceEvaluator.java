@@ -15,6 +15,8 @@ import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.QuizAttemptRepository;
 import com.devpath.domain.learning.repository.QuizRepository;
 import com.devpath.domain.learning.repository.SubmissionRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
+import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
 import com.devpath.domain.roadmap.entity.NodeCompletionRule;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.NodeCompletionRuleRepository;
@@ -72,6 +74,8 @@ public class NodeClearanceEvaluator {
   // 노드 완료 규칙 저장소다.
   private final NodeCompletionRuleRepository nodeCompletionRuleRepository;
 
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
+
   // 특정 학습자의 특정 노드 클리어 상태를 평가한다.
   public EvaluationResult evaluate(Long userId, Long nodeId) {
     RoadmapNode node =
@@ -99,8 +103,12 @@ public class NodeClearanceEvaluator {
     boolean lessonCompleted = totalLessonCount == 0L || completedLessonCount >= totalLessonCount;
     boolean quizPassed = hasQuizPassed(nodeId, userId);
     boolean assignmentPassed = hasAssignmentPassed(nodeId, userId);
+    boolean requiresCompletion =
+        learningAutomationPolicyService.isEnabled(
+            LearningAutomationRuleCatalog.NODE_CLEARANCE_REQUIRES_COMPLETION, true);
     boolean proofEligible =
-        lessonCompleted && requiredTagsSatisfied && quizPassed && assignmentPassed;
+        requiredTagsSatisfied
+            && (!requiresCompletion || (lessonCompleted && quizPassed && assignmentPassed));
     ClearanceStatus clearanceStatus =
         proofEligible ? ClearanceStatus.CLEARED : ClearanceStatus.NOT_CLEARED;
 

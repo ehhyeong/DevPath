@@ -30,7 +30,7 @@ import {
 } from './course-detail-support'
 import { buildInstructorChannelHref } from '../../instructor/channel/support'
 import { authApi, userApi } from '../../lib/api/auth'
-import { courseApi, enrollmentApi, qnaApi, reviewApi } from '../../lib/api/learner'
+import { courseApi, enrollmentApi, qnaApi, reportApi, reviewApi } from '../../lib/api/learner'
 import { instructorCourseApi } from '../../lib/api/instructor'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
@@ -90,6 +90,17 @@ export default function CourseDetailApp() {
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [enrollmentBusy, setEnrollmentBusy] = useState(false)
   const deferredQnaSearch = useDeferredValue(qnaSearch.trim().toLowerCase())
+
+  async function submitReport(targetType: 'REVIEW' | 'USER', targetId: number) {
+    if (!session) {
+      setAuthView('login')
+      return
+    }
+    const reason = window.prompt(targetType === 'REVIEW' ? '수강평 신고 사유' : '계정 신고 사유')
+    if (!reason?.trim()) return
+    await reportApi.submit(targetType, targetId, reason.trim())
+    setToastMessage('신고가 접수되었습니다. 관리자 검토 후 처리됩니다.')
+  }
 
   const displayCourse = useMemo(() => mergeCourseDetailWithFallback(course), [course])
   const courseInfoSections = useMemo(() => {
@@ -602,6 +613,11 @@ export default function CourseDetailApp() {
         ) : null}
 
         <CourseDetailHero displayCourse={displayCourse} heroTags={heroTags} reviewStats={reviewStats} instructorChannelHref={instructorChannelHref} instructor={instructor} handlePreviewClick={handlePreviewClick} handleEnroll={handleEnroll} enrollmentBusy={enrollmentBusy} isEnrolled={isEnrolled} />
+        {instructor?.instructorId ? (
+          <div className="mx-auto flex max-w-7xl justify-end px-4 pt-3 sm:px-6 lg:px-8">
+            <button type="button" className="text-xs font-semibold text-gray-400 hover:text-rose-600" onClick={() => void submitReport('USER', instructor.instructorId).catch((error: unknown) => setToastMessage(error instanceof Error ? error.message : '신고 접수에 실패했습니다.'))}>강사 계정 신고</button>
+          </div>
+        ) : null}
 
         <section className="container mx-auto flex flex-col gap-12 px-6 py-12 lg:px-20 md:flex-row">
           <div className="flex-1">
@@ -766,7 +782,7 @@ export default function CourseDetailApp() {
                               <p className="text-xs text-gray-400">{formatCourseDate(review.createdAt)}</p>
                             </div>
                           </div>
-                          <StarRating rating={review.rating} />
+                          <div className="flex items-center gap-3"><button type="button" className="text-xs font-semibold text-gray-400 hover:text-rose-600" onClick={() => void submitReport('REVIEW', review.id).catch((error: unknown) => setToastMessage(error instanceof Error ? error.message : '신고 접수에 실패했습니다.'))}>신고</button><StarRating rating={review.rating} /></div>
                         </div>
                         <p className="text-sm leading-relaxed text-gray-700">{review.content}</p>
 

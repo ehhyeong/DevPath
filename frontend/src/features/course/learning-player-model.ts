@@ -247,6 +247,11 @@ export function resolveVideoQualitySources(lesson: LearningLesson | null, course
     addVideoQualitySource(sources, quality, deriveVideoQualityUrl(primaryUrl, quality))
   })
 
+  // 관리자가 720p로 제한한 강의는 직접 URL이 있어도 고해상도 선택지를 노출하지 않는다.
+  if (lesson?.maxResolution?.toUpperCase().includes('720')) {
+    delete sources['1080']
+  }
+
   return sources
 }
 

@@ -8,6 +8,7 @@ import com.devpath.api.admin.entity.AccountLogType;
 import com.devpath.api.admin.repository.AccountLogRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.common.security.TokenRedisService;
 import com.devpath.domain.user.entity.AccountStatus;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
@@ -23,6 +24,7 @@ public class AdminAccountService {
 
   private final UserRepository userRepository;
   private final AccountLogRepository accountLogRepository;
+  private final TokenRedisService tokenRedisService;
 
   // 목록 조회는 읽기 전용 트랜잭션에서 제네릭 타입을 명확히 반환한다.
   public List<AccountDetailResponse> getAccounts() {
@@ -40,6 +42,7 @@ public class AdminAccountService {
     User user = getUser(userId);
     validateTransition(user.getAccountStatus(), AccountStatus.RESTRICTED);
     user.restrict();
+    tokenRedisService.deleteRefreshToken(userId);
     saveLog(userId, adminId, AccountLogType.RESTRICT, request.getReason());
   }
 
@@ -48,6 +51,7 @@ public class AdminAccountService {
     User user = getUser(userId);
     validateTransition(user.getAccountStatus(), AccountStatus.DEACTIVATED);
     user.deactivate();
+    tokenRedisService.deleteRefreshToken(userId);
     saveLog(userId, adminId, AccountLogType.DEACTIVATE, request.getReason());
   }
 
@@ -64,6 +68,7 @@ public class AdminAccountService {
     User user = getUser(userId);
     validateTransition(user.getAccountStatus(), AccountStatus.WITHDRAWN);
     user.withdraw();
+    tokenRedisService.deleteRefreshToken(userId);
     saveLog(userId, adminId, AccountLogType.WITHDRAW, request.getReason());
   }
 

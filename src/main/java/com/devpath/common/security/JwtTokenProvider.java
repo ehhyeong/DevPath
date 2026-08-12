@@ -9,6 +9,7 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 import javax.crypto.SecretKey;
@@ -82,6 +83,7 @@ public class JwtTokenProvider {
         .id(UUID.randomUUID().toString())
         .claim("role", role)
         .claim("tokenType", tokenType)
+        .claim("issuedAtMillis", now.getTime())
         .issuedAt(now)
         .expiration(expiry)
         .signWith(secretKey)
@@ -97,8 +99,10 @@ public class JwtTokenProvider {
       String jti = claims.getId();
       String role = claims.get("role", String.class);
       String tokenType = claims.get("tokenType", String.class);
+      Date issuedAt = claims.getIssuedAt();
+      Number issuedAtMillis = claims.get("issuedAtMillis", Number.class);
 
-      if (userId == null || jti == null || role == null || tokenType == null) {
+      if (userId == null || jti == null || role == null || tokenType == null || issuedAt == null) {
         throw new JwtAuthenticationException(ErrorCode.JWT_INVALID);
       }
 
@@ -106,7 +110,11 @@ public class JwtTokenProvider {
         throw new JwtAuthenticationException(ErrorCode.JWT_TYPE_MISMATCH);
       }
 
-      return new TokenClaims(userId, jti, role, tokenType);
+      Instant preciseIssuedAt =
+          issuedAtMillis == null
+              ? issuedAt.toInstant()
+              : Instant.ofEpochMilli(issuedAtMillis.longValue());
+      return new TokenClaims(userId, jti, role, tokenType, preciseIssuedAt);
     } catch (ExpiredJwtException e) {
       throw new JwtAuthenticationException(ErrorCode.JWT_EXPIRED);
     } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
@@ -133,5 +141,11 @@ public class JwtTokenProvider {
     return null;
   }
 
-  public record TokenClaims(Long userId, String jti, String role, String tokenType) {}
+  public record TokenClaims(
+      Long userId, String jti, String role, String tokenType, Instant issuedAt) {
+
+    public TokenClaims(Long userId, String jti, String role, String tokenType) {
+      this(userId, jti, role, tokenType, Instant.EPOCH);
+    }
+  }
 }

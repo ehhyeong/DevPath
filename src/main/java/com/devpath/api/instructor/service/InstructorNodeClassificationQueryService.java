@@ -6,14 +6,16 @@ import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
+import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
-import com.devpath.domain.roadmap.service.TagValidationService;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +33,7 @@ public class InstructorNodeClassificationQueryService {
   private final CourseTagMapRepository courseTagMapRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
   private final NodeRequiredTagRepository nodeRequiredTagRepository;
-  private final TagValidationService tagValidationService;
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
 
   // 강의 태그와 노드 필수 태그를 비교해 자동 분류 결과를 조회한다.
   public InstructorNodeClassificationDto.AutoClassificationResponse getAutoClassifications(
@@ -46,6 +48,17 @@ public class InstructorNodeClassificationQueryService {
             .filter(tagName -> !tagName.isBlank())
             .distinct()
             .toList();
+
+    if (!learningAutomationPolicyService.isEnabled(
+        LearningAutomationRuleCatalog.TAG_AUTO_CLASSIFICATION_ENABLED, true)) {
+      return InstructorNodeClassificationDto.AutoClassificationResponse.builder()
+          .courseId(course.getCourseId())
+          .courseTitle(course.getTitle())
+          .courseTags(courseTags)
+          .totalMatchedNodes(0)
+          .matchedNodes(List.of())
+          .build();
+    }
 
     if (courseTags.isEmpty()) {
       return InstructorNodeClassificationDto.AutoClassificationResponse.builder()
@@ -76,9 +89,7 @@ public class InstructorNodeClassificationQueryService {
         candidateNodes.stream()
             .filter(node -> requiredTagsByNodeId.containsKey(node.getNodeId()))
             .filter(
-                node ->
-                    tagValidationService.validateTags(
-                        requiredTagsByNodeId.get(node.getNodeId()), courseTags))
+                node -> meetsTagThreshold(requiredTagsByNodeId.get(node.getNodeId()), courseTags))
             .map(
                 node ->
                     InstructorNodeClassificationDto.MatchedNodeItem.builder()
@@ -99,6 +110,22 @@ public class InstructorNodeClassificationQueryService {
         .totalMatchedNodes(matchedNodes.size())
         .matchedNodes(matchedNodes)
         .build();
+  }
+
+  private boolean meetsTagThreshold(List<String> requiredTags, List<String> courseTags) {
+    if (requiredTags.isEmpty()) {
+      return false;
+    }
+    LinkedHashSet<String> normalizedCourseTags = new LinkedHashSet<>();
+    courseTags.forEach(tag -> normalizedCourseTags.add(normalize(tag)));
+    long matched =
+        requiredTags.stream().map(this::normalize).filter(normalizedCourseTags::contains).count();
+    double coverage = (double) matched / (double) requiredTags.size();
+    return coverage >= learningAutomationPolicyService.getTagMatchThreshold();
+  }
+
+  private String normalize(String value) {
+    return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
   }
 
   // 노드별 필수 태그 목록을 맵으로 만든다.

@@ -34,6 +34,14 @@ public class AdminPolicyAndMappingController {
         "매핑 후보를 조회했습니다.", policyAndMappingService.getMappingCandidatesSimple());
   }
 
+  @Operation(summary = "강의-노드 AI 추천", description = "Gemini가 태그 후보를 재선정하며 실패하면 태그 커버리지 추천을 반환합니다.")
+  @GetMapping("/course-node-mappings/candidates/{courseId}/ai")
+  public ApiResponse<CourseNodeMappingCandidateResponse> getAiMappingCandidate(
+      @PathVariable Long courseId) {
+    return ApiResponse.success(
+        "AI 매핑 후보를 조회했습니다.", policyAndMappingService.getAiMappingCandidate(courseId));
+  }
+
   @Operation(summary = "강의-노드 매핑 반영", description = "강의와 노드의 연결을 반영합니다.")
   @PutMapping("/courses/{courseId}/node-mapping")
   public ApiResponse<Void> applyNodeMapping(

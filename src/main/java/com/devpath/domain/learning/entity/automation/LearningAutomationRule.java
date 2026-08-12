@@ -107,4 +107,8 @@ public class LearningAutomationRule {
   public void disable() {
     this.status = AutomationRuleStatus.DISABLED;
   }
+
+  public void changeRuleValue(String ruleValue) {
+    this.ruleValue = ruleValue;
+  }
 }

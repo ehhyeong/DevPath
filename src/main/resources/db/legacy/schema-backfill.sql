@@ -1,3 +1,34 @@
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS token_invalidated_at TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS admin_role_id BIGINT,
+    ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE users
+SET is_super_admin = TRUE
+WHERE role_name = 'ROLE_ADMIN'
+  AND admin_role_id IS NULL;
+
+ALTER TABLE moderation_report
+    ADD COLUMN IF NOT EXISTS resolution_reason TEXT;
+
+CREATE TABLE IF NOT EXISTS course_review_history (
+    id BIGSERIAL PRIMARY KEY,
+    course_id BIGINT NOT NULL,
+    instructor_id BIGINT NOT NULL,
+    admin_id BIGINT NOT NULL,
+    action VARCHAR(20) NOT NULL,
+    reason TEXT NOT NULL,
+    processed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE settlement
+    ADD COLUMN IF NOT EXISTS learner_id BIGINT;
+
+ALTER TABLE settlement_hold
+    ADD COLUMN IF NOT EXISTS released_by BIGINT,
+    ADD COLUMN IF NOT EXISTS release_reason TEXT,
+    ADD COLUMN IF NOT EXISTS released_at TIMESTAMP;
+
 -- OCR schema backfill for environments that already have ocr_results rows.
 ALTER TABLE ocr_results
     ADD COLUMN IF NOT EXISTS source_image_url VARCHAR(500);
@@ -362,4 +393,18 @@ BEGIN
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
+END $$;
+
+DO $$
+BEGIN
+    IF to_regclass('public.experiment_results') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.experiment_results
+        ADD COLUMN IF NOT EXISTS hypothesis TEXT,
+        ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED',
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS started_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
 END $$;

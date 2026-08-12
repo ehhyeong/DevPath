@@ -53,6 +53,9 @@ public class User {
   @Column(name = "last_login_at")
   private LocalDateTime lastLoginAt;
 
+  @Column(name = "token_invalidated_at")
+  private LocalDateTime tokenInvalidatedAt;
+
   @Column(name = "is_active", nullable = false)
   private Boolean isActive = true;
 
@@ -67,6 +70,12 @@ public class User {
   @Column(name = "instructor_grade", length = 20)
   private String instructorGrade;
 
+  @Column(name = "admin_role_id")
+  private Long adminRoleId;
+
+  @Column(name = "is_super_admin", nullable = false, columnDefinition = "boolean default false")
+  private Boolean isSuperAdmin = false;
+
   @Builder
   public User(String email, String password, String name, UserRole role) {
     this.email = email;
@@ -74,6 +83,7 @@ public class User {
     this.name = name;
     this.role = role == null ? UserRole.ROLE_LEARNER : role;
     this.isActive = true;
+    this.isSuperAdmin = false;
   }
 
   public void updateLastLoginAt() {
@@ -94,11 +104,13 @@ public class User {
     }
     this.isActive = false;
     this.accountStatus = AccountStatus.RESTRICTED;
+    invalidateTokens();
   }
 
   public void deactivate() {
     this.isActive = false;
     this.accountStatus = AccountStatus.DEACTIVATED;
+    invalidateTokens();
   }
 
   public void restore() {
@@ -109,6 +121,15 @@ public class User {
   public void withdraw() {
     this.isActive = false;
     this.accountStatus = AccountStatus.WITHDRAWN;
+    invalidateTokens();
+  }
+
+  public boolean canAuthenticate() {
+    return Boolean.TRUE.equals(this.isActive) && this.accountStatus == AccountStatus.ACTIVE;
+  }
+
+  private void invalidateTokens() {
+    this.tokenInvalidatedAt = LocalDateTime.now();
   }
 
   public void approveInstructor() {
@@ -117,5 +138,22 @@ public class User {
 
   public void changeInstructorGrade(String grade) {
     this.instructorGrade = grade;
+  }
+
+  public void assignAdminRole(Long adminRoleId) {
+    if (this.role != UserRole.ROLE_ADMIN) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+    this.adminRoleId = adminRoleId;
+    invalidateTokens();
+  }
+
+  public void clearAdminRole() {
+    this.adminRoleId = null;
+    invalidateTokens();
+  }
+
+  public boolean hasSuperAdminAccess() {
+    return Boolean.TRUE.equals(this.isSuperAdmin);
   }
 }

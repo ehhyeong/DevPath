@@ -4,7 +4,9 @@ export function accountStatusLabel(status: string | null | undefined) {
   switch ((status ?? '').toUpperCase()) {
     case 'ACTIVE': return '활성'
     case 'RESTRICTED': return '제한'
+    case 'DEACTIVATED':
     case 'INACTIVE': return '비활성'
+    case 'WITHDRAWN': return '탈퇴'
     default: return status || '미확인'
   }
 }

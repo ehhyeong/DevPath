@@ -66,4 +66,7 @@ public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollme
   long countByCourseInstructorId(Long instructorId);
 
   long countByCourseInstructorIdAndStatus(Long instructorId, EnrollmentStatus status);
+
+  @Query("select coalesce(avg(e.progressPercentage), 0) from CourseEnrollment e")
+  Double findAverageProgressPercentage();
 }

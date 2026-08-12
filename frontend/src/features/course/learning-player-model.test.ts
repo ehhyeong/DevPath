@@ -1,6 +1,6 @@
 import { describe,expect,it } from 'vitest'
 import type { LearningLessonAssignment,LearningLessonProgress } from '../../types/learning'
-import { buildQuizModalQuestions,createAssignmentFormState,isAssignmentSubmissionFormReady,isLessonProgressCompleted,normalizeScorePercent,resolveAssignmentSubmissionMethods } from './learning-player-model'
+import { buildQuizModalQuestions,createAssignmentFormState,isAssignmentSubmissionFormReady,isLessonProgressCompleted,normalizeScorePercent,resolveAssignmentSubmissionMethods,resolveVideoQualitySources } from './learning-player-model'
 
 const assignment: LearningLessonAssignment = {
   assignmentId: 1,
@@ -72,5 +72,27 @@ describe('learning player model', () => {
 
     expect(questions).toHaveLength(3)
     expect(questions.every((question) => question.options.length >= 2)).toBe(true)
+  })
+
+  it('관리자 최대 해상도가 720p이면 1080p 재생 소스를 제외한다', () => {
+    const sources = resolveVideoQualitySources({
+      lessonId: 1,
+      title: '영상',
+      description: null,
+      lessonType: 'VIDEO',
+      videoUrl: 'https://cdn.example/video-1080p.mp4',
+      videoAssetKey: null,
+      videoUrl720p: 'https://cdn.example/video-720p.mp4',
+      thumbnailUrl: null,
+      durationSeconds: null,
+      isPreview: false,
+      isPublished: true,
+      sortOrder: 1,
+      maxResolution: '720p',
+      materials: [],
+    }, null)
+
+    expect(sources['1080']).toBeUndefined()
+    expect(sources['720']).toBe('https://cdn.example/video-720p.mp4')
   })
 })

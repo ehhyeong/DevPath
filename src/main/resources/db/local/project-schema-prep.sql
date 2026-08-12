@@ -1,4 +1,67 @@
 DO $$
+BEGIN
+    IF to_regclass('public.users') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.users
+        ADD COLUMN IF NOT EXISTS token_invalidated_at timestamp,
+        ADD COLUMN IF NOT EXISTS admin_role_id bigint,
+        ADD COLUMN IF NOT EXISTS is_super_admin boolean NOT NULL DEFAULT false;
+
+    UPDATE public.users
+       SET is_super_admin = true
+     WHERE role_name = 'ROLE_ADMIN'
+       AND admin_role_id IS NULL;
+END $$;
+
+DO $$
+BEGIN
+    IF to_regclass('public.moderation_report') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.moderation_report
+        ADD COLUMN IF NOT EXISTS resolution_reason text;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.course_review_history (
+    id bigserial PRIMARY KEY,
+    course_id bigint NOT NULL,
+    instructor_id bigint NOT NULL,
+    admin_id bigint NOT NULL,
+    action varchar(20) NOT NULL,
+    reason text NOT NULL,
+    processed_at timestamp NOT NULL DEFAULT now()
+);
+
+DO $$
+BEGIN
+    IF to_regclass('public.settlement') IS NOT NULL THEN
+        ALTER TABLE public.settlement ADD COLUMN IF NOT EXISTS learner_id bigint;
+    END IF;
+    IF to_regclass('public.settlement_hold') IS NOT NULL THEN
+        ALTER TABLE public.settlement_hold
+            ADD COLUMN IF NOT EXISTS released_by bigint,
+            ADD COLUMN IF NOT EXISTS release_reason text,
+            ADD COLUMN IF NOT EXISTS released_at timestamp;
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF to_regclass('public.system_settings') IS NULL THEN
+        RETURN;
+    END IF;
+
+    ALTER TABLE public.system_settings
+        ADD COLUMN IF NOT EXISTS refund_policy_days integer NOT NULL DEFAULT 7,
+        ADD COLUMN IF NOT EXISTS max_course_price bigint NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS max_resolution varchar(10) NOT NULL DEFAULT '1080p',
+        ADD COLUMN IF NOT EXISTS watermark_enabled boolean NOT NULL DEFAULT true;
+END $$;
+
+DO $$
 DECLARE
     fallback_owner_id bigint := 1;
 BEGIN
@@ -3833,4 +3896,16 @@ BEGIN
         ALTER TABLE public.proof_cards ALTER COLUMN node_clearance_id DROP NOT NULL;
     END IF;
 END $$;
+^^^ END OF SCRIPT ^^^
+DO $$
+BEGIN
+  IF to_regclass('public.experiment_results') IS NOT NULL THEN
+    ALTER TABLE experiment_results ADD COLUMN IF NOT EXISTS hypothesis TEXT;
+    ALTER TABLE experiment_results ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED';
+    ALTER TABLE experiment_results ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+    ALTER TABLE experiment_results ADD COLUMN IF NOT EXISTS started_at TIMESTAMP;
+    ALTER TABLE experiment_results ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;
+  END IF;
+END
+$$;
 ^^^ END OF SCRIPT ^^^

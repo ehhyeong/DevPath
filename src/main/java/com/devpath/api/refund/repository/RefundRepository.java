@@ -11,6 +11,8 @@ public interface RefundRepository extends JpaRepository<RefundRequest, Long> {
 
   List<RefundRequest> findByLearnerIdAndIsDeletedFalseOrderByRequestedAtDesc(Long learnerId);
 
+  List<RefundRequest> findAllByIsDeletedFalseOrderByRequestedAtDesc();
+
   Optional<RefundRequest> findByIdAndIsDeletedFalse(Long id);
 
   // 같은 강의에 진행 중이거나 승인된 환불 요청이 있으면 중복 요청을 막는다.

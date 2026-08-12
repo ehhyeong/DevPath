@@ -9,15 +9,15 @@ import com.devpath.api.recommendation.dto.RecommendationChangeResponse;
 import com.devpath.api.roadmap.service.NodeRequiredTagRegistrar;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
-import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.recommendation.NodeChangeType;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChange;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChangeStatus;
 import com.devpath.domain.learning.entity.recommendation.RecommendationHistory;
 import com.devpath.domain.learning.entity.recommendation.SupplementRecommendation;
-import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationChangeRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
+import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
@@ -38,7 +38,7 @@ public class RecommendationChangeService {
   private final UserRepository userRepository;
   private final RoadmapRepository roadmapRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
-  private final LearningAutomationRuleRepository learningAutomationRuleRepository;
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
   private final SupplementRecommendationService supplementRecommendationService;
   private final RecommendationHistoryService recommendationHistoryService;
   private final RiskWarningService riskWarningService;
@@ -66,7 +66,8 @@ public class RecommendationChangeService {
   // 알림 발송은 오직 createSuggestions()에서만 담당한다.
   private List<RecommendationChangeResponse.Detail> createSuggestionsInternal(
       Long userId, RecommendationChangeRequest.Suggestion request) {
-    if (!isRuleEnabled("RECOMMENDATION_CHANGE_ENABLED", true)) {
+    if (!learningAutomationPolicyService.isEnabled(
+        LearningAutomationRuleCatalog.RECOMMENDATION_CHANGE_ENABLED, true)) {
       throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
     }
 
@@ -317,23 +318,17 @@ public class RecommendationChangeService {
             .build());
   }
 
-  // 룰 활성 여부를 조회한다.
-  private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
-    return learningAutomationRuleRepository
-        .findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
-        .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
-        .orElse(defaultValue);
-  }
-
   // 추천 변경 제안 최대 개수를 계산한다.
   private int resolveSuggestionLimit(Integer requestLimit) {
     int requestedLimit = requestLimit == null || requestLimit <= 0 ? 5 : requestLimit;
 
-    return learningAutomationRuleRepository
-        .findTopByRuleKeyOrderByPriorityDescIdDesc("RECOMMENDATION_CHANGE_MAX_LIMIT")
-        .map(rule -> parsePositiveInt(rule.getRuleValue(), requestedLimit))
-        .map(configuredLimit -> Math.min(requestedLimit, configuredLimit))
-        .orElse(requestedLimit);
+    int configuredLimit =
+        parsePositiveInt(
+            learningAutomationPolicyService.getValue(
+                LearningAutomationRuleCatalog.RECOMMENDATION_CHANGE_MAX_LIMIT,
+                String.valueOf(requestedLimit)),
+            requestedLimit);
+    return Math.min(requestedLimit, configuredLimit);
   }
 
   // 양의 정수 문자열을 파싱한다.

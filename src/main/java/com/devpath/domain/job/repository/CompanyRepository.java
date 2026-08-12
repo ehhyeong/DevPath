@@ -11,5 +11,9 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
 
   List<Company> findAllByIsDeletedFalseOrderByCreatedAtDesc();
 
+  List<Company> findAllByOrderByCreatedAtDesc();
+
   Optional<Company> findByIdAndIsDeletedFalse(Long id);
+
+  Optional<Company> findByNameAndIsDeletedFalse(String name);
 }

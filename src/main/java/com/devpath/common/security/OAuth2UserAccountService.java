@@ -14,6 +14,7 @@ public class OAuth2UserAccountService {
   private static final String OAUTH_USER_PASSWORD_DUMMY = "OAUTH_USER_PASSWORD_DUMMY";
 
   private final UserRepository userRepository;
+  private final AccountAccessService accountAccessService;
 
   @Transactional
   public User findOrCreateUser(String email, String name) {
@@ -22,10 +23,14 @@ public class OAuth2UserAccountService {
 
   @Transactional
   public OAuth2UserAccount findOrCreateUserWithStatus(String email, String name) {
-    return userRepository
-        .findByEmail(email)
-        .map(user -> new OAuth2UserAccount(user, false))
-        .orElseGet(() -> new OAuth2UserAccount(createUser(email, name), true));
+    OAuth2UserAccount account =
+        userRepository
+            .findByEmail(email)
+            .map(user -> new OAuth2UserAccount(user, false))
+            .orElseGet(() -> new OAuth2UserAccount(createUser(email, name), true));
+    accountAccessService.validateActive(account.user());
+    account.user().updateLastLoginAt();
+    return account;
   }
 
   private User createUser(String email, String name) {

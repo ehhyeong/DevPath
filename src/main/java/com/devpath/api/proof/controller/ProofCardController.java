@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -48,5 +49,12 @@ public class ProofCardController {
   public ResponseEntity<ApiResponse<List<ProofCardResponse.GalleryItem>>> getGallery(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ResponseEntity.ok(ApiResponse.ok(proofCardService.getGallery(userId)));
+  }
+
+  @PostMapping("/courses/{courseId}/issue")
+  public ResponseEntity<ApiResponse<Void>> issueProofCard(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
+    proofCardService.issueManuallyByCourse(userId, courseId);
+    return ResponseEntity.ok(ApiResponse.success("Proof Card를 발급했습니다.", null));
   }
 }

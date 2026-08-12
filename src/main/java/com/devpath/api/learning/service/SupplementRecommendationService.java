@@ -9,7 +9,6 @@ import com.devpath.domain.course.entity.CourseNodeMapping;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.learning.entity.LessonProgress;
-import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.recommendation.RecommendationHistory;
 import com.devpath.domain.learning.entity.recommendation.RecommendationStatus;
 import com.devpath.domain.learning.entity.recommendation.RiskWarning;
@@ -17,11 +16,13 @@ import com.devpath.domain.learning.entity.recommendation.SupplementRecommendatio
 import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.TilDraftRepository;
 import com.devpath.domain.learning.repository.TimestampNoteRepository;
-import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.ocr.OcrResultRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
 import com.devpath.domain.learning.repository.recommendation.RiskWarningRepository;
 import com.devpath.domain.learning.repository.recommendation.SupplementRecommendationRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
+import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
+import com.devpath.domain.operation.recommendation.RecommendationAlgorithmPolicy;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.user.entity.User;
@@ -53,12 +54,14 @@ public class SupplementRecommendationService {
   private final TimestampNoteRepository timestampNoteRepository;
   private final TilDraftRepository tilDraftRepository;
   private final OcrResultRepository ocrResultRepository;
-  private final LearningAutomationRuleRepository learningAutomationRuleRepository;
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
+  private final RecommendationAlgorithmPolicy recommendationAlgorithmPolicy;
 
   @Transactional
   public SupplementRecommendationResponse createRecommendation(
       Long userId, Long nodeId, String reason) {
-    if (!isRuleEnabled("SUPPLEMENT_RECOMMENDATION_ENABLED", true)) {
+    if (!learningAutomationPolicyService.isEnabled(
+        LearningAutomationRuleCatalog.SUPPLEMENT_RECOMMENDATION_ENABLED, true)) {
       throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
     }
 
@@ -97,9 +100,25 @@ public class SupplementRecommendationService {
           supplementRecommendationRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    return recommendations.stream()
-        .map(SupplementRecommendationResponse::from)
-        .collect(Collectors.toList());
+    var stream = recommendations.stream();
+    if ("MISSING_TAG_COUNT_DESC"
+        .equals(
+            learningAutomationPolicyService.getValue(
+                LearningAutomationRuleCatalog.SUPPLEMENT_RECOMMENDATION_PRIORITY,
+                "MISSING_TAG_COUNT_DESC"))) {
+      stream =
+          stream.sorted(
+              Comparator.comparing(
+                      SupplementRecommendation::getMissingTagCount,
+                      Comparator.nullsLast(Comparator.reverseOrder()))
+                  .thenComparing(
+                      SupplementRecommendation::getCoveragePercent,
+                      Comparator.nullsLast(Comparator.naturalOrder()))
+                  .thenComparing(
+                      SupplementRecommendation::getCreatedAt,
+                      Comparator.nullsLast(Comparator.reverseOrder())));
+    }
+    return stream.map(SupplementRecommendationResponse::from).collect(Collectors.toList());
   }
 
   @Transactional(readOnly = true)
@@ -380,7 +399,14 @@ public class SupplementRecommendationService {
         ((100.0 - metrics.coveragePercent()) * 0.25) + (metrics.missingTagCount() * 8.0);
     double courseAlignmentScore = alignedTagCount * 14.0;
     double noAlignmentPenalty = requiredTags.isEmpty() ? 0.0 : (alignedTagCount == 0 ? 12.0 : 0.0);
-    return stalledScore + activityScore + skillGapScore + courseAlignmentScore - noAlignmentPenalty;
+    // 운영 설정 가중치는 후보 데이터 자체를 바꾸지 않고 최종 정렬 점수에만 적용한다.
+    double activityWeight = recommendationAlgorithmPolicy.recentActivityWeight();
+    double skillWeight = recommendationAlgorithmPolicy.skillMatchWeight();
+    return stalledScore
+        + (activityScore * activityWeight)
+        + (skillGapScore * skillWeight)
+        + (courseAlignmentScore * skillWeight)
+        - noAlignmentPenalty;
   }
 
   private String resolveReason(ResolvedCandidate candidate, String reason) {
@@ -453,14 +479,6 @@ public class SupplementRecommendationService {
               .message("필수 선수 지식이 일부 비어 있어 선행 학습을 권장합니다.")
               .build());
     }
-  }
-
-  // 룰 활성 여부를 조회한다.
-  private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
-    return learningAutomationRuleRepository
-        .findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
-        .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
-        .orElse(defaultValue);
   }
 
   private User validateUser(Long userId) {

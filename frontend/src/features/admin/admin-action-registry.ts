@@ -3,11 +3,14 @@ declare global {
     refreshCurrentTab: () => void
     logout: () => Promise<void>
     createTag: () => Promise<void>
+    editTag: (tagId: number) => Promise<void>
     mergeTag: (tagId: number) => Promise<void>
+    deleteTag: (tagId: number) => Promise<void>
     editOfficialRoadmap: (roadmapId: number) => void
     deleteOfficialRoadmap: (roadmapId: number) => Promise<void>
     createRoadmapNode: () => Promise<void>
     editRoadmapNode: (nodeId: number) => Promise<void>
+    deleteRoadmapNode: (nodeId: number) => Promise<void>
     editRoadmapInfo: (roadmapId: number) => void
     clearRoadmapInfo: (roadmapId: number) => Promise<void>
     updateNodeTags: (nodeId: number) => Promise<void>
@@ -15,11 +18,23 @@ declare global {
     updateNodeRules: (nodeId: number) => Promise<void>
     editRoadmapNodeResource: (resourceId: number) => void
     deleteRoadmapNodeResource: (resourceId: number) => Promise<void>
-    toggleAccountStatus: (userId: number, accountStatus: string) => Promise<void>
+    viewAccountDetails: (userId: number) => Promise<void>
+    changeAccountStatus: (userId: number, action: string) => Promise<void>
+    approveInstructor: (userId: number) => Promise<void>
+    changeInstructorGrade: (userId: number) => Promise<void>
+    createAdminRole: () => Promise<void>
+    editAdminRole: (roleId: number) => Promise<void>
+    deleteAdminRole: (roleId: number) => Promise<void>
+    assignAdminRole: (userId: number) => Promise<void>
+    clearAdminRole: (userId: number) => Promise<void>
+    requestAiMapping: (courseId: number) => Promise<void>
+    applySuggestedMapping: (courseId: number) => Promise<void>
+    clearCourseNodeMapping: (courseId: number) => Promise<void>
     approveCourse: (courseId: number) => Promise<void>
     rejectCourse: (courseId: number) => Promise<void>
     blindContent: (reportId: number) => Promise<void>
-    resolveReport: (reportId: number) => Promise<void>
+    unblindContent: (reportId: number) => Promise<void>
+    resolveReport: (reportId: number, action: string) => Promise<void>
     createCatalogCategory: () => void
     saveCourseCatalogMenu: () => Promise<void>
     setAllCatalogCategoriesCollapsed: (collapsed: boolean) => void
@@ -57,10 +72,12 @@ declare global {
 }
 
 export type AdminActionName =
-  | 'refreshCurrentTab' | 'logout' | 'createTag' | 'mergeTag' | 'editOfficialRoadmap' | 'deleteOfficialRoadmap'
-  | 'createRoadmapNode' | 'editRoadmapNode' | 'editRoadmapInfo' | 'clearRoadmapInfo' | 'updateNodeTags'
+  | 'refreshCurrentTab' | 'logout' | 'createTag' | 'editTag' | 'mergeTag' | 'deleteTag' | 'editOfficialRoadmap' | 'deleteOfficialRoadmap'
+  | 'createRoadmapNode' | 'editRoadmapNode' | 'deleteRoadmapNode' | 'editRoadmapInfo' | 'clearRoadmapInfo' | 'updateNodeTags'
   | 'updateNodePrerequisites' | 'updateNodeRules' | 'editRoadmapNodeResource' | 'deleteRoadmapNodeResource'
-  | 'toggleAccountStatus' | 'approveCourse' | 'rejectCourse' | 'blindContent' | 'resolveReport'
+  | 'viewAccountDetails' | 'changeAccountStatus' | 'approveInstructor' | 'changeInstructorGrade' | 'createAdminRole' | 'editAdminRole' | 'deleteAdminRole' | 'assignAdminRole' | 'clearAdminRole'
+  | 'requestAiMapping' | 'applySuggestedMapping' | 'clearCourseNodeMapping'
+  | 'approveCourse' | 'rejectCourse' | 'blindContent' | 'unblindContent' | 'resolveReport'
   | 'createCatalogCategory' | 'saveCourseCatalogMenu' | 'setAllCatalogCategoriesCollapsed'
   | 'toggleCatalogCategoryCollapsed' | 'moveCatalogCategory' | 'deleteCatalogCategory' | 'updateCatalogCategoryField'
   | 'updateCatalogCategoryActive' | 'addCatalogMegaMenuItem' | 'updateCatalogMegaMenuItemLabel'
@@ -109,11 +126,16 @@ function sanitizeElement(element: HTMLElement) {
     element.dataset.adminChange = changeExpression
     element.removeAttribute('onchange')
   }
+  const inputExpression = element.getAttribute('oninput')
+  if (inputExpression) {
+    element.dataset.adminInput = inputExpression
+    element.removeAttribute('oninput')
+  }
 }
 
 function sanitizeTree(root: ParentNode) {
   if (root instanceof HTMLElement) sanitizeElement(root)
-  root.querySelectorAll<HTMLElement>('[onclick], [onchange]').forEach(sanitizeElement)
+  root.querySelectorAll<HTMLElement>('[onclick], [onchange], [oninput]').forEach(sanitizeElement)
 }
 
 export function installAdminActionDelegation(root: HTMLElement) {
@@ -125,6 +147,10 @@ export function installAdminActionDelegation(root: HTMLElement) {
   root.addEventListener('change', (event) => {
     const target = event.target instanceof HTMLElement ? event.target : null
     if (target?.dataset.adminChange) invokeExpression(target.dataset.adminChange, target)
+  })
+  root.addEventListener('input', (event) => {
+    const target = event.target instanceof HTMLElement ? event.target : null
+    if (target?.dataset.adminInput) invokeExpression(target.dataset.adminInput, target)
   })
   new MutationObserver((records) => {
     records.forEach((record) => record.addedNodes.forEach((node) => {
