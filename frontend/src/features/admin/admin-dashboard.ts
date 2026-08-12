@@ -1,6 +1,7 @@
 import { renderAdminMarkup } from './admin-react-renderer'
 import { installAdminDashboardActions,runAdminAction } from './admin-dashboard-actions'
 import { openRoadmapNodeModal,syncRoadmapNodeModalData } from './admin-node-modal'
+import { installCourseReviewModalBindings } from './admin-course-review'
 import { renderOverview } from './admin-overview'
 import { accountStatusLabel,reportContentContext,reportReporterSummary,reportTargetLabel,reportTargetSummary } from './admin-moderation-support'
 import { fetchRoadmapInfoItems,installRoadmapInfoBindings } from './admin-roadmap-info'
@@ -793,7 +794,7 @@ async function fetchPendingCourses() {
               <tr class="border-b border-slate-100 transition-colors hover:bg-slate-50/70">
                 <td class="px-6 py-3"><div class="font-bold text-slate-800">${escapeHtml(course.title)}</div><div class="mt-0.5 font-mono text-[10px] text-slate-400">ID: #${course.courseId}</div></td>
                 <td class="px-6 py-3 text-xs font-medium text-slate-600">${escapeHtml(course.instructorName || `강사 #${course.instructorId}`)}<div class="mt-1 text-[10px] text-slate-400">${escapeHtml(formatDateTime(course.submittedAt))}</div></td>
-                <td class="space-x-1 px-6 py-3 text-right"><button data-admin-click="approveCourse(${course.courseId})" class="rounded bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700" type="button">승인</button><button data-admin-click="rejectCourse(${course.courseId})" class="rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50" type="button">반려</button></td>
+                <td class="px-6 py-3 text-right"><button data-admin-click="reviewCourse(${course.courseId})" class="admin-course-review-open" type="button"><i class="fas fa-search"></i>검수하기</button></td>
               </tr>`,
           )
           .join('')
@@ -1242,6 +1243,11 @@ async function bootstrap() {
 
   installAdminDashboardActions({ refreshActiveTab: () => refreshActiveTab(true), fetchTags, getTags: () => tagItems, getOfficialRoadmaps: () => officialRoadmapItems, getOfficialRoadmapEditingId: () => officialRoadmapEditingId, setOfficialRoadmapForm, resetOfficialRoadmapForm, fetchRoadmapBaseInfo, openRoadmapNodeModal: (node) => openRoadmapNodeModal(node, filterState.nodeRoadmapId), getRoadmapNode: (nodeId) => roadmapNodeMap.get(nodeId), fetchNodes, fetchAccounts, getAccount: (userId) => accountItems.find((account) => account.userId === userId), fetchRoles: fetchAdminRoles, getRoles: () => adminRoleItems, fetchOverview, fetchPendingCourses, fetchReports, getReport: (reportId) => reportMap.get(reportId) })
   installAccountDetailModalBindings()
+  installCourseReviewModalBindings(async (courseId, decision, reason) => {
+    if (decision === 'APPROVE') await adminApi.approveCourse(courseId, reason)
+    else await adminApi.rejectCourse(courseId, reason)
+    await Promise.all([fetchPendingCourses(), fetchOverview()])
+  })
   installAdminGovernanceBindings(runAdminAction)
   initNavigation()
   initFilters()

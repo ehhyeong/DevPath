@@ -9,6 +9,7 @@ import { installRoadmapHubActions } from './admin-roadmap-hub'
 import { installRoadmapInfoActions } from './admin-roadmap-info'
 import { parseNodeIdList, type RoadmapNodePayload } from './admin-dashboard-support'
 import { openAccountDetailModal } from './admin-account-detail'
+import { openCourseReviewModal, previewCourseReviewLesson } from './admin-course-review'
 import { installAdminGovernanceActions } from './admin-governance'
 
 type Dependencies = {
@@ -336,21 +337,12 @@ export function installAdminDashboardActions(deps: Dependencies) {
       await deps.fetchAccounts()
     })
   }
-  adminActions.approveCourse = async (courseId: number) => {
+  adminActions.reviewCourse = async (courseId: number) => {
     await runAdminAction(async () => {
-      if (!window.confirm('이 강의를 승인하시겠습니까?')) return
-      await adminApi.approveCourse(courseId, '관리자 승인')
-      await Promise.all([deps.fetchPendingCourses(), deps.fetchOverview()])
+      openCourseReviewModal(await adminApi.getCourseReview(courseId))
     })
   }
-  adminActions.rejectCourse = async (courseId: number) => {
-    await runAdminAction(async () => {
-      const reason = window.prompt('반려 사유를 입력하세요.')
-      if (!reason?.trim()) return
-      await adminApi.rejectCourse(courseId, reason.trim())
-      await Promise.all([deps.fetchPendingCourses(), deps.fetchOverview()])
-    })
-  }
+  adminActions.previewCourseReviewLesson = previewCourseReviewLesson
   adminActions.blindContent = async (reportId: number) => {
     await runAdminAction(async () => {
       const report = deps.getReport(reportId)

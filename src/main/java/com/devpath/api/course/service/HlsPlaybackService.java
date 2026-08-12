@@ -1,6 +1,7 @@
 package com.devpath.api.course.service;
 
 import static com.devpath.common.security.AdminAuthorityService.GOVERNANCE_MANAGE;
+import static com.devpath.common.security.AdminAuthorityService.MODERATION_RESOLVE;
 import static com.devpath.common.security.AdminAuthorityService.SUPER_ADMIN_AUTHORITY;
 
 import com.devpath.common.exception.CustomException;
@@ -145,7 +146,9 @@ public class HlsPlaybackService {
       return false;
     }
     var authorities = adminAuthorityService.resolveAuthorities(user);
-    return authorities.contains(SUPER_ADMIN_AUTHORITY) || authorities.contains(GOVERNANCE_MANAGE);
+    return authorities.contains(SUPER_ADMIN_AUTHORITY)
+        || authorities.contains(GOVERNANCE_MANAGE)
+        || authorities.contains(MODERATION_RESOLVE);
   }
 
   private Path resolvePlaylistPath(Lesson lesson) {

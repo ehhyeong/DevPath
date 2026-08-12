@@ -17,6 +17,7 @@ describe('AdminDashboardShell', () => {
     expect(container.querySelector('#view-reports .fa-history')).toBeInTheDocument()
     expect(container.querySelector('#adminSystemPolicyForm')).toBeInTheDocument()
     expect(container.querySelector('#addNodeModal')).toBeInTheDocument()
+    expect(container.querySelector('#courseReviewModal')).toBeInTheDocument()
     expect(container.querySelector('#nodeResourceActiveInput')).toBeChecked()
     expect(container.querySelector('#tagPagePrevious')).toBeDisabled()
     expect(container.querySelector('#tagPageNext')).toBeInTheDocument()

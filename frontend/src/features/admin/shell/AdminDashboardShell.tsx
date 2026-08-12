@@ -12,6 +12,7 @@ import AdminUsersView from './AdminUsersView'
 import AdminReportsView from './AdminReportsView'
 import AdminNodeModal from './AdminNodeModal'
 import AdminAccountDetailModal from './AdminAccountDetailModal'
+import AdminCourseReviewModal from './AdminCourseReviewModal'
 import AdminGovernanceView from './AdminGovernanceView'
 import AdminOperationsView from './AdminOperationsView'
 
@@ -38,6 +39,7 @@ export default function AdminDashboardShell() {
       </main>
       <AdminNodeModal />
       <AdminAccountDetailModal />
+      <AdminCourseReviewModal />
     </>
   )
 }

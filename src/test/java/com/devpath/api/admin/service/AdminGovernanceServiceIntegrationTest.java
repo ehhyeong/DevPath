@@ -2,6 +2,9 @@ package com.devpath.api.admin.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 import com.devpath.api.admin.dto.PolicyGovernanceRequests.UpdateNodeMapping;
 import com.devpath.api.admin.dto.PolicyGovernanceRequests.UpdateStreamingPolicy;
@@ -12,6 +15,7 @@ import com.devpath.api.admin.dto.PolicyGovernanceResponses.SystemPolicyResponse;
 import com.devpath.api.admin.dto.governance.CourseApproveRequest;
 import com.devpath.api.admin.dto.governance.CourseNodeMappingCandidateResponse;
 import com.devpath.api.admin.dto.governance.CourseRejectRequest;
+import com.devpath.api.admin.dto.governance.CourseReviewDetailResponse;
 import com.devpath.api.admin.dto.governance.NodeCompletionRuleRequest;
 import com.devpath.api.admin.dto.governance.NodePrerequisitesRequest;
 import com.devpath.api.admin.dto.governance.NodeRequiredTagsRequest;
@@ -21,16 +25,24 @@ import com.devpath.api.admin.dto.governance.RoadmapNodeUpsertRequest;
 import com.devpath.api.admin.dto.governance.StreamingPolicyUpdateRequest;
 import com.devpath.api.admin.dto.governance.SystemPolicyUpdateRequest;
 import com.devpath.api.admin.dto.governance.TagMergeRequest;
+import com.devpath.api.admin.entity.CourseReviewHistory;
+import com.devpath.api.admin.repository.CourseReviewHistoryRepository;
+import com.devpath.api.course.service.HlsPlaybackService;
 import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseNodeMapping;
+import com.devpath.domain.course.entity.CourseSection;
 import com.devpath.domain.course.entity.CourseStatus;
 import com.devpath.domain.course.entity.CourseTagMap;
+import com.devpath.domain.course.entity.Lesson;
+import com.devpath.domain.course.entity.LessonType;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
+import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.roadmap.entity.NodeCompletionRule;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
 import com.devpath.domain.roadmap.entity.Prerequisite;
@@ -82,6 +94,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class AdminGovernanceServiceIntegrationTest {
 
   @MockitoBean private InstructorNotificationService instructorNotificationService;
+  @MockitoBean private HlsPlaybackService hlsPlaybackService;
 
   @Autowired private AdminCourseGovernanceService adminCourseGovernanceService;
   @Autowired private AdminNodeGovernanceService adminNodeGovernanceService;
@@ -92,7 +105,10 @@ class AdminGovernanceServiceIntegrationTest {
   @Autowired private UserRepository userRepository;
   @Autowired private TagRepository tagRepository;
   @Autowired private CourseRepository courseRepository;
+  @Autowired private CourseSectionRepository courseSectionRepository;
+  @Autowired private LessonRepository lessonRepository;
   @Autowired private CourseTagMapRepository courseTagMapRepository;
+  @Autowired private CourseReviewHistoryRepository courseReviewHistoryRepository;
   @Autowired private CourseNodeMappingRepository courseNodeMappingRepository;
   @Autowired private RoadmapRepository roadmapRepository;
   @Autowired private RoadmapNodeRepository roadmapNodeRepository;
@@ -158,6 +174,60 @@ class AdminGovernanceServiceIntegrationTest {
     Course persistedCourse = courseRepository.findById(course.getCourseId()).orElseThrow();
     assertThat(response.getSubmittedAt()).isEqualTo(persistedCourse.getUpdatedAt());
     assertThat(response.getSubmittedAt()).isAfter(LocalDateTime.now().minusMinutes(1));
+  }
+
+  @Test
+  @DisplayName("검수 상세에서 강의 구성, 재생 경로와 이전 처리 이력을 반환한다")
+  void getCourseReviewReturnsContentForReviewStep() {
+    User instructor = saveUser("course-review-detail@devpath.com", UserRole.ROLE_INSTRUCTOR);
+    Course course = saveCourse(instructor, "검수 상세 강의", CourseStatus.IN_REVIEW);
+    CourseSection section =
+        courseSectionRepository.save(
+            CourseSection.builder()
+                .course(course)
+                .title("첫 번째 섹션")
+                .description("섹션 설명")
+                .orderIndex(1)
+                .isPublished(true)
+                .build());
+    Lesson lesson =
+        lessonRepository.save(
+            Lesson.builder()
+                .section(section)
+                .title("검수할 영상")
+                .description("영상 설명")
+                .lessonType(LessonType.VIDEO)
+                .videoUrl("/uploads/courses/review/index.m3u8")
+                .durationSeconds(420)
+                .isPreview(false)
+                .isPublished(true)
+                .orderIndex(1)
+                .build());
+    courseReviewHistoryRepository.save(
+        CourseReviewHistory.builder()
+            .courseId(course.getCourseId())
+            .instructorId(instructor.getId())
+            .adminId(3L)
+            .action("REJECTED")
+            .reason("영상 설명을 보완해 주세요")
+            .build());
+    flushAndClear();
+    when(hlsPlaybackService.issuePlaybackUrl(any(Lesson.class), eq(77L)))
+        .thenReturn("/api/media/hls/1/index.m3u8?expires=1&signature=signed");
+
+    CourseReviewDetailResponse response =
+        adminCourseGovernanceService.getCourseReview(course.getCourseId(), 77L);
+
+    assertThat(response.getTitle()).isEqualTo("검수 상세 강의");
+    assertThat(response.getSectionCount()).isEqualTo(1);
+    assertThat(response.getLessonCount()).isEqualTo(1);
+    assertThat(response.getPublishedLessonCount()).isEqualTo(1);
+    assertThat(response.getTotalDurationSeconds()).isEqualTo(420);
+    assertThat(response.getSections().getFirst().getLessons().getFirst().getPlaybackUrl())
+        .startsWith("/api/media/hls/1/index.m3u8");
+    assertThat(response.getReviewHistory())
+        .extracting("action", "reason")
+        .containsExactly(org.assertj.core.groups.Tuple.tuple("REJECTED", "영상 설명을 보완해 주세요"));
   }
 
   @Test

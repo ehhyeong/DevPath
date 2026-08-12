@@ -2,6 +2,7 @@ package com.devpath.api.admin.controller;
 
 import com.devpath.api.admin.dto.governance.CourseApproveRequest;
 import com.devpath.api.admin.dto.governance.CourseRejectRequest;
+import com.devpath.api.admin.dto.governance.CourseReviewDetailResponse;
 import com.devpath.api.admin.dto.governance.CourseReviewHistoryResponse;
 import com.devpath.api.admin.dto.governance.PendingCourseResponse;
 import com.devpath.api.admin.service.AdminCourseGovernanceService;
@@ -27,6 +28,14 @@ public class AdminCourseGovernanceController {
   public ApiResponse<List<PendingCourseResponse>> getPendingCourses() {
     return ApiResponse.success(
         "승인 대기 강의 목록을 조회했습니다.", adminCourseGovernanceService.getPendingCourses());
+  }
+
+  @Operation(summary = "강의 검수 상세 조회")
+  @GetMapping("/{courseId}/review")
+  public ApiResponse<CourseReviewDetailResponse> getCourseReview(
+      @PathVariable Long courseId, @AuthenticationPrincipal Long adminId) {
+    return ApiResponse.success(
+        "강의 검수 상세를 조회했습니다.", adminCourseGovernanceService.getCourseReview(courseId, adminId));
   }
 
   @Operation(summary = "강의 승인")
