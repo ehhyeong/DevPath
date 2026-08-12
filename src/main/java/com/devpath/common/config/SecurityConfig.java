@@ -126,6 +126,7 @@ public class SecurityConfig {
                         "/api/admin/moderations/**",
                         "/api/admin/courses/pending",
                         "/api/admin/courses/review-history",
+                        "/api/admin/courses/*/review",
                         "/api/admin/courses/*/approve",
                         "/api/admin/courses/*/reject")
                     .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, MODERATION_RESOLVE)

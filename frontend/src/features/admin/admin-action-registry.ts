@@ -30,8 +30,8 @@ declare global {
     requestAiMapping: (courseId: number) => Promise<void>
     applySuggestedMapping: (courseId: number) => Promise<void>
     clearCourseNodeMapping: (courseId: number) => Promise<void>
-    approveCourse: (courseId: number) => Promise<void>
-    rejectCourse: (courseId: number) => Promise<void>
+    reviewCourse: (courseId: number) => Promise<void>
+    previewCourseReviewLesson: (lessonId: number) => void
     blindContent: (reportId: number) => Promise<void>
     unblindContent: (reportId: number) => Promise<void>
     resolveReport: (reportId: number, action: string) => Promise<void>
@@ -77,7 +77,7 @@ export type AdminActionName =
   | 'updateNodePrerequisites' | 'updateNodeRules' | 'editRoadmapNodeResource' | 'deleteRoadmapNodeResource'
   | 'viewAccountDetails' | 'changeAccountStatus' | 'approveInstructor' | 'changeInstructorGrade' | 'createAdminRole' | 'editAdminRole' | 'deleteAdminRole' | 'assignAdminRole' | 'clearAdminRole'
   | 'requestAiMapping' | 'applySuggestedMapping' | 'clearCourseNodeMapping'
-  | 'approveCourse' | 'rejectCourse' | 'blindContent' | 'unblindContent' | 'resolveReport'
+  | 'reviewCourse' | 'previewCourseReviewLesson' | 'blindContent' | 'unblindContent' | 'resolveReport'
   | 'createCatalogCategory' | 'saveCourseCatalogMenu' | 'setAllCatalogCategoriesCollapsed'
   | 'toggleCatalogCategoryCollapsed' | 'moveCatalogCategory' | 'deleteCatalogCategory' | 'updateCatalogCategoryField'
   | 'updateCatalogCategoryActive' | 'addCatalogMegaMenuItem' | 'updateCatalogMegaMenuItemLabel'

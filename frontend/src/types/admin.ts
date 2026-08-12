@@ -151,6 +151,58 @@ export interface AdminCourseReviewHistory {
   processedAt: string | null
 }
 
+export interface AdminCourseReviewLesson {
+  lessonId: number
+  title: string
+  description: string | null
+  lessonType: string | null
+  playbackUrl: string | null
+  thumbnailUrl: string | null
+  durationSeconds: number | null
+  preview: boolean | null
+  published: boolean | null
+  sortOrder: number | null
+}
+
+export interface AdminCourseReviewSection {
+  sectionId: number
+  title: string
+  description: string | null
+  sortOrder: number | null
+  published: boolean | null
+  lessons: AdminCourseReviewLesson[]
+}
+
+export interface AdminCourseReviewDetail {
+  courseId: number
+  title: string
+  subtitle: string | null
+  description: string | null
+  status: string
+  price: number | null
+  originalPrice: number | null
+  currency: string | null
+  difficultyLevel: string | null
+  language: string | null
+  hasCertificate: boolean | null
+  thumbnailUrl: string | null
+  introVideoUrl: string | null
+  durationSeconds: number | null
+  prerequisites: string[]
+  jobRelevance: string[]
+  submittedAt: string | null
+  instructorId: number
+  instructorName: string | null
+  instructorEmail: string | null
+  sectionCount: number
+  lessonCount: number
+  publishedLessonCount: number
+  previewLessonCount: number
+  totalDurationSeconds: number
+  sections: AdminCourseReviewSection[]
+  reviewHistory: AdminCourseReviewHistory[]
+}
+
 // 신고 접수 표에서 사용하는 신고 요약 정보다.
 export interface AdminModerationReport {
   reportId: number

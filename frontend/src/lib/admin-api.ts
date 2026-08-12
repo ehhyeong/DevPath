@@ -1,6 +1,7 @@
 import type {
   AdminAccount,
   AdminAccountLog,
+  AdminCourseReviewDetail,
   AdminCourseNodeMappingCandidate,
   AdminDashboardOverview,
   AdminModerationReport,
@@ -337,6 +338,9 @@ export const adminApi = {
   },
   getPendingCourses(signal?: AbortSignal) {
     return request<AdminPendingCourse[]>('/api/admin/courses/pending', { method: 'GET', signal })
+  },
+  getCourseReview(courseId: number, signal?: AbortSignal) {
+    return request<AdminCourseReviewDetail>(`/api/admin/courses/${courseId}/review`, { method: 'GET', signal })
   },
   getCourseReviewHistory(signal?: AbortSignal) {
     return request<AdminCourseReviewHistory[]>('/api/admin/courses/review-history', { method: 'GET', signal })

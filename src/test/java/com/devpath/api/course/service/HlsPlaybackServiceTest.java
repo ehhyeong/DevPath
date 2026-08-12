@@ -84,6 +84,11 @@ class HlsPlaybackServiceTest {
     assertThat(protectedFixture.service.issuePlaybackUrl(protectedFixture.lesson, 99L))
         .startsWith("/api/media/hls/30/index.m3u8");
 
+    when(protectedFixture.adminAuthorityService.resolveAuthorities(admin))
+        .thenReturn(List.of("ROLE_ADMIN", "ADMIN_MODERATION_RESOLVE"));
+    assertThat(protectedFixture.service.issuePlaybackUrl(protectedFixture.lesson, 99L))
+        .startsWith("/api/media/hls/30/index.m3u8");
+
     Fixture previewFixture = fixture(true);
     assertThat(previewFixture.service.issuePlaybackUrl(previewFixture.lesson, null))
         .startsWith("/api/media/hls/30/index.m3u8");

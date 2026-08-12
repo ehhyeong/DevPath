@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.devpath.api.admin.service.AdminCourseGovernanceService;
 import com.devpath.api.admin.service.AdminDashboardService;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ class AdminAuthorizationIntegrationTest {
 
   @Autowired private MockMvc mockMvc;
   @MockitoBean private AdminDashboardService adminDashboardService;
+  @MockitoBean private AdminCourseGovernanceService adminCourseGovernanceService;
 
   @Test
   void allowsOnlyThePermissionAssignedToALimitedAdmin() throws Exception {
@@ -58,6 +60,22 @@ class AdminAuthorizationIntegrationTest {
     mockMvc
         .perform(get("/api/admin/dashboard/overview").with(authentication(admin("ADMIN_SUPER"))))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  void courseReviewerCanOpenReviewDetailButUnrelatedAdminCannot() throws Exception {
+    when(adminCourseGovernanceService.getCourseReview(12L, 1L)).thenReturn(null);
+
+    mockMvc
+        .perform(
+            get("/api/admin/courses/12/review")
+                .with(authentication(admin("ADMIN_MODERATION_RESOLVE"))))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            get("/api/admin/courses/12/review").with(authentication(admin("ADMIN_DASHBOARD_READ"))))
+        .andExpect(status().isForbidden());
   }
 
   @Test
