@@ -2,6 +2,7 @@ package com.devpath.api.instructor.service;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
 import com.devpath.api.common.service.CourseDetailMetadataMapper;
+import com.devpath.api.course.service.HlsPlaybackService;
 import com.devpath.api.instructor.dto.course.InstructorCourseListResponse;
 import com.devpath.api.review.entity.Review;
 import com.devpath.api.review.repository.ReviewRepository;
@@ -90,6 +91,7 @@ public class InstructorCourseQueryService {
   private final UserProfileRepository userProfileRepository;
   private final UserTechStackRepository userTechStackRepository;
   private final CourseDetailMetadataMapper metadataMapper;
+  private final HlsPlaybackService hlsPlaybackService;
 
   public List<InstructorCourseListResponse> getCourseList(Long instructorId) {
     validateAuthenticatedUser(instructorId);
@@ -318,7 +320,9 @@ public class InstructorCourseQueryService {
                   .title(lesson.getTitle())
                   .description(lesson.getDescription())
                   .lessonType(lesson.getLessonType() == null ? null : lesson.getLessonType().name())
-                  .videoUrl(lesson.getVideoUrl())
+                  .videoUrl(
+                      hlsPlaybackService.issuePlaybackUrl(
+                          lesson, lesson.getSection().getCourse().getInstructorId()))
                   .videoAssetKey(lesson.getVideoId())
                   .thumbnailUrl(lesson.getThumbnailUrl())
                   .durationSeconds(lesson.getDurationSeconds())

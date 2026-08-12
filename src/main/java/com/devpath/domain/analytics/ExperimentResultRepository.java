@@ -8,4 +8,8 @@ import org.springframework.stereotype.Repository;
 public interface ExperimentResultRepository extends JpaRepository<ExperimentResult, Long> {
 
   Optional<ExperimentResult> findByExperimentId(String experimentId);
+
+  boolean existsByExperimentId(String experimentId);
+
+  java.util.List<ExperimentResult> findAllByOrderByCreatedAtDescIdDesc();
 }

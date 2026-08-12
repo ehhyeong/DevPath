@@ -12,6 +12,7 @@ import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.system.service.SystemPolicyService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class RefundService {
 
-  private static final long REFUND_AVAILABLE_DAYS = 7L;
   private static final int MAX_REFUNDABLE_PROGRESS_PERCENT = 30;
 
   private final RefundRepository refundRepository;
   private final CourseRepository courseRepository;
   private final CourseEnrollmentRepository courseEnrollmentRepository;
+  private final SystemPolicyService systemPolicyService;
 
   public RefundResponse requestRefund(RefundRequestDto request, Long learnerId) {
     CourseEnrollment enrollment =
@@ -51,8 +52,8 @@ public class RefundService {
     Integer progressPercent =
         enrollment.getProgressPercentage() == null ? 0 : enrollment.getProgressPercentage();
 
-    // 이번 주차 마감 기준으로 환불 기간은 7일로 고정한다.
-    if (LocalDateTime.now().isAfter(enrolledAt.plusDays(REFUND_AVAILABLE_DAYS))) {
+    int refundPolicyDays = systemPolicyService.currentPolicy().refundPolicyDays();
+    if (LocalDateTime.now().isAfter(enrolledAt.plusDays(refundPolicyDays))) {
       throw new CustomException(ErrorCode.INVALID_INPUT);
     }
 

@@ -2,6 +2,7 @@ package com.devpath.api.admin.service;
 
 import com.devpath.api.admin.dto.settlement.SettlementEligibilityResponse;
 import com.devpath.api.admin.dto.settlement.SettlementHoldRequest;
+import com.devpath.api.instructor.dto.revenue.SettlementResponse;
 import com.devpath.api.refund.entity.RefundRequest;
 import com.devpath.api.refund.entity.RefundStatus;
 import com.devpath.api.refund.repository.RefundRepository;
@@ -12,8 +13,10 @@ import com.devpath.api.settlement.repository.SettlementHoldRepository;
 import com.devpath.api.settlement.repository.SettlementRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.system.service.SystemPolicyService;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,12 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AdminSettlementService {
 
-  private static final long REFUND_AVAILABLE_DAYS = 7L;
   private static final int MAX_REFUNDABLE_PROGRESS_PERCENT = 30;
 
   private final SettlementRepository settlementRepository;
   private final SettlementHoldRepository settlementHoldRepository;
   private final RefundRepository refundRepository;
+  private final SystemPolicyService systemPolicyService;
 
   public void holdSettlement(Long settlementId, Long adminId, SettlementHoldRequest request) {
     Settlement settlement =
@@ -46,6 +49,30 @@ public class AdminSettlementService {
             .build());
   }
 
+  public void releaseSettlement(Long settlementId, Long adminId, SettlementHoldRequest request) {
+    Settlement settlement = getSettlement(settlementId);
+    settlement.release();
+    settlementHoldRepository
+        .findTopBySettlementIdAndReleasedAtIsNullOrderByHeldAtDesc(settlementId)
+        .ifPresent(hold -> hold.release(adminId, request.getReason()));
+  }
+
+  public void completeSettlement(Long settlementId) {
+    getSettlement(settlementId).complete();
+  }
+
+  @Transactional(readOnly = true)
+  public List<SettlementResponse> getSettlements() {
+    return settlementRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc().stream()
+        .map(SettlementResponse::from)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public SettlementResponse getSettlementDetail(Long settlementId) {
+    return SettlementResponse.from(getSettlement(settlementId));
+  }
+
   @Transactional(readOnly = true)
   public SettlementEligibilityResponse checkEligibility(Long refundRequestId) {
     RefundRequest refundRequest =
@@ -54,7 +81,8 @@ public class AdminSettlementService {
             .orElseThrow(() -> new CustomException(ErrorCode.REFUND_NOT_FOUND));
 
     LocalDateTime purchasedAt = refundRequest.getEnrolledAt();
-    LocalDateTime refundDeadline = purchasedAt.plusDays(REFUND_AVAILABLE_DAYS);
+    LocalDateTime refundDeadline =
+        purchasedAt.plusDays(systemPolicyService.currentPolicy().refundPolicyDays());
     LocalDateTime now = LocalDateTime.now();
 
     Integer progressPercent =
@@ -114,5 +142,11 @@ public class AdminSettlementService {
         .isEligible(isEligible)
         .remainingDays(remainingDays)
         .build();
+  }
+
+  private Settlement getSettlement(Long settlementId) {
+    return settlementRepository
+        .findByIdAndIsDeletedFalse(settlementId)
+        .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
   }
 }

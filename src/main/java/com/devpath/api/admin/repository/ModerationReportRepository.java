@@ -18,6 +18,9 @@ public interface ModerationReportRepository extends JpaRepository<ModerationRepo
   boolean existsByReporterUserIdAndContentIdAndStatus(
       Long reporterUserId, Long contentId, ModerationReportStatus status);
 
+  boolean existsByReporterUserIdAndTargetUserIdAndContentIdIsNullAndStatus(
+      Long reporterUserId, Long targetUserId, ModerationReportStatus status);
+
   long countByStatus(ModerationReportStatus status);
 
   long countByActionTaken(ModerationActionType actionTaken);

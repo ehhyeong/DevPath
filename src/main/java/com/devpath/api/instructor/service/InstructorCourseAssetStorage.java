@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -17,9 +18,13 @@ import org.springframework.web.multipart.MultipartFile;
 class InstructorCourseAssetStorage {
 
   private final String uploadBaseDir;
+  private final InstructorCourseVideoProcessor videoProcessor;
 
-  InstructorCourseAssetStorage(@Value("${app.upload.dir:./uploads}") String uploadBaseDir) {
+  InstructorCourseAssetStorage(
+      @Value("${app.upload.dir:./uploads}") String uploadBaseDir,
+      InstructorCourseVideoProcessor videoProcessor) {
     this.uploadBaseDir = uploadBaseDir;
+    this.videoProcessor = videoProcessor;
   }
 
   InstructorCourseDto.UploadedAssetResponse store(
@@ -47,13 +52,37 @@ class InstructorCourseAssetStorage {
     }
 
     String normalizedAssetKey = assetKey.replace("\\", "/");
+    Optional<InstructorCourseVideoProcessor.ProcessedVideo> processedVideo =
+        videoProcessor.process(
+            uploadRoot, targetPath, normalizedAssetKey, safeAssetType, file.getContentType());
+    String resultUrl =
+        processedVideo
+            .map(InstructorCourseVideoProcessor.ProcessedVideo::url)
+            .orElse("/uploads/" + normalizedAssetKey);
+    String resultAssetKey =
+        processedVideo
+            .map(InstructorCourseVideoProcessor.ProcessedVideo::assetKey)
+            .orElse(normalizedAssetKey);
+    String resultStoredFileName =
+        processedVideo
+            .map(InstructorCourseVideoProcessor.ProcessedVideo::storedFileName)
+            .orElse(storedFileName);
+    String resultContentType =
+        processedVideo.isPresent() ? "application/vnd.apple.mpegurl" : file.getContentType();
+    long resultFileSize =
+        processedVideo
+            .map(InstructorCourseVideoProcessor.ProcessedVideo::fileSize)
+            .orElse(file.getSize());
     return InstructorCourseDto.UploadedAssetResponse.builder()
-        .url("/uploads/" + normalizedAssetKey)
-        .assetKey(normalizedAssetKey)
+        .url(resultUrl)
+        .assetKey(resultAssetKey)
         .originalFileName(originalFileName)
-        .storedFileName(storedFileName)
-        .contentType(file.getContentType())
-        .fileSize(file.getSize())
+        .storedFileName(resultStoredFileName)
+        .contentType(resultContentType)
+        .fileSize(resultFileSize)
+        .originalUrl("/uploads/" + normalizedAssetKey)
+        .originalAssetKey(normalizedAssetKey)
+        .transcoded(processedVideo.isPresent())
         .build();
   }
 

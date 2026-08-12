@@ -13,6 +13,7 @@ import com.devpath.domain.learning.entity.proof.ProofCardTag;
 import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.HashMap;
@@ -41,10 +42,26 @@ public class ProofCardService {
   private final LessonRepository lessonRepository;
   private final LessonProgressRepository lessonProgressRepository;
   private final UserRepository userRepository;
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
 
   // 강좌 수강 완료 시 Proof Card를 발급한다.
   @Transactional
   public void issueIfEligibleByCourse(Long userId, Long courseId) {
+    if (!learningAutomationPolicyService.isEnabled("PROOF_CARD_AUTO_ISSUE", true)) {
+      return;
+    }
+    issueEligibleCourse(userId, courseId);
+  }
+
+  @Transactional
+  public void issueManuallyByCourse(Long userId, Long courseId) {
+    if (!learningAutomationPolicyService.isEnabled("PROOF_CARD_MANUAL_ISSUE", true)) {
+      throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
+    }
+    issueEligibleCourse(userId, courseId);
+  }
+
+  private void issueEligibleCourse(Long userId, Long courseId) {
     if (proofCardRepository.existsByUserIdAndCourseCourseId(userId, courseId)) {
       return;
     }

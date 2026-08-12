@@ -19,6 +19,7 @@ import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.LessonPrerequisiteRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.system.service.SystemPolicyService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.ArrayList;
@@ -51,11 +52,14 @@ public class InstructorCourseService {
   private final InstructorCourseValueParser valueParser;
   private final InstructorCourseAssetStorage assetStorage;
   private final InstructorCourseMetadataEditor metadataEditor;
+  private final SystemPolicyService systemPolicyService;
 
   // 강의를 생성한다.
   @Transactional
   public Long createCourse(Long instructorId, InstructorCourseDto.CreateCourseRequest request) {
     validateAuthenticatedUser(instructorId);
+    systemPolicyService.validateCoursePrice(request.getPrice());
+    systemPolicyService.validateCoursePrice(request.getOriginalPrice());
     User instructor =
         userRepository
             .findById(instructorId)
@@ -86,6 +90,8 @@ public class InstructorCourseService {
   public void updateCourse(
       Long instructorId, Long courseId, InstructorCourseDto.UpdateCourseRequest request) {
     validateAuthenticatedUser(instructorId);
+    systemPolicyService.validateCoursePrice(request.getPrice());
+    systemPolicyService.validateCoursePrice(request.getOriginalPrice());
 
     Course course = getOwnedCourse(instructorId, courseId);
     course.updateBasicInfo(

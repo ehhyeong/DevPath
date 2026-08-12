@@ -6,6 +6,7 @@ import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.TilDraftRepository;
 import com.devpath.domain.learning.repository.TimestampNoteRepository;
 import com.devpath.domain.learning.repository.ocr.OcrResultRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.NodeRecommendation;
 import com.devpath.domain.roadmap.entity.NodeStatus;
@@ -36,6 +37,7 @@ public class NodeRecommendationPlanner {
   private final TimestampNoteRepository timestampNoteRepository;
   private final TilDraftRepository tilDraftRepository;
   private final OcrResultRepository ocrResultRepository;
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
 
   RecommendationPlan plan(Long userId, Long roadmapId, List<RoadmapNode> roadmapNodes) {
     Set<String> userSkills =
@@ -71,7 +73,10 @@ public class NodeRecommendationPlanner {
     RecommendationCandidate advancedCandidate =
         signals.isReadyForAdvanced()
             ? candidates.stream()
-                .filter(candidate -> candidate.coveragePercent() >= 80.0)
+                .filter(
+                    candidate ->
+                        candidate.coveragePercent()
+                            >= learningAutomationPolicyService.getTagMatchThreshold() * 100.0)
                 .filter(candidate -> isDifferentNode(candidate, remedialCandidate))
                 .sorted(advancedComparator())
                 .findFirst()

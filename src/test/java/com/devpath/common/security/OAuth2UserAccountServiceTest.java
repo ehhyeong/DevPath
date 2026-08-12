@@ -20,12 +20,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class OAuth2UserAccountServiceTest {
 
   @Mock private UserRepository userRepository;
+  @Mock private AccountAccessService accountAccessService;
 
   private OAuth2UserAccountService service;
 
   @BeforeEach
   void setUp() {
-    service = new OAuth2UserAccountService(userRepository);
+    service = new OAuth2UserAccountService(userRepository, accountAccessService);
   }
 
   @Test

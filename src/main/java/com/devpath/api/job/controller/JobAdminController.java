@@ -13,11 +13,13 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = SwaggerTag.JOB_ADMIN, description = "관리자 채용 공고 수집 및 등록 API")
@@ -45,6 +47,13 @@ public class JobAdminController {
     return ResponseEntity.ok(ApiResponse.ok(jobAdminService.createJob(request)));
   }
 
+  @GetMapping("/api/admin/jobs")
+  @Operation(tags = SwaggerTag.JOB_ADMIN, summary = "관리자 전체 채용 공고 목록 조회")
+  public ResponseEntity<ApiResponse<List<JobPostingResponse.Summary>>> getAllJobs(
+      @RequestParam(defaultValue = "false") boolean includeArchived) {
+    return ResponseEntity.ok(ApiResponse.ok(jobAdminService.getAllJobs(includeArchived)));
+  }
+
   @GetMapping("/api/jobs")
   @Operation(
       tags = SwaggerTag.JOB,
@@ -70,6 +79,24 @@ public class JobAdminController {
     return ResponseEntity.ok(ApiResponse.ok(jobAdminService.updateJob(jobId, request)));
   }
 
+  @GetMapping("/api/admin/jobs/{jobId}")
+  public ResponseEntity<ApiResponse<JobPostingResponse.Detail>> getAdminJob(
+      @PathVariable Long jobId) {
+    return ResponseEntity.ok(ApiResponse.ok(jobAdminService.getAdminJob(jobId)));
+  }
+
+  @DeleteMapping("/api/admin/jobs/{jobId}")
+  public ResponseEntity<ApiResponse<Void>> archiveJob(@PathVariable Long jobId) {
+    jobAdminService.archiveJob(jobId);
+    return ResponseEntity.ok(ApiResponse.ok(null));
+  }
+
+  @PostMapping("/api/admin/jobs/{jobId}/restore")
+  public ResponseEntity<ApiResponse<JobPostingResponse.Detail>> restoreJob(
+      @PathVariable Long jobId) {
+    return ResponseEntity.ok(ApiResponse.ok(jobAdminService.restoreJob(jobId)));
+  }
+
   @PostMapping("/api/admin/companies")
   @Operation(tags = SwaggerTag.COMPANY, summary = "기업 프로필 생성", description = "관리자가 기업 프로필을 생성합니다.")
   public ResponseEntity<ApiResponse<CompanyResponse.Detail>> createCompany(
@@ -79,8 +106,9 @@ public class JobAdminController {
 
   @GetMapping("/api/admin/companies")
   @Operation(tags = SwaggerTag.COMPANY, summary = "기업 목록 조회", description = "관리자가 기업 목록을 조회합니다.")
-  public ResponseEntity<ApiResponse<List<CompanyResponse.Summary>>> getCompanies() {
-    return ResponseEntity.ok(ApiResponse.ok(jobAdminService.getCompanies()));
+  public ResponseEntity<ApiResponse<List<CompanyResponse.Summary>>> getCompanies(
+      @RequestParam(defaultValue = "false") boolean includeArchived) {
+    return ResponseEntity.ok(ApiResponse.ok(jobAdminService.getCompanies(includeArchived)));
   }
 
   @GetMapping("/api/admin/companies/{companyId}")
@@ -105,5 +133,17 @@ public class JobAdminController {
   public ResponseEntity<ApiResponse<CompanyResponse.Detail>> verifyCompany(
       @PathVariable Long companyId, @Valid @RequestBody CompanyRequest.Verify request) {
     return ResponseEntity.ok(ApiResponse.ok(jobAdminService.verifyCompany(companyId, request)));
+  }
+
+  @DeleteMapping("/api/admin/companies/{companyId}")
+  public ResponseEntity<ApiResponse<Void>> archiveCompany(@PathVariable Long companyId) {
+    jobAdminService.archiveCompany(companyId);
+    return ResponseEntity.ok(ApiResponse.ok(null));
+  }
+
+  @PostMapping("/api/admin/companies/{companyId}/restore")
+  public ResponseEntity<ApiResponse<CompanyResponse.Detail>> restoreCompany(
+      @PathVariable Long companyId) {
+    return ResponseEntity.ok(ApiResponse.ok(jobAdminService.restoreCompany(companyId)));
   }
 }

@@ -1,6 +1,7 @@
 package com.devpath.api.analytics.dto;
 
 import com.devpath.domain.analytics.ExperimentResult;
+import com.devpath.domain.analytics.ExperimentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Builder;
@@ -17,6 +18,10 @@ public class ExperimentResultResponse {
   @Schema(description = "실험 이름", example = "홈 화면 추천 UI 변경 테스트")
   private String experimentName;
 
+  private String hypothesis;
+
+  private ExperimentStatus status;
+
   @Schema(
       description = "결과 지표 (JSON 형식)",
       example = "{\"variantA_ctr\": 0.15, \"variantB_ctr\": 0.22}")
@@ -25,12 +30,23 @@ public class ExperimentResultResponse {
   @Schema(description = "생성 일시")
   private LocalDateTime createdAt;
 
+  private LocalDateTime updatedAt;
+
+  private LocalDateTime startedAt;
+
+  private LocalDateTime completedAt;
+
   public static ExperimentResultResponse from(ExperimentResult result) {
     return ExperimentResultResponse.builder()
         .experimentId(result.getExperimentId())
         .experimentName(result.getExperimentName())
+        .hypothesis(result.getHypothesis())
+        .status(result.getStatus())
         .metricsJson(result.getMetricsJson())
         .createdAt(result.getCreatedAt())
+        .updatedAt(result.getUpdatedAt())
+        .startedAt(result.getStartedAt())
+        .completedAt(result.getCompletedAt())
         .build();
   }
 }

@@ -2,7 +2,10 @@ package com.devpath.api.admin.service;
 
 import com.devpath.api.admin.dto.governance.CourseApproveRequest;
 import com.devpath.api.admin.dto.governance.CourseRejectRequest;
+import com.devpath.api.admin.dto.governance.CourseReviewHistoryResponse;
 import com.devpath.api.admin.dto.governance.PendingCourseResponse;
+import com.devpath.api.admin.entity.CourseReviewHistory;
+import com.devpath.api.admin.repository.CourseReviewHistoryRepository;
 import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -22,6 +25,7 @@ public class AdminCourseGovernanceService {
 
   private final CourseRepository courseRepository;
   private final InstructorNotificationService instructorNotificationService;
+  private final CourseReviewHistoryRepository courseReviewHistoryRepository;
 
   public List<PendingCourseResponse> getPendingCourses() {
     return courseRepository.findByStatus(CourseStatus.IN_REVIEW).stream()
@@ -30,7 +34,7 @@ public class AdminCourseGovernanceService {
   }
 
   @Transactional
-  public void approveCourse(Long courseId, CourseApproveRequest request) {
+  public void approveCourse(Long courseId, Long adminId, CourseApproveRequest request) {
     Course course =
         courseRepository
             .findById(courseId)
@@ -39,12 +43,14 @@ public class AdminCourseGovernanceService {
       throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
     }
     course.approve();
+    saveHistory(course, adminId, "APPROVED", request.getReason());
     instructorNotificationService.notifySystem(
-        course.getInstructorId(), "강좌가 승인되었습니다: " + course.getTitle());
+        course.getInstructor().getId(),
+        "강좌가 승인되었습니다: " + course.getTitle() + " / 사유: " + request.getReason());
   }
 
   @Transactional
-  public void rejectCourse(Long courseId, CourseRejectRequest request) {
+  public void rejectCourse(Long courseId, Long adminId, CourseRejectRequest request) {
     Course course =
         courseRepository
             .findById(courseId)
@@ -53,7 +59,26 @@ public class AdminCourseGovernanceService {
       throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
     }
     course.reject();
+    saveHistory(course, adminId, "REJECTED", request.getReason());
     instructorNotificationService.notifySystem(
-        course.getInstructorId(), "강좌가 반려되었습니다: " + course.getTitle());
+        course.getInstructor().getId(),
+        "강좌가 반려되었습니다: " + course.getTitle() + " / 사유: " + request.getReason());
+  }
+
+  public List<CourseReviewHistoryResponse> getReviewHistory() {
+    return courseReviewHistoryRepository.findAllByOrderByProcessedAtDesc().stream()
+        .map(CourseReviewHistoryResponse::from)
+        .toList();
+  }
+
+  private void saveHistory(Course course, Long adminId, String action, String reason) {
+    courseReviewHistoryRepository.save(
+        CourseReviewHistory.builder()
+            .courseId(course.getCourseId())
+            .instructorId(course.getInstructor().getId())
+            .adminId(adminId)
+            .action(action)
+            .reason(reason)
+            .build());
   }
 }

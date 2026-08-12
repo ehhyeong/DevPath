@@ -80,12 +80,13 @@ WHERE NOT EXISTS (
     WHERE email = 'instructor@devpath.com'
 );
 
-INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+INSERT INTO users (email, password, name, role_name, is_active, is_super_admin, created_at, updated_at)
 SELECT
     'admin@devpath.com',
     '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
     '박서연',
     'ROLE_ADMIN',
+    TRUE,
     TRUE,
     NOW(),
     NOW()
@@ -19137,6 +19138,7 @@ INSERT INTO experiment_results (
     experiment_id,
     experiment_name,
     metrics_json,
+    status,
     created_at
 )
 SELECT
@@ -19144,6 +19146,7 @@ SELECT
     'EXP-C-9001',
     'C Swagger admin analytics experiment',
     '{"totalUsers": 15230, "weeklyActiveUsers": 4321, "averageRoadmapProgress": 42.8, "monthlyCompletedAssignments": 1830}',
+    'COMPLETED',
     NOW()
 WHERE NOT EXISTS (
     SELECT 1

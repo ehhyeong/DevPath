@@ -11,6 +11,8 @@ import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.entity.clearance.NodeClearanceReason;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceReasonRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
+import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
@@ -53,6 +55,7 @@ public class NodeClearanceService {
 
   // 강의-노드 매핑 저장소
   private final CourseNodeMappingRepository courseNodeMappingRepository;
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
 
   // 로드맵의 노드 클리어를 재계산한다.
   @Transactional
@@ -187,6 +190,10 @@ public class NodeClearanceService {
   // 특정 노드 클리어를 계산 후 저장한다.
   @Transactional
   public NodeClearanceResponse.Detail synchronizeNodeClearance(Long userId, Long nodeId) {
+    if (!learningAutomationPolicyService.isEnabled(
+        LearningAutomationRuleCatalog.NODE_CLEARANCE_AUTO_JUDGE, true)) {
+      throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
+    }
     User user = validateUser(userId);
     RoadmapNode node =
         roadmapNodeRepository

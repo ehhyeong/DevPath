@@ -110,6 +110,15 @@ public class AdminTagGovernanceService {
     }
   }
 
+  public void deleteTag(Long tagId) {
+    Tag tag =
+        tagRepository
+            .findById(tagId)
+            .filter(candidate -> !Boolean.TRUE.equals(candidate.getIsDeleted()))
+            .orElseThrow(() -> new CustomException(ErrorCode.TAG_NOT_FOUND));
+    tag.softDelete();
+  }
+
   @Transactional(readOnly = true)
   public TagGuideResponse getTagGuide() {
     List<TagResponse> standardTags =

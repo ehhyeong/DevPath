@@ -39,4 +39,6 @@ public interface RoadmapNodeResourceRepository extends JpaRepository<RoadmapNode
                    resource.resourceId asc
           """)
   List<RoadmapNodeResource> findActiveByNodeIds(@Param("nodeIds") List<Long> nodeIds);
+
+  void deleteAllByNodeNodeId(Long nodeId);
 }

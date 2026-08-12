@@ -233,6 +233,15 @@ public class CourseDetailResponse {
     @Schema(description = "Video asset key")
     private String videoAssetKey;
 
+    @Schema(description = "HLS encryption policy")
+    private Boolean hlsEncrypted;
+
+    @Schema(description = "Maximum playback resolution")
+    private String maxResolution;
+
+    @Schema(description = "Watermark policy")
+    private Boolean watermarkEnabled;
+
     @Schema(description = "Thumbnail URL")
     private String thumbnailUrl;
 

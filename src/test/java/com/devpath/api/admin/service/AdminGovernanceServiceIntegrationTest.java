@@ -10,6 +10,7 @@ import com.devpath.api.admin.dto.PolicyGovernanceResponses.CourseMappingCandidat
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.MappingCandidatesResponse;
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.SystemPolicyResponse;
 import com.devpath.api.admin.dto.governance.CourseApproveRequest;
+import com.devpath.api.admin.dto.governance.CourseNodeMappingCandidateResponse;
 import com.devpath.api.admin.dto.governance.CourseRejectRequest;
 import com.devpath.api.admin.dto.governance.NodeCompletionRuleRequest;
 import com.devpath.api.admin.dto.governance.NodePrerequisitesRequest;
@@ -17,6 +18,8 @@ import com.devpath.api.admin.dto.governance.NodeRequiredTagsRequest;
 import com.devpath.api.admin.dto.governance.NodeTypeRequest;
 import com.devpath.api.admin.dto.governance.PendingCourseResponse;
 import com.devpath.api.admin.dto.governance.RoadmapNodeUpsertRequest;
+import com.devpath.api.admin.dto.governance.StreamingPolicyUpdateRequest;
+import com.devpath.api.admin.dto.governance.SystemPolicyUpdateRequest;
 import com.devpath.api.admin.dto.governance.TagMergeRequest;
 import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
@@ -40,6 +43,7 @@ import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.roadmap.service.TagValidationService;
 import com.devpath.domain.system.repository.SystemSettingRepository;
+import com.devpath.domain.system.service.SystemPolicyService;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserRole;
@@ -72,6 +76,7 @@ import org.springframework.test.util.ReflectionTestUtils;
   AdminNodeGovernanceService.class,
   AdminPolicyAndMappingService.class,
   AdminTagGovernanceService.class,
+  SystemPolicyService.class,
   TagValidationService.class
 })
 class AdminGovernanceServiceIntegrationTest {
@@ -82,6 +87,7 @@ class AdminGovernanceServiceIntegrationTest {
   @Autowired private AdminNodeGovernanceService adminNodeGovernanceService;
   @Autowired private AdminPolicyAndMappingService adminPolicyAndMappingService;
   @Autowired private AdminTagGovernanceService adminTagGovernanceService;
+  @Autowired private SystemPolicyService systemPolicyService;
 
   @Autowired private UserRepository userRepository;
   @Autowired private TagRepository tagRepository;
@@ -106,7 +112,7 @@ class AdminGovernanceServiceIntegrationTest {
     assertThat(adminCourseGovernanceService.getPendingCourses()).hasSize(1);
 
     adminCourseGovernanceService.approveCourse(
-        course.getCourseId(), courseApproveRequest("Approved for publication"));
+        course.getCourseId(), 1L, courseApproveRequest("Approved for publication"));
     flushAndClear();
 
     assertThat(courseRepository.findById(course.getCourseId()))
@@ -117,13 +123,20 @@ class AdminGovernanceServiceIntegrationTest {
     Course rejectedCourse =
         saveCourse(instructor, "Rejected Pending Course", CourseStatus.IN_REVIEW);
     adminCourseGovernanceService.rejectCourse(
-        rejectedCourse.getCourseId(), courseRejectRequest("Needs more work"));
+        rejectedCourse.getCourseId(), 1L, courseRejectRequest("Needs more work"));
     flushAndClear();
 
     assertThat(courseRepository.findById(rejectedCourse.getCourseId()))
         .get()
         .extracting(Course::getStatus)
         .isEqualTo(CourseStatus.DRAFT);
+    assertThat(adminCourseGovernanceService.getReviewHistory())
+        .extracting("courseId", "action", "reason")
+        .contains(
+            org.assertj.core.groups.Tuple.tuple(
+                course.getCourseId(), "APPROVED", "Approved for publication"),
+            org.assertj.core.groups.Tuple.tuple(
+                rejectedCourse.getCourseId(), "REJECTED", "Needs more work"));
   }
 
   @Test
@@ -387,6 +400,63 @@ class AdminGovernanceServiceIntegrationTest {
   }
 
   @Test
+  @DisplayName("간소화 정책 API는 환불·가격·스트리밍 설정을 실제 저장한다")
+  void updateSimplePoliciesPersistsEveryField() {
+    adminPolicyAndMappingService.updateSystemPoliciesSimple(
+        systemPolicyUpdateRequest(18, 14, 450000L));
+    adminPolicyAndMappingService.updateStreamingPolicySimple(
+        streamingPolicyUpdateRequest(false, "1440p", false));
+    flushAndClear();
+
+    com.devpath.api.admin.dto.governance.SystemPolicyResponse response =
+        adminPolicyAndMappingService.getSystemPoliciesSimple();
+
+    assertThat(response.getPlatformFeeRate()).isEqualTo(18);
+    assertThat(response.getRefundPolicyDays()).isEqualTo(14);
+    assertThat(response.getMaxCoursePrice()).isEqualTo(450000L);
+    assertThat(response.getHlsEnabled()).isFalse();
+    assertThat(response.getMaxResolution()).isEqualTo("1440p");
+    assertThat(response.getWatermarkEnabled()).isFalse();
+    assertThat(systemPolicyService.currentPolicy().platformFeeRate()).isEqualTo(0.18);
+    assertThat(systemPolicyService.currentPolicy().refundPolicyDays()).isEqualTo(14);
+    assertThat(systemPolicyService.currentPolicy().maxResolution()).isEqualTo("1440p");
+    assertThat(systemPolicyService.currentPolicy().watermarkEnabled()).isFalse();
+    assertThatThrownBy(() -> systemPolicyService.validateCoursePrice(BigDecimal.valueOf(450001)))
+        .isInstanceOf(CustomException.class)
+        .hasMessageContaining("최대 가격");
+  }
+
+  @Test
+  @DisplayName("태그 기반 자동 매핑은 강한 후보만 추천하고 현재 연결을 함께 반환한다")
+  void getSimpleMappingCandidatesReturnsActionableSuggestions() {
+    User instructor = saveUser("simple-mapping@devpath.com", UserRole.ROLE_INSTRUCTOR);
+    Tag spring = saveTag("Spring");
+    Tag security = saveTag("Security");
+    Course course = saveCourse(instructor, "Spring Security", CourseStatus.PUBLISHED);
+    courseTagMapRepository.save(
+        CourseTagMap.builder().course(course).tag(spring).proficiencyLevel(5).build());
+    courseTagMapRepository.save(
+        CourseTagMap.builder().course(course).tag(security).proficiencyLevel(5).build());
+    RoadmapNode node = saveNode(saveOfficialRoadmap("Secure Backend"), "Security", "CONCEPT", 1);
+    saveRequiredTag(node, spring);
+    saveRequiredTag(node, security);
+    courseNodeMappingRepository.save(CourseNodeMapping.builder().course(course).node(node).build());
+    flushAndClear();
+
+    CourseNodeMappingCandidateResponse response =
+        adminPolicyAndMappingService.getMappingCandidatesSimple().stream()
+            .filter(item -> item.getCourseId().equals(course.getCourseId()))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(response.getCourseTags()).containsExactly("Security", "Spring");
+    assertThat(response.getMappedNodeIds()).containsExactly(node.getNodeId());
+    assertThat(response.getSuggestedNodeIds()).containsExactly(node.getNodeId());
+    assertThat(response.getTagMatchRate()).isEqualTo(100.0);
+    assertThat(response.getRecommendationSource()).isEqualTo("TAG_COVERAGE");
+  }
+
+  @Test
   @DisplayName("태그 병합 시 강의 태그, 사용자 기술스택, 노드 필수 태그를 모두 이전한다")
   void mergeTagsMovesAllReferences() {
     User instructor = saveUser("tag-merge-instructor@devpath.com", UserRole.ROLE_INSTRUCTOR);
@@ -557,6 +627,24 @@ class AdminGovernanceServiceIntegrationTest {
     UpdateStreamingPolicy request = newInstance(UpdateStreamingPolicy.class);
     ReflectionTestUtils.setField(request, "isHlsEncrypted", isHlsEncrypted);
     ReflectionTestUtils.setField(request, "maxConcurrentDevices", maxConcurrentDevices);
+    return request;
+  }
+
+  private SystemPolicyUpdateRequest systemPolicyUpdateRequest(
+      Integer platformFeeRate, Integer refundPolicyDays, Long maxCoursePrice) {
+    SystemPolicyUpdateRequest request = newInstance(SystemPolicyUpdateRequest.class);
+    ReflectionTestUtils.setField(request, "platformFeeRate", platformFeeRate);
+    ReflectionTestUtils.setField(request, "refundPolicyDays", refundPolicyDays);
+    ReflectionTestUtils.setField(request, "maxCoursePrice", maxCoursePrice);
+    return request;
+  }
+
+  private StreamingPolicyUpdateRequest streamingPolicyUpdateRequest(
+      Boolean hlsEnabled, String maxResolution, Boolean watermarkEnabled) {
+    StreamingPolicyUpdateRequest request = newInstance(StreamingPolicyUpdateRequest.class);
+    ReflectionTestUtils.setField(request, "hlsEnabled", hlsEnabled);
+    ReflectionTestUtils.setField(request, "maxResolution", maxResolution);
+    ReflectionTestUtils.setField(request, "watermarkEnabled", watermarkEnabled);
     return request;
   }
 

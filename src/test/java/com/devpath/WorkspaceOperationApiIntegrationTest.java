@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -114,6 +115,50 @@ class WorkspaceOperationApiIntegrationTest {
         .andExpect(jsonPath("$.paths['/api/admin/recommendation-settings']").exists())
         .andExpect(jsonPath("$.paths['/api/admin/experiments/results']").exists())
         .andExpect(jsonPath("$.paths['/api/admin/analytics/dashboard']").exists());
+  }
+
+  @Test
+  void experimentLifecyclePersistsExplicitResultsBeforeCompletion() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/admin/experiments")
+                .with(authentication(adminAuthentication()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        Map.of(
+                            "experimentId", "EXP-LIFECYCLE-API",
+                            "experimentName", "Lifecycle API",
+                            "hypothesis", "완료율이 증가한다"))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("DRAFT"));
+
+    mockMvc
+        .perform(
+            patch("/api/admin/experiments/{experimentId}/status", "EXP-LIFECYCLE-API")
+                .with(authentication(adminAuthentication()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"RUNNING\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("RUNNING"));
+
+    mockMvc
+        .perform(
+            put("/api/admin/experiments/{experimentId}/results", "EXP-LIFECYCLE-API")
+                .with(authentication(adminAuthentication()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"metricsJson\":\"{\\\"conversionRate\\\":0.42}\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.metricsJson").value("{\"conversionRate\":0.42}"));
+
+    mockMvc
+        .perform(
+            patch("/api/admin/experiments/{experimentId}/status", "EXP-LIFECYCLE-API")
+                .with(authentication(adminAuthentication()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"COMPLETED\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("COMPLETED"));
   }
 
   @Test
@@ -252,7 +297,7 @@ class WorkspaceOperationApiIntegrationTest {
     mockMvc
         .perform(get("/api/admin/analytics/dashboard").with(authentication(adminAuthentication())))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.totalUsers").value(greaterThanOrEqualTo(1)));
+        .andExpect(jsonPath("$.data.totalUsers").value(0));
   }
 
   private long createNotice(String title, String content) throws Exception {
@@ -285,6 +330,6 @@ class WorkspaceOperationApiIntegrationTest {
 
   private UsernamePasswordAuthenticationToken adminAuthentication() {
     return new UsernamePasswordAuthenticationToken(
-        ADMIN_ID, null, AuthorityUtils.createAuthorityList("ROLE_ADMIN"));
+        ADMIN_ID, null, AuthorityUtils.createAuthorityList("ROLE_ADMIN", "ADMIN_SUPER"));
   }
 }

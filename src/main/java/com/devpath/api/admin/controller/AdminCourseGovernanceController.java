@@ -2,6 +2,7 @@ package com.devpath.api.admin.controller;
 
 import com.devpath.api.admin.dto.governance.CourseApproveRequest;
 import com.devpath.api.admin.dto.governance.CourseRejectRequest;
+import com.devpath.api.admin.dto.governance.CourseReviewHistoryResponse;
 import com.devpath.api.admin.dto.governance.PendingCourseResponse;
 import com.devpath.api.admin.service.AdminCourseGovernanceService;
 import com.devpath.common.response.ApiResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "관리자 - 강의 거버넌스", description = "관리자 강의 거버넌스 API")
@@ -30,16 +32,26 @@ public class AdminCourseGovernanceController {
   @Operation(summary = "강의 승인")
   @PatchMapping("/{courseId}/approve")
   public ApiResponse<Void> approveCourse(
-      @PathVariable Long courseId, @RequestBody @Valid CourseApproveRequest request) {
-    adminCourseGovernanceService.approveCourse(courseId, request);
+      @PathVariable Long courseId,
+      @RequestBody @Valid CourseApproveRequest request,
+      @AuthenticationPrincipal Long adminId) {
+    adminCourseGovernanceService.approveCourse(courseId, adminId, request);
     return ApiResponse.success("강의가 승인되었습니다.", null);
   }
 
   @Operation(summary = "강의 반려")
   @PatchMapping("/{courseId}/reject")
   public ApiResponse<Void> rejectCourse(
-      @PathVariable Long courseId, @RequestBody @Valid CourseRejectRequest request) {
-    adminCourseGovernanceService.rejectCourse(courseId, request);
+      @PathVariable Long courseId,
+      @RequestBody @Valid CourseRejectRequest request,
+      @AuthenticationPrincipal Long adminId) {
+    adminCourseGovernanceService.rejectCourse(courseId, adminId, request);
     return ApiResponse.success("강의가 반려되었습니다.", null);
+  }
+
+  @GetMapping("/review-history")
+  public ApiResponse<List<CourseReviewHistoryResponse>> getReviewHistory() {
+    return ApiResponse.success(
+        "강의 검수 이력을 조회했습니다.", adminCourseGovernanceService.getReviewHistory());
   }
 }

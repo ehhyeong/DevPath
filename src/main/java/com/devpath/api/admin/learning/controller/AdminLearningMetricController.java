@@ -9,7 +9,9 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 // 관리자 학습 지표 API 컨트롤러다.
@@ -62,7 +64,14 @@ public class AdminLearningMetricController {
   @Operation(summary = "연간 학습 리포트 조회", description = "연간 학습 리포트를 조회합니다.")
   @GetMapping("/annual-report")
   public ResponseEntity<ApiResponse<AdminLearningMetricResponse.AnnualReportDetail>>
-      getAnnualReport() {
-    return ResponseEntity.ok(ApiResponse.ok(adminLearningMetricService.getAnnualReport()));
+      getAnnualReport(@RequestParam(required = false) Integer year) {
+    return ResponseEntity.ok(ApiResponse.ok(adminLearningMetricService.getAnnualReport(year)));
+  }
+
+  @Operation(summary = "학습 운영 스냅샷 기록", description = "현재 학습 지표와 자동화 상태를 측정 기록으로 저장합니다.")
+  @PostMapping("/snapshots")
+  public ResponseEntity<ApiResponse<Void>> captureSnapshot() {
+    adminLearningMetricService.captureSnapshot();
+    return ResponseEntity.ok(ApiResponse.ok(null));
   }
 }

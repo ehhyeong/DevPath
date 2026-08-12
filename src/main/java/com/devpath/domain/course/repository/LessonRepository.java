@@ -79,5 +79,15 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
   Optional<Lesson> findByLessonIdAndSectionCourseInstructorId(Long lessonId, Long instructorId);
 
+  @Query(
+      """
+        select l
+        from Lesson l
+        join fetch l.section s
+        join fetch s.course c
+        where l.lessonId = :lessonId
+        """)
+  Optional<Lesson> findByIdWithCourse(@Param("lessonId") Long lessonId);
+
   void deleteAllBySectionCourseCourseId(Long courseId);
 }

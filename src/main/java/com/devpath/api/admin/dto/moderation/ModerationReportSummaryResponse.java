@@ -23,5 +23,10 @@ public class ModerationReportSummaryResponse {
   private String contentPreview;
   private String reason;
   private String status;
+  private boolean blinded;
+  private String actionTaken;
+  private String resolutionReason;
+  private Long resolvedBy;
+  private LocalDateTime resolvedAt;
   private LocalDateTime createdAt;
 }

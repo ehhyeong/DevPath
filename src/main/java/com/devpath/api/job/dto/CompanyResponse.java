@@ -17,6 +17,7 @@ public class CompanyResponse {
       @Schema(description = "기업 위치", example = "서울") String location,
       @Schema(description = "기업 인증 상태", example = "PENDING")
           CompanyVerificationStatus verificationStatus,
+      @Schema(description = "보관 여부") Boolean archived,
       @Schema(description = "생성일시", example = "2026-05-06T12:00:00") LocalDateTime createdAt) {
 
     public static Summary from(Company company) {
@@ -26,6 +27,7 @@ public class CompanyResponse {
           company.getIndustry(),
           company.getLocation(),
           company.getVerificationStatus(),
+          company.getIsDeleted(),
           company.getCreatedAt());
     }
   }
@@ -45,6 +47,7 @@ public class CompanyResponse {
           CompanyVerificationStatus verificationStatus,
       @Schema(description = "인증 처리 메모", example = "사업자 정보 확인 완료") String verificationMemo,
       @Schema(description = "인증 처리 일시", example = "2026-05-06T12:10:00") LocalDateTime verifiedAt,
+      @Schema(description = "보관 여부") Boolean archived,
       @Schema(description = "생성일시", example = "2026-05-06T12:00:00") LocalDateTime createdAt,
       @Schema(description = "수정일시", example = "2026-05-06T12:10:00") LocalDateTime updatedAt) {
 
@@ -60,6 +63,7 @@ public class CompanyResponse {
           company.getVerificationStatus(),
           company.getVerificationMemo(),
           company.getVerifiedAt(),
+          company.getIsDeleted(),
           company.getCreatedAt(),
           company.getUpdatedAt());
     }

@@ -2,6 +2,7 @@ package com.devpath.domain.learning.repository;
 
 import com.devpath.domain.learning.entity.Submission;
 import com.devpath.domain.learning.entity.SubmissionStatus;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +23,9 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
 
   List<Submission> findAllByAssignmentIdAndSubmissionStatusAndIsDeletedFalseOrderBySubmittedAtDesc(
       Long assignmentId, SubmissionStatus submissionStatus);
+
+  long countBySubmissionStatusAndSubmittedAtAfterAndIsDeletedFalse(
+      SubmissionStatus submissionStatus, LocalDateTime threshold);
 
   @Query(
       """

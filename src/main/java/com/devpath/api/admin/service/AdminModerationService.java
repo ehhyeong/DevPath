@@ -13,10 +13,12 @@ import com.devpath.api.admin.entity.ModerationReportStatus;
 import com.devpath.api.admin.repository.AccountLogRepository;
 import com.devpath.api.admin.repository.BlindedContentRepository;
 import com.devpath.api.admin.repository.ModerationReportRepository;
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.review.entity.Review;
 import com.devpath.api.review.repository.ReviewRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.common.security.TokenRedisService;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.user.entity.AccountStatus;
@@ -40,6 +42,8 @@ public class AdminModerationService {
   private final ReviewRepository reviewRepository;
   private final CourseRepository courseRepository;
   private final AccountLogRepository accountLogRepository;
+  private final NotificationEventService notificationEventService;
+  private final TokenRedisService tokenRedisService;
 
   // 처리 대기 신고를 완료 상태로 바꾸고 액션에 따라 계정 상태도 갱신한다.
   public void resolveReport(Long reportId, Long adminId, ReportResolveRequest request) {
@@ -48,7 +52,13 @@ public class AdminModerationService {
             .findByIdAndStatus(reportId, ModerationReportStatus.PENDING)
             .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
 
-    report.resolve(adminId, request.getAction());
+    report.resolve(adminId, request.getAction(), request.getReason());
+
+    Long notificationTargetUserId = resolveNotificationTargetUserId(report);
+    if (notificationTargetUserId != null) {
+      notificationEventService.notifySystem(
+          notificationTargetUserId, buildModerationNotification(request));
+    }
 
     // 신고 액션이 정지이고 대상 사용자가 활성 상태면 계정 제한까지 함께 처리한다.
     if (request.getAction() == ModerationActionType.SUSPEND && report.getTargetUserId() != null) {
@@ -59,6 +69,7 @@ public class AdminModerationService {
 
       if (targetUser.getAccountStatus() == AccountStatus.ACTIVE) {
         targetUser.restrict();
+        tokenRedisService.deleteRefreshToken(targetUser.getId());
 
         accountLogRepository.save(
             AccountLog.builder()
@@ -73,6 +84,13 @@ public class AdminModerationService {
 
   // 동일 콘텐츠 블라인드 이력이 있으면 재활성화하고 없으면 새로 만든다.
   public void blindContent(Long contentId, Long adminId, ContentBlindRequest request) {
+    Review review =
+        reviewRepository
+            .findByIdAndIsDeletedFalse(contentId)
+            .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+    if (!Boolean.TRUE.equals(review.getIsHidden())) {
+      review.hide();
+    }
     BlindedContent blindedContent =
         blindedContentRepository.findByContentIdAndIsActiveTrue(contentId).orElse(null);
 
@@ -89,6 +107,19 @@ public class AdminModerationService {
     blindedContent.blind(adminId, request.getReason());
   }
 
+  public void unblindContent(Long contentId, Long adminId, ContentBlindRequest request) {
+    BlindedContent blindedContent =
+        blindedContentRepository
+            .findByContentIdAndIsActiveTrue(contentId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    Review review =
+        reviewRepository
+            .findByIdAndIsDeletedFalse(contentId)
+            .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+    review.resolveReport();
+    blindedContent.unblind(adminId, request.getReason());
+  }
+
   @Transactional(readOnly = true)
   public ModerationStatsResponse getModerationStats() {
     long totalReports = moderationReportRepository.count();
@@ -96,8 +127,7 @@ public class AdminModerationService {
         moderationReportRepository.countByStatus(ModerationReportStatus.RESOLVED);
     long pendingReports = moderationReportRepository.countByStatus(ModerationReportStatus.PENDING);
     long blindedContents = blindedContentRepository.countByIsActiveTrue();
-    long suspendedUsers =
-        moderationReportRepository.countByActionTaken(ModerationActionType.SUSPEND);
+    long suspendedUsers = userRepository.countByAccountStatus(AccountStatus.RESTRICTED);
 
     return ModerationStatsResponse.builder()
         .totalReports(totalReports)
@@ -159,8 +189,25 @@ public class AdminModerationService {
         .contentPreview(review == null ? null : abbreviate(review.getContent(), 90))
         .reason(report.getReason())
         .status(report.getStatus().name())
+        .blinded(
+            report.getContentId() != null
+                && blindedContentRepository
+                    .findByContentIdAndIsActiveTrue(report.getContentId())
+                    .isPresent())
+        .actionTaken(report.getActionTaken() == null ? null : report.getActionTaken().name())
+        .resolutionReason(report.getResolutionReason())
+        .resolvedBy(report.getResolvedBy())
+        .resolvedAt(report.getResolvedAt())
         .createdAt(report.getCreatedAt())
         .build();
+  }
+
+  // 리뷰 신고는 과거 데이터에 대상 회원 ID가 없어도 실제 작성자에게 처리 결과를 알린다.
+  private Long resolveNotificationTargetUserId(ModerationReport report) {
+    if (report.getTargetUserId() != null) {
+      return report.getTargetUserId();
+    }
+    return loadReview(report.getContentId()).map(Review::getLearnerId).orElse(null);
   }
 
   // 사용자 대상 신고는 이름과 이메일을 함께 보여준다.
@@ -231,5 +278,15 @@ public class AdminModerationService {
     }
 
     return normalized.substring(0, maxLength - 1) + "…";
+  }
+
+  private String buildModerationNotification(ReportResolveRequest request) {
+    String action =
+        switch (request.getAction()) {
+          case WARNING -> "경고";
+          case SUSPEND -> "계정 제한";
+          case DISMISS -> "신고 기각";
+        };
+    return "신고 처리 결과: " + action + " - " + request.getReason();
   }
 }

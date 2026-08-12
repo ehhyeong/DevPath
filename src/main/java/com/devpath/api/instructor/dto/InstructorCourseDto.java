@@ -242,5 +242,14 @@ public class InstructorCourseDto {
 
     @Schema(description = "파일 크기")
     private long fileSize;
+
+    @Schema(description = "변환 전 원본 파일 URL")
+    private String originalUrl;
+
+    @Schema(description = "변환 전 원본 저장소 키")
+    private String originalAssetKey;
+
+    @Schema(description = "HLS 변환 적용 여부")
+    private boolean transcoded;
   }
 }

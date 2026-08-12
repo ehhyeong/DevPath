@@ -41,6 +41,26 @@ public class SystemSetting {
   @Column(name = "max_concurrent_devices", nullable = false)
   private Integer maxConcurrentDevices;
 
+  @Builder.Default
+  @Column(name = "refund_policy_days", nullable = false, columnDefinition = "integer default 7")
+  private Integer refundPolicyDays = 7;
+
+  @Builder.Default
+  @Column(name = "max_course_price", nullable = false, columnDefinition = "bigint default 0")
+  private Long maxCoursePrice = 0L;
+
+  @Builder.Default
+  @Column(
+      name = "max_resolution",
+      nullable = false,
+      length = 10,
+      columnDefinition = "varchar(10) default '1080p'")
+  private String maxResolution = "1080p";
+
+  @Builder.Default
+  @Column(name = "watermark_enabled", nullable = false, columnDefinition = "boolean default true")
+  private Boolean watermarkEnabled = true;
+
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)
   private LocalDateTime createdAt;
@@ -54,8 +74,28 @@ public class SystemSetting {
     this.instructorSettlementRate = instructorSettlementRate;
   }
 
+  public void updateSystemPolicy(
+      BigDecimal platformFeeRate,
+      BigDecimal instructorSettlementRate,
+      Integer refundPolicyDays,
+      Long maxCoursePrice) {
+    updateSystemPolicy(platformFeeRate, instructorSettlementRate);
+    this.refundPolicyDays = refundPolicyDays;
+    this.maxCoursePrice = maxCoursePrice;
+  }
+
   public void updateStreamingPolicy(Boolean hlsEncrypted, Integer maxConcurrentDevices) {
     this.isHlsEncrypted = hlsEncrypted;
     this.maxConcurrentDevices = maxConcurrentDevices;
+  }
+
+  public void updateStreamingPolicy(
+      Boolean hlsEncrypted,
+      Integer maxConcurrentDevices,
+      String maxResolution,
+      Boolean watermarkEnabled) {
+    updateStreamingPolicy(hlsEncrypted, maxConcurrentDevices);
+    this.maxResolution = maxResolution;
+    this.watermarkEnabled = watermarkEnabled;
   }
 }
