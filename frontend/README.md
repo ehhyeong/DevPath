@@ -23,7 +23,7 @@ Node.js 22 이상이 필요하며 프로젝트 Docker 개발 환경과 같은 No
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 

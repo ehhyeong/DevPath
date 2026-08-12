@@ -82,7 +82,10 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 ### 관리자
 
 - 관리자 대시보드에서 계정, 기술 태그, 공식 로드맵, 노드 추천 자료, 강의 메뉴, 강의 검수와 신고를 운영합니다.
-- 공지, 정산, 정책, 강의 매핑은 백엔드 관리자 API를 제공하며 프론트엔드 운영 화면과는 범위가 다릅니다.
+- 통합 운영 센터에서 채용·기업, 학습 자동화, 추천·분석, A/B 실험, 플랫폼 공지, 환불·정산과 외부 의존성 상태를 운영하며 일반 사용자는 공개된 플랫폼 공지를 조회할 수 있습니다.
+- 제한 관리자 Role은 대시보드, 계정, 거버넌스, 검수, 채용, 학습, 공지, 정산 권한을 조합해 배정하며 각 권한은 실제 관리자 API 인가에 적용됩니다.
+- 강의 HLS URL은 수강생, 공개 강의의 미리보기 차시, 강사 소유자와 거버넌스 권한 관리자에게만 발급하고 시스템 정책의 최대 동시 학습 기기 수를 브라우저 기기 식별자 기준으로 적용합니다.
+- A/B 실험은 생성, 시작, 일시 중지, 재개, 결과 저장과 완료 상태를 관리합니다. 외부 이벤트 수집 인프라는 포함하지 않으므로 검증된 지표 JSON을 관리자가 저장합니다.
 
 </details>
 
@@ -133,6 +136,7 @@ flowchart LR
 
 - JDK 21
 - Node.js 22 이상, Node.js 24 권장
+- FFmpeg 9 이상 권장. 강의 영상 업로드 시 HLS 변환과 AES-128 암호화에 사용하며, 없어도 원본 영상 폴백으로 업로드는 계속됩니다.
 - Docker Desktop 또는 Docker Compose
 - PostgreSQL과 Redis를 직접 띄우거나 Docker Compose 사용
 
@@ -169,6 +173,19 @@ DEVPATH_REQUIRE_HTTPS=false
 
 OCR_SERVER_URL=http://localhost:5000
 GEMINI_API_KEY=<gemini-api-key>
+
+# PATH에서 ffmpeg를 찾을 수 없을 때 실행 파일의 절대 경로를 지정합니다.
+FFMPEG_PATH=<ffmpeg-executable-path>
+MEDIA_TRANSCODING_TIMEOUT=10m
+
+# HLS 재생 목록·세그먼트·AES 키 만료 URL 서명. 운영에서는 JWT 키와 분리한 임의 값을 사용합니다.
+HLS_URL_SIGNING_SECRET=<hls-url-signing-secret>
+HLS_URL_TTL=10m
+
+# 잡코리아 설정이 없으면 수집 API는 성공으로 위장하지 않고 명시적으로 실패합니다.
+JOBKOREA_JOB_LIST_URL=<jobkorea-job-list-xml-url>
+JOBKOREA_STARTER_LIST_URL=<jobkorea-starter-list-xml-url>
+JOBKOREA_API_KEY=<jobkorea-api-key>
 ```
 
 위 예시는 기본 로컬 프로필의 PostgreSQL 설정입니다. 운영 프로필은 `DB_URL`을 사용하고 `DB_DRIVER`를 지정하지 않으면 Oracle JDBC 드라이버를 기본값으로 사용합니다.
@@ -208,15 +225,17 @@ Windows PowerShell에서는 아래 명령을 사용할 수 있습니다.
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-### Docker Compose 전체 실행
+### Docker Compose 개발 환경 실행
 
 ```bash
 docker compose up -d --build
 ```
+
+이 명령은 Vite 개발 서버, PostgreSQL, Redis와 OCR 서버를 실행합니다. Spring Boot 백엔드는 위의 백엔드 실행 명령으로 별도 실행합니다.
 
 정적 Nginx 프론트엔드 이미지를 확인하려면 `frontend-static` 프로필을 사용합니다.
 
@@ -262,6 +281,10 @@ http://localhost:8083/swagger-ui/index.html
 ```
 
 Vite 개발 서버에서는 프록시가 설정되어 있어 `/api`, `/ws`, `/swagger-ui`, `/v3/api-docs`, `/uploads` 요청이 백엔드로 전달됩니다.
+
+강사가 `lesson-video` 유형으로 영상을 올리고 HLS 정책이 활성화되어 있으면 백엔드는 원본 파일을 보존한 채 6초 세그먼트의 AES-128 HLS 재생 목록을 생성합니다. HLS 재생 목록, TS 세그먼트와 AES 키는 강의 상세 권한 검사 후 발급되는 짧은 만료형 서명 URL로만 제공합니다. 변환 도구가 없거나 변환에 실패하면 원본 영상 URL로 폴백하며 관리자 상태 화면에 `FALLBACK_ONLY`로 표시합니다. 원본 폴백에는 HLS 암호화와 만료형 서명이 적용되지 않으므로 배포 환경에서는 FFmpeg를 준비해야 합니다. Chrome을 포함한 MSE 기반 브라우저에서는 프론트엔드의 `hls.js` 재생 경로를 사용합니다.
+
+Gemini 키가 없거나 호출에 실패하면 지원 기능은 결정론적 폴백만 사용하며 관리자 상태 화면에 이를 명시합니다. 잡코리아 수집 URL이 없으면 수집 API는 가짜 완료 응답을 반환하지 않고 설정 누락 오류를 반환합니다.
 
 </details>
 
