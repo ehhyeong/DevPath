@@ -5,6 +5,9 @@ import com.devpath.api.evaluation.dto.request.SubmitQuizAttemptRequest;
 import com.devpath.api.evaluation.dto.response.QuizAttemptResultResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.course.entity.EnrollmentStatus;
+import com.devpath.domain.course.repository.CourseEnrollmentRepository;
+import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.learning.entity.QuestionType;
 import com.devpath.domain.learning.entity.Quiz;
 import com.devpath.domain.learning.entity.QuizAnswer;
@@ -41,12 +44,15 @@ public class QuizAttemptService {
   private final QuizAttemptRepository quizAttemptRepository;
   private final QuizAnswerRepository quizAnswerRepository;
   private final QuizResultQueryService quizResultQueryService;
+  private final CourseNodeMappingRepository courseNodeMappingRepository;
+  private final CourseEnrollmentRepository courseEnrollmentRepository;
 
   // 학습자가 퀴즈를 응시하고 채점 결과까지 즉시 생성한다.
   public QuizAttemptResultResponse submitQuizAttempt(
       Long userId, Long quizId, SubmitQuizAttemptRequest request) {
     User learner = getLearner(userId);
     Quiz quiz = getAvailableQuiz(quizId);
+    validateEnrollment(userId, quiz);
 
     List<QuizQuestion> questions =
         quizQuestionRepository.findAllByQuizIdAndIsDeletedFalseOrderByDisplayOrderAsc(quizId);
@@ -90,7 +96,7 @@ public class QuizAttemptService {
       totalScore += quizAnswer.getPointsEarned() == null ? 0 : quizAnswer.getPointsEarned();
     }
 
-    boolean passed = isPassed(totalScore, computedMaxScore);
+    boolean passed = isPassed(totalScore, computedMaxScore, quiz.getPassScore());
     int timeSpentSeconds =
         request.getTimeSpentSeconds() == null ? 0 : request.getTimeSpentSeconds();
 
@@ -129,6 +135,19 @@ public class QuizAttemptService {
     }
 
     return quiz;
+  }
+
+  private void validateEnrollment(Long userId, Quiz quiz) {
+    List<Long> courseIds =
+        courseNodeMappingRepository.findCourseIdsByNodeId(quiz.getRoadmapNode().getNodeId());
+    boolean enrolled =
+        !courseIds.isEmpty()
+            && courseEnrollmentRepository.existsByUser_IdAndCourse_CourseIdInAndStatusIn(
+                userId, courseIds, List.of(EnrollmentStatus.ACTIVE, EnrollmentStatus.COMPLETED));
+
+    if (!enrolled) {
+      throw new CustomException(ErrorCode.FORBIDDEN, "수강 중인 강의의 퀴즈만 응시할 수 있습니다.");
+    }
   }
 
   // 문항별 답안 요청을 questionId 기준 map으로 변환한다.
@@ -221,12 +240,13 @@ public class QuizAttemptService {
     return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
   }
 
-  // 현재는 60퍼센트 이상이면 통과로 간주한다.
-  private boolean isPassed(int score, int maxScore) {
+  // passScore는 강사 편집기와 시드에서 사용하는 백분율 기준이다.
+  private boolean isPassed(int score, int maxScore, Integer passScore) {
     if (maxScore <= 0) {
       return false;
     }
 
-    return score >= Math.ceil(maxScore * 0.6);
+    int requiredPercent = passScore == null ? 60 : passScore;
+    return score * 100 >= maxScore * requiredPercent;
   }
 }

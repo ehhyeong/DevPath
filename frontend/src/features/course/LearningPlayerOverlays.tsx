@@ -68,14 +68,16 @@ export default function LearningPlayerOverlays({ model }: Props) {
     closeQuizModal,
     quizQuestionIndex,
     quizModalQuestions,
-    quizSelectedOptionIndex,
-    quizFeedback,
+    activeQuizAnswer,
+    quizSubmitBusy,
+    quizAttemptResult,
+    quizMessage,
     handleQuizOptionSelect,
+    handleQuizTextAnswer,
     setQuizQuestionIndex,
-    setQuizSelectedOptionIndex,
-    setQuizFeedback,
     handleQuizNextQuestion,
-    handleQuizCheckAnswer,
+    handleQuizRetry,
+    handleQuizResultContinue,
     activeNote,
     editingNoteContent,
     handleUpdateNote,
@@ -686,7 +688,7 @@ export default function LearningPlayerOverlays({ model }: Props) {
               onClick={closeQuizModal}
             >
               <div
-                className="max-h-full w-full max-w-2xl overflow-hidden rounded-lg bg-white text-gray-900 shadow-2xl"
+                className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white text-gray-900 shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-4 border-b border-gray-200 bg-gray-50 p-5 sm:p-6">
@@ -711,104 +713,133 @@ export default function LearningPlayerOverlays({ model }: Props) {
                       <i className="fas fa-times" />
                     </button>
                     <span className="text-sm font-bold text-gray-500">
-                      문제 {quizQuestionIndex + 1} / {quizModalQuestions.length}
+                      {quizAttemptResult ? `${quizAttemptResult.attemptNumber}회차 결과` : `문제 ${quizQuestionIndex + 1} / ${quizModalQuestions.length}`}
                     </span>
-                    <div className="mt-2 flex justify-end gap-1">
-                      {quizModalQuestions.map((item, index) => (
-                        <span
-                          key={`${item.label}-${index}`}
-                          className={`h-1 w-8 rounded-full ${index <= quizQuestionIndex ? 'bg-[#00C471]' : 'bg-gray-200'}`}
-                        />
-                      ))}
-                    </div>
+                    {!quizAttemptResult ? (
+                      <div className="mt-2 flex justify-end gap-1">
+                        {quizModalQuestions.map((item, index) => (
+                          <span
+                            key={item.questionId}
+                            className={`h-1 w-8 rounded-full ${index <= quizQuestionIndex ? 'bg-[#00C471]' : 'bg-gray-200'}`}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
-                <div className="max-h-[62vh] overflow-y-auto p-5 sm:p-8">
-                  <p className="mb-6 text-lg font-semibold leading-8 text-gray-900">
-                    Q. {activeQuizQuestion.questionText}
-                  </p>
-
-                  <div className="space-y-3">
-                    {activeQuizQuestion.options.map((option, optionIndex) => {
-                      const selected = quizSelectedOptionIndex === optionIndex
-                      const showCorrect = quizFeedback !== null && optionIndex === activeQuizQuestion.correctOptionIndex
-                      const showWrong = quizFeedback === 'wrong' && selected
-
-                      return (
-                        <button
-                          key={`${activeQuizQuestion.label}-${option}`}
-                          type="button"
-                          onClick={() => handleQuizOptionSelect(optionIndex)}
-                          className={`flex w-full items-center justify-between gap-4 rounded-lg border-2 p-4 text-left text-sm transition ${
-                            showCorrect
-                              ? 'border-[#00C471] bg-green-50 text-[#00A862]'
-                              : showWrong
-                                ? 'border-rose-300 bg-rose-50 text-rose-700'
-                                : selected
-                                  ? 'border-[#00C471] bg-green-50 text-[#00A862]'
-                                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <span>{optionIndex + 1}. {option}</span>
-                          <i className={`fas ${
-                            showCorrect
-                              ? 'fa-check-circle text-[#00C471] opacity-100'
-                              : showWrong
-                                ? 'fa-circle-exclamation text-rose-500 opacity-100'
-                                : selected
-                                  ? 'fa-check-circle text-[#00C471] opacity-100'
-                                  : 'fa-check-circle text-[#00C471] opacity-0'
-                          } transition`} />
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  {quizFeedback ? (
-                    <div className={`mt-6 rounded-lg p-4 text-sm font-medium leading-6 ${
-                      quizFeedback === 'correct' ? 'bg-green-50 text-green-700' : 'bg-rose-50 text-rose-700'
-                    }`}>
-                      <div className="flex items-center gap-2 font-bold">
-                        <i className={`fas ${quizFeedback === 'correct' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`} />
-                        <span>{quizFeedback === 'correct' ? '정답입니다.' : '정답이 아닙니다.'}</span>
+                <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-8">
+                  {quizAttemptResult ? (
+                    <div>
+                      <div className={`mb-6 rounded-2xl border p-5 ${quizAttemptResult.passed ? 'border-green-100 bg-green-50' : 'border-amber-100 bg-amber-50'}`}>
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className={`text-sm font-extrabold ${quizAttemptResult.passed ? 'text-green-700' : 'text-amber-700'}`}>
+                              {quizAttemptResult.passed ? '퀴즈를 통과했습니다.' : '통과 점수에 도달하지 못했습니다.'}
+                            </p>
+                            <p className="mt-1 text-xs font-semibold text-gray-500">서버에서 채점한 {quizAttemptResult.attemptNumber}회차 결과입니다.</p>
+                          </div>
+                          <strong className="shrink-0 text-2xl font-black text-gray-900">
+                            {quizAttemptResult.score} / {quizAttemptResult.maxScore}
+                          </strong>
+                        </div>
                       </div>
-                      {quizFeedback === 'wrong' ? (
-                        <p className="mt-2">
-                          정답: {activeQuizQuestion.correctOptionIndex + 1}.{' '}
-                          {activeQuizQuestion.options[activeQuizQuestion.correctOptionIndex]}
-                        </p>
-                      ) : null}
-                      <div className="mt-3 rounded-md bg-white/70 px-3 py-2">
-                        <p className="text-xs font-bold text-gray-500">해설</p>
-                        <p className="mt-1">{activeQuizQuestion.explanation}</p>
+                      <div className="space-y-3">
+                        {quizAttemptResult.questionResults.map((result, index) => (
+                          <div key={result.questionId} className="rounded-xl border border-gray-200 p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="text-sm font-bold leading-6 text-gray-800">{index + 1}. {result.questionText}</p>
+                              <span className={`shrink-0 text-xs font-black ${result.correct ? 'text-brand' : 'text-rose-500'}`}>
+                                {result.correct ? '정답' : '오답'} · {result.earnedPoints ?? 0}점
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs leading-5 text-gray-500">
+                              제출 답안: {result.selectedOptionText ?? result.textAnswer ?? '미입력'}
+                            </p>
+                            {result.correctAnswerText ? <p className="mt-1 text-xs font-bold leading-5 text-green-700">정답: {result.correctAnswerText}</p> : null}
+                            {result.explanation ? <p className="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-600">{result.explanation}</p> : null}
+                          </div>
+                        ))}
                       </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-2 flex items-center justify-between gap-3 text-xs font-bold text-gray-400">
+                        <span>{activeQuizQuestion.label}</span>
+                        <span>{activeQuizQuestion.points}점</span>
+                      </div>
+                      <p className="mb-6 text-lg font-semibold leading-8 text-gray-900">
+                        Q. {activeQuizQuestion.questionText}
+                      </p>
+
+                      {activeQuizQuestion.questionType === 'SHORT_ANSWER' ? (
+                        <textarea
+                          value={activeQuizAnswer?.textAnswer ?? ''}
+                          onChange={(event) => handleQuizTextAnswer(event.target.value)}
+                          maxLength={1000}
+                          className="min-h-36 w-full resize-y rounded-xl border-2 border-gray-200 bg-white p-4 text-sm leading-6 text-gray-800 outline-none transition focus:border-brand focus:ring-4 focus:ring-green-50"
+                          placeholder="답안을 입력해 주세요."
+                        />
+                      ) : (
+                        <div className="space-y-3">
+                          {activeQuizQuestion.options.map((option, optionIndex) => {
+                            const selected = activeQuizAnswer?.selectedOptionId === option.optionId
+                            return (
+                              <button
+                                key={option.optionId}
+                                type="button"
+                                onClick={() => handleQuizOptionSelect(optionIndex)}
+                                className={`flex w-full items-center justify-between gap-4 rounded-xl border-2 p-4 text-left text-sm transition ${selected ? 'border-[#00C471] bg-green-50 text-[#00A862]' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'}`}
+                              >
+                                <span>{optionIndex + 1}. {option.optionText}</span>
+                                <i className={`fas fa-check-circle text-[#00C471] transition ${selected ? 'opacity-100' : 'opacity-0'}`} />
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {quizMessage ? (
+                    <div className="mt-5 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600">
+                      {quizMessage}
                     </div>
                   ) : null}
                 </div>
 
                 <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 p-5 sm:p-6">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQuizQuestionIndex((current) => Math.max(0, current - 1))
-                      setQuizSelectedOptionIndex(null)
-                      setQuizFeedback(null)
-                    }}
-                    disabled={quizQuestionIndex === 0}
-                    className="rounded-lg px-4 py-2 text-sm font-semibold text-gray-500 transition hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    이전 문제
-                  </button>
-                  <button
-                    type="button"
-                    onClick={quizFeedback === 'correct' ? handleQuizNextQuestion : handleQuizCheckAnswer}
-                    className="rounded-lg bg-amber-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-amber-600 active:scale-[0.99]"
-                  >
-                    {quizFeedback === 'correct'
-                      ? quizQuestionIndex < quizModalQuestions.length - 1 ? '다음 문제로' : '퀴즈 완료하기'
-                      : '정답 확인하기'}
-                  </button>
+                  {quizAttemptResult ? (
+                    <>
+                      <button type="button" onClick={closeQuizModal} className="h-11 rounded-xl border border-gray-200 bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-100">닫기</button>
+                      <button
+                        type="button"
+                        onClick={quizAttemptResult.passed ? handleQuizResultContinue : handleQuizRetry}
+                        className="h-11 rounded-xl bg-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-green-600"
+                      >
+                        {quizAttemptResult.passed ? '다음 학습으로' : '다시 응시하기'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setQuizQuestionIndex((current) => Math.max(0, current - 1))}
+                        disabled={quizQuestionIndex === 0 || quizSubmitBusy}
+                        className="h-11 rounded-xl px-4 text-sm font-semibold text-gray-500 transition hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        이전 문제
+                      </button>
+                      <button
+                        type="button"
+                        disabled={quizSubmitBusy}
+                        onClick={() => void handleQuizNextQuestion()}
+                        className="h-11 rounded-xl bg-brand px-6 text-sm font-bold text-white shadow-sm transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+                      >
+                        {quizSubmitBusy ? '채점 중' : quizQuestionIndex < quizModalQuestions.length - 1 ? '다음 문제' : '답안 제출'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

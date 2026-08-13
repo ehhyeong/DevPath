@@ -1,7 +1,7 @@
 import type { DragEvent, MutableRefObject } from 'react'
-import { learnerAssignmentApi } from '../../lib/api/learner'
+import { learnerAssignmentApi, learnerQuizApi } from '../../lib/api/learner'
 import type { LearningCourseDetail, LearningLesson, LearningLessonAssignment, LearningLessonProgress } from '../../types/learning'
-import { buildAssignmentSubmissionPayload, createAssignmentFormState, isAssignmentLesson, isAssignmentSubmissionFormReady, resolveAssignmentSubmissionEmptyMessage, resolveLessonAssignment, type AssignmentGradingResultState, type PersistCompletionOptions, type QuizModalQuestion } from './learning-player-model'
+import { buildAssignmentSubmissionPayload, buildQuizModalQuestions, createAssignmentFormState, isAssignmentLesson, isAssignmentSubmissionFormReady, resolveAssignmentSubmissionEmptyMessage, resolveLessonAssignment, type AssignmentGradingResultState, type PersistCompletionOptions, type QuizModalQuestion } from './learning-player-model'
 import type { FlattenedLesson } from './learning-player-support'
 import { useLearningAssessmentState } from './useLearningPlayerState'
 
@@ -36,7 +36,7 @@ type Props = {
 
 export function useLearningAssessmentActions(props: Props) {
   const { state, lesson, lessons, course, duration, lessonLockMap, selectedLessonLocked, previousLesson, nextLesson, quizModalLesson, quizModalLessonId, quizModalQuestions, activeQuizQuestion, assignmentModalLesson, assignmentModal, assignmentResultNextLesson, assignmentResultProgressById, assignmentResultCompletesCourse, isStudentPreview, sessionUserId, quizScoreByLessonIdRef, setSelectedLessonId, setNotice, persistCompletedLesson, openCourseCompletionOverlay } = props
-  const { quizQuestionIndex, setQuizQuestionIndex, quizSelectedOptionIndex, setQuizSelectedOptionIndex, quizFeedback, setQuizFeedback, setQuizModalLessonId, assignmentModalLessonId, setAssignmentModalLessonId, assignmentForm, setAssignmentForm, setAssignmentFileDragActive, setAssignmentSubmitBusy, setAssignmentMessage, setAssignmentLoadingVisible, assignmentGradingResult, setAssignmentGradingResult, setAssignmentHistoryByAssignmentId, setCompletionVisible, setCompletionCardFlipped } = state
+  const { quizQuestionIndex, setQuizQuestionIndex, quizAnswers, setQuizAnswers, quizSubmitBusy, setQuizSubmitBusy, quizAttemptResult, setQuizAttemptResult, quizStartedAt, setQuizStartedAt, setQuizMessage, setQuizModalLessonId, assignmentModalLessonId, setAssignmentModalLessonId, assignmentForm, setAssignmentForm, setAssignmentFileDragActive, setAssignmentSubmitBusy, setAssignmentMessage, setAssignmentLoadingVisible, assignmentGradingResult, setAssignmentGradingResult, setAssignmentHistoryByAssignmentId, setCompletionVisible, setCompletionCardFlipped } = state
 
   function markLessonCompletedForNavigation(item: LearningLesson, options?: PersistCompletionOptions) {
     const totalSeconds = Math.max(1, duration || item.durationSeconds || 1)
@@ -97,17 +97,25 @@ export function useLearningAssessmentActions(props: Props) {
   }
 
   function openQuizModal(item: LearningLesson) {
+    if (!item.quiz?.quizId || buildQuizModalQuestions(item).length === 0) {
+      setNotice('응시 가능한 실제 퀴즈 문항이 아직 등록되지 않았습니다.')
+      return
+    }
     setQuizModalLessonId(item.lessonId)
     setQuizQuestionIndex(0)
-    setQuizSelectedOptionIndex(null)
-    setQuizFeedback(null)
+    setQuizAnswers({})
+    setQuizAttemptResult(null)
+    setQuizStartedAt(Date.now())
+    setQuizMessage(null)
   }
 
   function closeQuizModal() {
     setQuizModalLessonId(null)
     setQuizQuestionIndex(0)
-    setQuizSelectedOptionIndex(null)
-    setQuizFeedback(null)
+    setQuizAnswers({})
+    setQuizAttemptResult(null)
+    setQuizStartedAt(null)
+    setQuizMessage(null)
   }
 
   function handleSelectLesson(lessonId: number) {
@@ -154,42 +162,97 @@ export function useLearningAssessmentActions(props: Props) {
   }
 
   function handleQuizOptionSelect(optionIndex: number) {
-    setQuizSelectedOptionIndex(optionIndex)
-    setQuizFeedback(null)
-  }
-
-  function handleQuizCheckAnswer() {
     if (!activeQuizQuestion) return
-    if (quizSelectedOptionIndex === null) {
-      setNotice('답안을 선택해 주세요.')
-      return
-    }
-    setQuizFeedback(quizSelectedOptionIndex === activeQuizQuestion.correctOptionIndex ? 'correct' : 'wrong')
+    const option = activeQuizQuestion.options[optionIndex]
+    if (!option) return
+    setQuizAnswers((current) => ({
+      ...current,
+      [activeQuizQuestion.questionId]: { selectedOptionId: option.optionId },
+    }))
+    setQuizMessage(null)
   }
 
-  function handleQuizNextQuestion() {
-    if (!quizModalLesson || !activeQuizQuestion || quizFeedback !== 'correct') {
-      handleQuizCheckAnswer()
+  function handleQuizTextAnswer(value: string) {
+    if (!activeQuizQuestion) return
+    setQuizAnswers((current) => ({
+      ...current,
+      [activeQuizQuestion.questionId]: { textAnswer: value },
+    }))
+    setQuizMessage(null)
+  }
+
+  function hasQuizAnswer(question: QuizModalQuestion) {
+    const answer = quizAnswers[question.questionId]
+    return question.questionType === 'SHORT_ANSWER'
+      ? Boolean(answer?.textAnswer?.trim())
+      : answer?.selectedOptionId !== undefined
+  }
+
+  async function handleQuizNextQuestion() {
+    if (!quizModalLesson || !activeQuizQuestion || quizSubmitBusy) return
+    if (!hasQuizAnswer(activeQuizQuestion)) {
+      setQuizMessage(activeQuizQuestion.questionType === 'SHORT_ANSWER' ? '답안을 입력해 주세요.' : '답안을 선택해 주세요.')
       return
     }
 
     if (quizQuestionIndex < quizModalQuestions.length - 1) {
       setQuizQuestionIndex((current) => current + 1)
-      setQuizSelectedOptionIndex(null)
-      setQuizFeedback(null)
+      setQuizMessage(null)
       return
     }
+
+    if (isStudentPreview) {
+      setQuizMessage('학생 시점 미리보기에서는 실제 응시 결과를 저장하지 않습니다.')
+      return
+    }
+    if (!sessionUserId || !quizModalLesson.quiz?.quizId) {
+      setQuizMessage('로그인한 학습자만 퀴즈를 제출할 수 있습니다.')
+      return
+    }
+
+    setQuizSubmitBusy(true)
+    setQuizMessage(null)
+    try {
+      const result = await learnerQuizApi.submitAttempt(quizModalLesson.quiz.quizId, sessionUserId, {
+        answers: quizModalQuestions.map((question) => ({
+          questionId: question.questionId,
+          selectedOptionId: quizAnswers[question.questionId]?.selectedOptionId,
+          textAnswer: quizAnswers[question.questionId]?.textAnswer?.trim() || undefined,
+        })),
+        timeSpentSeconds: Math.max(0, Math.round((Date.now() - (quizStartedAt ?? Date.now())) / 1000)),
+      })
+      setQuizAttemptResult(result)
+      const scorePercent = result.maxScore > 0 ? Math.round((result.score / result.maxScore) * 100) : 0
+      quizScoreByLessonIdRef.current = {
+        ...quizScoreByLessonIdRef.current,
+        [quizModalLesson.lessonId]: scorePercent,
+      }
+      if (result.passed) {
+        markLessonCompletedForNavigation(quizModalLesson)
+      }
+    } catch (error) {
+      setQuizMessage(error instanceof Error ? error.message : '퀴즈 제출에 실패했습니다.')
+    } finally {
+      setQuizSubmitBusy(false)
+    }
+  }
+
+  function handleQuizRetry() {
+    setQuizQuestionIndex(0)
+    setQuizAnswers({})
+    setQuizAttemptResult(null)
+    setQuizStartedAt(Date.now())
+    setQuizMessage(null)
+  }
+
+  function handleQuizResultContinue() {
+    if (!quizModalLesson || !quizAttemptResult?.passed) return
 
     const currentQuizLessonIndex = lessons.findIndex((item) => item.lessonId === quizModalLesson.lessonId)
     const nextSectionFirstLesson = currentQuizLessonIndex >= 0
       ? lessons.slice(currentQuizLessonIndex + 1).find((item) => item.sectionId !== quizModalLesson.sectionId) ?? null
       : null
 
-    quizScoreByLessonIdRef.current = {
-      ...quizScoreByLessonIdRef.current,
-      [quizModalLesson.lessonId]: 100,
-    }
-    markLessonCompletedForNavigation(quizModalLesson)
     if (nextSectionFirstLesson) {
       setSelectedLessonId(nextSectionFirstLesson.lessonId)
       closeQuizModal()
@@ -198,7 +261,7 @@ export function useLearningAssessmentActions(props: Props) {
     }
 
     closeQuizModal()
-    setNotice('퀴즈를 완료했습니다. 마지막 섹션입니다.')
+    setNotice('퀴즈를 통과했습니다. 마지막 섹션입니다.')
   }
 
   function handleAssignmentFilesSelected(fileList: FileList | null) {
@@ -319,5 +382,5 @@ export function useLearningAssessmentActions(props: Props) {
     }
   }
 
-  return { markLessonCompletedForNavigation, openAssignmentModal, closeAssignmentModal, closeAssignmentGradingResult, openCompletionOverlay, closeCompletionOverlay, handleAssignmentResultPrimaryAction, openQuizModal, closeQuizModal, handleSelectLesson, handlePreviousLesson, handleNextLesson, handleQuizOptionSelect, handleQuizCheckAnswer, handleQuizNextQuestion, handleAssignmentFilesSelected, handleAssignmentFileDragOver, handleAssignmentFileDragLeave, handleAssignmentFileDrop, handleAssignmentFileRemove, handleAssignmentSubmit }
+  return { markLessonCompletedForNavigation, openAssignmentModal, closeAssignmentModal, closeAssignmentGradingResult, openCompletionOverlay, closeCompletionOverlay, handleAssignmentResultPrimaryAction, openQuizModal, closeQuizModal, handleSelectLesson, handlePreviousLesson, handleNextLesson, handleQuizOptionSelect, handleQuizTextAnswer, handleQuizNextQuestion, handleQuizRetry, handleQuizResultContinue, handleAssignmentFilesSelected, handleAssignmentFileDragOver, handleAssignmentFileDragLeave, handleAssignmentFileDrop, handleAssignmentFileRemove, handleAssignmentSubmit }
 }

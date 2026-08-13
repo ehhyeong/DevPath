@@ -1,9 +1,10 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useState } from 'react'
 
-import type { LearningCourseDetail,LearningLessonProgress,LearningPlayerConfig,LearningVideoQuality,SubmissionHistoryItem,TimestampNote } from '../../types/learning'
+import type { LearningCourseDetail,LearningLessonProgress,LearningPlayerConfig,LearningVideoQuality,QuizAttemptResultResponse,SubmissionHistoryItem,TimestampNote } from '../../types/learning'
 import type { QnaQuestionDetail,QnaQuestionSummary,QnaQuestionTemplate } from '../../types/qna'
 import { ASSIGNMENT_LOADING_MESSAGES,createAssignmentFormState,createQuestionFormState,type AssignmentGradingResultState,type AssignmentSubmissionFormState,type CompletionProofCardState,type QnaStatusFilter,type QuestionFormState,type TabKey } from './learning-player-model'
+import type { QuizAnswerState } from './learning-support'
 
 export function useLearningCourseState(initialLessonId: number | null) {
   const [session,setSession] = useAuthSession()
@@ -69,8 +70,11 @@ export function useLearningNotesAndQnaState() {
 export function useLearningAssessmentState() {
   const [quizModalLessonId,setQuizModalLessonId] = useState<number | null>(null)
   const [quizQuestionIndex,setQuizQuestionIndex] = useState(0)
-  const [quizSelectedOptionIndex,setQuizSelectedOptionIndex] = useState<number | null>(null)
-  const [quizFeedback,setQuizFeedback] = useState<'correct' | 'wrong' | null>(null)
+  const [quizAnswers,setQuizAnswers] = useState<QuizAnswerState>({})
+  const [quizSubmitBusy,setQuizSubmitBusy] = useState(false)
+  const [quizAttemptResult,setQuizAttemptResult] = useState<QuizAttemptResultResponse | null>(null)
+  const [quizStartedAt,setQuizStartedAt] = useState<number | null>(null)
+  const [quizMessage,setQuizMessage] = useState<string | null>(null)
   const [assignmentModalLessonId,setAssignmentModalLessonId] = useState<number | null>(null)
   const [assignmentForm,setAssignmentForm] = useState<AssignmentSubmissionFormState>(() => createAssignmentFormState())
   const [assignmentFileDragActive,setAssignmentFileDragActive] = useState(false)
@@ -85,5 +89,5 @@ export function useLearningAssessmentState() {
   const [completionCardFlipped,setCompletionCardFlipped] = useState(false)
   const [completionBurstKey,setCompletionBurstKey] = useState(0)
 
-  return { quizModalLessonId,setQuizModalLessonId,quizQuestionIndex,setQuizQuestionIndex,quizSelectedOptionIndex,setQuizSelectedOptionIndex,quizFeedback,setQuizFeedback,assignmentModalLessonId,setAssignmentModalLessonId,assignmentForm,setAssignmentForm,assignmentFileDragActive,setAssignmentFileDragActive,assignmentSubmitBusy,setAssignmentSubmitBusy,assignmentMessage,setAssignmentMessage,assignmentLoadingVisible,setAssignmentLoadingVisible,assignmentLoadingText,setAssignmentLoadingText,assignmentGradingResult,setAssignmentGradingResult,assignmentHistoryByAssignmentId,setAssignmentHistoryByAssignmentId,completionProofCard,setCompletionProofCard,completionVisible,setCompletionVisible,completionCardFlipped,setCompletionCardFlipped,completionBurstKey,setCompletionBurstKey }
+  return { quizModalLessonId,setQuizModalLessonId,quizQuestionIndex,setQuizQuestionIndex,quizAnswers,setQuizAnswers,quizSubmitBusy,setQuizSubmitBusy,quizAttemptResult,setQuizAttemptResult,quizStartedAt,setQuizStartedAt,quizMessage,setQuizMessage,assignmentModalLessonId,setAssignmentModalLessonId,assignmentForm,setAssignmentForm,assignmentFileDragActive,setAssignmentFileDragActive,assignmentSubmitBusy,setAssignmentSubmitBusy,assignmentMessage,setAssignmentMessage,assignmentLoadingVisible,setAssignmentLoadingVisible,assignmentLoadingText,setAssignmentLoadingText,assignmentGradingResult,setAssignmentGradingResult,assignmentHistoryByAssignmentId,setAssignmentHistoryByAssignmentId,completionProofCard,setCompletionProofCard,completionVisible,setCompletionVisible,completionCardFlipped,setCompletionCardFlipped,completionBurstKey,setCompletionBurstKey }
 }
