@@ -357,6 +357,15 @@ export const refundApi = {
   getMine(signal?: AbortSignal) {
     return request<RefundItem[]>('/api/refunds/me', { method: 'GET', signal }, accountCache('refunds'))
   },
+  async requestRefund(courseId: number, reason: string) {
+    const result = await request<RefundItem>(
+      '/api/refunds',
+      { method: 'POST', body: JSON.stringify({ courseId, reason }) },
+      { auth: true },
+    )
+    invalidateRequestCache('account:refunds', 'account:enrollments')
+    return result
+  },
 }
 
 export const communityApi = {
@@ -392,6 +401,13 @@ export const reviewApi = {
       `/api/reviews${buildQueryString({ courseId })}`,
       { method: 'GET', signal },
       { auth: false },
+    )
+  },
+  create(courseId: number, rating: number, content: string) {
+    return request<CourseReview>(
+      '/api/reviews',
+      { method: 'POST', body: JSON.stringify({ courseId, rating, content }) },
+      { auth: true },
     )
   },
 }

@@ -87,6 +87,11 @@ export default function CourseDetailApp() {
   const [askModalOpen, setAskModalOpen] = useState(false)
   const [selectedNews, setSelectedNews] = useState<CourseNewsCard | null>(null)
   const [enrollModalOpen, setEnrollModalOpen] = useState(false)
+  const [reviewModalOpen, setReviewModalOpen] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewContent, setReviewContent] = useState('')
+  const [reviewError, setReviewError] = useState<string | null>(null)
+  const [reviewBusy, setReviewBusy] = useState(false)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [enrollmentBusy, setEnrollmentBusy] = useState(false)
   const deferredQnaSearch = useDeferredValue(qnaSearch.trim().toLowerCase())
@@ -143,6 +148,9 @@ export default function CourseDetailApp() {
   const jobCards = useMemo(() => buildCourseJobCards(displayCourse), [displayCourse])
   const newsCards = useMemo(() => buildCourseNewsCards(displayCourse), [displayCourse])
   const reviewStats = useMemo(() => buildReviewStats(reviews), [reviews])
+  const hasWrittenReview = Boolean(
+    session?.userId && reviews.some((item) => item.learnerId === session.userId),
+  )
   const headerOffsetTop = isStudentPreview ? STUDENT_PREVIEW_BANNER_HEIGHT_PX : 0
   const appMainStyle = headerOffsetTop
     ? { paddingTop: `${APP_HEADER_HEIGHT_PX + headerOffsetTop}px` }
@@ -390,7 +398,7 @@ export default function CourseDetailApp() {
   }, [toastMessage])
 
   useEffect(() => {
-    if (!askModalOpen && !enrollModalOpen && !selectedNews) return
+    if (!askModalOpen && !enrollModalOpen && !reviewModalOpen && !selectedNews) return
 
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -399,6 +407,7 @@ export default function CourseDetailApp() {
       if (event.key !== 'Escape') return
       setAskModalOpen(false)
       setEnrollModalOpen(false)
+      setReviewModalOpen(false)
       setSelectedNews(null)
     }
 
@@ -407,7 +416,7 @@ export default function CourseDetailApp() {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleEscape)
     }
-  }, [askModalOpen, enrollModalOpen, selectedNews])
+  }, [askModalOpen, enrollModalOpen, reviewModalOpen, selectedNews])
 
   async function handleLogout() {
     const currentSession = readStoredAuthSession()
@@ -526,6 +535,37 @@ export default function CourseDetailApp() {
       setQuestionErrors(error instanceof Error ? error.message : '질문 등록에 실패했습니다.')
     } finally {
       setQuestionBusy(false)
+    }
+  }
+
+  async function handleSubmitReview() {
+    if (!session) {
+      openAuthModal('login')
+      return
+    }
+    if (!course?.courseId || !isEnrolled) {
+      setReviewError('수강 중인 강의에만 수강평을 작성할 수 있습니다.')
+      return
+    }
+    const content = reviewContent.trim()
+    if (!content) {
+      setReviewError('수강평 내용을 입력해주세요.')
+      return
+    }
+
+    setReviewBusy(true)
+    setReviewError(null)
+    try {
+      const created = await reviewApi.create(course.courseId, reviewRating, content)
+      setReviews((current) => [created, ...current.filter((item) => item.id !== created.id)])
+      setReviewContent('')
+      setReviewRating(5)
+      setReviewModalOpen(false)
+      setToastMessage('수강평이 등록되었습니다.')
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : '수강평 등록에 실패했습니다.')
+    } finally {
+      setReviewBusy(false)
     }
   }
 
@@ -716,9 +756,25 @@ export default function CourseDetailApp() {
 
             {activeTab === 'reviews' ? (
               <div className="course-detail-tab-panel">
-                <h3 className="mb-6 text-xl font-bold text-gray-900">
-                  수강평 <span className="text-sm font-normal text-gray-500">({reviewStats.count})</span>
-                </h3>
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    수강평 <span className="text-sm font-normal text-gray-500">({reviewStats.count})</span>
+                  </h3>
+                  {session?.role === 'ROLE_LEARNER' && isEnrolled ? (
+                    <button
+                      type="button"
+                      disabled={hasWrittenReview}
+                      onClick={() => {
+                        setReviewError(null)
+                        setReviewModalOpen(true)
+                      }}
+                      className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+                    >
+                      <i className={`fas ${hasWrittenReview ? 'fa-check' : 'fa-pen'}`} />
+                      {hasWrittenReview ? '작성 완료' : '수강평 작성'}
+                    </button>
+                  ) : null}
+                </div>
 
                 <div className="mb-8 flex items-center gap-8 rounded-xl border border-gray-200 bg-gray-50 p-6">
                   <div className="text-center">
@@ -994,6 +1050,15 @@ export default function CourseDetailApp() {
         questionErrors={questionErrors}
         questionBusy={questionBusy}
         handleSubmitQuestion={handleSubmitQuestion}
+        reviewModalOpen={reviewModalOpen}
+        setReviewModalOpen={setReviewModalOpen}
+        reviewRating={reviewRating}
+        setReviewRating={setReviewRating}
+        reviewContent={reviewContent}
+        setReviewContent={setReviewContent}
+        reviewError={reviewError}
+        reviewBusy={reviewBusy}
+        handleSubmitReview={handleSubmitReview}
         toastMessage={toastMessage}
       />
 
