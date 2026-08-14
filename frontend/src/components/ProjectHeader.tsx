@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import type { AuthSession } from '../types/auth'
 import AccountUserMenu from './AccountUserMenu'
 import HeaderAlerts from './HeaderAlerts'
+import SiteHeaderMegaMenu from './SiteHeaderMegaMenu'
 import { siteHeaderLinks, siteHeaderTuning } from './site-header-config'
 
 type ProjectHeaderProps = {
@@ -72,25 +73,10 @@ export default function ProjectHeader({
                     aria-haspopup={hasChildren ? 'menu' : undefined}
                   >
                     {item.label}
+                    {hasChildren ? <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" /> : null}
                   </a>
 
-                  {hasChildren ? (
-                    <div
-                      className="site-header-mega-menu"
-                      role="menu"
-                      aria-label={`${item.label} \uC138\uBD80 \uBA54\uB274`}
-                    >
-                      <div className="site-header-mega-panel">
-                        <div className="site-header-mega-links">
-                          {children.map((child) => (
-                            <a key={child.href + child.label} href={child.href} className="site-header-mega-link" role="menuitem">
-                              {child.label}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
+                  {hasChildren ? <SiteHeaderMegaMenu label={item.label} items={children} /> : null}
                 </div>
               )
             })}

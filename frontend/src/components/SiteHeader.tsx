@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import type { AuthSession } from '../types/auth'
 import AccountUserMenu from './AccountUserMenu'
 import HeaderAlerts from './HeaderAlerts'
+import SiteHeaderMegaMenu from './SiteHeaderMegaMenu'
 import { instructorDashboardLinks, siteHeaderLinks, siteHeaderTuning } from './site-header-config'
 
 function getMoveStyle(offset: { x: number; y: number }): CSSProperties {
@@ -134,25 +135,10 @@ export default function SiteHeader({
                       aria-haspopup={hasChildren ? 'menu' : undefined}
                     >
                       {item.label}
+                      {hasChildren ? <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" /> : null}
                     </a>
 
-                    {hasChildren ? (
-                      <div
-                        className="site-header-mega-menu"
-                        role="menu"
-                        aria-label={`${item.label} \uC138\uBD80 \uBA54\uB274`}
-                      >
-                        <div className="site-header-mega-panel">
-                          <div className="site-header-mega-links">
-                            {children.map((child) => (
-                              <a key={child.href + child.label} href={child.href} className="site-header-mega-link" role="menuitem">
-                                {child.label}
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
+                    {hasChildren ? <SiteHeaderMegaMenu label={item.label} items={children} /> : null}
                   </div>
                 )
               })}
@@ -176,23 +162,10 @@ export default function SiteHeader({
                           aria-haspopup="menu"
                         >
                           {item.label}
+                          <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" />
                         </a>
 
-                        <div
-                          className="site-header-mega-menu"
-                          role="menu"
-                          aria-label={`${item.label} \uC138\uBD80 \uBA54\uB274`}
-                        >
-                          <div className="site-header-mega-panel">
-                            <div className="site-header-mega-links">
-                              {children.map((child) => (
-                                <a key={child.href} href={child.href} className="site-header-mega-link" role="menuitem">
-                                  {child.label}
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
+                        <SiteHeaderMegaMenu label={item.label} items={children} />
                       </div>
                     )
                   })}
