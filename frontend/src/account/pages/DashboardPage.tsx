@@ -460,7 +460,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                   </p>
                   <button
                     type="button"
-                    className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100"
+                    className="mt-3 inline-flex h-[26px]! w-auto! shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] border border-gray-200 bg-gray-50 px-[10px]! py-0! text-[10px]! leading-[14px]! font-bold text-gray-600 transition hover:bg-gray-100"
                     onClick={() => navigateTo('/project-list')}
                   >
                     팀 찾기
@@ -535,7 +535,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                   </p>
                   <button
                     type="button"
-                    className="mt-3 rounded bg-purple-50 px-3 py-1.5 text-[10px] font-bold text-purple-600 transition hover:bg-purple-100"
+                    className="mt-3 inline-flex h-[26px]! w-auto! shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] border border-purple-100 bg-purple-50 px-[10px]! py-0! text-[10px]! leading-[14px]! font-bold text-purple-600 transition hover:bg-purple-100"
                     onClick={() => navigateTo('/mentoring-hub')}
                   >
                     멘토 찾기
@@ -568,7 +568,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                   </p>
                   <button
                     type="button"
-                    className="mt-3 rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100"
+                    className="mt-3 inline-flex h-[26px]! w-auto! shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] border border-gray-200 bg-gray-50 px-[10px]! py-0! text-[10px]! leading-[14px]! font-bold text-gray-600 transition hover:bg-gray-100"
                     onClick={() => navigateTo('/community-list')}
                   >
                     글 작성하기
@@ -659,7 +659,7 @@ export default function DashboardPage({ session }: { session: AuthSession }) {
                       </div>
                       <button
                         type="button"
-                        className="dashboard-ai-add-button mt-2 w-full rounded-lg border border-purple-200 bg-white h-[33px] px-3 text-[11px] leading-4 font-bold text-purple-600 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="dashboard-ai-add-button mt-2 inline-flex h-[28px]! w-auto! max-w-full self-start items-center justify-center whitespace-nowrap rounded-[8px] border border-purple-200 bg-white px-[12px]! py-0! text-[10px]! leading-[14px]! font-bold text-purple-600 transition hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={addingGrowthNodeId === mainGrowthItem.nodeId}
                         onClick={() => void handleAddGrowthNode(mainGrowthItem)}
                       >

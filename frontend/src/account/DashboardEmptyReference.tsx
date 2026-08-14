@@ -124,7 +124,7 @@ export function DashboardEmptyReference({ displayName }: { displayName: string }
                 <br />
                 프로젝트가 없습니다.
               </p>
-              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 h-[26px] px-3 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
+              <button type="button" className="mt-3 inline-flex h-[26px]! w-auto! shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] border border-gray-200 bg-gray-50 px-[10px]! py-0! text-[10px]! leading-[14px]! font-bold text-gray-600 transition hover:bg-gray-100">
                 팀 찾기
               </button>
             </div>
@@ -145,7 +145,7 @@ export function DashboardEmptyReference({ displayName }: { displayName: string }
                 <br />
                 멘토링이 없습니다.
               </p>
-              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 h-[26px] px-3 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
+              <button type="button" className="mt-3 inline-flex h-[26px]! w-auto! shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] border border-purple-100 bg-purple-50 px-[10px]! py-0! text-[10px]! leading-[14px]! font-bold text-purple-600 transition hover:bg-purple-100">
                 멘토 찾기
               </button>
             </div>
@@ -166,7 +166,7 @@ export function DashboardEmptyReference({ displayName }: { displayName: string }
                 <br />
                 없습니다.
               </p>
-              <button type="button" className="mt-3 rounded border border-gray-200 bg-gray-50 h-[26px] px-3 text-[10px] font-bold text-gray-600 transition hover:bg-gray-100">
+              <button type="button" className="mt-3 inline-flex h-[26px]! w-auto! shrink-0 items-center justify-center whitespace-nowrap rounded-[8px] border border-gray-200 bg-gray-50 px-[10px]! py-0! text-[10px]! leading-[14px]! font-bold text-gray-600 transition hover:bg-gray-100">
                 글 작성하기
               </button>
             </div>
