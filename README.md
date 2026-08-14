@@ -92,25 +92,21 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 <details>
 <summary><strong>🏗️ 아키텍처 자세히 보기</strong></summary>
 
-```mermaid
-flowchart LR
-    U[User Browser] --> F[Vite React Frontend]
-    F -->|/api, /ws proxy| B[Spring Boot API]
-    B --> P[(PostgreSQL / Oracle)]
-    B --> R[(Redis)]
-    B --> O[Python OCR Server]
-    B --> X[External APIs]
-    O --> E[EasyOCR]
-```
+<p align="center">
+  <img src="docs/assets/devpath-architecture.svg" width="100%" alt="DevPath 시스템 아키텍처. 학습자, 강사, 관리자가 React 애플리케이션을 이용하고 Nginx를 거쳐 Spring Boot API, 데이터 저장소, 미디어 처리 서비스와 외부 API에 연결됩니다." />
+</p>
 
 | 구성 | 역할 |
 | --- | --- |
-| Vite React Frontend | 사용자 화면, 라우팅, API 프록시 |
-| Spring Boot API | 인증, 도메인 API, 관리자 기능, 실시간 기능 |
+| React SPA | 학습자·강사·관리자 화면, 라우팅, Axios API 호출, hls.js 보호 재생, Tesseract.js OCR 폴백 |
+| Nginx | Vite 정적 빌드 제공과 `/api`, `/uploads`, `/ws`, OAuth 요청의 Spring Boot 프록시 |
+| Spring Boot API | JWT·OAuth2 인증, 도메인 API, 관리자 기능, Q&A·음성 시그널링 WebSocket |
 | PostgreSQL / Oracle | 로컬 PostgreSQL과 운영 프로필 기반 관계형 데이터 저장 |
-| Redis | 캐시와 세션성 데이터 처리 |
-| Python OCR Server | 학습 영상과 이미지 기반 OCR 처리 |
-| External APIs | OAuth, AI, 채용 정보 등 외부 연동 |
+| Redis | 캐시와 실시간 상태 데이터 처리 |
+| Local Upload Storage | 업로드 파일과 FFmpeg 변환 HLS·AES 자산 저장 |
+| Python OCR Server | Flask, EasyOCR와 OpenCV 기반 학습 영상·이미지 OCR 처리 |
+| External Integrations | Gemini·Claude Vision, GitHub·Google OAuth, 잡코리아, GitHub Pull Request, DEV.to 연동 |
+| Deployment | GitHub Actions로 Oracle Cloud 서버에 배포하며 Spring Boot는 systemd, 프론트엔드·PostgreSQL·Redis·OCR은 Docker Compose로 실행 |
 
 </details>
 
