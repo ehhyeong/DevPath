@@ -21,11 +21,12 @@ export type QuestionFormState = {
 }
 
 export type QuizModalQuestion = {
+  questionId: number
   label: string
+  questionType: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER'
   questionText: string
-  options: string[]
-  correctOptionIndex: number
-  explanation: string
+  points: number
+  options: Array<{ optionId: number; optionText: string }>
 }
 
 export type AssignmentSubmissionFormState = {
@@ -470,7 +471,8 @@ export function resolveLessonAssignment(item: LearningLesson | null | undefined)
 
 export function isQuizLesson(item: LearningLesson | null | undefined): boolean {
   if (!item) return false
-  return item.lessonType?.toUpperCase() !== 'VIDEO' && /퀴즈|quiz/i.test(item.title)
+  const lessonType = item.lessonType?.toUpperCase()
+  return lessonType === 'QUIZ' || lessonType === 'COURSE_QUIZ' || (lessonType !== 'VIDEO' && /퀴즈|quiz/i.test(item.title))
 }
 
 export function isLessonProgressCompleted(item: LearningLessonProgress | null | undefined) {
@@ -855,68 +857,24 @@ export function buildCelebrationParticles(seed: number): CelebrationParticle[] {
 }
 
 export function buildQuizModalQuestions(lesson: LearningLesson): QuizModalQuestion[] {
-  const configuredQuestions = (lesson.quiz?.questions ?? [])
+  return (lesson.quiz?.questions ?? [])
     .map((question, index) => {
       const options = (question.options ?? []).filter((option) => option.optionText.trim())
-      const correctOptionIndex =
-        question.correctOptionId == null
-          ? -1
-          : options.findIndex((option) => option.optionId === question.correctOptionId)
-      const supportedQuestionType = question.questionType === 'MULTIPLE_CHOICE' || question.questionType === 'TRUE_FALSE'
-      if (!supportedQuestionType || options.length < 2 || correctOptionIndex < 0) {
+      const objective = question.questionType === 'MULTIPLE_CHOICE' || question.questionType === 'TRUE_FALSE'
+      if (!question.questionText.trim() || (objective && options.length < 2)) {
         return null
       }
 
       return {
+        questionId: question.questionId,
         label: `문항 ${index + 1}`,
+        questionType: question.questionType,
         questionText: question.questionText,
-        options: options.map((option) => option.optionText),
-        correctOptionIndex,
-        explanation: question.explanation?.trim() || '강의 내용을 바탕으로 정답 근거를 다시 확인해 보세요.',
+        points: question.points,
+        options,
       }
     })
     .filter((question): question is QuizModalQuestion => question !== null)
-
-  if (configuredQuestions.length > 0) {
-    return configuredQuestions
-  }
-
-  return [
-    {
-      label: '렌더링 흐름',
-      questionText: '브라우저가 HTML과 CSS를 해석해 화면을 그리기 전까지의 흐름으로 가장 적절한 것은 무엇인가요?',
-      options: [
-        'HTML 파싱, DOM 생성, CSSOM 생성, 렌더 트리 구성, 레이아웃과 페인트 순서로 이어진다.',
-        'CSSOM을 먼저 만들고 HTML은 화면에 그린 뒤 나중에 DOM으로 바꾼다.',
-        'JavaScript가 실행되면 DOM과 CSSOM 없이 바로 픽셀이 그려진다.',
-        'Vite가 브라우저의 렌더링 엔진을 대신 실행한다.',
-      ],
-      correctOptionIndex: 0,
-      explanation: 'DOM과 CSSOM이 결합되어 렌더 트리가 만들어진 뒤 레이아웃과 페인트가 진행됩니다.',
-    },
-    {
-      label: 'DOM 변경',
-      questionText: 'JavaScript가 버튼 클릭 이벤트에서 DOM의 텍스트와 클래스를 바꾸면 어떤 일이 일어날 수 있나요?',
-      options: [
-        '변경된 DOM과 스타일을 기준으로 스타일 재계산, 레이아웃 또는 페인트가 다시 일어날 수 있다.',
-        'JavaScript는 렌더링 이후에는 화면에 아무 영향도 줄 수 없다.',
-        'DOM 변경은 항상 서버를 다시 시작해야만 화면에 반영된다.',
-        '클래스 변경은 HTML 구조와 스타일 계산에 영향을 주지 않는다.',
-      ],
-      correctOptionIndex: 0,
-      explanation: 'DOM이나 클래스 변경은 스타일 재계산과 레이아웃 또는 페인트를 다시 유발할 수 있습니다.',
-    },
-    {
-      label: 'Vite 역할',
-      questionText: 'Vite는 브라우저 렌더링 엔진을 바꾸는 도구다.',
-      options: [
-        '참',
-        '거짓',
-      ],
-      correctOptionIndex: 1,
-      explanation: 'Vite는 개발 서버와 번들링 도구이며 브라우저의 렌더링 엔진 자체를 바꾸지는 않습니다.',
-    },
-  ]
 }
 
 export function formatRelativeTime(value: string | null) {

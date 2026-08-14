@@ -50,7 +50,15 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
         jdbcTemplate.queryForObject(
             "select user_id from users where email = ?", Long.class, "learner@devpath.com");
     roadmapNodeId =
-        jdbcTemplate.queryForObject("select min(node_id) from roadmap_nodes", Long.class);
+        jdbcTemplate.queryForObject(
+            """
+            select min(cnm.node_id)
+            from course_node_mappings cnm
+            join course_enrollments ce on ce.course_id = cnm.course_id
+            where ce.user_id = ? and ce.status in ('ACTIVE', 'COMPLETED')
+            """,
+            Long.class,
+            learnerId);
   }
 
   @Test

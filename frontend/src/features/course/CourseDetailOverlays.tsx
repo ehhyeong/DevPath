@@ -16,6 +16,15 @@ type Props = {
   questionErrors: string | null
   questionBusy: boolean
   handleSubmitQuestion: () => void
+  reviewModalOpen: boolean
+  setReviewModalOpen: Dispatch<SetStateAction<boolean>>
+  reviewRating: number
+  setReviewRating: Dispatch<SetStateAction<number>>
+  reviewContent: string
+  setReviewContent: Dispatch<SetStateAction<string>>
+  reviewError: string | null
+  reviewBusy: boolean
+  handleSubmitReview: () => void
   toastMessage: string | null
 }
 
@@ -23,7 +32,7 @@ const qnaInputBaseClassName = 'qna-input w-full rounded-[12px] border-[1px] bord
 const qnaInputClassName = `${qnaInputBaseClassName} text-[14px]!`
 const qnaTextareaClassName = 'qna-textarea min-h-[140px] w-full resize-none rounded-[12px] border-[1px] border-solid border-[#e5e7eb] bg-white p-[12px] text-[14px]! [outline:none] [transition:all_0.2s] focus:border-[#00c471] focus:[box-shadow:0_0_0_3px_rgba(0,196,113,0.12)]'
 
-export default function CourseDetailOverlays({ enrollModalOpen, setEnrollModalOpen, learningHref, selectedNews, setSelectedNews, askModalOpen, setAskModalOpen, questionDraft, setQuestionDraft, questionErrors, questionBusy, handleSubmitQuestion, toastMessage }: Props) {
+export default function CourseDetailOverlays({ enrollModalOpen, setEnrollModalOpen, learningHref, selectedNews, setSelectedNews, askModalOpen, setAskModalOpen, questionDraft, setQuestionDraft, questionErrors, questionBusy, handleSubmitQuestion, reviewModalOpen, setReviewModalOpen, reviewRating, setReviewRating, reviewContent, setReviewContent, reviewError, reviewBusy, handleSubmitReview, toastMessage }: Props) {
   return (
     <>
       {enrollModalOpen ? (
@@ -229,6 +238,70 @@ export default function CourseDetailOverlays({ enrollModalOpen, setEnrollModalOp
                 onClick={handleSubmitQuestion}
               >
                 {questionBusy ? '등록 중' : '질문 등록'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {reviewModalOpen ? (
+        <div
+          className="fixed inset-0 z-[2500] flex items-center justify-center bg-[rgba(17,24,39,0.55)] p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="courseReviewModalTitle"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setReviewModalOpen(false)
+          }}
+        >
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-6">
+              <div>
+                <h3 id="courseReviewModalTitle" className="text-base font-extrabold text-gray-900">수강평 작성</h3>
+                <p className="mt-1 text-xs font-medium text-gray-500">직접 수강한 경험을 다른 학습자와 나눠주세요.</p>
+              </div>
+              <button type="button" onClick={() => setReviewModalOpen(false)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 text-gray-400 transition hover:bg-gray-50 hover:text-gray-700" aria-label="수강평 작성 닫기">
+                <i className="fas fa-times" />
+              </button>
+            </div>
+            <div className="space-y-5 p-5 sm:p-6">
+              <div>
+                <span className="mb-2 block text-xs font-bold text-gray-700">평점</span>
+                <div className="flex items-center gap-1" aria-label={`${reviewRating}점`}>
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setReviewRating(rating)}
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg text-xl transition ${rating <= reviewRating ? 'text-yellow-400' : 'text-gray-200 hover:text-yellow-200'}`}
+                      aria-label={`${rating}점 선택`}
+                    >
+                      <i className="fas fa-star" />
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm font-extrabold text-gray-700">{reviewRating}.0</span>
+                </div>
+              </div>
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label htmlFor="courseReviewContent" className="text-xs font-bold text-gray-700">수강평</label>
+                  <span className="text-[11px] font-bold text-gray-400">{reviewContent.length} / 2000</span>
+                </div>
+                <textarea
+                  id="courseReviewContent"
+                  value={reviewContent}
+                  onChange={(event) => setReviewContent(event.target.value)}
+                  maxLength={2000}
+                  className="min-h-36 w-full resize-y rounded-xl border border-gray-200 p-4 text-sm leading-6 text-gray-800 outline-none transition focus:border-brand focus:ring-4 focus:ring-green-50"
+                  placeholder="강의에서 좋았던 점과 도움이 된 내용을 작성해 주세요."
+                />
+              </div>
+              {reviewError ? <div className="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-600">{reviewError}</div> : null}
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 px-5 py-4 sm:px-6">
+              <button type="button" onClick={() => setReviewModalOpen(false)} className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-bold text-gray-600 transition hover:bg-gray-100">취소</button>
+              <button type="button" disabled={reviewBusy} onClick={handleSubmitReview} className="h-10 rounded-xl bg-brand px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-gray-300">
+                {reviewBusy ? '등록 중' : '수강평 등록'}
               </button>
             </div>
           </div>

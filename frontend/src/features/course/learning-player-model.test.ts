@@ -54,7 +54,7 @@ describe('learning player model', () => {
     expect(normalizeScorePercent(null, 20)).toBeNull()
   })
 
-  it('퀴즈 정보가 없는 강의는 기본 문제 목록을 만든다', () => {
+  it('퀴즈 정보가 없는 강의는 임의의 고정 문제를 만들지 않는다', () => {
     const questions = buildQuizModalQuestions({
       lessonId: 1,
       title: '영상',
@@ -70,8 +70,48 @@ describe('learning player model', () => {
       materials: [],
     })
 
-    expect(questions).toHaveLength(3)
-    expect(questions.every((question) => question.options.length >= 2)).toBe(true)
+    expect(questions).toEqual([])
+  })
+
+  it('정답 비공개 퀴즈도 실제 문항과 선택지 ID를 응시 모델에 유지한다', () => {
+    const questions = buildQuizModalQuestions({
+      lessonId: 2,
+      title: '실제 퀴즈',
+      description: null,
+      lessonType: 'QUIZ',
+      videoUrl: null,
+      videoAssetKey: null,
+      thumbnailUrl: null,
+      durationSeconds: null,
+      isPreview: false,
+      isPublished: true,
+      sortOrder: 2,
+      materials: [],
+      quiz: {
+        quizId: 10,
+        title: '서버 채점 퀴즈',
+        description: '',
+        passScore: 60,
+        exposeAnswer: false,
+        questions: [{
+          questionId: 101,
+          questionType: 'MULTIPLE_CHOICE',
+          questionText: '실제 문항',
+          explanation: null,
+          points: 5,
+          options: [{ optionId: 1001, optionText: '선택지 A' }, { optionId: 1002, optionText: '선택지 B' }],
+        }],
+      },
+    })
+
+    expect(questions).toEqual([{
+      questionId: 101,
+      label: '문항 1',
+      questionType: 'MULTIPLE_CHOICE',
+      questionText: '실제 문항',
+      points: 5,
+      options: [{ optionId: 1001, optionText: '선택지 A' }, { optionId: 1002, optionText: '선택지 B' }],
+    }])
   })
 
   it('관리자 최대 해상도가 720p이면 1080p 재생 소스를 제외한다', () => {

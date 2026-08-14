@@ -27,7 +27,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const notesAndQnaState = useLearningNotesAndQnaState()
   const { notes,noteContent,setNoteContent,noteComposerOpen,setNoteComposerOpen,noteMessage,setNoteMessage,qnaTemplates,qnaQuestions,setQnaQuestions,qnaDetails,setQnaDetails,loadingQna,qnaError,setQnaError,qnaStatusFilter,setQnaStatusFilter,qnaSearch,setQnaSearch,openQuestionId,setOpenQuestionId,loadingQuestionId,setLoadingQuestionId,questionForm,setQuestionForm,questionMessage,setQuestionMessage,questionBusy,questionComposerOpen,setQuestionComposerOpen,openNoteId,setOpenNoteId,editingNoteContent,setEditingNoteContent } = notesAndQnaState
   const assessmentState = useLearningAssessmentState()
-  const { quizModalLessonId,quizQuestionIndex,setQuizQuestionIndex,quizSelectedOptionIndex,setQuizSelectedOptionIndex,quizFeedback,setQuizFeedback,assignmentModalLessonId,setAssignmentModalLessonId,assignmentForm,setAssignmentForm,assignmentFileDragActive,assignmentSubmitBusy,assignmentMessage,setAssignmentMessage,assignmentLoadingVisible,setAssignmentLoadingVisible,assignmentLoadingText,setAssignmentLoadingText,assignmentGradingResult,setAssignmentGradingResult,assignmentHistoryByAssignmentId,completionProofCard,setCompletionProofCard,completionVisible,setCompletionVisible,completionCardFlipped,setCompletionCardFlipped,completionBurstKey,setCompletionBurstKey } = assessmentState
+  const { quizModalLessonId,quizQuestionIndex,setQuizQuestionIndex,quizAnswers,quizSubmitBusy,quizAttemptResult,quizMessage,assignmentModalLessonId,setAssignmentModalLessonId,assignmentForm,setAssignmentForm,assignmentFileDragActive,assignmentSubmitBusy,assignmentMessage,setAssignmentMessage,assignmentLoadingVisible,setAssignmentLoadingVisible,assignmentLoadingText,setAssignmentLoadingText,assignmentGradingResult,setAssignmentGradingResult,assignmentHistoryByAssignmentId,completionProofCard,setCompletionProofCard,completionVisible,setCompletionVisible,completionCardFlipped,setCompletionCardFlipped,completionBurstKey,setCompletionBurstKey } = assessmentState
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const frameRef = useRef<HTMLDivElement | null>(null)
@@ -127,6 +127,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     [course, quizModalLesson],
   )
   const activeQuizQuestion = quizModalQuestions[quizQuestionIndex] ?? quizModalQuestions[0] ?? null
+  const activeQuizAnswer = activeQuizQuestion ? quizAnswers[activeQuizQuestion.questionId] : undefined
   const assignmentModalLesson = assignmentModalLessonId ? lessons.find((item) => item.lessonId === assignmentModalLessonId) ?? null : null
   const assignmentModal = resolveLessonAssignment(assignmentModalLesson)
   const assignmentModalMethods = resolveAssignmentSubmissionMethods(assignmentModal)
@@ -743,7 +744,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   }, [assignmentModalLessonId, completionVisible, quizModalLessonId, resolvedVideoUrl, selectedLessonIsQuiz, setIsSelectMode, setSelectDrag])
 
   const assessmentActions = useLearningAssessmentActions({ state: assessmentState, lesson, lessons, course, duration, lessonLockMap, selectedLessonLocked, previousLesson, nextLesson, quizModalLesson, quizModalLessonId, quizModalQuestions, activeQuizQuestion, assignmentModalLesson, assignmentModal, assignmentResultNextLesson, assignmentResultProgressById, assignmentResultCompletesCourse, isStudentPreview, sessionUserId, quizScoreByLessonIdRef, setSelectedLessonId, setNotice, persistCompletedLesson, openCourseCompletionOverlay })
-  const { openAssignmentModal,closeAssignmentModal,closeAssignmentGradingResult,closeCompletionOverlay,handleAssignmentResultPrimaryAction,openQuizModal,closeQuizModal,handleSelectLesson,handlePreviousLesson,handleNextLesson,handleQuizOptionSelect,handleQuizCheckAnswer,handleQuizNextQuestion,handleAssignmentFilesSelected,handleAssignmentFileDragOver,handleAssignmentFileDragLeave,handleAssignmentFileDrop,handleAssignmentFileRemove,handleAssignmentSubmit } = assessmentActions
+  const { openAssignmentModal,closeAssignmentModal,closeAssignmentGradingResult,closeCompletionOverlay,handleAssignmentResultPrimaryAction,openQuizModal,closeQuizModal,handleSelectLesson,handlePreviousLesson,handleNextLesson,handleQuizOptionSelect,handleQuizTextAnswer,handleQuizNextQuestion,handleQuizRetry,handleQuizResultContinue,handleAssignmentFilesSelected,handleAssignmentFileDragOver,handleAssignmentFileDragLeave,handleAssignmentFileDrop,handleAssignmentFileRemove,handleAssignmentSubmit } = assessmentActions
 
   const { handleToggleQuestion,handleSaveNote,handleDeleteNote,handleUpdateNote,handleSubmitQuestion } = useLearningNotesAndQnaActions({ state: notesAndQnaState, lesson, course, currentTime, isStudentPreview, sessionUserId, setActiveTab })
 
@@ -918,14 +919,16 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     closeQuizModal,
     quizQuestionIndex,
     quizModalQuestions,
-    quizSelectedOptionIndex,
-    quizFeedback,
+    activeQuizAnswer,
+    quizSubmitBusy,
+    quizAttemptResult,
+    quizMessage,
     handleQuizOptionSelect,
+    handleQuizTextAnswer,
     setQuizQuestionIndex,
-    setQuizSelectedOptionIndex,
-    setQuizFeedback,
     handleQuizNextQuestion,
-    handleQuizCheckAnswer,
+    handleQuizRetry,
+    handleQuizResultContinue,
     activeNote,
     editingNoteContent,
     handleUpdateNote,
