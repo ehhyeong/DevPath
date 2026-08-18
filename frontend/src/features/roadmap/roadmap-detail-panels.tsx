@@ -4,7 +4,7 @@ import { roadmapApi } from '../../lib/api/roadmap'
 import type { MyRoadmapSummary } from '../../types/roadmap'
 import { type ChangesPanelProps, type FilterType, type NodeDrawerProps, type RoadmapMetricsProps, type RoadmapPageToolbarProps, buildCourseDetailUrl, buildLectureListUrl, buildRoadmapReturnHref, changeChipLabel, changeChipStyle, changesPanelActiveTabClassName, changesPanelInactiveTabClassName, changesPanelTabClassName, changeTypeIcon, getChangeItemClass, inferHistoryChangeType, isNodeReadyToClear, nodeResourceSourceLabel, parseEssentialConcept, roadmapDoneNodeCountCardClassName, roadmapHeaderMetricsClassName, roadmapNodeCountCardClassName, roadmapNodeCountLabelClassName, roadmapNodeCountNumberClassName, roadmapNodeCountWrapClassName, roadmapTotalNodeCountCardClassName, splitNodeDescription } from './roadmap-detail-support'
 
-export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode, onClose, onCleared }: NodeDrawerProps) {
+export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, allNodes, editMode, onClose, onCleared }: NodeDrawerProps) {
   const [clearing, setClearing] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -32,7 +32,16 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, editMode,
 
   async function handleDelete() {
     if (!node) return
-    if (!confirm(`"${node.title}" 노드를 삭제하시겠습니까? 되돌릴 수 없습니다.`)) return
+    // cascade 고지: 이 노드를 앵커로 매달린 복습/심화 노드는 함께 삭제된다.
+    const cascadeChildren =
+      node.originalNodeId != null
+        ? allNodes.filter((n) => n.isBranch && n.branchFromNodeId === node.originalNodeId)
+        : []
+    const cascadeNotice =
+      cascadeChildren.length > 0
+        ? `\n\n다음 추천 노드도 함께 삭제됩니다:\n- ${cascadeChildren.map((n) => n.title).join('\n- ')}`
+        : ''
+    if (!confirm(`"${node.title}" 노드를 삭제하시겠습니까? 되돌릴 수 없습니다.${cascadeNotice}`)) return
     setBusy(true)
     try {
       await roadmapApi.deleteNode(customRoadmapId, node.customNodeId)

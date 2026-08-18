@@ -15,6 +15,10 @@ export interface RoadmapNodeItem {
   isBranch?: boolean
   branchFromNodeId?: number | null
   branchType?: string | null
+  anchorNodeId?: number | null
+  laneKey?: number | null
+  branchKind?: string | null
+  orderInLane?: number | null
   lessonCompletionRate?: number
   requiredTagsSatisfied?: boolean
   readyToClear?: boolean

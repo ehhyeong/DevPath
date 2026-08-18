@@ -3,6 +3,7 @@ package com.devpath.api.builder.service;
 import com.devpath.api.builder.dto.MyRoadmapResponse;
 import com.devpath.api.builder.dto.MyRoadmapSaveRequest;
 import com.devpath.api.builder.dto.MyRoadmapSummary;
+import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.builder.entity.BuilderModule;
@@ -10,7 +11,6 @@ import com.devpath.domain.builder.entity.MyRoadmap;
 import com.devpath.domain.builder.entity.MyRoadmapModule;
 import com.devpath.domain.builder.repository.BuilderModuleRepository;
 import com.devpath.domain.builder.repository.MyRoadmapRepository;
-import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
@@ -258,24 +258,13 @@ public class MyRoadmapService {
       nodes.add(customRoadmapNodeRepository.save(node));
     }
 
-    // 2-pass: flat 구조에서 레인 도출. 척추=직전 척추가 앵커, 분기=branchGroup이 laneKey.
-    CustomRoadmapNode lastSpine = null;
-    int spineOrder = 0;
-    Map<String, Integer> laneOrderCounters = new HashMap<>();
+    // 2-pass: flat(sortOrder + branchGroup)에서 레인 도출(sync 서비스 공유 로직). 빌더 노드는 전부 위치 노드다.
+    Map<Long, Integer> branchGroupByNodeId = new HashMap<>();
     for (int i = 0; i < ordered.size(); i += 1) {
-      Integer branchGroup = ordered.get(i).getBranchGroup();
-      CustomRoadmapNode node = nodes.get(i);
-      if (branchGroup == null) {
-        node.assignLane(BranchKind.SPINE, null, null, spineOrder);
-        spineOrder += 1;
-        lastSpine = node;
-      } else {
-        Long anchorId = lastSpine != null ? lastSpine.getId() : null;
-        String laneId = anchorId + ":" + branchGroup;
-        int orderInLane = laneOrderCounters.merge(laneId, 1, Integer::sum) - 1;
-        node.assignLane(BranchKind.BRANCH, anchorId, branchGroup, orderInLane);
-      }
+      branchGroupByNodeId.put(nodes.get(i).getId(), ordered.get(i).getBranchGroup());
     }
+    CustomRoadmapPrerequisiteSyncService.assignPositionalLanes(
+        nodes, node -> branchGroupByNodeId.get(node.getId()));
   }
 
   private void validateModuleSource(MyRoadmapSaveRequest.ModuleItem item) {

@@ -132,11 +132,8 @@ public class DiagnosisRecommendationService {
       branchCandidateTags = nodeTags.stream().filter(tag -> !futureTagSet.contains(tag)).toList();
     }
 
-    // 커스텀 로드맵 컨텍스트 (삭제/순서변경/신규 제안용)
-    CustomRoadmap customRoadmap =
-        customRoadmapRepository
-            .findByUserIdAndOriginalRoadmapRoadmapId(user.getId(), roadmapId)
-            .orElse(null);
+    // 커스텀 로드맵 컨텍스트 (삭제/순서변경/신규 제안용). 빌더/공식복사 모두 지원(customRoadmapId 우선).
+    CustomRoadmap customRoadmap = findCustomRoadmap(user.getId(), roadmapId, customRoadmapId);
 
     List<CustomRoadmapNode> ordered =
         customRoadmap != null
@@ -165,7 +162,7 @@ public class DiagnosisRecommendationService {
         (!isLowScore && clearedOrder != null)
             ? ordered.stream()
                 .filter(n -> n.getOriginalNode() != null)
-                .filter(n -> !n.isBranch())
+                .filter(n -> !n.isRelearnGated())
                 .filter(n -> n.getStatus() != NodeStatus.COMPLETED)
                 .filter(
                     n -> n.getCustomSortOrder() != null && n.getCustomSortOrder() > clearedOrder)
@@ -255,7 +252,7 @@ public class DiagnosisRecommendationService {
     Map<String, String> canonicalByLower =
         candidateTags.stream().collect(Collectors.toMap(String::toLowerCase, t -> t, (a, b) -> a));
 
-    String title = branchNode.path("title").asText(null);
+    String title = clampNodeTitle(branchNode.path("title").asText(null));
     String content = branchNode.path("content").asText(null);
 
     List<String> validatedTags = new ArrayList<>();
@@ -292,7 +289,7 @@ public class DiagnosisRecommendationService {
           roadmapNodeRepository.save(
               RoadmapNode.builder()
                   .roadmap(clearedNode.getRoadmap())
-                  .title((isLowScore ? "[복습] " : "[심화] ") + clearedNode.getTitle())
+                  .title(clampNodeTitle((isLowScore ? "[복습] " : "[심화] ") + clearedNode.getTitle()))
                   .content(fallbackTagList + " 관련 학습 내용입니다.")
                   .nodeType("BRANCH")
                   .sortOrder(null)
@@ -411,7 +408,7 @@ public class DiagnosisRecommendationService {
     int count = 0;
     for (JsonNode item : newNodesNode) {
       if (count >= NEW_NODE_LIMIT) break;
-      String title = item.path("title").asText(null);
+      String title = clampNodeTitle(item.path("title").asText(null));
       if (title == null || title.isBlank()) continue;
       if (pendingTitles.contains(title)) continue;
 
@@ -615,6 +612,15 @@ public class DiagnosisRecommendationService {
     }
     change.updateSuggestionText(
         frontendRoadmapDemoReason(isLowScore), frontendRoadmapDemoContextSummary());
+  }
+
+  // roadmap_nodes.title은 varchar(255). Gemini가 긴 제목을 반환해도 insert가 깨지지 않도록 안전하게 자른다.
+  private static String clampNodeTitle(String title) {
+    if (title == null) {
+      return null;
+    }
+    String trimmed = title.trim();
+    return trimmed.length() > 255 ? trimmed.substring(0, 255) : trimmed;
   }
 
   private CustomRoadmap findCustomRoadmap(Long userId, Long roadmapId, Long customRoadmapId) {

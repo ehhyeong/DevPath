@@ -17763,7 +17763,7 @@ WHERE NOT EXISTS (
 );
 
 -- workspace_file 샘플 데이터
-INSERT INTO workspace_file (workspace_id, original_file_name, stored_file_name, file_path, file_size, content_type, uploaded_by_id, is_deleted, created_at)
+INSERT INTO workspace_file (workspace_id, original_file_name, stored_file_name, file_path, file_size, content_type, item_type, storage_provider, uploaded_by_id, is_deleted, created_at)
 SELECT
     (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
     '요구사항_명세서.txt',
@@ -17771,6 +17771,8 @@ SELECT
     './uploads/workspace/1/sample_requirements.txt',
     1024,
     'text/plain',
+    'FILE',
+    'LOCAL',
     (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     false,
     '2026-03-24 10:00:00'
@@ -17780,7 +17782,7 @@ WHERE NOT EXISTS (
       AND original_file_name = '요구사항_명세서.txt'
 );
 
-INSERT INTO workspace_file (workspace_id, original_file_name, stored_file_name, file_path, file_size, content_type, uploaded_by_id, is_deleted, created_at)
+INSERT INTO workspace_file (workspace_id, original_file_name, stored_file_name, file_path, file_size, content_type, item_type, storage_provider, uploaded_by_id, is_deleted, created_at)
 SELECT
     (SELECT id FROM workspace WHERE name = 'DevPath 팀 워크스페이스'),
     '와이어프레임_v1.png',
@@ -17788,6 +17790,8 @@ SELECT
     './uploads/workspace/1/sample_wireframe.png',
     204800,
     'image/png',
+    'FILE',
+    'LOCAL',
     (SELECT user_id FROM users WHERE email = 'learner@devpath.com'),
     false,
     '2026-03-25 14:00:00'

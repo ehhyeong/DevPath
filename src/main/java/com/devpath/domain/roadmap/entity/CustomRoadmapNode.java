@@ -68,7 +68,10 @@ public class CustomRoadmapNode {
   @Column(name = "branch_type", length = 20)
   private String branchType;
 
-  // ── 레인 트리 모델(TASK-56). P1: 옛 분기필드와 병존하며 점진 이행. ──
+  // ── 레인 트리 모델(TASK-56). 그래프/잠금은 이 필드로 동작한다. ──
+  // 위치 노드(SPINE/BRANCH)는 customSortOrder + 구조그룹에서 재도출되는 파생값이고,
+  // 앵커 분기(REVIEW/ADVANCED)의 anchorNodeId는 부모를 직접 가리키는 원본값이다(파생 불가).
+  // 옛 분기필드(builderBranchGroup/branchGroup/isBranch/branchFromNodeId/branchType)와 듀얼리드로 호환.
   // 이 레인이 갈라져 나온 부모 커스텀 노드 id (null = 루트 척추 레인)
   @Column(name = "anchor_node_id")
   private Long anchorNodeId;
@@ -82,7 +85,7 @@ public class CustomRoadmapNode {
   @Column(name = "branch_kind", length = 20)
   private BranchKind branchKind;
 
-  // 레인 내 순서(단일 소스). 전역 순서는 트리 순회로 파생.
+  // 레인 내 순서. 위치 노드는 재배치(relayout) 시 customSortOrder 기준으로 재도출된다.
   @Column(name = "order_in_lane")
   private Integer orderInLane;
 
@@ -199,6 +202,11 @@ public class CustomRoadmapNode {
   public boolean isRelearnGated() {
     BranchKind kind = effectiveBranchKind();
     return kind == BranchKind.REVIEW || kind == BranchKind.ADVANCED;
+  }
+
+  /** 이 노드가 레인 모델로 저장됐는가(branchKind 보유). 로드맵 단위 레인/레거시 판별의 단일 정의. */
+  public boolean isLaneModeled() {
+    return branchKind != null;
   }
 
   // 학습 시작 상태로 변경하는 비즈니스 메서드

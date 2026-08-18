@@ -6,6 +6,7 @@ import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.learning.entity.clearance.ClearanceStatus;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
+import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.NodeStatus;
@@ -17,7 +18,10 @@ import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,10 +72,25 @@ public class NodeClearanceCommandService {
       throw new CustomException(ErrorCode.NODE_ALREADY_COMPLETED);
     }
 
-    // 선행 노드가 모두 완료되었는지 확인한다.
-    if (customNodePrerequisiteRepository.countByCustomNodeAndPrerequisiteNotCompleted(
-            customNode, NodeStatus.COMPLETED)
-        > 0) {
+    // 선행 조건을 CNF로 확인한다(공유 판정 규칙): prereq_group마다 최소 1개가 완료/보류면 통과. 갈림길 합류는 갈래 끝들이
+    // 한 그룹(OR)이라 한 갈래만 완료해도 통과하고, 일반 선형 엣지는 각자 단독 그룹이라 모두 완료돼야 통과한다.
+    List<CustomNodePrerequisite> prereqs =
+        customNodePrerequisiteRepository.findAllByCustomNode(customNode);
+    Set<Long> satisfiedPrereqIds =
+        prereqs.stream()
+            .map(CustomNodePrerequisite::getPrerequisiteCustomNode)
+            .filter(pre -> pre.getStatus() == NodeStatus.COMPLETED || pre.isDeferred())
+            .map(CustomRoadmapNode::getId)
+            .collect(Collectors.toSet());
+    Collection<List<Long>> prereqGroups =
+        prereqs.stream()
+            .collect(
+                Collectors.groupingBy(
+                    CustomNodePrerequisite::getPrereqGroup,
+                    Collectors.mapping(
+                        pre -> pre.getPrerequisiteCustomNode().getId(), Collectors.toList())))
+            .values();
+    if (!CustomNodePrerequisite.prerequisitesMet(prereqGroups, satisfiedPrereqIds::contains)) {
       throw new CustomException(ErrorCode.NODE_LOCKED);
     }
 
@@ -112,12 +131,10 @@ public class NodeClearanceCommandService {
       nodeClearanceRepository.save(clearance);
     }
 
-    // 진행률을 재계산한다.
-    long total = customRoadmapNodeRepository.countByCustomRoadmap(customRoadmap);
-    long completed =
-        customRoadmapNodeRepository.countByCustomRoadmapAndStatus(
-            customRoadmap, NodeStatus.COMPLETED);
-    roadmapProgressService.updateProgressRate(customRoadmap, total, completed);
+    // 진행률을 재계산한다(심화/복습 제외는 RoadmapProgressService가 단일 규칙으로 처리).
+    roadmapProgressService.updateProgressRate(
+        customRoadmap,
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap));
 
     return NodeClearResponse.of(customNode);
   }

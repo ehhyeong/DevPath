@@ -2,6 +2,7 @@ package com.devpath.api.roadmap.dto;
 
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.roadmap.entity.BranchKind;
+import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.DisplayNodeStatus;
@@ -222,7 +223,7 @@ public class MyRoadmapDto {
         CustomRoadmap customRoadmap,
         Integer progressRate,
         List<CustomRoadmapNode> nodes,
-        Map<Long, List<Long>> prerequisiteIdsByNodeId,
+        Map<Long, List<List<Long>>> prerequisiteGroupsByNodeId,
         Map<Long, NodeStatus> statusByNodeId,
         Map<Long, NodeClearance> clearanceByNodeId,
         Map<Long, List<RoadmapNodeResource>> resourcesByNodeId,
@@ -252,7 +253,7 @@ public class MyRoadmapDto {
                       node ->
                           NodeItem.from(
                               node,
-                              prerequisiteIdsByNodeId.getOrDefault(node.getId(), List.of()),
+                              prerequisiteGroupsByNodeId.getOrDefault(node.getId(), List.of()),
                               statusByNodeId,
                               node.getOriginalNode() != null
                                   ? clearanceByNodeId.get(node.getOriginalNode().getNodeId())
@@ -329,6 +330,18 @@ public class MyRoadmapDto {
     @Schema(description = "분기 종류: REVIEW(복습) | ADVANCED(심화) | null(일반)")
     private String branchType;
 
+    @Schema(description = "레인 트리: 부모(앵커) 커스텀 노드 id. null=루트 척추. 레거시 미이행 노드는 null")
+    private Long anchorNodeId;
+
+    @Schema(description = "레인 트리: 형제 레인 구분키(좌/우/복습/심화). 레거시 미이행 노드는 null")
+    private Integer laneKey;
+
+    @Schema(description = "레인 종류: SPINE/BRANCH/REVIEW/ADVANCED. 레거시 미이행 노드는 null")
+    private String branchKind;
+
+    @Schema(description = "레인 내 순서. 레거시 미이행 노드는 null")
+    private Integer orderInLane;
+
     @Schema(description = "레슨 진행률 (0.0~1.0), null이면 미시작")
     private Double lessonCompletionRate;
 
@@ -367,6 +380,10 @@ public class MyRoadmapDto {
         boolean isBranch,
         Long branchFromNodeId,
         String branchType,
+        Long anchorNodeId,
+        Integer laneKey,
+        String branchKind,
+        Integer orderInLane,
         Double lessonCompletionRate,
         boolean requiredTagsSatisfied,
         List<String> requiredTags,
@@ -387,6 +404,10 @@ public class MyRoadmapDto {
       this.isBranch = isBranch;
       this.branchFromNodeId = branchFromNodeId;
       this.branchType = branchType;
+      this.anchorNodeId = anchorNodeId;
+      this.laneKey = laneKey;
+      this.branchKind = branchKind;
+      this.orderInLane = orderInLane;
       this.lessonCompletionRate = lessonCompletionRate;
       this.requiredTagsSatisfied = requiredTagsSatisfied;
       this.requiredTags = requiredTags;
@@ -399,7 +420,7 @@ public class MyRoadmapDto {
 
     public static NodeItem from(
         CustomRoadmapNode node,
-        List<Long> prerequisiteCustomNodeIds,
+        List<List<Long>> prerequisiteGroups,
         Map<Long, NodeStatus> statusByNodeId,
         NodeClearance clearance,
         List<RoadmapNodeResource> resources,
@@ -448,15 +469,15 @@ public class MyRoadmapDto {
       } else if (node.getStatus() == NodeStatus.IN_PROGRESS) {
         displayStatus = DisplayNodeStatus.IN_PROGRESS;
       } else {
-        boolean isLocked =
-            !prerequisiteCustomNodeIds.isEmpty()
-                && prerequisiteCustomNodeIds.stream()
-                    .anyMatch(
-                        prereqId ->
-                            statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
-                                    != NodeStatus.COMPLETED
-                                && !deferredCustomNodeIds.contains(prereqId));
-        displayStatus = isLocked ? DisplayNodeStatus.LOCKED : DisplayNodeStatus.PENDING;
+        // CNF 잠금: 선행 판정(공유 규칙)이 통과하지 못하면 잠금. 그룹 없으면 선행 없음→해제.
+        boolean unlocked =
+            CustomNodePrerequisite.prerequisitesMet(
+                prerequisiteGroups,
+                prereqId ->
+                    statusByNodeId.getOrDefault(prereqId, NodeStatus.NOT_STARTED)
+                            == NodeStatus.COMPLETED
+                        || deferredCustomNodeIds.contains(prereqId));
+        displayStatus = unlocked ? DisplayNodeStatus.PENDING : DisplayNodeStatus.LOCKED;
       }
 
       double lessonRate =
@@ -469,6 +490,9 @@ public class MyRoadmapDto {
               || (requiredTagsSatisfied != null
                   ? requiredTagsSatisfied
                   : clearance != null && Boolean.TRUE.equals(clearance.getRequiredTagsSatisfied()));
+
+      List<Long> prerequisiteCustomNodeIds =
+          prerequisiteGroups.stream().flatMap(List::stream).distinct().toList();
 
       return NodeItem.builder()
           .customNodeId(node.getId())
@@ -483,6 +507,10 @@ public class MyRoadmapDto {
           .isBranch(node.isBranch())
           .branchFromNodeId(node.getBranchFromNodeId())
           .branchType(node.getBranchType())
+          .anchorNodeId(node.getAnchorNodeId())
+          .laneKey(node.getLaneKey())
+          .branchKind(node.getBranchKind() != null ? node.getBranchKind().name() : null)
+          .orderInLane(node.getOrderInLane())
           .lessonCompletionRate(lessonRate)
           .requiredTagsSatisfied(tagsSatisfied)
           .requiredTags(requiredTags)

@@ -657,6 +657,7 @@ export default function RoadmapDetailPage() {
         node={drawerNode}
         customRoadmapId={customRoadmapId}
         originalRoadmapId={roadmap.originalRoadmapId}
+        allNodes={roadmap.nodes}
         editMode={editMode}
         onClose={() => setDrawerNode(null)}
         onCleared={async () => {
