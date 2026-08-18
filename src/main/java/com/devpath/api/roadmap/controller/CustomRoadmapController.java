@@ -92,9 +92,7 @@ public class CustomRoadmapController {
             nodeClearanceCommandService.clearNode(userId, customRoadmapId, customNodeId)));
   }
 
-  @Operation(
-      summary = "노드 스킵",
-      description = "노드를 완료하지 않아도 다음 노드를 진행할 수 있도록 스킵 처리합니다(미완료 상태 유지).")
+  @Operation(summary = "노드 스킵", description = "노드를 완료하지 않아도 다음 노드를 진행할 수 있도록 스킵 처리합니다(미완료 상태 유지).")
   @PostMapping("/{customRoadmapId}/nodes/{customNodeId}/defer")
   public ResponseEntity<ApiResponse<Void>> deferNode(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
@@ -114,9 +112,7 @@ public class CustomRoadmapController {
     return ResponseEntity.ok(ApiResponse.success("노드 스킵을 해제했습니다.", null));
   }
 
-  @Operation(
-      summary = "노드 삭제",
-      description = "커스텀 로드맵에서 노드를 삭제하고 선행관계를 정리한 뒤 진행률을 재계산합니다.")
+  @Operation(summary = "노드 삭제", description = "커스텀 로드맵에서 노드를 삭제하고 선행관계를 정리한 뒤 진행률을 재계산합니다.")
   @DeleteMapping("/{customRoadmapId}/nodes/{customNodeId}")
   public ResponseEntity<ApiResponse<Void>> deleteNode(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,

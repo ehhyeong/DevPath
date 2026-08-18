@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { showAuthToast } from '../lib/auth-toast'
-import { projectApiRequest } from '../project-api'
+import { projectApiRequest } from '../features/project/api'
 
 export type SquadWorkspaceAsidePage =
   | 'dashboard'
@@ -42,6 +42,24 @@ type NavSection = {
   items: NavItem[]
 }
 
+const SIDEBAR_PINNED_STORAGE_KEY = 'sidebarPinned'
+
+function readSidebarPinned() {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  return window.localStorage.getItem(SIDEBAR_PINNED_STORAGE_KEY) === 'true'
+}
+
+function storeSidebarPinned(value: boolean) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(SIDEBAR_PINNED_STORAGE_KEY, value ? 'true' : 'false')
+}
+
 function navHref(path: string, workspaceId: number | null) {
   return workspaceId ? `${path}?workspaceId=${workspaceId}` : path
 }
@@ -55,12 +73,15 @@ export default function SquadWorkspaceAside({
   activePage,
   workspaceId,
   projectName,
-  pinned = false,
+  pinned,
   onTogglePinned,
   reviewBadgeCount,
   onNavigate,
 }: SquadWorkspaceAsideProps) {
   const [githubLinked, setGithubLinked] = useState<boolean | null>(null)
+  const [localPinned, setLocalPinned] = useState(readSidebarPinned)
+  const sidebarPinned = pinned ?? localPinned
+  const activeGithubLinked = workspaceId ? githubLinked : false
   const projectLabel = projectName?.trim() || '스쿼드 프로젝트'
   const sections: NavSection[] = [
     {
@@ -78,6 +99,7 @@ export default function SquadWorkspaceAside({
     {
       title: '설계/리뷰',
       items: [
+        { key: 'erd', label: 'ERD 설계', icon: 'fas fa-project-diagram', path: '/squad-erd' },
         {
           key: 'review',
           label: '코드 피드백',
@@ -85,7 +107,6 @@ export default function SquadWorkspaceAside({
           path: '/squad-review',
           badgeCount: reviewBadgeCount,
         },
-        { key: 'erd', label: 'ERD 설계', icon: 'fas fa-project-diagram', path: '/squad-erd' },
       ],
     },
     {
@@ -100,7 +121,6 @@ export default function SquadWorkspaceAside({
 
   useEffect(() => {
     if (!workspaceId) {
-      setGithubLinked(false)
       return
     }
 
@@ -132,7 +152,7 @@ export default function SquadWorkspaceAside({
   }, [workspaceId])
 
   function handleNavigate(event: MouseEvent<HTMLAnchorElement>, href: string, item?: NavItem) {
-    if (item?.key === 'review' && githubLinked !== true) {
+    if (item?.key === 'review' && activeGithubLinked !== true) {
       event.preventDefault()
       showAuthToast({
         message: '코드 피드백은 GitHub 저장소를 연동한 뒤 이용할 수 있습니다.',
@@ -145,8 +165,24 @@ export default function SquadWorkspaceAside({
     onNavigate?.(event, href)
   }
 
+  function handleTogglePinned(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (onTogglePinned) {
+      onTogglePinned(event)
+      return
+    }
+
+    setLocalPinned((current) => {
+      const next = !current
+      storeSidebarPinned(next)
+      return next
+    })
+  }
+
   return (
-    <aside className={`${pinned ? 'pinned ' : ''}squad-workspace-aside w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
+    <aside className={`${sidebarPinned ? 'pinned w-[256px]! ' : ''}squad-workspace-aside w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
       <div className="h-20 flex items-center px-5 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 shrink-0">
         <a
           href="/workspace-hub"
@@ -156,51 +192,45 @@ export default function SquadWorkspaceAside({
           <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-md">
             <i className="fas fa-arrow-left"></i>
           </div>
-          <div className="sidebar-text flex flex-col justify-center min-w-0">
+          <div className={`sidebar-text flex min-w-0 w-0 flex-col justify-center overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-[ease] group-hover:ml-[12px] group-hover:w-auto group-hover:opacity-100 ${sidebarPinned ? 'ml-[12px]! w-auto! opacity-100!' : ''}`}>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">목록으로 돌아가기</p>
             <p className="font-extrabold text-gray-900 truncate w-28 leading-tight">{projectLabel}</p>
           </div>
         </a>
-        {onTogglePinned ? (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault()
-              event.stopPropagation()
-              onTogglePinned(event)
-            }}
-            className="sidebar-text squad-dashboard-pin-button w-7 h-7 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-brand transition-colors focus:outline-none ml-2"
-            title={pinned ? '사이드바 고정 해제' : '사이드바 고정'}
-          >
-            <i className="fas fa-thumbtack text-xs"></i>
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={handleTogglePinned}
+          className={`sidebar-text squad-dashboard-pin-button ml-2 flex h-[28px]! w-[28px]! shrink-0 basis-[28px] items-center justify-center overflow-hidden whitespace-nowrap rounded-[6px]! text-[14px]! leading-[20px]! text-gray-400 opacity-0 transition-all duration-300 ease-[ease] hover:bg-gray-100 hover:text-brand focus:outline-none group-hover:ml-[12px] group-hover:w-[28px] group-hover:opacity-100 ${sidebarPinned ? 'ml-[12px]! w-[28px]! opacity-100!' : ''}`}
+          title={sidebarPinned ? '사이드바 고정 해제' : '사이드바 고정'}
+        >
+          <i className={`${sidebarPinned ? 'fas fa-thumbtack' : 'fas fa-thumbtack rotate-45'} text-xs`}></i>
+        </button>
       </div>
 
       <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
         {sections.map((section) => (
           <div key={section.title}>
-            <p className="sidebar-section-title px-4 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">
+            <p className={`workspace-sidebar-section-title px-4 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 ${sidebarPinned ? 'mt-[24px]! mb-[8px]! h-auto! opacity-100!' : ''}`}>
               {section.title}
             </p>
             {section.items.map((item) => {
               const href = navHref(item.path, workspaceId)
               const badgeCount = item.badgeCount ?? 0
-              const blocked = item.key === 'review' && githubLinked !== true
+              const blocked = item.key === 'review' && activeGithubLinked !== true
 
               return (
                 <a
                   key={item.key}
                   href={href}
                   onClick={(event) => handleNavigate(event, href, item)}
-                  className={`${activePage === item.key ? 'nav-item active' : 'nav-item'} ${blocked ? 'opacity-50' : ''}`}
+                  className={`workspace-nav-item mb-[4px] flex min-h-[48px]! box-border items-center rounded-[12px]! px-[16px]! py-[14px]! [transition:all_0.2s_ease-in-out]! hover:translate-x-[4px]! ${activePage === item.key ? 'active bg-[#EBFDF5]! font-bold! text-[#00C471]! hover:bg-[#EBFDF5]! hover:text-[#00C471]!' : 'font-semibold! text-[#6B7280]! hover:bg-[#F3F4F6]! hover:text-[#111827]!'} ${blocked ? 'opacity-50' : ''}`}
                   aria-disabled={blocked}
                 >
-                  <i className={`${item.icon} w-6 text-center text-lg`}></i>
-                  <span className="sidebar-text squad-dashboard-review-link flex-1">
+                  <i className={`${item.icon} w-6 shrink-0 grow-0 basis-[24px] text-center text-lg leading-[28px]!`}></i>
+                  <span className={`sidebar-text squad-dashboard-review-link w-0 flex-1 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-[ease] group-hover:ml-[12px] group-hover:flex group-hover:w-auto group-hover:min-w-0 group-hover:flex-auto group-hover:items-center group-hover:justify-between group-hover:gap-[8px] group-hover:opacity-100 ${sidebarPinned ? 'ml-[12px]! flex! w-auto! min-w-0 flex-auto items-center justify-between gap-[8px] opacity-100!' : ''}`}>
                     <span className="truncate">{item.label}</span>
                     {badgeCount > 0 ? (
-                      <span className="squad-dashboard-review-badge bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                      <span className="squad-dashboard-review-badge inline-flex h-[16px] w-[16px] shrink-0 basis-[16px] items-center justify-center rounded-full bg-red-500 p-0! text-[9px] leading-[16px]! font-black text-white">
                         {badgeCount}
                       </span>
                     ) : null}

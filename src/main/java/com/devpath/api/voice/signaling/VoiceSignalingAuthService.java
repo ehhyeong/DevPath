@@ -10,6 +10,7 @@ import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.voice.entity.VoiceChannel;
 import com.devpath.domain.voice.repository.VoiceChannelRepository;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
+import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class VoiceSignalingAuthService {
   private final VoiceChannelRepository voiceChannelRepository;
   private final UserRepository userRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final WorkspaceRepository workspaceRepository;
 
   @Transactional(readOnly = true)
   public VoiceSignalingUser authenticate(Long channelId, String token) {
@@ -43,7 +45,9 @@ public class VoiceSignalingAuthService {
             .orElseThrow(() -> new CustomException(ErrorCode.VOICE_CHANNEL_NOT_FOUND));
 
     if (!workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(
-        channel.getWorkspaceId(), claims.userId())) {
+            channel.getWorkspaceId(), claims.userId())
+        && !workspaceRepository.existsByIdAndOwnerIdAndIsDeletedFalse(
+            channel.getWorkspaceId(), claims.userId())) {
       throw new CustomException(ErrorCode.VOICE_FORBIDDEN);
     }
 

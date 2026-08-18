@@ -1,5 +1,15 @@
 package com.devpath.common.config;
 
+import static com.devpath.common.security.AdminAuthorityService.ACCOUNT_MANAGE;
+import static com.devpath.common.security.AdminAuthorityService.DASHBOARD_READ;
+import static com.devpath.common.security.AdminAuthorityService.FINANCE_MANAGE;
+import static com.devpath.common.security.AdminAuthorityService.GOVERNANCE_MANAGE;
+import static com.devpath.common.security.AdminAuthorityService.JOB_MANAGE;
+import static com.devpath.common.security.AdminAuthorityService.LEARNING_MANAGE;
+import static com.devpath.common.security.AdminAuthorityService.MODERATION_RESOLVE;
+import static com.devpath.common.security.AdminAuthorityService.NOTICE_WRITE;
+import static com.devpath.common.security.AdminAuthorityService.SUPER_ADMIN_AUTHORITY;
+
 import com.devpath.common.security.ApiAccessDeniedHandler;
 import com.devpath.common.security.ApiAuthenticationEntryPoint;
 import com.devpath.common.security.CustomOAuth2UserService;
@@ -50,6 +60,10 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/samples/**")
                     .permitAll()
+                    .requestMatchers("/api/media/hls/**")
+                    .permitAll()
+                    .requestMatchers("/uploads/courses/*/lesson-video/*_hls/**")
+                    .denyAll()
                     .requestMatchers(HttpMethod.GET, "/uploads/**")
                     .permitAll()
                     .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/reissue")
@@ -64,6 +78,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/roadmaps/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/home/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/notices/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/courses/**")
                     .permitAll()
@@ -84,8 +100,52 @@ public class SecurityConfig {
                     .requestMatchers(
                         HttpMethod.GET, "/api/portfolios/public/**", "/api/public/portfolios/**")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/admin/permissions/users/*")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, ACCOUNT_MANAGE)
+                    .requestMatchers(HttpMethod.PATCH, "/api/admin/permissions/users/*/role")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, ACCOUNT_MANAGE)
+                    .requestMatchers("/api/admin/permissions/**")
+                    .hasAuthority(SUPER_ADMIN_AUTHORITY)
+                    .requestMatchers("/api/admin/dashboard/**", "/api/admin/system/**")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, DASHBOARD_READ)
+                    .requestMatchers("/api/admin/accounts/**")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, ACCOUNT_MANAGE)
+                    .requestMatchers(
+                        "/api/admin/tags/**",
+                        "/api/admin/roadmaps/**",
+                        "/api/admin/nodes/**",
+                        "/api/admin/node-resources/**",
+                        "/api/admin/course-catalog/**",
+                        "/api/admin/roadmap-hub/**",
+                        "/api/admin/course-node-mappings/**",
+                        "/api/admin/courses/*/node-mapping",
+                        "/api/admin/system-policies/**",
+                        "/api/admin/streaming-policy/**")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, GOVERNANCE_MANAGE)
+                    .requestMatchers(
+                        "/api/admin/moderations/**",
+                        "/api/admin/courses/pending",
+                        "/api/admin/courses/review-history",
+                        "/api/admin/courses/*/review",
+                        "/api/admin/courses/*/approve",
+                        "/api/admin/courses/*/reject")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, MODERATION_RESOLVE)
+                    .requestMatchers("/api/admin/jobs/**", "/api/admin/companies/**")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, JOB_MANAGE)
+                    .requestMatchers(
+                        "/api/admin/learning-metrics/**",
+                        "/api/admin/learning-rules/**",
+                        "/api/admin/recommendation-settings/**",
+                        "/api/admin/experiments/**",
+                        "/api/admin/analytics/**",
+                        "/api/admin/market/**")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, LEARNING_MANAGE)
+                    .requestMatchers("/api/admin/notices/**")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, NOTICE_WRITE)
+                    .requestMatchers("/api/admin/refunds/**", "/api/admin/settlements/**")
+                    .hasAnyAuthority(SUPER_ADMIN_AUTHORITY, FINANCE_MANAGE)
                     .requestMatchers("/api/admin/**")
-                    .hasRole("ADMIN")
+                    .hasAuthority(SUPER_ADMIN_AUTHORITY)
                     .requestMatchers("/api/instructor/**", "/api/evaluation/instructor/**")
                     .hasRole("INSTRUCTOR")
                     .anyRequest()

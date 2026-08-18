@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LocalWorkspaceHubProjectSeedInitializer implements CommandLineRunner {
 
   private final WorkspaceHubProjectRepository workspaceHubProjectRepository;
+  private final LocalSeedSqlExecutor seedSqlExecutor;
 
   @Override
   @Transactional
@@ -57,73 +58,31 @@ public class LocalWorkspaceHubProjectSeedInitializer implements CommandLineRunne
   }
 
   private List<ProjectSeed> workspaceHubSeeds() {
-    return List.of(
-        new ProjectSeed(
-            "proj-squad-1",
-            "menu-1",
-            "squad",
-            "progress",
-            "/workspace-hub",
-            "배달비 절약 플랫폼",
-            "위치 기반 실시간 공동 구매 매칭 서비스 MVP 개발",
-            40,
-            null,
-            null,
-            null,
-            null,
-            "avatars",
-            "어제",
-            "A,B",
-            2,
-            null,
-            null,
-            null,
-            null,
-            1),
-        new ProjectSeed(
-            "proj-mentor-1",
-            "menu-2",
-            "mentoring",
-            "progress",
-            "/workspace-hub",
-            "대용량 트래픽 커머스",
-            "Spring Boot & Redis를 활용한 선착순 쿠폰 시스템 구현 실습",
-            20,
-            "공통 과제형",
-            "fas fa-puzzle-piece mr-1",
-            "Backend",
-            null,
-            "mentor",
-            null,
-            null,
-            null,
-            "Jonas",
-            "멘토 코드마스터 J",
-            "리뷰 대기중",
-            "fas fa-comment-dots mr-1",
-            2),
-        new ProjectSeed(
-            "proj-mentor-2",
-            "menu-3",
-            "mentoring",
-            "progress",
-            "/workspace-hub",
-            "React Native 습관 챌린지 앱",
-            "기획부터 앱스토어 런칭까지 한 사이클을 경험하는 실전 프로젝트",
-            50,
-            "팀 프로젝트형",
-            "fas fa-users mr-1",
-            "App",
-            "💻 Backend",
-            "mentor",
-            null,
-            null,
-            null,
-            "Mobile",
-            "멘토 1명, 팀원 4명",
-            "2주차 진행중",
-            null,
-            3));
+    return seedSqlExecutor.query(
+        "db/local/workspace-hub-project-seeds.sql",
+        (resultSet, rowNumber) ->
+            new ProjectSeed(
+                resultSet.getString("dom_id"),
+                resultSet.getString("menu_id"),
+                resultSet.getString("card_type"),
+                resultSet.getString("card_status"),
+                resultSet.getString("dashboard_url"),
+                resultSet.getString("title"),
+                resultSet.getString("description"),
+                resultSet.getInt("progress_percent"),
+                resultSet.getString("mentoring_mode_label"),
+                resultSet.getString("mentoring_mode_icon"),
+                resultSet.getString("category_label"),
+                resultSet.getString("role_label"),
+                resultSet.getString("footer_kind"),
+                resultSet.getString("footer_date_label"),
+                resultSet.getString("member_avatar_seeds"),
+                resultSet.getObject("extra_member_count", Integer.class),
+                resultSet.getString("footer_avatar_seed"),
+                resultSet.getString("footer_text"),
+                resultSet.getString("footer_meta_text"),
+                resultSet.getString("footer_meta_icon"),
+                resultSet.getInt("sort_order")));
   }
 
   private record ProjectSeed(

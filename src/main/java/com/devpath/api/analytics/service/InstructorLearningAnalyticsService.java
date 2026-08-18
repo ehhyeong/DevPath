@@ -21,7 +21,6 @@ import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.LessonRepository;
-import com.devpath.domain.learning.entity.Assignment;
 import com.devpath.domain.learning.entity.LessonProgress;
 import com.devpath.domain.learning.entity.Quiz;
 import com.devpath.domain.learning.entity.QuizAttempt;
@@ -61,6 +60,7 @@ public class InstructorLearningAnalyticsService {
   private final SubmissionRepository submissionRepository;
   private final QuizRepository quizRepository;
   private final QuizAttemptRepository quizAttemptRepository;
+  private final InstructorAnalyticsMetrics metrics;
 
   public InstructorAnalyticsOverviewResponse.Detail getOverview(Long instructorId) {
     validateInstructor(instructorId);
@@ -590,11 +590,7 @@ public class InstructorLearningAnalyticsService {
   }
 
   private double toScoreRate(QuizAttempt attempt) {
-    if (attempt.getMaxScore() == null || attempt.getMaxScore() <= 0) {
-      return 0.0;
-    }
-
-    return ((double) attempt.getScore() / (double) attempt.getMaxScore()) * 100.0;
+    return metrics.quizScoreRate(attempt, 2);
   }
 
   private List<InstructorAnalyticsDifficultyResponse.NodeItem> buildNodeDifficultyItems(
@@ -700,14 +696,7 @@ public class InstructorLearningAnalyticsService {
   }
 
   private double toAssignmentScoreRate(Submission submission) {
-    Assignment assignment = submission.getAssignment();
-    if (submission.getTotalScore() == null
-        || assignment.getTotalScore() == null
-        || assignment.getTotalScore() <= 0) {
-      return 0.0;
-    }
-
-    return ((double) submission.getTotalScore() / (double) assignment.getTotalScore()) * 100.0;
+    return metrics.assignmentScoreRate(submission, 2);
   }
 
   private String buildWeakPointSummary(InstructorAnalyticsDifficultyResponse.NodeItem item) {
@@ -747,28 +736,15 @@ public class InstructorLearningAnalyticsService {
   }
 
   private double averageInteger(Collection<Integer> values) {
-    List<Integer> filtered = values.stream().filter(value -> value != null).toList();
-    if (filtered.isEmpty()) {
-      return 0.0;
-    }
-
-    return round(filtered.stream().mapToInt(Integer::intValue).average().orElse(0.0));
+    return metrics.averageIntegers(values, 2);
   }
 
   private double averageDouble(Collection<Double> values) {
-    List<Double> filtered = values.stream().filter(value -> value != null).toList();
-    if (filtered.isEmpty()) {
-      return 0.0;
-    }
-
-    return round(filtered.stream().mapToDouble(Double::doubleValue).average().orElse(0.0));
+    return metrics.averageDoubles(values, 2);
   }
 
   private double toPercent(long numerator, long denominator) {
-    if (denominator <= 0L) {
-      return 0.0;
-    }
-    return round(((double) numerator / (double) denominator) * 100.0);
+    return metrics.percent(numerator, denominator, 2);
   }
 
   private LocalDateTime maxDateTime(Collection<LocalDateTime> values) {
@@ -789,6 +765,6 @@ public class InstructorLearningAnalyticsService {
   }
 
   private double round(double value) {
-    return Math.round(value * 100.0) / 100.0;
+    return metrics.round(value, 2);
   }
 }

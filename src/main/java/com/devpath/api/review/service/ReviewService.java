@@ -9,6 +9,10 @@ import com.devpath.api.review.entity.Review;
 import com.devpath.api.review.repository.ReviewRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.course.entity.Course;
+import com.devpath.domain.course.entity.CourseEnrollment;
+import com.devpath.domain.course.entity.EnrollmentStatus;
+import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseRepository;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +30,24 @@ public class ReviewService {
   private final ReviewRepository reviewRepository;
   private final ReviewReplyRepository reviewReplyRepository;
   private final CourseRepository courseRepository;
+  private final CourseEnrollmentRepository courseEnrollmentRepository;
   private final InstructorNotificationService instructorNotificationService;
 
   public ReviewResponse createReview(ReviewRequest request, Long learnerId) {
+    Course course =
+        courseRepository
+            .findById(request.getCourseId())
+            .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+    CourseEnrollment enrollment =
+        courseEnrollmentRepository
+            .findByUser_IdAndCourse_CourseId(learnerId, request.getCourseId())
+            .orElseThrow(
+                () -> new CustomException(ErrorCode.FORBIDDEN, "수강한 강의에만 리뷰를 작성할 수 있습니다."));
+    if (enrollment.getStatus() != EnrollmentStatus.ACTIVE
+        && enrollment.getStatus() != EnrollmentStatus.COMPLETED) {
+      throw new CustomException(ErrorCode.FORBIDDEN, "수강한 강의에만 리뷰를 작성할 수 있습니다.");
+    }
+
     if (reviewRepository.existsByCourseIdAndLearnerIdAndIsDeletedFalse(
         request.getCourseId(), learnerId)) {
       throw new CustomException(ErrorCode.DUPLICATE_RESOURCE);
@@ -44,12 +63,7 @@ public class ReviewService {
 
     Review saved = reviewRepository.save(review);
 
-    courseRepository
-        .findById(request.getCourseId())
-        .ifPresent(
-            course ->
-                instructorNotificationService.notifyReview(
-                    course.getInstructorId(), course.getTitle()));
+    instructorNotificationService.notifyReview(course.getInstructorId(), course.getTitle());
 
     return ReviewResponse.from(saved, null);
   }

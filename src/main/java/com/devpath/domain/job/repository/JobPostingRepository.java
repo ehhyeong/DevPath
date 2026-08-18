@@ -19,11 +19,20 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
   List<JobPosting> findAllByIsDeletedFalseOrderByCreatedAtDesc();
 
   @EntityGraph(attributePaths = "company")
+  List<JobPosting> findAllByOrderByCreatedAtDesc();
+
+  @EntityGraph(attributePaths = "company")
   Optional<JobPosting> findByIdAndIsDeletedFalse(Long id);
 
   long countByStatusAndIsDeletedFalse(JobPostingStatus status);
 
   long countByIsDeletedFalse();
+
+  long countByCompanyIdAndIsDeletedFalse(Long companyId);
+
+  @EntityGraph(attributePaths = "company")
+  Optional<JobPosting> findByIdAndIsDeletedFalseAndStatusAndCompanyIsDeletedFalse(
+      Long id, JobPostingStatus status);
 
   @Query(
       """

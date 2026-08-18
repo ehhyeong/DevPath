@@ -29,9 +29,7 @@ public class JobSkillSuggestionDto {
   @Schema(description = "성장공고 보완 스킬 로드맵 연동 응답")
   public static class Response {
 
-    @Schema(
-        description = "처리 모드: ADD(기존 로드맵에 노드 추가 제안) | CREATED(신규 기술 로드맵 생성)",
-        example = "ADD")
+    @Schema(description = "처리 모드: ADD(기존 로드맵에 노드 추가 제안) | CREATED(신규 기술 로드맵 생성)", example = "ADD")
     private String mode;
 
     @Schema(description = "ADD 모드일 때 수락/무시에 사용할 추천 변경 ID", example = "12")

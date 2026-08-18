@@ -224,7 +224,8 @@ public class MyRoadmapService {
     myRoadmapRepository.delete(myRoadmap);
   }
 
-  // 빌더 flat payload(sortOrder + branchGroup)를 커스텀 노드로 저장하고, 레인 필드(anchor/laneKey/kind/order)를 도출해 배치한다.
+  // 빌더 flat payload(sortOrder + branchGroup)를 커스텀 노드로 저장하고, 레인 필드(anchor/laneKey/kind/order)를 도출해
+  // 배치한다.
   private void buildAndSaveCustomNodes(
       CustomRoadmap customRoadmap,
       List<MyRoadmapSaveRequest.ModuleItem> modules,

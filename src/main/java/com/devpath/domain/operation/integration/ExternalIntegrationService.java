@@ -128,7 +128,8 @@ public class ExternalIntegrationService {
             .findByIdAndIsDeletedFalse(workspaceId)
             .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_NOT_FOUND));
 
-    boolean isMember = workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId);
+    boolean isMember =
+        workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId);
     boolean isOwner = workspace.getOwnerId().equals(userId);
     if (!isMember && !isOwner) {
       throw new CustomException(ErrorCode.WORKSPACE_FORBIDDEN);

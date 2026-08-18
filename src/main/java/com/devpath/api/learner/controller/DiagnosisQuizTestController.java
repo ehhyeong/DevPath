@@ -29,9 +29,7 @@ public class DiagnosisQuizTestController {
   private final RecommendationStatusService recommendationStatusService;
 
   @PostMapping("/{roadmapId}/diagnosis/test-run")
-  @Operation(
-      summary = "[TEST] 즉시 분기 추천 생성(비동기)",
-      description = "local/test 프로필 전용 테스트 API입니다")
+  @Operation(summary = "[TEST] 즉시 분기 추천 생성(비동기)", description = "local/test 프로필 전용 테스트 API입니다")
   public ResponseEntity<ApiResponse<Void>> testRunDiagnosis(
       @PathVariable Long roadmapId,
       @RequestParam Long originalNodeId,

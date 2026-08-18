@@ -1,5 +1,7 @@
 package com.devpath.api.admin.dto.account;
 
+import com.devpath.domain.user.entity.AccountStatus;
+import com.devpath.domain.user.entity.InstructorStatus;
 import com.devpath.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
@@ -26,8 +28,14 @@ public class AccountDetailResponse {
   @Schema(
       description = "계정 상태",
       example = "ACTIVE",
-      allowableValues = {"ACTIVE", "INACTIVE"})
+      allowableValues = {"ACTIVE", "RESTRICTED", "DEACTIVATED", "WITHDRAWN"})
   private AccountStatus accountStatus;
+
+  @Schema(description = "강사 승인 상태", example = "PENDING")
+  private InstructorStatus instructorStatus;
+
+  @Schema(description = "강사 등급", example = "STANDARD")
+  private String instructorGrade;
 
   @Schema(description = "가입 시각")
   private LocalDateTime createdAt;
@@ -35,15 +43,23 @@ public class AccountDetailResponse {
   @Schema(description = "마지막 로그인 시각")
   private LocalDateTime lastLoginAt;
 
-  // 현재는 users.is_active 기반으로 응답 enum을 구성한다.
   public static AccountDetailResponse from(User user) {
+    AccountStatus accountStatus = user.getAccountStatus();
+    if (accountStatus == null) {
+      accountStatus =
+          Boolean.TRUE.equals(user.getIsActive())
+              ? AccountStatus.ACTIVE
+              : AccountStatus.DEACTIVATED;
+    }
+
     return AccountDetailResponse.builder()
         .userId(user.getId())
         .email(user.getEmail())
         .nickname(user.getName())
         .role(user.getRole().name())
-        .accountStatus(
-            Boolean.TRUE.equals(user.getIsActive()) ? AccountStatus.ACTIVE : AccountStatus.INACTIVE)
+        .accountStatus(accountStatus)
+        .instructorStatus(user.getInstructorStatus())
+        .instructorGrade(user.getInstructorGrade())
         .createdAt(user.getCreatedAt())
         .lastLoginAt(user.getLastLoginAt())
         .build();

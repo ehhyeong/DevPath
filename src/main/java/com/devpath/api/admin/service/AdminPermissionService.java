@@ -1,5 +1,6 @@
 package com.devpath.api.admin.service;
 
+import com.devpath.api.admin.dto.permission.AdminRoleAssignmentRequest;
 import com.devpath.api.admin.dto.permission.InstructorGradeUpdateRequest;
 import com.devpath.api.admin.dto.permission.RoleCreateRequest;
 import com.devpath.api.admin.dto.permission.RoleResponse;
@@ -10,8 +11,11 @@ import com.devpath.api.admin.repository.AdminPermissionRepository;
 import com.devpath.api.admin.repository.AdminRoleRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.common.security.AdminAuthorityService;
+import com.devpath.common.security.TokenRedisService;
 import com.devpath.domain.user.entity.AccountStatus;
 import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.entity.UserRole;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +30,7 @@ public class AdminPermissionService {
   private final AdminRoleRepository adminRoleRepository;
   private final AdminPermissionRepository adminPermissionRepository;
   private final UserRepository userRepository;
+  private final TokenRedisService tokenRedisService;
 
   public RoleResponse createRole(RoleCreateRequest request) {
     validateCreateRoleName(request.getRoleName());
@@ -75,21 +80,72 @@ public class AdminPermissionService {
             .findById(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
 
+    if (user.getAdminRoleId() == null) {
+      return UserPermissionResponse.from(user);
+    }
+    AdminRole adminRole =
+        adminRoleRepository
+            .findByIdAndIsDeletedFalse(user.getAdminRoleId())
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    return UserPermissionResponse.from(
+        user, adminRole.getRoleName(), getPermissionCodes(adminRole.getId()));
+  }
+
+  public UserPermissionResponse assignAdminRole(Long userId, AdminRoleAssignmentRequest request) {
+    User user = getUser(userId);
+    if (user.getRole() != UserRole.ROLE_ADMIN) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+    AdminRole adminRole =
+        adminRoleRepository
+            .findByIdAndIsDeletedFalse(request.getRoleId())
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    user.assignAdminRole(adminRole.getId());
+    tokenRedisService.deleteRefreshToken(userId);
+    return UserPermissionResponse.from(
+        user, adminRole.getRoleName(), getPermissionCodes(adminRole.getId()));
+  }
+
+  public UserPermissionResponse clearAdminRole(Long userId) {
+    User user = getUser(userId);
+    if (user.getRole() != UserRole.ROLE_ADMIN) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
+    user.clearAdminRole();
+    tokenRedisService.deleteRefreshToken(userId);
     return UserPermissionResponse.from(user);
   }
 
+  public void deleteRole(Long roleId) {
+    AdminRole adminRole =
+        adminRoleRepository
+            .findByIdAndIsDeletedFalse(roleId)
+            .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
+    adminPermissionRepository
+        .findByAdminRoleIdAndIsDeletedFalse(roleId)
+        .forEach(AdminPermission::delete);
+    userRepository
+        .findAllByAdminRoleId(roleId)
+        .forEach(
+            user -> {
+              user.clearAdminRole();
+              tokenRedisService.deleteRefreshToken(user.getId());
+            });
+    adminRole.delete();
+  }
+
   public void changeInstructorGrade(Long userId, InstructorGradeUpdateRequest request) {
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
+    User user = getUser(userId);
 
     // 탈퇴/비활성 계정의 강사 등급은 운영상 변경하지 않는다.
     if (user.getAccountStatus() != AccountStatus.ACTIVE) {
       throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
     }
+    if (user.getRole() != UserRole.ROLE_INSTRUCTOR) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
 
-    user.changeInstructorGrade(request.getGrade());
+    user.changeInstructorGrade(request.getGrade().trim().toUpperCase());
   }
 
   // role에 연결된 permission row를 일괄 저장한다.
@@ -104,7 +160,7 @@ public class AdminPermissionService {
     }
   }
 
-  // 권한 코드는 공백 제거, 중복 제거 후 저장한다.
+  // 인가 규칙에 연결되지 않은 문자열 권한이 저장되지 않도록 고정 목록을 검증한다.
   private List<String> normalizePermissionCodes(List<String> permissionCodes) {
     if (permissionCodes == null) {
       return List.of();
@@ -112,8 +168,14 @@ public class AdminPermissionService {
 
     return permissionCodes.stream()
         .filter(code -> code != null && !code.isBlank())
-        .map(String::trim)
+        .map(code -> code.trim().toUpperCase())
         .distinct()
+        .peek(
+            code -> {
+              if (!AdminAuthorityService.isSupported(code)) {
+                throw new CustomException(ErrorCode.INVALID_INPUT, "지원하지 않는 관리자 권한 코드입니다: " + code);
+              }
+            })
         .toList();
   }
 
@@ -144,5 +206,11 @@ public class AdminPermissionService {
     return adminPermissionRepository.findByAdminRoleIdAndIsDeletedFalse(roleId).stream()
         .map(AdminPermission::getPermissionCode)
         .toList();
+  }
+
+  private User getUser(Long userId) {
+    return userRepository
+        .findById(userId)
+        .orElseThrow(() -> new CustomException(ErrorCode.ACCOUNT_NOT_FOUND));
   }
 }

@@ -223,7 +223,9 @@ public class InstructorCourseDto {
   @Schema(description = "강의 에셋 업로드 응답 DTO")
   public static class UploadedAssetResponse {
 
-    @Schema(description = "브라우저에서 접근 가능한 에셋 URL", example = "/uploads/courses/1/thumbnail/course.png")
+    @Schema(
+        description = "브라우저에서 접근 가능한 에셋 URL",
+        example = "/uploads/courses/1/thumbnail/course.png")
     private String url;
 
     @Schema(description = "저장소 내부 에셋 키", example = "courses/1/thumbnail/course.png")
@@ -240,5 +242,14 @@ public class InstructorCourseDto {
 
     @Schema(description = "파일 크기")
     private long fileSize;
+
+    @Schema(description = "변환 전 원본 파일 URL")
+    private String originalUrl;
+
+    @Schema(description = "변환 전 원본 저장소 키")
+    private String originalAssetKey;
+
+    @Schema(description = "HLS 변환 적용 여부")
+    private boolean transcoded;
   }
 }

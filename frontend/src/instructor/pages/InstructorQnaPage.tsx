@@ -1,30 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+
+
+
 import MarkdownContent from '../../components/MarkdownContent'
 import UserAvatar from '../../components/UserAvatar'
-import {
-  buildInstructorCourseOptions,
-  normalizeInstructorCourseTitle,
-} from '../../instructor/course-display'
-import {
-  readInstructorChannelCustomization,
-  sanitizeInstructorProfileImageUrl,
-} from '../../instructor-channel-customization'
-import { instructorCourseApi, instructorQnaApi, userApi } from '../../lib/api'
+
+
 import type { AuthSession } from '../../types/auth'
-import type {
-  InstructorCourseListItem,
-  InstructorQnaInboxItem,
-  InstructorQnaTemplate,
-  InstructorQnaTimeline,
-} from '../../types/instructor'
-import type { UserProfile } from '../../types/learner'
+import type { InstructorQnaInboxItem } from '../../types/instructor'
+
 
 type QuestionStatusFilter = 'pending' | 'answered'
-type MarkdownAction = 'heading' | 'bold' | 'italic' | 'link' | 'code' | 'image'
-type ToastState = {
-  message: string
-  tone: 'info' | 'success'
-} | null
+
 
 const recommendedQuickTemplates = [
   {
@@ -50,81 +36,6 @@ const recommendedQuickTemplates = [
   },
 ]
 
-const legacyTextMap: Record<string, string> = {
-  'Spring Boot Intro': '스프링 부트 입문',
-  'JPA Practical Design': 'JPA 실전 설계',
-  'Learner Kim': '김수강',
-  'Learner Park': '박수강',
-  'Learner Lee': '이수강',
-  'Instructor Hong': '홍멘토',
-  'Hong Backend Lab': '홍 백엔드 연구소',
-  'BeanCreationException during startup': 'BeanCreationException이 발생할 때 어디부터 확인해야 하나요?',
-  'Spring Boot startup fails with BeanCreationException. Which bean should I inspect first and how do I narrow the cause?':
-    '스프링 부트를 실행하면 BeanCreationException이 발생합니다. 어떤 빈부터 확인해야 하고, 원인을 빠르게 좁히는 순서가 궁금합니다.',
-  'How to avoid JPA infinite recursion': 'JPA 무한 참조를 안전하게 끊는 방법이 궁금합니다',
-  'My entity graph loops when I serialize it to JSON. What is the safest way to stop recursive references?':
-    '엔티티를 JSON으로 직렬화하면 양방향 연관관계 때문에 순환 참조가 발생합니다. 가장 안전하게 막는 방법이 무엇인가요?',
-  'Start from the root cause in the stack trace, then check configuration classes, component scanning, and constructor dependencies.':
-    '스택 트레이스에서 가장 아래쪽 원인 메시지부터 확인한 뒤, 설정 클래스, 컴포넌트 스캔 범위, 생성자 의존성을 순서대로 점검해보세요.',
-  'Prefer response DTOs for API output, and use reference annotations only when you must serialize the entity graph directly.':
-    'API 응답은 DTO로 분리하고, 꼭 엔티티를 직접 직렬화해야 할 때만 참조 관련 어노테이션을 제한적으로 사용하는 방식이 가장 안전합니다.',
-  'Debugging startup errors': '시작 오류 점검 순서',
-  'Check stack trace order, configuration classes, environment variables, and recent dependency changes first.':
-    '스택 트레이스 순서, 설정 클래스, 환경 변수, 최근 변경한 의존성을 먼저 점검해보세요.',
-  'N+1 review checklist': '직렬화 및 연관관계 점검 체크리스트',
-  'Compare repository query count, fetch strategy, and entity graph usage before changing domain structure.':
-    '도메인 구조를 바꾸기 전에 쿼리 수, fetch 전략, 엔티티 그래프 사용 여부를 먼저 비교해보세요.',
-}
-
-function normalizeLegacyText(value: string | null | undefined) {
-  if (!value) {
-    return value ?? null
-  }
-
-  return legacyTextMap[value] ?? value
-}
-
-function normalizeQuestion(question: InstructorQnaInboxItem): InstructorQnaInboxItem {
-  return {
-    ...question,
-    courseTitle: normalizeInstructorCourseTitle(
-      normalizeLegacyText(question.courseTitle) ?? question.courseTitle,
-    ),
-    lessonTitle: normalizeLegacyText(question.lessonTitle),
-    learnerName: normalizeLegacyText(question.learnerName),
-    title: normalizeLegacyText(question.title) ?? question.title,
-    content: normalizeLegacyText(question.content) ?? question.content,
-  }
-}
-
-function normalizeTemplate(template: InstructorQnaTemplate): InstructorQnaTemplate {
-  return {
-    ...template,
-    title: normalizeLegacyText(template.title) ?? template.title,
-    content: normalizeLegacyText(template.content) ?? template.content,
-  }
-}
-
-function normalizeTimeline(timeline: InstructorQnaTimeline): InstructorQnaTimeline {
-  return {
-    ...timeline,
-    question: normalizeQuestion(timeline.question),
-    publishedAnswer: timeline.publishedAnswer
-      ? {
-          ...timeline.publishedAnswer,
-          authorName: normalizeLegacyText(timeline.publishedAnswer.authorName) ?? timeline.publishedAnswer.authorName,
-          content: normalizeLegacyText(timeline.publishedAnswer.content) ?? timeline.publishedAnswer.content,
-        }
-      : null,
-    draft: timeline.draft
-      ? {
-          ...timeline.draft,
-          draftContent: normalizeLegacyText(timeline.draft.draftContent) ?? timeline.draft.draftContent,
-        }
-      : null,
-    lectureTitle: normalizeLegacyText(timeline.lectureTitle),
-  }
-}
 
 function formatRelativeTime(value: string | null) {
   if (!value) return '방금 전'
@@ -136,18 +47,6 @@ function formatRelativeTime(value: string | null) {
   return `${Math.floor(diffMinutes / 1440)}일 전`
 }
 
-function buildQuestionSearchText(question: InstructorQnaInboxItem) {
-  return [
-    question.title,
-    question.content,
-    question.learnerName,
-    question.courseTitle,
-    question.lectureTimestamp,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-}
 
 function buildLearnerAvatarSeed(question: InstructorQnaInboxItem) {
   return (question.learnerName ?? question.learnerAvatarSeed ?? String(question.questionId)).replace(/\s+/g, '-')
@@ -163,30 +62,65 @@ function buildStatusLabel(status: string) {
   return status === 'UNANSWERED' ? '미답변' : '답변 완료'
 }
 
-function parseLectureTimestampSeconds(value: string | null | undefined) {
-  if (!value) {
-    return null
-  }
 
-  const parts = value
-    .split(':')
-    .map((part) => Number(part.trim()))
-    .filter((part) => Number.isFinite(part) && part >= 0)
-
-  if (parts.length === 2) {
-    return parts[0] * 60 + parts[1]
-  }
-
-  if (parts.length === 3) {
-    return parts[0] * 3600 + parts[1] * 60 + parts[2]
-  }
-
-  return null
-}
-
-function buildReturnToHref() {
-  return `${window.location.pathname}${window.location.search}${window.location.hash}`
-}
+const INSTRUCTOR_QNA_UI_LOCK_CLASSES = [
+  "h-[calc(100vh-64px)]! min-h-[calc(100vh-64px)]! overflow-hidden! bg-[#f3f4f6]! text-[#1f2937]! font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]!",
+  '[&_.instructor-qna-main]:h-[calc(100vh-64px)]! [&_.instructor-qna-main]:min-h-[calc(100vh-64px)]! [&_.instructor-qna-main]:overflow-hidden! [&_.instructor-qna-main]:bg-[#f3f4f6]!',
+  '[&_.instructor-qna-inbox]:z-[10]! [&_.instructor-qna-inbox]:border-r-[1px]! [&_.instructor-qna-inbox]:border-r-[#e5e7eb]! [&_.instructor-qna-inbox]:bg-[#ffffff]! [&_.instructor-qna-inbox]:[box-shadow:4px_0_24px_rgba(0,0,0,0.02)]!',
+  '[&_.instructor-qna-inbox>div:first-child]:border-b-[1px]! [&_.instructor-qna-inbox>div:first-child]:border-b-[#f3f4f6]! [&_.instructor-qna-inbox>div:first-child]:p-[24px]!',
+  '[&_.instructor-qna-inbox_h2]:text-[#111827]! [&_.instructor-qna-inbox_h2]:text-[20px]! [&_.instructor-qna-inbox_h2]:leading-[28px]! [&_.instructor-qna-inbox_h2]:font-[800]! [&_.instructor-qna-inbox_h2]:tracking-[0]!',
+  '[&_.instructor-qna-inbox_input]:h-[38px]! [&_.instructor-qna-inbox_input]:rounded-[12px]! [&_.instructor-qna-inbox_input]:border-[1px]! [&_.instructor-qna-inbox_input]:border-solid! [&_.instructor-qna-inbox_input]:border-[#e5e7eb]! [&_.instructor-qna-inbox_input]:bg-[#f9fafb]! [&_.instructor-qna-inbox_input]:pt-[10px]! [&_.instructor-qna-inbox_input]:pr-[16px]! [&_.instructor-qna-inbox_input]:pb-[10px]! [&_.instructor-qna-inbox_input]:pl-[40px]! [&_.instructor-qna-inbox_input]:text-[#374151]! [&_.instructor-qna-inbox_input]:text-[12px]! [&_.instructor-qna-inbox_input]:leading-[16px]! [&_.instructor-qna-inbox_input]:font-[700]!',
+  '[&_.instructor-qna-inbox_select]:h-[38px]! [&_.instructor-qna-inbox_select]:rounded-[12px]! [&_.instructor-qna-inbox_select]:border-[1px]! [&_.instructor-qna-inbox_select]:border-solid! [&_.instructor-qna-inbox_select]:border-[#e5e7eb]! [&_.instructor-qna-inbox_select]:bg-[#f9fafb]! [&_.instructor-qna-inbox_select]:px-[12px]! [&_.instructor-qna-inbox_select]:py-[10px]! [&_.instructor-qna-inbox_select]:text-[#374151]! [&_.instructor-qna-inbox_select]:text-[12px]! [&_.instructor-qna-inbox_select]:leading-[16px]! [&_.instructor-qna-inbox_select]:font-[700]!',
+  '[&_.instructor-qna-filter-tabs]:pt-[8px]! [&_.instructor-qna-filter-tabs_button]:h-[34px]! [&_.instructor-qna-filter-tabs_button]:rounded-[12px]! [&_.instructor-qna-filter-tabs_button]:text-[12px]! [&_.instructor-qna-filter-tabs_button]:leading-[16px]! [&_.instructor-qna-filter-tabs_button]:font-[700]!',
+  '[&_.instructor-qna-list]:max-h-[calc(100vh-64px-176px)]! [&_.instructor-qna-list]:bg-[#f8f9fa]! [&_.instructor-qna-list]:p-[16px]!',
+  '[&_.instructor-qna-item]:mb-[12px]! [&_.instructor-qna-item]:rounded-[12px]! [&_.instructor-qna-item]:border-[1px]! [&_.instructor-qna-item]:border-solid! [&_.instructor-qna-item]:border-[#e5e7eb]! [&_.instructor-qna-item]:border-l-[4px]! [&_.instructor-qna-item]:border-l-transparent! [&_.instructor-qna-item]:bg-[#ffffff]! [&_.instructor-qna-item]:p-[16px]! [&_.instructor-qna-item]:[box-shadow:none]! [&_.instructor-qna-item]:[transition:transform_0.2s_ease,box-shadow_0.2s_ease,border-color_0.2s_ease]!',
+  '[&_.instructor-qna-item:hover]:[transform:translateY(-2px)]! [&_.instructor-qna-item:hover]:border-[#d1d5db]! [&_.instructor-qna-item:hover]:[box-shadow:0_6px_16px_-4px_rgba(0,0,0,0.06)]!',
+  '[&_.instructor-qna-item.is-active]:border-[#00c471]! [&_.instructor-qna-item.is-active]:bg-[#f0fdf4]! [&_.instructor-qna-item.is-active]:[box-shadow:0_4px_12px_rgba(0,196,113,0.1)]!',
+  '[&_.instructor-qna-item_img]:h-[24px]! [&_.instructor-qna-item_img]:w-[24px]!',
+  '[&_.instructor-qna-item_h3]:mb-[6px]! [&_.instructor-qna-item_h3]:text-[#111827]! [&_.instructor-qna-item_h3]:text-[14px]! [&_.instructor-qna-item_h3]:leading-[20px]! [&_.instructor-qna-item_h3]:font-[800]!',
+  '[&_.instructor-qna-item_p]:mb-[12px]! [&_.instructor-qna-item_p]:text-[#6b7280]! [&_.instructor-qna-item_p]:text-[12px]! [&_.instructor-qna-item_p]:leading-[19px]! [&_.instructor-qna-item_span]:tracking-[0]!',
+  '[&_.instructor-qna-detail]:bg-[#f8f9fa]!',
+  '[&_.instructor-qna-context-bar]:z-[10]! [&_.instructor-qna-context-bar]:border-b-[1px]! [&_.instructor-qna-context-bar]:border-b-[#e5e7eb]! [&_.instructor-qna-context-bar]:bg-[#ffffff]! [&_.instructor-qna-context-bar]:px-[32px]! [&_.instructor-qna-context-bar]:py-[16px]! [&_.instructor-qna-context-bar]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!',
+  '[&_.instructor-qna-context-bar_span]:min-h-[30px]! [&_.instructor-qna-context-bar_span]:rounded-[8px]! [&_.instructor-qna-context-bar_span]:px-[12px]! [&_.instructor-qna-context-bar_span]:py-[6px]! [&_.instructor-qna-context-bar_span]:text-[12px]! [&_.instructor-qna-context-bar_span]:leading-[16px]! [&_.instructor-qna-context-bar_span]:font-[700]!',
+  '[&_.instructor-qna-context-bar_button]:min-h-[30px]! [&_.instructor-qna-context-bar_button]:rounded-[8px]! [&_.instructor-qna-context-bar_button]:px-[12px]! [&_.instructor-qna-context-bar_button]:py-[6px]! [&_.instructor-qna-context-bar_button]:text-[12px]! [&_.instructor-qna-context-bar_button]:leading-[16px]! [&_.instructor-qna-context-bar_button]:font-[700]!',
+  '[&_.instructor-qna-context-bar>button]:h-[30px]! [&_.instructor-qna-context-bar>button]:w-auto! [&_.instructor-qna-context-bar>button]:min-h-[30px]! [&_.instructor-qna-context-bar>button]:gap-[6px]! [&_.instructor-qna-context-bar>button]:whitespace-nowrap! [&_.instructor-qna-context-bar>button]:[box-shadow:0_1px_2px_rgba(15,23,42,0.06)]!',
+  '[&_.instructor-qna-workspace]:bg-[#f8f9fa]! [&_.instructor-qna-detail-scroll]:p-[32px]!',
+  '[&_.instructor-qna-question-card]:rounded-[16px]! [&_.instructor-qna-question-card]:border-[1px]! [&_.instructor-qna-question-card]:border-solid! [&_.instructor-qna-question-card]:border-[#e5e7eb]! [&_.instructor-qna-question-card]:bg-[#ffffff]! [&_.instructor-qna-question-card]:p-[32px]! [&_.instructor-qna-question-card]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!',
+  '[&_.instructor-qna-answer-card]:rounded-[16px]! [&_.instructor-qna-answer-card]:border-[1px]! [&_.instructor-qna-answer-card]:border-solid! [&_.instructor-qna-answer-card]:border-[#bbf7d0]! [&_.instructor-qna-answer-card]:bg-[#ffffff]! [&_.instructor-qna-answer-card]:p-[32px]! [&_.instructor-qna-answer-card]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!',
+  '[&_.instructor-qna-question-card_h3]:mb-[16px]! [&_.instructor-qna-question-card_h3]:text-[#111827]! [&_.instructor-qna-question-card_h3]:text-[20px]! [&_.instructor-qna-question-card_h3]:leading-[28px]! [&_.instructor-qna-question-card_h3]:font-[900]! [&_.instructor-qna-question-card_img]:h-[40px]! [&_.instructor-qna-question-card_img]:w-[40px]!',
+  '[&_.instructor-qna-editor]:mt-[24px]! [&_.instructor-qna-editor]:rounded-[16px]! [&_.instructor-qna-editor]:border-[1px]! [&_.instructor-qna-editor]:border-solid! [&_.instructor-qna-editor]:border-[#e5e7eb]! [&_.instructor-qna-editor]:bg-[#ffffff]! [&_.instructor-qna-editor]:[box-shadow:0_1px_2px_rgba(15,23,42,0.04)]!',
+  '[&_.instructor-qna-editor:focus-within]:border-[#00c471]! [&_.instructor-qna-editor:focus-within]:[box-shadow:0_0_0_3px_rgba(0,196,113,0.15)]!',
+  '[&_.instructor-qna-editor>div:first-child]:rounded-t-[16px]! [&_.instructor-qna-editor>div:first-child]:border-b-[1px]! [&_.instructor-qna-editor>div:first-child]:border-b-[#e5e7eb]! [&_.instructor-qna-editor>div:first-child]:bg-[#f9fafb]! [&_.instructor-qna-editor>div:first-child]:px-[16px]! [&_.instructor-qna-editor>div:first-child]:py-[12px]!',
+  '[&_.instructor-qna-editor>div:first-child_button]:h-[28px]! [&_.instructor-qna-editor>div:first-child_button]:w-[28px]! [&_.instructor-qna-editor>div:first-child_button]:rounded-[6px]! [&_.instructor-qna-editor>div:first-child_button]:text-[14px]!',
+  '[&_.instructor-qna-editor>div:first-child>div:last-child_span]:flex-[0_0_auto]! [&_.instructor-qna-editor>div:first-child>div:last-child_span]:whitespace-nowrap! [&_.instructor-qna-editor>div:first-child>div:last-child_span]:text-[11px]! [&_.instructor-qna-editor>div:first-child>div:last-child_span]:leading-[16px]! [&_.instructor-qna-editor>div:first-child>div:last-child_span]:font-[700]!',
+  '[&_.instructor-qna-editor>div:first-child>div:last-child_button]:h-[30px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:w-auto! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:min-w-0! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:gap-[6px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:whitespace-nowrap! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:rounded-[8px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:border-[1px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:border-solid! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:border-[#e5e7eb]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:bg-[#ffffff]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:px-[12px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:py-[6px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:text-[#374151]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:text-[12px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:leading-[16px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:font-[800]! [&_.instructor-qna-editor>div:first-child>div:last-child_button]:[box-shadow:0_1px_2px_rgba(15,23,42,0.06)]!',
+  '[&_.instructor-qna-editor>div:first-child>div:last-child_button_i]:text-[12px]! [&_.instructor-qna-editor>div:first-child>div:last-child_button_i]:leading-none!',
+  '[&_.instructor-qna-editor_textarea]:h-[224px]! [&_.instructor-qna-editor_textarea]:p-[24px]! [&_.instructor-qna-editor_textarea]:text-[#1f2937]! [&_.instructor-qna-editor_textarea]:text-[14px]! [&_.instructor-qna-editor_textarea]:leading-[22px]!',
+  '[&_.instructor-qna-editor>div:last-child]:border-t-[1px]! [&_.instructor-qna-editor>div:last-child]:border-t-[#f3f4f6]! [&_.instructor-qna-editor>div:last-child]:p-[16px]!',
+  '[&_.instructor-qna-editor>div:last-child_button]:h-[40px]! [&_.instructor-qna-editor>div:last-child_button]:rounded-[12px]! [&_.instructor-qna-editor>div:last-child_button]:text-[12px]! [&_.instructor-qna-editor>div:last-child_button]:leading-[16px]! [&_.instructor-qna-editor>div:last-child_button]:font-[800]!',
+  '[&_.instructor-qna-editor>div:last-child_button:first-child]:h-[38px]! [&_.instructor-qna-editor>div:last-child_button:first-child]:bg-[#f3f4f6]! [&_.instructor-qna-editor>div:last-child_button:first-child]:px-[20px]! [&_.instructor-qna-editor>div:last-child_button:first-child]:py-[10px]! [&_.instructor-qna-editor>div:last-child_button:first-child]:text-[#4b5563]!',
+  '[&_.instructor-qna-editor>div:last-child_button:last-child]:h-[38px]! [&_.instructor-qna-editor>div:last-child_button:last-child]:gap-[8px]! [&_.instructor-qna-editor>div:last-child_button:last-child]:px-[32px]! [&_.instructor-qna-editor>div:last-child_button:last-child]:py-[10px]!',
+  '[&_.instructor-qna-answer-card]:relative! [&_.instructor-qna-answer-card]:overflow-hidden! [&_.instructor-qna-answer-card::before]:absolute! [&_.instructor-qna-answer-card::before]:top-0! [&_.instructor-qna-answer-card::before]:left-0! [&_.instructor-qna-answer-card::before]:h-full! [&_.instructor-qna-answer-card::before]:w-[4px]! [&_.instructor-qna-answer-card::before]:bg-[#00c471]! [&_.instructor-qna-answer-card::before]:content-[\'\']!',
+  '[&_.instructor-qna-answer-card_button]:h-[30px]! [&_.instructor-qna-answer-card_button]:w-auto! [&_.instructor-qna-answer-card_button]:min-h-[30px]! [&_.instructor-qna-answer-card_button]:whitespace-nowrap! [&_.instructor-qna-answer-card_button]:rounded-[8px]! [&_.instructor-qna-answer-card_button]:border-[1px]! [&_.instructor-qna-answer-card_button]:border-solid! [&_.instructor-qna-answer-card_button]:border-[#e5e7eb]! [&_.instructor-qna-answer-card_button]:bg-[#f9fafb]! [&_.instructor-qna-answer-card_button]:px-[12px]! [&_.instructor-qna-answer-card_button]:py-[6px]! [&_.instructor-qna-answer-card_button]:text-[#6b7280]! [&_.instructor-qna-answer-card_button]:text-[12px]! [&_.instructor-qna-answer-card_button]:leading-[16px]! [&_.instructor-qna-answer-card_button]:font-[700]!',
+  '[&_.instructor-qna-tools]:z-[10]! [&_.instructor-qna-tools]:flex! [&_.instructor-qna-tools]:h-auto! [&_.instructor-qna-tools]:min-h-0! [&_.instructor-qna-tools]:w-[320px]! [&_.instructor-qna-tools]:flex-[0_0_320px]! [&_.instructor-qna-tools]:flex-col! [&_.instructor-qna-tools]:border-l-[1px]! [&_.instructor-qna-tools]:border-l-[#e5e7eb]! [&_.instructor-qna-tools]:bg-[#ffffff]! [&_.instructor-qna-tools]:box-border! [&_.instructor-qna-tools_*]:box-border!',
+  '[&_.instructor-qna-tools>div:first-child]:border-b-[1px]! [&_.instructor-qna-tools>div:first-child]:border-b-[#f3f4f6]! [&_.instructor-qna-tools>div:first-child]:bg-[rgba(249,250,251,0.5)]! [&_.instructor-qna-tools>div:first-child]:p-[20px]!',
+  '[&_.instructor-qna-tools_h3]:text-[#111827]! [&_.instructor-qna-tools_h3]:text-[14px]! [&_.instructor-qna-tools_h3]:leading-[20px]! [&_.instructor-qna-tools_h3]:font-[800]! [&_.instructor-qna-tools_p]:mt-[4px]! [&_.instructor-qna-tools_p]:text-[#6b7280]! [&_.instructor-qna-tools_p]:text-[10px]! [&_.instructor-qna-tools_p]:leading-[14px]! [&_.instructor-qna-tools_p]:font-[700]!',
+  '[&_.instructor-qna-tools>div:nth-child(2)]:min-h-0! [&_.instructor-qna-tools>div:nth-child(2)]:flex-[1_1_auto]! [&_.instructor-qna-tools>div:nth-child(2)]:overflow-y-auto! [&_.instructor-qna-tools>div:nth-child(2)]:p-[20px]!',
+  '[&_.instructor-qna-tools_h4]:mb-[12px]! [&_.instructor-qna-tools_h4]:text-[#9ca3af]! [&_.instructor-qna-tools_h4]:text-[10px]! [&_.instructor-qna-tools_h4]:leading-[14px]! [&_.instructor-qna-tools_h4]:font-[800]! [&_.instructor-qna-tools_h4]:tracking-[0.18em]!',
+  '[&_.instructor-qna-tools_button]:rounded-[12px]! [&_.instructor-qna-tools_button]:border-[1px]! [&_.instructor-qna-tools_button]:border-solid! [&_.instructor-qna-tools_button]:border-[#e5e7eb]! [&_.instructor-qna-tools_button]:bg-[#ffffff]! [&_.instructor-qna-tools_button]:p-[14px]! [&_.instructor-qna-tools_button]:text-left! [&_.instructor-qna-tools_button]:[transition:transform_0.2s_ease,box-shadow_0.2s_ease,border-color_0.2s_ease,background-color_0.2s_ease]!',
+  '[&_.instructor-qna-tools_button:hover]:[transform:translateY(-2px)]! [&_.instructor-qna-tools_button:hover]:border-[#d1d5db]! [&_.instructor-qna-tools_button:hover]:bg-[#f9fafb]! [&_.instructor-qna-tools_button:hover]:[box-shadow:0_6px_12px_-4px_rgba(0,0,0,0.05)]!',
+  '[&_.instructor-qna-tools_button.instructor-qna-template-action]:flex! [&_.instructor-qna-tools_button.instructor-qna-template-action]:h-[24px]! [&_.instructor-qna-tools_button.instructor-qna-template-action]:w-[24px]! [&_.instructor-qna-tools_button.instructor-qna-template-action]:items-center! [&_.instructor-qna-tools_button.instructor-qna-template-action]:justify-center! [&_.instructor-qna-tools_button.instructor-qna-template-action]:rounded-[4px]! [&_.instructor-qna-tools_button.instructor-qna-template-action]:border-[#e5e7eb]! [&_.instructor-qna-tools_button.instructor-qna-template-action]:bg-[#f9fafb]! [&_.instructor-qna-tools_button.instructor-qna-template-action]:p-0! [&_.instructor-qna-tools_button.instructor-qna-template-action]:text-[#6b7280]! [&_.instructor-qna-tools_button.instructor-qna-template-action]:transform-none! [&_.instructor-qna-tools_button.instructor-qna-template-action]:[box-shadow:none]!',
+  '[&_.instructor-qna-tools_button.instructor-qna-template-delete]:border-[#fee2e2]! [&_.instructor-qna-tools_button.instructor-qna-template-delete]:bg-[#fef2f2]! [&_.instructor-qna-tools_button.instructor-qna-template-delete]:text-[#ef4444]!',
+  '[&_.instructor-qna-tools_button.instructor-qna-add-template]:h-[34px]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:justify-center! [&_.instructor-qna-tools_button.instructor-qna-add-template]:border-dashed! [&_.instructor-qna-tools_button.instructor-qna-add-template]:border-[#d1d5db]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:bg-[#ffffff]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:px-[12px]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:py-[8px]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:text-center! [&_.instructor-qna-tools_button.instructor-qna-add-template]:text-[#6b7280]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:text-[12px]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:leading-[16px]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:font-[700]! [&_.instructor-qna-tools_button.instructor-qna-add-template]:[box-shadow:none]!',
+  '[&_.instructor-qna-tools_button.instructor-qna-add-template:hover]:border-[#d1d5db]! [&_.instructor-qna-tools_button.instructor-qna-add-template:hover]:bg-[#ffffff]! [&_.instructor-qna-tools_button.instructor-qna-add-template:hover]:text-[#6b7280]! [&_.instructor-qna-tools_button.instructor-qna-add-template:hover]:[box-shadow:none]!',
+  '[&_.instructor-qna-tools_button_.line-clamp-1]:text-[#111827]! [&_.instructor-qna-tools_button_.line-clamp-1]:text-[13px]! [&_.instructor-qna-tools_button_.line-clamp-1]:leading-[18px]! [&_.instructor-qna-tools_button_.line-clamp-1]:font-[900]! [&_.instructor-qna-tools_button_.line-clamp-2]:text-[#6b7280]! [&_.instructor-qna-tools_button_.line-clamp-2]:text-[11px]! [&_.instructor-qna-tools_button_.line-clamp-2]:leading-[16px]! [&_.instructor-qna-tools_button_.line-clamp-2]:font-[600]!',
+  '[&_.instructor-qna-modal-backdrop]:z-[2400]! [&_.instructor-qna-modal-backdrop]:bg-[rgba(17,24,39,0.6)]! [&_.instructor-qna-modal-backdrop]:p-[16px]! [&_.instructor-qna-modal-backdrop]:[backdrop-filter:blur(4px)]!',
+  '[&_.instructor-qna-modal]:w-[min(560px,100%)]! [&_.instructor-qna-modal]:max-w-[560px]! [&_.instructor-qna-modal]:rounded-[24px]! [&_.instructor-qna-modal]:bg-[#ffffff]! [&_.instructor-qna-modal]:[box-shadow:0_30px_60px_rgba(0,0,0,0.15)]!',
+  '[&_.instructor-qna-modal>div:first-child]:border-b-[1px]! [&_.instructor-qna-modal>div:first-child]:border-b-[#f3f4f6]! [&_.instructor-qna-modal>div:first-child]:bg-[#f9fafb]! [&_.instructor-qna-modal>div:first-child]:p-[24px]!',
+  '[&_.instructor-qna-modal_h3]:text-[#111827]! [&_.instructor-qna-modal_h3]:text-[18px]! [&_.instructor-qna-modal_h3]:leading-[28px]! [&_.instructor-qna-modal_h3]:font-[800]!',
+  '[&_.instructor-qna-modal_input]:rounded-[12px]! [&_.instructor-qna-modal_input]:border-[1px]! [&_.instructor-qna-modal_input]:border-solid! [&_.instructor-qna-modal_input]:border-[#e5e7eb]! [&_.instructor-qna-modal_input]:text-[14px]! [&_.instructor-qna-modal_input]:leading-[20px]! [&_.instructor-qna-modal_textarea]:h-[192px]! [&_.instructor-qna-modal_textarea]:rounded-[12px]! [&_.instructor-qna-modal_textarea]:border-[1px]! [&_.instructor-qna-modal_textarea]:border-solid! [&_.instructor-qna-modal_textarea]:border-[#e5e7eb]! [&_.instructor-qna-modal_textarea]:text-[14px]! [&_.instructor-qna-modal_textarea]:leading-[20px]!',
+  '[&_.instructor-qna-modal_button]:rounded-[12px]! [&_.instructor-qna-modal_button]:text-[12px]! [&_.instructor-qna-modal_button]:leading-[16px]! [&_.instructor-qna-modal_button]:font-[800]!',
+].join(' ')
 
 function Modal({
   title,
@@ -222,470 +156,14 @@ function Modal({
     </div>
   )
 }
+import { useInstructorQnaController } from './useInstructorQnaController'
 
 export default function InstructorQnaPage({ session }: { session: AuthSession }) {
-  const [questions, setQuestions] = useState<InstructorQnaInboxItem[]>([])
-  const [courseCatalog, setCourseCatalog] = useState<InstructorCourseListItem[]>([])
-  const [timeline, setTimeline] = useState<InstructorQnaTimeline | null>(null)
-  const [statusFilter, setStatusFilter] = useState<QuestionStatusFilter>('pending')
-  const [search, setSearch] = useState('')
-  const [courseFilter, setCourseFilter] = useState('all')
-  const [sortFilter, setSortFilter] = useState<'latest' | 'oldest'>('latest')
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [draftText, setDraftText] = useState('')
-  const [quickReplies, setQuickReplies] = useState<InstructorQnaTemplate[]>([])
-  const [quickOpen, setQuickOpen] = useState(false)
-  const [templateOpen, setTemplateOpen] = useState(false)
-  const [editingQuickId, setEditingQuickId] = useState<number | null>(null)
-  const [quickTitle, setQuickTitle] = useState('')
-  const [quickBody, setQuickBody] = useState('')
-  const [toast, setToast] = useState<ToastState>(null)
-  const [loading, setLoading] = useState(true)
-  const [timelineLoading, setTimelineLoading] = useState(false)
-  const [editingAnswer, setEditingAnswer] = useState(false)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const editorRef = useRef<HTMLTextAreaElement | null>(null)
+  const { statusFilter, search, sortFilter, setSortFilter, draftText, setDraftText, quickReplies, quickOpen, setQuickOpen, templateOpen, setTemplateOpen, quickTitle, setQuickTitle, quickBody, setQuickBody, toast, loading, setEditingAnswerId, editorRef, courseOptions, activeCourseFilter, visibleQuestions, activeSelectedId, activeTimeline, timelineLoading, current, instructorDisplayName, instructorProfileImage, showAnswerForm, openCourseScreen, changeStatusFilter, changeCourseFilter, changeSearch, selectQuestion, appendReply, applyMarkdown, saveDraft, submitAnswer, openQuickModal, saveQuickReply, deleteQuickReply } = useInstructorQnaController({ session })
 
-  useEffect(() => {
-    const controller = new AbortController()
-
-    setLoading(true)
-
-    Promise.all([
-      instructorQnaApi.getInbox(statusFilter === 'pending' ? 'UNANSWERED' : 'ANSWERED', controller.signal),
-      instructorQnaApi.getTemplates(controller.signal),
-    ])
-      .then(([nextQuestions, nextTemplates]) => {
-        setQuestions(nextQuestions.map(normalizeQuestion))
-        setQuickReplies(nextTemplates.map(normalizeTemplate))
-      })
-      .catch((error: Error) => {
-        if (!controller.signal.aborted) {
-          setToast({ message: error.message, tone: 'info' })
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setLoading(false)
-        }
-      })
-
-    return () => controller.abort()
-  }, [statusFilter])
-
-  useEffect(() => {
-    const controller = new AbortController()
-
-    instructorCourseApi
-      .getCourses(controller.signal)
-      .then((nextCourses) => setCourseCatalog(nextCourses))
-      .catch(() => {})
-
-    return () => controller.abort()
-  }, [])
-
-  useEffect(() => {
-    const controller = new AbortController()
-
-    userApi
-      .getMyProfile(controller.signal)
-      .then((nextProfile) => setProfile(nextProfile))
-      .catch(() => {})
-
-    return () => controller.abort()
-  }, [])
-
-  const courseOptions = buildInstructorCourseOptions(courseCatalog).filter(([value]) =>
-    questions.some((question) => String(question.courseId) === value),
-  )
-  const allowedCourseIds = new Set(courseOptions.map(([value]) => Number(value)))
-  const scopedQuestions =
-    courseCatalog.length > 0
-      ? questions.filter((question) => question.courseId !== null && allowedCourseIds.has(question.courseId))
-      : questions
-  const visibleQuestions = [...scopedQuestions]
-    .filter((question) => {
-      if (courseFilter !== 'all' && String(question.courseId) !== courseFilter) {
-        return false
-      }
-
-      if (!search.trim()) {
-        return true
-      }
-
-      return buildQuestionSearchText(question).includes(search.trim().toLowerCase())
-    })
-    .sort((left, right) =>
-      sortFilter === 'latest'
-        ? (right.createdAt ?? '').localeCompare(left.createdAt ?? '')
-        : (left.createdAt ?? '').localeCompare(right.createdAt ?? ''),
-    )
-
-  useEffect(() => {
-    if (!visibleQuestions.some((question) => question.questionId === selectedId)) {
-      setSelectedId(visibleQuestions[0]?.questionId ?? null)
-    }
-  }, [selectedId, visibleQuestions])
-
-  useEffect(() => {
-    if (!selectedId) {
-      setTimeline(null)
-      setDraftText('')
-      return
-    }
-
-    const controller = new AbortController()
-    setTimelineLoading(true)
-    setEditingAnswer(false)
-
-    instructorQnaApi
-      .getTimeline(selectedId, controller.signal)
-      .then((nextTimeline) => {
-        const normalizedTimeline = normalizeTimeline(nextTimeline)
-        setTimeline(normalizedTimeline)
-        setDraftText(
-          normalizedTimeline.draft?.draftContent ?? normalizedTimeline.publishedAnswer?.content ?? '',
-        )
-      })
-      .catch((error: Error) => {
-        if (!controller.signal.aborted) {
-          setToast({ message: error.message, tone: 'info' })
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setTimelineLoading(false)
-        }
-      })
-
-    return () => controller.abort()
-  }, [selectedId])
-
-  useEffect(() => {
-    if (!toast) {
-      return
-    }
-
-    const timeoutId = window.setTimeout(() => setToast(null), 3000)
-    return () => window.clearTimeout(timeoutId)
-  }, [toast])
-
-  const current =
-    timeline?.question ?? visibleQuestions.find((question) => question.questionId === selectedId) ?? null
-  const customization = readInstructorChannelCustomization(session.userId)
-  const instructorDisplayName =
-    customization?.displayName?.trim() ||
-    profile?.channelName?.trim() ||
-    profile?.name?.trim() ||
-    timeline?.publishedAnswer?.authorName?.trim() ||
-    session.name ||
-    '강사'
-  const instructorProfileImage =
-    sanitizeInstructorProfileImageUrl(customization?.profileImageUrl) ??
-    sanitizeInstructorProfileImageUrl(profile?.profileImage) ??
-    sanitizeInstructorProfileImageUrl(timeline?.publishedAnswer?.authorProfileImage) ??
-    null
-  const showAnswerForm = current ? current.status === 'UNANSWERED' || editingAnswer : false
-
-  function openCourseScreen(question: InstructorQnaInboxItem) {
-    if (!question.courseId) {
-      setToast({ message: '연결된 강의 정보가 없습니다.', tone: 'info' })
-      return
-    }
-
-    const returnTo = buildReturnToHref()
-    const timestampSeconds = parseLectureTimestampSeconds(question.lectureTimestamp)
-    const url = new URL('/learning', window.location.href)
-    url.searchParams.set('courseId', String(question.courseId))
-    url.searchParams.set('preview', 'student')
-    url.searchParams.set('autoplay', '1')
-    url.searchParams.set('returnTo', returnTo)
-    url.searchParams.set('from', 'instructor-qna')
-    url.searchParams.set('questionId', String(question.questionId))
-
-    if (question.lessonId) {
-      url.searchParams.set('lessonId', String(question.lessonId))
-    }
-
-    if (timestampSeconds !== null) {
-      url.searchParams.set('t', String(timestampSeconds))
-    }
-
-    const opened = window.open(url.toString(), '_blank')
-    if (opened) {
-      opened.opener = null
-      return
-    }
-
-    if (!opened) {
-      window.location.assign(url.toString())
-    }
-  }
-
-  useEffect(() => {
-    if (courseFilter !== 'all' && !courseOptions.some(([value]) => value === courseFilter)) {
-      setCourseFilter('all')
-    }
-  }, [courseFilter, courseOptions])
-
-  function focusEditorSelection(start: number, end: number) {
-    window.requestAnimationFrame(() => {
-      if (!editorRef.current) {
-        return
-      }
-
-      editorRef.current.focus()
-      editorRef.current.setSelectionRange(start, end)
-    })
-  }
-
-  function replaceEditorSelection(
-    builder: (selectedText: string) => { text: string; selectionStart: number; selectionEnd: number },
-  ) {
-    if (!editorRef.current) {
-      return
-    }
-
-    const textarea = editorRef.current
-    const currentValue = textarea.value
-    const selectionStart = textarea.selectionStart
-    const selectionEnd = textarea.selectionEnd
-    const selectedText = currentValue.slice(selectionStart, selectionEnd)
-    const insertion = builder(selectedText)
-    const nextValue =
-      currentValue.slice(0, selectionStart) + insertion.text + currentValue.slice(selectionEnd)
-
-    setDraftText(nextValue)
-    focusEditorSelection(
-      selectionStart + insertion.selectionStart,
-      selectionStart + insertion.selectionEnd,
-    )
-  }
-
-  function appendReply(value: string) {
-    setDraftText((currentDraft) =>
-      currentDraft.trim() ? `${currentDraft.trimEnd()}\n\n${value}` : value,
-    )
-
-    window.requestAnimationFrame(() => {
-      editorRef.current?.focus()
-      const nextLength = (editorRef.current?.value ?? value).length
-      editorRef.current?.setSelectionRange(nextLength, nextLength)
-    })
-  }
-
-  function applyMarkdown(action: MarkdownAction) {
-    if (!showAnswerForm) {
-      return
-    }
-
-    if (action === 'link') {
-      const href = window.prompt('링크 주소를 입력하세요.', 'https://')
-      if (!href) {
-        return
-      }
-
-      replaceEditorSelection((selectedText) => {
-        const label = selectedText || '링크 텍스트'
-        return {
-          text: `[${label}](${href})`,
-          selectionStart: 1,
-          selectionEnd: 1 + label.length,
-        }
-      })
-      return
-    }
-
-    if (action === 'image') {
-      const src = window.prompt('이미지 주소를 입력하세요.', 'https://')
-      if (!src) {
-        return
-      }
-
-      const alt = window.prompt('이미지 설명을 입력하세요.', '이미지 설명')
-      if (alt === null) {
-        return
-      }
-
-      replaceEditorSelection(() => ({
-        text: `![${alt}](${src})`,
-        selectionStart: 2,
-        selectionEnd: 2 + alt.length,
-      }))
-      return
-    }
-
-    replaceEditorSelection((selectedText) => {
-      if (action === 'heading') {
-        const label = selectedText || '제목을 입력하세요'
-        return {
-          text: `## ${label}`,
-          selectionStart: 3,
-          selectionEnd: 3 + label.length,
-        }
-      }
-
-      if (action === 'bold') {
-        const label = selectedText || '강조할 문구'
-        return {
-          text: `**${label}**`,
-          selectionStart: 2,
-          selectionEnd: 2 + label.length,
-        }
-      }
-
-      if (action === 'italic') {
-        const label = selectedText || '기울임 문구'
-        return {
-          text: `*${label}*`,
-          selectionStart: 1,
-          selectionEnd: 1 + label.length,
-        }
-      }
-
-      const label = selectedText || '코드를 입력하세요'
-
-      if (selectedText.includes('\n') || !selectedText) {
-        return {
-          text: `\`\`\`\n${label}\n\`\`\``,
-          selectionStart: 4,
-          selectionEnd: 4 + label.length,
-        }
-      }
-
-      return {
-        text: `\`${label}\``,
-        selectionStart: 1,
-        selectionEnd: 1 + label.length,
-      }
-    })
-  }
-
-  async function saveDraft() {
-    if (!current) {
-      return
-    }
-
-    try {
-      const savedDraft = await instructorQnaApi.saveDraft(current.questionId, draftText)
-      setTimeline((existing) =>
-        existing
-          ? normalizeTimeline({
-              ...existing,
-              draft: savedDraft,
-            })
-          : existing,
-      )
-      setToast({ message: '답변 초안을 저장했습니다.', tone: 'success' })
-    } catch (error) {
-      setToast({
-        message: error instanceof Error ? error.message : '초안 저장에 실패했습니다.',
-        tone: 'info',
-      })
-    }
-  }
-
-  async function submitAnswer() {
-    if (!current) {
-      return
-    }
-
-    const content = draftText.trim()
-    if (!content) {
-      window.alert('답변 내용을 입력해주세요.')
-      editorRef.current?.focus()
-      return
-    }
-
-    try {
-      if (timeline?.publishedAnswer) {
-        await instructorQnaApi.updateAnswer(
-          current.questionId,
-          timeline.publishedAnswer.answerId,
-          content,
-        )
-      } else {
-        await instructorQnaApi.createAnswer(current.questionId, content)
-      }
-
-      const [nextQuestions, nextTimeline] = await Promise.all([
-        instructorQnaApi.getInbox(statusFilter === 'pending' ? 'UNANSWERED' : 'ANSWERED'),
-        instructorQnaApi.getTimeline(current.questionId),
-      ])
-      const normalizedTimeline = normalizeTimeline(nextTimeline)
-
-      setQuestions(nextQuestions.map(normalizeQuestion))
-      setTimeline(normalizedTimeline)
-      setDraftText(normalizedTimeline.publishedAnswer?.content ?? normalizedTimeline.draft?.draftContent ?? '')
-      setEditingAnswer(false)
-      setToast({ message: '답변을 등록했습니다.', tone: 'success' })
-    } catch (error) {
-      setToast({
-        message: error instanceof Error ? error.message : '답변 저장에 실패했습니다.',
-        tone: 'info',
-      })
-    }
-  }
-
-  function openQuickModal(reply?: InstructorQnaTemplate) {
-    setEditingQuickId(reply?.id ?? null)
-    setQuickTitle(reply?.title ?? '')
-    setQuickBody(reply?.content ?? '')
-    setQuickOpen(true)
-  }
-
-  async function saveQuickReply() {
-    if (!quickTitle.trim() || !quickBody.trim()) {
-      window.alert('제목과 내용을 모두 입력해주세요.')
-      return
-    }
-
-    try {
-      const savedReply = editingQuickId
-        ? await instructorQnaApi.updateTemplate(editingQuickId, {
-            title: quickTitle.trim(),
-            content: quickBody.trim(),
-          })
-        : await instructorQnaApi.createTemplate({
-            title: quickTitle.trim(),
-            content: quickBody.trim(),
-          })
-      const normalizedReply = normalizeTemplate(savedReply)
-
-      setQuickReplies((currentReplies) =>
-        editingQuickId
-          ? currentReplies.map((reply) => (reply.id === editingQuickId ? normalizedReply : reply))
-          : [...currentReplies, normalizedReply],
-      )
-      setQuickOpen(false)
-      setToast({ message: '빠른 답변을 저장했습니다.', tone: 'success' })
-    } catch (error) {
-      setToast({
-        message: error instanceof Error ? error.message : '빠른 답변 저장에 실패했습니다.',
-        tone: 'info',
-      })
-    }
-  }
-
-  async function deleteQuickReply(replyId: number) {
-    if (!window.confirm('이 빠른 답변을 삭제할까요?')) {
-      return
-    }
-
-    try {
-      await instructorQnaApi.deleteTemplate(replyId)
-      setQuickReplies((currentReplies) => currentReplies.filter((reply) => reply.id !== replyId))
-      setToast({ message: '빠른 답변을 삭제했습니다.', tone: 'success' })
-    } catch (error) {
-      setToast({
-        message: error instanceof Error ? error.message : '빠른 답변 삭제에 실패했습니다.',
-        tone: 'info',
-      })
-    }
-  }
 
   return (
-    <div className="instructor-qna-page min-h-[calc(100vh-64px)] bg-[#f3f4f6]">
+    <div className={`instructor-qna-page min-h-[calc(100vh-64px)] bg-[#f3f4f6] ${INSTRUCTOR_QNA_UI_LOCK_CLASSES}`}>
       {toast ? (
         <div
           className={`pointer-events-none fixed top-24 left-1/2 z-[9999] -translate-x-1/2 rounded-full px-6 py-3 text-sm font-bold text-white shadow-2xl ${
@@ -698,7 +176,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
       ) : null}
 
       <div className="instructor-qna-main flex min-h-[calc(100vh-64px)] flex-col xl:flex-row">
-        <section className="instructor-qna-inbox w-full shrink-0 border-r border-gray-200 bg-white xl:w-[390px]">
+        <section className="instructor-qna-inbox w-full shrink-0 border-r border-gray-200 bg-white xl:w-[400px]! xl:flex-[0_0_400px]!">
           <div className="border-b border-gray-100 p-6">
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-xl font-black text-gray-900">수강생 Q&amp;A</h2>
@@ -712,7 +190,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                 <i className="fas fa-search pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400" />
                 <input
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => changeSearch(event.target.value)}
                   className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-xs font-semibold text-gray-700 outline-none transition focus:border-[#00c471]"
                   placeholder="제목, 작성자, 내용으로 검색"
                 />
@@ -720,8 +198,8 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
 
               <div className="grid grid-cols-2 gap-2">
                 <select
-                  value={courseFilter}
-                  onChange={(event) => setCourseFilter(event.target.value)}
+                  value={activeCourseFilter}
+                  onChange={(event) => changeCourseFilter(event.target.value)}
                   className="h-11 rounded-xl border border-gray-200 bg-gray-50 px-3 text-xs font-semibold text-gray-700 outline-none transition focus:border-[#00c471]"
                 >
                   <option value="all">전체 강의</option>
@@ -742,7 +220,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                 </select>
               </div>
 
-              <div className="flex gap-2 pt-1">
+              <div className="instructor-qna-filter-tabs flex gap-2 pt-1">
                 {[
                   ['pending', '미답변'],
                   ['answered', '답변 완료'],
@@ -750,7 +228,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                   <button
                     key={key}
                     type="button"
-                    onClick={() => setStatusFilter(key as QuestionStatusFilter)}
+                    onClick={() => changeStatusFilter(key as QuestionStatusFilter)}
                     className={`flex h-10 flex-1 items-center justify-center rounded-xl border text-xs font-bold transition ${
                       statusFilter === key
                         ? 'border-gray-900 bg-gray-900 text-white'
@@ -774,9 +252,9 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                 <button
                   key={question.questionId}
                   type="button"
-                  onClick={() => setSelectedId(question.questionId)}
+                  onClick={() => selectQuestion(question.questionId)}
                   className={`instructor-qna-item mb-3 w-full rounded-2xl border border-l-4 p-4 text-left transition ${
-                    selectedId === question.questionId
+                    activeSelectedId === question.questionId
                       ? 'is-active border-[#00c471] border-l-[#00c471] bg-[#f0fdf4] shadow-[0_6px_18px_rgba(0,196,113,0.08)]'
                       : 'border-gray-200 border-l-transparent bg-white hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_8px_18px_rgba(15,23,42,0.06)]'
                   }`}
@@ -992,7 +470,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                             className="flex h-11 items-center gap-2 rounded-xl bg-[#00c471] px-7 text-xs font-bold text-white shadow-md transition hover:bg-[#00b366]"
                           >
                             <i className="fas fa-paper-plane" />
-                            {timeline?.publishedAnswer ? '답변 수정' : '답변 등록'}
+                            {activeTimeline?.publishedAnswer ? '답변 수정' : '답변 등록'}
                           </button>
                         </div>
                       </div>
@@ -1021,7 +499,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                         </div>
                         <button
                           type="button"
-                          onClick={() => setEditingAnswer(true)}
+                          onClick={() => setEditingAnswerId(activeSelectedId)}
                           className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-500 transition hover:text-[#00c471]"
                         >
                           <i className="fas fa-edit mr-1" />
@@ -1029,7 +507,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                         </button>
                       </div>
 
-                      <MarkdownContent content={timeline?.publishedAnswer?.content ?? ''} />
+                      <MarkdownContent content={activeTimeline?.publishedAnswer?.content ?? ''} />
                     </div>
                   )}
                 </div>
@@ -1102,7 +580,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                                       event.stopPropagation()
                                       openQuickModal(reply)
                                     }}
-                                    className="flex h-6 w-6 items-center justify-center rounded border border-gray-200 bg-gray-50 text-gray-500"
+                                    className="instructor-qna-template-action flex h-6 w-6 items-center justify-center rounded border border-gray-200 bg-gray-50 text-gray-500"
                                     title="수정"
                                   >
                                     <i className="fas fa-pen text-[10px]" />
@@ -1113,7 +591,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                                       event.stopPropagation()
                                       deleteQuickReply(reply.id)
                                     }}
-                                    className="flex h-6 w-6 items-center justify-center rounded border border-red-100 bg-red-50 text-red-500"
+                                    className="instructor-qna-template-action instructor-qna-template-delete flex h-6 w-6 items-center justify-center rounded border border-red-100 bg-red-50 text-red-500"
                                     title="삭제"
                                   >
                                     <i className="fas fa-trash text-[10px]" />
@@ -1135,7 +613,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                       <button
                         type="button"
                         onClick={() => openQuickModal()}
-                        className="w-full rounded-xl border border-dashed border-gray-300 py-2.5 text-xs font-bold text-gray-500 transition hover:border-[#00c471] hover:bg-green-50 hover:text-[#00c471]"
+                        className="instructor-qna-add-template w-full rounded-xl border border-dashed border-gray-300 py-2.5 text-xs font-bold text-gray-500 transition hover:border-[#00c471] hover:bg-green-50 hover:text-[#00c471]"
                       >
                         <i className="fas fa-plus mr-1" />
                         내 답변 추가하기

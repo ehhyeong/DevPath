@@ -1,0 +1,775 @@
+import { useAuthSession } from '../../lib/useAuthSession'
+import { useEffect,useMemo,useState,type FormEvent } from 'react'
+import { navigateTo } from '../../lib/spa-navigation'
+import AuthModal,{ type AuthView } from '../../components/AuthModal'
+import LoginRequiredView from '../../components/LoginRequiredView'
+import ProjectAside,{ type ProjectAsideSquad } from '../../components/ProjectAside'
+import ProjectHeader from '../../components/ProjectHeader'
+import { AUTH_SESSION_SYNC_EVENT,clearStoredAuthSession,getPostLoginRedirect,readStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
+import { PROFILE_UPDATED_EVENT,type ProfileSyncPayload } from '../../lib/profile-sync'
+import { projectApiRequest } from '../project/api'
+import { FilterTab,SquadCard,DetailModal,ApplyModal,CreateSquadModal,StatusModal,ReceivedApplicationModal,MemberProfileModal } from './CommunityLoungeSections'
+import { type ActiveFilter,type ApplyForm,authorToMember,clearInitialDetailSquadId,type CreateForm,emptyCreateForm,ITEMS_PER_PAGE,type LoungeApplication,type LoungeApplicationSummary,type LoungeShellResponse,type LoungeType,mapApplication,mapSquadPost,parseTokenList,readInitialDetailSquadId,type SortFilter,type SquadLoungePostResponse,type SquadMember,type SquadPost,type StatusTab,templates,toDateTime,toDeadlineTime } from './community-lounge-model'
+
+
+export default function CommunityLoungeApp() {
+  const [session,setSession] = useAuthSession()
+  const [authView, setAuthView] = useState<AuthView | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+  const [asideSquads, setAsideSquads] = useState<ProjectAsideSquad[]>([])
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [squads, setSquads] = useState<SquadPost[]>([])
+  const [sentApplications, setSentApplications] = useState<LoungeApplication[]>([])
+  const [receivedApplications, setReceivedApplications] = useState<LoungeApplication[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortFilter>('latest')
+  const [hideClosed, setHideClosed] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [initialDetailSquadId, setInitialDetailSquadId] = useState(() => readInitialDetailSquadId())
+  const [detailSquad, setDetailSquad] = useState<SquadPost | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createForm, setCreateForm] = useState<CreateForm>(() => emptyCreateForm())
+  const [applySquad, setApplySquad] = useState<SquadPost | null>(null)
+  const [applyForm, setApplyForm] = useState<ApplyForm>({ role: '', portfolio: '', content: '' })
+  const [statusOpen, setStatusOpen] = useState(false)
+  const [statusTab, setStatusTab] = useState<StatusTab>('sent')
+  const [receivedDetail, setReceivedDetail] = useState<LoungeApplication | null>(null)
+  const [memberProfile, setMemberProfile] = useState<SquadMember | null>(null)
+  const [memberMessage, setMemberMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    document.title = 'DevPath - 라운지'
+    const root = document.getElementById('root')
+    const bodyClasses = ['h-[100dvh]!', 'min-h-0!', 'overflow-hidden!']
+    const rootClasses = ['h-[100dvh]!', 'min-h-0!']
+
+    document.body.classList.add(...bodyClasses)
+    root?.classList.add(...rootClasses)
+
+    return () => {
+      document.body.classList.remove(...bodyClasses)
+      root?.classList.remove(...rootClasses)
+    }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const currentSession = readStoredAuthSession()
+    const currentUserId = currentSession?.userId ?? null
+
+    setSession(currentSession)
+    setIsLoading(true)
+    setLoadError(null)
+
+    Promise.allSettled([
+      projectApiRequest<LoungeShellResponse>('/api/lounge/shell', { signal: controller.signal }, 'optional'),
+      projectApiRequest<SquadLoungePostResponse[]>('/api/lounge/squads', { signal: controller.signal }),
+      projectApiRequest<LoungeApplicationSummary[]>('/api/lounge/applications/sent', { signal: controller.signal }, 'required'),
+      projectApiRequest<LoungeApplicationSummary[]>('/api/lounge/applications/received', { signal: controller.signal }, 'required'),
+    ])
+      .then(([shellResult, squadsResult, sentResult, receivedResult]) => {
+        if (controller.signal.aborted) {
+          return
+        }
+
+        if (shellResult.status === 'fulfilled') {
+          setAsideSquads(shellResult.value.mySquads ?? [])
+          setProfileImage(shellResult.value.user?.profileImage ?? null)
+        } else {
+          setAsideSquads([])
+          setProfileImage(null)
+        }
+
+        if (squadsResult.status === 'fulfilled') {
+          setSquads(squadsResult.value.map((post) => mapSquadPost(post, currentUserId)))
+        } else {
+          setSquads([])
+          setLoadError('스쿼드 라운지 글을 불러오지 못했습니다.')
+        }
+
+        const nextSentApplications = sentResult.status === 'fulfilled' ? sentResult.value.map(mapApplication) : []
+        setSentApplications(nextSentApplications)
+        setReceivedApplications(receivedResult.status === 'fulfilled' ? receivedResult.value.map(mapApplication) : [])
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      controller.abort()
+    }
+  }, [reloadKey, setSession])
+
+  useEffect(() => {
+    const syncProfile = (event: Event) => {
+      const profileEvent = event as CustomEvent<ProfileSyncPayload>
+      setProfileImage(profileEvent.detail?.profileImage ?? null)
+    }
+
+    window.addEventListener(PROFILE_UPDATED_EVENT, syncProfile)
+
+    return () => {
+      window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
+    }
+  }, [])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeFilter, hideClosed, search, sort])
+
+  useEffect(() => {
+    const syncSession = () => {
+      setSession(readStoredAuthSession())
+      setReloadKey((key) => key + 1)
+    }
+    window.addEventListener('storage', syncSession)
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    return () => {
+      window.removeEventListener('storage', syncSession)
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
+    }
+  }, [setSession])
+
+  const filteredSquads = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    const next = squads.filter((squad) => {
+      if (activeFilter === 'my_posts' && !squad.isMine) {
+        return false
+      }
+
+      if (activeFilter !== 'all' && activeFilter !== 'my_posts' && squad.type !== activeFilter) {
+        return false
+      }
+
+      if (hideClosed && squad.isClosed) {
+        return false
+      }
+
+      if (!query) {
+        return true
+      }
+
+      return `${squad.title} ${squad.tags.join(' ')} ${squad.desc}`.toLowerCase().includes(query)
+    })
+
+    next.sort((a, b) => {
+      if (a.isClosed && !b.isClosed) {
+        return 1
+      }
+
+      if (!a.isClosed && b.isClosed) {
+        return -1
+      }
+
+      if (sort === 'views') {
+        return b.views - a.views
+      }
+
+      if (sort === 'deadline') {
+        return toDeadlineTime(a.deadline) - toDeadlineTime(b.deadline)
+      }
+
+      if (sort === 'available') {
+        return a.max - a.current - (b.max - b.current)
+      }
+
+      return toDateTime(b.sortDate || b.date) - toDateTime(a.sortDate || a.date)
+    })
+
+    return next
+  }, [activeFilter, hideClosed, search, sort, squads])
+
+  const totalPages = Math.ceil(filteredSquads.length / ITEMS_PER_PAGE)
+  const paginatedSquads = filteredSquads.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+  function openAuthModal(message?: string) {
+    if (message) {
+      showAuthToast({
+        message,
+        durationMs: 2200,
+      })
+    }
+
+    setAuthView('login')
+  }
+
+  function requireLogin(message: string) {
+    if (readStoredAuthSession()?.accessToken) {
+      return true
+    }
+
+    openAuthModal(message)
+    return false
+  }
+
+  function handleAuthenticated() {
+    const nextSession = readStoredAuthSession()
+    setSession(nextSession)
+    setAuthView(null)
+    setReloadKey((key) => key + 1)
+
+    const redirect = getPostLoginRedirect(nextSession?.role ?? null)
+    if (redirect !== '/') {
+      navigateTo(redirect)
+      return
+    }
+
+    setReloadKey((key) => key + 1)
+  }
+
+  function handleLogout() {
+    clearStoredAuthSession()
+    setSession(null)
+    setAsideSquads([])
+    setProfileImage(null)
+    setReloadKey((key) => key + 1)
+  }
+
+  function openCreateModal(squad?: SquadPost) {
+    if (!requireLogin('스쿼드 생성은 로그인 후 이용할 수 있습니다.')) {
+      return
+    }
+
+    if (squad) {
+      setCreateForm({
+        editId: squad.id,
+        title: squad.title,
+        type: squad.type,
+        deadline: squad.deadline || '',
+        maxMembers: String(squad.max || ''),
+        tags: squad.tags.map((tag) => `#${tag}`).join(' '),
+        roles: squad.roles.join(' '),
+        desc: squad.desc,
+      })
+    } else {
+      setCreateForm(emptyCreateForm())
+    }
+
+    setCreateOpen(true)
+  }
+
+  function updateCreateType(type: LoungeType) {
+    setCreateForm((form) => ({
+      ...form,
+      type,
+      desc: form.editId ? form.desc : templates[type],
+    }))
+  }
+
+  async function submitSquad(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (isSubmitting) {
+      return
+    }
+
+    const title = createForm.title.trim()
+    const description = createForm.desc.trim()
+    if (!title || !description) {
+      showAuthToast({
+        message: '필수 항목을 입력해주세요.',
+        variant: 'error',
+        durationMs: 1800,
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const payload = {
+        title,
+        type: createForm.type,
+        deadline: createForm.deadline || null,
+        maxMembers: Number(createForm.maxMembers || 1),
+        tags: parseTokenList(createForm.tags),
+        description,
+        roles: createForm.type === 'project' ? parseTokenList(createForm.roles) : [],
+      }
+      const path = createForm.editId ? `/api/lounge/squads/${createForm.editId}` : '/api/lounge/squads'
+      const method = createForm.editId ? 'PUT' : 'POST'
+
+      await projectApiRequest(path, { method, body: JSON.stringify(payload) }, 'required')
+      showAuthToast({
+        message: createForm.editId ? '수정되었습니다.' : '등록되었습니다.',
+        durationMs: 1800,
+      })
+      setCreateOpen(false)
+      setReloadKey((key) => key + 1)
+    } catch (error) {
+      showAuthToast({
+        message: error instanceof Error ? error.message : '저장에 실패했습니다.',
+        variant: 'error',
+        durationMs: 2200,
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function openDetailModal(squad: SquadPost) {
+    setDetailSquad(squad)
+
+    try {
+      const detail = await projectApiRequest<SquadLoungePostResponse>(`/api/lounge/squads/${squad.id}`)
+      const mapped = mapSquadPost(detail, readStoredAuthSession()?.userId ?? null)
+      setDetailSquad(mapped)
+      setSquads((items) => items.map((item) => (item.id === mapped.id ? mapped : item)))
+    } catch {
+      // 목록 데이터가 이미 있으므로 상세 보기는 그대로 유지한다.
+    }
+  }
+
+  useEffect(() => {
+    if (!initialDetailSquadId || isLoading) {
+      return
+    }
+
+    const targetSquad = squads.find((squad) => squad.id === initialDetailSquadId)
+
+    if (!targetSquad) {
+      return
+    }
+
+    setInitialDetailSquadId(null)
+    clearInitialDetailSquadId()
+    void openDetailModal(targetSquad)
+  }, [initialDetailSquadId, isLoading, squads])
+
+  async function closeSquadOnly() {
+    if (!detailSquad || !window.confirm('모집을 단순 마감 처리하시겠습니까?')) {
+      return
+    }
+
+    await projectApiRequest(`/api/lounge/squads/${detailSquad.id}/close`, { method: 'PATCH' }, 'required')
+    setDetailSquad(null)
+    setReloadKey((key) => key + 1)
+  }
+
+  async function closeAndCreateWorkspace() {
+    if (!detailSquad) {
+      return
+    }
+
+    if (detailSquad.workspaceUrl) {
+      navigateTo(detailSquad.workspaceUrl)
+      return
+    }
+
+    if (!detailSquad.isClosed) {
+      const confirmed = window.confirm("모집을 마감하고, 팀원들과 함께할 '워크스페이스'를 바로 생성하시겠습니까?\n(작성하신 스쿼드 제목, 기술 스택, 소개글이 자동으로 넘어갑니다.)")
+      if (!confirmed) {
+        return
+      }
+
+      await projectApiRequest(`/api/lounge/squads/${detailSquad.id}/close`, { method: 'PATCH' }, 'required')
+    }
+
+    const params = new URLSearchParams({
+      squadId: String(detailSquad.id),
+      title: detailSquad.title,
+      tech: detailSquad.tags.join(','),
+      desc: detailSquad.desc,
+    })
+    navigateTo(`/project-create?${params.toString()}`)
+  }
+
+  function openApplyForm() {
+    if (!detailSquad) {
+      return
+    }
+
+    if (!requireLogin('참여 신청은 로그인 후 이용할 수 있습니다.')) {
+      return
+    }
+
+    setApplySquad(detailSquad)
+    setApplyForm({
+      role: detailSquad.roles[0] || '',
+      portfolio: '',
+      content: '',
+    })
+  }
+
+  async function submitApplication(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!applySquad || isSubmitting) {
+      return
+    }
+
+    if (!applySquad.authorId) {
+      showAuthToast({
+        message: '신청 대상을 찾을 수 없습니다.',
+        variant: 'error',
+        durationMs: 1800,
+      })
+      return
+    }
+
+    const content = [
+      applyForm.role ? `[희망 직군]: ${applyForm.role}` : '',
+      applyForm.portfolio ? `[포트폴리오]: ${applyForm.portfolio}` : '',
+      applyForm.content,
+    ]
+      .filter(Boolean)
+      .join('\n')
+
+    setIsSubmitting(true)
+
+    try {
+      await projectApiRequest(
+        '/api/lounge/applications',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            receiverId: applySquad.authorId,
+            type: applySquad.type === 'join_wish' ? 'SQUAD_PROPOSAL' : 'SQUAD_APPLICATION',
+            targetId: applySquad.id,
+            targetTitle: applySquad.title,
+            title: `${applySquad.type === 'join_wish' ? '스카우트 제안: ' : '참여 신청: '}${applySquad.title}`,
+            content: content || '참여하고 싶습니다.',
+          }),
+        },
+        'required',
+      )
+      showAuthToast({
+        message: applySquad.type === 'join_wish' ? '스카우트 제안을 보냈습니다.' : '참여 신청을 보냈습니다.',
+        durationMs: 2200,
+      })
+      setApplySquad(null)
+      setDetailSquad(null)
+      setReloadKey((key) => key + 1)
+    } catch (error) {
+      showAuthToast({
+        message: error instanceof Error ? error.message : '전송에 실패했습니다.',
+        variant: 'error',
+        durationMs: 2200,
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  function openStatusModal() {
+    if (!requireLogin('지원 현황은 로그인 후 확인할 수 있습니다.')) {
+      return
+    }
+
+    setStatusOpen(true)
+  }
+
+  async function openReceivedRequest(application: LoungeApplication) {
+    let next = application
+
+    try {
+      const detail = await projectApiRequest<LoungeApplicationSummary>(`/api/lounge/applications/${application.id}`, {}, 'required')
+      next = mapApplication(detail)
+    } catch {
+      // 목록의 요약 정보로 계속 보여준다.
+    }
+
+    setReceivedDetail(next)
+  }
+
+  async function processRequest(action: 'approve' | 'reject') {
+    if (!receivedDetail) {
+      return
+    }
+
+    await projectApiRequest(
+      `/api/lounge/applications/${receivedDetail.id}/${action === 'approve' ? 'approve' : 'reject'}`,
+      { method: 'PATCH', body: JSON.stringify({}) },
+      'required',
+    )
+    setReceivedDetail(null)
+    setReloadKey((key) => key + 1)
+  }
+
+  function openMemberProfile(member: SquadMember) {
+    setMemberProfile(member)
+    setMemberMessage('')
+  }
+
+  function sendDM() {
+    if (!memberMessage.trim()) {
+      showAuthToast({
+        message: '메시지를 입력해주세요.',
+        variant: 'error',
+        durationMs: 1800,
+      })
+      return
+    }
+
+    showAuthToast({
+      message: '메시지가 전송되었습니다.',
+      durationMs: 1800,
+    })
+    setMemberProfile(null)
+    setMemberMessage('')
+  }
+
+  if (!session) return <LoginRequiredView />
+
+  return (
+    <div className="flex h-screen overflow-hidden text-gray-800">
+      <ProjectAside activeKey="lounge" mySquads={asideSquads} />
+
+      <div className="contents text-[16px] leading-[24px] [&_button]:font-['Pretendard',sans-serif]! [&_input]:font-['Pretendard',sans-serif]! [&_select]:font-['Pretendard',sans-serif]! [&_textarea]:font-['Pretendard',sans-serif]! [&_button]:text-[14px]! [&_button]:leading-[20px]! [&_input]:text-[14px]! [&_input]:leading-[20px]! [&_select]:text-[14px]! [&_select]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]! [&_.text-4xl]:text-[36px]! [&_.text-4xl]:leading-[40px]! [&_.text-2xl]:text-[24px]! [&_.text-2xl]:leading-[32px]! [&_.text-xl]:text-[20px]! [&_.text-xl]:leading-[28px]! [&_.text-lg]:text-[18px]! [&_.text-lg]:leading-[28px]! [&_.text-base]:text-[16px]! [&_.text-base]:leading-[24px]! [&_.text-sm]:text-[14px]! [&_.text-sm]:leading-[20px]! [&_.text-xs]:text-[12px]! [&_.text-xs]:leading-[16px]! [&_.text-\[11px\]]:text-[11px]! [&_.text-\[11px\]]:leading-[16px]! [&_.text-\[10px\]]:text-[10px]! [&_.text-\[10px\]]:leading-[14px]! [&_.text-\[9px\]]:text-[9px]! [&_.text-\[9px\]]:leading-[12px]! [&_input::placeholder]:text-[14px]! [&_input::placeholder]:leading-[normal]! [&_input::placeholder]:text-[#9CA3AF]! [&_input::placeholder]:opacity-100! [&_textarea::placeholder]:text-[14px]! [&_textarea::placeholder]:leading-[normal]! [&_textarea::placeholder]:text-[#9CA3AF]! [&_textarea::placeholder]:opacity-100!">
+        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+          <ProjectHeader
+            session={session}
+            profileImage={profileImage}
+            activeHref="/lounge-dashboard"
+            onLoginClick={() => openAuthModal()}
+            onLogout={handleLogout}
+          />
+
+          <main className="flex-1 overflow-hidden flex flex-col bg-[#F8F9FA] relative">
+            <div id="viewLounge" className="flex-1 overflow-y-auto">
+            <div className="bg-gray-900 text-white p-12 relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-96 h-96 bg-brand opacity-10 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
+              <div className="relative z-10 max-w-5xl mx-auto">
+                <span className="bg-brand/20 border border-brand/30 text-brand text-[11px] font-extrabold px-3 py-1 rounded-full mb-3 inline-block uppercase tracking-wider">
+                  <i className="fas fa-rocket mr-1"></i> DevSquad Lounge
+                </span>
+                <h1 className="text-4xl font-extrabold mb-3 leading-tight">
+                  함께 성장할 <span className="text-brand">최고의 동료</span>를 찾아보세요.
+                </h1>
+                <p className="text-gray-400 text-sm mb-8">
+                  사이드 프로젝트부터 전공 스터디, 모각코까지. 당신의 열정을 함께 나눌 팀원들을 만나보세요.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => openCreateModal()}
+                    className="bg-brand hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold text-sm transition shadow-lg flex items-center gap-2 transform hover:-translate-y-1"
+                  >
+                    <i className="fas fa-plus"></i> 스쿼드 생성
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openStatusModal}
+                    className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-bold text-sm transition backdrop-blur-sm relative"
+                  >
+                    내 지원 현황 확인
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="max-w-6xl mx-auto p-8 -mt-8">
+              <div className="bg-white p-2 rounded-2xl shadow-lg border border-gray-100 mb-8 flex items-center gap-2 flex-wrap lg:flex-nowrap">
+                <div className="flex-1 relative w-full lg:w-auto">
+                  <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                  <input
+                    type="text"
+                    id="searchInput"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="기술 스택, 제목, 태그 검색..."
+                    className="w-full min-h-[44px] pl-11 pr-4 py-3 rounded-xl text-sm leading-[20px] outline-none focus:bg-gray-50 transition placeholder:leading-[normal]"
+                  />
+                </div>
+
+                <div className="h-8 w-px bg-gray-200 mx-2 hidden lg:block"></div>
+
+                <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start px-2 lg:px-0">
+                  <select
+                    id="sortSelect"
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value as SortFilter)}
+                    className="py-2 text-sm font-bold text-gray-600 bg-transparent outline-none cursor-pointer hover:text-gray-900 border-none focus:ring-0"
+                  >
+                    <option value="latest">최신순</option>
+                    <option value="views">조회순</option>
+                    <option value="deadline">마감 임박순</option>
+                    <option value="available">여유 자리순</option>
+                  </select>
+
+                  <label className="flex items-center gap-1.5 text-sm font-bold text-gray-600 cursor-pointer hover:text-gray-900 shrink-0">
+                    <input
+                      type="checkbox"
+                      id="hideClosedCheckbox"
+                      checked={hideClosed}
+                      onChange={(event) => setHideClosed(event.target.checked)}
+                      className="w-4 h-4 text-brand focus:ring-brand rounded border-gray-300 cursor-pointer appearance-none border checked:bg-[#00C471] checked:border-[#00C471] flex items-center justify-center relative after:content-[''] after:absolute after:w-1.5 after:h-2.5 after:border-r-2 after:border-b-2 after:border-white after:rotate-45 after:-mt-0.5 checked:after:block after:hidden"
+                    />
+                    <span>모집중만 보기</span>
+                  </label>
+                </div>
+
+                <div className="h-8 w-px bg-gray-200 mx-2 hidden lg:block"></div>
+
+                <div className="flex gap-2 overflow-x-auto hide-scroll w-full lg:w-auto pb-2 lg:pb-0">
+                  <FilterTab active={activeFilter === 'all'} label="전체" onClick={() => setActiveFilter('all')} />
+                  <FilterTab active={activeFilter === 'project'} label="🚀 프로젝트" onClick={() => setActiveFilter('project')} />
+                  <FilterTab active={activeFilter === 'join_wish'} label="🙋 참여 희망" onClick={() => setActiveFilter('join_wish')} />
+                  <FilterTab active={activeFilter === 'study'} label="📚 스터디" onClick={() => setActiveFilter('study')} />
+                  <FilterTab active={activeFilter === 'networking'} label="☕ 모각코" onClick={() => setActiveFilter('networking')} />
+                  <FilterTab active={activeFilter === 'my_posts'} label="💪 내가 쓴 글" onClick={() => setActiveFilter('my_posts')} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[300px]" id="cardList">
+                {isLoading ? (
+                  <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400">
+                    <i className="fas fa-spinner fa-spin text-4xl mb-3 opacity-50"></i>
+                    <p className="font-bold text-sm">스쿼드 글을 불러오는 중입니다.</p>
+                  </div>
+                ) : loadError ? (
+                  <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400">
+                    <i className="fas fa-circle-exclamation text-4xl mb-3 opacity-50"></i>
+                    <p className="font-bold text-sm">{loadError}</p>
+                  </div>
+                ) : paginatedSquads.length === 0 ? (
+                  <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400">
+                    <i className="fas fa-folder-open text-4xl mb-3 opacity-50"></i>
+                    <p className="font-bold text-sm">조건에 맞는 스쿼드가 없습니다.</p>
+                  </div>
+                ) : (
+                  paginatedSquads.map((squad) => (
+                    <SquadCard
+                      key={squad.id}
+                      squad={squad}
+                      currentUserProfileImage={profileImage}
+                      onOpen={() => openDetailModal(squad)}
+                      onEdit={() => openCreateModal(squad)}
+                      onAuthorOpen={() => openMemberProfile(authorToMember(squad, profileImage))}
+                      onMemberOpen={openMemberProfile}
+                    />
+                  ))
+                )}
+              </div>
+
+              <div id="paginationContainer" className="mt-10 flex justify-center items-center gap-1.5 pb-8">
+                {totalPages > 1 ? (
+                  <>
+                    <button
+                      type="button"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs transition ${
+                        currentPage === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-600 cursor-pointer'
+                      }`}
+                    >
+                      <i className="fas fa-chevron-left"></i>
+                    </button>
+                    {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                      <button
+                        type="button"
+                        key={page}
+                        onClick={() => {
+                          setCurrentPage(page)
+                          document.getElementById('viewLounge')?.scrollTo({ top: 400, behavior: 'smooth' })
+                        }}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm transition ${
+                          page === currentPage ? 'bg-gray-900 text-white shadow-md cursor-default' : 'text-gray-500 hover:bg-gray-100 cursor-pointer'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs transition ${
+                        currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-100 text-gray-600 cursor-pointer'
+                      }`}
+                    >
+                      <i className="fas fa-chevron-right"></i>
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {detailSquad ? (
+        <DetailModal
+          squad={detailSquad}
+          onClose={() => setDetailSquad(null)}
+          onApply={openApplyForm}
+          onMessageAuthor={() => openMemberProfile(authorToMember(detailSquad, profileImage))}
+          onEdit={() => {
+            openCreateModal(detailSquad)
+            setDetailSquad(null)
+          }}
+          onCloseOnly={closeSquadOnly}
+          onCreateWorkspace={closeAndCreateWorkspace}
+        />
+      ) : null}
+
+      {applySquad ? (
+        <ApplyModal
+          squad={applySquad}
+          form={applyForm}
+          isSubmitting={isSubmitting}
+          onClose={() => setApplySquad(null)}
+          onChange={setApplyForm}
+          onSubmit={submitApplication}
+        />
+      ) : null}
+
+      {createOpen ? (
+        <CreateSquadModal
+          form={createForm}
+          isSubmitting={isSubmitting}
+          onClose={() => setCreateOpen(false)}
+          onChange={setCreateForm}
+          onTypeChange={updateCreateType}
+          onSubmit={submitSquad}
+        />
+      ) : null}
+
+      {statusOpen ? (
+        <StatusModal
+          tab={statusTab}
+          sentApplications={sentApplications}
+          receivedApplications={receivedApplications}
+          onTabChange={setStatusTab}
+          onClose={() => setStatusOpen(false)}
+          onOpenReceived={openReceivedRequest}
+        />
+      ) : null}
+
+      {receivedDetail ? (
+        <ReceivedApplicationModal
+          application={receivedDetail}
+          onClose={() => setReceivedDetail(null)}
+          onProcess={processRequest}
+        />
+      ) : null}
+
+      {memberProfile ? (
+        <MemberProfileModal
+          member={memberProfile}
+          message={memberMessage}
+          onMessageChange={setMemberMessage}
+          onClose={() => setMemberProfile(null)}
+          onSend={sendDM}
+        />
+      ) : null}
+
+      {authView ? (
+        <AuthModal
+          view={authView}
+          onClose={() => setAuthView(null)}
+          onViewChange={setAuthView}
+          onAuthenticated={handleAuthenticated}
+        />
+      ) : null}
+      </div>
+    </div>
+  )
+}

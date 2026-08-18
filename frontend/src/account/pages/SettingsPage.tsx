@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { userApi } from '../../lib/api'
+import { userApi } from '../../lib/api/auth'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
-import { readLocalPreferences } from '../ui'
+import { readLocalPreferences } from '../ui-utils'
 import type { AuthSession } from '../../types/auth'
 import type { UserProfile } from '../../types/learner'
 
@@ -32,17 +32,15 @@ function ToggleSwitch({
         id={id}
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="absolute block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-300"
-        style={{
-          right: checked ? 0 : '50%',
-          zIndex: 1,
-          borderColor: checked ? '#00C471' : '#E5E7EB',
-        }}
+        className={`absolute z-[1] block h-5 w-5 cursor-pointer appearance-none rounded-full border-4 bg-white transition-all duration-300 checked:border-[#00C471] checked:bg-[#00C471] ${
+          checked ? 'right-0 border-[#00C471]' : 'right-1/2 border-[#E5E7EB]'
+        }`}
       />
       <label
         htmlFor={id}
-        className="block h-5 cursor-pointer overflow-hidden rounded-full transition-all duration-300"
-        style={{ backgroundColor: checked ? '#00C471' : '#D1D5DB' }}
+        className={`block h-5 cursor-pointer overflow-hidden rounded-full transition-all duration-300 ${
+          checked ? 'bg-[#00C471]' : 'bg-[#D1D5DB]'
+        }`}
       />
     </div>
   )
@@ -166,7 +164,7 @@ export default function SettingsPage(props: { session: AuthSession }) {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar currentPageKey="settings" wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0" />
+        <MyMenuSidebar currentPageKey="settings" />
 
         <section className="min-w-0 flex-1">
           <div className="mx-auto max-w-2xl space-y-6">

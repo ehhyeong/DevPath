@@ -1,6 +1,8 @@
 package com.devpath.api.instructor.service;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
+import com.devpath.api.common.service.CourseDetailMetadataMapper;
+import com.devpath.api.course.service.HlsPlaybackService;
 import com.devpath.api.instructor.dto.course.InstructorCourseListResponse;
 import com.devpath.api.review.entity.Review;
 import com.devpath.api.review.repository.ReviewRepository;
@@ -32,7 +34,6 @@ import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -49,10 +50,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class InstructorCourseQueryService {
-
-  private static final String INFO_SECTION_TARGET_AUDIENCE = "TARGET_AUDIENCE";
-  private static final String INFO_SECTION_PREREQUISITES = "PREREQUISITES";
-  private static final String INFO_SECTION_OBJECTIVES = "OBJECTIVES";
 
   private static final String DEFAULT_COURSE_THUMBNAIL =
       "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80";
@@ -93,6 +90,8 @@ public class InstructorCourseQueryService {
   private final ReviewRepository reviewRepository;
   private final UserProfileRepository userProfileRepository;
   private final UserTechStackRepository userTechStackRepository;
+  private final CourseDetailMetadataMapper metadataMapper;
+  private final HlsPlaybackService hlsPlaybackService;
 
   public List<InstructorCourseListResponse> getCourseList(Long instructorId) {
     validateAuthenticatedUser(instructorId);
@@ -212,10 +211,11 @@ public class InstructorCourseQueryService {
         .durationSeconds(course.getDurationSeconds())
         .prerequisites(course.getPrerequisites())
         .jobRelevance(course.getJobRelevance())
-        .objectives(mapObjectives(objectives))
-        .targetAudiences(mapTargetAudiences(targetAudiences))
-        .infoSections(mapInfoSections(course, objectives, targetAudiences, infoSectionItems))
-        .tags(mapTags(tagMaps))
+        .objectives(metadataMapper.mapObjectives(objectives))
+        .targetAudiences(metadataMapper.mapTargetAudiences(targetAudiences))
+        .infoSections(
+            metadataMapper.mapInfoSections(course, objectives, targetAudiences, infoSectionItems))
+        .tags(metadataMapper.mapTags(tagMaps))
         .instructor(mapInstructor(course, userProfile, specialties))
         .sections(mapSections(sections))
         .news(Collections.emptyList())
@@ -252,108 +252,6 @@ public class InstructorCourseQueryService {
     return status == EnrollmentStatus.ACTIVE || status == EnrollmentStatus.COMPLETED;
   }
 
-  private List<CourseDetailResponse.ObjectiveItem> mapObjectives(List<CourseObjective> objectives) {
-    return objectives.stream()
-        .map(
-            objective ->
-                CourseDetailResponse.ObjectiveItem.builder()
-                    .objectiveId(objective.getObjectiveId())
-                    .objectiveText(objective.getObjectiveText())
-                    .displayOrder(objective.getDisplayOrder())
-                    .build())
-        .toList();
-  }
-
-  // 수강 대상 엔티티 목록을 응답 DTO로 변환한다.
-  private List<CourseDetailResponse.TargetAudienceItem> mapTargetAudiences(
-      List<CourseTargetAudience> targetAudiences) {
-    return targetAudiences.stream()
-        .map(
-            targetAudience ->
-                CourseDetailResponse.TargetAudienceItem.builder()
-                    .targetAudienceId(targetAudience.getTargetAudienceId())
-                    .audienceDescription(targetAudience.getAudienceDescription())
-                    .displayOrder(targetAudience.getDisplayOrder())
-                    .build())
-        .toList();
-  }
-
-  // 강의 태그 매핑 목록을 응답 DTO로 변환한다.
-  private List<CourseDetailResponse.InfoSectionItem> mapInfoSections(
-      Course course,
-      List<CourseObjective> objectives,
-      List<CourseTargetAudience> targetAudiences,
-      List<CourseInfoSectionItem> infoSectionItems) {
-    if (!infoSectionItems.isEmpty()) {
-      Map<String, List<CourseInfoSectionItem>> itemsBySection =
-          infoSectionItems.stream()
-              .collect(
-                  Collectors.groupingBy(
-                      item -> item.getSectionOrder() + ":" + item.getSectionKey(),
-                      LinkedHashMap::new,
-                      Collectors.toList()));
-
-      return itemsBySection.values().stream()
-          .map(
-              items -> {
-                CourseInfoSectionItem first = items.get(0);
-                return CourseDetailResponse.InfoSectionItem.builder()
-                    .sectionKey(first.getSectionKey())
-                    .title(first.getSectionTitle())
-                    .displayOrder(first.getSectionOrder())
-                    .items(items.stream().map(CourseInfoSectionItem::getItemText).toList())
-                    .build();
-              })
-          .toList();
-    }
-
-    List<CourseDetailResponse.InfoSectionItem> fallback = new ArrayList<>();
-    if (!targetAudiences.isEmpty()) {
-      fallback.add(
-          CourseDetailResponse.InfoSectionItem.builder()
-              .sectionKey(INFO_SECTION_TARGET_AUDIENCE)
-              .title("이런 분들에게 추천합니다")
-              .displayOrder(fallback.size())
-              .items(
-                  targetAudiences.stream()
-                      .map(CourseTargetAudience::getAudienceDescription)
-                      .toList())
-              .build());
-    }
-    if (course.getPrerequisites() != null && !course.getPrerequisites().isEmpty()) {
-      fallback.add(
-          CourseDetailResponse.InfoSectionItem.builder()
-              .sectionKey(INFO_SECTION_PREREQUISITES)
-              .title("수강 전 알아두면 좋아요")
-              .displayOrder(fallback.size())
-              .items(course.getPrerequisites())
-              .build());
-    }
-    if (!objectives.isEmpty()) {
-      fallback.add(
-          CourseDetailResponse.InfoSectionItem.builder()
-              .sectionKey(INFO_SECTION_OBJECTIVES)
-              .title("이 강의를 듣고 나면")
-              .displayOrder(fallback.size())
-              .items(objectives.stream().map(CourseObjective::getObjectiveText).toList())
-              .build());
-    }
-    return fallback;
-  }
-
-  private List<CourseDetailResponse.TagItem> mapTags(List<CourseTagMap> tagMaps) {
-    return tagMaps.stream()
-        .map(
-            tagMap ->
-                CourseDetailResponse.TagItem.builder()
-                    .tagId(tagMap.getTag().getTagId())
-                    .tagName(tagMap.getTag().getName())
-                    .proficiencyLevel(tagMap.getProficiencyLevel())
-                    .build())
-        .toList();
-  }
-
-  // 강사 프로필과 기술 스택을 강사 정보 응답 DTO로 변환한다.
   private CourseDetailResponse.InstructorInfo mapInstructor(
       Course course, UserProfile userProfile, List<String> specialties) {
     Long instructorId = course.getInstructorId();
@@ -422,7 +320,9 @@ public class InstructorCourseQueryService {
                   .title(lesson.getTitle())
                   .description(lesson.getDescription())
                   .lessonType(lesson.getLessonType() == null ? null : lesson.getLessonType().name())
-                  .videoUrl(lesson.getVideoUrl())
+                  .videoUrl(
+                      hlsPlaybackService.issuePlaybackUrl(
+                          lesson, lesson.getSection().getCourse().getInstructorId()))
                   .videoAssetKey(lesson.getVideoId())
                   .thumbnailUrl(lesson.getThumbnailUrl())
                   .durationSeconds(lesson.getDurationSeconds())

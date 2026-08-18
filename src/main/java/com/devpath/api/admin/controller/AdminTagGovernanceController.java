@@ -48,6 +48,13 @@ public class AdminTagGovernanceController {
     return ApiResponse.success("태그가 병합되었습니다.", null);
   }
 
+  @Operation(summary = "태그 삭제")
+  @DeleteMapping("/{tagId}")
+  public ApiResponse<Void> deleteTag(@PathVariable Long tagId) {
+    adminTagGovernanceService.deleteTag(tagId);
+    return ApiResponse.success("태그를 삭제했습니다.", null);
+  }
+
   @Operation(summary = "태그 가이드 조회", description = "표준 태그 목록 및 가이드 메시지 반환")
   @GetMapping("/guide")
   public ApiResponse<TagGuideResponse> getTagGuide() {

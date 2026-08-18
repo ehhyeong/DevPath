@@ -52,7 +52,8 @@ public class InstructorNotificationService {
   }
 
   @Transactional
-  public void notifyMentoringApplication(Long instructorId, String postTitle, String applicantName) {
+  public void notifyMentoringApplication(
+      Long instructorId, String postTitle, String applicantName) {
     notify(
         instructorId,
         InstructorNotificationType.MENTORING_APPLICATION,

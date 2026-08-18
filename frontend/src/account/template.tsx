@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import SiteHeader from '../components/SiteHeader'
 import type { AccountPageKey } from '../lib/account-navigation'
 import { useInternalPageScroll } from '../lib/useInternalPageScroll'
@@ -53,23 +53,13 @@ export function LearnerContentRow({ children }: { children: ReactNode }) {
 
 export function MyMenuSidebar({
   currentPageKey,
-  wrapperClassName = 'w-60 shrink-0 hidden lg:block -ml-0',
-  asideClassName = 'sticky top-24 pt-1.5',
-  spacerClassName,
-  wrapperStyle,
 }: {
   currentPageKey: AccountPageKey
-  wrapperClassName?: string
-  asideClassName?: string
-  spacerClassName?: string
-  wrapperStyle?: CSSProperties
 }) {
-  const mergedWrapperClassName = ['account-menu-sidebar', wrapperClassName].filter(Boolean).join(' ')
-
   return (
-    <div className={mergedWrapperClassName} style={wrapperStyle}>
-      {spacerClassName ? <div className={spacerClassName} /> : null}
-      <aside className={asideClassName}>
+    <div className="hidden w-60 shrink-0 lg:block">
+      <div className="h-16" />
+      <aside className="sticky top-24 pt-1.5">
         {accountMenuSections.map((section, sectionIndex) => (
           <div key={section.title}>
             {sectionIndex > 0 ? <div className="mx-3 my-5 border-t border-gray-200" /> : null}
@@ -78,9 +68,23 @@ export function MyMenuSidebar({
             </div>
 
             {section.items.map((item) => (
-              <a key={item.key} href={item.href} className={`nav-item ${currentPageKey === item.key ? 'active' : ''}`}>
-                <i className={item.icon} />
-                <span className="sidebar-text">{item.label}</span>
+              <a
+                key={item.key}
+                href={item.href}
+                className={`group mb-1 flex cursor-pointer items-center rounded-[0.75rem] px-4 py-[0.875rem] [transition:background-color_0.2s_ease,color_0.2s_ease] ${
+                  currentPageKey === item.key
+                    ? 'bg-[#E6F9F1] font-bold text-[#00C471]'
+                    : 'font-medium text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]'
+                }`}
+              >
+                <i
+                  className={`${item.icon} mr-[0.875rem] w-6 text-center text-[1.125rem] [transition:color_0.2s_ease] ${
+                    currentPageKey === item.key
+                      ? 'text-[#00C471] group-hover:text-[#00C471]'
+                      : 'text-[#9CA3AF] group-hover:text-[#4B5563]'
+                  }`}
+                />
+                <span className="ml-0 w-auto overflow-visible text-[0.95rem] whitespace-nowrap opacity-100">{item.label}</span>
               </a>
             ))}
           </div>

@@ -38,6 +38,7 @@ public enum ErrorCode {
   TIL_NOT_FOUND(HttpStatus.NOT_FOUND, "TIL 초안을 찾을 수 없습니다."),
   WISHLIST_NOT_FOUND(HttpStatus.NOT_FOUND, "찜한 강의를 찾을 수 없습니다."),
   ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 이력을 찾을 수 없습니다."),
+  PLAYBACK_DEVICE_LIMIT_EXCEEDED(HttpStatus.FORBIDDEN, "허용된 동시 학습 기기 수를 초과했습니다."),
 
   BUILDER_MODULE_NOT_FOUND(HttpStatus.NOT_FOUND, "빌더 모듈을 찾을 수 없습니다."),
   MY_ROADMAP_NOT_FOUND(HttpStatus.NOT_FOUND, "나만의 로드맵을 찾을 수 없습니다."),
@@ -49,8 +50,7 @@ public enum ErrorCode {
   CUSTOM_NODE_NOT_FOUND(HttpStatus.NOT_FOUND, "커스텀 노드를 찾을 수 없습니다."),
 
   INSUFFICIENT_TAGS(HttpStatus.BAD_REQUEST, "노드 진입에 필요한 태그가 부족합니다."),
-  NODE_RELEARN_REQUIRED(
-      HttpStatus.BAD_REQUEST, "심화/복습 노드는 추가 이후 관련 강의를 다시 학습해야 클리어할 수 있습니다."),
+  NODE_RELEARN_REQUIRED(HttpStatus.BAD_REQUEST, "심화/복습 노드는 추가 이후 관련 강의를 다시 학습해야 클리어할 수 있습니다."),
   NODE_LOCKED(HttpStatus.FORBIDDEN, "선행 노드를 먼저 완료해야 합니다."),
   NODE_ALREADY_COMPLETED(HttpStatus.BAD_REQUEST, "이미 완료된 노드입니다."),
 
@@ -62,8 +62,7 @@ public enum ErrorCode {
   RECOMMENDATION_ALREADY_PROCESSED(HttpStatus.BAD_REQUEST, "이미 처리된 추천입니다."),
   RECOMMENDATION_EXPIRED(HttpStatus.BAD_REQUEST, "만료된 추천입니다."),
   SUPPLEMENT_RECOMMENDATION_NOT_FOUND(HttpStatus.NOT_FOUND, "보강 노드 추천을 찾을 수 없습니다."),
-  NODE_TAG_RESOLUTION_FAILED(
-      HttpStatus.BAD_REQUEST, "추천 노드에 연결할 적합한 학습 태그를 찾지 못했습니다."),
+  NODE_TAG_RESOLUTION_FAILED(HttpStatus.BAD_REQUEST, "추천 노드에 연결할 적합한 학습 태그를 찾지 못했습니다."),
   RISK_WARNING_NOT_FOUND(HttpStatus.NOT_FOUND, "리스크 경고를 찾을 수 없습니다."),
   OCR_RESULT_NOT_FOUND(HttpStatus.NOT_FOUND, "OCR 결과를 찾을 수 없습니다."),
 
@@ -95,6 +94,7 @@ public enum ErrorCode {
   SETTLEMENT_NOT_PENDING(HttpStatus.BAD_REQUEST, "PENDING 상태의 정산만 처리할 수 있습니다."),
   ACCOUNT_ALREADY_RESTRICTED(HttpStatus.BAD_REQUEST, "이미 제한된 계정입니다."),
   ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "계정을 찾을 수 없습니다."),
+  ACCOUNT_ACCESS_BLOCKED(HttpStatus.FORBIDDEN, "비활성화되었거나 이용이 제한된 계정입니다."),
   NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "N001", "해당 공지사항을 찾을 수 없습니다."),
   QNA_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "QnA 질문을 찾을 수 없습니다."),
   QNA_ANSWER_NOT_FOUND(HttpStatus.NOT_FOUND, "QnA 답변을 찾을 수 없습니다."),

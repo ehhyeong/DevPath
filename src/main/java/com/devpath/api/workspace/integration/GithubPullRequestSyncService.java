@@ -1,8 +1,8 @@
 package com.devpath.api.workspace.integration;
 
+import com.devpath.api.workspace.service.WorkspaceCodeReviewSchema;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
-import com.devpath.api.workspace.service.WorkspaceCodeReviewSchema;
 import com.devpath.domain.operation.integration.ExternalIntegration;
 import com.devpath.domain.operation.integration.ExternalIntegrationRepository;
 import com.devpath.domain.operation.integration.IntegrationProvider;
@@ -46,10 +46,10 @@ public class GithubPullRequestSyncService {
     List<GithubPullRequest> pullRequests;
     try {
       pullRequests =
-          githubPullRequestClient.fetchPullRequests(repository, integration.getRepositoryAccessToken());
+          githubPullRequestClient.fetchPullRequests(
+              repository, integration.getRepositoryAccessToken());
     } catch (CustomException exception) {
-      String message =
-          "GitHub 저장소는 연결했지만 PR 동기화는 실패했습니다. 저장소 권한, API 제한, 서버 인증 설정을 확인해주세요.";
+      String message = "GitHub 저장소는 연결했지만 PR 동기화는 실패했습니다. 저장소 권한, API 제한, 서버 인증 설정을 확인해주세요.";
       integration.markSyncFailed(message);
       return new SyncResult(0, 0, 0, true, message);
     }

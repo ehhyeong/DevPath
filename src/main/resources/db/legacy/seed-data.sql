@@ -80,12 +80,13 @@ WHERE NOT EXISTS (
     WHERE email = 'instructor@devpath.com'
 );
 
-INSERT INTO users (email, password, name, role_name, is_active, created_at, updated_at)
+INSERT INTO users (email, password, name, role_name, is_active, is_super_admin, created_at, updated_at)
 SELECT
     'admin@devpath.com',
     '$2a$10$xh6.EW/FRzJBWfxqpdXh2uTVoepPhUxQRUH5OEwk90IpYeKjegkj.',
     '박서연',
     'ROLE_ADMIN',
+    TRUE,
     TRUE,
     NOW(),
     NOW()
@@ -13778,15 +13779,30 @@ WHERE workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서�
   );
 
 UPDATE qna_questions question
-SET adopted_answer_id = answer.answer_id,
+SET adopted_answer_id = (
+        SELECT MAX(answer.answer_id)
+        FROM qna_answers answer
+        WHERE answer.question_id = question.question_id
+    ),
     qna_status = 'ANSWERED',
-    updated_at = answer.created_at
-FROM qna_answers answer, workspace workspace_seed
-WHERE answer.question_id = question.question_id
-  AND workspace_seed.id = question.workspace_id
-  AND workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+    updated_at = (
+        SELECT MAX(answer.created_at)
+        FROM qna_answers answer
+        WHERE answer.question_id = question.question_id
+    )
+WHERE EXISTS (
+      SELECT 1
+      FROM workspace workspace_seed
+      WHERE workspace_seed.id = question.workspace_id
+        AND workspace_seed.name = '대용량 트래픽 처리를 위한 커머스 서버 구축'
+  )
   AND question.title = 'Redis 쿠폰 중복 발급 테스트 방식 질문'
-  AND question.adopted_answer_id IS NULL;
+  AND question.adopted_answer_id IS NULL
+  AND EXISTS (
+      SELECT 1
+      FROM qna_answers answer
+      WHERE answer.question_id = question.question_id
+  );
 
 INSERT INTO meeting_note (
     workspace_id,
@@ -19126,6 +19142,7 @@ INSERT INTO experiment_results (
     experiment_id,
     experiment_name,
     metrics_json,
+    status,
     created_at
 )
 SELECT
@@ -19133,6 +19150,7 @@ SELECT
     'EXP-C-9001',
     'C Swagger admin analytics experiment',
     '{"totalUsers": 15230, "weeklyActiveUsers": 4321, "averageRoadmapProgress": 42.8, "monthlyCompletedAssignments": 1830}',
+    'COMPLETED',
     NOW()
 WHERE NOT EXISTS (
     SELECT 1

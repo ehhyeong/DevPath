@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +48,10 @@ public class AdminPolicyAndMappingService {
       BigDecimal.valueOf(85.0).setScale(1, RoundingMode.HALF_UP);
   private static final Boolean DEFAULT_HLS_ENCRYPTED = true;
   private static final Integer DEFAULT_MAX_CONCURRENT_DEVICES = 3;
+  private static final Integer DEFAULT_REFUND_POLICY_DAYS = 7;
+  private static final Long DEFAULT_MAX_COURSE_PRICE = 0L;
+  private static final String DEFAULT_MAX_RESOLUTION = "1080p";
+  private static final Boolean DEFAULT_WATERMARK_ENABLED = true;
   private static final BigDecimal HUNDRED =
       BigDecimal.valueOf(100).setScale(1, RoundingMode.HALF_UP);
 
@@ -57,6 +62,7 @@ public class AdminPolicyAndMappingService {
   private final TagValidationService tagValidationService;
   private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final SystemSettingRepository systemSettingRepository;
+  private final ObjectProvider<AdminCourseNodeMappingAiClient> mappingAiClientProvider;
 
   public AdminPolicyAndMappingService(
       CourseRepository courseRepository,
@@ -65,7 +71,8 @@ public class AdminPolicyAndMappingService {
       NodeRequiredTagRepository nodeRequiredTagRepository,
       TagValidationService tagValidationService,
       CourseNodeMappingRepository courseNodeMappingRepository,
-      SystemSettingRepository systemSettingRepository) {
+      SystemSettingRepository systemSettingRepository,
+      ObjectProvider<AdminCourseNodeMappingAiClient> mappingAiClientProvider) {
     this.courseRepository = courseRepository;
     this.courseTagMapRepository = courseTagMapRepository;
     this.roadmapNodeRepository = roadmapNodeRepository;
@@ -73,6 +80,7 @@ public class AdminPolicyAndMappingService {
     this.tagValidationService = tagValidationService;
     this.courseNodeMappingRepository = courseNodeMappingRepository;
     this.systemSettingRepository = systemSettingRepository;
+    this.mappingAiClientProvider = mappingAiClientProvider;
   }
 
   @Transactional(readOnly = true)
@@ -357,31 +365,69 @@ public class AdminPolicyAndMappingService {
         .divide(BigDecimal.valueOf(requiredCount), 1, RoundingMode.HALF_UP);
   }
 
-  // ===== 신규 거버넌스 API 메서드 =====
-
   @Transactional(readOnly = true)
   public List<CourseNodeMappingCandidateResponse> getMappingCandidatesSimple() {
-    // TODO: 추후 AI 기반 태그 매칭 알고리즘 연동 예정
     MappingCandidatesResponse existing = getMappingCandidates();
     return existing.getCourses().stream()
         .map(
-            item ->
-                CourseNodeMappingCandidateResponse.builder()
-                    .courseId(item.getCourseId())
-                    .courseTitle(item.getCourseTitle())
-                    .suggestedNodeIds(
-                        item.getCandidates().stream()
-                            .map(NodeCandidateItem::getNodeId)
-                            .collect(Collectors.toList()))
-                    .tagMatchRate(
-                        item.getCandidates().isEmpty()
-                            ? 0.0
-                            : item.getCandidates().stream()
-                                .mapToDouble(c -> c.getCoveragePercent().doubleValue())
-                                .average()
-                                .orElse(0.0))
-                    .build())
+            item -> toSimpleMappingCandidate(item, selectTagBasedSuggestions(item), "TAG_COVERAGE"))
         .collect(Collectors.toList());
+  }
+
+  @Transactional(readOnly = true)
+  public CourseNodeMappingCandidateResponse getAiMappingCandidate(Long courseId) {
+    CourseMappingCandidateItem course =
+        getMappingCandidates().getCourses().stream()
+            .filter(item -> item.getCourseId().equals(courseId))
+            .findFirst()
+            .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+
+    AdminCourseNodeMappingAiClient aiClient = mappingAiClientProvider.getIfAvailable();
+    List<Long> aiSuggestions = aiClient == null ? List.of() : aiClient.recommend(course);
+    if (!aiSuggestions.isEmpty()) {
+      return toSimpleMappingCandidate(course, aiSuggestions, "GEMINI");
+    }
+    return toSimpleMappingCandidate(course, selectTagBasedSuggestions(course), "TAG_COVERAGE");
+  }
+
+  private CourseNodeMappingCandidateResponse toSimpleMappingCandidate(
+      CourseMappingCandidateItem course, List<Long> suggestedNodeIds, String source) {
+    Map<Long, NodeCandidateItem> candidateMap =
+        course.getCandidates().stream()
+            .collect(Collectors.toMap(NodeCandidateItem::getNodeId, item -> item));
+    double matchRate =
+        suggestedNodeIds.stream()
+            .map(candidateMap::get)
+            .filter(Objects::nonNull)
+            .mapToDouble(item -> item.getCoveragePercent().doubleValue())
+            .average()
+            .orElse(0.0);
+
+    return CourseNodeMappingCandidateResponse.builder()
+        .courseId(course.getCourseId())
+        .courseTitle(course.getCourseTitle())
+        .courseTags(course.getCourseTags())
+        .mappedNodeIds(course.getMappedNodeIds())
+        .suggestedNodeIds(suggestedNodeIds)
+        .tagMatchRate(matchRate)
+        .recommendationSource(source)
+        .build();
+  }
+
+  private List<Long> selectTagBasedSuggestions(CourseMappingCandidateItem course) {
+    List<Long> strongMatches =
+        course.getCandidates().stream()
+            .filter(
+                candidate ->
+                    Boolean.TRUE.equals(candidate.getFullyMatched())
+                        || candidate.getCoveragePercent().compareTo(BigDecimal.valueOf(50)) >= 0)
+            .limit(5)
+            .map(NodeCandidateItem::getNodeId)
+            .toList();
+    if (!strongMatches.isEmpty()) {
+      return strongMatches;
+    }
+    return course.getCandidates().stream().limit(3).map(NodeCandidateItem::getNodeId).toList();
   }
 
   public void applyNodeMapping(Long courseId, CourseNodeMappingRequest request) {
@@ -409,47 +455,60 @@ public class AdminPolicyAndMappingService {
 
   @Transactional(readOnly = true)
   public com.devpath.api.admin.dto.governance.SystemPolicyResponse getSystemPoliciesSimple() {
-    // TODO: refundPolicyDays, maxCoursePrice DB 연동 예정
     SystemSetting setting = systemSettingRepository.findTopByOrderBySettingIdAsc().orElse(null);
-    Integer platformFeeRate = setting != null ? setting.getPlatformFeeRate().intValue() : 20;
-
-    // 이번 단계에서는 DB 스키마 확장 없이 기본 응답값만 안정적으로 유지한다.
-    Integer refundPolicyDays = 7;
-    Long maxCoursePrice = 0L;
 
     return com.devpath.api.admin.dto.governance.SystemPolicyResponse.builder()
-        .platformFeeRate(platformFeeRate)
-        .refundPolicyDays(refundPolicyDays)
-        .maxCoursePrice(maxCoursePrice)
+        .platformFeeRate(
+            setting == null
+                ? DEFAULT_PLATFORM_FEE_RATE.intValue()
+                : setting.getPlatformFeeRate().intValue())
+        .refundPolicyDays(
+            setting == null ? DEFAULT_REFUND_POLICY_DAYS : setting.getRefundPolicyDays())
+        .maxCoursePrice(setting == null ? DEFAULT_MAX_COURSE_PRICE : setting.getMaxCoursePrice())
+        .hlsEnabled(setting == null ? DEFAULT_HLS_ENCRYPTED : setting.getIsHlsEncrypted())
+        .maxResolution(setting == null ? DEFAULT_MAX_RESOLUTION : setting.getMaxResolution())
+        .watermarkEnabled(
+            setting == null ? DEFAULT_WATERMARK_ENABLED : setting.getWatermarkEnabled())
         .updatedAt(setting == null ? null : setting.getUpdatedAt())
         .build();
   }
 
   public void updateSystemPoliciesSimple(SystemPolicyUpdateRequest request) {
-    // TODO: refundPolicyDays, maxCoursePrice 실제 정책 저장 연동 예정
-    if (request != null && request.getPlatformFeeRate() != null) {
-      SystemSetting setting = getOrCreateSystemSetting();
-      BigDecimal platformFeeRate = normalizeRate(request.getPlatformFeeRate().doubleValue());
-      BigDecimal instructorSettlementRate = HUNDRED.subtract(platformFeeRate);
-      validateRatePair(platformFeeRate, instructorSettlementRate);
-      setting.updateSystemPolicy(platformFeeRate, instructorSettlementRate);
+    if (request == null) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
     }
+    SystemSetting setting = getOrCreateSystemSetting();
+    BigDecimal platformFeeRate = normalizeRate(request.getPlatformFeeRate().doubleValue());
+    BigDecimal instructorSettlementRate = HUNDRED.subtract(platformFeeRate);
+    validateRatePair(platformFeeRate, instructorSettlementRate);
+    setting.updateSystemPolicy(
+        platformFeeRate,
+        instructorSettlementRate,
+        request.getRefundPolicyDays(),
+        request.getMaxCoursePrice());
   }
 
   public void updateStreamingPolicySimple(StreamingPolicyUpdateRequest request) {
-    // TODO: maxResolution, watermarkEnabled 실제 정책 저장 연동 예정
+    if (request == null) {
+      throw new CustomException(ErrorCode.INVALID_INPUT);
+    }
     SystemSetting setting = getOrCreateSystemSetting();
-    Boolean hlsEncrypted =
-        request != null && request.getHlsEnabled() != null
-            ? request.getHlsEnabled()
-            : setting.getIsHlsEncrypted();
+    Boolean hlsEncrypted = request.getHlsEnabled();
     Integer maxConcurrentDevices = setting.getMaxConcurrentDevices();
 
-    if (hlsEncrypted == null || maxConcurrentDevices == null || maxConcurrentDevices <= 0) {
+    if (hlsEncrypted == null
+        || maxConcurrentDevices == null
+        || maxConcurrentDevices <= 0
+        || request.getMaxResolution() == null
+        || request.getWatermarkEnabled() == null) {
       throw new CustomException(ErrorCode.INVALID_INPUT);
     }
 
-    setting.updateStreamingPolicy(hlsEncrypted, maxConcurrentDevices);
+    setting.updateStreamingPolicy(
+        hlsEncrypted,
+        maxConcurrentDevices,
+        request.getMaxResolution(),
+        request.getWatermarkEnabled());
   }
 
   private SystemSetting getOrCreateSystemSetting() {
@@ -463,6 +522,10 @@ public class AdminPolicyAndMappingService {
                         .instructorSettlementRate(DEFAULT_INSTRUCTOR_SETTLEMENT_RATE)
                         .isHlsEncrypted(DEFAULT_HLS_ENCRYPTED)
                         .maxConcurrentDevices(DEFAULT_MAX_CONCURRENT_DEVICES)
+                        .refundPolicyDays(DEFAULT_REFUND_POLICY_DAYS)
+                        .maxCoursePrice(DEFAULT_MAX_COURSE_PRICE)
+                        .maxResolution(DEFAULT_MAX_RESOLUTION)
+                        .watermarkEnabled(DEFAULT_WATERMARK_ENABLED)
                         .build()));
   }
 

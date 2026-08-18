@@ -25,6 +25,8 @@
 *.ts text eol=lf
 *.tsx text eol=lf
 *.svg text eol=lf
+Dockerfile text eol=lf
+*.conf text eol=lf
 
 *.bat text eol=crlf
 *.cmd text eol=crlf

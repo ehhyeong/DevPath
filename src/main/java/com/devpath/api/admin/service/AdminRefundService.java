@@ -2,6 +2,7 @@ package com.devpath.api.admin.service;
 
 import com.devpath.api.admin.dto.refund.RefundProcessRequest;
 import com.devpath.api.notification.service.NotificationEventService;
+import com.devpath.api.refund.dto.RefundResponse;
 import com.devpath.api.refund.entity.RefundRequest;
 import com.devpath.api.refund.entity.RefundReview;
 import com.devpath.api.refund.entity.RefundStatus;
@@ -14,6 +15,7 @@ import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import com.devpath.domain.course.repository.CourseEnrollmentRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,11 +40,14 @@ public class AdminRefundService {
     // 승인 시에는 HELD를 제외한 최신 PENDING 정산 금액에서만 차감한다.
     Settlement settlement =
         settlementRepository
-            .findTopByInstructorIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
-                refundRequest.getInstructorId(), SettlementStatus.PENDING)
+            .findTopByLearnerIdAndCourseIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+                refundRequest.getLearnerId(), refundRequest.getCourseId(), SettlementStatus.PENDING)
             .orElseThrow(() -> new CustomException(ErrorCode.SETTLEMENT_NOT_FOUND));
 
-    settlement.deductAmount(refundRequest.getRefundAmount());
+    long deduction = Math.min(refundRequest.getRefundAmount(), settlement.getAmount());
+    if (deduction > 0L) {
+      settlement.deductAmount(deduction);
+    }
     refundRequest.approve();
 
     // 환불 승인 완료 시 수강 이력은 취소 상태로 바꾼다.
@@ -83,5 +88,20 @@ public class AdminRefundService {
             .build());
 
     notificationEventService.notifyRefundProcessed(refundRequest.getLearnerId(), false);
+  }
+
+  @Transactional(readOnly = true)
+  public List<RefundResponse> getRefunds() {
+    return refundRepository.findAllByIsDeletedFalseOrderByRequestedAtDesc().stream()
+        .map(RefundResponse::from)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public RefundResponse getRefund(Long refundId) {
+    return RefundResponse.from(
+        refundRepository
+            .findByIdAndIsDeletedFalse(refundId)
+            .orElseThrow(() -> new CustomException(ErrorCode.REFUND_NOT_FOUND)));
   }
 }

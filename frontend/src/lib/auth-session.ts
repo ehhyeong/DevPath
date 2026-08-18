@@ -1,4 +1,5 @@
 import type { AuthSession, AuthTokenClaims, AuthTokenResponse } from '../types/auth'
+import { invalidateCachedQueries } from './memory-query-cache'
 import {
   EXPIRED_AUTH_TOAST_MESSAGE,
   LOGIN_SUCCESS_AUTH_TOAST_MESSAGE,
@@ -98,6 +99,7 @@ function writeToStorage(storage: Storage, session: AuthSession) {
 }
 
 function notifyAuthSessionChanged() {
+  invalidateCachedQueries()
   window.dispatchEvent(new Event(AUTH_SESSION_SYNC_EVENT))
 }
 

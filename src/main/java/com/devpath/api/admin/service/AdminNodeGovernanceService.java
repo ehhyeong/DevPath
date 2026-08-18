@@ -18,6 +18,7 @@ import com.devpath.domain.roadmap.repository.NodeCompletionRuleRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
+import com.devpath.domain.roadmap.repository.RoadmapNodeResourceRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.repository.TagRepository;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,6 +47,7 @@ public class AdminNodeGovernanceService {
   private final NodeRequiredTagRepository nodeRequiredTagRepository;
   private final PrerequisiteRepository prerequisiteRepository;
   private final NodeCompletionRuleRepository nodeCompletionRuleRepository;
+  private final RoadmapNodeResourceRepository roadmapNodeResourceRepository;
 
   @Transactional(readOnly = true)
   // 관리자 표에 필요한 노드와 필수 조건 정보를 한 번에 조합한다.
@@ -162,6 +165,23 @@ public class AdminNodeGovernanceService {
     List<NodeRequiredTag> mappings =
         tags.stream().map(tag -> NodeRequiredTag.builder().node(node).tag(tag).build()).toList();
     nodeRequiredTagRepository.saveAll(mappings);
+  }
+
+  public void deleteNode(Long nodeId) {
+    RoadmapNode node = getNode(nodeId);
+
+    // 사용자 로드맵이나 강의가 참조하는 노드는 DB 제약으로 삭제를 막아 기존 학습 데이터를 보존한다.
+    nodeRequiredTagRepository.deleteAllByNodeId(nodeId);
+    prerequisiteRepository.deleteAllByNodeOrPreNode(node, node);
+    nodeCompletionRuleRepository.deleteAllByNodeNodeId(nodeId);
+    roadmapNodeResourceRepository.deleteAllByNodeNodeId(nodeId);
+    try {
+      roadmapNodeRepository.delete(node);
+      roadmapNodeRepository.flush();
+    } catch (DataIntegrityViolationException exception) {
+      throw new CustomException(
+          ErrorCode.INVALID_STATUS_TRANSITION, "강의 또는 학습 로드맵에서 사용 중인 노드는 삭제할 수 없습니다.");
+    }
   }
 
   public void updateNodeType(Long nodeId, NodeTypeRequest request) {

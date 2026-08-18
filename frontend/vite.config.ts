@@ -11,13 +11,15 @@ const proxyToBackend = {
   changeOrigin: true,
 } as const
 
-// 관리자 대시보드를 별도 엔트리 HTML로 같이 빌드한다.
+// 모든 화면은 index.html 단일 엔트리에서 경로별 React 앱으로 로드한다.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
-    rollupOptions: {
+    // Mermaid ships one optional parser module that Rolldown cannot split further.
+    chunkSizeWarningLimit: 700,
+    rolldownOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
+        main: resolve(import.meta.dirname, 'index.html'),
       },
     },
   },

@@ -98,8 +98,38 @@ export interface AdminAccount {
   nickname: string
   role: string
   accountStatus: string | null
+  instructorStatus: string | null
+  instructorGrade: string | null
   createdAt: string | null
   lastLoginAt: string | null
+}
+
+export interface AdminAccountLog {
+  logId: number
+  targetUserId: number
+  adminId: number | null
+  logType: string
+  reason: string
+  processedAt: string | null
+}
+
+export interface AdminUserPermission {
+  userId: number
+  email: string
+  roles: string[]
+  adminRoleId: number | null
+  adminRoleName: string | null
+  permissionCodes: string[]
+  superAdmin: boolean
+}
+
+export interface AdminRole {
+  id: number
+  roleName: string
+  description: string | null
+  permissionCodes: string[]
+  createdAt: string | null
+  updatedAt: string | null
 }
 
 // 강의 검수 대기열에 필요한 최소 정보다.
@@ -109,6 +139,68 @@ export interface AdminPendingCourse {
   instructorName: string | null
   title: string
   submittedAt: string | null
+}
+
+export interface AdminCourseReviewHistory {
+  id: number
+  courseId: number
+  instructorId: number
+  adminId: number
+  action: string
+  reason: string
+  processedAt: string | null
+}
+
+export interface AdminCourseReviewLesson {
+  lessonId: number
+  title: string
+  description: string | null
+  lessonType: string | null
+  playbackUrl: string | null
+  thumbnailUrl: string | null
+  durationSeconds: number | null
+  preview: boolean | null
+  published: boolean | null
+  sortOrder: number | null
+}
+
+export interface AdminCourseReviewSection {
+  sectionId: number
+  title: string
+  description: string | null
+  sortOrder: number | null
+  published: boolean | null
+  lessons: AdminCourseReviewLesson[]
+}
+
+export interface AdminCourseReviewDetail {
+  courseId: number
+  title: string
+  subtitle: string | null
+  description: string | null
+  status: string
+  price: number | null
+  originalPrice: number | null
+  currency: string | null
+  difficultyLevel: string | null
+  language: string | null
+  hasCertificate: boolean | null
+  thumbnailUrl: string | null
+  introVideoUrl: string | null
+  durationSeconds: number | null
+  prerequisites: string[]
+  jobRelevance: string[]
+  submittedAt: string | null
+  instructorId: number
+  instructorName: string | null
+  instructorEmail: string | null
+  sectionCount: number
+  lessonCount: number
+  publishedLessonCount: number
+  previewLessonCount: number
+  totalDurationSeconds: number
+  sections: AdminCourseReviewSection[]
+  reviewHistory: AdminCourseReviewHistory[]
 }
 
 // 신고 접수 표에서 사용하는 신고 요약 정보다.
@@ -127,5 +219,38 @@ export interface AdminModerationReport {
   contentPreview: string | null
   reason: string
   status: string
+  blinded: boolean
+  actionTaken: string | null
+  resolutionReason: string | null
+  resolvedBy: number | null
+  resolvedAt: string | null
   createdAt: string | null
+}
+
+export interface AdminModerationStats {
+  totalReports: number
+  resolvedReports: number
+  pendingReports: number
+  blindedContents: number
+  suspendedUsers: number
+}
+
+export interface AdminSystemPolicy {
+  platformFeeRate: number
+  refundPolicyDays: number
+  maxCoursePrice: number
+  hlsEnabled: boolean
+  maxResolution: string
+  watermarkEnabled: boolean
+  updatedAt: string | null
+}
+
+export interface AdminCourseNodeMappingCandidate {
+  courseId: number
+  courseTitle: string
+  courseTags: string[]
+  mappedNodeIds: number[]
+  suggestedNodeIds: number[]
+  tagMatchRate: number
+  recommendationSource: 'GEMINI' | 'TAG_COVERAGE' | string
 }

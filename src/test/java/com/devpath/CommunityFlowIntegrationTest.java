@@ -40,6 +40,7 @@ class CommunityFlowIntegrationTest {
 
   private Long authorId;
   private Long actorId;
+  private String authorName;
 
   @BeforeEach
   void setUp() {
@@ -53,6 +54,9 @@ class CommunityFlowIntegrationTest {
     actorId =
         jdbcTemplate.queryForObject(
             "select user_id from users where email = ?", Long.class, "instructor@devpath.com");
+    authorName =
+        jdbcTemplate.queryForObject(
+            "select name from users where email = ?", String.class, "learner@devpath.com");
   }
 
   @Test
@@ -67,7 +71,7 @@ class CommunityFlowIntegrationTest {
 
     long postId = createdPost.get("id").asLong();
     assertThat(postId).isPositive();
-    assertThat(createdPost.get("authorName").asText()).isEqualTo("Learner Kim");
+    assertThat(createdPost.get("authorName").asText()).isEqualTo(authorName);
     assertThat(createdPost.get("category").asText()).isEqualTo("TECH_SHARE");
     assertThat(createdPost.get("viewCount").asInt()).isZero();
     assertThat(createdPost.get("likeCount").asInt()).isZero();

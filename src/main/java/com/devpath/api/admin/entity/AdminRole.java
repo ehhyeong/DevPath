@@ -39,4 +39,8 @@ public class AdminRole {
     this.roleName = roleName;
     this.description = description;
   }
+
+  public void delete() {
+    this.isDeleted = true;
+  }
 }

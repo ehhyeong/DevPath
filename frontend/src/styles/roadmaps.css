@@ -1,0 +1,217 @@
+/* Consolidated from roadmap.css. */
+/* index.css에서 Pretendard, body font-family 이미 선언 */
+
+:root {
+  --header-height: var(--app-header-height, 64px);
+  --roadmap-toolbar-height: 60px;
+  --roadmap-content-gap: 48px;
+  --roadmap-fixed-top: calc(var(--header-height) + var(--roadmap-toolbar-height));
+  --changes-panel-width: min(400px, 100vw);
+  --roadmap-node-width: clamp(280px, 34vw, 380px);
+  --roadmap-side-node-width: clamp(250px, 30vw, 330px);
+  --roadmap-row-min-height: 146px;
+  --roadmap-row-gap: clamp(24px, 4vw, 34px);
+  --roadmap-lane-gap: clamp(24px, 5vw, 48px);
+  --roadmap-line-color: #cbd5e1;
+}
+
+.roadmap-main.panel-open .roadmap-content {
+  max-width: calc(100% - var(--changes-panel-width));
+  margin-left: 0;
+  margin-right: var(--changes-panel-width);
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ── 헤더 ── */
+.roadmap-page-toolbar {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  height: var(--roadmap-toolbar-height);
+  z-index: 950;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #e5e7eb;
+  backdrop-filter: blur(10px);
+}
+
+.roadmap-page-toolbar__inner {
+  width: min(100%, 1600px);
+  height: 100%;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.roadmap-page-toolbar__inner::-webkit-scrollbar {
+  display: none;
+}
+
+.roadmap-page-toolbar__left,
+.roadmap-page-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+/* ── 변경사항 노드 오버레이 ── */
+@keyframes pulse-blue {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+  50%       { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+@keyframes pulse-orange {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+  50%       { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+}
+@keyframes pulse-indigo {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6); }
+  50%       { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+}
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  50%       { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+/* ── 변경 라벨 배지 (노드 위) ── */
+/* ── 로드맵 정보 아코디언 HTML 렌더링 ── */
+.roadmap-info-html .p-6 { padding: 1.14rem 1.24rem; }
+.roadmap-info-html .text-sm { font-size: 0.875rem; }
+.roadmap-info-html .text-base { font-size: 0.95rem; }
+.roadmap-info-html .leading-relaxed { line-height: 1.625; }
+.roadmap-info-html .space-y-6 > * + * { margin-top: 1.08rem; }
+.roadmap-info-html .space-y-1 > * + * { margin-top: 0.16rem; }
+.roadmap-info-html .mb-2 { margin-bottom: 0.38rem; }
+.roadmap-info-html .mb-4 { margin-bottom: 0.74rem; }
+.roadmap-info-html .block { display: block; }
+.roadmap-info-html .font-bold { font-weight: 700; }
+.roadmap-info-html .text-gray-900 { color: #111827; }
+.roadmap-info-html .text-gray-800 { color: #1f2937; }
+.roadmap-info-html .text-gray-700 { color: #374151; }
+.roadmap-info-html .text-gray-600 { color: #4b5563; }
+.roadmap-info-html .bg-yellow-100 { background: #fef3c7; }
+.roadmap-info-html .bg-white { background: #ffffff; }
+.roadmap-info-html .px-1 { padding-left: 0.2rem; padding-right: 0.2rem; }
+.roadmap-info-html .p-5 { padding: 0.96rem 1.06rem; }
+.roadmap-info-html .rounded { border-radius: 0.25rem; }
+.roadmap-info-html .rounded-xl { border-radius: 0.8rem; }
+.roadmap-info-html .border { border: 1px solid #e5e7eb; }
+.roadmap-info-html .border-gray-200 { border-color: #e5e7eb; }
+.roadmap-info-html .shadow-sm { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); }
+.roadmap-info-html .list-disc { list-style-type: disc; }
+.roadmap-info-html .pl-5 { padding-left: 0.95rem; }
+.roadmap-info-html .mr-1 { margin-right: 0.25rem; }
+.roadmap-info-html .text-\[\#00C471\] { color: #00c471; }
+.roadmap-info-html p,
+.roadmap-info-html li,
+.roadmap-info-html strong,
+.roadmap-info-html span {
+  letter-spacing: -0.01em;
+}
+.roadmap-info-html p {
+  font-size: 0.91rem;
+  line-height: 1.68;
+  color: #374151;
+  margin: 0;
+}
+.roadmap-info-html strong {
+  font-weight: 700;
+  color: #111827;
+}
+.roadmap-info-html ul {
+  margin: 0;
+}
+.roadmap-info-html li {
+  font-size: 0.89rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+.roadmap-info-html i {
+  font-size: 0.85rem;
+}
+
+/* ── 배지 펄스 ── */
+@keyframes badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.1); }
+}
+@media (max-width: 960px) {
+  .roadmap-main.panel-open .roadmap-content {
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .changes-panel {
+    width: min(var(--changes-panel-width), 100vw);
+  }
+}
+
+/* ── 헤더 네비게이션 ── */
+.header-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  white-space: nowrap;
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --roadmap-toolbar-height: 0px;
+    --roadmap-content-gap: 24px;
+  }
+
+  .roadmap-header-metrics-shell {
+    display: block;
+  }
+
+  .roadmap-page-toolbar {
+    display: none;
+  }
+
+  .roadmap-page-toolbar__inner {
+    justify-content: flex-start;
+  }
+
+  .roadmap-page-toolbar__left--mobile,
+  .roadmap-page-toolbar__right--mobile {
+    display: none;
+  }
+}
+
+
+/* Consolidated from my-roadmap.css. */
+@keyframes builderStepPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+/* Consolidated from roadmap-hub.css. */
+.hub-main {
+  padding-top: var(--app-header-height, 64px);
+  overflow-y: auto;
+  background: #f9fafb;
+  overflow-anchor: none;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --left-rail: 0px;
+  }
+}

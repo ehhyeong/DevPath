@@ -9,7 +9,6 @@ import com.devpath.domain.course.entity.CourseNodeMapping;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.learning.entity.LessonProgress;
-import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.recommendation.RecommendationHistory;
 import com.devpath.domain.learning.entity.recommendation.RecommendationStatus;
 import com.devpath.domain.learning.entity.recommendation.RiskWarning;
@@ -17,18 +16,17 @@ import com.devpath.domain.learning.entity.recommendation.SupplementRecommendatio
 import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.TilDraftRepository;
 import com.devpath.domain.learning.repository.TimestampNoteRepository;
-import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.ocr.OcrResultRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
 import com.devpath.domain.learning.repository.recommendation.RiskWarningRepository;
 import com.devpath.domain.learning.repository.recommendation.SupplementRecommendationRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
+import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
+import com.devpath.domain.operation.recommendation.RecommendationAlgorithmPolicy;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
-import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
-import com.devpath.domain.user.repository.UserTechStackRepository;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -46,23 +44,24 @@ public class SupplementRecommendationService {
 
   private final SupplementRecommendationRepository supplementRecommendationRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
-  private final NodeRequiredTagRepository nodeRequiredTagRepository;
   private final RecommendationHistoryRepository recommendationHistoryRepository;
   private final RiskWarningRepository riskWarningRepository;
   private final UserRepository userRepository;
-  private final UserTechStackRepository userTechStackRepository;
+  private final SupplementRecommendationMetrics recommendationMetrics;
   private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final CourseTagMapRepository courseTagMapRepository;
   private final LessonProgressRepository lessonProgressRepository;
   private final TimestampNoteRepository timestampNoteRepository;
   private final TilDraftRepository tilDraftRepository;
   private final OcrResultRepository ocrResultRepository;
-  private final LearningAutomationRuleRepository learningAutomationRuleRepository;
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
+  private final RecommendationAlgorithmPolicy recommendationAlgorithmPolicy;
 
   @Transactional
   public SupplementRecommendationResponse createRecommendation(
       Long userId, Long nodeId, String reason) {
-    if (!isRuleEnabled("SUPPLEMENT_RECOMMENDATION_ENABLED", true)) {
+    if (!learningAutomationPolicyService.isEnabled(
+        LearningAutomationRuleCatalog.SUPPLEMENT_RECOMMENDATION_ENABLED, true)) {
       throw new CustomException(ErrorCode.LEARNING_RULE_DISABLED);
     }
 
@@ -101,9 +100,25 @@ public class SupplementRecommendationService {
           supplementRecommendationRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    return recommendations.stream()
-        .map(SupplementRecommendationResponse::from)
-        .collect(Collectors.toList());
+    var stream = recommendations.stream();
+    if ("MISSING_TAG_COUNT_DESC"
+        .equals(
+            learningAutomationPolicyService.getValue(
+                LearningAutomationRuleCatalog.SUPPLEMENT_RECOMMENDATION_PRIORITY,
+                "MISSING_TAG_COUNT_DESC"))) {
+      stream =
+          stream.sorted(
+              Comparator.comparing(
+                      SupplementRecommendation::getMissingTagCount,
+                      Comparator.nullsLast(Comparator.reverseOrder()))
+                  .thenComparing(
+                      SupplementRecommendation::getCoveragePercent,
+                      Comparator.nullsLast(Comparator.naturalOrder()))
+                  .thenComparing(
+                      SupplementRecommendation::getCreatedAt,
+                      Comparator.nullsLast(Comparator.reverseOrder())));
+    }
+    return stream.map(SupplementRecommendationResponse::from).collect(Collectors.toList());
   }
 
   @Transactional(readOnly = true)
@@ -220,7 +235,7 @@ public class SupplementRecommendationService {
           roadmapNodeRepository
               .findById(nodeId)
               .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NODE_NOT_FOUND));
-      return ResolvedCandidate.manual(node, calculateMetrics(userId, nodeId));
+      return ResolvedCandidate.manual(node, recommendationMetrics.calculate(userId, nodeId));
     }
     return selectAutomaticCandidate(userId);
   }
@@ -236,7 +251,7 @@ public class SupplementRecommendationService {
           ErrorCode.LESSON_PROGRESS_NOT_FOUND, "학습 진행 데이터가 없어 자동 보강 후보를 생성할 수 없습니다.");
     }
 
-    Set<String> userSkills = loadUserSkills(userId);
+    Set<String> userSkills = recommendationMetrics.loadUserSkills(userId);
     List<Long> courseIds =
         progresses.stream()
             .map(progress -> progress.getLesson().getSection().getCourse().getCourseId())
@@ -256,7 +271,8 @@ public class SupplementRecommendationService {
         officialNodes.stream()
             .map(RoadmapNode::getNodeId)
             .collect(Collectors.toCollection(LinkedHashSet::new));
-    Map<Long, Set<String>> requiredTagsByNodeId = loadRequiredTagsByNodeId(officialNodeIds);
+    Map<Long, Set<String>> requiredTagsByNodeId =
+        recommendationMetrics.loadRequiredTagsByNodeId(officialNodeIds);
 
     Map<Long, ResolvedCandidate> candidateByNodeId = new LinkedHashMap<>();
     for (LessonProgress progress : progresses) {
@@ -283,7 +299,8 @@ public class SupplementRecommendationService {
         }
 
         Set<String> requiredTags = requiredTagsByNodeId.getOrDefault(node.getNodeId(), Set.of());
-        RecommendationMetrics metrics = calculateMetrics(userSkills, requiredTags);
+        SupplementRecommendationMetrics.Metrics metrics =
+            recommendationMetrics.calculate(userSkills, requiredTags);
         ResolvedCandidate candidate =
             ResolvedCandidate.automatic(
                 node,
@@ -368,7 +385,7 @@ public class SupplementRecommendationService {
       long noteCount,
       long ocrCount,
       long tilCount,
-      RecommendationMetrics metrics,
+      SupplementRecommendationMetrics.Metrics metrics,
       Set<String> courseTags,
       Set<String> requiredTags) {
     int progressPercent = safeInt(progress.getProgressPercent());
@@ -382,33 +399,14 @@ public class SupplementRecommendationService {
         ((100.0 - metrics.coveragePercent()) * 0.25) + (metrics.missingTagCount() * 8.0);
     double courseAlignmentScore = alignedTagCount * 14.0;
     double noAlignmentPenalty = requiredTags.isEmpty() ? 0.0 : (alignedTagCount == 0 ? 12.0 : 0.0);
-    return stalledScore + activityScore + skillGapScore + courseAlignmentScore - noAlignmentPenalty;
-  }
-
-  private RecommendationMetrics calculateMetrics(Long userId, Long nodeId) {
-    return calculateMetrics(
-        loadUserSkills(userId), nodeRequiredTagRepository.findTagNamesByNodeId(nodeId));
-  }
-
-  private RecommendationMetrics calculateMetrics(
-      Set<String> userSkills, Collection<String> requiredTags) {
-    long matchedCount = requiredTags.stream().filter(userSkills::contains).count();
-    int missingTagCount = requiredTags.size() - (int) matchedCount;
-    double coveragePercent =
-        requiredTags.isEmpty() ? 100.0 : (matchedCount * 100.0) / requiredTags.size();
-
-    return new RecommendationMetrics(
-        determinePriority(missingTagCount, coveragePercent), coveragePercent, missingTagCount);
-  }
-
-  private Integer determinePriority(int missingTagCount, double coveragePercent) {
-    if (missingTagCount > 0 && coveragePercent < 50.0) {
-      return 1;
-    }
-    if (missingTagCount > 0 || coveragePercent < 80.0) {
-      return 2;
-    }
-    return 3;
+    // 운영 설정 가중치는 후보 데이터 자체를 바꾸지 않고 최종 정렬 점수에만 적용한다.
+    double activityWeight = recommendationAlgorithmPolicy.recentActivityWeight();
+    double skillWeight = recommendationAlgorithmPolicy.skillMatchWeight();
+    return stalledScore
+        + (activityScore * activityWeight)
+        + (skillGapScore * skillWeight)
+        + (courseAlignmentScore * skillWeight)
+        - noAlignmentPenalty;
   }
 
   private String resolveReason(ResolvedCandidate candidate, String reason) {
@@ -458,7 +456,7 @@ public class SupplementRecommendationService {
   }
 
   private void createRiskWarningIfNeeded(
-      User user, RoadmapNode node, RecommendationMetrics metrics) {
+      User user, RoadmapNode node, SupplementRecommendationMetrics.Metrics metrics) {
     if (metrics.missingTagCount() > 0 && metrics.coveragePercent() < 50.0) {
       riskWarningRepository.save(
           RiskWarning.builder()
@@ -483,22 +481,10 @@ public class SupplementRecommendationService {
     }
   }
 
-  // 룰 활성 여부를 조회한다.
-  private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
-    return learningAutomationRuleRepository
-        .findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
-        .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
-        .orElse(defaultValue);
-  }
-
   private User validateUser(Long userId) {
     return userRepository
         .findById(userId)
         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-  }
-
-  private Set<String> loadUserSkills(Long userId) {
-    return new LinkedHashSet<>(userTechStackRepository.findTagNamesByUserId(userId));
   }
 
   private Map<Long, Set<String>> loadCourseTagsByCourseId(List<Long> courseIds) {
@@ -510,32 +496,13 @@ public class SupplementRecommendationService {
     return courseTagsByCourseId;
   }
 
-  private Map<Long, Set<String>> loadRequiredTagsByNodeId(Set<Long> nodeIds) {
-    if (nodeIds.isEmpty()) {
-      return Map.of();
-    }
-
-    Map<Long, Set<String>> requiredTagsByNodeId = new LinkedHashMap<>();
-    nodeRequiredTagRepository
-        .findTagNamesByNodeIds(nodeIds)
-        .forEach(
-            projection ->
-                requiredTagsByNodeId
-                    .computeIfAbsent(projection.getNodeId(), ignored -> new LinkedHashSet<>())
-                    .add(projection.getTagName()));
-    return requiredTagsByNodeId;
-  }
-
   private int safeInt(Integer value) {
     return value == null ? 0 : value;
   }
 
-  private record RecommendationMetrics(
-      Integer priority, double coveragePercent, int missingTagCount) {}
-
   private record ResolvedCandidate(
       RoadmapNode node,
-      RecommendationMetrics metrics,
+      SupplementRecommendationMetrics.Metrics metrics,
       double score,
       Long lessonId,
       int progressPercent,
@@ -543,13 +510,14 @@ public class SupplementRecommendationService {
       long ocrCount,
       long tilCount,
       boolean automatic) {
-    private static ResolvedCandidate manual(RoadmapNode node, RecommendationMetrics metrics) {
+    private static ResolvedCandidate manual(
+        RoadmapNode node, SupplementRecommendationMetrics.Metrics metrics) {
       return new ResolvedCandidate(node, metrics, 0.0, null, 0, 0, 0, 0, false);
     }
 
     private static ResolvedCandidate automatic(
         RoadmapNode node,
-        RecommendationMetrics metrics,
+        SupplementRecommendationMetrics.Metrics metrics,
         double score,
         Long lessonId,
         int progressPercent,

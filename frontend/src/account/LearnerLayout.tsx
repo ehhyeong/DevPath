@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { userApi } from '../lib/api'
+import { userApi } from '../lib/api/auth'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../lib/profile-sync'
 import { LearnerHeader } from './template'
 import type { AuthSession } from '../types/auth'

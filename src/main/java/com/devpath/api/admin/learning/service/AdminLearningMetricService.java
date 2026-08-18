@@ -10,18 +10,18 @@ import com.devpath.domain.learning.entity.analytics.AnalyticsMetricType;
 import com.devpath.domain.learning.entity.analytics.LearningMetricSample;
 import com.devpath.domain.learning.entity.automation.AutomationMonitorSnapshot;
 import com.devpath.domain.learning.entity.automation.AutomationMonitorStatus;
-import com.devpath.domain.learning.entity.automation.AutomationRuleStatus;
 import com.devpath.domain.learning.entity.clearance.ClearanceStatus;
 import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.QuizAttemptRepository;
 import com.devpath.domain.learning.repository.analytics.LearningMetricSampleRepository;
 import com.devpath.domain.learning.repository.automation.AutomationMonitorSnapshotRepository;
-import com.devpath.domain.learning.repository.automation.LearningAutomationRuleRepository;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.recommendation.RecommendationChangeRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,17 +38,17 @@ public class AdminLearningMetricService {
   private final QuizAttemptRepository quizAttemptRepository;
   private final ProofCardRepository proofCardRepository;
   private final RecommendationChangeRepository recommendationChangeRepository;
-  private final LearningAutomationRuleRepository learningAutomationRuleRepository;
   private final LearningMetricSampleRepository learningMetricSampleRepository;
   private final AutomationMonitorSnapshotRepository automationMonitorSnapshotRepository;
+  private final LearningAutomationPolicyService learningAutomationPolicyService;
 
-  @Transactional
+  @Transactional(readOnly = true)
   public List<AdminLearningMetricResponse.Detail> getMetrics() {
     return List.of(
         getClearanceRate(), getRoadmapCompletionRate(), getLearningDuration(), getQuizQuality());
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public AdminLearningMetricResponse.Detail getClearanceRate() {
     long totalCount = nodeClearanceRepository.count();
     long clearedCount =
@@ -58,8 +58,6 @@ public class AdminLearningMetricService {
             .count();
 
     double clearanceRate = toPercent(clearedCount, totalCount);
-    recordMetricSample(AnalyticsMetricType.OVERVIEW, "clearanceRate", clearanceRate);
-
     return AdminLearningMetricResponse.Detail.builder()
         .metricKey("clearanceRate")
         .metricName("Node clearance rate")
@@ -69,7 +67,7 @@ public class AdminLearningMetricService {
         .build();
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public AdminLearningMetricResponse.Detail getRoadmapCompletionRate() {
     List<CourseEnrollment> enrollments = courseEnrollmentRepository.findAll();
     long totalCount = enrollments.size();
@@ -79,9 +77,6 @@ public class AdminLearningMetricService {
             .count();
 
     double roadmapCompletionRate = toPercent(completedCount, totalCount);
-    recordMetricSample(
-        AnalyticsMetricType.COMPLETION_RATE, "roadmapCompletionRate", roadmapCompletionRate);
-
     return AdminLearningMetricResponse.Detail.builder()
         .metricKey("roadmapCompletionRate")
         .metricName("Roadmap completion rate")
@@ -91,7 +86,7 @@ public class AdminLearningMetricService {
         .build();
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public AdminLearningMetricResponse.Detail getLearningDuration() {
     List<LessonProgress> lessonProgresses = lessonProgressRepository.findAll();
     double averageLearningDuration =
@@ -103,11 +98,6 @@ public class AdminLearningMetricService {
             .orElse(0.0);
 
     averageLearningDuration = round(averageLearningDuration);
-    recordMetricSample(
-        AnalyticsMetricType.AVERAGE_WATCH_TIME,
-        "averageLearningDurationSeconds",
-        averageLearningDuration);
-
     return AdminLearningMetricResponse.Detail.builder()
         .metricKey("learningDuration")
         .metricName("Average learning duration")
@@ -117,7 +107,7 @@ public class AdminLearningMetricService {
         .build();
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public AdminLearningMetricResponse.Detail getQuizQuality() {
     List<QuizAttempt> quizAttempts = quizAttemptRepository.findAll();
 
@@ -132,8 +122,6 @@ public class AdminLearningMetricService {
     double passRate = toPercent(passedCount, quizAttempts.size());
     double quizQualityScore = round((averageScoreRate + passRate) / 2.0);
 
-    recordMetricSample(AnalyticsMetricType.QUIZ_STATS, "quizQualityScore", quizQualityScore);
-
     return AdminLearningMetricResponse.Detail.builder()
         .metricKey("quizQuality")
         .metricName("Quiz quality score")
@@ -143,7 +131,7 @@ public class AdminLearningMetricService {
         .build();
   }
 
-  @Transactional
+  @Transactional(readOnly = true)
   public List<AdminLearningMetricResponse.AutomationMonitorDetail> getAutomationMonitor() {
     List<AdminLearningMetricResponse.AutomationMonitorDetail> monitors =
         List.of(
@@ -164,32 +152,104 @@ public class AdminLearningMetricService {
                 "Supplement recommendation rule",
                 isRuleEnabled("SUPPLEMENT_RECOMMENDATION_ENABLED", true)));
 
-    monitors.forEach(this::recordMonitorSnapshot);
     return monitors;
   }
 
-  @Transactional
-  public AdminLearningMetricResponse.AnnualReportDetail getAnnualReport() {
-    AdminLearningMetricResponse.Detail clearanceRate = getClearanceRate();
-    AdminLearningMetricResponse.Detail roadmapCompletionRate = getRoadmapCompletionRate();
-    AdminLearningMetricResponse.Detail learningDuration = getLearningDuration();
-    AdminLearningMetricResponse.Detail quizQuality = getQuizQuality();
+  @Transactional(readOnly = true)
+  public AdminLearningMetricResponse.AnnualReportDetail getAnnualReport(Integer requestedYear) {
+    int year = requestedYear == null ? Year.now().getValue() : requestedYear;
+    if (year < 2000 || year > 2100) {
+      throw new com.devpath.common.exception.CustomException(
+          com.devpath.common.exception.ErrorCode.INVALID_INPUT, "조회 연도는 2000년부터 2100년 사이여야 합니다.");
+    }
+    LocalDateTime start = LocalDate.of(year, 1, 1).atStartOfDay();
+    LocalDateTime end = start.plusYears(1);
+
+    List<com.devpath.domain.learning.entity.clearance.NodeClearance> clearances =
+        nodeClearanceRepository.findAll().stream()
+            .filter(item -> isWithin(item.getLastCalculatedAt(), start, end))
+            .toList();
+    double clearanceRate =
+        toPercent(
+            clearances.stream()
+                .filter(item -> ClearanceStatus.CLEARED.equals(item.getClearanceStatus()))
+                .count(),
+            clearances.size());
+
+    List<CourseEnrollment> enrollments =
+        courseEnrollmentRepository.findAll().stream()
+            .filter(item -> isWithin(item.getEnrolledAt(), start, end))
+            .toList();
+    double roadmapCompletionRate =
+        toPercent(
+            enrollments.stream()
+                .filter(item -> isWithin(item.getCompletedAt(), start, end))
+                .count(),
+            enrollments.size());
+
+    double learningDuration =
+        round(
+            lessonProgressRepository.findAll().stream()
+                .filter(item -> isWithin(item.getLastWatchedAt(), start, end))
+                .map(LessonProgress::getProgressSeconds)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(0.0));
+    List<QuizAttempt> quizAttempts =
+        quizAttemptRepository.findAll().stream()
+            .filter(item -> isWithin(item.getCompletedAt(), start, end))
+            .toList();
+    double scoreRate = quizAttempts.stream().mapToDouble(this::toScoreRate).average().orElse(0.0);
+    double passRate =
+        toPercent(
+            quizAttempts.stream().filter(item -> Boolean.TRUE.equals(item.getIsPassed())).count(),
+            quizAttempts.size());
+    double quizQuality = round((scoreRate + passRate) / 2.0);
     List<AdminLearningMetricResponse.AutomationMonitorDetail> automationMonitors =
         getAutomationMonitor();
 
-    long issuedProofCardCount = proofCardRepository.count();
-    long recommendationChangeCount = recommendationChangeRepository.count();
+    long issuedProofCardCount =
+        proofCardRepository.findAll().stream()
+            .filter(item -> isWithin(item.getIssuedAt(), start, end))
+            .count();
+    long recommendationChangeCount =
+        recommendationChangeRepository.findAll().stream()
+            .filter(item -> isWithin(item.getSuggestedAt(), start, end))
+            .count();
 
     return AdminLearningMetricResponse.AnnualReportDetail.builder()
-        .year(LocalDate.now().getYear())
-        .clearanceRate(clearanceRate.getMetricValue())
-        .roadmapCompletionRate(roadmapCompletionRate.getMetricValue())
-        .averageLearningDurationSeconds(learningDuration.getMetricValue())
-        .quizQualityScore(quizQuality.getMetricValue())
+        .year(year)
+        .clearanceRate(clearanceRate)
+        .roadmapCompletionRate(roadmapCompletionRate)
+        .averageLearningDurationSeconds(learningDuration)
+        .quizQualityScore(quizQuality)
         .issuedProofCardCount(issuedProofCardCount)
         .recommendationChangeCount(recommendationChangeCount)
         .automationMonitors(automationMonitors)
         .build();
+  }
+
+  public AdminLearningMetricResponse.AnnualReportDetail getAnnualReport() {
+    return getAnnualReport(null);
+  }
+
+  @Transactional
+  public void captureSnapshot() {
+    List<AdminLearningMetricResponse.Detail> metrics = getMetrics();
+    recordMetricSample(
+        AnalyticsMetricType.OVERVIEW, "clearanceRate", metrics.get(0).getMetricValue());
+    recordMetricSample(
+        AnalyticsMetricType.COMPLETION_RATE,
+        "roadmapCompletionRate",
+        metrics.get(1).getMetricValue());
+    recordMetricSample(
+        AnalyticsMetricType.AVERAGE_WATCH_TIME,
+        "averageLearningDurationSeconds",
+        metrics.get(2).getMetricValue());
+    recordMetricSample(
+        AnalyticsMetricType.QUIZ_STATS, "quizQualityScore", metrics.get(3).getMetricValue());
+    getAutomationMonitor().forEach(this::recordMonitorSnapshot);
   }
 
   private AdminLearningMetricResponse.AutomationMonitorDetail createMonitorDetail(
@@ -228,10 +288,11 @@ public class AdminLearningMetricService {
   }
 
   private boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
-    return learningAutomationRuleRepository
-        .findTopByRuleKeyOrderByPriorityDescIdDesc(ruleKey)
-        .map(rule -> AutomationRuleStatus.ENABLED.equals(rule.getStatus()))
-        .orElse(defaultValue);
+    return learningAutomationPolicyService.isEnabled(ruleKey, defaultValue);
+  }
+
+  private boolean isWithin(LocalDateTime value, LocalDateTime start, LocalDateTime end) {
+    return value != null && !value.isBefore(start) && value.isBefore(end);
   }
 
   private double toScoreRate(QuizAttempt quizAttempt) {

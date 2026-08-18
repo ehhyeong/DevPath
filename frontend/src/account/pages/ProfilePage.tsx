@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import UserAvatar from '../../components/UserAvatar'
 import { updateStoredAuthSession } from '../../lib/auth-session'
-import { userApi } from '../../lib/api'
+import { userApi } from '../../lib/api/auth'
 import { notifyProfileUpdated } from '../../lib/profile-sync'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import type { AuthSession } from '../../types/auth'
@@ -194,7 +194,7 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar currentPageKey="profile" wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0" />
+        <MyMenuSidebar currentPageKey="profile" />
 
         <section className="min-w-0 flex-1">
           <h2 className="mb-6 pt-[5px] text-2xl font-bold leading-none text-gray-900">프로필 관리</h2>
@@ -233,7 +233,7 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
                     <input
                       id="profile-name"
                       type="text"
-                      className="input-field"
+                      className="w-full rounded-[8px] border border-[#E5E7EB] bg-white px-[14px] py-[10px] text-[14px]! outline-none transition-all duration-200 focus:border-[#00C471] focus:shadow-[0_0_0_3px_rgba(0,196,113,0.12)]"
                       value={form.name}
                       onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
                       placeholder="이름을 입력해주세요"
@@ -247,7 +247,7 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
                     <input
                       id="profile-channel"
                       type="text"
-                      className="input-field"
+                      className="w-full rounded-[8px] border border-[#E5E7EB] bg-white px-[14px] py-[10px] text-[14px]! outline-none transition-all duration-200 focus:border-[#00C471] focus:shadow-[0_0_0_3px_rgba(0,196,113,0.12)]"
                       value={form.channelName}
                       onChange={(event) => setForm((current) => ({ ...current, channelName: event.target.value }))}
                       placeholder="닉네임을 입력해주세요"
@@ -262,7 +262,7 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
                   <input
                     id="profile-bio"
                     type="text"
-                    className="input-field"
+                    className="w-full rounded-[8px] border border-[#E5E7EB] bg-white px-[14px] py-[10px] text-[14px]! outline-none transition-all duration-200 focus:border-[#00C471] focus:shadow-[0_0_0_3px_rgba(0,196,113,0.12)]"
                     value={form.bio}
                     onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))}
                     placeholder="자신을 한 줄로 표현해주세요"
@@ -299,7 +299,7 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
                   <input
                     id="profile-tag-input"
                     type="text"
-                    className="input-field"
+                    className="w-full rounded-[8px] border border-[#E5E7EB] bg-white px-[14px] py-[10px] text-[14px]! outline-none transition-all duration-200 focus:border-[#00C471] focus:shadow-[0_0_0_3px_rgba(0,196,113,0.12)]"
                     value={tagQuery}
                     onChange={(event) => setTagQuery(event.target.value)}
                     onKeyDown={handleTagInputKeyDown}
@@ -315,7 +315,7 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
                     <input
                       id="profile-github"
                       type="text"
-                      className="input-field"
+                      className="w-full rounded-[8px] border border-[#E5E7EB] bg-white px-[14px] py-[10px] text-[14px]! outline-none transition-all duration-200 focus:border-[#00C471] focus:shadow-[0_0_0_3px_rgba(0,196,113,0.12)]"
                       value={form.githubUrl}
                       onChange={(event) => setForm((current) => ({ ...current, githubUrl: event.target.value }))}
                       placeholder="https://github.com/username"
@@ -329,7 +329,7 @@ export default function ProfilePage({ session }: { session: AuthSession }) {
                     <input
                       id="profile-blog"
                       type="text"
-                      className="input-field"
+                      className="w-full rounded-[8px] border border-[#E5E7EB] bg-white px-[14px] py-[10px] text-[14px]! outline-none transition-all duration-200 focus:border-[#00C471] focus:shadow-[0_0_0_3px_rgba(0,196,113,0.12)]"
                       value={form.blogUrl}
                       onChange={(event) => setForm((current) => ({ ...current, blogUrl: event.target.value }))}
                       placeholder="URL을 입력해주세요"

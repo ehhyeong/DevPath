@@ -11,15 +11,9 @@ const AUTH_TOAST_DURATION_MS = 2200
 type AuthToastEvent = CustomEvent<AuthToastDetail>
 
 export default function AuthToastViewport() {
-  const [toast, setToast] = useState<AuthToastDetail | null>(null)
+  const [toast, setToast] = useState<AuthToastDetail | null>(consumeQueuedAuthToast)
 
   useEffect(() => {
-    const queuedMessage = consumeQueuedAuthToast()
-
-    if (queuedMessage) {
-      setToast(queuedMessage)
-    }
-
     const handleAuthToast = (event: Event) => {
       const authToastEvent = event as AuthToastEvent
       const nextToast = authToastEvent.detail

@@ -1,456 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { ErrorCard, LoadingCard } from '../../account/ui'
-import { instructorMentoringApi } from '../../lib/api'
-import { projectApiRequest } from '../../project-api'
+import { useEffect,useMemo,useState,type ReactNode } from 'react'
+import { ErrorCard,LoadingCard } from '../../account/ui'
+import { navigateTo } from '../../lib/spa-navigation'
+import { projectApiRequest } from '../../features/project/api'
+import { instructorMentoringApi } from '../../lib/api/instructor'
 import type { InstructorMentoringBoard } from '../../types/instructor'
+import { applyApprovedRequest,avatarUrl,buildProjectFromForm,calculateOngoingProgress,createDefaultForm,createSampleForm,getLiveApplicationId,getLivePostId,getPreviewCapacity,INSTRUCTOR_MENTORING_UI_LOCK_CLASSES,modeMeta,projectToForm,shortRoleLabel,toMentoringPostPayload,withPostId,type MentoringMode,type MentoringPostDetail,type MentoringTab,type OngoingProject,type PendingRequest,type ProjectFormState,type ProjectRoleInput,type RecruitingProject,type WorkspaceDashboardSummary,type WorkspaceMilestoneSummary,type WorkspaceSettingsForm,type WorkspaceSettingsSummary,type WorkspaceTaskSummary } from './instructor-mentoring-model'
 
-type MentoringTab = 'recruiting' | 'requests' | 'ongoing' | 'completed'
-type MentoringMode = 'study' | 'team'
-
-type RecruitingRole = { name: string; current: number; total: number }
-
-type RecruitingProject = {
-  id: string
-  title: string
-  requestTitle: string
-  description: string
-  mode: MentoringMode
-  category: string
-  recruitStatus: '모집중' | '모집마감'
-  current: number
-  total: number
-  roles: RecruitingRole[]
-  tags: string[]
-  mentorName: string
-  mentorBio: string
-  intro: string
-  durationWeeks: number
-  weeks: string[]
-}
-
-type PendingRequest = {
-  id: string
-  applicantName: string
-  avatarSeed: string
-  submittedAt: string
-  projectId: string
-  projectTitle: string
-  mode: MentoringMode
-  role: string
-  motivation: string
-  portfolioUrl: string
-}
-
-type OngoingProject = {
-  id: string
-  title: string
-  subtitle: string
-  week: number
-  mode: MentoringMode
-  category: string
-  progress: number
-  primaryAction: string
-  secondaryAction: string
-  menuActions: string[]
-  workspaceId?: number | null
-  startDate?: string | null
-}
-
-type MentoringPostDetail = {
-  postId: number
-  title: string
-  content?: string | null
-  requiredStacks?: string | null
-  category?: string | null
-  mentoringType?: string | null
-  durationWeeks?: number | null
-  curriculum?: string | null
-  maxParticipants?: number | null
-  status?: string | null
-}
-
-type WorkspaceMemberSummary = {
-  memberId: number
-  learnerId: number
-  learnerName?: string | null
-  profileImage?: string | null
-  roleLabel?: string | null
-  position?: string | null
-  online?: boolean
-  lastActiveAt?: string | null
-  joinedAt?: string | null
-}
-
-type WorkspaceDashboardSummary = {
-  workspaceId: number
-  name?: string | null
-  description?: string | null
-  ownerId?: number | null
-  ownerName?: string | null
-  members?: WorkspaceMemberSummary[]
-}
-
-type WorkspaceSettingsSummary = {
-  workspaceId: number
-  name?: string | null
-  description?: string | null
-  ownerId?: number | null
-  canManage?: boolean
-  members?: WorkspaceMemberSummary[]
-}
-
-type WorkspaceMilestoneSummary = {
-  milestoneId: number
-  title: string
-  startDate?: string | null
-  dueDate?: string | null
-  status?: string | null
-  createdAt?: string | null
-}
-
-type WorkspaceTaskSummary = {
-  taskId: number
-  title: string
-  status?: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | string
-  assigneeId?: number | null
-  dueDate?: string | null
-  createdAt?: string | null
-}
-
-type OngoingProjectView = OngoingProject & {
-  displayWeek: number
-  displayProgress: number
-  milestoneTotal: number
-  progressSource: 'milestone' | 'assignment' | 'board'
-}
-
-type WorkspaceSettingsForm = {
-  title: string
-  subtitle: string
-  category: string
-}
-
-type ProjectRoleInput = { name: string; count: number }
-
-type ProjectFormState = {
-  mode: MentoringMode
-  category: string
-  recruitStatus: '모집중' | '모집마감'
-  title: string
-  capacityTotal: string
-  durationWeeks: string
-  tags: string[]
-  mentorName: string
-  mentorBio: string
-  intro: string
-  weeks: string[]
-  roles: ProjectRoleInput[]
-}
-
-const modeMeta = {
-  study: { label: '공통 과제형', fullLabel: '공통 과제 (스터디형)', icon: 'fas fa-users', tone: 'bg-purple-50 text-[#7C3AED] border-purple-100' },
-  team: { label: '팀 프로젝트형', fullLabel: '역할 분담 (팀 프로젝트형)', icon: 'fas fa-puzzle-piece', tone: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-} as const
-
-function createDefaultForm(): ProjectFormState {
-  return {
-    mode: 'study',
-    category: 'Backend',
-    recruitStatus: '모집중',
-    title: '',
-    capacityTotal: '10',
-    durationWeeks: '4',
-    tags: ['Spring Boot', 'Redis'],
-    mentorName: '',
-    mentorBio: '',
-    intro: '',
-    weeks: ['요구사항 분석 및 ERD 설계', '핵심 API 비즈니스 로직 개발'],
-    roles: [{ name: 'Frontend', count: 2 }, { name: 'Backend', count: 2 }],
-  }
-}
-
-function createSampleForm(): ProjectFormState {
-  return {
-    mode: 'study',
-    category: 'Backend',
-    recruitStatus: '모집중',
-    title: '대용량 트래픽 커머스 서버 구축',
-    capacityTotal: '10',
-    durationWeeks: '4',
-    tags: ['Spring Boot', 'Redis', 'Kafka', 'MySQL'],
-    mentorName: '코드마스터 J',
-    mentorBio: '네카라쿠배 백엔드 리드 개발자',
-    intro: '실제 운영 환경과 유사한 트래픽 시나리오를 경험합니다. 선착순 쿠폰 발급, 재고 동시성 이슈 등을 집중적으로 다루며 코드 리뷰를 진행합니다.',
-    weeks: ['요구사항 분석 및 ERD 설계', '회원/상품 기능 구현 및 단위 테스트 작성', '대용량 트래픽 처리를 위한 Redis/Kafka 도입', '성능 최적화 및 최종 발표'],
-    roles: [{ name: 'Frontend', count: 2 }, { name: 'Backend', count: 2 }],
-  }
-}
-
-function projectToForm(project: RecruitingProject): ProjectFormState {
-  return {
-    mode: project.mode,
-    category: project.category,
-    recruitStatus: project.recruitStatus,
-    title: project.title,
-    capacityTotal: String(project.total || 10),
-    durationWeeks: String(project.durationWeeks || 4),
-    tags: project.tags,
-    mentorName: project.mentorName,
-    mentorBio: project.mentorBio,
-    intro: project.intro,
-    weeks: project.weeks.length > 0 ? project.weeks : [''],
-    roles: project.roles.length > 0 ? project.roles.map((role) => ({ name: role.name, count: role.total })) : [{ name: 'Frontend', count: 2 }, { name: 'Backend', count: 2 }],
-  }
-}
-
-function getPreviewCapacity(form: ProjectFormState) {
-  if (form.mode === 'study') {
-    return { total: Number(form.capacityTotal || 0), detail: '' }
-  }
-
-  const roles = form.roles.filter((role) => role.name.trim() && role.count > 0)
-  return { total: roles.reduce((sum, role) => sum + role.count, 0), detail: roles.map((role) => `${role.name} ${role.count}`).join(', ') }
-}
-
-function buildProjectFromForm(form: ProjectFormState, previousProject?: RecruitingProject): RecruitingProject {
-  const weeks = form.weeks.map((week) => week.trim()).filter(Boolean)
-  const tags = form.tags.map((tag) => tag.trim()).filter(Boolean)
-  const requestTitle = form.title.replace(/ 구축$| 서비스$| 스터디$/g, '').trim() || form.title.trim()
-
-  if (form.mode === 'study') {
-    const total = Math.max(1, Number(form.capacityTotal || 0))
-    return {
-      id: previousProject?.id ?? `project-${Date.now()}`,
-      title: form.title.trim(),
-      requestTitle,
-      description: form.intro.trim(),
-      mode: 'study',
-      category: form.category,
-      recruitStatus: form.recruitStatus,
-      current: previousProject?.mode === 'study' ? Math.min(previousProject.current, total) : 0,
-      total,
-      roles: [],
-      tags,
-      mentorName: form.mentorName.trim(),
-      mentorBio: form.mentorBio.trim(),
-      intro: form.intro.trim(),
-      durationWeeks: Math.max(1, Number(form.durationWeeks || 0)),
-      weeks,
-    }
-  }
-
-  const roles = form.roles.map((role) => ({ name: role.name.trim(), total: Math.max(1, role.count || 0) })).filter((role) => role.name)
-  const previousRoleMap = new Map(previousProject?.roles.map((role) => [role.name, role.current]) ?? [])
-
-  return {
-    id: previousProject?.id ?? `project-${Date.now()}`,
-    title: form.title.trim(),
-    requestTitle,
-    description: form.intro.trim(),
-    mode: 'team',
-    category: form.category,
-    recruitStatus: form.recruitStatus,
-    current: roles.reduce((sum, role) => sum + Math.min(previousRoleMap.get(role.name) ?? 0, role.total), 0),
-    total: roles.reduce((sum, role) => sum + role.total, 0),
-    roles: roles.map((role) => ({ name: role.name, total: role.total, current: Math.min(previousRoleMap.get(role.name) ?? 0, role.total) })),
-    tags,
-    mentorName: form.mentorName.trim(),
-    mentorBio: form.mentorBio.trim(),
-    intro: form.intro.trim(),
-    durationWeeks: Math.max(1, Number(form.durationWeeks || 0)),
-    weeks,
-  }
-}
-
-function applyApprovedRequest(project: RecruitingProject, request: PendingRequest): RecruitingProject {
-  if (project.mode === 'study') {
-    return { ...project, current: Math.min(project.total, project.current + 1) }
-  }
-
-  const roles = project.roles.map((role) => (role.name === request.role ? { ...role, current: Math.min(role.total, role.current + 1) } : role))
-  return { ...project, roles, current: roles.reduce((sum, role) => sum + role.current, 0) }
-}
-
-function getLiveApplicationId(requestId: string) {
-  if (!requestId.startsWith('application-')) {
-    return null
-  }
-
-  const applicationId = Number(requestId.replace('application-', ''))
-  return Number.isFinite(applicationId) && applicationId > 0 ? applicationId : null
-}
-
-function getLivePostId(projectId: string) {
-  if (!projectId.startsWith('post-')) {
-    return null
-  }
-
-  const postId = Number(projectId.replace('post-', ''))
-  return Number.isFinite(postId) && postId > 0 ? postId : null
-}
-
-function toMentoringPostPayload(project: RecruitingProject) {
-  return {
-    title: project.title,
-    content: project.intro || project.description,
-    requiredStacks: project.tags.join(', '),
-    category: project.category,
-    mentoringType: project.mode,
-    durationWeeks: project.durationWeeks,
-    curriculum: project.weeks.join('\n'),
-    maxParticipants: Math.max(1, project.total || 1),
-    status: project.recruitStatus === '모집마감' ? 'CLOSED' : 'OPEN',
-  }
-}
-
-function withPostId(project: RecruitingProject, post: MentoringPostDetail): RecruitingProject {
-  return {
-    ...project,
-    id: `post-${post.postId}`,
-    title: post.title || project.title,
-    requestTitle: post.title || project.requestTitle,
-    description: post.content ?? project.description,
-    intro: post.content ?? project.intro,
-    category: post.category ?? project.category,
-    mode: post.mentoringType === 'team' ? 'team' : 'study',
-    durationWeeks: post.durationWeeks ?? project.durationWeeks,
-    total: post.maxParticipants ?? project.total,
-    recruitStatus: post.status === 'CLOSED' ? '모집마감' : '모집중',
-  }
-}
-
-function parseDate(value?: string | null) {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date
-}
-
-function startOfDay(date: Date) {
-  const nextDate = new Date(date)
-  nextDate.setHours(0, 0, 0, 0)
-  return nextDate
-}
-
-function addDays(date: Date, days: number) {
-  const nextDate = new Date(date)
-  nextDate.setDate(nextDate.getDate() + days)
-  return nextDate
-}
-
-function sortMilestones(milestones: WorkspaceMilestoneSummary[]) {
-  return [...milestones].sort((a, b) => {
-    const left = parseDate(a.startDate)?.getTime() ?? parseDate(a.dueDate)?.getTime() ?? parseDate(a.createdAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
-    const right = parseDate(b.startDate)?.getTime() ?? parseDate(b.dueDate)?.getTime() ?? parseDate(b.createdAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
-    return left - right
-  })
-}
-
-function inferAssignmentWeek(task: WorkspaceTaskSummary, fallback: number) {
-  const koreanWeek = task.title.match(/(\d+)\s*주차/i)
-  const englishWeek = task.title.match(/week\s*(\d+)/i)
-  const parsed = Number(koreanWeek?.[1] ?? englishWeek?.[1] ?? NaN)
-  return Number.isFinite(parsed) && parsed >= 1 ? parsed : fallback
-}
-
-function sortTasks(tasks: WorkspaceTaskSummary[]) {
-  return [...tasks].sort((a, b) => {
-    const left = parseDate(a.dueDate)?.getTime() ?? parseDate(a.createdAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
-    const right = parseDate(b.dueDate)?.getTime() ?? parseDate(b.createdAt)?.getTime() ?? Number.MAX_SAFE_INTEGER
-    if (left !== right) return left - right
-    return a.taskId - b.taskId
-  })
-}
-
-function calculateAssignmentProgress(project: OngoingProject, tasks: WorkspaceTaskSummary[]): OngoingProjectView | null {
-  const sorted = sortTasks(tasks)
-  if (sorted.length === 0) return null
-
-  const taskByWeek = new Map<number, WorkspaceTaskSummary[]>()
-  sorted.forEach((task, index) => {
-    const week = inferAssignmentWeek(task, (index % 4) + 1)
-    taskByWeek.set(week, [...(taskByWeek.get(week) ?? []), task])
-  })
-
-  const weeks = [...taskByWeek.keys()].sort((a, b) => a - b)
-  const total = weeks.length
-  const today = startOfDay(new Date())
-  const completedCount = weeks.filter((week) => {
-    const weekTasks = taskByWeek.get(week) ?? []
-    const dueDates = weekTasks.map((task) => startOfDay(parseDate(task.dueDate) ?? new Date(Number.NaN))).filter((date) => !Number.isNaN(date.getTime()))
-    const weekDueDate = dueDates.length ? new Date(Math.max(...dueDates.map((date) => date.getTime()))) : null
-    const allDone = weekTasks.length > 0 && weekTasks.every((task) => String(task.status ?? '').toUpperCase() === 'DONE')
-    return allDone || (weekDueDate !== null && today > weekDueDate)
-  }).length
-  const displayWeek = completedCount >= total ? weeks[weeks.length - 1] : weeks[Math.min(completedCount, total - 1)]
-
-  return {
-    ...project,
-    displayWeek: Math.max(1, displayWeek),
-    displayProgress: Math.max(0, Math.min(100, Math.round((completedCount / total) * 100))),
-    milestoneTotal: total,
-    progressSource: 'assignment',
-  }
-}
-
-function calculateOngoingProgress(project: OngoingProject, milestones: WorkspaceMilestoneSummary[], tasks: WorkspaceTaskSummary[]): OngoingProjectView {
-  if (project.mode === 'study') {
-    const assignmentProgress = calculateAssignmentProgress(project, tasks)
-    if (assignmentProgress) return assignmentProgress
-  }
-
-  const sorted = sortMilestones(milestones)
-  const total = sorted.length
-
-  if (project.mode !== 'team' || total === 0) {
-    return {
-      ...project,
-      displayWeek: Math.max(1, project.week || 1),
-      displayProgress: Math.max(0, Math.min(100, project.progress || 0)),
-      milestoneTotal: Math.max(1, project.week || 1),
-      progressSource: 'board',
-    }
-  }
-
-  const today = startOfDay(new Date())
-  const ranges = sorted.map((milestone, index) => {
-    const start = startOfDay(parseDate(milestone.startDate) ?? parseDate(milestone.dueDate) ?? addDays(today, index * 7))
-    const due = startOfDay(parseDate(milestone.dueDate) ?? addDays(start, 6))
-    return { milestone, start, due }
-  })
-  const currentRangeIndex = ranges.findIndex((range) => today >= range.start && today <= range.due)
-  const firstFutureIndex = ranges.findIndex((range) => today < range.start)
-  const completedCount = ranges.filter((range) => String(range.milestone.status ?? '').toUpperCase() === 'COMPLETED' || today > range.due).length
-  const week = currentRangeIndex >= 0
-    ? currentRangeIndex + 1
-    : firstFutureIndex >= 0
-      ? Math.max(1, firstFutureIndex + 1)
-      : total
-  const progress = Math.round((completedCount / total) * 100)
-
-  return {
-    ...project,
-    displayWeek: Math.max(1, Math.min(total, week)),
-    displayProgress: Math.max(0, Math.min(100, progress)),
-    milestoneTotal: total,
-    progressSource: 'milestone',
-  }
-}
-
-function shortRoleLabel(position?: string | null) {
-  if (!position) return null
-  const normalized = position.toLowerCase()
-  if (normalized.includes('front')) return 'FE'
-  if (normalized.includes('back')) return 'BE'
-  if (normalized.includes('full')) return 'FS'
-  if (normalized.includes('design') || normalized.includes('디자')) return 'DES'
-  if (normalized.includes('pm') || normalized.includes('기획')) return 'PM'
-  if (normalized.includes('devops') || normalized.includes('infra') || normalized.includes('인프라')) return 'OPS'
-  return position
-}
-
-function avatarUrl(name?: string | null) {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name || 'DevPath')}`
-}
 
 function ModalShell({
   onClose,
@@ -513,9 +68,6 @@ export default function InstructorMentoringPage() {
   useEffect(() => {
     const controller = new AbortController()
 
-    setLoading(true)
-    setError(null)
-
     instructorMentoringApi
       .getBoard(controller.signal)
       .then((board) => {
@@ -545,10 +97,6 @@ export default function InstructorMentoringPage() {
       .map((project) => project.workspaceId as number)))
 
     if (workspaceIds.length === 0) {
-      setWorkspaceDashboards({})
-      setWorkspaceSettings({})
-      setWorkspaceMilestones({})
-      setWorkspaceTasks({})
       return
     }
 
@@ -965,7 +513,7 @@ export default function InstructorMentoringPage() {
       }
       const route = project.mode === 'team' ? teamRoutes[actionLabel] : commonRoutes[actionLabel]
       if (route) {
-        window.location.href = `${route}?workspaceId=${project.workspaceId}`
+        navigateTo(`${route}?workspaceId=${project.workspaceId}`)
         return
       }
     }
@@ -993,7 +541,7 @@ export default function InstructorMentoringPage() {
   }
 
   return (
-    <div className="instructor-mentoring-page p-6" onClick={() => setOpenMenuId(null)}>
+    <div className={`instructor-mentoring-page p-6 ${INSTRUCTOR_MENTORING_UI_LOCK_CLASSES}`} onClick={() => setOpenMenuId(null)}>
       <div className="instructor-mentoring-content mx-auto max-w-[1200px]">
         <div className="instructor-mentoring-heading-row mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <h1 className="text-2xl font-bold text-gray-900">멘토링 관리</h1>
@@ -1161,7 +709,7 @@ export default function InstructorMentoringPage() {
                 <h3 className="mb-2 text-lg font-extrabold text-gray-900 transition group-hover:text-brand">{project.title}</h3>
                 <p className="mb-6 text-xs text-gray-500">{project.subtitle}</p>
                 <div className="mt-auto">
-                  <div className="mb-2 h-1.5 w-full rounded-full bg-gray-100"><div className="h-1.5 rounded-full bg-brand" style={{ width: `${project.displayProgress}%` }} /></div>
+                  <div className="instructor-mentoring-progress-bar mb-2 h-1.5 w-full rounded-full bg-gray-100"><div className="instructor-mentoring-progress-bar h-1.5 rounded-full bg-brand" style={{ width: `${project.displayProgress}%` }} /></div>
                   <div className="mb-5 flex justify-between text-[10px] font-bold text-gray-400">
                     <span>{project.progressSource === 'milestone' ? `마일스톤 ${project.displayWeek}/${project.milestoneTotal}` : project.progressSource === 'assignment' ? `과제 ${project.displayWeek}/${project.milestoneTotal}` : '진척도'}</span>
                     <span className="text-brand">{project.displayProgress}%</span>
@@ -1364,10 +912,10 @@ export default function InstructorMentoringPage() {
               <button type="button" onClick={closeProjectForm} className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition hover:-translate-y-px hover:bg-gray-50"><i className="fas fa-times" /></button>
             </div>
             <div className="custom-scrollbar overflow-auto bg-white p-4">
-              <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-2">
+              <div className="instructor-mentoring-form-grid grid grid-cols-1 gap-[14px] lg:grid-cols-2">
                 <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
                   <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-3 py-3">
-                    <div className="flex items-center gap-2 text-[13px] font-black text-gray-900"><i className="fas fa-sliders-h text-brand" />공고 정보 입력</div>
+                    <div className="instructor-mentoring-fixed-text flex items-center gap-2 text-[13px] font-black text-gray-900"><i className="fas fa-sliders-h text-brand" />공고 정보 입력</div>
                     <div className="text-xs font-bold text-gray-400">* 필수 입력</div>
                   </div>
                   <div className="space-y-4 p-3">
@@ -1397,7 +945,7 @@ export default function InstructorMentoringPage() {
                   </div>
                 </div>
                 <div className="rounded-2xl border-none bg-gray-50">
-                  <div className="flex items-center justify-between px-3 pt-3 pb-0"><div className="flex items-center gap-2 text-[13px] font-black text-gray-500"><i className="fas fa-eye text-gray-400" />학습자 화면 미리보기</div><button type="button" onClick={loadSample} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-black text-gray-900 transition hover:-translate-y-px hover:bg-gray-50">샘플 데이터 채우기</button></div>
+                  <div className="flex items-center justify-between px-3 pt-3 pb-0"><div className="instructor-mentoring-fixed-text flex items-center gap-2 text-[13px] font-black text-gray-500"><i className="fas fa-eye text-gray-400" />학습자 화면 미리보기</div><button type="button" onClick={loadSample} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-black text-gray-900 transition hover:-translate-y-px hover:bg-gray-50">샘플 데이터 채우기</button></div>
                   <div className="p-3">
                     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
                       <div className="flex h-[140px] flex-col justify-end gap-2 bg-[linear-gradient(135deg,#374151_0%,#111827_100%)] p-4 text-white">
@@ -1416,10 +964,10 @@ export default function InstructorMentoringPage() {
                             <div className="min-w-0"><div className="text-[11px] font-black tracking-[0.06em] text-brand">MENTOR</div><div className="truncate text-sm font-black text-gray-900">{form.mentorName || '멘토 성함'}</div><div className="truncate text-xs font-extrabold text-gray-500">{form.mentorBio || '멘토 한 줄 소개'}</div></div>
                           </div>
                         </div>
-                        <div className="mb-2 flex items-center gap-2 text-[13px] font-black text-gray-900"><i className="fas fa-bullseye text-brand" />프로젝트 상세 소개</div>
+                        <div className="instructor-mentoring-fixed-text mb-2 flex items-center gap-2 text-[13px] font-black text-gray-900"><i className="fas fa-bullseye text-brand" />프로젝트 상세 소개</div>
                         <div className="max-h-32 overflow-y-auto text-sm leading-6 text-gray-700">{form.intro || '프로젝트 소개가 여기에 표시됩니다.'}</div>
-                        <div className="mt-4 mb-2 flex items-center gap-2 text-[13px] font-black text-gray-900"><i className="fas fa-list-ol text-brand" />주차별 커리큘럼</div>
-                        <div className="space-y-2.5">{form.weeks.map((week, index) => <div key={`preview-week-${index}`} className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-[10px]"><div className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-black text-white">{index + 1}</div><div className="mt-0.5 text-[13px] leading-[1.35] font-extrabold text-gray-900">{week || `${index + 1}주차 커리큘럼`}</div></div>)}</div>
+                        <div className="instructor-mentoring-fixed-text mt-4 mb-2 flex items-center gap-2 text-[13px] font-black text-gray-900"><i className="fas fa-list-ol text-brand" />주차별 커리큘럼</div>
+                        <div className="space-y-2.5">{form.weeks.map((week, index) => <div key={`preview-week-${index}`} className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-[10px]"><div className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-black text-white">{index + 1}</div><div className="instructor-mentoring-fixed-text mt-0.5 text-[13px] leading-[1.35] font-extrabold text-gray-900">{week || `${index + 1}주차 커리큘럼`}</div></div>)}</div>
                         <div className="mt-4 grid grid-cols-2 gap-3">
                           <div className="rounded-2xl border border-gray-200 bg-white p-3 text-center shadow-sm"><div className="text-[11px] font-black tracking-[0.04em] text-gray-400">모집 인원</div><div className="mt-1 text-sm font-black text-gray-900">0 / {previewCapacity.total}명</div>{form.mode === 'team' && previewCapacity.detail ? <div className="mt-1 text-[9px] font-medium text-gray-500">({previewCapacity.detail})</div> : null}</div>
                           <div className="rounded-2xl border border-gray-200 bg-white p-3 text-center shadow-sm"><div className="text-[11px] font-black tracking-[0.04em] text-gray-400">예상 기간</div><div className="mt-1 text-sm font-black text-gray-900">{form.durationWeeks || 0}주</div></div>

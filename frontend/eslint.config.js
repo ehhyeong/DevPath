@@ -19,5 +19,10 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Existing effects synchronize API and browser state. Migrate them incrementally
+      // before enabling this React Compiler performance rule for the whole application.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

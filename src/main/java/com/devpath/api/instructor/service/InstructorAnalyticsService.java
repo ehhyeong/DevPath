@@ -1,5 +1,6 @@
 package com.devpath.api.instructor.service;
 
+import com.devpath.api.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.api.instructor.dto.analytics.InstructorAnalyticsDashboardResponse;
 import com.devpath.api.instructor.dto.course.InstructorCourseListResponse;
 import com.devpath.domain.course.entity.Course;
@@ -46,6 +47,7 @@ public class InstructorAnalyticsService {
   private final QuizAttemptRepository quizAttemptRepository;
   private final SubmissionRepository submissionRepository;
   private final InstructorCourseQueryService instructorCourseQueryService;
+  private final InstructorAnalyticsMetrics metrics;
 
   public InstructorAnalyticsDashboardResponse getDashboard(Long instructorId, Long courseId) {
     List<InstructorCourseListResponse> courseOptions =
@@ -611,7 +613,9 @@ public class InstructorAnalyticsService {
                         "오답 패턴 재설계",
                         "%s 오답 신호가 높습니다. 핵심 개념 설명 뒤 바로 따라 하는 실습을 붙여 회복 동선을 짧게 가져가세요."
                             .formatted(item.nodeTitle()),
-                        item.weaknessScore() >= 65.0 ? "HIGH" : item.weaknessScore() >= 40.0 ? "MEDIUM" : "LOW")));
+                        item.weaknessScore() >= 65.0
+                            ? "HIGH"
+                            : item.weaknessScore() >= 40.0 ? "MEDIUM" : "LOW")));
     dropOffs.stream()
         .findFirst()
         .ifPresent(
@@ -621,7 +625,9 @@ public class InstructorAnalyticsService {
                         "이탈 구간 분할",
                         "%s에서 이탈률이 %.1f%%입니다. 긴 설명을 5분 안쪽 단위로 나누고 체크 질문을 추가하세요."
                             .formatted(item.lessonTitle(), item.dropOffRate()),
-                        item.dropOffRate() >= 40.0 ? "HIGH" : item.dropOffRate() >= 20.0 ? "MEDIUM" : "LOW")));
+                        item.dropOffRate() >= 40.0
+                            ? "HIGH"
+                            : item.dropOffRate() >= 20.0 ? "MEDIUM" : "LOW")));
 
     return insights.stream().limit(3).toList();
   }
@@ -683,28 +689,23 @@ public class InstructorAnalyticsService {
   }
 
   private double calculateAssignmentScoreRate(Submission submission) {
-    int maxScore = Math.max(defaultInt(submission.getAssignment().getTotalScore()), 1);
-    return roundToOneDecimal((defaultInt(submission.getTotalScore()) * 100.0) / maxScore);
+    return metrics.assignmentScoreRate(submission, 1);
   }
 
   private double calculateScoreRate(QuizAttempt attempt) {
-    int maxScore = Math.max(defaultInt(attempt.getMaxScore()), 1);
-    return roundToOneDecimal((defaultInt(attempt.getScore()) * 100.0) / maxScore);
+    return metrics.quizScoreRate(attempt, 1);
   }
 
   private double calculateRate(long denominator, long numerator) {
-    if (denominator <= 0) {
-      return 0.0;
-    }
-    return roundToOneDecimal((numerator * 100.0) / denominator);
+    return metrics.percent(numerator, denominator, 1);
   }
 
   private int defaultInt(Integer value) {
-    return value == null ? 0 : value;
+    return metrics.safeInt(value);
   }
 
   private double roundToOneDecimal(double value) {
-    return Math.round(value * 10.0) / 10.0;
+    return metrics.round(value, 1);
   }
 
   private LocalDateTime maxTime(LocalDateTime left, LocalDateTime right) {

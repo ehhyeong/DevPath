@@ -1,10 +1,49 @@
 import { useEffect, useState } from 'react'
-import { ErrorCard, LoadingCard, formatNumber } from '../../account/ui'
-import { buildInstructorCourseOptions } from '../../instructor/course-display'
-import { instructorAnalyticsApi } from '../../lib/api'
+import { ErrorCard, LoadingCard } from '../../account/ui'
+import { formatNumber } from '../../account/ui-utils'
+import { buildInstructorCourseOptions } from '../course-display'
+import { instructorAnalyticsApi } from '../../lib/api/instructor'
 import type { InstructorAnalyticsDashboard } from '../../types/instructor'
 
 type Tone = 'safe' | 'warn' | 'danger'
+
+const STUDENT_ANALYTICS_UI_LOCK_CLASSES = [
+  "min-h-[calc(100dvh-var(--app-header-height))]! box-border! bg-[#f3f4f6]! text-[#1f2937]! font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]!",
+  '[&_.student-analytics-content]:mx-auto! [&_.student-analytics-content]:w-full! [&_.student-analytics-content]:max-w-[1400px]!',
+  '[&_.student-analytics-header]:mb-[24px]! [&_.student-analytics-header]:items-center!',
+  '[&_h1]:m-0! [&_h1]:text-[#111827]! [&_h1]:text-[20px]! [&_h1]:leading-[28px]! [&_h1]:font-[700]! [&_h1]:tracking-[0]!',
+  '[&_h1+p]:mt-[4px]! [&_h1+p]:text-[#4b5563]! [&_h1+p]:text-[14px]! [&_h1+p]:leading-[20px]! [&_h1+p]:font-[500]!',
+  '[&_.student-analytics-controls]:gap-[12px]!',
+  '[&_.student-analytics-select]:h-[38px]! [&_.student-analytics-select]:min-w-[150px]! [&_.student-analytics-select]:rounded-[8px]! [&_.student-analytics-select]:border-[1px]! [&_.student-analytics-select]:border-[#e5e7eb]! [&_.student-analytics-select]:bg-[#ffffff]! [&_.student-analytics-select]:px-[16px]! [&_.student-analytics-select]:py-[8px]! [&_.student-analytics-select]:text-[#374151]! [&_.student-analytics-select]:text-[14px]! [&_.student-analytics-select]:leading-[20px]! [&_.student-analytics-select]:font-[600]! [&_.student-analytics-select]:tracking-[0]! [&_.student-analytics-select]:[box-shadow:none]!',
+  '[&_.student-analytics-metric-grid]:mb-[24px]! [&_.student-analytics-metric-grid]:gap-[16px]!',
+  '[&_.student-analytics-metric-card]:min-h-[128px]! [&_.student-analytics-metric-card]:rounded-[12px]! [&_.student-analytics-metric-card]:border-[1px]! [&_.student-analytics-metric-card]:border-[#f3f4f6]! [&_.student-analytics-metric-card]:bg-[#ffffff]! [&_.student-analytics-metric-card]:p-[20px]! [&_.student-analytics-metric-card]:[box-shadow:none]!',
+  '[&_.student-analytics-metric-card:hover]:[box-shadow:0_10px_24px_rgba(15,23,42,0.08)]!',
+  '[&_.student-analytics-metric-card>div:first-child]:mb-[12px]! [&_.student-analytics-metric-card>div:first-child]:gap-[12px]!',
+  '[&_.student-analytics-metric-card>div:first-child>div:first-child]:h-[44px]! [&_.student-analytics-metric-card>div:first-child>div:first-child]:w-[44px]! [&_.student-analytics-metric-card>div:first-child>div:first-child]:rounded-[12px]! [&_.student-analytics-metric-card>div:first-child>div:first-child]:text-[18px]!',
+  '[&_.student-analytics-metric-card_p]:tracking-[0]!',
+  '[&_.student-analytics-metric-card_p.text-xs]:text-[#4b5563]! [&_.student-analytics-metric-card_p.text-xs]:text-[12px]! [&_.student-analytics-metric-card_p.text-xs]:leading-[16px]! [&_.student-analytics-metric-card_p.text-xs]:font-[500]!',
+  '[&_.student-analytics-metric-card_p.text-2xl]:text-[#111827]! [&_.student-analytics-metric-card_p.text-2xl]:text-[24px]! [&_.student-analytics-metric-card_p.text-2xl]:leading-[32px]! [&_.student-analytics-metric-card_p.text-2xl]:font-[700]!',
+  '[&_.student-analytics-metric-card>div:last-child]:gap-[8px]! [&_.student-analytics-metric-card>div:last-child]:text-[12px]! [&_.student-analytics-metric-card>div:last-child]:leading-[16px]!',
+  '[&_.student-analytics-main-grid]:mb-[24px]! [&_.student-analytics-main-grid]:gap-[24px]! [&_.student-analytics-bottom-grid]:gap-[24px]!',
+  '[&_.student-analytics-panel]:rounded-[16px]! [&_.student-analytics-panel]:border-[1px]! [&_.student-analytics-panel]:p-[24px]! [&_.student-analytics-panel]:[box-shadow:none]!',
+  '[&_.student-analytics-panel:hover]:[box-shadow:0_10px_24px_rgba(15,23,42,0.08)]!',
+  '[&_.student-analytics-panel>div:first-child]:mb-[20px]!',
+  '[&_.student-analytics-panel>div:first-child_.h-10]:h-[40px]! [&_.student-analytics-panel>div:first-child_.h-10]:w-[40px]! [&_.student-analytics-panel>div:first-child_.h-10]:rounded-[12px]! [&_.student-analytics-panel>div:first-child_.w-10]:h-[40px]! [&_.student-analytics-panel>div:first-child_.w-10]:w-[40px]! [&_.student-analytics-panel>div:first-child_.w-10]:rounded-[12px]!',
+  '[&_.student-analytics-panel_h3]:text-[#111827]! [&_.student-analytics-panel_h3]:text-[16px]! [&_.student-analytics-panel_h3]:leading-[24px]! [&_.student-analytics-panel_h3]:font-[700]! [&_.student-analytics-panel_h3]:tracking-[0]!',
+  '[&_.student-analytics-panel_h3+p]:mt-[2px]! [&_.student-analytics-panel_h3+p]:text-[#4b5563]! [&_.student-analytics-panel_h3+p]:text-[12px]! [&_.student-analytics-panel_h3+p]:leading-[16px]! [&_.student-analytics-panel_h3+p]:font-[500]!',
+  '[&_.student-analytics-panel_.space-y-3]:gap-y-[12px]!',
+  '[&_.student-analytics-list-card]:rounded-[12px]! [&_.student-analytics-list-card]:p-[16px]! [&_.student-analytics-list-card:hover]:[box-shadow:0_10px_24px_rgba(15,23,42,0.08)]!',
+  '[&_.student-analytics-list-card_span.text-sm]:text-[14px]! [&_.student-analytics-list-card_span.text-sm]:leading-[20px]! [&_.student-analytics-compact-card_span.text-sm]:text-[14px]! [&_.student-analytics-compact-card_span.text-sm]:leading-[20px]!',
+  '[&_.student-analytics-list-card_p]:text-[12px]! [&_.student-analytics-list-card_p]:leading-[18px]! [&_.student-analytics-list-card_p]:tracking-[0]! [&_.student-analytics-compact-card_p]:text-[12px]! [&_.student-analytics-compact-card_p]:leading-[18px]! [&_.student-analytics-compact-card_p]:tracking-[0]!',
+  '[&_.student-analytics-list-card_.h-2]:h-[8px]! [&_.student-analytics-list-card_.h-7]:h-[28px]! [&_.student-analytics-list-card_.h-7]:w-[28px]! [&_.student-analytics-list-card_.h-7]:rounded-[8px]! [&_.student-analytics-list-card_.w-7]:h-[28px]! [&_.student-analytics-list-card_.w-7]:w-[28px]! [&_.student-analytics-list-card_.w-7]:rounded-[8px]!',
+  '[&_.student-analytics-compact-card]:rounded-[12px]! [&_.student-analytics-compact-card]:p-[12px]! [&_.student-analytics-compact-card:hover]:[box-shadow:0_10px_24px_rgba(15,23,42,0.08)]!',
+  '[&_.student-analytics-compact-card_.rounded-lg]:rounded-[8px]! [&_.student-analytics-list-card_.rounded-lg]:rounded-[8px]!',
+  '[&_.student-analytics-compact-card_span.rounded-lg]:px-[10px]! [&_.student-analytics-compact-card_span.rounded-lg]:py-[4px]! [&_.student-analytics-compact-card_span.rounded-lg]:text-[12px]! [&_.student-analytics-compact-card_span.rounded-lg]:leading-[16px]! [&_.student-analytics-compact-card_span.rounded-lg]:font-[600]! [&_.student-analytics-list-card_span.rounded-lg]:px-[10px]! [&_.student-analytics-list-card_span.rounded-lg]:py-[4px]! [&_.student-analytics-list-card_span.rounded-lg]:text-[12px]! [&_.student-analytics-list-card_span.rounded-lg]:leading-[16px]! [&_.student-analytics-list-card_span.rounded-lg]:font-[600]!',
+  '[&_.student-analytics-primary-button]:mt-[16px]! [&_.student-analytics-primary-button]:h-[40px]! [&_.student-analytics-primary-button]:min-h-[40px]! [&_.student-analytics-primary-button]:rounded-[12px]! [&_.student-analytics-primary-button]:bg-[#2563eb]! [&_.student-analytics-primary-button]:px-[16px]! [&_.student-analytics-primary-button]:py-[10px]! [&_.student-analytics-primary-button]:text-[#ffffff]! [&_.student-analytics-primary-button]:text-[14px]! [&_.student-analytics-primary-button]:leading-[20px]! [&_.student-analytics-primary-button]:font-[600]! [&_.student-analytics-primary-button]:[box-shadow:0_1px_2px_rgba(15,23,42,0.08)]!',
+  '[&_.student-analytics-panel_.student-analytics-progress-bar]:h-[10px]!',
+  '[&_.student-analytics-panel_.rounded-xl.bg-blue-50]:rounded-[12px]! [&_.student-analytics-panel_.rounded-xl.bg-blue-50]:p-[12px]! [&_.student-analytics-panel_.rounded-xl.bg-purple-50]:rounded-[12px]! [&_.student-analytics-panel_.rounded-xl.bg-purple-50]:p-[12px]! [&_.student-analytics-panel_.rounded-xl.bg-gradient-to-r]:rounded-[12px]! [&_.student-analytics-panel_.rounded-xl.bg-gradient-to-r]:p-[12px]!',
+  '[&_.student-analytics-summary-box]:rounded-[12px]! [&_.student-analytics-summary-box]:p-[12px]! [&_.student-analytics-summary-box_p]:text-[12px]! [&_.student-analytics-summary-box_p]:leading-[18px]!',
+].join(' ')
 
 function getDropoutTone(tone: Tone) {
   if (tone === 'danger') {
@@ -181,13 +220,18 @@ export default function StudentAnalyticsPage() {
 
   useEffect(() => {
     const controller = new AbortController()
-
-    setLoading(true)
-    setError(null)
+    let fallbackRequested = false
 
     instructorAnalyticsApi
       .getDashboard(courseId ?? undefined, controller.signal)
       .then((response) => {
+        const nextCourseOptions = buildInstructorCourseOptions(response.courseOptions)
+        if (courseId !== null && !nextCourseOptions.some(([value]) => Number(value) === courseId)) {
+          fallbackRequested = true
+          setCourseId(null)
+          return
+        }
+
         setAnalytics(response)
       })
       .catch((nextError: Error) => {
@@ -198,7 +242,7 @@ export default function StudentAnalyticsPage() {
         setError(nextError.message)
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && !fallbackRequested) {
           setLoading(false)
         }
       })
@@ -208,15 +252,15 @@ export default function StudentAnalyticsPage() {
 
   const availableCourseOptions = analytics ? buildInstructorCourseOptions(analytics.courseOptions) : []
 
-  useEffect(() => {
-    if (courseId !== null && !availableCourseOptions.some(([value]) => Number(value) === courseId)) {
-      setCourseId(null)
-    }
-  }, [courseId, availableCourseOptions])
+  function changeCourse(nextCourseId: number | null) {
+    setLoading(true)
+    setError(null)
+    setCourseId(nextCourseId)
+  }
 
   if (loading) {
     return (
-      <div className="student-analytics-page p-6">
+      <div className={`student-analytics-page p-6 ${STUDENT_ANALYTICS_UI_LOCK_CLASSES}`}>
         <LoadingCard label="학생 분석 데이터를 불러오는 중입니다." />
       </div>
     )
@@ -224,7 +268,7 @@ export default function StudentAnalyticsPage() {
 
   if (error || !analytics) {
     return (
-      <div className="student-analytics-page p-6">
+      <div className={`student-analytics-page p-6 ${STUDENT_ANALYTICS_UI_LOCK_CLASSES}`}>
         <ErrorCard message={error ?? '학생 분석 데이터를 불러오지 못했습니다.'} />
       </div>
     )
@@ -313,19 +357,19 @@ export default function StudentAnalyticsPage() {
   ]
 
   return (
-    <div className="student-analytics-page bg-gray-50 p-6">
+    <div className={`student-analytics-page bg-gray-50 p-6 ${STUDENT_ANALYTICS_UI_LOCK_CLASSES}`}>
       <div className="student-analytics-content mx-auto max-w-[1400px]">
-        <div className="student-analytics-header mb-6 flex items-center justify-between">
+        <div className="student-analytics-header mb-6 flex items-center justify-between max-[767px]:flex-col!">
           <div>
             <h1 className="text-xl font-bold text-gray-900">학생 분석 리포트</h1>
             <p className="mt-1 text-sm text-gray-600">AI 기반 이탈 구간 분석 및 개선 포인트 제공</p>
           </div>
 
-          <div className="student-analytics-controls flex items-center gap-3">
+          <div className="student-analytics-controls flex items-center gap-3 max-[767px]:flex-col! max-[767px]:items-stretch!">
             <select
               value={courseId ?? 'all'}
-              onChange={(event) => setCourseId(event.target.value === 'all' ? null : Number(event.target.value))}
-              className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300"
+              onChange={(event) => changeCourse(event.target.value === 'all' ? null : Number(event.target.value))}
+              className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 max-[767px]:w-full!"
             >
               <option value="all">전체 강의</option>
               {courseOptions.map(([value, label]) => (
@@ -334,7 +378,7 @@ export default function StudentAnalyticsPage() {
                 </option>
               ))}
             </select>
-            <select className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300">
+            <select className="student-analytics-select cursor-pointer rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 max-[767px]:w-full!">
               <option>최근 30일</option>
             </select>
           </div>
@@ -461,7 +505,7 @@ export default function StudentAnalyticsPage() {
                     <span className="text-sm font-medium text-gray-700">{item.label}</span>
                     <span className="text-sm font-semibold text-gray-900">{item.percent}%</span>
                   </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div className="student-analytics-progress-bar h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
                     <div className={`h-full rounded-full bg-gradient-to-r ${item.tone}`} style={{ width: `${item.percent}%` }} />
                   </div>
                   <span className="mt-1 block text-xs text-gray-600">{item.helper}</span>

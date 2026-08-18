@@ -1,0 +1,279 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000" role="img" aria-labelledby="title description">
+  <title id="title">DevPath 시스템 아키텍처</title>
+  <desc id="description">학습자, 강사, 관리자가 Nginx와 React 프론트엔드를 거쳐 Oracle Cloud의 Spring Boot 애플리케이션, 데이터 및 미디어 서비스와 외부 API를 이용하는 구조</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#111827" flood-opacity="0.13"/>
+    </filter>
+    <filter id="smallShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#111827" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#9ca3af"/>
+    </marker>
+    <marker id="darkArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="#6b7280"/>
+    </marker>
+    <style>
+      text { font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif; }
+      .boundary-title { fill: #374151; font-size: 15px; font-weight: 700; }
+      .namespace-title { fill: #4b5563; font-size: 13px; font-weight: 700; }
+      .node-title { fill: #374151; font-size: 14px; font-weight: 700; }
+      .node-copy { fill: #6b7280; font-size: 12px; font-weight: 500; }
+      .tiny { fill: #4b5563; font-size: 11px; font-weight: 600; }
+      .flow { fill: #374151; font-size: 11px; font-weight: 600; }
+      .spring-text { fill: #58b82a; font-size: 20px; font-weight: 800; }
+    </style>
+  </defs>
+
+  <rect width="1800" height="1000" fill="#ffffff"/>
+
+  <g filter="url(#shadow)">
+    <rect x="115" y="54" width="520" height="48" fill="#5599ed"/>
+    <text x="375" y="84" text-anchor="middle" fill="#ffffff" font-size="17" font-weight="600">Architecture: DevPath Learning &amp; Career Platform</text>
+  </g>
+
+  <g transform="translate(1120 25)">
+    <circle cx="28" cy="31" r="25" fill="#f3e8ff"/>
+    <path d="M17 35c7-15 18-18 24-9-1 13-11 21-24 18 7-1 13-6 18-13-7 5-13 6-18 4Z" fill="#7c3aed"/>
+    <text x="62" y="31" fill="#374151" font-size="14" font-weight="800">Gemini AI</text>
+    <text x="62" y="48" fill="#6b7280" font-size="11">분석 · 코드 리뷰 · 추천</text>
+  </g>
+  <g transform="translate(1340 25)">
+    <circle cx="28" cy="31" r="25" fill="#eef2ff"/>
+    <text x="28" y="36" text-anchor="middle" fill="#111827" font-size="14" font-weight="900">OAuth</text>
+    <text x="62" y="31" fill="#374151" font-size="14" font-weight="800">GitHub · Google</text>
+    <text x="62" y="48" fill="#6b7280" font-size="11">소셜 로그인</text>
+  </g>
+  <g transform="translate(1575 25)">
+    <circle cx="28" cy="31" r="25" fill="#fff7ed"/>
+    <text x="28" y="36" text-anchor="middle" fill="#f97316" font-size="13" font-weight="900">JOB</text>
+    <text x="62" y="31" fill="#374151" font-size="14" font-weight="800">잡코리아</text>
+    <text x="62" y="48" fill="#6b7280" font-size="11">채용공고 XML API</text>
+  </g>
+
+  <rect x="110" y="130" width="1600" height="735" rx="5" fill="#f6f7f8"/>
+  <g transform="translate(145 150)">
+    <path d="M0 12c0-7 6-12 13-12h22c7 0 13 5 13 12s-6 12-13 12H13C6 24 0 19 0 12Zm12 0c0 2 2 4 5 4h15c3 0 5-2 5-4s-2-4-5-4H17c-3 0-5 2-5 4Z" fill="#ef3124"/>
+    <text x="61" y="18" fill="#e32922" font-size="20" font-weight="800">ORACLE CLOUD</text>
+  </g>
+
+  <g filter="url(#smallShadow)">
+    <g transform="translate(20 220)">
+      <rect width="86" height="105" rx="3" fill="#ffffff" stroke="#d1d5db"/>
+      <path d="M24 24h38v30H24zM18 60h50" fill="none" stroke="#6b7280" stroke-width="5" stroke-linejoin="round"/>
+      <text x="43" y="88" text-anchor="middle" class="node-title">학습자</text>
+    </g>
+    <g transform="translate(20 425)">
+      <rect width="86" height="105" rx="3" fill="#ffffff" stroke="#d1d5db"/>
+      <path d="M24 24h38v30H24zM18 60h50" fill="none" stroke="#6b7280" stroke-width="5" stroke-linejoin="round"/>
+      <text x="43" y="88" text-anchor="middle" class="node-title">강사</text>
+    </g>
+    <g transform="translate(20 630)">
+      <rect width="86" height="105" rx="3" fill="#ffffff" stroke="#d1d5db"/>
+      <path d="M24 24h38v30H24zM18 60h50" fill="none" stroke="#6b7280" stroke-width="5" stroke-linejoin="round"/>
+      <text x="43" y="88" text-anchor="middle" class="node-title">관리자</text>
+    </g>
+  </g>
+
+  <g filter="url(#smallShadow)">
+    <g transform="translate(145 238)">
+      <rect width="245" height="70" rx="3" fill="#ffffff" stroke="#d1d5db"/>
+      <g transform="translate(18 17)">
+        <rect width="10" height="10" fill="#60a5fa"/><rect y="13" width="10" height="10" fill="#60a5fa"/><rect y="26" width="10" height="10" fill="#60a5fa"/>
+        <path d="M14 5h12M14 18h12M14 31h12" stroke="#93c5fd" stroke-width="3"/>
+      </g>
+      <text x="62" y="29" class="node-title">www.devpath.kr</text>
+      <text x="62" y="49" class="node-copy">DNS · HTTPS 서비스 접속</text>
+    </g>
+    <g transform="translate(145 443)">
+      <rect width="245" height="70" rx="3" fill="#ffffff" stroke="#d1d5db"/>
+      <g transform="translate(18 17)">
+        <rect width="10" height="10" fill="#60a5fa"/><rect y="13" width="10" height="10" fill="#60a5fa"/><rect y="26" width="10" height="10" fill="#60a5fa"/>
+        <path d="M14 5h12M14 18h12M14 31h12" stroke="#93c5fd" stroke-width="3"/>
+      </g>
+      <text x="62" y="29" class="node-title">강사 운영 화면</text>
+      <text x="62" y="49" class="node-copy">강의 제작 · 분석 · 멘토링</text>
+    </g>
+    <g transform="translate(145 648)">
+      <rect width="245" height="70" rx="3" fill="#ffffff" stroke="#d1d5db"/>
+      <g transform="translate(18 17)">
+        <rect width="10" height="10" fill="#60a5fa"/><rect y="13" width="10" height="10" fill="#60a5fa"/><rect y="26" width="10" height="10" fill="#60a5fa"/>
+        <path d="M14 5h12M14 18h12M14 31h12" stroke="#93c5fd" stroke-width="3"/>
+      </g>
+      <text x="62" y="29" class="node-title">관리자 운영 화면</text>
+      <text x="62" y="49" class="node-copy">거버넌스 · 검수 · 통합 운영</text>
+    </g>
+  </g>
+
+  <g filter="url(#smallShadow)" transform="translate(430 337)">
+    <rect width="205" height="278" rx="3" fill="#ffffff" stroke="#d1d5db"/>
+    <g transform="translate(66 24)">
+      <path d="M0 20 36 0l36 20v40L36 80 0 60Z" fill="#009639"/>
+      <text x="36" y="50" text-anchor="middle" fill="#ffffff" font-size="34" font-weight="900">N</text>
+    </g>
+    <text x="102" y="132" text-anchor="middle" class="node-title">Host Nginx</text>
+    <text x="102" y="152" text-anchor="middle" class="node-copy">HTTPS 종단 · Reverse Proxy</text>
+    <path d="M28 177h149" stroke="#e5e7eb"/>
+    <text x="32" y="201" class="tiny">/api · /uploads</text>
+    <text x="32" y="224" class="tiny">/ws · /oauth2</text>
+    <text x="32" y="247" class="tiny">/swagger-ui</text>
+  </g>
+
+  <path d="M106 273h39M390 273h18v119h22M106 478h39M390 478h40M106 683h39M390 683h18V560h22" fill="none" stroke="#a3a3a3" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="665" y="195" width="1005" height="610" rx="8" fill="#e5f3fd"/>
+  <text x="695" y="225" class="boundary-title">Oracle Cloud VM</text>
+  <rect x="710" y="240" width="915" height="520" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="7 5"/>
+  <text x="742" y="266" class="boundary-title">User Traffic &amp; Application Process Area</text>
+  <text x="1345" y="266" fill="#6b7280" font-size="16">Single Availability Zone</text>
+
+  <rect x="742" y="285" width="335" height="248" fill="#f9dfd2"/>
+  <text x="758" y="309" class="namespace-title">Frontend Docker Container</text>
+  <rect x="765" y="330" width="289" height="174" fill="#e7f3e8"/>
+  <text x="780" y="353" class="tiny">Nginx static server · React SPA</text>
+  <g transform="translate(800 375)">
+    <path d="M0 18 28 2l28 16v32L28 66 0 50Z" fill="#009639"/>
+    <text x="28" y="42" text-anchor="middle" fill="#ffffff" font-size="23" font-weight="900">N</text>
+    <circle cx="115" cy="34" r="8" fill="#149eca"/>
+    <ellipse cx="115" cy="34" rx="39" ry="14" fill="none" stroke="#149eca" stroke-width="2"/>
+    <ellipse cx="115" cy="34" rx="39" ry="14" fill="none" stroke="#149eca" stroke-width="2" transform="rotate(60 115 34)"/>
+    <ellipse cx="115" cy="34" rx="39" ry="14" fill="none" stroke="#149eca" stroke-width="2" transform="rotate(120 115 34)"/>
+    <text x="169" y="30" fill="#111827" font-size="24" font-weight="800">React 19</text>
+    <text x="169" y="49" fill="#4b5563" font-size="11">Vite · TypeScript</text>
+  </g>
+  <text x="782" y="480" class="tiny">Axios · hls.js · Tesseract.js</text>
+
+  <rect x="1115" y="285" width="478" height="345" fill="#f9dfd2"/>
+  <text x="1132" y="309" class="namespace-title">Spring Boot API · systemd Runtime</text>
+  <text x="1405" y="309" class="tiny">Java 21 · Spring Boot 4</text>
+
+  <g transform="translate(1135 330)">
+    <g>
+      <rect width="137" height="112" fill="#e7f3e8"/>
+      <text x="12" y="23" class="tiny">Learning Domain</text>
+      <path d="M15 59c18-27 49-24 56-13-6 27-29 41-55 31 14-2 27-13 38-27-15 11-28 15-39 9Z" fill="#58b82a"/>
+      <text x="77" y="73" class="spring-text">spring</text>
+      <text x="12" y="98" class="node-copy">로드맵 · 강의 · 평가</text>
+    </g>
+    <g transform="translate(148)">
+      <rect width="137" height="112" fill="#e7f3e8"/>
+      <text x="12" y="23" class="tiny">Collaboration</text>
+      <path d="M15 59c18-27 49-24 56-13-6 27-29 41-55 31 14-2 27-13 38-27-15 11-28 15-39 9Z" fill="#58b82a"/>
+      <text x="77" y="73" class="spring-text">spring</text>
+      <text x="12" y="98" class="node-copy">프로젝트 · 멘토링</text>
+    </g>
+    <g transform="translate(296)">
+      <rect width="137" height="112" fill="#e7f3e8"/>
+      <text x="12" y="23" class="tiny">Career Domain</text>
+      <path d="M15 59c18-27 49-24 56-13-6 27-29 41-55 31 14-2 27-13 38-27-15 11-28 15-39 9Z" fill="#58b82a"/>
+      <text x="77" y="73" class="spring-text">spring</text>
+      <text x="12" y="98" class="node-copy">채용 · 포트폴리오</text>
+    </g>
+    <g transform="translate(0 124)">
+      <rect width="137" height="112" fill="#e7f3e8"/>
+      <text x="12" y="23" class="tiny">Admin Domain</text>
+      <path d="M15 59c18-27 49-24 56-13-6 27-29 41-55 31 14-2 27-13 38-27-15 11-28 15-39 9Z" fill="#58b82a"/>
+      <text x="77" y="73" class="spring-text">spring</text>
+      <text x="12" y="98" class="node-copy">검수 · 신고 · 운영</text>
+    </g>
+    <g transform="translate(148 124)">
+      <rect width="137" height="112" fill="#e7f3e8"/>
+      <text x="12" y="23" class="tiny">Security</text>
+      <path d="M15 59c18-27 49-24 56-13-6 27-29 41-55 31 14-2 27-13 38-27-15 11-28 15-39 9Z" fill="#58b82a"/>
+      <text x="77" y="73" class="spring-text">spring</text>
+      <text x="12" y="98" class="node-copy">JWT · OAuth2 · Role</text>
+    </g>
+    <g transform="translate(296 124)">
+      <rect width="137" height="112" fill="#e7f3e8"/>
+      <text x="12" y="23" class="tiny">Realtime</text>
+      <path d="M15 59c18-27 49-24 56-13-6 27-29 41-55 31 14-2 27-13 38-27-15 11-28 15-39 9Z" fill="#58b82a"/>
+      <text x="77" y="73" class="spring-text">spring</text>
+      <text x="12" y="98" class="node-copy">Q&amp;A · Voice WebSocket</text>
+    </g>
+  </g>
+
+  <rect x="742" y="555" width="335" height="165" fill="#f9dfd2"/>
+  <text x="758" y="579" class="namespace-title">Docker Compose · Data &amp; OCR</text>
+  <g transform="translate(760 595)">
+    <g>
+      <rect width="92" height="100" fill="#e7f3e8"/>
+      <ellipse cx="46" cy="27" rx="20" ry="8" fill="none" stroke="#336791" stroke-width="3"/>
+      <path d="M26 27v28c0 6 9 10 20 10s20-4 20-10V27M26 42c0 6 9 10 20 10s20-4 20-10" fill="none" stroke="#336791" stroke-width="3"/>
+      <text x="46" y="86" text-anchor="middle" class="tiny">PostgreSQL</text>
+    </g>
+    <g transform="translate(102)">
+      <rect width="92" height="100" fill="#e7f3e8"/>
+      <path d="m22 35 24-13 24 13-24 13-24-13Zm0 14 24 13 24-13" fill="none" stroke="#d82c20" stroke-width="3"/>
+      <text x="46" y="86" text-anchor="middle" class="tiny">Redis 7</text>
+    </g>
+    <g transform="translate(204)">
+      <rect width="92" height="100" fill="#e7f3e8"/>
+      <rect x="20" y="20" width="52" height="45" fill="none" stroke="#7c3aed" stroke-width="3"/>
+      <path d="M28 31h36M28 42h27M28 53h31" stroke="#7c3aed" stroke-width="3"/>
+      <text x="46" y="86" text-anchor="middle" class="tiny">OCR · EasyOCR</text>
+    </g>
+  </g>
+
+  <rect x="1115" y="650" width="478" height="70" fill="#f9dfd2"/>
+  <text x="1132" y="674" class="namespace-title">Local Media Pipeline</text>
+  <g transform="translate(1140 682)">
+    <rect width="118" height="27" fill="#e7f3e8"/>
+    <text x="59" y="18" text-anchor="middle" class="tiny">Upload Storage</text>
+    <rect x="132" width="96" height="27" fill="#e7f3e8"/>
+    <text x="180" y="18" text-anchor="middle" class="tiny">FFmpeg</text>
+    <rect x="242" width="118" height="27" fill="#e7f3e8"/>
+    <text x="301" y="18" text-anchor="middle" class="tiny">HLS · AES-128</text>
+    <rect x="374" width="65" height="27" fill="#e7f3e8"/>
+    <text x="406" y="18" text-anchor="middle" class="tiny">Signed URL</text>
+  </g>
+
+  <path d="M635 476h83v-67h24" fill="none" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="652" y="460" class="flow">Proxy / Serve</text>
+  <path d="M1077 409h38" fill="none" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1082" y="396" class="flow">REST · WS</text>
+  <path d="M1354 630v20M1048 638h67" fill="none" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1064" y="625" class="flow">Read / Write</text>
+
+  <path d="M1148 85v180h109v20M1400 85v180h-42v20M1635 85v180h-137v20" fill="none" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1162" y="185" class="flow">AI request</text>
+  <text x="1410" y="185" class="flow">Authentication</text>
+  <text x="1547" y="185" class="flow">Job data</text>
+
+  <g filter="url(#smallShadow)" transform="translate(1260 905)">
+    <rect width="185" height="54" fill="#ffffff" stroke="#d1d5db"/>
+    <circle cx="32" cy="27" r="17" fill="#111827"/>
+    <text x="32" y="32" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="900">GH</text>
+    <text x="62" y="24" class="node-title">GitHub</text>
+    <text x="62" y="41" class="node-copy">master merge</text>
+  </g>
+  <g filter="url(#smallShadow)" transform="translate(1480 905)">
+    <rect width="185" height="54" fill="#ffffff" stroke="#d1d5db"/>
+    <circle cx="32" cy="27" r="17" fill="#eff6ff"/>
+    <path d="M22 28h20M27 20l-5 8 5 8M37 20l5 8-5 8" fill="none" stroke="#3b82f6" stroke-width="2"/>
+    <text x="62" y="24" class="node-title">GitHub Actions</text>
+    <text x="62" y="41" class="node-copy">SSH build · deploy</text>
+  </g>
+  <path d="M1445 932h35" fill="none" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M1572 905V790h-52v-30" fill="none" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1452" y="921" class="flow">Merge</text>
+  <text x="1585" y="791" class="flow">Deploy</text>
+
+  <g transform="translate(730 890)">
+    <path d="M0 26h52c15 0 25-5 31-15 5 2 9 7 11 12-7 4-13 5-20 5-5 17-22 27-48 27C12 55 3 45 0 26Z" fill="#2496ed"/>
+    <rect x="12" y="4" width="12" height="10" fill="#2496ed"/><rect x="27" y="4" width="12" height="10" fill="#2496ed"/><rect x="42" y="4" width="12" height="10" fill="#2496ed"/>
+    <rect x="27" y="17" width="12" height="10" fill="#2496ed"/><rect x="42" y="17" width="12" height="10" fill="#2496ed"/><rect x="57" y="17" width="12" height="10" fill="#2496ed"/>
+    <text x="112" y="32" fill="#1f2937" font-size="25" font-weight="800">Docker Compose</text>
+    <text x="112" y="51" fill="#6b7280" font-size="12">Frontend · PostgreSQL · Redis · OCR</text>
+  </g>
+  <g transform="translate(1040 900)">
+    <circle cx="26" cy="26" r="24" fill="#111827"/>
+    <text x="26" y="32" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="900">JAVA</text>
+    <text x="66" y="25" fill="#1f2937" font-size="20" font-weight="800">Spring Boot JAR</text>
+    <text x="66" y="44" fill="#6b7280" font-size="12">systemd process · port 8083</text>
+  </g>
+  <path d="M820 890V805M1105 900V805" fill="none" stroke="#9ca3af" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="835" y="852" class="flow">Build &amp; run</text>
+  <text x="1120" y="852" class="flow">Restart</text>
+
+</svg>

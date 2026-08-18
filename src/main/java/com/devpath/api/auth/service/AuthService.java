@@ -3,6 +3,7 @@ package com.devpath.api.auth.service;
 import com.devpath.api.auth.dto.AuthDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.common.security.AccountAccessService;
 import com.devpath.common.security.JwtTokenProvider;
 import com.devpath.common.security.TokenRedisService;
 import com.devpath.domain.user.entity.User;
@@ -24,6 +25,7 @@ public class AuthService {
   private final PasswordEncoder passwordEncoder;
   private final JwtTokenProvider jwtTokenProvider;
   private final TokenRedisService tokenRedisService;
+  private final AccountAccessService accountAccessService;
 
   @Transactional
   public void signUp(AuthDto.SignUpRequest request) {
@@ -42,7 +44,7 @@ public class AuthService {
     userRepository.save(user);
   }
 
-  @Transactional(readOnly = true)
+  @Transactional
   public AuthDto.TokenResponse login(AuthDto.LoginRequest request) {
     User user =
         userRepository
@@ -52,6 +54,8 @@ public class AuthService {
     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
       throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
     }
+    accountAccessService.validateActive(user);
+    user.updateLastLoginAt();
 
     String roleName = user.getRole().name();
     String accessToken = jwtTokenProvider.createAccessToken(user.getId(), roleName);
@@ -86,23 +90,28 @@ public class AuthService {
       throw new CustomException(ErrorCode.REFRESH_TOKEN_REUSED);
     }
 
+    User user = accountAccessService.requireActiveAccount(claims.userId());
+    if (accountAccessService.wasIssuedBeforeInvalidation(user, claims.issuedAt())) {
+      tokenRedisService.deleteRefreshToken(claims.userId());
+      throw new CustomException(ErrorCode.ACCOUNT_ACCESS_BLOCKED);
+    }
+
     tokenRedisService.blacklistRefreshJti(
         claims.jti(), jwtTokenProvider.getRemainingValidity(refreshToken));
 
-    String newAccessToken = jwtTokenProvider.createAccessToken(claims.userId(), claims.role());
-    String newRefreshToken = jwtTokenProvider.createRefreshToken(claims.userId(), claims.role());
+    String roleName = user.getRole().name();
+    String newAccessToken = jwtTokenProvider.createAccessToken(claims.userId(), roleName);
+    String newRefreshToken = jwtTokenProvider.createRefreshToken(claims.userId(), roleName);
     JwtTokenProvider.TokenClaims newRefreshClaims =
         jwtTokenProvider.parseRefreshToken(newRefreshToken);
     tokenRedisService.saveRefreshTokenJti(
         claims.userId(), newRefreshClaims.jti(), jwtTokenProvider.getRefreshTokenExpiration());
 
-    String name = userRepository.findById(claims.userId()).map(User::getName).orElse(null);
-
     return AuthDto.TokenResponse.builder()
         .tokenType(TOKEN_TYPE)
         .accessToken(newAccessToken)
         .refreshToken(newRefreshToken)
-        .name(name)
+        .name(user.getName())
         .build();
   }
 

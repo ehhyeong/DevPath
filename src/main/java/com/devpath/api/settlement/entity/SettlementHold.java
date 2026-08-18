@@ -39,4 +39,17 @@ public class SettlementHold {
   private String reason;
 
   @CreatedDate private LocalDateTime heldAt;
+
+  private Long releasedBy;
+
+  @Column(columnDefinition = "TEXT")
+  private String releaseReason;
+
+  private LocalDateTime releasedAt;
+
+  public void release(Long adminId, String reason) {
+    this.releasedBy = adminId;
+    this.releaseReason = reason;
+    this.releasedAt = LocalDateTime.now();
+  }
 }

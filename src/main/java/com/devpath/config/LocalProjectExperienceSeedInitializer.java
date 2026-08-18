@@ -28,7 +28,9 @@ import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -56,66 +58,44 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
   private final ShowcaseLikeRepository showcaseLikeRepository;
   private final ShowcaseCommentRepository showcaseCommentRepository;
   private final PasswordEncoder passwordEncoder;
+  private final LocalSeedSqlExecutor seedSqlExecutor;
 
   @Override
   @Transactional
   public void run(String... args) {
-    List<User> users =
-        List.of(
-            ensureUser("project.frontend@devpath.com", "이서준"),
-            ensureUser("project.backend@devpath.com", "정다은"),
-            ensureUser("project.pm@devpath.com", "최민지"),
-            ensureUser("project.ai@devpath.com", "오서연"));
+    Map<String, User> usersByEmail = ensureUsers();
+    List<User> users = List.copyOf(usersByEmail.values());
 
-    seedProjectWorkspace(
-        users.get(0),
-        "포트폴리오 빌더 솔로",
-        "개인 포트폴리오 제작을 위한 솔로 워크스페이스. React, Spring Boot, PDF 자동화를 실험합니다.",
-        ProjectType.SOLO,
-        WorkspaceType.SOLO,
-        ProjectStatus.IN_PROGRESS,
-        List.of(users.get(0)));
-    seedProjectWorkspace(
-        users.get(1),
-        "DevPath 팀 워크스페이스",
-        "팀 협업과 멘토링 리뷰 흐름을 검증하는 스쿼드 워크스페이스. API, 알림, 회의 기록을 연결합니다.",
-        ProjectType.SQUAD,
-        WorkspaceType.SQUAD,
-        ProjectStatus.IN_PROGRESS,
-        users);
-    seedProjectWorkspace(
-        users.get(2),
-        "Next.js 스터디 운영툴",
-        "스터디 모집부터 과제 제출까지 운영하는 프로젝트. 진행 기록과 쇼케이스 제출을 함께 관리합니다.",
-        ProjectType.SQUAD,
-        WorkspaceType.SQUAD,
-        ProjectStatus.COMPLETED,
-        List.of(users.get(0), users.get(2), users.get(3)));
+    projectSeeds()
+        .forEach(
+            seed ->
+                seedProjectWorkspace(
+                    usersByEmail.get(seed.ownerEmail()),
+                    seed.name(),
+                    seed.description(),
+                    seed.projectType(),
+                    seed.workspaceType(),
+                    seed.status(),
+                    users(seed.memberEmails(), usersByEmail)));
 
-    seedShowcase(
-        users.get(0),
-        "DevPath 포트폴리오 빌더",
-        "학습 기록과 프로젝트 경험을 모아 PDF 포트폴리오로 정리하는 웹 서비스입니다.",
-        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900",
-        ShowcaseCategory.FULLSTACK,
-        36,
-        users);
-    seedShowcase(
-        users.get(1),
-        "AI 코드 리뷰 대시보드",
-        "PR 리뷰 결과를 위험도, 수정 가이드, 히스토리로 분류해서 팀 단위로 추적합니다.",
-        "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=900",
-        ShowcaseCategory.AI,
-        42,
-        users);
-    seedShowcase(
-        users.get(3),
-        "스터디 매칭 모바일 MVP",
-        "관심 스택과 시간대를 기반으로 스터디원을 추천하고 출석을 관리하는 모바일 MVP입니다.",
-        "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=900",
-        ShowcaseCategory.MOBILE,
-        28,
-        users);
+    showcaseSeeds()
+        .forEach(
+            seed ->
+                seedShowcase(
+                    usersByEmail.get(seed.ownerEmail()),
+                    seed.title(),
+                    seed.description(),
+                    seed.thumbnailUrl(),
+                    seed.category(),
+                    seed.initialViews(),
+                    users));
+  }
+
+  private Map<String, User> ensureUsers() {
+    Map<String, User> usersByEmail = new LinkedHashMap<>();
+    userSeeds()
+        .forEach(seed -> usersByEmail.put(seed.email(), ensureUser(seed.email(), seed.name())));
+    return usersByEmail;
   }
 
   private User ensureUser(String email, String name) {
@@ -295,4 +275,61 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
                         .content("완성도가 좋아요. 다음 스프린트에서 회고까지 남기면 더 설득력 있겠습니다.")
                         .build()));
   }
+
+  private List<UserSeed> userSeeds() {
+    return seedSqlExecutor.query(
+        "db/local/project-experience-users.sql",
+        (resultSet, rowNumber) ->
+            new UserSeed(resultSet.getString("email"), resultSet.getString("name")));
+  }
+
+  private List<ProjectSeed> projectSeeds() {
+    return seedSqlExecutor.query(
+        "db/local/project-experience-projects.sql",
+        (resultSet, rowNumber) ->
+            new ProjectSeed(
+                resultSet.getString("owner_email"),
+                resultSet.getString("name"),
+                resultSet.getString("description"),
+                ProjectType.valueOf(resultSet.getString("project_type")),
+                WorkspaceType.valueOf(resultSet.getString("workspace_type")),
+                ProjectStatus.valueOf(resultSet.getString("project_status")),
+                resultSet.getString("member_emails")));
+  }
+
+  private List<ShowcaseSeed> showcaseSeeds() {
+    return seedSqlExecutor.query(
+        "db/local/project-experience-showcases.sql",
+        (resultSet, rowNumber) ->
+            new ShowcaseSeed(
+                resultSet.getString("owner_email"),
+                resultSet.getString("title"),
+                resultSet.getString("description"),
+                resultSet.getString("thumbnail_url"),
+                ShowcaseCategory.valueOf(resultSet.getString("category")),
+                resultSet.getInt("initial_views")));
+  }
+
+  private List<User> users(String emails, Map<String, User> usersByEmail) {
+    return List.of(emails.split(",")).stream().map(usersByEmail::get).toList();
+  }
+
+  private record UserSeed(String email, String name) {}
+
+  private record ProjectSeed(
+      String ownerEmail,
+      String name,
+      String description,
+      ProjectType projectType,
+      WorkspaceType workspaceType,
+      ProjectStatus status,
+      String memberEmails) {}
+
+  private record ShowcaseSeed(
+      String ownerEmail,
+      String title,
+      String description,
+      String thumbnailUrl,
+      ShowcaseCategory category,
+      int initialViews) {}
 }

@@ -1,14 +1,26 @@
+import { useAuthSession } from './lib/useAuthSession'
 import { type CSSProperties, useEffect, useState } from 'react'
 import AccountUserMenu from './components/AccountUserMenu'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import SiteHeader from './components/SiteHeader'
-import { authApi, userApi } from './lib/api'
+import { authApi, userApi } from './lib/api/auth'
 import {
   AUTH_SESSION_SYNC_EVENT,
   clearStoredAuthSession,
   getPostLoginRedirect,
   readStoredAuthSession,
 } from './lib/auth-session'
+import { navigateTo } from './lib/spa-navigation'
+import { readAuthViewFromLocation,syncAuthViewInLocation } from './lib/location-state'
+import type { ApiResponse } from './types/home'
+
+type PlatformNotice = {
+  id: number
+  title: string
+  content: string
+  pinned: boolean
+  createdAt: string | null
+}
 
 const headerLinks = [
   { key: 'roadmap', href: '/roadmap-hub', label: '로드맵' },
@@ -19,6 +31,7 @@ const headerLinks = [
 ]
 
 const instructorHeaderLink = { key: 'instructorDashboard', href: '/instructor-dashboard', label: '강사 대시보드' }
+const showLegacyHeader = false
 
 type HeaderMoveKey = 'brandGroup' | 'navGroup'
 
@@ -49,29 +62,7 @@ const supportLinks = [
 ]
 
 function go(path: string) {
-  window.location.href = path
-}
-
-function readAuthViewFromLocation(): AuthView | null {
-  const value = new URLSearchParams(window.location.search).get('auth')
-
-  if (value === 'login' || value === 'signup') {
-    return value
-  }
-
-  return null
-}
-
-function syncAuthViewInLocation(view: AuthView | null) {
-  const url = new URL(window.location.href)
-
-  if (view) {
-    url.searchParams.set('auth', view)
-  } else {
-    url.searchParams.delete('auth')
-  }
-
-  window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  navigateTo(path)
 }
 
 function initAos() {
@@ -131,10 +122,15 @@ function getHeaderMoveStyle(key: HeaderMoveKey): CSSProperties {
   }
 }
 
+const glassPanelClassName = 'glass-panel border-[1px] border-solid border-[rgba(255,255,255,0.5)] bg-[rgba(255,255,255,0.7)] [backdrop-filter:blur(12px)] [box-shadow:0_8px_32px_rgba(0,0,0,0.05)]'
+
 function App() {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
+  const [platformNotices, setPlatformNotices] = useState<PlatformNotice[]>([])
+  const [noticesOpen, setNoticesOpen] = useState(false)
+  const [noticesError, setNoticesError] = useState('')
   const showInstructorDashboard = session?.role === 'ROLE_INSTRUCTOR'
   const navGroupOffset = headerMoveOffsets.navGroup
   const headerUserStyle = { transform: 'translateX(-20px)' }
@@ -146,12 +142,19 @@ function App() {
   }, [])
 
   useEffect(() => {
-    document.documentElement.classList.add('home-page-document')
-    document.body.classList.add('home-page-body')
+    const documentClasses = ['h-full', 'overflow-hidden']
+    const bodyClasses = ['h-[100dvh]!', 'min-h-0!', 'overflow-hidden!']
+    const rootClasses = ['h-[100dvh]!', 'min-h-0!']
+    const root = document.getElementById('root')
+
+    document.documentElement.classList.add(...documentClasses)
+    document.body.classList.add(...bodyClasses)
+    root?.classList.add(...rootClasses)
 
     return () => {
-      document.documentElement.classList.remove('home-page-document')
-      document.body.classList.remove('home-page-body')
+      document.documentElement.classList.remove(...documentClasses)
+      document.body.classList.remove(...bodyClasses)
+      root?.classList.remove(...rootClasses)
     }
   }, [])
 
@@ -169,7 +172,7 @@ function App() {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   useEffect(() => {
     // 홈에서 모달을 직접 열고 닫을 수 있도록 URL 상태도 함께 맞춥니다.
@@ -222,6 +225,20 @@ function App() {
     setAuthView(null)
   }
 
+  async function openPlatformNotices() {
+    setNoticesOpen(true)
+    setNoticesError('')
+    if (platformNotices.length) return
+    try {
+      const response = await fetch('/api/notices', { headers: { Accept: 'application/json' } })
+      const payload = await response.json() as ApiResponse<PlatformNotice[]>
+      if (!response.ok || !payload.success) throw new Error(payload.message || '공지를 불러오지 못했습니다.')
+      setPlatformNotices(payload.data)
+    } catch (error) {
+      setNoticesError(error instanceof Error ? error.message : '공지를 불러오지 못했습니다.')
+    }
+  }
+
   // 관리자 세션은 일반 홈 대신 전용 대시보드로 즉시 이동시킨다.
   function handleAuthenticated() {
     const nextSession = readStoredAuthSession()
@@ -236,7 +253,7 @@ function App() {
   }
 
   return (
-    <div className="home-page-shell text-gray-800">
+    <div className="h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden text-gray-800">
       <SiteHeader
         session={session}
         profileImage={profileImage}
@@ -244,7 +261,7 @@ function App() {
         onLoginClick={() => openAuthModal('login')}
       />
 
-      {false ? <nav className="app-header">
+      {showLegacyHeader ? <nav className="app-header">
         <div className="mx-auto flex h-full w-full max-w-[1600px] items-center gap-8 px-8">
           <div className="hidden w-60 items-center px-4 lg:flex" style={{ transform: 'translateX(var(--logo-nudge))' }}>
             <a
@@ -323,17 +340,17 @@ function App() {
         </div>
       </nav> : null}
 
-      <main className="home-page-main">
-      <div className="home-page-body-zoom">
-      <section className="home-hero-section relative overflow-hidden px-6 pt-16 pb-8">
+      <main className="mt-[var(--app-header-height)] h-[calc(100dvh-var(--app-header-height))] min-h-0 w-full min-w-0 overflow-x-hidden overflow-y-auto pr-[calc(var(--devpath-scrollbar-size)*0.9)] overscroll-y-contain scroll-smooth [scrollbar-gutter:stable] max-[1023px]:pr-0 max-[1023px]:[scrollbar-gutter:auto]">
+      <div className="ml-[calc((100%-(100%/var(--home-page-body-zoom)))/2)] w-[calc(100%/var(--home-page-body-zoom))] origin-top-left [--home-page-body-zoom:0.9] [zoom:var(--home-page-body-zoom)] max-[1023px]:ml-0 max-[1023px]:w-full max-[1023px]:transform-none max-[1023px]:[zoom:1]">
+      <section className="relative min-h-[calc(111.111111dvh-71.111111px)] overflow-hidden px-6 pt-16 pb-8 max-[1023px]:min-h-[calc(100dvh-var(--app-header-height))] max-[767px]:px-[var(--app-page-gutter)] max-[767px]:pt-[clamp(40px,8vh,64px)]">
         <div className="relative z-10 mx-auto max-w-6xl text-center" data-aos="fade-up">
-          <span className="home-hero-eyebrow text-brand inline-block rounded-full border border-green-200 bg-white shadow-sm">
+          <span className="text-brand mb-[24px] inline-block rounded-full border border-green-200 bg-white px-[12px] py-[4px] text-[12px] leading-[16px] [font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,'Helvetica_Neue','Segoe_UI','Apple_SD_Gothic_Neo','Noto_Sans_KR','Malgun_Gothic',sans-serif] [font-weight:700] [letter-spacing:0] shadow-sm max-[767px]:mb-[18px] max-[767px]:whitespace-normal">
             🚀 개발자 커리어 가속화 플랫폼
           </span>
-          <h1 className="home-hero-title font-extrabold text-gray-900">
+          <h1 className="mb-[24px] text-[48px] leading-[50px] font-extrabold tracking-[-1.2px] text-gray-900 [font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,'Helvetica_Neue','Segoe_UI','Apple_SD_Gothic_Neo','Noto_Sans_KR','Malgun_Gothic',sans-serif] md:text-[72px] md:leading-[74px] md:tracking-[-1.8px] min-[768px]:max-[1023px]:text-[clamp(56px,7vw,64px)] min-[768px]:max-[1023px]:leading-[1.04] max-[767px]:mb-[20px] max-[767px]:text-[clamp(36px,11vw,48px)] max-[767px]:leading-[1.08]">
             성장의 길을 찾다,
             <br />
-            <span className="home-hero-brand bg-gradient-to-r from-green-500 to-teal-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-green-500 to-teal-500 bg-clip-text tracking-[-1.2px] text-transparent md:tracking-[-1.8px]">
               DevPath
             </span>
           </h1>
@@ -346,21 +363,21 @@ function App() {
             <button
               type="button"
                 onClick={() => go('/survey')}
-              className="hero-primary-button px-8 py-4 bg-brand hover:bg-green-600 text-white font-bold rounded-xl transition shadow-xl shadow-green-500/30 flex items-center justify-center gap-2 text-lg"
+              className="bg-brand flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-bold text-white shadow-xl shadow-green-500/30 [transition:background-color_0.2s_ease,box-shadow_0.2s_ease,transform_0.2s_ease] hover:bg-green-600 max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px] max-[767px]:leading-[24px]"
             >
               <i className="fas fa-magic" /> 로드맵 추천받기
             </button>
             <button
               type="button"
               onClick={() => go('/roadmap-hub')}
-              className="hero-secondary-button flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-4 text-lg font-bold text-gray-700 transition hover:border-gray-400"
+              className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-8 py-4 text-lg font-bold text-gray-700 [transition:border-color_0.2s_ease,box-shadow_0.2s_ease,transform_0.2s_ease] hover:border-gray-400 max-[767px]:min-h-[52px] max-[767px]:w-full max-[767px]:px-[18px] max-[767px]:py-[14px] max-[767px]:text-[16px] max-[767px]:leading-[24px]"
             >
               <i className="fas fa-map" /> 로드맵 둘러보기
             </button>
           </div>
 
           <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 text-left md:grid-cols-3">
-            <div className="glass-panel float rounded-2xl p-6" style={{ animationDelay: '0s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '0s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-500">
                   <i className="fab fa-hotjar" />
@@ -376,7 +393,7 @@ function App() {
               </div>
             </div>
 
-            <div className="glass-panel float rounded-2xl p-6" style={{ animationDelay: '1s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '1s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-500">
                   <i className="fas fa-user-graduate" />
@@ -405,7 +422,7 @@ function App() {
               </div>
             </div>
 
-            <div className="glass-panel float rounded-2xl p-6" style={{ animationDelay: '2s' }}>
+            <div className={`${glassPanelClassName} [animation:float_6s_ease-in-out_infinite] rounded-2xl p-6`} style={{ animationDelay: '2s' }}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-purple-500">
                   <i className="fas fa-briefcase" />
@@ -463,49 +480,49 @@ function App() {
           </div>
 
           <div className="flex h-96 flex-1 items-center justify-center" data-aos="fade-left">
-            <div className="roadmap-preview-shell">
-              <div className="roadmap-preview-scene">
+            <div className="roadmap-preview-shell relative mx-auto flex h-[380px] w-full max-w-[404px] [flex-basis:auto] [flex-grow:0] [flex-shrink:0] items-center justify-center overflow-hidden [border:1px_solid_rgba(226,232,240,0.92)] rounded-[32px] [background:linear-gradient(180deg,rgba(255,255,255,0.99)_0%,rgba(248,250,252,0.97)_58%,rgba(241,245,249,0.98)_100%)] [box-shadow:0_28px_64px_rgba(15,23,42,0.1)] [isolation:isolate] before:absolute before:inset-0 before:z-[-2] before:content-[''] before:[background-image:radial-gradient(circle,rgba(148,163,184,0.22)_1px,transparent_1px)] before:[background-size:16px_16px] before:opacity-[0.45] after:absolute after:z-[-1] after:h-[92px] after:rounded-[999px] after:content-[''] after:[inset:16px_58px_auto] after:[background:linear-gradient(180deg,rgba(226,232,240,0.9)_0%,rgba(255,255,255,0)_100%)] after:[filter:blur(28px)] max-md:h-[350px] max-md:max-w-[344px] max-md:rounded-[28px]">
+              <div className="roadmap-preview-scene relative z-[1] h-[332px] w-[min(100%,280px)] max-md:h-[304px] max-md:w-[min(100%,256px)]">
                 <svg
-                  className="roadmap-preview-lines"
+                  className="roadmap-preview-lines pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible"
                   viewBox="0 0 280 332"
                   fill="none"
                   preserveAspectRatio="none"
                   aria-hidden="true"
                 >
                   <path
-                    className="roadmap-preview-line"
+                    className="roadmap-preview-line [fill:none] [stroke:#cbd5e1] [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:3]"
                     d="M140 50V86M74 86H206M74 86V106M206 86V106M74 196V220M206 196V220M74 220H206M140 220V250"
                   />
-                  <circle className="roadmap-preview-joint" cx="140" cy="86" r="4" />
-                  <circle className="roadmap-preview-joint" cx="140" cy="222" r="4" />
+                  <circle className="roadmap-preview-joint [fill:#cbd5e1]" cx="140" cy="86" r="4" />
+                  <circle className="roadmap-preview-joint [fill:#cbd5e1]" cx="140" cy="222" r="4" />
                 </svg>
 
-                <div className="roadmap-preview-pill">
+                <div className="roadmap-preview-pill absolute top-0 left-1/2 z-[2] inline-flex h-[48px] [transform:translateX(-50%)] items-center gap-[8px] whitespace-nowrap rounded-[999px] [background:#111827] px-[18px] text-[0.88rem] font-[700] text-white [box-shadow:0_18px_36px_rgba(17,24,39,0.22)] max-md:h-[44px] max-md:px-[16px] max-md:text-[0.82rem]">
                   <i className="fas fa-flag" />
                   <span>시작: 개발 기초</span>
                 </div>
 
-                <div className="roadmap-preview-branches">
-                  <div className="roadmap-preview-card roadmap-preview-card--green">
-                    <div className="roadmap-preview-icon roadmap-preview-icon--green">
+                <div className="roadmap-preview-branches absolute top-[104px] right-[4px] left-[4px] z-[2] flex items-stretch justify-between gap-[20px] max-md:top-[100px]">
+                  <div className="roadmap-preview-card roadmap-preview-card--green flex min-h-[94px] w-[118px] flex-col items-center justify-center gap-[10px] rounded-[24px] [border:1px_solid_rgba(134,239,172,0.78)] [background:rgba(255,255,255,0.96)] px-[12px] py-[14px] text-center [backdrop-filter:blur(12px)] [box-shadow:0_16px_30px_rgba(134,239,172,0.22)] max-md:min-h-[92px] max-md:w-[108px] max-md:px-[10px] max-md:py-[12px]">
+                    <div className="roadmap-preview-icon roadmap-preview-icon--green flex h-[42px] w-[42px] items-center justify-center rounded-[14px] [border:2px_solid_currentColor] [background:#f0fdf4] text-[1.05rem] [color:#00c471] [box-shadow:0_8px_18px_rgba(148,163,184,0.18)] max-md:h-[38px] max-md:w-[38px] max-md:text-[0.96rem]">
                       <i className="fab fa-html5" />
                     </div>
-                    <p className="roadmap-preview-title">HTML/CSS</p>
+                    <p className="roadmap-preview-title text-[0.84rem] font-[700] [color:#1f2937]">HTML/CSS</p>
                   </div>
-                  <div className="roadmap-preview-card roadmap-preview-card--blue">
-                    <div className="roadmap-preview-icon roadmap-preview-icon--blue">
+                  <div className="roadmap-preview-card roadmap-preview-card--blue flex min-h-[94px] w-[118px] flex-col items-center justify-center gap-[10px] rounded-[24px] [border:1px_solid_rgba(147,197,253,0.78)] [background:rgba(255,255,255,0.96)] px-[12px] py-[14px] text-center [backdrop-filter:blur(12px)] [box-shadow:0_16px_30px_rgba(96,165,250,0.2)] max-md:min-h-[92px] max-md:w-[108px] max-md:px-[10px] max-md:py-[12px]">
+                    <div className="roadmap-preview-icon roadmap-preview-icon--blue flex h-[42px] w-[42px] items-center justify-center rounded-[14px] [border:2px_solid_currentColor] [background:#eff6ff] text-[1.05rem] [color:#3b82f6] [box-shadow:0_8px_18px_rgba(148,163,184,0.18)] max-md:h-[38px] max-md:w-[38px] max-md:text-[0.96rem]">
                       <i className="fab fa-js" />
                     </div>
-                    <p className="roadmap-preview-title">JavaScript</p>
+                    <p className="roadmap-preview-title text-[0.84rem] font-[700] [color:#1f2937]">JavaScript</p>
                   </div>
                 </div>
 
-                <div className="roadmap-preview-next">
-                  <div className="roadmap-preview-next-badge">
+                <div className="roadmap-preview-next absolute bottom-[2px] left-1/2 z-[2] flex h-[84px] w-[188px] [transform:translateX(-50%)] flex-col items-center justify-center rounded-[22px] [border:1px_solid_rgba(226,232,240,0.95)] [background:rgba(255,255,255,0.97)] px-[16px] text-center [backdrop-filter:blur(14px)] [box-shadow:0_18px_34px_rgba(148,163,184,0.18)] max-md:h-[78px] max-md:w-[168px] max-md:px-[14px]">
+                  <div className="roadmap-preview-next-badge mb-[6px] inline-flex items-center gap-[6px] text-[0.64rem] font-[700] tracking-[0.08em] [color:#94a3b8]">
                     <i className="fas fa-lock" />
                     <span>잠금</span>
                   </div>
-                  <p className="roadmap-preview-next-title">프레임워크</p>
+                  <p className="roadmap-preview-next-title text-[1rem] font-[700] [color:#334155]">프레임워크</p>
                 </div>
               </div>
             </div>
@@ -718,9 +735,9 @@ function App() {
               <ul className="space-y-2 text-sm text-gray-500">
                 {supportLinks.map((item) => (
                   <li key={item.label}>
-                    <a href={item.href} className="hover:text-brand">
-                      {item.label}
-                    </a>
+                    {item.label === '공지사항'
+                      ? <button type="button" className="hover:text-brand" onClick={() => void openPlatformNotices()}>{item.label}</button>
+                      : <a href={item.href} className="hover:text-brand">{item.label}</a>}
                   </li>
                 ))}
               </ul>
@@ -742,6 +759,18 @@ function App() {
           onViewChange={setAuthView}
           onAuthenticated={handleAuthenticated}
         />
+      ) : null}
+      {noticesOpen ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-5" role="dialog" aria-modal="true" aria-labelledby="platform-notice-title" onClick={(event) => { if (event.target === event.currentTarget) setNoticesOpen(false) }}>
+          <section className="max-h-[80vh] w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <header className="flex items-center justify-between border-b border-gray-100 px-6 py-5"><div><h2 id="platform-notice-title" className="text-xl font-extrabold text-gray-900">DevPath 공지사항</h2><p className="mt-1 text-sm text-gray-500">서비스 운영 소식을 확인하세요.</p></div><button type="button" className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500" aria-label="공지 닫기" onClick={() => setNoticesOpen(false)}><i className="fas fa-xmark" /></button></header>
+            <div className="max-h-[calc(80vh-96px)] space-y-3 overflow-y-auto p-6">
+              {noticesError ? <p className="rounded-xl bg-rose-50 p-4 text-sm font-semibold text-rose-700">{noticesError}</p> : null}
+              {!noticesError && platformNotices.length === 0 ? <p className="py-12 text-center text-sm text-gray-400">등록된 공지사항이 없습니다.</p> : null}
+              {platformNotices.map((notice) => <article key={notice.id} className="rounded-2xl border border-gray-100 p-5"><div className="flex items-center gap-2"><h3 className="font-bold text-gray-900">{notice.title}</h3>{notice.pinned ? <span className="rounded-full bg-orange-50 px-2 py-1 text-[10px] font-bold text-orange-700">중요</span> : null}</div><p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-gray-600">{notice.content}</p><time className="mt-3 block text-xs text-gray-400">{notice.createdAt ? new Date(notice.createdAt).toLocaleDateString('ko-KR') : ''}</time></article>)}
+            </div>
+          </section>
+        </div>
       ) : null}
     </div>
   )

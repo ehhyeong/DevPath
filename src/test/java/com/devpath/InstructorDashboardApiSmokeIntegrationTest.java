@@ -39,8 +39,17 @@ class InstructorDashboardApiSmokeIntegrationTest {
             "select user_id from users where email = ?", Long.class, "instructor@devpath.com");
     answeredQuestionId =
         jdbcTemplate.queryForObject(
-            "select question_id from qna_questions where qna_status = 'ANSWERED' order by created_at desc limit 1",
-            Long.class);
+            """
+            select q.question_id
+            from qna_questions q
+            join courses c on c.course_id = q.course_id
+            where q.qna_status = 'ANSWERED'
+              and c.instructor_id = ?
+            order by q.created_at desc
+            limit 1
+            """,
+            Long.class,
+            instructorId);
   }
 
   @Test

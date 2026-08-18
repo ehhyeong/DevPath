@@ -89,7 +89,8 @@ public class NodeRequiredTagRegistrar {
       if (tag == null) {
         continue;
       }
-      if (!nodeRequiredTagRepository.existsByNodeNodeIdAndTagTagId(node.getNodeId(), tag.getTagId())) {
+      if (!nodeRequiredTagRepository.existsByNodeNodeIdAndTagTagId(
+          node.getNodeId(), tag.getTagId())) {
         nodeRequiredTagRepository.save(NodeRequiredTag.builder().node(node).tag(tag).build());
         linked++;
       }

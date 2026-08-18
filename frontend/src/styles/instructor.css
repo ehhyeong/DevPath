@@ -1,0 +1,245 @@
+/* Consolidated from InstructorSidebar.css. */
+
+.instructor-sidebar .sidebar-sticky-content {
+  position: relative;
+  top: auto;
+  display: flex;
+  height: 100%;
+  max-height: none;
+  flex: 1;
+  flex-direction: column;
+}
+
+.instructor-sidebar .sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.instructor-sidebar .sidebar-section + .sidebar-section {
+  margin-top: 22px;
+}
+
+.instructor-sidebar .workspace-sidebar-section-title {
+  margin: 0 0 8px;
+  padding: 0 12px;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.instructor-sidebar .sidebar-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.instructor-sidebar .sidebar-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 12px 14px;
+  color: #475569;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-align: left;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.instructor-sidebar .sidebar-menu-item:active {
+  transform: scale(0.98);
+}
+
+.instructor-sidebar .menu-icon {
+  display: flex;
+  width: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.instructor-sidebar .theme-blue .menu-icon {
+  color: #3b82f6;
+}
+
+.instructor-sidebar .theme-blue:hover {
+  background-color: #f0f9ff;
+  color: #1d4ed8;
+}
+
+.instructor-sidebar .theme-blue.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.instructor-sidebar .theme-blue.active .menu-icon {
+  color: #2563eb;
+}
+
+.instructor-sidebar .theme-orange .menu-icon {
+  color: #f97316;
+}
+
+.instructor-sidebar .theme-orange:hover {
+  background-color: #fff7ed;
+  color: #c2410c;
+}
+
+.instructor-sidebar .theme-orange.active {
+  background-color: #ffedd5;
+  color: #ea580c;
+  font-weight: 600;
+}
+
+.instructor-sidebar .theme-orange.active .menu-icon {
+  color: #ea580c;
+}
+
+.instructor-sidebar .theme-teal .menu-icon {
+  color: #14b8a6;
+}
+
+.instructor-sidebar .theme-teal:hover {
+  background-color: #f0fdfa;
+  color: #0f766e;
+}
+
+.instructor-sidebar .theme-teal.active {
+  background-color: #ccfbf1;
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.instructor-sidebar .theme-teal.active .menu-icon {
+  color: #0d9488;
+}
+
+.instructor-sidebar .theme-purple .menu-icon {
+  color: #a855f7;
+}
+
+.instructor-sidebar .theme-purple:hover {
+  background-color: #faf5ff;
+  color: #7e22ce;
+}
+
+.instructor-sidebar .theme-purple.active {
+  background-color: #f3e8ff;
+  color: #9333ea;
+  font-weight: 600;
+}
+
+.instructor-sidebar .theme-purple.active .menu-icon {
+  color: #9333ea;
+}
+
+.instructor-sidebar .theme-yellow .menu-icon {
+  color: #f59e0b;
+}
+
+.instructor-sidebar .theme-yellow:hover {
+  background-color: #fefce8;
+  color: #a16207;
+}
+
+.instructor-sidebar .theme-yellow.active {
+  background-color: #fef3c7;
+  color: #d97706;
+  font-weight: 600;
+}
+
+.instructor-sidebar .theme-yellow.active .menu-icon {
+  color: #d97706;
+}
+
+.instructor-sidebar .theme-slate .menu-icon {
+  color: #64748b;
+}
+
+.instructor-sidebar .theme-slate:hover {
+  background-color: #f8fafc;
+  color: #334155;
+}
+
+.instructor-sidebar .theme-slate.active {
+  background-color: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+}
+
+.instructor-sidebar .theme-slate.active .menu-icon {
+  color: #475569;
+}
+
+.instructor-sidebar .menu-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.instructor-sidebar .menu-badge {
+  min-width: 20px;
+  border-radius: 999px;
+  background-color: #fee2e2;
+  padding: 2px 6px;
+  color: #dc2626;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.instructor-sidebar .sidebar-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.instructor-sidebar .help-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 10px 14px;
+  color: #64748b;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.instructor-sidebar .help-button:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

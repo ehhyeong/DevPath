@@ -7,6 +7,7 @@ import com.devpath.api.settlement.entity.SettlementStatus;
 import com.devpath.api.settlement.repository.SettlementRepository;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.system.service.SystemPolicyService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -27,11 +28,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class InstructorRevenueService {
 
   private static final int MONTHLY_TREND_LIMIT = 6;
-  private static final double PLATFORM_FEE_RATE = 0.2;
   private static final DateTimeFormatter MONTH_KEY_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
 
   private final SettlementRepository settlementRepository;
   private final CourseRepository courseRepository;
+  private final SystemPolicyService systemPolicyService;
 
   public RevenueResponse getRevenue(Long instructorId) {
     List<Settlement> settlements =
@@ -58,7 +59,7 @@ public class InstructorRevenueService {
     return RevenueResponse.builder()
         .totalRevenue(totalRevenue)
         .monthlyRevenue(monthlyRevenue)
-        .platformFeeRate(PLATFORM_FEE_RATE)
+        .platformFeeRate(systemPolicyService.currentPolicy().platformFeeRate())
         .netRevenue(completedRevenue)
         .pendingSettlementCount(countByStatus(settlements, SettlementStatus.PENDING))
         .heldSettlementCount(countByStatus(settlements, SettlementStatus.HELD))

@@ -41,6 +41,7 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
 
   private Long learnerId;
   private Long lessonId;
+  private int savedProgressSeconds;
   private Long roadmapId;
 
   @BeforeEach
@@ -48,20 +49,19 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
     learnerId =
         jdbcTemplate.queryForObject(
             "select user_id from users where email = ?", Long.class, "learner@devpath.com");
-    lessonId =
-        jdbcTemplate.queryForObject(
+    Map<String, Object> lesson =
+        jdbcTemplate.queryForMap(
             """
-            select min(l.lesson_id)
+            select l.lesson_id, l.duration_seconds
             from lessons l
             join course_materials cm on cm.lesson_id = l.lesson_id
-            where not exists (
-              select 1
-              from lesson_progress lp
-              where lp.user_id = ? and lp.lesson_id = l.lesson_id
-            )
-            """,
-            Long.class,
-            learnerId);
+            order by l.lesson_id
+            fetch first 1 row only
+            """);
+    lessonId = ((Number) lesson.get("lesson_id")).longValue();
+    savedProgressSeconds = Math.min(315, ((Number) lesson.get("duration_seconds")).intValue());
+    jdbcTemplate.update(
+        "delete from lesson_progress where user_id = ? and lesson_id = ?", learnerId, lessonId);
     roadmapId =
         jdbcTemplate.queryForObject(
             "select roadmap_id from roadmaps where title = ?",
@@ -81,14 +81,14 @@ class LearningRecommendationSwaggerFinalInspectionIntegrationTest {
     JsonNode savedProgress =
         putAsLearner(
             "/api/learning/sessions/{lessonId}/progress",
-            Map.of("progressPercent", 42, "progressSeconds", 315),
+            Map.of("progressPercent", 42, "progressSeconds", savedProgressSeconds),
             lessonId);
     assertThat(savedProgress.get("progressPercent").asInt()).isEqualTo(42);
-    assertThat(savedProgress.get("progressSeconds").asInt()).isEqualTo(315);
+    assertThat(savedProgress.get("progressSeconds").asInt()).isEqualTo(savedProgressSeconds);
 
     JsonNode progress = getAsLearner("/api/learning/sessions/{lessonId}/progress", lessonId);
     assertThat(progress.get("progressPercent").asInt()).isEqualTo(42);
-    assertThat(progress.get("progressSeconds").asInt()).isEqualTo(315);
+    assertThat(progress.get("progressSeconds").asInt()).isEqualTo(savedProgressSeconds);
 
     JsonNode playerConfig = getAsLearner("/api/learning/player/{lessonId}/config", lessonId);
     assertThat(playerConfig.get("defaultPlaybackRate").asDouble()).isEqualTo(1.0D);

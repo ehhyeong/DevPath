@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { certificateApi, proofCardApi } from '../../lib/api'
+import { certificateApi, proofCardApi } from '../../lib/api/learner'
+import { navigateTo } from '../../lib/spa-navigation'
+import { buildLearningLogShareUrl,getSharedProofCardId } from '../learning-log-share'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
-import { downloadBase64File } from '../ui'
+import { downloadBase64File } from '../ui-utils'
 import type { ProofCardDetail, ProofCardGalleryItem } from '../../types/learner'
 
 type ProofCardType = 'language' | 'cs' | 'framework' | 'backend'
@@ -141,6 +143,10 @@ export default function LearningLogGalleryPage() {
   const [sortOrder, setSortOrder] = useState<'latest' | 'score'>('latest')
   const [selectedCard, setSelectedCard] = useState<ProofCardViewItem | null>(null)
   const [message, setMessage] = useState('')
+  const sharedProofCardId = useMemo(() => getSharedProofCardId(window.location), [])
+  const [flippedCardIds, setFlippedCardIds] = useState<Set<number>>(
+    () => new Set(sharedProofCardId ? [sharedProofCardId] : []),
+  )
   const prefetchedDetailIds = useRef<Set<number>>(new Set())
 
   useEffect(() => {
@@ -237,8 +243,18 @@ export default function LearningLogGalleryPage() {
     })
   }, [categoryFilter, items, sortOrder])
 
-  function handleFlip(cardElement: HTMLDivElement) {
-    cardElement.classList.toggle('flipped')
+  function handleFlip(proofCardId: number) {
+    setFlippedCardIds((current) => {
+      const next = new Set(current)
+
+      if (next.has(proofCardId)) {
+        next.delete(proofCardId)
+      } else {
+        next.add(proofCardId)
+      }
+
+      return next
+    })
   }
 
   async function handleDownloadCertificate(card: ProofCardViewItem) {
@@ -259,7 +275,7 @@ export default function LearningLogGalleryPage() {
   return (
     <LearnerPageShell>
       <LearnerContentRow>
-        <MyMenuSidebar currentPageKey="learning-log-gallery" wrapperClassName="w-60 shrink-0 hidden lg:block -ml-0" />
+        <MyMenuSidebar currentPageKey="learning-log-gallery" />
 
         <section className="min-w-0 flex-1">
           <div className="mb-8 flex flex-col items-end justify-between gap-4 md:flex-row">
@@ -307,11 +323,12 @@ export default function LearningLogGalleryPage() {
                 return (
                   <div
                     key={item.proofCardId}
-                    className="group perspective card-item h-[420px] w-full cursor-pointer"
-                    onClick={(event) => handleFlip(event.currentTarget)}
+                    data-proof-card-id={item.proofCardId}
+                    className={`group h-[420px] w-full cursor-pointer [perspective:1000px] ${flippedCardIds.has(item.proofCardId) ? 'flipped' : ''}`}
+                    onClick={() => handleFlip(item.proofCardId)}
                   >
-                    <div className="card-inner relative rounded-2xl shadow-xl">
-                      <div className="card-front flex flex-col border border-gray-200 bg-white">
+                    <div className="relative h-full w-full rounded-2xl shadow-xl [transition:transform_0.6s] [transform-style:preserve-3d] [.flipped_&]:[transform:rotateY(180deg)]">
+                      <div className="absolute inset-0 flex h-full w-full flex-col overflow-hidden rounded-[1rem] border border-gray-200 bg-white [-webkit-backface-visibility:hidden] [backface-visibility:hidden]">
                         <div className={`relative flex h-44 flex-col justify-between bg-gradient-to-br ${theme.front} p-6`}>
                           <div className="flex items-start justify-between">
                             <span className="rounded border border-white/10 bg-white/20 px-2 py-1 text-[10px] font-bold tracking-wider text-white backdrop-blur">
@@ -320,7 +337,7 @@ export default function LearningLogGalleryPage() {
                           </div>
                           <i className={`${theme.icon} absolute right-[-5px] bottom-[-10px] text-7xl text-white/20`} />
                           <div className="relative z-10 text-white">
-                            <h3 className="proof-card-display-title text-2xl font-extrabold tracking-tight">{item.title}</h3>
+                            <h3 className="overflow-hidden text-2xl leading-[1.15] font-extrabold tracking-tight [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [word-break:keep-all]">{item.title}</h3>
                             <p className="mt-1 text-xs font-medium text-white/80">Verified</p>
                           </div>
                         </div>
@@ -351,16 +368,16 @@ export default function LearningLogGalleryPage() {
                         </div>
                       </div>
 
-                    <div className="card-back flex flex-col border border-gray-700 bg-gray-900 p-7 text-white">
+                    <div className="absolute inset-0 flex h-full w-full flex-col overflow-hidden rounded-[1rem] border border-gray-700 bg-gray-900 p-7 text-white [-webkit-backface-visibility:hidden] [backface-visibility:hidden] [transform:rotateY(180deg)]">
                       <div className="mb-4 border-b border-gray-700 pb-3">
-                        <h3 className="proof-card-back-title text-lg font-bold text-white">{detail?.title ?? item.title}</h3>
-                        <p className="proof-card-back-description mt-1 text-xs text-gray-400">{detail?.description ?? item.nodeTitle ?? item.courseTitle ?? ''}</p>
+                        <h3 className="overflow-hidden text-lg leading-[1.25] font-bold text-white [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [word-break:keep-all]">{detail?.title ?? item.title}</h3>
+                        <p className="mt-1 overflow-hidden text-xs text-gray-400 [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:4] [word-break:keep-all]">{detail?.description ?? item.nodeTitle ?? item.courseTitle ?? ''}</p>
                       </div>
-                      <div className="custom-scrollbar flex-1 overflow-y-auto pr-2">
+                      <div className="flex-1 overflow-y-auto pr-2">
                         <p className="mb-2 text-[10px] font-bold tracking-wider text-brand uppercase">포함된 핵심 개념</p>
                         <ul className="list-inside list-disc space-y-2 text-sm text-gray-300 marker:text-brand">
                           {detailTags.map((tag) => (
-                            <li key={`${item.proofCardId}-${tag.tagId}`} className="proof-card-list-text">{tag.tagName}</li>
+                            <li key={`${item.proofCardId}-${tag.tagId}`} className="overflow-hidden [display:-webkit-box] [overflow-wrap:anywhere] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [word-break:keep-all]">{tag.tagName}</li>
                           ))}
                         </ul>
                       </div>
@@ -368,7 +385,7 @@ export default function LearningLogGalleryPage() {
                         <button
                           onClick={(event) => {
                             event.stopPropagation()
-                            window.location.href = '/roadmap-hub'
+                            navigateTo('/roadmap-hub')
                           }}
                           className="rounded-lg border border-gray-600 bg-gray-800 py-2 text-xs font-bold text-white transition hover:bg-gray-700"
                         >
@@ -394,8 +411,8 @@ export default function LearningLogGalleryPage() {
         </section>
       </LearnerContentRow>
 
-      <div className={`modal fixed inset-0 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm ${filterOpen ? 'active' : ''}`}>
-        <div className="modal-enter relative w-full max-w-sm overflow-hidden rounded-2xl bg-white p-6 shadow-2xl">
+      <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm [transition:opacity_0.2s,visibility_0.2s] ${filterOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}>
+        <div className="relative w-full max-w-sm animate-[modalScaleIn_0.2s_ease-out_forwards] overflow-hidden rounded-2xl bg-white p-6 shadow-2xl">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-lg font-bold text-gray-900">필터 및 정렬</h3>
             <button onClick={() => setFilterOpen(false)} className="text-gray-400 transition hover:text-gray-900">
@@ -439,8 +456,8 @@ export default function LearningLogGalleryPage() {
         </div>
       </div>
 
-      <div className={`modal fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm ${certificateOpen ? 'active' : ''}`}>
-        <div className="modal-enter relative w-full max-w-3xl overflow-hidden rounded bg-white shadow-2xl">
+      <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm [transition:opacity_0.2s,visibility_0.2s] ${certificateOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}>
+        <div className="relative w-full max-w-3xl animate-[modalScaleIn_0.2s_ease-out_forwards] overflow-hidden rounded bg-white shadow-2xl">
           <button
             onClick={() => setCertificateOpen(false)}
             className="absolute top-4 right-4 z-10 text-gray-400 transition hover:text-gray-900"
@@ -457,10 +474,10 @@ export default function LearningLogGalleryPage() {
                 <span className="text-xl font-bold">DevPath</span>
               </div>
 
-              <h1 className="mb-2 text-4xl font-bold tracking-wide text-gray-900" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+              <h1 className="mb-2 font-['Noto_Serif_KR',serif] text-4xl font-bold tracking-wide text-gray-900">
                 수료 증명
               </h1>
-              <p className="mb-10 text-sm tracking-[0.2em] text-gray-500 uppercase" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+              <p className="mb-10 font-['Noto_Serif_KR',serif] text-sm tracking-[0.2em] text-gray-500 uppercase">
                 CERTIFICATE OF COMPLETION
               </p>
 
@@ -505,7 +522,7 @@ export default function LearningLogGalleryPage() {
                 </div>
 
                 <div className="text-center">
-                  <div className="mb-2 text-2xl italic text-gray-600" style={{ fontFamily: "'Noto Serif KR', serif" }}>
+                  <div className="mb-2 font-['Noto_Serif_KR',serif] text-2xl italic text-gray-600">
                     DevPath
                   </div>
                   <div className="w-32 border-t border-gray-400" />
@@ -533,7 +550,7 @@ export default function LearningLogGalleryPage() {
                   return
                 }
 
-                await navigator.clipboard.writeText(`${window.location.origin}/learning-log-gallery.html#${selectedCard.proofCardId}`)
+                await navigator.clipboard.writeText(buildLearningLogShareUrl(window.location.origin, selectedCard.proofCardId))
                 setMessage('링크가 복사되었습니다.')
               }}
               className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gray-100"

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { buildMyInstructorProfileHref } from '../instructor-channel-customization'
+import { buildMyInstructorProfileHref } from '../instructor/channel/customization'
 import { accountNavItems, type AccountPageKey } from '../lib/account-navigation'
 import type { AuthSession } from '../types/auth'
 import UserAvatar from './UserAvatar'

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import UserAvatar from './UserAvatar'
-import { projectApiRequest } from '../project-api'
+import { projectApiRequest } from '../features/project/api'
+import { navigateTo } from '../lib/spa-navigation'
 
 type TeamWorkspaceHeaderMember = {
   memberId: number
@@ -76,12 +77,12 @@ export default function TeamWorkspaceHeader({
 
   function openNotification(notification: TeamWorkspaceHeaderNotification) {
     if (notification.targetPath) {
-      window.location.assign(navHref(notification.targetPath, workspaceId))
+      navigateTo(navHref(notification.targetPath, workspaceId))
     }
   }
 
   return (
-    <header className="team-ws-header relative z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-8 shadow-sm">
+    <header className="team-ws-header relative z-30 flex h-[64px] min-h-[64px] shrink-0 items-center justify-between border-b border-gray-100 bg-white px-8 shadow-sm">
       <div className="flex min-w-0 items-center gap-3 font-bold text-gray-800">
         <span className="flex items-center gap-1 rounded-md border border-indigo-100 bg-team-light px-2 py-1 text-[10px] tracking-wider text-team">
           <i className="fas fa-puzzle-piece"></i>
@@ -131,7 +132,7 @@ export default function TeamWorkspaceHeader({
           </button>
 
           {notificationOpen ? (
-            <div className="team-ws-notification-popup absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-xl">
+            <div className="team-ws-notification-popup absolute right-0 top-12 z-50 w-[320px] overflow-hidden rounded-[16px] border border-gray-100 bg-white text-left shadow-xl">
               <div className="flex items-center justify-between border-b border-gray-50 p-4">
                 <h3 className="text-sm font-bold">팀 알림</h3>
                 <button type="button" onClick={() => setCleared(true)} className="text-xs text-gray-400 hover:text-gray-600">

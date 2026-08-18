@@ -1,0 +1,27 @@
+import { render } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+import AdminDashboardShell from './AdminDashboardShell'
+
+describe('AdminDashboardShell', () => {
+  it('keeps the navigation, tab, modal, and imperative DOM contracts', () => {
+    const { container } = render(<AdminDashboardShell />)
+    const ids = Array.from(container.querySelectorAll<HTMLElement>('[id]')).map((element) => element.id)
+
+    expect(container.querySelectorAll('.nav-btn')).toHaveLength(11)
+    expect(container.querySelectorAll('[id^="view-"]')).toHaveLength(12)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(container.querySelector('#main-content')).toBeInTheDocument()
+    expect(container.querySelector('#view-dashboard')).toBeVisible()
+    expect(container.querySelector('#view-tags')).toHaveClass('hidden')
+    expect(container.querySelector('#view-governance')).toHaveClass('hidden')
+    expect(container.querySelector('#view-reports .fa-history')).toBeInTheDocument()
+    expect(container.querySelector('#adminSystemPolicyForm')).toBeInTheDocument()
+    expect(container.querySelector('#addNodeModal')).toBeInTheDocument()
+    expect(container.querySelector('#courseReviewModal')).toBeInTheDocument()
+    expect(container.querySelector('#nodeResourceActiveInput')).toBeChecked()
+    expect(container.querySelector('#tagPagePrevious')).toBeDisabled()
+    expect(container.querySelector('#tagPageNext')).toBeInTheDocument()
+    expect(container.querySelector('#nodePagePrevious')).toBeDisabled()
+    expect(container.querySelector('#nodePageNext')).toBeInTheDocument()
+  })
+})

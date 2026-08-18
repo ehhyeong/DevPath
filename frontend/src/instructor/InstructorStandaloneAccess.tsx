@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useAuthSession } from '../lib/useAuthSession'
+import { useEffect, type ReactNode } from 'react'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from '../lib/auth-session'
 import LoginRequiredGate from '../components/LoginRequiredView'
 
@@ -38,7 +39,7 @@ type Props = {
 }
 
 export default function InstructorStandaloneAccess({ title, children }: Props) {
-  const [session, setSession] = useState(() => readStoredAuthSession())
+  const [session,setSession] = useAuthSession()
 
   useEffect(() => {
     document.title = title
@@ -56,7 +57,7 @@ export default function InstructorStandaloneAccess({ title, children }: Props) {
       window.removeEventListener('storage', syncSession)
       window.removeEventListener(AUTH_SESSION_SYNC_EVENT, syncSession)
     }
-  }, [])
+  }, [setSession])
 
   if (!session) {
     return <LoginRequiredView />

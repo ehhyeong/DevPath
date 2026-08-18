@@ -5,12 +5,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
 import com.devpath.api.common.dto.CourseListItemResponse;
+import com.devpath.api.common.service.CourseDetailMetadataMapper;
+import com.devpath.api.course.service.HlsPlaybackService;
+import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.learner.dto.SkillCheckDto;
+import com.devpath.api.recommendation.service.NodeRecommendationArtifacts;
+import com.devpath.api.recommendation.service.NodeRecommendationPlanner;
 import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
 import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.api.roadmap.service.RoadmapProgressService;
+import com.devpath.api.settlement.entity.SettlementStatus;
+import com.devpath.api.settlement.repository.SettlementRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.common.security.AdminAuthorityService;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseAnnouncement;
 import com.devpath.domain.course.entity.CourseAnnouncementType;
@@ -34,6 +42,8 @@ import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.learning.entity.LessonProgress;
 import com.devpath.domain.learning.entity.TimestampNote;
 import com.devpath.domain.learning.entity.ocr.OcrResult;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
+import com.devpath.domain.learning.service.PlaybackDeviceRegistry;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.NodeRecommendation;
 import com.devpath.domain.roadmap.entity.Prerequisite;
@@ -49,6 +59,7 @@ import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.roadmap.service.TagValidationService;
+import com.devpath.domain.system.service.SystemPolicyService;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
@@ -70,6 +81,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @DataJpaTest(
     properties = {
@@ -81,10 +93,19 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 @Import({
   LearnerCourseService.class,
+  HlsPlaybackService.class,
+  AdminAuthorityService.class,
+  LearnerCourseAssessmentAssembler.class,
+  CourseDetailMetadataMapper.class,
   CourseWishlistService.class,
   CourseEnrollmentService.class,
+  SystemPolicyService.class,
+  PlaybackDeviceRegistry.class,
+  LearningAutomationPolicyService.class,
   SkillCheckService.class,
   com.devpath.api.recommendation.service.NodeRecommendationService.class,
+  NodeRecommendationPlanner.class,
+  NodeRecommendationArtifacts.class,
   CustomRoadmapCopyService.class,
   CustomRoadmapPrerequisiteSyncService.class,
   JpaOfficialRoadmapReader.class,
@@ -92,6 +113,8 @@ import org.springframework.test.context.ActiveProfiles;
   TagValidationService.class
 })
 class LearnerFlowIntegrationTest {
+
+  @MockitoBean private InstructorNotificationService instructorNotificationService;
 
   @Autowired private LearnerCourseService learnerCourseService;
   @Autowired private CourseWishlistService courseWishlistService;
@@ -117,6 +140,7 @@ class LearnerFlowIntegrationTest {
   @Autowired private LessonRepository lessonRepository;
   @Autowired private CourseMaterialRepository courseMaterialRepository;
   @Autowired private CourseAnnouncementRepository courseAnnouncementRepository;
+  @Autowired private SettlementRepository settlementRepository;
 
   @Autowired private RoadmapRepository roadmapRepository;
   @Autowired private RoadmapNodeRepository roadmapNodeRepository;
@@ -372,6 +396,17 @@ class LearnerFlowIntegrationTest {
     assertThat(detail.getInstructor().getChannelApiPath())
         .isEqualTo("/api/instructors/" + instructor.getId() + "/channel");
     assertThat(detail.getNews()).hasSize(2);
+    assertThat(
+            settlementRepository
+                .findTopByLearnerIdAndCourseIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+                    learner.getId(), publishedCourse.getCourseId(), SettlementStatus.PENDING))
+        .get()
+        .satisfies(
+            settlement -> {
+              assertThat(settlement.getGrossAmount()).isEqualTo(79000L);
+              assertThat(settlement.getFeeAmount()).isEqualTo(11850L);
+              assertThat(settlement.getAmount()).isEqualTo(67150L);
+            });
     assertThat(detail.getNews())
         .extracting(CourseDetailResponse.NewsItem::getTitle)
         .contains("오프라인 특강 안내", "강의 자료 업데이트");
@@ -380,6 +415,38 @@ class LearnerFlowIntegrationTest {
         .contains(
             "https://devpath.com/events/security",
             "/api/courses/" + publishedCourse.getCourseId() + "/news");
+  }
+
+  @Test
+  @DisplayName("미리보기가 아닌 영상은 수강생에게만 URL과 자산 키를 제공한다")
+  void protectedLessonVideoIsHiddenFromNonEnrolledUsers() {
+    Lesson protectedLesson = lessonRepository.findById(lesson.getLessonId()).orElseThrow();
+    protectedLesson.updateInfo(
+        protectedLesson.getTitle(),
+        protectedLesson.getDescription(),
+        protectedLesson.getLessonType(),
+        protectedLesson.getVideoId(),
+        protectedLesson.getVideoUrl(),
+        protectedLesson.getVideoProvider(),
+        protectedLesson.getThumbnailUrl(),
+        protectedLesson.getDurationSeconds(),
+        false,
+        true);
+    flushAndClear();
+
+    CourseDetailResponse anonymous =
+        learnerCourseService.getCourseDetail(null, publishedCourse.getCourseId());
+    CourseDetailResponse enrolled =
+        learnerCourseService.getCourseDetail(
+            learner.getId(), publishedCourse.getCourseId(), "integration-device");
+
+    assertThat(anonymous.getSections().get(0).getLessons().get(0).getVideoUrl()).isNull();
+    assertThat(anonymous.getSections().get(0).getLessons().get(0).getVideoAssetKey()).isNull();
+    assertThat(enrolled.getSections().get(0).getLessons().get(0).getVideoUrl())
+        .isEqualTo("https://cdn.devpath.com/lesson.mp4");
+    assertThat(enrolled.getSections().get(0).getLessons().get(0).getVideoAssetKey())
+        .isEqualTo("lesson-asset");
+    assertThat(enrolled.getSections().get(0).getLessons().get(0).getHlsEncrypted()).isFalse();
   }
 
   @Test

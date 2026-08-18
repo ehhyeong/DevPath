@@ -11,6 +11,7 @@ public class SettlementResponse {
 
   private Long settlementId;
   private Long instructorId;
+  private Long learnerId;
   private Long courseId;
   private Long grossAmount;
   private Long feeAmount;
@@ -23,6 +24,7 @@ public class SettlementResponse {
     return SettlementResponse.builder()
         .settlementId(settlement.getId())
         .instructorId(settlement.getInstructorId())
+        .learnerId(settlement.getLearnerId())
         .courseId(settlement.getCourseId())
         .grossAmount(settlement.getGrossAmount())
         .feeAmount(settlement.getFeeAmount())

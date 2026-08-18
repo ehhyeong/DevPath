@@ -78,7 +78,8 @@ class SquadLoungePostServiceTest {
     when(userRepository.findById(leaderId)).thenReturn(Optional.of(leader));
     when(squadMemberRepository.findBySquadAndUser(squad, leader))
         .thenReturn(Optional.of(leaderMember));
-    when(workspaceRepository.findByIdAndIsDeletedFalse(workspaceId)).thenReturn(Optional.of(workspace));
+    when(workspaceRepository.findByIdAndIsDeletedFalse(workspaceId))
+        .thenReturn(Optional.of(workspace));
     when(squadMemberRepository.findBySquadWithUser(squad))
         .thenReturn(List.of(leaderMember, applicantMember));
     when(workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, leaderId))

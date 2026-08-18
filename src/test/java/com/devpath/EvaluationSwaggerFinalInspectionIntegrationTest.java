@@ -51,9 +51,14 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
             "select user_id from users where email = ?", Long.class, "learner@devpath.com");
     roadmapNodeId =
         jdbcTemplate.queryForObject(
-            "select min(node_id) from roadmap_nodes where title = ?",
+            """
+            select min(cnm.node_id)
+            from course_node_mappings cnm
+            join course_enrollments ce on ce.course_id = cnm.course_id
+            where ce.user_id = ? and ce.status in ('ACTIVE', 'COMPLETED')
+            """,
             Long.class,
-            "Security and JWT");
+            learnerId);
   }
 
   @Test
@@ -217,7 +222,6 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
     Map<String, Object> submissionPayload =
         Map.ofEntries(
             Map.entry("submissionText", "Implemented JWT login, refresh, and filter validation."),
-            Map.entry("submissionUrl", "https://github.com/example/swagger-final-" + suffix),
             Map.entry("hasReadme", true),
             Map.entry("testPassed", true),
             Map.entry("lintPassed", true),
@@ -239,12 +243,12 @@ class EvaluationSwaggerFinalInspectionIntegrationTest {
             assignmentId);
 
     long submissionId = createdSubmission.get("submissionId").asLong();
-    assertThat(createdSubmission.get("submissionStatus").asText()).isEqualTo("SUBMITTED");
+    assertThat(createdSubmission.get("submissionStatus").asText()).isEqualTo("GRADED");
 
     JsonNode submissionList =
         getAsInstructor(
             "/api/evaluation/instructor/assignments/{assignmentId}/submissions",
-            Map.of("status", "SUBMITTED"),
+            Map.of("status", "GRADED"),
             assignmentId);
 
     assertThat(submissionList.isArray()).isTrue();

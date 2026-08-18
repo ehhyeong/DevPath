@@ -32,28 +32,19 @@ public class MentoringPostRequest {
       @Schema(description = "필요 기술 스택", example = "Java, Spring Boot, JPA, PostgreSQL")
           @Size(max = 500, message = "필요 기술 스택은 500자 이하여야 합니다.")
           String requiredStacks,
-
       @Schema(description = "멘토링 분야", example = "Backend")
           @Size(max = 60, message = "멘토링 분야는 60자 이하여야 합니다.")
           String category,
-
       @Schema(description = "멘토링 유형", example = "study")
           @Size(max = 30, message = "멘토링 유형은 30자 이하여야 합니다.")
           String mentoringType,
-
       @Schema(description = "진행 기간 주차", example = "4")
           @Min(value = 1, message = "진행 기간은 1주 이상이어야 합니다.")
           @Max(value = 52, message = "진행 기간은 52주 이하여야 합니다.")
           Integer durationWeeks,
-
-      @Schema(description = "주차별 커리큘럼", example = "요구사항 분석\\n핵심 기능 구현")
-          String curriculum,
-
-      @Schema(description = "모집 마감일", example = "2026-06-30")
-          LocalDate deadlineAt,
-
-      @Schema(description = "공고 상태", example = "OPEN")
-          MentoringPostStatus status,
+      @Schema(description = "주차별 커리큘럼", example = "요구사항 분석\\n핵심 기능 구현") String curriculum,
+      @Schema(description = "모집 마감일", example = "2026-06-30") LocalDate deadlineAt,
+      @Schema(description = "공고 상태", example = "OPEN") MentoringPostStatus status,
 
       // 추후 신청 승인 시 정원 초과 검증에 사용한다.
       @Schema(description = "최대 참여 인원", example = "5")
@@ -80,28 +71,19 @@ public class MentoringPostRequest {
       @Schema(description = "필요 기술 스택", example = "Java, Spring Boot, QueryDSL, Redis")
           @Size(max = 500, message = "필요 기술 스택은 500자 이하여야 합니다.")
           String requiredStacks,
-
       @Schema(description = "멘토링 분야", example = "Backend")
           @Size(max = 60, message = "멘토링 분야는 60자 이하여야 합니다.")
           String category,
-
       @Schema(description = "멘토링 유형", example = "study")
           @Size(max = 30, message = "멘토링 유형은 30자 이하여야 합니다.")
           String mentoringType,
-
       @Schema(description = "진행 기간 주차", example = "4")
           @Min(value = 1, message = "진행 기간은 1주 이상이어야 합니다.")
           @Max(value = 52, message = "진행 기간은 52주 이하여야 합니다.")
           Integer durationWeeks,
-
-      @Schema(description = "주차별 커리큘럼", example = "요구사항 분석\\n핵심 기능 구현")
-          String curriculum,
-
-      @Schema(description = "모집 마감일", example = "2026-06-30")
-          LocalDate deadlineAt,
-
-      @Schema(description = "공고 상태", example = "OPEN")
-          MentoringPostStatus status,
+      @Schema(description = "주차별 커리큘럼", example = "요구사항 분석\\n핵심 기능 구현") String curriculum,
+      @Schema(description = "모집 마감일", example = "2026-06-30") LocalDate deadlineAt,
+      @Schema(description = "공고 상태", example = "OPEN") MentoringPostStatus status,
 
       // 비정상적인 정원 값 저장을 방지한다.
       @Schema(description = "최대 참여 인원", example = "6")

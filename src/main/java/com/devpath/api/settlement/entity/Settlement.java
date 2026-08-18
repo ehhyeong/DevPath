@@ -36,6 +36,8 @@ public class Settlement {
   @Column(nullable = false)
   private Long instructorId;
 
+  @Column private Long learnerId;
+
   @Column(nullable = false)
   private Long amount;
 
@@ -84,5 +86,20 @@ public class Settlement {
     }
 
     this.amount = this.amount - refundAmount;
+  }
+
+  public void release() {
+    if (this.status != SettlementStatus.HELD) {
+      throw new CustomException(ErrorCode.INVALID_STATUS_TRANSITION);
+    }
+    this.status = SettlementStatus.PENDING;
+  }
+
+  public void complete() {
+    if (this.status != SettlementStatus.PENDING) {
+      throw new CustomException(ErrorCode.SETTLEMENT_NOT_PENDING);
+    }
+    this.status = SettlementStatus.COMPLETED;
+    this.settledAt = LocalDateTime.now();
   }
 }

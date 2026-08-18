@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,8 +35,10 @@ public class LearnerCourseController {
   @Operation(summary = "강의 상세 조회", description = "강의 ID로 상세 정보를 조회합니다.")
   @GetMapping("/{courseId}")
   public ResponseEntity<ApiResponse<CourseDetailResponse>> getCourseDetail(
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @PathVariable Long courseId,
+      @RequestHeader(value = "X-DevPath-Device-Id", required = false) String deviceId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(learnerCourseService.getCourseDetail(userId, courseId)));
+        ApiResponse.ok(learnerCourseService.getCourseDetail(userId, courseId, deviceId)));
   }
 }

@@ -131,7 +131,8 @@ public class WorkspaceQuestionService {
             .findByQuestion_IdAndIdAndIsDeletedFalse(questionId, answerId)
             .orElseThrow(() -> new CustomException(ErrorCode.ANSWER_NOT_FOUND));
 
-    if (!answer.getUser().getId().equals(user.getId()) && !workspace.getOwnerId().equals(user.getId())) {
+    if (!answer.getUser().getId().equals(user.getId())
+        && !workspace.getOwnerId().equals(user.getId())) {
       throw new CustomException(ErrorCode.QNA_FORBIDDEN);
     }
 

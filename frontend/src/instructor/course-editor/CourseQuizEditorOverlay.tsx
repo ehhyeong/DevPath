@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { instructorLessonEvaluationApi } from '../../lib/api'
+import { instructorLessonEvaluationApi } from '../../lib/api/instructor'
 import type {
   GenerateInstructorQuizRequest,
   InstructorQuizEditor,
@@ -22,6 +22,7 @@ type Props = {
   courseTags?: string[]
   onClose: () => void
   standalone?: boolean
+  standaloneClassName?: string
 }
 
 const QUESTION_EXPLANATION_MAX_LENGTH = 120
@@ -119,6 +120,7 @@ export default function CourseQuizEditorOverlay({
   courseTags = [],
   onClose,
   standalone = false,
+  standaloneClassName = '',
 }: Props) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -421,19 +423,9 @@ export default function CourseQuizEditorOverlay({
         difficultyLevel,
         keywords,
       }
-      console.log('[AI Quiz] 생성 요청 시작 →', {
-        lessonId,
-        mode: payload.mode,
-        videoFileName: payload.videoFileName,
-        questionCount: payload.questionCount,
-        difficultyLevel: payload.difficultyLevel,
-        keywords: payload.keywords,
-      })
       const generated = await instructorLessonEvaluationApi.generateQuizDraft(lessonId, payload)
-      console.log('[AI Quiz] 생성 완료 ←', { questionCount: generated.questions.length, quizType: generated.quizType })
       setDraft(normalizeEditor(generated))
     } catch (nextError) {
-      console.error('[AI Quiz] 생성 실패 ✗', nextError)
       setError(nextError instanceof Error ? nextError.message : '퀴즈 초안 생성에 실패했습니다.')
     } finally {
       setGenerating(false)
@@ -485,7 +477,7 @@ export default function CourseQuizEditorOverlay({
       <div
         className={
           standalone
-            ? 'course-quiz-editor-page flex min-h-screen items-center justify-center bg-[#F0F2F5] px-4'
+            ? `course-quiz-editor-page flex min-h-screen items-center justify-center bg-[#F0F2F5] px-4 ${standaloneClassName}`
             : 'fixed inset-0 z-[90] flex items-center justify-center bg-black/30 backdrop-blur-[2px]'
         }
       >
@@ -500,7 +492,7 @@ export default function CourseQuizEditorOverlay({
     <div
       className={
         standalone
-          ? 'course-quiz-editor-page min-h-screen bg-[#F0F2F5]'
+          ? `course-quiz-editor-page min-h-screen bg-[#F0F2F5] ${standaloneClassName}`
           : 'course-quiz-editor-modal fixed inset-0 z-[90] bg-black/20 backdrop-blur-[2px]'
       }
     >

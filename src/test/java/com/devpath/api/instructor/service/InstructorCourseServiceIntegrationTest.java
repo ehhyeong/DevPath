@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.devpath.api.common.dto.CourseDetailResponse;
+import com.devpath.api.common.service.CourseDetailMetadataMapper;
+import com.devpath.api.course.service.HlsPlaybackService;
 import com.devpath.api.instructor.dto.InstructorAnnouncementDto;
 import com.devpath.api.instructor.dto.InstructorCourseDto;
 import com.devpath.api.instructor.dto.InstructorLessonDto;
@@ -13,6 +15,7 @@ import com.devpath.api.instructor.dto.InstructorNodeCoverageDto;
 import com.devpath.api.instructor.dto.InstructorSectionDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.common.security.AdminAuthorityService;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseNodeMapping;
 import com.devpath.domain.course.repository.CourseAnnouncementRepository;
@@ -22,10 +25,12 @@ import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.LessonPrerequisiteRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.service.TagValidationService;
+import com.devpath.domain.system.service.SystemPolicyService;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
@@ -57,12 +62,21 @@ import org.springframework.test.util.ReflectionTestUtils;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Import({
   InstructorCourseService.class,
+  InstructorCourseAssetStorage.class,
+  InstructorCourseVideoProcessor.class,
+  InstructorCourseMetadataEditor.class,
   InstructorCourseQueryService.class,
+  HlsPlaybackService.class,
+  AdminAuthorityService.class,
+  CourseDetailMetadataMapper.class,
   InstructorAnnouncementService.class,
   InstructorAnnouncementQueryService.class,
   InstructorNodeClassificationQueryService.class,
   InstructorNodeCoverageQueryService.class,
-  TagValidationService.class
+  InstructorCourseValueParser.class,
+  LearningAutomationPolicyService.class,
+  TagValidationService.class,
+  SystemPolicyService.class
 })
 class InstructorCourseServiceIntegrationTest {
 
@@ -114,7 +128,7 @@ class InstructorCourseServiceIntegrationTest {
     userProfileRepository.save(
         UserProfile.builder()
             .user(instructor)
-            .profileImage("/images/profiles/test-instructor.png")
+            .profileImage("https://cdn.devpath.com/profiles/test-instructor.png")
             .channelName("Test Backend Lab")
             .bio("강사용 강의 테스트 프로필")
             .phone("010-1234-5678")
@@ -248,7 +262,7 @@ class InstructorCourseServiceIntegrationTest {
     assertThat(detail.getInstructor().getInstructorId()).isEqualTo(instructorId);
     assertThat(detail.getInstructor().getChannelName()).isEqualTo("Test Backend Lab");
     assertThat(detail.getInstructor().getProfileImage())
-        .isEqualTo("/images/profiles/test-instructor.png");
+        .isEqualTo("https://cdn.devpath.com/profiles/test-instructor.png");
     assertThat(detail.getInstructor().getHeadline()).isNotBlank();
     assertThat(detail.getInstructor().getSpecialties())
         .containsExactlyInAnyOrder("Java", "Spring Boot");

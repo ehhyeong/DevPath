@@ -26,33 +26,16 @@ public class LocalLegacySeedPasswordNormalizer implements CommandLineRunner {
 
   private static final String SEED_PASSWORD = "devpath1234";
 
-  // LocalTestAccountInitializer(learner/instructor/admin)와 lounge/mentor/project 시드는 이미 devpath1234 이므로,
-  // 비밀번호가 통일되지 않은 legacy seed-data.sql 계정만 대상으로 한다.
-  private static final List<String> LEGACY_SEED_EMAILS =
-      List.of(
-          "restricted-user@devpath.com",
-          "deactivated-user@devpath.com",
-          "withdrawn-user@devpath.com",
-          "learner2@devpath.com",
-          "learner3@devpath.com",
-          "learner4@devpath.com",
-          "frontend@devpath.com",
-          "data@devpath.com",
-          "week9.b.mentor@devpath.com",
-          "week9.b.mentee@devpath.com",
-          "b-learner-one@devpath.com",
-          "b-learner-two@devpath.com",
-          "b-mentor@devpath.com");
-
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+  private final LocalSeedSqlExecutor seedSqlExecutor;
 
   @Override
   @Transactional
   public void run(String... args) {
     int normalized = 0;
 
-    for (String email : LEGACY_SEED_EMAILS) {
+    for (String email : legacySeedEmails()) {
       var user = userRepository.findByEmail(email).orElse(null);
       if (user == null) {
         continue;
@@ -65,7 +48,14 @@ public class LocalLegacySeedPasswordNormalizer implements CommandLineRunner {
     }
 
     if (normalized > 0) {
-      log.info("Normalized {} legacy seed account password(s) to the shared seed password.", normalized);
+      log.info(
+          "Normalized {} legacy seed account password(s) to the shared seed password.", normalized);
     }
+  }
+
+  private List<String> legacySeedEmails() {
+    return seedSqlExecutor.query(
+        "db/local/legacy-seed-password-accounts.sql",
+        (resultSet, rowNumber) -> resultSet.getString("email"));
   }
 }

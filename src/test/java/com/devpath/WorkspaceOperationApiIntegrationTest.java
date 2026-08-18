@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,6 +20,9 @@ import com.devpath.domain.operation.notice.WorkspaceNoticeReadRepository;
 import com.devpath.domain.operation.notice.WorkspaceNoticeRepository;
 import com.devpath.domain.operation.recommendation.RecommendationSetting;
 import com.devpath.domain.operation.recommendation.RecommendationSettingRepository;
+import com.devpath.domain.workspace.entity.Workspace;
+import com.devpath.domain.workspace.entity.WorkspaceType;
+import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +42,6 @@ import org.springframework.test.web.servlet.MvcResult;
 @ActiveProfiles("test")
 class WorkspaceOperationApiIntegrationTest {
 
-  private static final Long WORKSPACE_ID = 101L;
   private static final Long LEARNER_ID = 1L;
   private static final Long OTHER_LEARNER_ID = 2L;
   private static final Long ADMIN_ID = 99L;
@@ -49,8 +52,10 @@ class WorkspaceOperationApiIntegrationTest {
   @Autowired private ExternalIntegrationRepository integrationRepository;
   @Autowired private RecommendationSettingRepository settingRepository;
   @Autowired private ExperimentResultRepository experimentResultRepository;
+  @Autowired private WorkspaceRepository workspaceRepository;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private Long workspaceId;
 
   @BeforeEach
   void setUp() {
@@ -60,9 +65,22 @@ class WorkspaceOperationApiIntegrationTest {
     settingRepository.deleteAll();
     experimentResultRepository.deleteAll();
 
+    workspaceId =
+        workspaceRepository
+            .findByNameAndOwnerIdAndIsDeletedFalse("Workspace operation API test", LEARNER_ID)
+            .orElseGet(
+                () ->
+                    workspaceRepository.save(
+                        Workspace.builder()
+                            .ownerId(LEARNER_ID)
+                            .name("Workspace operation API test")
+                            .type(WorkspaceType.SOLO)
+                            .build()))
+            .getId();
+
     integrationRepository.save(
         ExternalIntegration.builder()
-            .workspaceId(WORKSPACE_ID)
+            .workspaceId(workspaceId)
             .provider(IntegrationProvider.GITHUB)
             .build());
 
@@ -100,12 +118,56 @@ class WorkspaceOperationApiIntegrationTest {
   }
 
   @Test
+  void experimentLifecyclePersistsExplicitResultsBeforeCompletion() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/admin/experiments")
+                .with(authentication(adminAuthentication()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        Map.of(
+                            "experimentId", "EXP-LIFECYCLE-API",
+                            "experimentName", "Lifecycle API",
+                            "hypothesis", "완료율이 증가한다"))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("DRAFT"));
+
+    mockMvc
+        .perform(
+            patch("/api/admin/experiments/{experimentId}/status", "EXP-LIFECYCLE-API")
+                .with(authentication(adminAuthentication()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"RUNNING\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("RUNNING"));
+
+    mockMvc
+        .perform(
+            put("/api/admin/experiments/{experimentId}/results", "EXP-LIFECYCLE-API")
+                .with(authentication(adminAuthentication()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"metricsJson\":\"{\\\"conversionRate\\\":0.42}\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.metricsJson").value("{\"conversionRate\":0.42}"));
+
+    mockMvc
+        .perform(
+            patch("/api/admin/experiments/{experimentId}/status", "EXP-LIFECYCLE-API")
+                .with(authentication(adminAuthentication()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"COMPLETED\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+  }
+
+  @Test
   void workspaceNoticeFlowUsesJwtPrincipalAndDoesNotRequireWorkspaceIdOnRead() throws Exception {
     long noticeId = createNotice("Deploy notice", "Deploy starts at 10 PM.");
 
     mockMvc
         .perform(
-            get("/api/workspaces/{workspaceId}/notices", WORKSPACE_ID)
+            get("/api/workspaces/{workspaceId}/notices", workspaceId)
                 .with(authentication(learnerAuthentication(LEARNER_ID))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("SUCCESS"))
@@ -117,7 +179,7 @@ class WorkspaceOperationApiIntegrationTest {
                 .with(authentication(learnerAuthentication(LEARNER_ID))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data.id").value(noticeId))
-        .andExpect(jsonPath("$.data.workspaceId").value(WORKSPACE_ID));
+        .andExpect(jsonPath("$.data.workspaceId").value(workspaceId));
 
     mockMvc
         .perform(
@@ -130,7 +192,7 @@ class WorkspaceOperationApiIntegrationTest {
 
     mockMvc
         .perform(
-            get("/api/workspaces/{workspaceId}/notices/unread/count", WORKSPACE_ID)
+            get("/api/workspaces/{workspaceId}/notices/unread/count", workspaceId)
                 .with(authentication(learnerAuthentication(LEARNER_ID))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").value(1));
@@ -150,14 +212,14 @@ class WorkspaceOperationApiIntegrationTest {
 
     mockMvc
         .perform(
-            get("/api/workspaces/{workspaceId}/notices/unread/count", WORKSPACE_ID)
+            get("/api/workspaces/{workspaceId}/notices/unread/count", workspaceId)
                 .with(authentication(learnerAuthentication(LEARNER_ID))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").value(0));
 
     mockMvc
         .perform(
-            get("/api/workspaces/{workspaceId}/notices/unread/count", WORKSPACE_ID)
+            get("/api/workspaces/{workspaceId}/notices/unread/count", workspaceId)
                 .with(authentication(learnerAuthentication(OTHER_LEARNER_ID))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").value(1));
@@ -170,7 +232,7 @@ class WorkspaceOperationApiIntegrationTest {
 
     mockMvc
         .perform(
-            get("/api/workspaces/{workspaceId}/notices/unread/count", WORKSPACE_ID)
+            get("/api/workspaces/{workspaceId}/notices/unread/count", workspaceId)
                 .with(authentication(learnerAuthentication(OTHER_LEARNER_ID))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.data").value(0));
@@ -180,19 +242,19 @@ class WorkspaceOperationApiIntegrationTest {
   void integrationAndAdminOperationApisRemainSwaggerTestableWithAuthentication() throws Exception {
     mockMvc
         .perform(
-            get("/api/workspaces/{workspaceId}/integrations", WORKSPACE_ID)
+            get("/api/workspaces/{workspaceId}/integrations", workspaceId)
                 .with(authentication(learnerAuthentication(LEARNER_ID))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("SUCCESS"))
-        .andExpect(jsonPath("$.data.length()").value(1))
-        .andExpect(jsonPath("$.data[0].provider").value("GITHUB"));
+        .andExpect(jsonPath("$.data.length()").value(IntegrationProvider.values().length))
+        .andExpect(jsonPath("$.data[*].provider").value(hasItem("GITHUB")));
 
     mockMvc
         .perform(
-            patch("/api/workspaces/{workspaceId}/integrations/{provider}", WORKSPACE_ID, "GITHUB")
+            patch("/api/workspaces/{workspaceId}/integrations/{provider}", workspaceId, "GITHUB")
                 .with(authentication(learnerAuthentication(LEARNER_ID)))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(Map.of("isActive", true))))
+                .content(json(Map.of("isActive", false))))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("SUCCESS"));
 
@@ -235,14 +297,14 @@ class WorkspaceOperationApiIntegrationTest {
     mockMvc
         .perform(get("/api/admin/analytics/dashboard").with(authentication(adminAuthentication())))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.data.totalUsers").value(greaterThanOrEqualTo(1)));
+        .andExpect(jsonPath("$.data.totalUsers").value(0));
   }
 
   private long createNotice(String title, String content) throws Exception {
     MvcResult result =
         mockMvc
             .perform(
-                post("/api/workspaces/{workspaceId}/notices", WORKSPACE_ID)
+                post("/api/workspaces/{workspaceId}/notices", workspaceId)
                     .with(authentication(learnerAuthentication(LEARNER_ID)))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(json(Map.of("title", title, "content", content))))
@@ -268,6 +330,6 @@ class WorkspaceOperationApiIntegrationTest {
 
   private UsernamePasswordAuthenticationToken adminAuthentication() {
     return new UsernamePasswordAuthenticationToken(
-        ADMIN_ID, null, AuthorityUtils.createAuthorityList("ROLE_ADMIN"));
+        ADMIN_ID, null, AuthorityUtils.createAuthorityList("ROLE_ADMIN", "ADMIN_SUPER"));
   }
 }

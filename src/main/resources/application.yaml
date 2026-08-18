@@ -74,6 +74,13 @@ springdoc:
     urls-primary-name: 학습자
 
 app:
+  media:
+    # 강의 영상 HLS 변환에 사용할 FFmpeg 실행 파일과 최대 처리 시간
+    ffmpeg-path: ${FFMPEG_PATH:ffmpeg}
+    transcoding-timeout: ${MEDIA_TRANSCODING_TIMEOUT:10m}
+    # HLS 재생 목록, 세그먼트와 AES 키에 공통 적용하는 만료형 URL 서명
+    hls-url-signing-secret: ${HLS_URL_SIGNING_SECRET:devpath-local-hls-signing-key}
+    hls-url-ttl: ${HLS_URL_TTL:10m}
   oauth2:
     # 로그인 후 리다이렉트 URL
     redirect-url: ${DEVPATH_OAUTH2_REDIRECT_URL:${OAUTH2_REDIRECT_URL:http://localhost:8084/oauth2/redirect}}

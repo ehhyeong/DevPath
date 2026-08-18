@@ -19,6 +19,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtTokenProvider jwtTokenProvider;
   private final TokenRedisService tokenRedisService;
+  private final AccountAccessService accountAccessService;
+  private final AdminAuthorityService adminAuthorityService;
   private final ApiAuthenticationEntryPoint apiAuthenticationEntryPoint;
 
   @Override
@@ -36,9 +38,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (tokenRedisService.isAccessJtiBlacklisted(claims.jti())) {
           throw new JwtAuthenticationException(ErrorCode.JWT_BLACKLISTED);
         }
+        var user = accountAccessService.validateAccessToken(claims.userId(), claims.issuedAt());
 
         SecurityContextHolder.getContext()
-            .setAuthentication(AuthenticationUtils.createAuthentication(claims, request));
+            .setAuthentication(
+                AuthenticationUtils.createAuthentication(
+                    claims, request, adminAuthorityService.resolveAuthorities(user)));
       }
 
       filterChain.doFilter(request, response);

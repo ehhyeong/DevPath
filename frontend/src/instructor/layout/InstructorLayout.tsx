@@ -23,9 +23,9 @@ export default function InstructorLayout({
   return (
     <div className="instructor-layout-shell h-screen min-h-0 min-w-0 overflow-hidden text-gray-800">
       <InstructorHeader session={session} profileImage={profileImage} onLogout={onLogout} />
-      <div className="instructor-layout-main app-main flex min-h-0 min-w-0 bg-[#F3F4F6]">
+      <div className="instructor-layout-main app-main flex min-h-0 min-w-0 overflow-hidden! bg-[#F3F4F6]">
         <InstructorSidebar currentPageKey={currentPageKey} />
-        <main className="instructor-layout-content app-responsive-main bg-[#F3F4F6]">{children}</main>
+        <main className="instructor-layout-content app-responsive-main h-[calc(100dvh-var(--app-header-height))] min-h-0 overflow-x-hidden overflow-y-auto bg-[#F3F4F6]">{children}</main>
       </div>
     </div>
   )

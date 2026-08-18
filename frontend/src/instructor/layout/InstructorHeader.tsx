@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import AccountUserMenu from '../../components/AccountUserMenu'
 import HeaderAlerts from '../../components/HeaderAlerts'
-import { instructorDashboardLinks, siteHeaderLinks, siteHeaderTuning } from '../../components/SiteHeader'
+import { instructorDashboardLinks, siteHeaderLinks, siteHeaderTuning } from '../../components/site-header-config'
 import type { AuthSession } from '../../types/auth'
 
 function getMoveStyle(offset: { x: number; y: number }): CSSProperties {
