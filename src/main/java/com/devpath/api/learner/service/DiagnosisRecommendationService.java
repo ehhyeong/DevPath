@@ -219,6 +219,7 @@ public class DiagnosisRecommendationService {
         applyBranch(
             user,
             clearedNode,
+            customRoadmap,
             branchCandidateTags,
             isLowScore,
             recommendationAiClient.section(root, "branch"));
@@ -243,6 +244,7 @@ public class DiagnosisRecommendationService {
   private List<Long> applyBranch(
       User user,
       RoadmapNode clearedNode,
+      CustomRoadmap customRoadmap,
       List<String> candidateTags,
       boolean isLowScore,
       JsonNode branchNode) {
@@ -301,20 +303,32 @@ public class DiagnosisRecommendationService {
     suggestBranchChange(
         user,
         generated,
+        customRoadmap,
+        clearedNode,
         isLowScore ? "진단 퀴즈 저득점 — 복습 학습 노드가 추천되었습니다." : "진단 퀴즈 고득점 — 심화 학습 노드가 추천되었습니다.",
-        clearedNode.getNodeId());
+        isLowScore);
     return List.of(generated.getNodeId());
   }
 
+  // 분기 제안을 저장한다. 빌더/공식복사 모두 적용되도록 명시적 타깃(targetCustomRoadmapId + anchorCustomNodeId)을 채운다.
   private void suggestBranchChange(
-      User user, RoadmapNode generatedNode, String reason, Long branchFromNodeId) {
+      User user,
+      RoadmapNode generatedNode,
+      CustomRoadmap customRoadmap,
+      RoadmapNode clearedNode,
+      String reason,
+      boolean isLowScore) {
+    CustomRoadmapNode anchor = findAnchorCustomNode(customRoadmap, clearedNode.getNodeId());
     recommendationChangeRepository.save(
         RecommendationChange.builder()
             .user(user)
             .roadmapNode(generatedNode)
             .reason(reason)
             .nodeChangeType(NodeChangeType.ADD)
-            .branchFromNodeId(branchFromNodeId)
+            .branchFromNodeId(clearedNode.getNodeId())
+            .targetCustomRoadmapId(customRoadmap == null ? null : customRoadmap.getId())
+            .anchorCustomNodeId(anchor == null ? null : anchor.getId())
+            .branchType(isLowScore ? "REVIEW" : "ADVANCED")
             .build());
   }
 
