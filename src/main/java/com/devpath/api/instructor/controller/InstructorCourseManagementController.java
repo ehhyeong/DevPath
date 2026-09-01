@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.controller;
 
-import com.devpath.api.common.dto.CourseDetailResponse;
+import com.devpath.api.course.dto.CourseDetailResponse;
 import com.devpath.api.instructor.dto.InstructorCourseDto;
 import com.devpath.api.instructor.dto.course.InstructorCourseListResponse;
 import com.devpath.api.instructor.service.InstructorCourseQueryService;

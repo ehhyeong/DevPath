@@ -1,6 +1,6 @@
 package com.devpath.api.admin.dto.permission;
 
-import com.devpath.api.admin.entity.AdminRole;
+import com.devpath.domain.admin.entity.AdminRole;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;

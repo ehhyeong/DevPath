@@ -1,10 +1,11 @@
 package com.devpath.api.instructor.service;
 
 import com.devpath.api.instructor.dto.subscription.SubscriptionResponse;
-import com.devpath.api.instructor.entity.InstructorSubscription;
-import com.devpath.api.instructor.repository.InstructorSubscriptionRepository;
+import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.instructor.entity.InstructorSubscription;
+import com.devpath.domain.instructor.repository.InstructorSubscriptionRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;

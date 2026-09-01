@@ -3,6 +3,7 @@ package com.devpath.api.voice.controller;
 import com.devpath.api.voice.dto.VoiceRequest;
 import com.devpath.api.voice.dto.VoiceResponse;
 import com.devpath.api.voice.service.VoiceChannelService;
+import com.devpath.api.voice.service.VoiceMeetingMinutesService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerTag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class VoiceChannelController {
 
   private final VoiceChannelService voiceChannelService;
+  private final VoiceMeetingMinutesService voiceMeetingMinutesService;
 
   @PostMapping("/api/voice-channels")
   @Operation(summary = "보이스 채널 생성", description = "워크스페이스에 보이스 채널을 생성합니다.")
@@ -117,7 +119,8 @@ public class VoiceChannelController {
   public ResponseEntity<ApiResponse<VoiceResponse.MinutesDetail>> getMinutes(
       @PathVariable Long channelId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ResponseEntity.ok(ApiResponse.ok(voiceChannelService.getMinutes(channelId, userId)));
+    return ResponseEntity.ok(
+        ApiResponse.ok(voiceMeetingMinutesService.getMinutes(channelId, userId)));
   }
 
   @PatchMapping("/api/voice-channels/{channelId}/minutes")
@@ -129,7 +132,7 @@ public class VoiceChannelController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody VoiceRequest.MinutesUpdate request) {
     return ResponseEntity.ok(
-        ApiResponse.ok(voiceChannelService.updateMinutes(channelId, userId, request)));
+        ApiResponse.ok(voiceMeetingMinutesService.updateMinutes(channelId, userId, request)));
   }
 
   @PostMapping("/api/voice-channels/{channelId}/minutes/transcript-lines")
@@ -141,7 +144,8 @@ public class VoiceChannelController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody VoiceRequest.MinutesTranscriptAppend request) {
     return ResponseEntity.ok(
-        ApiResponse.ok(voiceChannelService.appendMinutesTranscript(channelId, userId, request)));
+        ApiResponse.ok(
+            voiceMeetingMinutesService.appendMinutesTranscript(channelId, userId, request)));
   }
 
   @PostMapping("/api/voice-channels/{channelId}/minutes/summary")
@@ -152,7 +156,7 @@ public class VoiceChannelController {
       @PathVariable Long channelId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(voiceChannelService.generateMinutesSummary(channelId, userId)));
+        ApiResponse.ok(voiceMeetingMinutesService.generateMinutesSummary(channelId, userId)));
   }
 
   @PostMapping("/api/voice-channels/{channelId}/minutes/action-items/tasks")
@@ -166,7 +170,7 @@ public class VoiceChannelController {
           @Valid @RequestBody VoiceRequest.MinutesActionItemsCreate request) {
     return ResponseEntity.ok(
         ApiResponse.ok(
-            voiceChannelService.createKanbanTasksFromMinutes(channelId, userId, request)));
+            voiceMeetingMinutesService.createKanbanTasksFromMinutes(channelId, userId, request)));
   }
 
   @PostMapping("/api/voice-channels/{channelId}/join")

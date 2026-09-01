@@ -11,15 +11,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.devpath.domain.analytics.ExperimentResult;
-import com.devpath.domain.analytics.ExperimentResultRepository;
-import com.devpath.domain.operation.integration.ExternalIntegration;
-import com.devpath.domain.operation.integration.ExternalIntegrationRepository;
-import com.devpath.domain.operation.integration.IntegrationProvider;
-import com.devpath.domain.operation.notice.WorkspaceNoticeReadRepository;
-import com.devpath.domain.operation.notice.WorkspaceNoticeRepository;
-import com.devpath.domain.operation.recommendation.RecommendationSetting;
-import com.devpath.domain.operation.recommendation.RecommendationSettingRepository;
+import com.devpath.domain.analytics.entity.ExperimentResult;
+import com.devpath.domain.analytics.repository.ExperimentResultRepository;
+import com.devpath.domain.operation.integration.entity.ExternalIntegration;
+import com.devpath.domain.operation.integration.entity.IntegrationProvider;
+import com.devpath.domain.operation.integration.repository.ExternalIntegrationRepository;
+import com.devpath.domain.operation.notice.repository.WorkspaceNoticeReadRepository;
+import com.devpath.domain.operation.notice.repository.WorkspaceNoticeRepository;
+import com.devpath.domain.operation.recommendation.entity.RecommendationSetting;
+import com.devpath.domain.operation.recommendation.repository.RecommendationSettingRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;

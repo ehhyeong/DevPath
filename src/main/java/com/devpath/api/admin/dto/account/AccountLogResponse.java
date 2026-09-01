@@ -1,6 +1,6 @@
 package com.devpath.api.admin.dto.account;
 
-import com.devpath.api.admin.entity.AccountLog;
+import com.devpath.domain.admin.entity.AccountLog;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

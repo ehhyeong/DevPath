@@ -1,0 +1,27 @@
+package com.devpath.domain.settlement.repository;
+
+import com.devpath.domain.settlement.entity.Settlement;
+import com.devpath.domain.settlement.entity.SettlementStatus;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface SettlementRepository extends JpaRepository<Settlement, Long> {
+
+  List<Settlement> findByInstructorIdAndIsDeletedFalse(Long instructorId);
+
+  List<Settlement> findByInstructorIdAndIsDeletedFalseOrderByCreatedAtDesc(Long instructorId);
+
+  List<Settlement> findAllByIsDeletedFalseOrderByCreatedAtDesc();
+
+  Optional<Settlement> findByIdAndIsDeletedFalse(Long id);
+
+  // 환불 차감 대상은 HELD가 아닌 최신 PENDING settlement만 본다.
+  Optional<Settlement> findTopByInstructorIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+      Long instructorId, SettlementStatus status);
+
+  Optional<Settlement> findTopByLearnerIdAndCourseIdAndStatusAndIsDeletedFalseOrderByCreatedAtDesc(
+      Long learnerId, Long courseId, SettlementStatus status);
+
+  long countByInstructorIdAndStatusAndIsDeletedFalse(Long instructorId, SettlementStatus status);
+}

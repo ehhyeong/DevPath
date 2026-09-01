@@ -1,8 +1,8 @@
 package com.devpath.api.mentoring.service;
 
-import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.mentoring.dto.MentoringApplicationRequest;
 import com.devpath.api.mentoring.dto.MentoringApplicationResponse;
+import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;

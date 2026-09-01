@@ -5,12 +5,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.devpath.api.admin.dto.settlement.SettlementHoldRequest;
-import com.devpath.api.refund.repository.RefundRepository;
-import com.devpath.api.settlement.entity.Settlement;
-import com.devpath.api.settlement.entity.SettlementHold;
-import com.devpath.api.settlement.entity.SettlementStatus;
-import com.devpath.api.settlement.repository.SettlementHoldRepository;
-import com.devpath.api.settlement.repository.SettlementRepository;
+import com.devpath.domain.refund.repository.RefundRepository;
+import com.devpath.domain.settlement.entity.Settlement;
+import com.devpath.domain.settlement.entity.SettlementHold;
+import com.devpath.domain.settlement.entity.SettlementStatus;
+import com.devpath.domain.settlement.repository.SettlementHoldRepository;
+import com.devpath.domain.settlement.repository.SettlementRepository;
 import com.devpath.domain.system.service.SystemPolicyService;
 import java.time.LocalDateTime;
 import java.util.Optional;

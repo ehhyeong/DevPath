@@ -1,6 +1,6 @@
 package com.devpath.api.learning.dto;
 
-import com.devpath.api.proof.dto.ProofCardResponse;
+import com.devpath.api.learning.proof.dto.ProofCardResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;

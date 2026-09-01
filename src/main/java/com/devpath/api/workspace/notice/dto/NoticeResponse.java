@@ -1,6 +1,6 @@
 package com.devpath.api.workspace.notice.dto;
 
-import com.devpath.domain.operation.notice.WorkspaceNotice;
+import com.devpath.domain.operation.notice.entity.WorkspaceNotice;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Builder;

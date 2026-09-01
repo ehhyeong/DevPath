@@ -1,6 +1,6 @@
 package com.devpath.api.learner.service;
 
-import com.devpath.api.common.dto.CourseDetailResponse;
+import com.devpath.api.course.dto.CourseDetailResponse;
 import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.entity.LessonType;
 import com.devpath.domain.learning.entity.Assignment;

@@ -1,8 +1,6 @@
 package com.devpath.api.job.service;
 
 import com.devpath.api.job.dto.JobSkillSuggestionDto;
-import com.devpath.api.roadmap.service.NodeRequiredTagRegistrar;
-import com.devpath.api.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.learning.entity.recommendation.NodeChangeType;
@@ -16,6 +14,8 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
+import com.devpath.domain.roadmap.service.NodeRequiredTagRegistrar;
+import com.devpath.domain.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;

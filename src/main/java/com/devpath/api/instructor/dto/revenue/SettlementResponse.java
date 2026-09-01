@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.revenue;
 
-import com.devpath.api.settlement.entity.Settlement;
+import com.devpath.domain.settlement.entity.Settlement;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

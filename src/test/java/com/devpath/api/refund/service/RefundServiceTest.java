@@ -7,14 +7,14 @@ import static org.mockito.Mockito.when;
 
 import com.devpath.api.refund.dto.RefundRequestDto;
 import com.devpath.api.refund.dto.RefundResponse;
-import com.devpath.api.refund.entity.RefundRequest;
-import com.devpath.api.refund.entity.RefundStatus;
-import com.devpath.api.refund.repository.RefundRepository;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.refund.entity.RefundRequest;
+import com.devpath.domain.refund.entity.RefundStatus;
+import com.devpath.domain.refund.repository.RefundRepository;
 import com.devpath.domain.system.service.SystemPolicyService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

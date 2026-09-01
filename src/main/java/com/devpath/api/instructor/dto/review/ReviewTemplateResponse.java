@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.review;
 
-import com.devpath.api.instructor.entity.ReviewTemplate;
+import com.devpath.domain.instructor.entity.ReviewTemplate;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

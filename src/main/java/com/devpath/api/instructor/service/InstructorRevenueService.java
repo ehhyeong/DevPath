@@ -2,11 +2,11 @@ package com.devpath.api.instructor.service;
 
 import com.devpath.api.instructor.dto.revenue.RevenueResponse;
 import com.devpath.api.instructor.dto.revenue.SettlementResponse;
-import com.devpath.api.settlement.entity.Settlement;
-import com.devpath.api.settlement.entity.SettlementStatus;
-import com.devpath.api.settlement.repository.SettlementRepository;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.settlement.entity.Settlement;
+import com.devpath.domain.settlement.entity.SettlementStatus;
+import com.devpath.domain.settlement.repository.SettlementRepository;
 import com.devpath.domain.system.service.SystemPolicyService;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

@@ -1,6 +1,6 @@
 package com.devpath.api.notice.dto;
 
-import com.devpath.api.notice.entity.Notice;
+import com.devpath.domain.notice.entity.Notice;
 import java.time.LocalDateTime;
 
 public record PlatformNoticeResponse(

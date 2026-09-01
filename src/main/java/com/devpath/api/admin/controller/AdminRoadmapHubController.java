@@ -3,7 +3,6 @@ package com.devpath.api.admin.controller;
 import com.devpath.api.admin.dto.roadmaphub.AdminRoadmapHubCatalogResponse;
 import com.devpath.api.admin.dto.roadmaphub.RoadmapHubCatalogUpdateRequest;
 import com.devpath.api.admin.service.AdminRoadmapHubService;
-import com.devpath.api.roadmap.service.RoadmapHubQueryService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,13 +21,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin/roadmap-hub")
 public class AdminRoadmapHubController {
 
-  private final RoadmapHubQueryService roadmapHubQueryService;
   private final AdminRoadmapHubService adminRoadmapHubService;
 
   @Operation(summary = "로드맵 허브 구성 조회")
   @GetMapping
   public ApiResponse<AdminRoadmapHubCatalogResponse> getCatalog() {
-    return ApiResponse.success("로드맵 허브 구성을 조회했습니다.", roadmapHubQueryService.getAdminCatalog());
+    return ApiResponse.success("로드맵 허브 구성을 조회했습니다.", adminRoadmapHubService.getCatalog());
   }
 
   @Operation(summary = "로드맵 허브 구성 저장")
@@ -36,6 +34,6 @@ public class AdminRoadmapHubController {
   public ApiResponse<AdminRoadmapHubCatalogResponse> replaceCatalog(
       @RequestBody @Valid RoadmapHubCatalogUpdateRequest request) {
     adminRoadmapHubService.replaceCatalog(request);
-    return ApiResponse.success("로드맵 허브 구성을 저장했습니다.", roadmapHubQueryService.getAdminCatalog());
+    return ApiResponse.success("로드맵 허브 구성을 저장했습니다.", adminRoadmapHubService.getCatalog());
   }
 }

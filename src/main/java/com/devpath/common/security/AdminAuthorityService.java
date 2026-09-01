@@ -1,6 +1,6 @@
 package com.devpath.common.security;
 
-import com.devpath.api.admin.repository.AdminPermissionRepository;
+import com.devpath.domain.admin.repository.AdminPermissionRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserRole;
 import java.util.ArrayList;

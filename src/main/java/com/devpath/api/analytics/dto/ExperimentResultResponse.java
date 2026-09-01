@@ -1,7 +1,7 @@
 package com.devpath.api.analytics.dto;
 
-import com.devpath.domain.analytics.ExperimentResult;
-import com.devpath.domain.analytics.ExperimentStatus;
+import com.devpath.domain.analytics.entity.ExperimentResult;
+import com.devpath.domain.analytics.entity.ExperimentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Builder;

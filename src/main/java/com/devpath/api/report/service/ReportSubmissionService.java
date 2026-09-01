@@ -1,15 +1,15 @@
 package com.devpath.api.report.service;
 
-import com.devpath.api.admin.entity.ModerationReport;
-import com.devpath.api.admin.entity.ModerationReportStatus;
-import com.devpath.api.admin.repository.ModerationReportRepository;
 import com.devpath.api.report.dto.ReportCreateRequest;
 import com.devpath.api.report.dto.ReportCreateResponse;
 import com.devpath.api.report.dto.ReportTargetType;
-import com.devpath.api.review.entity.Review;
-import com.devpath.api.review.repository.ReviewRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.admin.entity.ModerationReport;
+import com.devpath.domain.admin.entity.ModerationReportStatus;
+import com.devpath.domain.admin.repository.ModerationReportRepository;
+import com.devpath.domain.review.entity.Review;
+import com.devpath.domain.review.repository.ReviewRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

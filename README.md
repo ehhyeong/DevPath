@@ -110,6 +110,29 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 
 </details>
 
+### 저장소와 백엔드 패키지 원칙
+
+DevPath는 Spring Boot API, React SPA, OCR 서버와 배포 구성을 한 저장소에서 함께 관리하는 모노레포입니다. 하나의 제품을 구성하는 변경을 같은 PR에서 검증하고 배포 경로별 변경 감지를 적용하기 위한 선택이며, 백엔드 코드는 기능별 패키지와 계층 규칙을 함께 사용합니다.
+
+```text
+com.devpath
+├─ api.<feature>
+│  ├─ controller       # HTTP 요청·응답과 입력 검증
+│  ├─ service          # 유스케이스와 트랜잭션 경계
+│  └─ dto              # API 요청·응답 모델
+├─ domain.<feature>
+│  ├─ entity           # 도메인 상태와 상태 변경
+│  └─ repository       # 영속성 접근
+├─ common
+│  ├─ config           # 공통 프레임워크·외부 연동 설정
+│  ├─ security         # 인증·인가
+│  ├─ exception        # 공통 예외 처리
+│  └─ response         # 공통 API 응답
+└─ bootstrap.seed      # local 프로필의 시연 데이터 준비
+```
+
+기본 의존 방향은 `Controller → Service → Repository → Entity`입니다. Controller는 Repository를 직접 호출하지 않고, `domain`은 `api` DTO나 Controller를 참조하지 않습니다. `common.config`는 애플리케이션 공통 설정, `bootstrap.seed`는 로컬 시작 데이터 준비만 담당합니다. 이 규칙은 아키텍처 테스트로 함께 검증합니다.
+
 <details>
 <summary><strong>🛠️ 기술 스택 자세히 보기</strong></summary>
 
@@ -290,9 +313,10 @@ Gemini 키가 없거나 호출에 실패하면 지원 기능은 결정론적 폴
 ```text
 DevPath
 ├─ src/main/java/com/devpath
-│  ├─ api              # 도메인별 Controller, Service, DTO
-│  ├─ domain           # Entity와 Repository
-│  ├─ config           # 프로필별 설정과 로컬 초기화 구성
+│  ├─ api/<feature>    # 기능별 Controller, Service, DTO
+│  ├─ domain/<feature> # 기능별 Entity와 Repository
+│  ├─ common           # 공통 설정, 보안, 예외, 응답
+│  ├─ bootstrap/seed   # local 프로필의 시연 데이터 준비
 │  └─ DevPathApplication.java
 ├─ src/main/resources
 │  ├─ application*.yaml          # 공통 설정과 프로필별 환경 변수 매핑
@@ -328,11 +352,20 @@ DevPath
 
 ## 팀원
 
-| 이름 | GitHub |
-| --- | --- |
-| 김용하 | [@yongha03](https://github.com/yongha03) |
-| 김태형 | [@ehhyeong](https://github.com/ehhyeong) |
-| 박주승 | [@ParkJus](https://github.com/ParkJus) |
+아래 담당 영역은 Git 작성자와 병합 이력을 기준으로 정리한 대표 기여이며, 실제 구현 과정에서는 기능 간 리뷰와 보완 작업을 함께 진행했습니다.
+
+| 이름 | GitHub | 주요 담당 영역 | 대표 작업 |
+| --- | --- | --- | --- |
+| 김용하 | [@yongha03](https://github.com/yongha03) | 커스텀 로드맵, 진단·학습 추천, Proof Card, 백엔드 배포 안정화 | [PR #191](https://github.com/yongha03/DevPath/pull/191), [PR #204](https://github.com/yongha03/DevPath/pull/204), [PR #225](https://github.com/yongha03/DevPath/pull/225) |
+| 김태형 | [@ehhyeong](https://github.com/ehhyeong) | 관리자 강의 검수, 보호 영상 재생, 리뷰·환불, 배포·백엔드 구조 정리 | [PR #240](https://github.com/yongha03/DevPath/pull/240), [PR #247](https://github.com/yongha03/DevPath/pull/247), [PR #248](https://github.com/yongha03/DevPath/pull/248) |
+| 박주승 | [@ParkJus](https://github.com/ParkJus) | 워크스페이스 운영, 관리자 분석·추천 정책, 외부 연동, 공통 응답·예외 처리 | [PR #31](https://github.com/yongha03/DevPath/pull/31), [워크스페이스 운영·분석 API](https://github.com/yongha03/DevPath/commit/1b34bbf8), [공통 응답·예외 처리](https://github.com/yongha03/DevPath/commit/46929829) |
+
+## 협업 방식
+
+- 기능과 수정 사항은 이슈에 배경, 완료 조건과 영향 범위를 기록합니다.
+- 작업 브랜치에서 변경한 뒤 PR 템플릿에 변경 이유와 실제 검증 명령을 작성합니다.
+- `master` 반영은 PR 리뷰와 대화 해결을 거치며, 직접 push는 브랜치 보호 규칙으로 제한합니다.
+- PR은 가능한 한 하나의 목적을 유지하고, 관련 없는 변경은 별도 PR이나 커밋으로 분리합니다.
 
 ## 참고
 

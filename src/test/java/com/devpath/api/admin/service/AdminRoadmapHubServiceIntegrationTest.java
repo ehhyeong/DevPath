@@ -62,7 +62,7 @@ class AdminRoadmapHubServiceIntegrationTest {
                 1,
                 item("React", null, null, reactRoadmap.getRoadmapId(), true, false, 0))));
 
-    AdminRoadmapHubCatalogResponse response = roadmapHubQueryService.getAdminCatalog();
+    AdminRoadmapHubCatalogResponse response = adminRoadmapHubService.getCatalog();
 
     assertThat(response.getSections()).hasSize(2);
     assertThat(response.getSections().get(0).getSectionKey()).isEqualTo("role-based");

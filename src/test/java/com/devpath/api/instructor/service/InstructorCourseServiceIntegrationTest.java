@@ -3,8 +3,8 @@ package com.devpath.api.instructor.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.devpath.api.common.dto.CourseDetailResponse;
-import com.devpath.api.common.service.CourseDetailMetadataMapper;
+import com.devpath.api.course.dto.CourseDetailResponse;
+import com.devpath.api.course.mapper.CourseDetailMetadataMapper;
 import com.devpath.api.course.service.HlsPlaybackService;
 import com.devpath.api.instructor.dto.InstructorAnnouncementDto;
 import com.devpath.api.instructor.dto.InstructorCourseDto;

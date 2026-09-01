@@ -1,7 +1,7 @@
 package com.devpath.api.workspace.integration.dto;
 
-import com.devpath.domain.operation.integration.ExternalIntegration;
-import com.devpath.domain.operation.integration.IntegrationProvider;
+import com.devpath.domain.operation.integration.entity.ExternalIntegration;
+import com.devpath.domain.operation.integration.entity.IntegrationProvider;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Builder;

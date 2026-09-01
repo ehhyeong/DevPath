@@ -1,7 +1,5 @@
 package com.devpath.api.workspace.service;
 
-import com.devpath.api.ai.dto.AiCodeReviewResponse;
-import com.devpath.api.ai.service.AiCodeReviewService;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewRequest;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewResponse;
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
@@ -20,7 +18,6 @@ public class WorkspaceCodeReviewService {
 
   private final WorkspaceCodeReviewStore codeReviewStore;
   private final WorkspaceService workspaceService;
-  private final AiCodeReviewService aiCodeReviewService;
   private final WorkspaceCodeReviewAiReviewer aiReviewer;
 
   @Transactional(readOnly = true)
@@ -138,10 +135,10 @@ public class WorkspaceCodeReviewService {
 
   private WorkspaceCodeReviewResponse.Detail toDetail(
       WorkspaceCodeReviewStore.DetailRow row, WorkspaceDashboardResponse dashboard) {
-    AiCodeReviewResponse.Detail aiReview =
+    WorkspaceCodeReviewResponse.AiReview aiReview =
         row.summary().aiCodeReviewId() == null
             ? null
-            : aiCodeReviewService.getReview(row.summary().aiCodeReviewId());
+            : aiReviewer.getReview(row.summary().aiCodeReviewId());
 
     return new WorkspaceCodeReviewResponse.Detail(
         row.summary(),

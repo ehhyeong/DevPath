@@ -1,5 +1,7 @@
 package com.devpath.domain.operation.recommendation;
 
+import com.devpath.domain.operation.recommendation.entity.RecommendationSetting;
+import com.devpath.domain.operation.recommendation.repository.RecommendationSettingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

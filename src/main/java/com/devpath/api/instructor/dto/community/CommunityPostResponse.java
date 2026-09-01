@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.community;
 
-import com.devpath.api.instructor.entity.InstructorPost;
+import com.devpath.domain.instructor.entity.InstructorPost;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

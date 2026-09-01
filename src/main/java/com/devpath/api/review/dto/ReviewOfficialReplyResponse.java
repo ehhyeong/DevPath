@@ -1,6 +1,6 @@
 package com.devpath.api.review.dto;
 
-import com.devpath.api.instructor.entity.ReviewReply;
+import com.devpath.domain.instructor.entity.ReviewReply;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Builder;

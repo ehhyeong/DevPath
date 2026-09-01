@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.devpath.api.learner.component.CourseScoreAnalyzer;
-import com.devpath.api.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.common.provider.GeminiProvider;
 import com.devpath.domain.learning.entity.recommendation.NodeChangeType;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChange;
@@ -21,6 +20,7 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
+import com.devpath.domain.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;
@@ -48,6 +48,7 @@ class DiagnosisRecommendationServiceTest {
   @Mock private UserTechStackRepository userTechStackRepository;
   @Mock private ProofCardRepository proofCardRepository;
   @Mock private CourseScoreAnalyzer courseScoreAnalyzer;
+  @Mock private FrontendRoadmapDemoRecommender frontendRoadmapDemoRecommender;
 
   private DiagnosisRecommendationService diagnosisRecommendationService;
 
@@ -65,7 +66,8 @@ class DiagnosisRecommendationServiceTest {
             customRoadmapNodeRepository,
             userTechStackRepository,
             proofCardRepository,
-            courseScoreAnalyzer);
+            courseScoreAnalyzer,
+            frontendRoadmapDemoRecommender);
   }
 
   @Test

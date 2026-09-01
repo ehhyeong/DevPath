@@ -1,8 +1,8 @@
 package com.devpath.api.review.dto;
 
-import com.devpath.api.instructor.entity.ReviewReply;
-import com.devpath.api.review.entity.Review;
-import com.devpath.api.review.entity.ReviewStatus;
+import com.devpath.domain.instructor.entity.ReviewReply;
+import com.devpath.domain.review.entity.Review;
+import com.devpath.domain.review.entity.ReviewStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.Arrays;

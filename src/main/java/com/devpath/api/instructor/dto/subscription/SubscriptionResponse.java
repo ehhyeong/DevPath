@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.subscription;
 
-import com.devpath.api.instructor.entity.InstructorSubscription;
+import com.devpath.domain.instructor.entity.InstructorSubscription;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
