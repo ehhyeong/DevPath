@@ -1,0 +1,43 @@
+name: 기능 제안
+description: 새로운 기능이나 기존 기능 개선을 제안합니다.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: 배경과 문제
+      description: 어떤 사용자 문제가 있고 왜 지금 해결해야 하는지 작성해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안 내용
+      description: 원하는 동작과 주요 흐름을 작성해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 범위
+      description: 포함할 내용과 이번 작업에서 제외할 내용을 구분해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 완료 조건
+      description: 구현과 검증이 끝났다고 판단할 기준을 체크리스트로 작성해 주세요.
+      placeholder: |
+        - [ ] 정상 흐름이 동작한다.
+        - [ ] 예외 흐름이 검증된다.
+        - [ ] 관련 테스트가 통과한다.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: 영향 범위와 위험
+      description: API, 데이터베이스, 배포, 호환성에 미칠 영향을 작성해 주세요.
