@@ -359,6 +359,14 @@
 - 로그인된 `ehhyeong` 계정은 `yongha03/DevPath` 저장소 옵션 권한이 없고 브랜치 설정 URL이 404로 차단되어 원격 브랜치 보호를 직접 적용할 수 없다.
 - 저장소 소유자는 `master`에 PR 필수, 승인 1명 이상, 대화 해결 필수, 직접 push 제한을 적용하는 것이 적절하다. 현재 안정적인 PR CI workflow가 없으므로 필수 상태 검사는 CI 추가 후 설정한다.
 
+## 현재 작업 범위. 원격 PR 생성과 merge commit 병합
+
+- 사용자는 로컬 커밋을 push하고 `master`에 병합하는 작업까지 명시적으로 요청했다.
+- 병합 방식은 Squash merge나 Rebase merge가 아니라 GitHub의 `Create a merge commit`을 사용한다.
+- push 전에 Markdown·YAML·Java 파일을 UTF-8 엄격 디코딩으로 검사하고 Unicode 대체 문자 `U+FFFD`가 포함되지 않았는지 확인한다.
+- PR 본문은 변경 요약, 변경 이유, 주요 변경 사항, 실제 검증 내역, 영향 범위와 위험, 관련 이슈 순서로 작성한다.
+- 저장소의 Markdown·YAML·Java 파일 1,476개를 UTF-8 엄격 디코딩하고 `U+FFFD` 포함 여부를 검사해 모두 통과했다.
+
 ## 현재 작업 범위. 진단 추천 시연 폴백 책임 분리
 
 - `DiagnosisRecommendationService` 705줄에는 일반 사용자의 AI 추천 흐름과 특정 프론트 시연 계정용 고정 추천 폴백이 함께 들어 있다.

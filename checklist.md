@@ -189,3 +189,12 @@
 - [x] 관련 테스트와 전체 테스트·Spotless·구조 규칙 재검증
 - [x] 변경사항을 논리적 커밋 단위로 분리하고 커밋별 검증 근거 확인
 - [x] 원격 저장소의 기본 브랜치와 브랜치 보호 적용 가능 여부 확인
+
+## 진행 중인 원격 PR 생성과 병합
+
+- [x] 작업 트리와 Markdown·YAML·Java 파일의 UTF-8 무결성 재확인
+- [ ] `kimtaehyeong` 브랜치를 `origin`에 push
+- [ ] `yongha03/DevPath:master` 대상 PR 생성
+- [ ] PR 본문에 실제 변경·검증·위험 내역 기록
+- [ ] Squash 또는 rebase가 아닌 Create a merge commit 방식으로 병합
+- [ ] 원격 `master`의 병합 커밋과 로컬 브랜치 상태 확인
