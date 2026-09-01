@@ -5,8 +5,6 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
 .hover-card { transition: all 0.3s ease; border: 1px solid #E5E7EB; }
 .hover-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); border-color: #D1D5DB; }
 
-@keyframes borderGlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-
 @keyframes devShowcaseModalSlideUp {
   from { transform: translateY(18px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
