@@ -9,7 +9,8 @@ import com.devpath.api.analytics.dto.InstructorAnalyticsProgressResponse;
 import com.devpath.api.analytics.dto.InstructorAnalyticsQuizResponse;
 import com.devpath.api.analytics.dto.InstructorAnalyticsStudentResponse;
 import com.devpath.api.analytics.dto.InstructorAnalyticsWeakPointResponse;
-import com.devpath.api.analytics.service.InstructorLearningAnalyticsService;
+import com.devpath.api.analytics.service.InstructorAssessmentAnalyticsService;
+import com.devpath.api.analytics.service.InstructorLearningProgressAnalyticsService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,14 +29,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InstructorLearningAnalyticsController {
 
-  private final InstructorLearningAnalyticsService instructorLearningAnalyticsService;
+  private final InstructorLearningProgressAnalyticsService learningProgressAnalyticsService;
+  private final InstructorAssessmentAnalyticsService assessmentAnalyticsService;
 
   @Operation(summary = "학습 분석 개요 조회", description = "강사 전체 학습 분석 개요를 조회합니다.")
   @GetMapping("/overview")
   public ResponseEntity<ApiResponse<InstructorAnalyticsOverviewResponse.Detail>> getOverview(
       @Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getOverview(instructorId)));
+        ApiResponse.ok(learningProgressAnalyticsService.getOverview(instructorId)));
   }
 
   @Operation(summary = "수강생 분석 조회", description = "강사 강의 전체의 수강생 분석 정보를 조회합니다.")
@@ -43,7 +45,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsStudentResponse.StudentItem>>>
       getStudents(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getStudents(instructorId)));
+        ApiResponse.ok(learningProgressAnalyticsService.getStudents(instructorId)));
   }
 
   @Operation(summary = "강의별 진도 분석 조회", description = "강의별 진도 분석 정보를 조회합니다.")
@@ -51,7 +53,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsProgressResponse.CourseProgressItem>>>
       getProgress(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getProgress(instructorId)));
+        ApiResponse.ok(learningProgressAnalyticsService.getProgress(instructorId)));
   }
 
   @Operation(summary = "강의별 완료율 조회", description = "강의별 완료율을 조회합니다.")
@@ -59,7 +61,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsProgressResponse.CompletionRateItem>>>
       getCompletionRate(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getCompletionRate(instructorId)));
+        ApiResponse.ok(learningProgressAnalyticsService.getCompletionRate(instructorId)));
   }
 
   @Operation(summary = "강의별 평균 시청 시간 조회", description = "강의별 평균 시청 시간을 조회합니다.")
@@ -67,7 +69,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsProgressResponse.AverageWatchTimeItem>>>
       getAverageWatchTime(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getAverageWatchTime(instructorId)));
+        ApiResponse.ok(learningProgressAnalyticsService.getAverageWatchTime(instructorId)));
   }
 
   @Operation(summary = "과제 통계 조회", description = "과제 제출 및 채점 분석 정보를 조회합니다.")
@@ -75,15 +77,14 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<InstructorAnalyticsAssignmentResponse.Detail>>
       getAssignmentStats(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getAssignmentStats(instructorId)));
+        ApiResponse.ok(assessmentAnalyticsService.getAssignmentStats(instructorId)));
   }
 
   @Operation(summary = "퀴즈 통계 조회", description = "퀴즈 응시 분석 정보를 조회합니다.")
   @GetMapping("/quiz-stats")
   public ResponseEntity<ApiResponse<InstructorAnalyticsQuizResponse.Detail>> getQuizStats(
       @Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
-    return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getQuizStats(instructorId)));
+    return ResponseEntity.ok(ApiResponse.ok(assessmentAnalyticsService.getQuizStats(instructorId)));
   }
 
   @Operation(summary = "레슨별 이탈 분석 조회", description = "레슨별 이탈 분석 정보를 조회합니다.")
@@ -91,7 +92,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsDropOffResponse.LessonItem>>>
       getDropOff(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getDropOff(instructorId)));
+        ApiResponse.ok(learningProgressAnalyticsService.getDropOff(instructorId)));
   }
 
   @Operation(summary = "노드별 난이도 분석 조회", description = "노드별 난이도 분석 정보를 조회합니다.")
@@ -99,7 +100,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsDifficultyResponse.NodeItem>>>
       getDifficulty(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getDifficulty(instructorId)));
+        ApiResponse.ok(assessmentAnalyticsService.getDifficulty(instructorId)));
   }
 
   @Operation(summary = "수강생 진도 순위 조회", description = "진도 기준으로 정렬된 수강생 목록을 조회합니다.")
@@ -107,7 +108,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsStudentResponse.StudentItem>>>
       getStudentProgress(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getStudentProgress(instructorId)));
+        ApiResponse.ok(learningProgressAnalyticsService.getStudentProgress(instructorId)));
   }
 
   @Operation(summary = "문항 성과 조회", description = "퀴즈 문항별 성과 분석 정보를 조회합니다.")
@@ -115,7 +116,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsQuizResponse.QuestionPerformanceItem>>>
       getQuestionPerformance(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getQuestionPerformance(instructorId)));
+        ApiResponse.ok(assessmentAnalyticsService.getQuestionPerformance(instructorId)));
   }
 
   @Operation(summary = "학습 퍼널 조회", description = "수강 등록부터 완료까지의 퍼널 분석 정보를 조회합니다.")
@@ -123,7 +124,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<InstructorAnalyticsFunnelResponse.Detail>> getFunnel(
       @Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getFunnel(instructorId)));
+        ApiResponse.ok(learningProgressAnalyticsService.getFunnel(instructorId)));
   }
 
   @Operation(summary = "취약 지점 조회", description = "취약도 기준으로 정렬된 취약 지점 분석 정보를 조회합니다.")
@@ -131,6 +132,6 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsWeakPointResponse.NodeItem>>>
       getWeakPoints(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(instructorLearningAnalyticsService.getWeakPoints(instructorId)));
+        ApiResponse.ok(assessmentAnalyticsService.getWeakPoints(instructorId)));
   }
 }

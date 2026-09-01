@@ -30,11 +30,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -48,16 +46,6 @@ public class DiagnosisRecommendationService {
   private static final int REORDER_CANDIDATE_LIMIT = 5;
   // 클리어 시 Gemini가 제안할 신규 노드 최대 개수
   private static final int NEW_NODE_LIMIT = 1;
-  // 프론트 시연 계정 전용 고정 데모 추천 폴백 (Gemini 호출 지연 회피용)
-  private static final String FRONTEND_ROADMAP_DEMO_EMAIL = "kim.hakseup@devpath.com";
-  private static final int FRONTEND_ROADMAP_DEMO_SCORE = 85;
-  private static final long FRONTEND_ROADMAP_DEMO_FALLBACK_DELAY_MILLIS = 1800L;
-  private static final String FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE = "[심화] 렌더링 성능 디버깅";
-  private static final String FRONTEND_ROADMAP_DEMO_REVIEW_TITLE = "[복습] 렌더링 흐름 체크포인트";
-  private static final String FRONTEND_ROADMAP_DEMO_LEGACY_ADVANCED_TITLE =
-      "[Advanced] Rendering Performance Debugging";
-  private static final String FRONTEND_ROADMAP_DEMO_LEGACY_REVIEW_TITLE =
-      "[Review] Rendering Flow Checkpoint";
 
   private final RoadmapNodeRepository roadmapNodeRepository;
   private final UserRepository userRepository;
@@ -70,6 +58,7 @@ public class DiagnosisRecommendationService {
   private final UserTechStackRepository userTechStackRepository;
   private final ProofCardRepository proofCardRepository;
   private final CourseScoreAnalyzer courseScoreAnalyzer;
+  private final FrontendRoadmapDemoRecommender frontendRoadmapDemoRecommender;
 
   @Transactional
   public RecommendationResult recommendForQuiz(
@@ -111,9 +100,11 @@ public class DiagnosisRecommendationService {
     boolean isLowScore = (double) score / 100 < REVIEW_THRESHOLD;
 
     // 프론트 시연 계정은 Gemini 호출을 건너뛰고 고정 데모 추천으로 대체한다.
-    if (isFrontendRoadmapDemoFallback(user, clearedNode, nodeTags)) {
-      return buildFrontendRoadmapDemoFallback(
-              user, clearedNode, roadmapId, customRoadmapId, isLowScore)
+    if (frontendRoadmapDemoRecommender.supports(user, clearedNode, nodeTags)) {
+      CustomRoadmap customRoadmap = findCustomRoadmap(user.getId(), roadmapId, customRoadmapId);
+      CustomRoadmapNode anchor = findAnchorCustomNode(customRoadmap, clearedNode.getNodeId());
+      return frontendRoadmapDemoRecommender
+          .recommend(user, clearedNode, customRoadmap, anchor, isLowScore)
           .stream()
           .map(String::valueOf)
           .collect(Collectors.joining(","));
@@ -510,122 +501,11 @@ public class DiagnosisRecommendationService {
             ? List.of()
             : nodeRequiredTagRepository.findTagNamesByNodeId(originalNodeId);
 
-    if (isFrontendRoadmapDemoFallback(user, node, tags)) {
-      return Math.min(100, FRONTEND_ROADMAP_DEMO_SCORE);
+    if (frontendRoadmapDemoRecommender.supports(user, node, tags)) {
+      return frontendRoadmapDemoRecommender.score();
     }
 
     return resolveScore(courseScores);
-  }
-
-  private boolean isFrontendRoadmapDemoFallback(
-      User user, RoadmapNode clearedNode, List<String> nodeTags) {
-    if (user == null || clearedNode == null || nodeTags == null) {
-      return false;
-    }
-    if (!FRONTEND_ROADMAP_DEMO_EMAIL.equalsIgnoreCase(user.getEmail())) {
-      return false;
-    }
-
-    String title = clearedNode.getTitle() == null ? "" : clearedNode.getTitle().toLowerCase();
-    return title.contains("html")
-        && title.contains("css")
-        && title.contains("javascript")
-        && hasTagIgnoreCase(nodeTags, "HTML")
-        && hasTagIgnoreCase(nodeTags, "CSS")
-        && hasTagIgnoreCase(nodeTags, "JavaScript")
-        && hasTagIgnoreCase(nodeTags, "Vite");
-  }
-
-  private boolean hasTagIgnoreCase(List<String> tags, String expected) {
-    return tags.stream().anyMatch(tag -> expected.equalsIgnoreCase(tag.trim()));
-  }
-
-  private List<Long> buildFrontendRoadmapDemoFallback(
-      User user,
-      RoadmapNode clearedNode,
-      Long roadmapId,
-      Long customRoadmapId,
-      boolean isLowScore) {
-    String title =
-        isLowScore ? FRONTEND_ROADMAP_DEMO_REVIEW_TITLE : FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE;
-    String legacyTitle =
-        isLowScore
-            ? FRONTEND_ROADMAP_DEMO_LEGACY_REVIEW_TITLE
-            : FRONTEND_ROADMAP_DEMO_LEGACY_ADVANCED_TITLE;
-
-    CustomRoadmap customRoadmap = findCustomRoadmap(user.getId(), roadmapId, customRoadmapId);
-    Long targetCustomRoadmapId = customRoadmap == null ? null : customRoadmap.getId();
-
-    RecommendationChange existingChange =
-        findExistingFrontendRoadmapDemoChange(
-            user.getId(), title, legacyTitle, targetCustomRoadmapId);
-    if (existingChange != null) {
-      refreshFrontendRoadmapDemoChange(existingChange, isLowScore);
-      return List.of(existingChange.getRoadmapNode().getNodeId());
-    }
-
-    pauseFrontendRoadmapDemoFallback();
-
-    RoadmapNode generated =
-        roadmapNodeRepository.save(
-            RoadmapNode.builder()
-                .roadmap(systemDynamicRoadmapProvider.resolve())
-                .title(title)
-                .content(frontendRoadmapDemoContent(isLowScore))
-                .nodeType("BRANCH")
-                .sortOrder(null)
-                .subTopics(frontendRoadmapDemoSubTopics(isLowScore))
-                .branchGroup(null)
-                .build());
-
-    CustomRoadmapNode anchor = findAnchorCustomNode(customRoadmap, clearedNode.getNodeId());
-
-    recommendationChangeRepository.save(
-        RecommendationChange.builder()
-            .user(user)
-            .roadmapNode(generated)
-            .branchFromNodeId(clearedNode.getNodeId())
-            .targetCustomRoadmapId(targetCustomRoadmapId)
-            .anchorCustomNodeId(anchor == null ? null : anchor.getId())
-            .branchType(isLowScore ? "REVIEW" : "ADVANCED")
-            .reason(frontendRoadmapDemoReason(isLowScore))
-            .contextSummary(frontendRoadmapDemoContextSummary())
-            .nodeChangeType(NodeChangeType.ADD)
-            .build());
-
-    return List.of(generated.getNodeId());
-  }
-
-  private RecommendationChange findExistingFrontendRoadmapDemoChange(
-      Long userId, String title, String legacyTitle, Long targetCustomRoadmapId) {
-    List<RecommendationChange> changes =
-        recommendationChangeRepository.findAllByUserIdAndChangeStatusOrderByCreatedAtDesc(
-            userId, RecommendationChangeStatus.SUGGESTED);
-
-    return changes.stream()
-        .filter(change -> change.getRoadmapNode() != null)
-        .filter(change -> Objects.equals(change.getTargetCustomRoadmapId(), targetCustomRoadmapId))
-        .filter(
-            change ->
-                title.equals(change.getRoadmapNode().getTitle())
-                    || legacyTitle.equals(change.getRoadmapNode().getTitle()))
-        .findFirst()
-        .orElse(null);
-  }
-
-  private void refreshFrontendRoadmapDemoChange(RecommendationChange change, boolean isLowScore) {
-    RoadmapNode node = change.getRoadmapNode();
-    if (node != null) {
-      node.updateAdminInfo(
-          isLowScore ? FRONTEND_ROADMAP_DEMO_REVIEW_TITLE : FRONTEND_ROADMAP_DEMO_ADVANCED_TITLE,
-          frontendRoadmapDemoContent(isLowScore),
-          "BRANCH",
-          null,
-          frontendRoadmapDemoSubTopics(isLowScore),
-          null);
-    }
-    change.updateSuggestionText(
-        frontendRoadmapDemoReason(isLowScore), frontendRoadmapDemoContextSummary());
   }
 
   // roadmap_nodes.title은 varchar(255). Gemini가 긴 제목을 반환해도 insert가 깨지지 않도록 안전하게 자른다.
@@ -665,40 +545,6 @@ public class DiagnosisRecommendationService {
         .filter(node -> originalNodeId.equals(node.getOriginalNode().getNodeId()))
         .findFirst()
         .orElse(null);
-  }
-
-  private void pauseFrontendRoadmapDemoFallback() {
-    try {
-      Thread.sleep(FRONTEND_ROADMAP_DEMO_FALLBACK_DELAY_MILLIS);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      log.warn(
-          "[DiagnosisRecommendationService] Frontend roadmap demo fallback delay interrupted.");
-    }
-  }
-
-  private String frontendRoadmapDemoContent(boolean isLowScore) {
-    if (isLowScore) {
-      return "브라우저 렌더링 흐름에서 DOM, CSSOM, 렌더 트리, 레이아웃, 페인트가 어떻게 이어지는지 다시 점검합니다. 첫 Vite 페이지를 DevTools와 함께 다시 구현하면서 JavaScript DOM 변경이 어떤 화면 갱신을 만드는지 설명해 봅니다.";
-    }
-
-    return "DOM 업데이트, 스타일 재계산, 레이아웃, 페인트 비용을 연결해서 렌더링 성능을 더 깊게 다룹니다. 작은 Vite 인터랙션을 기준으로 불필요한 DOM 쓰기를 줄이기 전후를 DevTools로 비교합니다.";
-  }
-
-  private String frontendRoadmapDemoSubTopics(boolean isLowScore) {
-    return isLowScore ? "DOM,CSSOM,렌더 트리,레이아웃,페인트,Vite" : "DOM,CSSOM,렌더 트리,레이아웃,페인트,DevTools,Vite";
-  }
-
-  private String frontendRoadmapDemoReason(boolean isLowScore) {
-    if (isLowScore) {
-      return "첫 프론트엔드 렌더링 노드에서 보완이 필요한 흐름을 다시 확인하도록 생성된 복습 추천입니다.";
-    }
-
-    return "첫 프론트엔드 렌더링 노드를 안정적으로 완료했기 때문에 렌더링 성능까지 확장하도록 생성된 심화 추천입니다.";
-  }
-
-  private String frontendRoadmapDemoContextSummary() {
-    return "첫 번째 렌더링 학습 결과를 바탕으로 다음 학습 단계가 추천되었습니다.";
   }
 
   public record RecommendationResult(int score, String recommendedNodes) {}

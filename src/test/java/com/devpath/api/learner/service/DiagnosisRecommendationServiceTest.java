@@ -48,6 +48,7 @@ class DiagnosisRecommendationServiceTest {
   @Mock private UserTechStackRepository userTechStackRepository;
   @Mock private ProofCardRepository proofCardRepository;
   @Mock private CourseScoreAnalyzer courseScoreAnalyzer;
+  @Mock private FrontendRoadmapDemoRecommender frontendRoadmapDemoRecommender;
 
   private DiagnosisRecommendationService diagnosisRecommendationService;
 
@@ -65,7 +66,8 @@ class DiagnosisRecommendationServiceTest {
             customRoadmapNodeRepository,
             userTechStackRepository,
             proofCardRepository,
-            courseScoreAnalyzer);
+            courseScoreAnalyzer,
+            frontendRoadmapDemoRecommender);
   }
 
   @Test
