@@ -3,7 +3,7 @@ package com.devpath.api.qna.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.devpath.api.instructor.service.InstructorNotificationService;
+import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.qna.dto.AnswerCreateRequest;
 import com.devpath.api.qna.dto.AnswerResponse;
 import com.devpath.api.qna.dto.QuestionCreateRequest;

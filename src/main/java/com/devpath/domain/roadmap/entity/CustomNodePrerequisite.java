@@ -60,8 +60,8 @@ public class CustomNodePrerequisite {
 
   /**
    * CNF 선행 판정: 선행 조건 그룹({@code groups})마다 최소 1개가 충족되면(=모든 그룹 통과) 통과. 빈 그룹·그룹 없음은 제약 없음으로 통과.
-   * 조회(CustomRoadmapQueryService)·잠금표시(MyRoadmapDto)·클리어(NodeClearanceCommandService) 세 게이트가 공유하는 단일 판정 규칙이다.
-   * {@code satisfied}는 선행 노드 id가 완료(또는 보류)됐는지를 돌려준다.
+   * 조회(CustomRoadmapQueryService)·잠금표시(MyRoadmapDto)·클리어(NodeClearanceCommandService) 세 게이트가 공유하는
+   * 단일 판정 규칙이다. {@code satisfied}는 선행 노드 id가 완료(또는 보류)됐는지를 돌려준다.
    */
   public static boolean prerequisitesMet(
       Collection<? extends Collection<Long>> groups, Predicate<Long> satisfied) {

@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.communication;
 
-import com.devpath.api.instructor.entity.DmMessage;
+import com.devpath.domain.instructor.entity.DmMessage;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

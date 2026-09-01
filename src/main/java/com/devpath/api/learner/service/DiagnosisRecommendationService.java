@@ -2,7 +2,6 @@ package com.devpath.api.learner.service;
 
 import com.devpath.api.learner.component.CourseScoreAnalyzer;
 import com.devpath.api.learner.dto.DiagnosisQuizDto;
-import com.devpath.api.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.domain.learning.entity.recommendation.NodeChangeType;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChange;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChangeStatus;
@@ -16,6 +15,7 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
+import com.devpath.domain.roadmap.service.SystemDynamicRoadmapProvider;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;

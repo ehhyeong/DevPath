@@ -43,6 +43,36 @@ class WorkspaceCodeReviewAiReviewer {
     codeReviewStore.attachAiReview(workspaceId, reviewId, aiReview.reviewId(), selectedFilePath);
   }
 
+  WorkspaceCodeReviewResponse.AiReview getReview(Long reviewId) {
+    AiCodeReviewResponse.Detail review = aiCodeReviewService.getReview(reviewId);
+    return new WorkspaceCodeReviewResponse.AiReview(
+        review.reviewId(),
+        review.requesterId(),
+        review.requesterName(),
+        review.pullRequestId(),
+        review.title(),
+        review.summary(),
+        review.commentCount(),
+        review.providerName(),
+        review.comments().stream().map(this::toWorkspaceComment).toList(),
+        review.createdAt());
+  }
+
+  private WorkspaceCodeReviewResponse.AiComment toWorkspaceComment(
+      AiCodeReviewResponse.CommentDetail comment) {
+    return new WorkspaceCodeReviewResponse.AiComment(
+        comment.commentId(),
+        comment.reviewId(),
+        comment.category(),
+        comment.lineNumber(),
+        comment.title(),
+        comment.message(),
+        comment.suggestion(),
+        comment.status().name(),
+        comment.decidedAt(),
+        comment.createdAt());
+  }
+
   private void createDemoReview(
       Long workspaceId,
       Long reviewId,

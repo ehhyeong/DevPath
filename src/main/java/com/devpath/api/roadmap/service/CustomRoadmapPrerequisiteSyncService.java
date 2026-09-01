@@ -29,18 +29,18 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <ul>
  *   <li><b>레인 모델</b>(노드에 branchKind 존재): 레인=(anchorNodeId, laneKey) 체인. 첫 노드 선행=앵커 커스텀 노드, 나머지=레인 내
- *       직전 노드. 위치 노드(SPINE/BRANCH)의 레인 필드는 수동편집 후 {@code relayoutLanes}가 customSortOrder+구조그룹에서 재도출하고,
- *       앵커 분기(REVIEW/ADVANCED)는 anchorNodeId 원본값을 보존한다.
- *   <li><b>레거시 모델</b>(branchKind 전무): 옛 필드 기반. 척추=직전 척추, 추천 분기=branchFromNodeId 앵커, 위치 분기=effectiveBranchGroup.
- *       복사 로드맵이 레인화(P4)되기 전까지만 사용한다(합류 미지원, AND).
+ *       직전 노드. 위치 노드(SPINE/BRANCH)의 레인 필드는 수동편집 후 {@code relayoutLanes}가 customSortOrder+구조그룹에서
+ *       재도출하고, 앵커 분기(REVIEW/ADVANCED)는 anchorNodeId 원본값을 보존한다.
+ *   <li><b>레거시 모델</b>(branchKind 전무): 옛 필드 기반. 척추=직전 척추, 추천 분기=branchFromNodeId 앵커, 위치
+ *       분기=effectiveBranchGroup. 복사 로드맵이 레인화(P4)되기 전까지만 사용한다(합류 미지원, AND).
  * </ul>
  *
  * <p>분기 두 종류(레인 모델):
  *
  * <ul>
  *   <li><b>유형 A 곁가지</b>(REVIEW/ADVANCED): 앵커 옆 선택 노드. 선행=앵커, 아무도 이 노드를 선행으로 두지 않음(합류 없음).
- *   <li><b>유형 B 갈림길</b>(BRANCH): 앵커에서 병렬 레인 ≥1로 갈라져 <b>다음 척추에서 OR 합류</b>. 다음 척추의 선행 = 각 갈래 끝들의 한 그룹(OR)
- *       → 한 갈래만 완료해도 진행 가능. 앵커→다음척추 직결 엣지는 만들지 않는다.
+ *   <li><b>유형 B 갈림길</b>(BRANCH): 앵커에서 병렬 레인 ≥1로 갈라져 <b>다음 척추에서 OR 합류</b>. 다음 척추의 선행 = 각 갈래 끝들의 한
+ *       그룹(OR) → 한 갈래만 완료해도 진행 가능. 앵커→다음척추 직결 엣지는 만들지 않는다.
  * </ul>
  *
  * <p>선행 판정은 CNF: prereqGroup이 같은 엣지끼리 OR, 다른 그룹끼리 AND. 일반 선형 엣지는 각자 단독 그룹이라 AND와 같다.
@@ -74,8 +74,8 @@ public class CustomRoadmapPrerequisiteSyncService {
   }
 
   /**
-   * 수동편집(이동·분기재배치·삭제) 후 호출한다. 레인 모델 로드맵은 flat(customSortOrder + 구조그룹)에서 레인 필드를 재도출한 뒤
-   * 그래프를 재생성하고, 레거시 로드맵은 기존대로 customSortOrder 기준으로만 재생성한다(TASK-56 P6).
+   * 수동편집(이동·분기재배치·삭제) 후 호출한다. 레인 모델 로드맵은 flat(customSortOrder + 구조그룹)에서 레인 필드를 재도출한 뒤 그래프를 재생성하고,
+   * 레거시 로드맵은 기존대로 customSortOrder 기준으로만 재생성한다(TASK-56 P6).
    */
   @Transactional
   public void relayoutAndRebuild(CustomRoadmap customRoadmap) {
@@ -107,8 +107,8 @@ public class CustomRoadmapPrerequisiteSyncService {
   }
 
   /**
-   * 레인 필드를 권위값으로 삼아 전역 표시순서(customSortOrder)를 레인 트리 DFS preorder로 재부여한 뒤 그래프를 재생성한다.
-   * 레인을 직접 조작하는 편집(lane-aware moveNode)이 호출한다. (relayout과 반대 방향: 레인→순서)
+   * 레인 필드를 권위값으로 삼아 전역 표시순서(customSortOrder)를 레인 트리 DFS preorder로 재부여한 뒤 그래프를 재생성한다. 레인을 직접 조작하는
+   * 편집(lane-aware moveNode)이 호출한다. (relayout과 반대 방향: 레인→순서)
    */
   @Transactional
   public void recomputeOrderAndRebuild(CustomRoadmap customRoadmap) {
@@ -122,7 +122,8 @@ public class CustomRoadmapPrerequisiteSyncService {
       Comparator<CustomRoadmapNode> childOrder =
           Comparator.comparing(
                   CustomRoadmapNode::getOrderInLane, Comparator.nullsLast(Integer::compareTo))
-              .thenComparing(CustomRoadmapNode::getLaneKey, Comparator.nullsLast(Integer::compareTo))
+              .thenComparing(
+                  CustomRoadmapNode::getLaneKey, Comparator.nullsLast(Integer::compareTo))
               .thenComparing(CustomRoadmapNode::getId, Comparator.nullsLast(Long::compareTo));
       int[] counter = {1};
       nodes.stream()
@@ -151,12 +152,11 @@ public class CustomRoadmapPrerequisiteSyncService {
 
   /**
    * 위치 노드(SPINE/구조 BRANCH)에 레인 필드를 일괄 배치한다. {@code orderedPositional}은 표시 순서(customSortOrder)대로 정렬된
-   * 위치 노드들이고, {@code groupOf}는 각 노드의 구조 분기 그룹(null=척추, 1/2=좌·우)을 돌려준다. 척추=직전 척추 앵커, 분기=그룹 시작
-   * 직전 척추 앵커로 잇는다. 빌더 저장과 수동편집 재배치가 공유하는 단일 도출 로직이다(순수 함수).
+   * 위치 노드들이고, {@code groupOf}는 각 노드의 구조 분기 그룹(null=척추, 1/2=좌·우)을 돌려준다. 척추=직전 척추 앵커, 분기=그룹 시작 직전 척추
+   * 앵커로 잇는다. 빌더 저장과 수동편집 재배치가 공유하는 단일 도출 로직이다(순수 함수).
    */
   public static void assignPositionalLanes(
-      List<CustomRoadmapNode> orderedPositional,
-      Function<CustomRoadmapNode, Integer> groupOf) {
+      List<CustomRoadmapNode> orderedPositional, Function<CustomRoadmapNode, Integer> groupOf) {
     CustomRoadmapNode lastSpine = null;
     int spineOrder = 0;
     Map<String, Integer> laneOrderCounters = new HashMap<>();

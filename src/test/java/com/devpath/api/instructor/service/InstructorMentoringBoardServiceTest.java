@@ -8,8 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.devpath.api.instructor.dto.mentoring.InstructorMentoringBoardPayload;
-import com.devpath.api.instructor.entity.InstructorMentoringBoard;
-import com.devpath.api.instructor.repository.InstructorMentoringBoardRepository;
+import com.devpath.domain.instructor.entity.InstructorMentoringBoard;
+import com.devpath.domain.instructor.repository.InstructorMentoringBoardRepository;
 import com.devpath.domain.mentoring.entity.MentoringApplication;
 import com.devpath.domain.mentoring.entity.MentoringApplicationStatus;
 import com.devpath.domain.mentoring.entity.MentoringPost;

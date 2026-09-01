@@ -1,7 +1,7 @@
 package com.devpath.api.refund.dto;
 
-import com.devpath.api.refund.entity.RefundRequest;
-import com.devpath.api.refund.entity.RefundStatus;
+import com.devpath.domain.refund.entity.RefundRequest;
+import com.devpath.domain.refund.entity.RefundStatus;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

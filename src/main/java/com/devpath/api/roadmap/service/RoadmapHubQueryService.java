@@ -1,13 +1,11 @@
 package com.devpath.api.roadmap.service;
 
-import com.devpath.api.admin.dto.roadmaphub.AdminRoadmapHubCatalogResponse;
 import com.devpath.api.roadmap.dto.RoadmapHubCatalogResponse;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapHubItem;
 import com.devpath.domain.roadmap.entity.RoadmapHubSection;
 import com.devpath.domain.roadmap.repository.RoadmapHubItemRepository;
 import com.devpath.domain.roadmap.repository.RoadmapHubSectionRepository;
-import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 로드맵 허브 공개 화면과 관리자 편집기에 필요한 카탈로그 응답을 조립한다.
+// 로드맵 허브 공개 화면과 관리 화면에 필요한 섹션 카탈로그를 조립한다.
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -24,17 +22,13 @@ public class RoadmapHubQueryService {
 
   private final RoadmapHubSectionRepository roadmapHubSectionRepository;
   private final RoadmapHubItemRepository roadmapHubItemRepository;
-  private final RoadmapRepository roadmapRepository;
 
   public RoadmapHubCatalogResponse getPublicCatalog() {
     return RoadmapHubCatalogResponse.builder().sections(loadSectionItems(false)).build();
   }
 
-  public AdminRoadmapHubCatalogResponse getAdminCatalog() {
-    return AdminRoadmapHubCatalogResponse.builder()
-        .sections(loadSectionItems(true))
-        .officialRoadmaps(loadOfficialRoadmapOptions())
-        .build();
+  public RoadmapHubCatalogResponse getManagementCatalog() {
+    return RoadmapHubCatalogResponse.builder().sections(loadSectionItems(true)).build();
   }
 
   private List<RoadmapHubCatalogResponse.SectionItem> loadSectionItems(boolean includeInactive) {
@@ -102,16 +96,5 @@ public class RoadmapHubQueryService {
         .linkedRoadmapId(linkedRoadmap == null ? null : linkedRoadmap.getRoadmapId())
         .linkedRoadmapTitle(linkedRoadmap == null ? null : linkedRoadmap.getTitle())
         .build();
-  }
-
-  private List<AdminRoadmapHubCatalogResponse.OfficialRoadmapOption> loadOfficialRoadmapOptions() {
-    return roadmapRepository.findAllByIsOfficialTrueAndIsDeletedFalseOrderByTitleAsc().stream()
-        .map(
-            roadmap ->
-                AdminRoadmapHubCatalogResponse.OfficialRoadmapOption.builder()
-                    .roadmapId(roadmap.getRoadmapId())
-                    .title(roadmap.getTitle())
-                    .build())
-        .toList();
   }
 }

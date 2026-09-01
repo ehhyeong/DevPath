@@ -1,6 +1,9 @@
 package com.devpath.api.admin.service;
 
+import com.devpath.api.admin.dto.roadmaphub.AdminRoadmapHubCatalogResponse;
 import com.devpath.api.admin.dto.roadmaphub.RoadmapHubCatalogUpdateRequest;
+import com.devpath.api.roadmap.dto.RoadmapHubCatalogResponse;
+import com.devpath.api.roadmap.service.RoadmapHubQueryService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.Roadmap;
@@ -18,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 관리자 허브 편집기에서 보낸 전체 구조를 현재 로드맵 허브 구성으로 교체한다.
+// 관리자 허브 편집기의 조회 응답을 조립하고 전달받은 전체 구조로 구성을 교체한다.
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -31,6 +34,16 @@ public class AdminRoadmapHubService {
   private final RoadmapHubSectionRepository roadmapHubSectionRepository;
   private final RoadmapHubItemRepository roadmapHubItemRepository;
   private final RoadmapRepository roadmapRepository;
+  private final RoadmapHubQueryService roadmapHubQueryService;
+
+  @Transactional(readOnly = true)
+  public AdminRoadmapHubCatalogResponse getCatalog() {
+    RoadmapHubCatalogResponse managementCatalog = roadmapHubQueryService.getManagementCatalog();
+    return AdminRoadmapHubCatalogResponse.builder()
+        .sections(managementCatalog.getSections())
+        .officialRoadmaps(loadOfficialRoadmapOptions())
+        .build();
+  }
 
   public void replaceCatalog(RoadmapHubCatalogUpdateRequest request) {
     List<RoadmapHubCatalogUpdateRequest.SectionRequest> requestedSections =
@@ -67,6 +80,17 @@ public class AdminRoadmapHubService {
 
       saveItems(savedSection, sectionRequest.getItems());
     }
+  }
+
+  private List<AdminRoadmapHubCatalogResponse.OfficialRoadmapOption> loadOfficialRoadmapOptions() {
+    return roadmapRepository.findAllByIsOfficialTrueAndIsDeletedFalseOrderByTitleAsc().stream()
+        .map(
+            roadmap ->
+                AdminRoadmapHubCatalogResponse.OfficialRoadmapOption.builder()
+                    .roadmapId(roadmap.getRoadmapId())
+                    .title(roadmap.getTitle())
+                    .build())
+        .toList();
   }
 
   private void saveItems(

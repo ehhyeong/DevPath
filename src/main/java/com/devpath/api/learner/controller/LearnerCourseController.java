@@ -1,7 +1,7 @@
 package com.devpath.api.learner.controller;
 
-import com.devpath.api.common.dto.CourseDetailResponse;
-import com.devpath.api.common.dto.CourseListItemResponse;
+import com.devpath.api.course.dto.CourseDetailResponse;
+import com.devpath.api.course.dto.CourseListItemResponse;
 import com.devpath.api.learner.service.LearnerCourseService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;

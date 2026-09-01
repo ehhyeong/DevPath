@@ -9,6 +9,7 @@ import com.devpath.domain.roadmap.entity.NodeStatus;
 import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
+import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -46,8 +47,8 @@ public class CustomRoadmapNodeCommandService {
   }
 
   /**
-   * 노드 삭제. 이 노드에 매달린 복습/심화(REVIEW/ADVANCED) 자식은 함께 삭제(cascade)하고, 구조 분기 자식은 relayout이 직전 척추로
-   * 재앵커한다. 선행관계 간선을 함께 정리하고 진행률을 재계산한다.
+   * 노드 삭제. 이 노드에 매달린 복습/심화(REVIEW/ADVANCED) 자식은 함께 삭제(cascade)하고, 구조 분기 자식은 relayout이 직전 척추로 재앵커한다.
+   * 선행관계 간선을 함께 정리하고 진행률을 재계산한다.
    */
   @Transactional
   public void deleteNode(Long userId, Long customRoadmapId, Long customNodeId) {
@@ -56,7 +57,8 @@ public class CustomRoadmapNodeCommandService {
 
     // cascade: 이 노드를 앵커로 매달린 복습/심화 자식 노드를 함께 삭제한다(부모 없으면 의미가 사라짐).
     List<CustomRoadmapNode> reviewChildren =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap)
+        customRoadmapNodeRepository
+            .findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap)
             .stream()
             .filter(
                 n ->
@@ -81,8 +83,8 @@ public class CustomRoadmapNodeCommandService {
   }
 
   /**
-   * 노드를 한 칸 위/아래로 이동한다. 레인 모델 로드맵은 레인 규칙으로 이동한다: 같은 레인(분기 체인) 내에서는 순서변경, 레인 경계에서 더 밀면 그
-   * 층(layer)의 분기가 척추로 이탈한다. 레거시 로드맵은 기존 customSortOrder 스왑. 진행상태는 보존된다.
+   * 노드를 한 칸 위/아래로 이동한다. 레인 모델 로드맵은 레인 규칙으로 이동한다: 같은 레인(분기 체인) 내에서는 순서변경, 레인 경계에서 더 밀면 그 층(layer)의
+   * 분기가 척추로 이탈한다. 레거시 로드맵은 기존 customSortOrder 스왑. 진행상태는 보존된다.
    */
   @Transactional
   public void moveNode(Long userId, Long customRoadmapId, Long customNodeId, boolean up) {
@@ -206,7 +208,8 @@ public class CustomRoadmapNodeCommandService {
     // 더 깊은 층은 마지막 이탈 노드로 재앵커하고 층 번호를 0부터로 당긴다.
     CustomRoadmapNode newAnchor = exitOrdered.get(exitOrdered.size() - 1);
     for (CustomRoadmapNode b : below) {
-      b.assignLane(BranchKind.BRANCH, newAnchor.getId(), b.getLaneKey(), b.getOrderInLane() - (k + 1));
+      b.assignLane(
+          BranchKind.BRANCH, newAnchor.getId(), b.getLaneKey(), b.getOrderInLane() - (k + 1));
     }
   }
 
@@ -239,8 +242,8 @@ public class CustomRoadmapNodeCommandService {
   }
 
   /**
-   * 이동 노드를 앵커 노드 '바로 뒤'(앵커가 null이면 맨 앞)로 옮긴다. AI 순서변경 제안(REORDER) 적용에서 호출한다. 호출 측에서
-   * 소유권/존재를 보장한 엔티티를 넘긴다.
+   * 이동 노드를 앵커 노드 '바로 뒤'(앵커가 null이면 맨 앞)로 옮긴다. AI 순서변경 제안(REORDER) 적용에서 호출한다. 호출 측에서 소유권/존재를 보장한
+   * 엔티티를 넘긴다.
    */
   @Transactional
   public void reorderAfter(
@@ -266,8 +269,8 @@ public class CustomRoadmapNodeCommandService {
   }
 
   /**
-   * 노드의 분기 소속을 변경한다(null=척추, 1=왼쪽, 2=오른쪽). 첫 분기 편집 시 모든 노드의 현재 유효 분기값을 override로 백필해
-   * 기존 분기 구성을 보존한 뒤 편집본으로 전환한다. 변경 후 현재 순서·분기 기준으로 선행관계를 재생성한다.
+   * 노드의 분기 소속을 변경한다(null=척추, 1=왼쪽, 2=오른쪽). 첫 분기 편집 시 모든 노드의 현재 유효 분기값을 override로 백필해 기존 분기 구성을 보존한
+   * 뒤 편집본으로 전환한다. 변경 후 현재 순서·분기 기준으로 선행관계를 재생성한다.
    */
   @Transactional
   public void setNodeBranch(

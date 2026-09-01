@@ -1,10 +1,10 @@
 package com.devpath.api.instructor.service;
 
 import com.devpath.api.instructor.dto.mentoring.InstructorMentoringBoardPayload;
-import com.devpath.api.instructor.entity.InstructorMentoringBoard;
-import com.devpath.api.instructor.repository.InstructorMentoringBoardRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.instructor.entity.InstructorMentoringBoard;
+import com.devpath.domain.instructor.repository.InstructorMentoringBoardRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

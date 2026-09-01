@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.review;
 
-import com.devpath.api.review.entity.ReviewStatus;
+import com.devpath.domain.review.entity.ReviewStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;

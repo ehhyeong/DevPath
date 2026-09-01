@@ -1,11 +1,9 @@
 package com.devpath.api.instructor.service;
 
-import com.devpath.api.common.dto.CourseDetailResponse;
-import com.devpath.api.common.service.CourseDetailMetadataMapper;
+import com.devpath.api.course.dto.CourseDetailResponse;
+import com.devpath.api.course.mapper.CourseDetailMetadataMapper;
 import com.devpath.api.course.service.HlsPlaybackService;
 import com.devpath.api.instructor.dto.course.InstructorCourseListResponse;
-import com.devpath.api.review.entity.Review;
-import com.devpath.api.review.repository.ReviewRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -28,6 +26,8 @@ import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.CourseTargetAudienceRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.qna.repository.QuestionRepository;
+import com.devpath.domain.review.entity.Review;
+import com.devpath.domain.review.repository.ReviewRepository;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;

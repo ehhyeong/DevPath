@@ -46,7 +46,6 @@ class WorkspaceCodeReviewServiceTest {
         new WorkspaceCodeReviewService(
             codeReviewStore,
             workspaceService,
-            aiCodeReviewService,
             new WorkspaceCodeReviewAiReviewer(codeReviewStore, aiCodeReviewService));
   }
 

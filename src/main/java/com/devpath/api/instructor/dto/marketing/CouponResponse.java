@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.marketing;
 
-import com.devpath.api.instructor.entity.Coupon;
+import com.devpath.domain.instructor.entity.Coupon;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

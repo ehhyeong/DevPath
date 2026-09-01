@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.marketing;
 
-import com.devpath.api.instructor.entity.PromotionStatus;
+import com.devpath.domain.instructor.entity.PromotionStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;

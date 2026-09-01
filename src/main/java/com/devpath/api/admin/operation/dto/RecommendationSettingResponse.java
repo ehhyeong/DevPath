@@ -1,6 +1,6 @@
 package com.devpath.api.admin.operation.dto;
 
-import com.devpath.domain.operation.recommendation.RecommendationSetting;
+import com.devpath.domain.operation.recommendation.entity.RecommendationSetting;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.Builder;

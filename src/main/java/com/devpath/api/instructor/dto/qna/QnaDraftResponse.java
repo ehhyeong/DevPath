@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.qna;
 
-import com.devpath.api.instructor.entity.QnaAnswerDraft;
+import com.devpath.domain.instructor.entity.QnaAnswerDraft;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

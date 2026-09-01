@@ -1,12 +1,8 @@
 package com.devpath.api.review.service;
 
-import com.devpath.api.instructor.entity.ReviewReply;
-import com.devpath.api.instructor.repository.ReviewReplyRepository;
-import com.devpath.api.instructor.service.InstructorNotificationService;
+import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.review.dto.ReviewRequest;
 import com.devpath.api.review.dto.ReviewResponse;
-import com.devpath.api.review.entity.Review;
-import com.devpath.api.review.repository.ReviewRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -14,6 +10,10 @@ import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.instructor.entity.ReviewReply;
+import com.devpath.domain.instructor.repository.ReviewReplyRepository;
+import com.devpath.domain.review.entity.Review;
+import com.devpath.domain.review.repository.ReviewRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;

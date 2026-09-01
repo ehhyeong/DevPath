@@ -1,8 +1,8 @@
 package com.devpath.api.admin.service;
 
 import com.devpath.api.admin.dto.dashboard.AdminDashboardOverviewResponse;
-import com.devpath.api.admin.entity.ModerationReportStatus;
-import com.devpath.api.admin.repository.ModerationReportRepository;
+import com.devpath.domain.admin.entity.ModerationReportStatus;
+import com.devpath.domain.admin.repository.ModerationReportRepository;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseStatus;
 import com.devpath.domain.course.entity.CourseTagMap;

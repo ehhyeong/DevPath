@@ -3,7 +3,7 @@ package com.devpath.api.learning.service;
 import com.devpath.api.learning.component.NodeClearanceEvaluator;
 import com.devpath.api.learning.dto.NodeClearanceRequest;
 import com.devpath.api.learning.dto.NodeClearanceResponse;
-import com.devpath.api.proof.service.ProofCardService;
+import com.devpath.api.learning.proof.service.ProofCardService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;

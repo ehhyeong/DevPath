@@ -1,9 +1,7 @@
 package com.devpath.api.learner.service;
 
-import com.devpath.api.instructor.service.InstructorNotificationService;
 import com.devpath.api.learner.dto.CourseEnrollmentDto;
-import com.devpath.api.settlement.entity.Settlement;
-import com.devpath.api.settlement.repository.SettlementRepository;
+import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -11,6 +9,8 @@ import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.settlement.entity.Settlement;
+import com.devpath.domain.settlement.repository.SettlementRepository;
 import com.devpath.domain.system.service.SystemPolicyService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;

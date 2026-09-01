@@ -1,6 +1,6 @@
 package com.devpath.api.report.dto;
 
-import com.devpath.api.admin.entity.ModerationReport;
+import com.devpath.domain.admin.entity.ModerationReport;
 import java.time.LocalDateTime;
 
 public record ReportCreateResponse(

@@ -1,6 +1,6 @@
 package com.devpath.api.review.service;
 
-import com.devpath.api.instructor.service.InstructorNotificationService;
+import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.review.dto.PullRequestReviewRequest;
 import com.devpath.api.review.dto.PullRequestReviewResponse;

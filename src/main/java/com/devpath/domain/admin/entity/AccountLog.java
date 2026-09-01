@@ -1,0 +1,40 @@
+package com.devpath.domain.admin.entity;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+@Entity
+@Table(name = "account_log")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
+@EntityListeners(AuditingEntityListener.class)
+public class AccountLog {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
+  @Column(nullable = false)
+  private Long targetUserId;
+
+  @Column(nullable = false)
+  private Long adminId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private AccountLogType logType;
+
+  @Column(columnDefinition = "TEXT")
+  private String reason;
+
+  @CreatedDate private LocalDateTime processedAt;
+}

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.devpath.api.voice.signaling.service.VoiceSignalingAuthService;
 import com.devpath.common.security.JwtTokenProvider;
 import com.devpath.common.security.TokenRedisService;
 import com.devpath.domain.user.entity.User;

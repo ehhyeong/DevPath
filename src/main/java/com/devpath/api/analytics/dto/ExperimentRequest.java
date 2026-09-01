@@ -1,6 +1,6 @@
 package com.devpath.api.analytics.dto;
 
-import com.devpath.domain.analytics.ExperimentStatus;
+import com.devpath.domain.analytics.entity.ExperimentStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;

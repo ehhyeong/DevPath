@@ -1,6 +1,6 @@
 package com.devpath.api.admin.dto.governance;
 
-import com.devpath.api.admin.entity.CourseReviewHistory;
+import com.devpath.domain.admin.entity.CourseReviewHistory;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

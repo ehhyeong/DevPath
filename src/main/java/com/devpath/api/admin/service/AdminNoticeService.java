@@ -2,10 +2,10 @@ package com.devpath.api.admin.service;
 
 import com.devpath.api.admin.dto.notice.NoticeCreateRequest;
 import com.devpath.api.admin.dto.notice.NoticeResponse;
-import com.devpath.api.notice.entity.Notice;
-import com.devpath.api.notice.repository.NoticeRepository;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.notice.entity.Notice;
+import com.devpath.domain.notice.repository.NoticeRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

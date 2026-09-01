@@ -1,6 +1,6 @@
 package com.devpath.api.admin.dto.notice;
 
-import com.devpath.api.notice.entity.Notice;
+import com.devpath.domain.notice.entity.Notice;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

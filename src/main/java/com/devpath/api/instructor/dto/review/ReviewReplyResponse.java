@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.review;
 
-import com.devpath.api.instructor.entity.ReviewReply;
+import com.devpath.domain.instructor.entity.ReviewReply;
 import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;

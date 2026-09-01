@@ -1,6 +1,6 @@
 package com.devpath.api.instructor.dto.community;
 
-import com.devpath.api.instructor.entity.InstructorComment;
+import com.devpath.domain.instructor.entity.InstructorComment;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
