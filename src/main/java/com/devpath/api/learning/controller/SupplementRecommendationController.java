@@ -3,6 +3,7 @@ package com.devpath.api.learning.controller;
 import com.devpath.api.learning.dto.RecommendationHistoryResponse;
 import com.devpath.api.learning.dto.RiskWarningResponse;
 import com.devpath.api.learning.dto.SupplementRecommendationResponse;
+import com.devpath.api.learning.service.SupplementRecommendationQueryService;
 import com.devpath.api.learning.service.SupplementRecommendationService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.domain.learning.entity.recommendation.RecommendationStatus;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SupplementRecommendationController {
 
   private final SupplementRecommendationService supplementRecommendationService;
+  private final SupplementRecommendationQueryService supplementRecommendationQueryService;
 
   @Operation(summary = "보강 추천 생성", description = "보강 추천 후보를 수동 또는 자동으로 생성합니다.")
   @PostMapping
@@ -47,7 +49,7 @@ public class SupplementRecommendationController {
       @AuthenticationPrincipal Long userId,
       @RequestParam(required = false) RecommendationStatus status) {
     return ResponseEntity.ok(
-        ApiResponse.ok(supplementRecommendationService.getRecommendations(userId, status)));
+        ApiResponse.ok(supplementRecommendationQueryService.getRecommendations(userId, status)));
   }
 
   @Operation(summary = "보강 추천 승인", description = "보강 추천을 승인합니다.")
@@ -77,7 +79,7 @@ public class SupplementRecommendationController {
           @RequestParam(required = false) Long nodeId) {
     return ResponseEntity.ok(
         ApiResponse.ok(
-            supplementRecommendationService.getRecommendationHistories(
+            supplementRecommendationQueryService.getRecommendationHistories(
                 userId, recommendationId, nodeId)));
   }
 
@@ -89,6 +91,7 @@ public class SupplementRecommendationController {
       @RequestParam(required = false) Long nodeId) {
     return ResponseEntity.ok(
         ApiResponse.ok(
-            supplementRecommendationService.getRiskWarnings(userId, unacknowledgedOnly, nodeId)));
+            supplementRecommendationQueryService.getRiskWarnings(
+                userId, unacknowledgedOnly, nodeId)));
   }
 }
