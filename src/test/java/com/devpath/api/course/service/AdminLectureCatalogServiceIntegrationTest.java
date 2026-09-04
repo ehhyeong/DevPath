@@ -1,10 +1,9 @@
-package com.devpath.api.admin.service;
+package com.devpath.api.course.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.devpath.api.admin.dto.catalog.LectureCatalogMenuUpdateRequest;
 import com.devpath.api.course.dto.LectureCatalogMenuResponse;
-import com.devpath.api.course.service.LectureCatalogQueryService;
+import com.devpath.api.course.dto.LectureCatalogMenuUpdateRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

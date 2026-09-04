@@ -1,8 +1,8 @@
-package com.devpath.api.admin.controller;
+package com.devpath.api.course.controller;
 
-import com.devpath.api.admin.dto.catalog.LectureCatalogMenuUpdateRequest;
-import com.devpath.api.admin.service.AdminLectureCatalogService;
 import com.devpath.api.course.dto.LectureCatalogMenuResponse;
+import com.devpath.api.course.dto.LectureCatalogMenuUpdateRequest;
+import com.devpath.api.course.service.AdminLectureCatalogService;
 import com.devpath.api.course.service.LectureCatalogQueryService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;

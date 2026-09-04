@@ -1,6 +1,6 @@
-package com.devpath.api.admin.service;
+package com.devpath.api.course.service;
 
-import com.devpath.api.admin.dto.catalog.LectureCatalogMenuUpdateRequest;
+import com.devpath.api.course.dto.LectureCatalogMenuUpdateRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.LectureCatalogCategory;
