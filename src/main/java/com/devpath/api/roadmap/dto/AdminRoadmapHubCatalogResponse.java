@@ -1,6 +1,5 @@
-package com.devpath.api.admin.dto.roadmaphub;
+package com.devpath.api.roadmap.dto;
 
-import com.devpath.api.roadmap.dto.RoadmapHubCatalogResponse;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;

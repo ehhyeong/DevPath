@@ -1,8 +1,8 @@
-package com.devpath.api.admin.controller;
+package com.devpath.api.roadmap.controller;
 
-import com.devpath.api.admin.dto.roadmaphub.AdminRoadmapHubCatalogResponse;
-import com.devpath.api.admin.dto.roadmaphub.RoadmapHubCatalogUpdateRequest;
-import com.devpath.api.admin.service.AdminRoadmapHubService;
+import com.devpath.api.roadmap.dto.AdminRoadmapHubCatalogResponse;
+import com.devpath.api.roadmap.dto.RoadmapHubCatalogUpdateRequest;
+import com.devpath.api.roadmap.service.AdminRoadmapHubService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

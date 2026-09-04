@@ -1,9 +1,8 @@
-package com.devpath.api.admin.service;
+package com.devpath.api.roadmap.service;
 
-import com.devpath.api.admin.dto.roadmaphub.AdminRoadmapHubCatalogResponse;
-import com.devpath.api.admin.dto.roadmaphub.RoadmapHubCatalogUpdateRequest;
+import com.devpath.api.roadmap.dto.AdminRoadmapHubCatalogResponse;
 import com.devpath.api.roadmap.dto.RoadmapHubCatalogResponse;
-import com.devpath.api.roadmap.service.RoadmapHubQueryService;
+import com.devpath.api.roadmap.dto.RoadmapHubCatalogUpdateRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.Roadmap;

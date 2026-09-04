@@ -1,4 +1,4 @@
-package com.devpath.api.admin.dto.roadmaphub;
+package com.devpath.api.roadmap.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;

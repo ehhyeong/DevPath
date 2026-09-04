@@ -1,7 +1,7 @@
-package com.devpath.api.user.service;
+package com.devpath.api.roadmap.service;
 
-import com.devpath.api.user.dto.RoadmapDto;
-import com.devpath.api.user.dto.RoadmapNodeDto;
+import com.devpath.api.roadmap.dto.RoadmapDto;
+import com.devpath.api.roadmap.dto.RoadmapNodeDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.Roadmap;

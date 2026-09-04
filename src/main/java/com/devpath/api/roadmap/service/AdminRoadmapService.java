@@ -1,6 +1,6 @@
-package com.devpath.api.admin.service;
+package com.devpath.api.roadmap.service;
 
-import com.devpath.api.user.dto.RoadmapDto;
+import com.devpath.api.roadmap.dto.RoadmapDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.Roadmap;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AdminService {
+public class AdminRoadmapService {
 
   private final RoadmapRepository roadmapRepository;
   private final UserRepository userRepository;
