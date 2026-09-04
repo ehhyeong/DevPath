@@ -1,7 +1,7 @@
-package com.devpath.api.learner.controller;
+package com.devpath.api.course.controller;
 
-import com.devpath.api.learner.dto.CourseWishlistDto;
-import com.devpath.api.learner.service.CourseWishlistService;
+import com.devpath.api.course.dto.CourseWishlistDto;
+import com.devpath.api.course.service.CourseWishlistService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

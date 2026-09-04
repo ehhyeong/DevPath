@@ -1,4 +1,4 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.course.service;
 
 import com.devpath.api.course.dto.CourseDetailResponse;
 import com.devpath.domain.course.entity.Lesson;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-class LearnerCourseAssessmentAssembler {
+public class LearnerCourseAssessmentAssembler {
 
   private final AssignmentRepository assignmentRepository;
   private final QuizRepository quizRepository;

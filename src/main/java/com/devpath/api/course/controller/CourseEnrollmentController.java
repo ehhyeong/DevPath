@@ -1,7 +1,7 @@
-package com.devpath.api.learner.controller;
+package com.devpath.api.course.controller;
 
-import com.devpath.api.learner.dto.CourseEnrollmentDto;
-import com.devpath.api.learner.service.CourseEnrollmentService;
+import com.devpath.api.course.dto.CourseEnrollmentDto;
+import com.devpath.api.course.service.CourseEnrollmentService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import io.swagger.v3.oas.annotations.Operation;

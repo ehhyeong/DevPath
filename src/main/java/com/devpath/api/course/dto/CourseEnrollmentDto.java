@@ -1,4 +1,4 @@
-package com.devpath.api.learner.dto;
+package com.devpath.api.course.dto;
 
 import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.EnrollmentStatus;

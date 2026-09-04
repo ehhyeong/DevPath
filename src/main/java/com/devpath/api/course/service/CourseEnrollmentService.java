@@ -1,7 +1,6 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.course.service;
 
-import com.devpath.api.learner.dto.CourseEnrollmentDto;
-import com.devpath.api.notification.service.InstructorNotificationService;
+import com.devpath.api.course.dto.CourseEnrollmentDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
@@ -9,6 +8,7 @@ import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.EnrollmentStatus;
 import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.settlement.entity.Settlement;
 import com.devpath.domain.settlement.repository.SettlementRepository;
 import com.devpath.domain.system.service.SystemPolicyService;
@@ -32,7 +32,7 @@ public class CourseEnrollmentService {
   private final CourseEnrollmentRepository courseEnrollmentRepository;
   private final CourseRepository courseRepository;
   private final UserRepository userRepository;
-  private final InstructorNotificationService instructorNotificationService;
+  private final InstructorNotificationPublisher instructorNotificationPublisher;
   private final SettlementRepository settlementRepository;
   private final SystemPolicyService systemPolicyService;
 
@@ -54,7 +54,7 @@ public class CourseEnrollmentService {
 
     CourseEnrollment saved = courseEnrollmentRepository.save(enrollment);
     createSettlement(userId, course);
-    instructorNotificationService.notifySystem(
+    instructorNotificationPublisher.notifySystem(
         course.getInstructor().getId(), user.getName() + "님이 강좌에 수강 신청했습니다: " + course.getTitle());
     return saved;
   }

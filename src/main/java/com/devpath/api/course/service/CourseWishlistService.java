@@ -1,6 +1,6 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.course.service;
 
-import com.devpath.api.learner.dto.CourseWishlistDto;
+import com.devpath.api.course.dto.CourseWishlistDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
