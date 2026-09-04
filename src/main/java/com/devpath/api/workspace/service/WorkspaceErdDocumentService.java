@@ -7,7 +7,6 @@ import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,7 +17,7 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class WorkspaceErdService {
+public class WorkspaceErdDocumentService {
 
   private static final String EMPTY_SCHEMA_JSON = "{\"tables\":[],\"relationships\":[]}";
   private static final String EMPTY_MERMAID_CODE = "erDiagram\n";
@@ -75,30 +74,7 @@ public class WorkspaceErdService {
     workspaceService.getWorkspaceDashboard(workspaceId, userId);
     ensureDocumentExists(workspaceId, userId);
     ensureVersionExists(findDocumentRow(workspaceId), userId, "Initial ERD snapshot", null);
-
-    return jdbcTemplate.query(
-        """
-        SELECT v.version_id, v.workspace_id, v.version, v.mermaid_code, v.schema_json,
-               v.summary, v.updated_by_id, COALESCE(u.name, 'Unknown') AS updated_by_name,
-               v.discussion_message_id, v.created_at
-          FROM workspace_erd_versions v
-          LEFT JOIN users u ON u.user_id = v.updated_by_id
-         WHERE v.workspace_id = ?
-         ORDER BY v.version DESC
-        """,
-        (rs, rowNum) ->
-            new WorkspaceErdResponse.Version(
-                rs.getLong("version_id"),
-                rs.getLong("workspace_id"),
-                rs.getInt("version"),
-                rs.getString("mermaid_code"),
-                rs.getString("schema_json"),
-                rs.getString("summary"),
-                rs.getLong("updated_by_id"),
-                rs.getString("updated_by_name"),
-                nullableLong(rs.getObject("discussion_message_id")),
-                toLocalDateTime(rs.getTimestamp("created_at"))),
-        workspaceId);
+    return queryVersions(workspaceId);
   }
 
   public List<WorkspaceErdResponse.Version> getRecentChanges(Long workspaceId, Long userId) {
@@ -116,18 +92,7 @@ public class WorkspaceErdService {
          ORDER BY v.created_at DESC
          LIMIT 3
         """,
-        (rs, rowNum) ->
-            new WorkspaceErdResponse.Version(
-                rs.getLong("version_id"),
-                rs.getLong("workspace_id"),
-                rs.getInt("version"),
-                rs.getString("mermaid_code"),
-                rs.getString("schema_json"),
-                rs.getString("summary"),
-                rs.getLong("updated_by_id"),
-                rs.getString("updated_by_name"),
-                nullableLong(rs.getObject("discussion_message_id")),
-                toLocalDateTime(rs.getTimestamp("created_at"))),
+        (rs, rowNum) -> mapVersion(rs),
         workspaceId);
   }
 
@@ -139,101 +104,34 @@ public class WorkspaceErdService {
         .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
   }
 
-  public List<WorkspaceErdResponse.Comment> getComments(
-      Long workspaceId, Long userId, String targetType, String targetId) {
-    workspaceService.getWorkspaceDashboard(workspaceId, userId);
-
-    List<Object> args = new ArrayList<>();
-    args.add(workspaceId);
-
-    StringBuilder sql =
-        new StringBuilder(
-            """
-            SELECT c.comment_id, c.workspace_id, c.target_type, c.target_id, c.target_label,
-                   c.author_id, COALESCE(u.name, 'Unknown') AS author_name, c.body, c.created_at
-              FROM workspace_erd_comments c
-              LEFT JOIN users u ON u.user_id = c.author_id
-             WHERE c.workspace_id = ?
-               AND c.is_deleted = FALSE
-            """);
-
-    if (StringUtils.hasText(targetType)) {
-      sql.append(" AND c.target_type = ?");
-      args.add(targetType.trim().toUpperCase());
-    }
-
-    if (StringUtils.hasText(targetId)) {
-      sql.append(" AND c.target_id = ?");
-      args.add(targetId.trim());
-    }
-
-    sql.append(" ORDER BY c.created_at ASC");
-
+  private List<WorkspaceErdResponse.Version> queryVersions(Long workspaceId) {
     return jdbcTemplate.query(
-        sql.toString(),
-        (rs, rowNum) ->
-            new WorkspaceErdResponse.Comment(
-                rs.getLong("comment_id"),
-                rs.getLong("workspace_id"),
-                rs.getString("target_type"),
-                rs.getString("target_id"),
-                rs.getString("target_label"),
-                rs.getLong("author_id"),
-                rs.getString("author_name"),
-                rs.getString("body"),
-                rs.getLong("author_id") == userId,
-                toLocalDateTime(rs.getTimestamp("created_at"))),
-        args.toArray());
+        """
+        SELECT v.version_id, v.workspace_id, v.version, v.mermaid_code, v.schema_json,
+               v.summary, v.updated_by_id, COALESCE(u.name, 'Unknown') AS updated_by_name,
+               v.discussion_message_id, v.created_at
+          FROM workspace_erd_versions v
+          LEFT JOIN users u ON u.user_id = v.updated_by_id
+         WHERE v.workspace_id = ?
+         ORDER BY v.version DESC
+        """,
+        (rs, rowNum) -> mapVersion(rs),
+        workspaceId);
   }
 
-  @Transactional
-  public WorkspaceErdResponse.Comment createComment(
-      Long workspaceId, Long userId, WorkspaceErdRequest.CommentCreate request) {
-    workspaceService.getWorkspaceDashboard(workspaceId, userId);
-
-    Long commentId =
-        jdbcTemplate.queryForObject(
-            """
-            INSERT INTO workspace_erd_comments (
-                workspace_id, target_type, target_id, target_label, author_id, body,
-                is_deleted, created_at, updated_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, FALSE, now(), now())
-            RETURNING comment_id
-            """,
-            Long.class,
-            workspaceId,
-            request.targetType().trim().toUpperCase(),
-            request.targetId().trim(),
-            defaultText(request.targetLabel(), request.targetId().trim()),
-            userId,
-            request.body().trim());
-
-    return findComment(workspaceId, userId, commentId);
-  }
-
-  @Transactional
-  public void deleteComment(Long workspaceId, Long userId, Long commentId) {
-    workspaceService.getWorkspaceDashboard(workspaceId, userId);
-
-    int updated =
-        jdbcTemplate.update(
-            """
-            UPDATE workspace_erd_comments
-               SET is_deleted = TRUE,
-                   updated_at = now()
-             WHERE workspace_id = ?
-               AND comment_id = ?
-               AND author_id = ?
-               AND is_deleted = FALSE
-            """,
-            workspaceId,
-            commentId,
-            userId);
-
-    if (updated == 0) {
-      throw new CustomException(ErrorCode.UNAUTHORIZED_ACTION);
-    }
+  private WorkspaceErdResponse.Version mapVersion(java.sql.ResultSet resultSet)
+      throws java.sql.SQLException {
+    return new WorkspaceErdResponse.Version(
+        resultSet.getLong("version_id"),
+        resultSet.getLong("workspace_id"),
+        resultSet.getInt("version"),
+        resultSet.getString("mermaid_code"),
+        resultSet.getString("schema_json"),
+        resultSet.getString("summary"),
+        resultSet.getLong("updated_by_id"),
+        resultSet.getString("updated_by_name"),
+        nullableLong(resultSet.getObject("discussion_message_id")),
+        toLocalDateTime(resultSet.getTimestamp("created_at")));
   }
 
   private void ensureDocumentExists(Long workspaceId, Long userId) {
@@ -286,39 +184,6 @@ public class WorkspaceErdService {
         workspaceId);
   }
 
-  private WorkspaceErdResponse.Comment findComment(
-      Long workspaceId, Long viewerId, Long commentId) {
-    List<WorkspaceErdResponse.Comment> comments =
-        jdbcTemplate.query(
-            """
-            SELECT c.comment_id, c.workspace_id, c.target_type, c.target_id, c.target_label,
-                   c.author_id, COALESCE(u.name, 'Unknown') AS author_name, c.body, c.created_at
-              FROM workspace_erd_comments c
-              LEFT JOIN users u ON u.user_id = c.author_id
-             WHERE c.workspace_id = ?
-               AND c.comment_id = ?
-               AND c.is_deleted = FALSE
-            """,
-            (rs, rowNum) ->
-                new WorkspaceErdResponse.Comment(
-                    rs.getLong("comment_id"),
-                    rs.getLong("workspace_id"),
-                    rs.getString("target_type"),
-                    rs.getString("target_id"),
-                    rs.getString("target_label"),
-                    rs.getLong("author_id"),
-                    rs.getString("author_name"),
-                    rs.getString("body"),
-                    rs.getLong("author_id") == viewerId,
-                    toLocalDateTime(rs.getTimestamp("created_at"))),
-            workspaceId,
-            commentId);
-
-    return comments.stream()
-        .findFirst()
-        .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
-  }
-
   private void ensureVersionExists(
       DocumentRow row, Long userId, String summary, Long discussionMessageId) {
     Integer count =
@@ -332,7 +197,6 @@ public class WorkspaceErdService {
             Integer.class,
             row.workspaceId(),
             row.version());
-
     if (count != null && count > 0) {
       return;
     }
