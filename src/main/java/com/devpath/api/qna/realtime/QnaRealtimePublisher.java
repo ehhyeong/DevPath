@@ -1,6 +1,7 @@
 package com.devpath.api.qna.realtime;
 
 import com.devpath.domain.qna.entity.Question;
+import com.devpath.domain.qna.service.QnaAnswerEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -8,7 +9,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @Service
 @RequiredArgsConstructor
-public class QnaRealtimePublisher {
+public class QnaRealtimePublisher implements QnaAnswerEventPublisher {
 
   public static final String TYPE_ANSWER_CREATED = "answer-created";
   public static final String TYPE_ANSWER_UPDATED = "answer-updated";
@@ -16,14 +17,17 @@ public class QnaRealtimePublisher {
 
   private final QnaRealtimeWebSocketHandler webSocketHandler;
 
+  @Override
   public void answerCreated(Question question, Long answerId) {
     publishAfterCommit(question, answerId, TYPE_ANSWER_CREATED);
   }
 
+  @Override
   public void answerUpdated(Question question, Long answerId) {
     publishAfterCommit(question, answerId, TYPE_ANSWER_UPDATED);
   }
 
+  @Override
   public void answerAdopted(Question question, Long answerId) {
     publishAfterCommit(question, answerId, TYPE_ANSWER_ADOPTED);
   }

@@ -6,6 +6,7 @@ import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.notification.entity.LearnerNotification;
 import com.devpath.domain.notification.entity.LearnerNotificationType;
 import com.devpath.domain.notification.repository.LearnerNotificationRepository;
+import com.devpath.domain.notification.service.SystemNotificationSender;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,10 +14,15 @@ import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
-public class NotificationEventService {
+public class NotificationEventService implements SystemNotificationSender {
 
   private final LearnerNotificationRepository learnerNotificationRepository;
   private final NotificationSseService notificationSseService;
+
+  @Override
+  public void sendSystemNotification(Long receiverId, String message) {
+    notifySystem(receiverId, message);
+  }
 
   @Transactional
   public NotificationResponse notifySystem(Long receiverId, String message) {
