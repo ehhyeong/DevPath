@@ -12,21 +12,21 @@ import com.devpath.api.admin.dto.PolicyGovernanceRequests.UpdateSystemPolicy;
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.CourseMappingCandidateItem;
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.MappingCandidatesResponse;
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.SystemPolicyResponse;
-import com.devpath.api.admin.dto.governance.CourseApproveRequest;
 import com.devpath.api.admin.dto.governance.CourseNodeMappingCandidateResponse;
-import com.devpath.api.admin.dto.governance.CourseRejectRequest;
-import com.devpath.api.admin.dto.governance.CourseReviewDetailResponse;
 import com.devpath.api.admin.dto.governance.NodeCompletionRuleRequest;
 import com.devpath.api.admin.dto.governance.NodePrerequisitesRequest;
 import com.devpath.api.admin.dto.governance.NodeRequiredTagsRequest;
 import com.devpath.api.admin.dto.governance.NodeTypeRequest;
-import com.devpath.api.admin.dto.governance.PendingCourseResponse;
 import com.devpath.api.admin.dto.governance.RoadmapNodeUpsertRequest;
 import com.devpath.api.admin.dto.governance.StreamingPolicyUpdateRequest;
 import com.devpath.api.admin.dto.governance.SystemPolicyUpdateRequest;
 import com.devpath.api.admin.dto.governance.TagMergeRequest;
+import com.devpath.api.course.dto.CourseApproveRequest;
+import com.devpath.api.course.dto.CourseRejectRequest;
+import com.devpath.api.course.dto.CourseReviewDetailResponse;
+import com.devpath.api.course.dto.PendingCourseResponse;
+import com.devpath.api.course.service.AdminCourseGovernanceService;
 import com.devpath.api.course.service.HlsPlaybackService;
-import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.admin.entity.CourseReviewHistory;
@@ -43,6 +43,7 @@ import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.roadmap.entity.NodeCompletionRule;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
 import com.devpath.domain.roadmap.entity.Prerequisite;
@@ -86,19 +87,21 @@ import org.springframework.test.util.ReflectionTestUtils;
 @Import({
   AdminCourseGovernanceService.class,
   AdminNodeGovernanceService.class,
-  AdminPolicyAndMappingService.class,
+  AdminCourseNodeMappingService.class,
+  AdminSystemPolicyService.class,
   AdminTagGovernanceService.class,
   SystemPolicyService.class,
   TagValidationService.class
 })
 class AdminGovernanceServiceIntegrationTest {
 
-  @MockitoBean private InstructorNotificationService instructorNotificationService;
+  @MockitoBean private InstructorNotificationPublisher instructorNotificationPublisher;
   @MockitoBean private HlsPlaybackService hlsPlaybackService;
 
   @Autowired private AdminCourseGovernanceService adminCourseGovernanceService;
   @Autowired private AdminNodeGovernanceService adminNodeGovernanceService;
-  @Autowired private AdminPolicyAndMappingService adminPolicyAndMappingService;
+  @Autowired private AdminCourseNodeMappingService adminCourseNodeMappingService;
+  @Autowired private AdminSystemPolicyService adminSystemPolicyService;
   @Autowired private AdminTagGovernanceService adminTagGovernanceService;
   @Autowired private SystemPolicyService systemPolicyService;
 
@@ -410,7 +413,7 @@ class AdminGovernanceServiceIntegrationTest {
     saveRequiredTag(partialNode, oauth2);
     flushAndClear();
 
-    MappingCandidatesResponse response = adminPolicyAndMappingService.getMappingCandidates();
+    MappingCandidatesResponse response = adminCourseNodeMappingService.getMappingCandidates();
 
     CourseMappingCandidateItem courseItem =
         response.getCourses().stream()
@@ -427,7 +430,7 @@ class AdminGovernanceServiceIntegrationTest {
     assertThat(courseItem.getCandidates().get(1).getNodeId()).isEqualTo(partialNode.getNodeId());
     assertThat(courseItem.getCandidates().get(1).getMissingTags()).containsExactly("OAuth2");
 
-    adminPolicyAndMappingService.updateCourseNodeMapping(
+    adminCourseNodeMappingService.updateCourseNodeMapping(
         course.getCourseId(),
         updateNodeMappingRequest(List.of(perfectNode.getNodeId(), partialNode.getNodeId())));
     flushAndClear();
@@ -439,7 +442,7 @@ class AdminGovernanceServiceIntegrationTest {
         .containsExactlyInAnyOrder(perfectNode.getNodeId(), partialNode.getNodeId());
 
     CourseMappingCandidateItem mappedCourseItem =
-        adminPolicyAndMappingService.getMappingCandidates().getCourses().stream()
+        adminCourseNodeMappingService.getMappingCandidates().getCourses().stream()
             .filter(item -> item.getCourseId().equals(course.getCourseId()))
             .findFirst()
             .orElseThrow();
@@ -450,18 +453,18 @@ class AdminGovernanceServiceIntegrationTest {
   @Test
   @DisplayName("시스템 정책과 스트리밍 정책을 조회하고 수정한다")
   void getAndUpdateSystemPolicies() {
-    SystemPolicyResponse defaultResponse = adminPolicyAndMappingService.getSystemPolicies();
+    SystemPolicyResponse defaultResponse = adminSystemPolicyService.getSystemPolicies();
 
     assertThat(defaultResponse.getPlatformFeeRate()).isEqualByComparingTo("15.0");
     assertThat(defaultResponse.getInstructorSettlementRate()).isEqualByComparingTo("85.0");
     assertThat(defaultResponse.getIsHlsEncrypted()).isTrue();
     assertThat(defaultResponse.getMaxConcurrentDevices()).isEqualTo(3);
 
-    adminPolicyAndMappingService.updateSystemPolicies(updateSystemPolicyRequest(20.0, 80.0));
-    adminPolicyAndMappingService.updateStreamingPolicy(updateStreamingPolicyRequest(false, 2));
+    adminSystemPolicyService.updateSystemPolicies(updateSystemPolicyRequest(20.0, 80.0));
+    adminSystemPolicyService.updateStreamingPolicy(updateStreamingPolicyRequest(false, 2));
     flushAndClear();
 
-    SystemPolicyResponse updatedResponse = adminPolicyAndMappingService.getSystemPolicies();
+    SystemPolicyResponse updatedResponse = adminSystemPolicyService.getSystemPolicies();
     assertThat(updatedResponse.getPlatformFeeRate()).isEqualByComparingTo("20.0");
     assertThat(updatedResponse.getInstructorSettlementRate()).isEqualByComparingTo("80.0");
     assertThat(updatedResponse.getIsHlsEncrypted()).isFalse();
@@ -472,14 +475,13 @@ class AdminGovernanceServiceIntegrationTest {
   @Test
   @DisplayName("간소화 정책 API는 환불·가격·스트리밍 설정을 실제 저장한다")
   void updateSimplePoliciesPersistsEveryField() {
-    adminPolicyAndMappingService.updateSystemPoliciesSimple(
-        systemPolicyUpdateRequest(18, 14, 450000L));
-    adminPolicyAndMappingService.updateStreamingPolicySimple(
+    adminSystemPolicyService.updateSystemPoliciesSimple(systemPolicyUpdateRequest(18, 14, 450000L));
+    adminSystemPolicyService.updateStreamingPolicySimple(
         streamingPolicyUpdateRequest(false, "1440p", false));
     flushAndClear();
 
     com.devpath.api.admin.dto.governance.SystemPolicyResponse response =
-        adminPolicyAndMappingService.getSystemPoliciesSimple();
+        adminSystemPolicyService.getSystemPoliciesSimple();
 
     assertThat(response.getPlatformFeeRate()).isEqualTo(18);
     assertThat(response.getRefundPolicyDays()).isEqualTo(14);
@@ -514,7 +516,7 @@ class AdminGovernanceServiceIntegrationTest {
     flushAndClear();
 
     CourseNodeMappingCandidateResponse response =
-        adminPolicyAndMappingService.getMappingCandidatesSimple().stream()
+        adminCourseNodeMappingService.getMappingCandidatesSimple().stream()
             .filter(item -> item.getCourseId().equals(course.getCourseId()))
             .findFirst()
             .orElseThrow();

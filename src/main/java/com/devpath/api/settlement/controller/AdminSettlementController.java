@@ -1,0 +1,74 @@
+package com.devpath.api.settlement.controller;
+
+import com.devpath.api.settlement.dto.SettlementEligibilityResponse;
+import com.devpath.api.settlement.dto.SettlementHoldRequest;
+import com.devpath.api.settlement.dto.SettlementResponse;
+import com.devpath.api.settlement.service.AdminSettlementService;
+import com.devpath.common.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@Tag(name = "관리자 - 정산", description = "관리자 정산 관리 API")
+@RestController
+@RequestMapping("/api/admin/settlements")
+@RequiredArgsConstructor
+public class AdminSettlementController {
+
+  private final AdminSettlementService adminSettlementService;
+
+  @GetMapping
+  public ApiResponse<List<SettlementResponse>> getSettlements() {
+    return ApiResponse.success("정산 목록을 조회했습니다.", adminSettlementService.getSettlements());
+  }
+
+  @GetMapping("/{settlementId}")
+  public ApiResponse<SettlementResponse> getSettlement(@PathVariable Long settlementId) {
+    return ApiResponse.success(
+        "정산 상세를 조회했습니다.", adminSettlementService.getSettlementDetail(settlementId));
+  }
+
+  @Operation(summary = "정산 보류 처리", description = "정산을 보류 상태로 변경합니다.")
+  @PostMapping("/{settlementId}/hold")
+  public ApiResponse<Void> holdSettlement(
+      @PathVariable Long settlementId,
+      @RequestBody @Valid SettlementHoldRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    adminSettlementService.holdSettlement(settlementId, userId, request);
+    return ApiResponse.success("정산이 보류 처리되었습니다.", null);
+  }
+
+  @PostMapping("/{settlementId}/release")
+  public ApiResponse<Void> releaseSettlement(
+      @PathVariable Long settlementId,
+      @RequestBody @Valid SettlementHoldRequest request,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    adminSettlementService.releaseSettlement(settlementId, userId, request);
+    return ApiResponse.success("정산 보류를 해제했습니다.", null);
+  }
+
+  @PostMapping("/{settlementId}/complete")
+  public ApiResponse<Void> completeSettlement(@PathVariable Long settlementId) {
+    adminSettlementService.completeSettlement(settlementId);
+    return ApiResponse.success("정산을 완료했습니다.", null);
+  }
+
+  @Operation(summary = "정산 가능 여부 계산", description = "환불 요청 기준으로 정산 가능 여부를 계산합니다.")
+  @GetMapping("/eligibility")
+  public ApiResponse<SettlementEligibilityResponse> checkEligibility(
+      @Parameter(description = "환불 요청 ID") @RequestParam Long refundRequestId) {
+    return ApiResponse.success(
+        "정산 가능 여부를 조회했습니다.", adminSettlementService.checkEligibility(refundRequestId));
+  }
+}

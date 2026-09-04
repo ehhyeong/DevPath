@@ -1,7 +1,6 @@
 package com.devpath.api.job.service;
 
 import com.devpath.api.job.dto.JobSkillSuggestionDto;
-import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
@@ -11,6 +10,7 @@ import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
+import com.devpath.domain.roadmap.service.CustomRoadmapCopyService;
 import com.devpath.domain.roadmap.service.NodeRequiredTagRegistrar;
 import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import com.devpath.domain.roadmap.service.SystemDynamicRoadmapProvider;

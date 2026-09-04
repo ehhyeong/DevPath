@@ -37,13 +37,13 @@ public class InstructorAnalyticsService {
   private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final QuizAttemptRepository quizAttemptRepository;
   private final SubmissionRepository submissionRepository;
-  private final InstructorCourseQueryService instructorCourseQueryService;
+  private final InstructorCourseListQueryService instructorCourseListQueryService;
   private final InstructorLearningDashboardAssembler learningDashboardAssembler;
   private final InstructorAssessmentDashboardAssembler assessmentDashboardAssembler;
 
   public InstructorAnalyticsDashboardResponse getDashboard(Long instructorId, Long courseId) {
     List<InstructorCourseListResponse> courseOptions =
-        instructorCourseQueryService.getCourseList(instructorId);
+        instructorCourseListQueryService.getCourseList(instructorId);
     Set<Long> availableCourseIds =
         courseOptions.stream()
             .map(InstructorCourseListResponse::courseId)

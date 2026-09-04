@@ -2,7 +2,7 @@ package com.devpath.api.instructor.controller;
 
 import com.devpath.api.instructor.dto.InstructorCourseDto;
 import com.devpath.api.instructor.dto.InstructorMaterialDto;
-import com.devpath.api.instructor.service.InstructorCourseService;
+import com.devpath.api.instructor.service.InstructorCourseMetadataService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,7 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/instructor")
 public class InstructorCourseMetadataController {
 
-  private final InstructorCourseService instructorCourseService;
+  private final InstructorCourseMetadataService instructorCourseMetadataService;
 
   @Operation(summary = "Update course metadata")
   @PatchMapping("/courses/{courseId}/metadata")
@@ -36,7 +36,7 @@ public class InstructorCourseMetadataController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorCourseDto.UpdateMetadataRequest request) {
-    instructorCourseService.updateCourseMetadata(userId, courseId, request);
+    instructorCourseMetadataService.updateCourseMetadata(userId, courseId, request);
     return ApiResponse.success("Course metadata updated.", null);
   }
 
@@ -46,7 +46,7 @@ public class InstructorCourseMetadataController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorCourseDto.ReplaceObjectivesRequest request) {
-    instructorCourseService.replaceObjectives(userId, courseId, request);
+    instructorCourseMetadataService.replaceObjectives(userId, courseId, request);
     return ApiResponse.success("Course objectives saved.", null);
   }
 
@@ -56,7 +56,7 @@ public class InstructorCourseMetadataController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorCourseDto.ReplaceTargetAudiencesRequest request) {
-    instructorCourseService.replaceTargetAudiences(userId, courseId, request);
+    instructorCourseMetadataService.replaceTargetAudiences(userId, courseId, request);
     return ApiResponse.success("Course target audiences saved.", null);
   }
 
@@ -66,7 +66,7 @@ public class InstructorCourseMetadataController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorCourseDto.ReplaceInfoSectionsRequest request) {
-    instructorCourseService.replaceInfoSections(userId, courseId, request);
+    instructorCourseMetadataService.replaceInfoSections(userId, courseId, request);
     return ApiResponse.success("Course info sections saved.", null);
   }
 
@@ -76,7 +76,7 @@ public class InstructorCourseMetadataController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long lessonId,
       @Valid @RequestBody InstructorMaterialDto.CreateMaterialRequest request) {
-    Long materialId = instructorCourseService.createMaterial(userId, lessonId, request);
+    Long materialId = instructorCourseMetadataService.createMaterial(userId, lessonId, request);
     return ApiResponse.success("Lesson material created.", materialId);
   }
 
@@ -87,7 +87,7 @@ public class InstructorCourseMetadataController {
       @RequestParam("file") MultipartFile file,
       @RequestParam(value = "assetType", required = false) String assetType) {
     InstructorCourseDto.UploadedAssetResponse response =
-        instructorCourseService.uploadCourseAsset(userId, file, assetType);
+        instructorCourseMetadataService.uploadCourseAsset(userId, file, assetType);
     return ApiResponse.success("Course asset uploaded.", response);
   }
 
@@ -97,7 +97,7 @@ public class InstructorCourseMetadataController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorCourseDto.UploadThumbnailRequest request) {
-    instructorCourseService.uploadThumbnail(userId, courseId, request);
+    instructorCourseMetadataService.uploadThumbnail(userId, courseId, request);
     return ApiResponse.success("Course thumbnail saved.", null);
   }
 
@@ -107,7 +107,7 @@ public class InstructorCourseMetadataController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorCourseDto.UploadTrailerRequest request) {
-    instructorCourseService.uploadTrailer(userId, courseId, request);
+    instructorCourseMetadataService.uploadTrailer(userId, courseId, request);
     return ApiResponse.success("Course trailer saved.", null);
   }
 }

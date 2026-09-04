@@ -1,7 +1,7 @@
 package com.devpath.api.instructor.service;
 
-import com.devpath.api.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.api.instructor.dto.analytics.InstructorAnalyticsDashboardResponse;
+import com.devpath.domain.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.domain.learning.entity.QuizAttempt;
 import com.devpath.domain.learning.entity.Submission;
 import com.devpath.domain.learning.entity.SubmissionStatus;

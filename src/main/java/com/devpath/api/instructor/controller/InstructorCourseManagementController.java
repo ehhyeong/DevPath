@@ -3,7 +3,8 @@ package com.devpath.api.instructor.controller;
 import com.devpath.api.course.dto.CourseDetailResponse;
 import com.devpath.api.instructor.dto.InstructorCourseDto;
 import com.devpath.api.instructor.dto.course.InstructorCourseListResponse;
-import com.devpath.api.instructor.service.InstructorCourseQueryService;
+import com.devpath.api.instructor.service.InstructorCourseDetailQueryService;
+import com.devpath.api.instructor.service.InstructorCourseListQueryService;
 import com.devpath.api.instructor.service.InstructorCourseService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class InstructorCourseManagementController {
 
   private final InstructorCourseService instructorCourseService;
-  private final InstructorCourseQueryService instructorCourseQueryService;
+  private final InstructorCourseListQueryService instructorCourseListQueryService;
+  private final InstructorCourseDetailQueryService instructorCourseDetailQueryService;
 
   @Operation(summary = "강의 생성")
   @PostMapping("/courses")
@@ -46,14 +48,15 @@ public class InstructorCourseManagementController {
   public ApiResponse<List<InstructorCourseListResponse>> getCourses(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.success(
-        "Instructor courses loaded.", instructorCourseQueryService.getCourseList(userId));
+        "Instructor courses loaded.", instructorCourseListQueryService.getCourseList(userId));
   }
 
   @Operation(summary = "강의 상세 조회")
   @GetMapping("/courses/{courseId}")
   public ApiResponse<CourseDetailResponse> getCourseDetail(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long courseId) {
-    CourseDetailResponse response = instructorCourseQueryService.getCourseDetail(userId, courseId);
+    CourseDetailResponse response =
+        instructorCourseDetailQueryService.getCourseDetail(userId, courseId);
     return ApiResponse.success("Course detail loaded.", response);
   }
 

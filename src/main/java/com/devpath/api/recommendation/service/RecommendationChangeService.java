@@ -1,8 +1,5 @@
 package com.devpath.api.recommendation.service;
 
-import com.devpath.api.learning.service.SupplementRecommendationService;
-import com.devpath.api.learning.service.TilService;
-import com.devpath.api.learning.service.WeaknessAnalysisService;
 import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.recommendation.dto.RecommendationChangeRequest;
 import com.devpath.api.recommendation.dto.RecommendationChangeResponse;
@@ -17,6 +14,8 @@ import com.devpath.domain.learning.repository.recommendation.RecommendationChang
 import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
 import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
+import com.devpath.domain.learning.service.RecommendationChangeSignalReader;
+import com.devpath.domain.learning.service.SupplementRecommendationLifecycleService;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
@@ -39,11 +38,10 @@ public class RecommendationChangeService {
   private final RoadmapRepository roadmapRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
   private final LearningAutomationPolicyService learningAutomationPolicyService;
-  private final SupplementRecommendationService supplementRecommendationService;
+  private final RecommendationChangeSignalReader signalReader;
+  private final SupplementRecommendationLifecycleService supplementRecommendationLifecycleService;
   private final RecommendationHistoryService recommendationHistoryService;
   private final RiskWarningService riskWarningService;
-  private final WeaknessAnalysisService weaknessAnalysisService;
-  private final TilService tilService;
   private final NodeRequiredTagRegistrar nodeRequiredTagRegistrar;
   private final NotificationEventService notificationEventService;
   private final RecommendationChangeRoadmapEditor roadmapEditor;
@@ -80,19 +78,14 @@ public class RecommendationChangeService {
     }
 
     int limit = resolveSuggestionLimit(request.getLimit());
-    long tilSignalCount = tilService.getTilSignalCountForRecommendationChange(userId);
-    boolean weaknessSignal =
-        weaknessAnalysisService.hasLatestAnalysisSignalForRecommendationChange(userId);
+    RecommendationChangeSignalReader.Signals signals =
+        signalReader.read(userId, request.getRoadmapId());
     long riskWarningCount =
         riskWarningService.getUnacknowledgedWarningCountForRecommendationChange(userId);
     long recommendationHistoryCount =
         recommendationHistoryService.getRecentHistoryCountForRecommendationChange(userId);
 
-    List<SupplementRecommendation> supplementRecommendations =
-        supplementRecommendationService.getPendingRecommendationsForRecommendationChange(
-            userId, request.getRoadmapId());
-
-    return supplementRecommendations.stream()
+    return signals.pendingRecommendations().stream()
         .limit(limit)
         .map(
             supplementRecommendation ->
@@ -101,8 +94,8 @@ public class RecommendationChangeService {
                     supplementRecommendation,
                     buildReason(supplementRecommendation),
                     buildContextSummary(
-                        tilSignalCount,
-                        weaknessSignal,
+                        signals.tilCount(),
+                        signals.hasWeaknessAnalysis(),
                         riskWarningCount,
                         recommendationHistoryCount)))
         .map(this::toDetail)
@@ -149,7 +142,7 @@ public class RecommendationChangeService {
     }
 
     if (recommendationChange.getSourceRecommendationId() != null) {
-      supplementRecommendationService.approveRecommendation(
+      supplementRecommendationLifecycleService.approve(
           userId, recommendationChange.getSourceRecommendationId());
     }
 
@@ -176,7 +169,7 @@ public class RecommendationChangeService {
     recommendationChange.ignore();
 
     if (recommendationChange.getSourceRecommendationId() != null) {
-      supplementRecommendationService.rejectRecommendation(
+      supplementRecommendationLifecycleService.reject(
           userId, recommendationChange.getSourceRecommendationId());
     }
 

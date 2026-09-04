@@ -1,0 +1,38 @@
+package com.devpath.api.settlement.controller;
+
+import com.devpath.api.settlement.dto.RevenueResponse;
+import com.devpath.api.settlement.dto.SettlementResponse;
+import com.devpath.api.settlement.service.InstructorRevenueService;
+import com.devpath.common.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Tag(name = "강사 - 수익/정산", description = "강사 수익/정산 API")
+@RestController
+@RequestMapping("/api/instructor/revenues")
+@RequiredArgsConstructor
+public class InstructorRevenueController {
+
+  private final InstructorRevenueService instructorRevenueService;
+
+  @Operation(summary = "수익 현황 조회", description = "총수익, 월간수익, 최근 거래를 조회합니다.")
+  @GetMapping
+  public ApiResponse<RevenueResponse> getRevenue(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success("수익 현황을 조회했습니다.", instructorRevenueService.getRevenue(userId));
+  }
+
+  @Operation(summary = "정산 현황 조회", description = "강사 정산 목록을 최신순으로 조회합니다.")
+  @GetMapping("/settlements")
+  public ApiResponse<List<SettlementResponse>> getSettlements(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+    return ApiResponse.success("정산 현황을 조회했습니다.", instructorRevenueService.getSettlements(userId));
+  }
+}

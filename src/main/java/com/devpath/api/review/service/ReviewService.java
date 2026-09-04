@@ -1,6 +1,5 @@
 package com.devpath.api.review.service;
 
-import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.review.dto.ReviewRequest;
 import com.devpath.api.review.dto.ReviewResponse;
 import com.devpath.common.exception.CustomException;
@@ -12,6 +11,7 @@ import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.instructor.entity.ReviewReply;
 import com.devpath.domain.instructor.repository.ReviewReplyRepository;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.review.entity.Review;
 import com.devpath.domain.review.repository.ReviewRepository;
 import java.util.List;
@@ -31,7 +31,7 @@ public class ReviewService {
   private final ReviewReplyRepository reviewReplyRepository;
   private final CourseRepository courseRepository;
   private final CourseEnrollmentRepository courseEnrollmentRepository;
-  private final InstructorNotificationService instructorNotificationService;
+  private final InstructorNotificationPublisher instructorNotificationPublisher;
 
   public ReviewResponse createReview(ReviewRequest request, Long learnerId) {
     Course course =
@@ -63,7 +63,7 @@ public class ReviewService {
 
     Review saved = reviewRepository.save(review);
 
-    instructorNotificationService.notifyReview(course.getInstructorId(), course.getTitle());
+    instructorNotificationPublisher.notifyReview(course.getInstructorId(), course.getTitle());
 
     return ReviewResponse.from(saved, null);
   }

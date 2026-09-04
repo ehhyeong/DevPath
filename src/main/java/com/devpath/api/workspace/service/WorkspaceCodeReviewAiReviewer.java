@@ -1,12 +1,10 @@
 package com.devpath.api.workspace.service;
 
-import com.devpath.api.ai.dto.AiCodeReviewRequest;
-import com.devpath.api.ai.dto.AiCodeReviewResponse;
-import com.devpath.api.ai.service.AiCodeReviewService;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewRequest;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.ai.service.CodeReviewAssistant;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +16,7 @@ import org.springframework.util.StringUtils;
 class WorkspaceCodeReviewAiReviewer {
 
   private final WorkspaceCodeReviewStore codeReviewStore;
-  private final AiCodeReviewService aiCodeReviewService;
+  private final CodeReviewAssistant codeReviewAssistant;
 
   void createReview(
       Long workspaceId,
@@ -35,16 +33,16 @@ class WorkspaceCodeReviewAiReviewer {
       return;
     }
 
-    AiCodeReviewResponse.Detail aiReview =
-        aiCodeReviewService.createReview(
+    CodeReviewAssistant.Review aiReview =
+        codeReviewAssistant.createReview(
             userId,
-            new AiCodeReviewRequest.Create(
-                null, null, "AI 시니어 멘토 리뷰 - " + row.summary().title(), reviewDiff));
+            new CodeReviewAssistant.Request(
+                null, "AI 시니어 멘토 리뷰 - " + row.summary().title(), reviewDiff));
     codeReviewStore.attachAiReview(workspaceId, reviewId, aiReview.reviewId(), selectedFilePath);
   }
 
   WorkspaceCodeReviewResponse.AiReview getReview(Long reviewId) {
-    AiCodeReviewResponse.Detail review = aiCodeReviewService.getReview(reviewId);
+    CodeReviewAssistant.Review review = codeReviewAssistant.getReviewResult(reviewId);
     return new WorkspaceCodeReviewResponse.AiReview(
         review.reviewId(),
         review.requesterId(),
@@ -59,7 +57,7 @@ class WorkspaceCodeReviewAiReviewer {
   }
 
   private WorkspaceCodeReviewResponse.AiComment toWorkspaceComment(
-      AiCodeReviewResponse.CommentDetail comment) {
+      CodeReviewAssistant.Comment comment) {
     return new WorkspaceCodeReviewResponse.AiComment(
         comment.commentId(),
         comment.reviewId(),

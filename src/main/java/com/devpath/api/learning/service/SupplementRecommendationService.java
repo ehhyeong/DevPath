@@ -1,7 +1,5 @@
 package com.devpath.api.learning.service;
 
-import com.devpath.api.learning.dto.RecommendationHistoryResponse;
-import com.devpath.api.learning.dto.RiskWarningResponse;
 import com.devpath.api.learning.dto.SupplementRecommendationResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -9,7 +7,6 @@ import com.devpath.domain.course.entity.CourseNodeMapping;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.learning.entity.LessonProgress;
-import com.devpath.domain.learning.entity.recommendation.RecommendationHistory;
 import com.devpath.domain.learning.entity.recommendation.RecommendationStatus;
 import com.devpath.domain.learning.entity.recommendation.RiskWarning;
 import com.devpath.domain.learning.entity.recommendation.SupplementRecommendation;
@@ -17,11 +14,11 @@ import com.devpath.domain.learning.repository.LessonProgressRepository;
 import com.devpath.domain.learning.repository.TilDraftRepository;
 import com.devpath.domain.learning.repository.TimestampNoteRepository;
 import com.devpath.domain.learning.repository.ocr.OcrResultRepository;
-import com.devpath.domain.learning.repository.recommendation.RecommendationHistoryRepository;
 import com.devpath.domain.learning.repository.recommendation.RiskWarningRepository;
 import com.devpath.domain.learning.repository.recommendation.SupplementRecommendationRepository;
 import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import com.devpath.domain.learning.service.LearningAutomationRuleCatalog;
+import com.devpath.domain.learning.service.SupplementRecommendationLifecycleService;
 import com.devpath.domain.operation.recommendation.RecommendationAlgorithmPolicy;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
@@ -44,7 +41,6 @@ public class SupplementRecommendationService {
 
   private final SupplementRecommendationRepository supplementRecommendationRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
-  private final RecommendationHistoryRepository recommendationHistoryRepository;
   private final RiskWarningRepository riskWarningRepository;
   private final UserRepository userRepository;
   private final SupplementRecommendationMetrics recommendationMetrics;
@@ -56,6 +52,7 @@ public class SupplementRecommendationService {
   private final OcrResultRepository ocrResultRepository;
   private final LearningAutomationPolicyService learningAutomationPolicyService;
   private final RecommendationAlgorithmPolicy recommendationAlgorithmPolicy;
+  private final SupplementRecommendationLifecycleService recommendationLifecycleService;
 
   @Transactional
   public SupplementRecommendationResponse createRecommendation(
@@ -80,153 +77,22 @@ public class SupplementRecommendationService {
             .build();
 
     SupplementRecommendation saved = supplementRecommendationRepository.save(recommendation);
-    saveHistory(user, saved, null, saved.getStatus(), "CREATED", saved.getReason());
+    recommendationLifecycleService.recordCreated(saved);
     createRiskWarningIfNeeded(user, candidate.node(), candidate.metrics());
     return SupplementRecommendationResponse.from(saved);
-  }
-
-  @Transactional(readOnly = true)
-  public List<SupplementRecommendationResponse> getRecommendations(
-      Long userId, RecommendationStatus status) {
-    List<SupplementRecommendation> recommendations;
-
-    if (status != null) {
-      recommendations =
-          supplementRecommendationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
-              .filter(recommendation -> recommendation.getStatus() == status)
-              .collect(Collectors.toList());
-    } else {
-      recommendations =
-          supplementRecommendationRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
-    }
-
-    var stream = recommendations.stream();
-    if ("MISSING_TAG_COUNT_DESC"
-        .equals(
-            learningAutomationPolicyService.getValue(
-                LearningAutomationRuleCatalog.SUPPLEMENT_RECOMMENDATION_PRIORITY,
-                "MISSING_TAG_COUNT_DESC"))) {
-      stream =
-          stream.sorted(
-              Comparator.comparing(
-                      SupplementRecommendation::getMissingTagCount,
-                      Comparator.nullsLast(Comparator.reverseOrder()))
-                  .thenComparing(
-                      SupplementRecommendation::getCoveragePercent,
-                      Comparator.nullsLast(Comparator.naturalOrder()))
-                  .thenComparing(
-                      SupplementRecommendation::getCreatedAt,
-                      Comparator.nullsLast(Comparator.reverseOrder())));
-    }
-    return stream.map(SupplementRecommendationResponse::from).collect(Collectors.toList());
-  }
-
-  @Transactional(readOnly = true)
-  public List<SupplementRecommendationResponse> getRecommendationsForHistory(Long userId) {
-    return getRecommendations(userId, null);
-  }
-
-  @Transactional(readOnly = true)
-  public List<SupplementRecommendation> getPendingRecommendationsForRecommendationChange(
-      Long userId, Long roadmapId) {
-    if (roadmapId == null) {
-      return supplementRecommendationRepository.findAllByUserIdAndStatusOrderByCreatedAtDesc(
-          userId, RecommendationStatus.PENDING);
-    }
-
-    return supplementRecommendationRepository
-        .findAllByUserIdAndRoadmapNodeRoadmapRoadmapIdAndStatusOrderByCreatedAtDesc(
-            userId, roadmapId, RecommendationStatus.PENDING);
-  }
-
-  // 한글 주석: 승인 시 before/after 상태를 recommendation_histories에 함께 남겨 이력 조회에서 바로 쓸 수 있게 한다.
-  @Transactional(readOnly = true)
-  public List<RecommendationHistoryResponse> getRecommendationHistories(
-      Long userId, Long recommendationId, Long nodeId) {
-    validateUser(userId);
-
-    List<RecommendationHistory> histories;
-    if (recommendationId != null) {
-      histories =
-          recommendationHistoryRepository.findAllByUserIdAndRecommendationIdOrderByCreatedAtDesc(
-              userId, recommendationId);
-    } else if (nodeId != null) {
-      histories =
-          recommendationHistoryRepository.findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(
-              userId, nodeId);
-    } else {
-      histories = recommendationHistoryRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
-    }
-
-    return histories.stream().map(RecommendationHistoryResponse::from).toList();
-  }
-
-  @Transactional(readOnly = true)
-  public List<RiskWarningResponse> getRiskWarnings(
-      Long userId, Boolean unacknowledgedOnly, Long nodeId) {
-    validateUser(userId);
-
-    List<RiskWarning> warnings;
-    if (nodeId != null) {
-      warnings =
-          riskWarningRepository.findAllByUserIdAndRoadmapNodeNodeIdOrderByCreatedAtDesc(
-              userId, nodeId);
-    } else if (Boolean.TRUE.equals(unacknowledgedOnly)) {
-      warnings =
-          riskWarningRepository.findAllByUserIdAndIsAcknowledgedFalseOrderByCreatedAtDesc(userId);
-    } else {
-      warnings = riskWarningRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
-    }
-
-    return warnings.stream().map(RiskWarningResponse::from).toList();
   }
 
   @Transactional
   public SupplementRecommendationResponse approveRecommendation(
       Long userId, Long recommendationId) {
-    SupplementRecommendation recommendation =
-        supplementRecommendationRepository
-            .findById(recommendationId)
-            .orElseThrow(() -> new CustomException(ErrorCode.SUPPLEMENT_RECOMMENDATION_NOT_FOUND));
-
-    if (!recommendation.getUser().getId().equals(userId)) {
-      throw new CustomException(ErrorCode.FORBIDDEN);
-    }
-
-    RecommendationStatus beforeStatus = recommendation.getStatus();
-    recommendation.approve();
-    saveHistory(
-        recommendation.getUser(),
-        recommendation,
-        beforeStatus,
-        recommendation.getStatus(),
-        "APPROVED",
-        recommendation.getReason());
-    return SupplementRecommendationResponse.from(recommendation);
+    return SupplementRecommendationResponse.from(
+        recommendationLifecycleService.approve(userId, recommendationId));
   }
 
-  // 한글 주석: 거절도 승인과 동일한 형식으로 저장해 추천 상태 변경 흐름을 완결한다.
   @Transactional
   public SupplementRecommendationResponse rejectRecommendation(Long userId, Long recommendationId) {
-    SupplementRecommendation recommendation =
-        supplementRecommendationRepository
-            .findById(recommendationId)
-            .orElseThrow(() -> new CustomException(ErrorCode.SUPPLEMENT_RECOMMENDATION_NOT_FOUND));
-
-    if (!recommendation.getUser().getId().equals(userId)) {
-      throw new CustomException(ErrorCode.FORBIDDEN);
-    }
-
-    RecommendationStatus beforeStatus = recommendation.getStatus();
-    recommendation.reject();
-    saveHistory(
-        recommendation.getUser(),
-        recommendation,
-        beforeStatus,
-        recommendation.getStatus(),
-        "REJECTED",
-        recommendation.getReason());
-    return SupplementRecommendationResponse.from(recommendation);
+    return SupplementRecommendationResponse.from(
+        recommendationLifecycleService.reject(userId, recommendationId));
   }
 
   private ResolvedCandidate resolveCandidate(Long userId, Long nodeId) {
@@ -434,25 +300,6 @@ public class SupplementRecommendationService {
   private ResolvedCandidate pickHigherScoreCandidate(
       ResolvedCandidate left, ResolvedCandidate right) {
     return left.score() >= right.score() ? left : right;
-  }
-
-  private void saveHistory(
-      User user,
-      SupplementRecommendation recommendation,
-      RecommendationStatus beforeStatus,
-      RecommendationStatus afterStatus,
-      String actionType,
-      String context) {
-    recommendationHistoryRepository.save(
-        RecommendationHistory.builder()
-            .user(user)
-            .recommendationId(recommendation.getId())
-            .roadmapNode(recommendation.getRoadmapNode())
-            .beforeStatus(beforeStatus == null ? null : beforeStatus.name())
-            .afterStatus(afterStatus == null ? null : afterStatus.name())
-            .actionType(actionType)
-            .context(context)
-            .build());
   }
 
   private void createRiskWarningIfNeeded(

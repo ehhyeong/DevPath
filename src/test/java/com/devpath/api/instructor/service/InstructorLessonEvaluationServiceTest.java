@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.devpath.api.evaluation.service.AiQuizDraftService;
 import com.devpath.api.instructor.dto.InstructorLessonEvaluationDto;
 import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
@@ -13,6 +12,7 @@ import com.devpath.domain.learning.entity.Assignment;
 import com.devpath.domain.learning.entity.Quiz;
 import com.devpath.domain.learning.repository.AssignmentRepository;
 import com.devpath.domain.learning.repository.QuizRepository;
+import com.devpath.domain.learning.service.QuizDraftGenerator;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
@@ -36,7 +36,7 @@ class InstructorLessonEvaluationServiceTest {
   @Mock private CourseNodeMappingRepository courseNodeMappingRepository;
   @Mock private QuizRepository quizRepository;
   @Mock private AssignmentRepository assignmentRepository;
-  @Mock private AiQuizDraftService aiQuizDraftService;
+  @Mock private QuizDraftGenerator quizDraftGenerator;
 
   private InstructorLessonEvaluationService evaluationService;
 
@@ -49,7 +49,8 @@ class InstructorLessonEvaluationServiceTest {
             roadmapRepository,
             roadmapNodeRepository,
             courseNodeMappingRepository,
-            new InstructorQuizEditor(quizRepository, aiQuizDraftService),
+            new InstructorQuizEditor(quizRepository),
+            new InstructorQuizDraftGenerator(quizRepository, quizDraftGenerator),
             new InstructorAssignmentEditor(assignmentRepository));
   }
 

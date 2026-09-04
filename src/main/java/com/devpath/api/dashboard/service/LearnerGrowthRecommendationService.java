@@ -2,7 +2,6 @@ package com.devpath.api.dashboard.service;
 
 import com.devpath.api.dashboard.dto.DashboardGrowthRecommendationResponse;
 import com.devpath.api.dashboard.dto.DashboardGrowthRecommendationResponse.RecommendationItem;
-import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.learning.entity.clearance.ClearanceStatus;
@@ -17,6 +16,7 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
+import com.devpath.domain.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;

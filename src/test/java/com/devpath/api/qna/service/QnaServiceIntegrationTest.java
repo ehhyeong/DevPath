@@ -3,7 +3,6 @@ package com.devpath.api.qna.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.qna.dto.AnswerCreateRequest;
 import com.devpath.api.qna.dto.AnswerResponse;
 import com.devpath.api.qna.dto.QuestionCreateRequest;
@@ -11,6 +10,7 @@ import com.devpath.api.qna.dto.QuestionDetailResponse;
 import com.devpath.api.qna.realtime.QnaRealtimePublisher;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.qna.entity.Answer;
 import com.devpath.domain.qna.entity.Question;
 import com.devpath.domain.qna.entity.QuestionDifficulty;
@@ -39,14 +39,16 @@ import org.springframework.test.util.ReflectionTestUtils;
       "spring.jpa.defer-datasource-initialization=false"
     })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-@Import(QnaService.class)
+@Import({QnaQuestionService.class, QnaAnswerService.class})
 class QnaServiceIntegrationTest {
 
-  @Autowired private QnaService qnaService;
+  @Autowired private QnaQuestionService qnaQuestionService;
+
+  @Autowired private QnaAnswerService qnaAnswerService;
 
   @MockitoBean private QnaRealtimePublisher qnaRealtimePublisher;
 
-  @MockitoBean private InstructorNotificationService instructorNotificationService;
+  @MockitoBean private InstructorNotificationPublisher instructorNotificationPublisher;
 
   @Autowired private UserRepository userRepository;
 
@@ -71,7 +73,7 @@ class QnaServiceIntegrationTest {
             "Spring Boot에서 JWT 필터가 두 번 실행됩니다.",
             "OncePerRequestFilter인데 로그가 두 번 찍힙니다.");
 
-    QuestionDetailResponse response = qnaService.createQuestion(author.getId(), request);
+    QuestionDetailResponse response = qnaQuestionService.createQuestion(author.getId(), request);
     flushAndClear();
 
     Question savedQuestion = questionRepository.findById(response.getId()).orElseThrow();
@@ -102,11 +104,11 @@ class QnaServiceIntegrationTest {
     flushAndClear();
 
     QuestionDetailResponse firstResponse =
-        qnaService.getQuestionDetail(author.getId(), question.getId());
+        qnaQuestionService.getQuestionDetail(author.getId(), question.getId());
     flushAndClear();
 
     QuestionDetailResponse secondResponse =
-        qnaService.getQuestionDetail(author.getId(), question.getId());
+        qnaQuestionService.getQuestionDetail(author.getId(), question.getId());
     flushAndClear();
 
     assertThat(firstResponse.getViewCount()).isEqualTo(1);
@@ -125,7 +127,7 @@ class QnaServiceIntegrationTest {
     saveActiveTemplate(QuestionTemplateType.DEBUGGING, 1);
 
     QuestionDetailResponse question =
-        qnaService.createQuestion(
+        qnaQuestionService.createQuestion(
             author.getId(),
             questionCreateRequest(
                 QuestionTemplateType.DEBUGGING,
@@ -134,14 +136,14 @@ class QnaServiceIntegrationTest {
                 "필터 체인 설정을 먼저 봐야 할까요?"));
 
     AnswerResponse answer =
-        qnaService.createAnswer(
+        qnaAnswerService.createAnswer(
             answerAuthor.getId(),
             question.getId(),
             answerCreateRequest("SecurityFilterChain 설정과 필터 등록 위치를 점검해보세요."));
     flushAndClear();
 
     QuestionDetailResponse adopted =
-        qnaService.adoptAnswer(author.getId(), question.getId(), answer.getId());
+        qnaAnswerService.adoptAnswer(author.getId(), question.getId(), answer.getId());
     flushAndClear();
 
     Question savedQuestion = questionRepository.findById(question.getId()).orElseThrow();
@@ -164,7 +166,7 @@ class QnaServiceIntegrationTest {
     saveActiveTemplate(QuestionTemplateType.DEBUGGING, 1);
 
     QuestionDetailResponse question =
-        qnaService.createQuestion(
+        qnaQuestionService.createQuestion(
             owner.getId(),
             questionCreateRequest(
                 QuestionTemplateType.DEBUGGING,
@@ -172,11 +174,11 @@ class QnaServiceIntegrationTest {
                 "채택 권한 테스트",
                 "질문 작성자만 채택할 수 있어야 합니다."));
     AnswerResponse answer =
-        qnaService.createAnswer(
+        qnaAnswerService.createAnswer(
             answerAuthor.getId(), question.getId(), answerCreateRequest("제가 쓴 답변입니다."));
 
     assertThatThrownBy(
-            () -> qnaService.adoptAnswer(intruder.getId(), question.getId(), answer.getId()))
+            () -> qnaAnswerService.adoptAnswer(intruder.getId(), question.getId(), answer.getId()))
         .isInstanceOf(CustomException.class)
         .extracting(throwable -> ((CustomException) throwable).getErrorCode())
         .isEqualTo(ErrorCode.UNAUTHORIZED_ACTION);
@@ -191,7 +193,7 @@ class QnaServiceIntegrationTest {
     saveActiveTemplate(QuestionTemplateType.DEBUGGING, 1);
 
     QuestionDetailResponse question =
-        qnaService.createQuestion(
+        qnaQuestionService.createQuestion(
             owner.getId(),
             questionCreateRequest(
                 QuestionTemplateType.DEBUGGING,
@@ -199,16 +201,17 @@ class QnaServiceIntegrationTest {
                 "재채택 방지 테스트",
                 "이미 채택된 질문은 다시 채택되면 안 됩니다."));
     AnswerResponse firstAnswer =
-        qnaService.createAnswer(
+        qnaAnswerService.createAnswer(
             firstAnswerAuthor.getId(), question.getId(), answerCreateRequest("첫 번째 답변"));
     AnswerResponse secondAnswer =
-        qnaService.createAnswer(
+        qnaAnswerService.createAnswer(
             secondAnswerAuthor.getId(), question.getId(), answerCreateRequest("두 번째 답변"));
 
-    qnaService.adoptAnswer(owner.getId(), question.getId(), firstAnswer.getId());
+    qnaAnswerService.adoptAnswer(owner.getId(), question.getId(), firstAnswer.getId());
 
     assertThatThrownBy(
-            () -> qnaService.adoptAnswer(owner.getId(), question.getId(), secondAnswer.getId()))
+            () ->
+                qnaAnswerService.adoptAnswer(owner.getId(), question.getId(), secondAnswer.getId()))
         .isInstanceOf(CustomException.class)
         .extracting(throwable -> ((CustomException) throwable).getErrorCode())
         .isEqualTo(ErrorCode.ALREADY_ADOPTED);
