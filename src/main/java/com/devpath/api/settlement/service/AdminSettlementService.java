@@ -1,8 +1,8 @@
-package com.devpath.api.admin.service;
+package com.devpath.api.settlement.service;
 
-import com.devpath.api.admin.dto.settlement.SettlementEligibilityResponse;
-import com.devpath.api.admin.dto.settlement.SettlementHoldRequest;
-import com.devpath.api.instructor.dto.revenue.SettlementResponse;
+import com.devpath.api.settlement.dto.SettlementEligibilityResponse;
+import com.devpath.api.settlement.dto.SettlementHoldRequest;
+import com.devpath.api.settlement.dto.SettlementResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.refund.entity.RefundRequest;

@@ -1,10 +1,10 @@
-package com.devpath.api.admin.service;
+package com.devpath.api.settlement.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.devpath.api.admin.dto.settlement.SettlementHoldRequest;
+import com.devpath.api.settlement.dto.SettlementHoldRequest;
 import com.devpath.domain.refund.repository.RefundRepository;
 import com.devpath.domain.settlement.entity.Settlement;
 import com.devpath.domain.settlement.entity.SettlementHold;

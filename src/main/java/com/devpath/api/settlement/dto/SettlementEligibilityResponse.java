@@ -1,4 +1,4 @@
-package com.devpath.api.admin.dto.settlement;
+package com.devpath.api.settlement.dto;
 
 import java.time.LocalDateTime;
 import lombok.Builder;

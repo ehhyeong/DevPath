@@ -1,4 +1,4 @@
-package com.devpath.api.admin.dto.settlement;
+package com.devpath.api.settlement.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;

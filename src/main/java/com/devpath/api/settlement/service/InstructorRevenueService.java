@@ -1,7 +1,7 @@
-package com.devpath.api.instructor.service;
+package com.devpath.api.settlement.service;
 
-import com.devpath.api.instructor.dto.revenue.RevenueResponse;
-import com.devpath.api.instructor.dto.revenue.SettlementResponse;
+import com.devpath.api.settlement.dto.RevenueResponse;
+import com.devpath.api.settlement.dto.SettlementResponse;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.settlement.entity.Settlement;

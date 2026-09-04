@@ -1,4 +1,4 @@
-package com.devpath.api.instructor.dto.revenue;
+package com.devpath.api.settlement.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;

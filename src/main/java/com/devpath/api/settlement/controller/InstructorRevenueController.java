@@ -1,8 +1,8 @@
-package com.devpath.api.instructor.controller;
+package com.devpath.api.settlement.controller;
 
-import com.devpath.api.instructor.dto.revenue.RevenueResponse;
-import com.devpath.api.instructor.dto.revenue.SettlementResponse;
-import com.devpath.api.instructor.service.InstructorRevenueService;
+import com.devpath.api.settlement.dto.RevenueResponse;
+import com.devpath.api.settlement.dto.SettlementResponse;
+import com.devpath.api.settlement.service.InstructorRevenueService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
