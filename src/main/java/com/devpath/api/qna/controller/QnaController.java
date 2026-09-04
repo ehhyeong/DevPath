@@ -9,7 +9,9 @@ import com.devpath.api.qna.dto.QuestionCreateRequest;
 import com.devpath.api.qna.dto.QuestionDetailResponse;
 import com.devpath.api.qna.dto.QuestionSummaryResponse;
 import com.devpath.api.qna.dto.QuestionTemplateResponse;
-import com.devpath.api.qna.service.QnaService;
+import com.devpath.api.qna.service.QnaAnswerService;
+import com.devpath.api.qna.service.QnaDuplicateSuggestionService;
+import com.devpath.api.qna.service.QnaQuestionService;
 import com.devpath.common.response.ApiResponse;
 import com.devpath.common.swagger.SwaggerErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,7 +42,9 @@ import org.springframework.web.bind.annotation.RestController;
         "질문/답변 기반 Q&A API입니다. Swagger 테스트 기준으로 userId=1은 질문 작성자, userId=2는 답변 작성자로 두면 채택 흐름까지 바로 테스트할 수 있습니다.")
 public class QnaController {
 
-  private final QnaService qnaService;
+  private final QnaQuestionService qnaQuestionService;
+  private final QnaAnswerService qnaAnswerService;
+  private final QnaDuplicateSuggestionService qnaDuplicateSuggestionService;
 
   @PostMapping("/questions")
   @Operation(summary = "질문 등록", description = "질문 템플릿과 난이도를 선택해 새로운 질문을 등록합니다.")
@@ -62,7 +66,7 @@ public class QnaController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
       @Valid @RequestBody QuestionCreateRequest request) {
     QuestionDetailResponse response =
-        qnaService.createQuestion(requireUserId(authenticatedUserId), request);
+        qnaQuestionService.createQuestion(requireUserId(authenticatedUserId), request);
     return ApiResponse.ok(response);
   }
 
@@ -79,7 +83,7 @@ public class QnaController {
       @Parameter(description = "강의 ID", example = "1") @RequestParam(required = false)
           Long courseId) {
     List<QuestionSummaryResponse> responses =
-        qnaService.getQuestions(requireUserId(authenticatedUserId), courseId);
+        qnaQuestionService.getQuestions(requireUserId(authenticatedUserId), courseId);
     return ApiResponse.ok(responses);
   }
 
@@ -99,7 +103,7 @@ public class QnaController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long authenticatedUserId,
       @Parameter(description = "질문 ID입니다.", example = "1") @PathVariable Long questionId) {
     QuestionDetailResponse response =
-        qnaService.getQuestionDetail(requireUserId(authenticatedUserId), questionId);
+        qnaQuestionService.getQuestionDetail(requireUserId(authenticatedUserId), questionId);
     return ApiResponse.ok(response);
   }
 
@@ -119,7 +123,8 @@ public class QnaController {
       @Parameter(description = "중복 여부를 확인할 질문 제목입니다.", example = "Spring Boot에서 JWT 필터가 두 번 실행됩니다.")
           @RequestParam
           String title) {
-    List<DuplicateQuestionSuggestionResponse> responses = qnaService.getDuplicateSuggestions(title);
+    List<DuplicateQuestionSuggestionResponse> responses =
+        qnaDuplicateSuggestionService.getDuplicateSuggestions(title);
     return ApiResponse.ok(responses);
   }
 
@@ -144,7 +149,7 @@ public class QnaController {
       @Parameter(description = "답변을 등록할 질문 ID입니다.", example = "1") @PathVariable Long questionId,
       @Valid @RequestBody AnswerCreateRequest request) {
     AnswerResponse response =
-        qnaService.createAnswer(requireUserId(authenticatedUserId), questionId, request);
+        qnaAnswerService.createAnswer(requireUserId(authenticatedUserId), questionId, request);
     return ApiResponse.ok(response);
   }
 
@@ -173,7 +178,7 @@ public class QnaController {
       @Parameter(description = "질문 ID입니다.", example = "1") @PathVariable Long questionId,
       @Parameter(description = "채택할 답변 ID입니다.", example = "1") @PathVariable Long answerId) {
     QuestionDetailResponse response =
-        qnaService.adoptAnswer(requireUserId(authenticatedUserId), questionId, answerId);
+        qnaAnswerService.adoptAnswer(requireUserId(authenticatedUserId), questionId, answerId);
     return ApiResponse.ok(response);
   }
 
@@ -186,7 +191,7 @@ public class QnaController {
             description = "질문 템플릿 조회 성공")
       })
   public ApiResponse<List<QuestionTemplateResponse>> getQuestionTemplates() {
-    List<QuestionTemplateResponse> responses = qnaService.getQuestionTemplates();
+    List<QuestionTemplateResponse> responses = qnaQuestionService.getQuestionTemplates();
     return ApiResponse.ok(responses);
   }
 }
