@@ -1,11 +1,11 @@
 package com.devpath.api.instructor.service;
 
 import com.devpath.api.instructor.dto.subscription.SubscriptionResponse;
-import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.instructor.entity.InstructorSubscription;
 import com.devpath.domain.instructor.repository.InstructorSubscriptionRepository;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;
@@ -21,7 +21,7 @@ public class InstructorSubscriptionService {
   private final InstructorSubscriptionRepository subscriptionRepository;
   private final UserProfileRepository userProfileRepository;
   private final UserRepository userRepository;
-  private final InstructorNotificationService instructorNotificationService;
+  private final InstructorNotificationPublisher instructorNotificationPublisher;
 
   public SubscriptionResponse subscribe(Long channelId, Long learnerId) {
     validateChannel(channelId);
@@ -53,7 +53,7 @@ public class InstructorSubscriptionService {
         userRepository
             .findById(learnerId)
             .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    instructorNotificationService.notifySubscribe(channelId, learner.getName());
+    instructorNotificationPublisher.notifySubscribe(channelId, learner.getName());
 
     return SubscriptionResponse.from(subscription);
   }

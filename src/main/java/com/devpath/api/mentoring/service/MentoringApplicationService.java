@@ -2,7 +2,6 @@ package com.devpath.api.mentoring.service;
 
 import com.devpath.api.mentoring.dto.MentoringApplicationRequest;
 import com.devpath.api.mentoring.dto.MentoringApplicationResponse;
-import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -13,6 +12,7 @@ import com.devpath.domain.mentoring.entity.MentoringPostStatus;
 import com.devpath.domain.mentoring.repository.MentoringApplicationRepository;
 import com.devpath.domain.mentoring.repository.MentoringPostRepository;
 import com.devpath.domain.mentoring.repository.MentoringRepository;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.List;
@@ -30,7 +30,7 @@ public class MentoringApplicationService {
   private final MentoringRepository mentoringRepository;
   private final UserRepository userRepository;
   private final NotificationEventService notificationEventService;
-  private final InstructorNotificationService instructorNotificationService;
+  private final InstructorNotificationPublisher instructorNotificationPublisher;
 
   @Transactional
   public MentoringApplicationResponse.Detail apply(
@@ -61,7 +61,7 @@ public class MentoringApplicationService {
             .build();
 
     MentoringApplication savedApplication = mentoringApplicationRepository.save(application);
-    instructorNotificationService.notifyMentoringApplication(
+    instructorNotificationPublisher.notifyMentoringApplication(
         post.getMentor().getId(), post.getTitle(), applicant.getName());
 
     return MentoringApplicationResponse.Detail.from(savedApplication);

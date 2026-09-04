@@ -8,7 +8,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.review.dto.ReviewRequest;
 import com.devpath.api.review.dto.ReviewResponse;
 import com.devpath.common.exception.CustomException;
@@ -19,6 +18,7 @@ import com.devpath.domain.course.entity.EnrollmentStatus;
 import com.devpath.domain.course.repository.CourseEnrollmentRepository;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.instructor.repository.ReviewReplyRepository;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.review.entity.Review;
 import com.devpath.domain.review.repository.ReviewRepository;
 import java.util.Optional;
@@ -36,7 +36,7 @@ class ReviewServiceTest {
   @Mock private ReviewReplyRepository reviewReplyRepository;
   @Mock private CourseRepository courseRepository;
   @Mock private CourseEnrollmentRepository courseEnrollmentRepository;
-  @Mock private InstructorNotificationService instructorNotificationService;
+  @Mock private InstructorNotificationPublisher instructorNotificationPublisher;
 
   private ReviewService service;
 
@@ -48,7 +48,7 @@ class ReviewServiceTest {
             reviewReplyRepository,
             courseRepository,
             courseEnrollmentRepository,
-            instructorNotificationService);
+            instructorNotificationPublisher);
   }
 
   @Test
@@ -74,7 +74,7 @@ class ReviewServiceTest {
     assertThat(response.getId()).isEqualTo(30L);
     assertThat(response.getLearnerId()).isEqualTo(7L);
     assertThat(response.getRating()).isEqualTo(5);
-    verify(instructorNotificationService).notifyReview(20L, "강의");
+    verify(instructorNotificationPublisher).notifyReview(20L, "강의");
   }
 
   @Test
