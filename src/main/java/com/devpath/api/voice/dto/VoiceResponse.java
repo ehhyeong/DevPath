@@ -1,6 +1,5 @@
 package com.devpath.api.voice.dto;
 
-import com.devpath.api.workspace.dto.WorkspaceTaskResponse;
 import com.devpath.domain.voice.entity.VoiceChannel;
 import com.devpath.domain.voice.entity.VoiceChatClearState;
 import com.devpath.domain.voice.entity.VoiceChatMessage;
@@ -9,7 +8,9 @@ import com.devpath.domain.voice.entity.VoiceEventType;
 import com.devpath.domain.voice.entity.VoiceLobbyPresence;
 import com.devpath.domain.voice.entity.VoiceMeetingMinutes;
 import com.devpath.domain.voice.entity.VoiceParticipant;
+import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
+import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -200,10 +201,42 @@ public class VoiceResponse {
           LocalDate dueDate) {}
 
   @Schema(
+      name = "VoiceMeetingMinutesKanbanTaskResponse",
+      description = "Kanban task created from AI minutes")
+  public record MinutesKanbanTask(
+      Long taskId,
+      Long workspaceId,
+      String title,
+      String description,
+      WorkspaceTaskStatus status,
+      WorkspaceTaskPriority priority,
+      Long assigneeId,
+      LocalDate dueDate,
+      Long createdById,
+      LocalDateTime createdAt,
+      LocalDateTime updatedAt) {
+
+    public static MinutesKanbanTask from(WorkspaceTask task) {
+      return new MinutesKanbanTask(
+          task.getId(),
+          task.getWorkspaceId(),
+          task.getTitle(),
+          task.getDescription(),
+          task.getStatus(),
+          task.getPriority(),
+          task.getAssigneeId(),
+          task.getDueDate(),
+          task.getCreatedById(),
+          task.getCreatedAt(),
+          task.getUpdatedAt());
+    }
+  }
+
+  @Schema(
       name = "VoiceMeetingMinutesKanbanTasksResponse",
       description = "Kanban tasks created from AI minutes")
   public record MinutesKanbanTasksDetail(
-      @Schema(description = "Created Kanban tasks") List<WorkspaceTaskResponse> tasks) {}
+      @Schema(description = "Created Kanban tasks") List<MinutesKanbanTask> tasks) {}
 
   @Schema(name = "VoiceEventResponse", description = "보이스 채널 상태 이벤트 응답")
   public record EventDetail(

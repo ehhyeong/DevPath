@@ -2,7 +2,6 @@ package com.devpath.api.voice.service;
 
 import com.devpath.api.voice.dto.VoiceRequest;
 import com.devpath.api.voice.dto.VoiceResponse;
-import com.devpath.api.workspace.dto.WorkspaceTaskResponse;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.voice.entity.VoiceChannel;
 import com.devpath.domain.voice.entity.VoiceChatMessage;
@@ -105,12 +104,12 @@ public class VoiceMeetingMinutesService {
     User user = voiceChannelAccess.getUser(userId);
     voiceChannelAccess.validateWorkspaceMember(channel.getWorkspaceId(), user.getId());
 
-    List<WorkspaceTaskResponse> createdTasks =
+    List<VoiceResponse.MinutesKanbanTask> createdTasks =
         request.actionItems().stream()
             .limit(ACTION_ITEM_LIMIT)
             .map(item -> createWorkspaceTask(channel, user, item))
             .map(workspaceTaskRepository::save)
-            .map(WorkspaceTaskResponse::from)
+            .map(VoiceResponse.MinutesKanbanTask::from)
             .toList();
 
     return new VoiceResponse.MinutesKanbanTasksDetail(createdTasks);
