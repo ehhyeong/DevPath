@@ -6,13 +6,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.devpath.api.course.dto.CourseDetailResponse;
 import com.devpath.api.course.dto.CourseListItemResponse;
 import com.devpath.api.course.mapper.CourseDetailMetadataMapper;
+import com.devpath.api.course.service.CourseEnrollmentService;
+import com.devpath.api.course.service.CourseWishlistService;
 import com.devpath.api.course.service.HlsPlaybackService;
+import com.devpath.api.course.service.LearnerCourseAssessmentAssembler;
+import com.devpath.api.course.service.LearnerCourseService;
 import com.devpath.api.learner.dto.SkillCheckDto;
-import com.devpath.api.notification.service.InstructorNotificationService;
 import com.devpath.api.recommendation.service.NodeRecommendationArtifacts;
 import com.devpath.api.recommendation.service.NodeRecommendationPlanner;
-import com.devpath.api.roadmap.service.CustomRoadmapCopyService;
-import com.devpath.api.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.common.security.AdminAuthorityService;
@@ -41,6 +42,7 @@ import com.devpath.domain.learning.entity.TimestampNote;
 import com.devpath.domain.learning.entity.ocr.OcrResult;
 import com.devpath.domain.learning.service.LearningAutomationPolicyService;
 import com.devpath.domain.learning.service.PlaybackDeviceRegistry;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.NodeRecommendation;
 import com.devpath.domain.roadmap.entity.Prerequisite;
@@ -55,6 +57,8 @@ import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
+import com.devpath.domain.roadmap.service.CustomRoadmapCopyService;
+import com.devpath.domain.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import com.devpath.domain.roadmap.service.TagValidationService;
 import com.devpath.domain.settlement.entity.SettlementStatus;
@@ -114,7 +118,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 })
 class LearnerFlowIntegrationTest {
 
-  @MockitoBean private InstructorNotificationService instructorNotificationService;
+  @MockitoBean private InstructorNotificationPublisher instructorNotificationPublisher;
 
   @Autowired private LearnerCourseService learnerCourseService;
   @Autowired private CourseWishlistService courseWishlistService;
