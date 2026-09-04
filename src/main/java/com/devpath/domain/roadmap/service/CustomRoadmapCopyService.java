@@ -1,4 +1,4 @@
-package com.devpath.api.roadmap.service;
+package com.devpath.domain.roadmap.service;
 
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -15,8 +15,6 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
-import com.devpath.domain.roadmap.service.RoadmapProgressService;
-import com.devpath.domain.roadmap.service.TagValidationService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.user.repository.UserTechStackRepository;

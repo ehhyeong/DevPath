@@ -1,4 +1,4 @@
-package com.devpath.api.roadmap.service;
+package com.devpath.domain.roadmap.service;
 
 import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;

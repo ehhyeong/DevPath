@@ -1,4 +1,4 @@
-package com.devpath.api.roadmap.service;
+package com.devpath.domain.roadmap.service;
 
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -9,7 +9,6 @@ import com.devpath.domain.roadmap.entity.NodeStatus;
 import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
-import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
