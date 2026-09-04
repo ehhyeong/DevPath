@@ -1,7 +1,7 @@
 package com.devpath.api.instructor.service;
 
-import com.devpath.api.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.api.instructor.dto.analytics.InstructorAnalyticsDashboardResponse;
+import com.devpath.domain.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.EnrollmentStatus;

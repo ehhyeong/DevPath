@@ -1,4 +1,4 @@
-package com.devpath.api.analytics.service;
+package com.devpath.domain.analytics.service;
 
 import com.devpath.domain.learning.entity.QuizAttempt;
 import com.devpath.domain.learning.entity.Submission;

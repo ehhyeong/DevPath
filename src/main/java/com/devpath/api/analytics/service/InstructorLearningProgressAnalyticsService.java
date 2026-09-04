@@ -7,6 +7,7 @@ import com.devpath.api.analytics.dto.InstructorAnalyticsProgressResponse;
 import com.devpath.api.analytics.dto.InstructorAnalyticsStudentResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.domain.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseEnrollment;
 import com.devpath.domain.course.entity.CourseStatus;
