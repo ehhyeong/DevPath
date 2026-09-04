@@ -62,10 +62,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @Import({
   InstructorCourseService.class,
+  InstructorCurriculumService.class,
+  InstructorCourseMetadataService.class,
   InstructorCourseAssetStorage.class,
   InstructorCourseVideoProcessor.class,
   InstructorCourseMetadataEditor.class,
-  InstructorCourseQueryService.class,
+  InstructorCourseListQueryService.class,
+  InstructorCourseDetailQueryService.class,
+  InstructorCourseThumbnailResolver.class,
   HlsPlaybackService.class,
   AdminAuthorityService.class,
   CourseDetailMetadataMapper.class,
@@ -81,7 +85,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 class InstructorCourseServiceIntegrationTest {
 
   @Autowired private InstructorCourseService instructorCourseService;
-  @Autowired private InstructorCourseQueryService instructorCourseQueryService;
+  @Autowired private InstructorCurriculumService instructorCurriculumService;
+  @Autowired private InstructorCourseMetadataService instructorCourseMetadataService;
+  @Autowired private InstructorCourseDetailQueryService instructorCourseDetailQueryService;
   @Autowired private InstructorAnnouncementService instructorAnnouncementService;
   @Autowired private InstructorAnnouncementQueryService instructorAnnouncementQueryService;
 
@@ -188,7 +194,7 @@ class InstructorCourseServiceIntegrationTest {
             });
 
     Long sectionId =
-        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+        instructorCurriculumService.createSection(instructorId, courseId, createSectionRequest());
     flushAndClear();
 
     assertThat(courseSectionRepository.findAllByCourseCourseIdOrderByOrderIndexAsc(courseId))
@@ -197,9 +203,9 @@ class InstructorCourseServiceIntegrationTest {
         .containsExactly("Section 1. Spring Security 핵심");
 
     Long lessonId1 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest1());
     Long lessonId2 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest2());
     flushAndClear();
 
     assertThat(lessonRepository.findAllBySectionSectionIdOrderByOrderIndexAsc(sectionId))
@@ -208,7 +214,7 @@ class InstructorCourseServiceIntegrationTest {
         .containsExactly("JWT 인증 필터 구현", "SecurityContext 저장 흐름");
 
     // 동일 섹션 내 레슨 2개의 순서를 서로 교체한다.
-    instructorCourseService.updateLessonOrder(
+    instructorCurriculumService.updateLessonOrder(
         instructorId, updateLessonOrderRequest(sectionId, lessonId1, lessonId2));
     flushAndClear();
 
@@ -216,27 +222,31 @@ class InstructorCourseServiceIntegrationTest {
         .extracting("lessonId")
         .containsExactly(lessonId2, lessonId1);
 
-    instructorCourseService.updateCourseMetadata(instructorId, courseId, updateMetadataRequest());
+    instructorCourseMetadataService.updateCourseMetadata(
+        instructorId, courseId, updateMetadataRequest());
     flushAndClear();
 
     assertThat(courseTagMapRepository.findAllByCourseCourseId(courseId)).hasSize(2);
 
-    instructorCourseService.replaceObjectives(instructorId, courseId, replaceObjectivesRequest());
-    instructorCourseService.replaceTargetAudiences(
+    instructorCourseMetadataService.replaceObjectives(
+        instructorId, courseId, replaceObjectivesRequest());
+    instructorCourseMetadataService.replaceTargetAudiences(
         instructorId, courseId, replaceTargetAudiencesRequest());
     flushAndClear();
 
-    instructorCourseService.uploadThumbnail(instructorId, courseId, uploadThumbnailRequest());
-    instructorCourseService.uploadTrailer(instructorId, courseId, uploadTrailerRequest());
+    instructorCourseMetadataService.uploadThumbnail(
+        instructorId, courseId, uploadThumbnailRequest());
+    instructorCourseMetadataService.uploadTrailer(instructorId, courseId, uploadTrailerRequest());
 
     Long materialId =
-        instructorCourseService.createMaterial(instructorId, lessonId1, createMaterialRequest());
+        instructorCourseMetadataService.createMaterial(
+            instructorId, lessonId1, createMaterialRequest());
     flushAndClear();
 
     assertThat(courseMaterialRepository.findById(materialId)).isPresent();
 
     CourseDetailResponse detail =
-        instructorCourseQueryService.getCourseDetail(instructorId, courseId);
+        instructorCourseDetailQueryService.getCourseDetail(instructorId, courseId);
 
     assertThat(detail.getCourseId()).isEqualTo(courseId);
     assertThat(detail.getTitle()).isEqualTo("Spring Security 실전");
@@ -334,16 +344,16 @@ class InstructorCourseServiceIntegrationTest {
   void updateLessonPrerequisitesAndCleanupOnLessonDelete() {
     Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
     Long sectionId =
-        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+        instructorCurriculumService.createSection(instructorId, courseId, createSectionRequest());
 
     Long lessonId1 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest1());
     Long lessonId2 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest2());
     Long lessonId3 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest3());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest3());
 
-    instructorCourseService.updateLessonPrerequisites(
+    instructorCurriculumService.updateLessonPrerequisites(
         instructorId, lessonId3, updateLessonPrerequisitesRequest(List.of(lessonId1, lessonId2)));
     flushAndClear();
 
@@ -353,7 +363,7 @@ class InstructorCourseServiceIntegrationTest {
         .extracting(link -> link.getPrerequisiteLesson().getLessonId())
         .containsExactly(lessonId1, lessonId2);
 
-    instructorCourseService.deleteLesson(instructorId, lessonId1);
+    instructorCurriculumService.deleteLesson(instructorId, lessonId1);
     flushAndClear();
 
     assertThat(
@@ -368,19 +378,20 @@ class InstructorCourseServiceIntegrationTest {
   void deleteSectionCleansLessonsAndMaterials() {
     Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
     Long sectionId =
-        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+        instructorCurriculumService.createSection(instructorId, courseId, createSectionRequest());
     Long lessonId1 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest1());
     Long lessonId2 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest2());
     Long materialId =
-        instructorCourseService.createMaterial(instructorId, lessonId1, createMaterialRequest());
+        instructorCourseMetadataService.createMaterial(
+            instructorId, lessonId1, createMaterialRequest());
 
-    instructorCourseService.updateLessonPrerequisites(
+    instructorCurriculumService.updateLessonPrerequisites(
         instructorId, lessonId2, updateLessonPrerequisitesRequest(List.of(lessonId1)));
     flushAndClear();
 
-    instructorCourseService.deleteSection(instructorId, sectionId);
+    instructorCurriculumService.deleteSection(instructorId, sectionId);
     flushAndClear();
 
     assertThat(courseSectionRepository.findById(sectionId)).isEmpty();
@@ -399,27 +410,27 @@ class InstructorCourseServiceIntegrationTest {
   void updateLessonPrerequisitesRejectsInvalidCases() {
     Long courseId = instructorCourseService.createCourse(instructorId, createCourseRequest());
     Long sectionId =
-        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+        instructorCurriculumService.createSection(instructorId, courseId, createSectionRequest());
 
     Long lessonId1 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest1());
     Long lessonId2 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest2());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest2());
     Long lessonId3 =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest3());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest3());
 
     Long otherCourseId =
         instructorCourseService.createCourse(instructorId, createSecondCourseRequest());
     Long otherSectionId =
-        instructorCourseService.createSection(
+        instructorCurriculumService.createSection(
             instructorId, otherCourseId, createSecondSectionRequest());
     Long otherLessonId =
-        instructorCourseService.createLesson(
+        instructorCurriculumService.createLesson(
             instructorId, otherSectionId, createOtherCourseLessonRequest());
 
     assertThatThrownBy(
             () ->
-                instructorCourseService.updateLessonPrerequisites(
+                instructorCurriculumService.updateLessonPrerequisites(
                     instructorId,
                     lessonId3,
                     updateLessonPrerequisitesRequest(List.of(lessonId1, lessonId1))))
@@ -429,7 +440,7 @@ class InstructorCourseServiceIntegrationTest {
 
     assertThatThrownBy(
             () ->
-                instructorCourseService.updateLessonPrerequisites(
+                instructorCurriculumService.updateLessonPrerequisites(
                     instructorId, lessonId3, updateLessonPrerequisitesRequest(List.of(lessonId3))))
         .isInstanceOf(CustomException.class)
         .extracting("errorCode")
@@ -437,7 +448,7 @@ class InstructorCourseServiceIntegrationTest {
 
     assertThatThrownBy(
             () ->
-                instructorCourseService.updateLessonPrerequisites(
+                instructorCurriculumService.updateLessonPrerequisites(
                     instructorId,
                     lessonId3,
                     updateLessonPrerequisitesRequest(List.of(lessonId2, otherLessonId))))
@@ -917,23 +928,23 @@ class InstructorCourseServiceIntegrationTest {
     Long courseId =
         instructorCourseService.createCourse(instructorId, createNodeClassificationCourseRequest());
     Long sectionId =
-        instructorCourseService.createSection(instructorId, courseId, createSectionRequest());
+        instructorCurriculumService.createSection(instructorId, courseId, createSectionRequest());
     Long lessonId =
-        instructorCourseService.createLesson(instructorId, sectionId, createLessonRequest1());
+        instructorCurriculumService.createLesson(instructorId, sectionId, createLessonRequest1());
     Long announcementId =
         instructorAnnouncementService.createAnnouncement(
             instructorId, courseId, createNormalAnnouncementRequest());
     flushAndClear();
 
     assertThatThrownBy(
-            () -> instructorCourseQueryService.getCourseDetail(otherInstructorId, courseId))
+            () -> instructorCourseDetailQueryService.getCourseDetail(otherInstructorId, courseId))
         .isInstanceOf(CustomException.class)
         .extracting("errorCode")
         .isEqualTo(ErrorCode.FORBIDDEN);
 
     assertThatThrownBy(
             () ->
-                instructorCourseService.createSection(
+                instructorCurriculumService.createSection(
                     otherInstructorId, courseId, createSectionRequest()))
         .isInstanceOf(CustomException.class)
         .extracting("errorCode")
@@ -941,7 +952,7 @@ class InstructorCourseServiceIntegrationTest {
 
     assertThatThrownBy(
             () ->
-                instructorCourseService.createLesson(
+                instructorCurriculumService.createLesson(
                     otherInstructorId, sectionId, createLessonRequest2()))
         .isInstanceOf(CustomException.class)
         .extracting("errorCode")
@@ -949,7 +960,7 @@ class InstructorCourseServiceIntegrationTest {
 
     assertThatThrownBy(
             () ->
-                instructorCourseService.updateLessonPrerequisites(
+                instructorCurriculumService.updateLessonPrerequisites(
                     otherInstructorId, lessonId, updateLessonPrerequisitesRequest(List.of())))
         .isInstanceOf(CustomException.class)
         .extracting("errorCode")

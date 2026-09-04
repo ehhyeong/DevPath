@@ -1,17 +1,11 @@
 package com.devpath.api.instructor.service;
 
 import com.devpath.api.instructor.dto.InstructorCourseDto;
-import com.devpath.api.instructor.dto.InstructorLessonDto;
-import com.devpath.api.instructor.dto.InstructorMaterialDto;
-import com.devpath.api.instructor.dto.InstructorSectionDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Course;
-import com.devpath.domain.course.entity.CourseMaterial;
-import com.devpath.domain.course.entity.CourseSection;
 import com.devpath.domain.course.entity.CourseStatus;
 import com.devpath.domain.course.entity.Lesson;
-import com.devpath.domain.course.entity.LessonPrerequisite;
 import com.devpath.domain.course.repository.CourseAnnouncementRepository;
 import com.devpath.domain.course.repository.CourseMaterialRepository;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
@@ -22,20 +16,12 @@ import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.system.service.SystemPolicyService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-// 강사용 강의, 섹션, 레슨, 자료 쓰기 로직을 처리한다.
+// 강사용 강의의 생성, 기본 정보, 상태와 삭제를 관리한다.
 @Service
 @RequiredArgsConstructor
 public class InstructorCourseService {
@@ -50,7 +36,6 @@ public class InstructorCourseService {
   private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final CourseMaterialRepository courseMaterialRepository;
   private final InstructorCourseValueParser valueParser;
-  private final InstructorCourseAssetStorage assetStorage;
   private final InstructorCourseMetadataEditor metadataEditor;
   private final SystemPolicyService systemPolicyService;
 
@@ -126,293 +111,6 @@ public class InstructorCourseService {
     courseRepository.delete(course);
   }
 
-  // 섹션을 생성한다.
-  @Transactional
-  public Long createSection(
-      Long instructorId, Long courseId, InstructorSectionDto.CreateSectionRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Course course = getOwnedCourse(instructorId, courseId);
-
-    CourseSection section =
-        CourseSection.builder()
-            .course(course)
-            .title(request.getTitle())
-            .description(request.getDescription())
-            .orderIndex(request.getOrderIndex())
-            .isPublished(request.getIsPublished())
-            .build();
-
-    CourseSection savedSection = courseSectionRepository.save(section);
-    return savedSection.getSectionId();
-  }
-
-  // 섹션을 수정한다.
-  @Transactional
-  public void updateSection(
-      Long instructorId, Long sectionId, InstructorSectionDto.UpdateSectionRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    CourseSection section = getOwnedSection(instructorId, sectionId);
-    section.updateInfo(request.getTitle(), request.getDescription());
-    section.changeOrderIndex(request.getOrderIndex());
-    section.changePublished(request.getIsPublished());
-  }
-
-  // 섹션을 삭제한다.
-  @Transactional
-  public void deleteSection(Long instructorId, Long sectionId) {
-    validateAuthenticatedUser(instructorId);
-
-    CourseSection section = getOwnedSection(instructorId, sectionId);
-    List<Lesson> lessons =
-        lessonRepository.findAllBySectionSectionIdOrderByOrderIndexAsc(section.getSectionId());
-    List<Long> lessonIds = lessons.stream().map(Lesson::getLessonId).toList();
-
-    // 선행 조건 연결을 먼저 지워야 레슨 삭제 시 FK 충돌이 나지 않는다.
-    deleteLessonPrerequisiteLinks(lessonIds);
-
-    for (Lesson lesson : lessons) {
-      List<CourseMaterial> materials =
-          courseMaterialRepository.findAllByLessonLessonIdOrderByDisplayOrderAsc(
-              lesson.getLessonId());
-
-      if (!materials.isEmpty()) {
-        courseMaterialRepository.deleteAll(materials);
-      }
-    }
-
-    if (!lessons.isEmpty()) {
-      lessonRepository.deleteAll(lessons);
-    }
-
-    courseSectionRepository.delete(section);
-  }
-
-  // 레슨을 생성한다.
-  @Transactional
-  public Long createLesson(
-      Long instructorId, Long sectionId, InstructorLessonDto.CreateLessonRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    CourseSection section = getOwnedSection(instructorId, sectionId);
-
-    Lesson lesson =
-        Lesson.builder()
-            .section(section)
-            .title(request.getTitle())
-            .description(request.getDescription())
-            .lessonType(valueParser.toLessonType(request.getLessonType()))
-            .videoId(request.getVideoId())
-            .videoUrl(request.getVideoUrl())
-            .videoProvider(request.getVideoProvider())
-            .thumbnailUrl(request.getThumbnailUrl())
-            .durationSeconds(request.getDurationSeconds())
-            .orderIndex(request.getOrderIndex())
-            .isPreview(request.getIsPreview())
-            .isPublished(request.getIsPublished())
-            .build();
-
-    Lesson savedLesson = lessonRepository.save(lesson);
-    return savedLesson.getLessonId();
-  }
-
-  // 레슨을 수정한다.
-  @Transactional
-  public void updateLesson(
-      Long instructorId, Long lessonId, InstructorLessonDto.UpdateLessonRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Lesson lesson = getOwnedLesson(instructorId, lessonId);
-    lesson.updateInfo(
-        request.getTitle(),
-        request.getDescription(),
-        valueParser.toLessonType(request.getLessonType()),
-        request.getVideoId(),
-        request.getVideoUrl(),
-        request.getVideoProvider(),
-        request.getThumbnailUrl(),
-        request.getDurationSeconds(),
-        request.getIsPreview(),
-        request.getIsPublished());
-  }
-
-  // 레슨 선행 조건을 전체 교체한다.
-  @Transactional
-  public InstructorLessonDto.UpdateLessonPrerequisitesResponse updateLessonPrerequisites(
-      Long instructorId,
-      Long lessonId,
-      InstructorLessonDto.UpdateLessonPrerequisitesRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Lesson lesson = getOwnedLesson(instructorId, lessonId);
-    LinkedHashSet<Long> uniquePrerequisiteLessonIds =
-        new LinkedHashSet<>(request.getPrerequisiteLessonIds());
-
-    if (uniquePrerequisiteLessonIds.size() != request.getPrerequisiteLessonIds().size()) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-
-    if (uniquePrerequisiteLessonIds.contains(null)
-        || uniquePrerequisiteLessonIds.contains(lessonId)) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-
-    List<Lesson> prerequisiteLessons =
-        loadValidPrerequisiteLessons(instructorId, lesson, uniquePrerequisiteLessonIds);
-
-    lessonPrerequisiteRepository.deleteAllByLessonLessonId(lessonId);
-
-    if (!prerequisiteLessons.isEmpty()) {
-      List<LessonPrerequisite> lessonPrerequisites =
-          prerequisiteLessons.stream()
-              .map(
-                  prerequisiteLesson ->
-                      LessonPrerequisite.builder()
-                          .lesson(lesson)
-                          .prerequisiteLesson(prerequisiteLesson)
-                          .build())
-              .toList();
-
-      lessonPrerequisiteRepository.saveAll(lessonPrerequisites);
-    }
-
-    return InstructorLessonDto.UpdateLessonPrerequisitesResponse.builder()
-        .lessonId(lessonId)
-        .prerequisiteLessonIds(new ArrayList<>(uniquePrerequisiteLessonIds))
-        .build();
-  }
-
-  // 레슨을 삭제한다.
-  @Transactional
-  public void deleteLesson(Long instructorId, Long lessonId) {
-    validateAuthenticatedUser(instructorId);
-
-    Lesson lesson = getOwnedLesson(instructorId, lessonId);
-
-    // 레슨이 선행 조건으로 연결된 관계까지 먼저 지워야 안전하다.
-    lessonPrerequisiteRepository.deleteAllByLessonLessonIdOrPrerequisiteLessonLessonId(
-        lessonId, lessonId);
-
-    List<CourseMaterial> materials =
-        courseMaterialRepository.findAllByLessonLessonIdOrderByDisplayOrderAsc(lessonId);
-
-    if (!materials.isEmpty()) {
-      courseMaterialRepository.deleteAllInBatch(materials);
-    }
-
-    lessonRepository.delete(lesson);
-  }
-
-  // 레슨 순서를 일괄 변경한다.
-  @Transactional
-  public void updateLessonOrder(
-      Long instructorId, InstructorLessonDto.UpdateLessonOrderRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    CourseSection section = getOwnedSection(instructorId, request.getSectionId());
-    List<Lesson> lessons =
-        lessonRepository.findAllBySectionSectionIdOrderByOrderIndexAsc(section.getSectionId());
-
-    validateLessonOrders(lessons, request);
-
-    Map<Long, Lesson> lessonMap =
-        lessons.stream().collect(Collectors.toMap(Lesson::getLessonId, Function.identity()));
-
-    for (InstructorLessonDto.LessonOrderItem item : request.getLessonOrders()) {
-      Lesson lesson = lessonMap.get(item.getLessonId());
-      lesson.changeOrderIndex(item.getOrderIndex());
-    }
-  }
-
-  // 강의 메타데이터를 수정한다.
-  @Transactional
-  public void updateCourseMetadata(
-      Long instructorId, Long courseId, InstructorCourseDto.UpdateMetadataRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Course course = getOwnedCourse(instructorId, courseId);
-    metadataEditor.updateMetadata(course, request);
-  }
-
-  // 강의 목표를 전체 교체한다.
-  @Transactional
-  public void replaceObjectives(
-      Long instructorId, Long courseId, InstructorCourseDto.ReplaceObjectivesRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Course course = getOwnedCourse(instructorId, courseId);
-    metadataEditor.replaceObjectives(course, request.getObjectives());
-  }
-
-  // 수강 대상을 전체 교체한다.
-  @Transactional
-  public void replaceTargetAudiences(
-      Long instructorId, Long courseId, InstructorCourseDto.ReplaceTargetAudiencesRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Course course = getOwnedCourse(instructorId, courseId);
-    metadataEditor.replaceTargetAudiences(course, request.getTargetAudiences());
-  }
-
-  @Transactional
-  public void replaceInfoSections(
-      Long instructorId, Long courseId, InstructorCourseDto.ReplaceInfoSectionsRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Course course = getOwnedCourse(instructorId, courseId);
-    metadataEditor.replaceInfoSections(course, request);
-  }
-
-  // 레슨 자료를 생성한다.
-  @Transactional
-  public Long createMaterial(
-      Long instructorId, Long lessonId, InstructorMaterialDto.CreateMaterialRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Lesson lesson = getOwnedLesson(instructorId, lessonId);
-
-    CourseMaterial material =
-        CourseMaterial.builder()
-            .lesson(lesson)
-            .materialType(request.getMaterialType())
-            .materialUrl(request.getMaterialUrl())
-            .assetKey(request.getAssetKey())
-            .originalFileName(request.getOriginalFileName())
-            .displayOrder(request.getDisplayOrder())
-            .build();
-
-    CourseMaterial savedMaterial = courseMaterialRepository.save(material);
-    return savedMaterial.getMaterialId();
-  }
-
-  // 강의 썸네일을 등록한다.
-  public InstructorCourseDto.UploadedAssetResponse uploadCourseAsset(
-      Long instructorId, MultipartFile file, String assetType) {
-    validateAuthenticatedUser(instructorId);
-    return assetStorage.store(instructorId, file, assetType);
-  }
-
-  @Transactional
-  public void uploadThumbnail(
-      Long instructorId, Long courseId, InstructorCourseDto.UploadThumbnailRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Course course = getOwnedCourse(instructorId, courseId);
-    course.updateThumbnail(request.getThumbnailUrl());
-  }
-
-  // 강의 트레일러를 등록한다.
-  @Transactional
-  public void uploadTrailer(
-      Long instructorId, Long courseId, InstructorCourseDto.UploadTrailerRequest request) {
-    validateAuthenticatedUser(instructorId);
-
-    Course course = getOwnedCourse(instructorId, courseId);
-    course.updateTrailer(
-        request.getTrailerUrl(), request.getVideoAssetKey(), request.getDurationSeconds());
-  }
-
   // 현재 로그인한 사용자가 존재하는지 검증한다.
   private void validateAuthenticatedUser(Long instructorId) {
     if (instructorId == null) {
@@ -437,59 +135,6 @@ public class InstructorCourseService {
             });
   }
 
-  // 현재 로그인한 강사가 소유한 섹션인지 검증하며 조회한다.
-  private CourseSection getOwnedSection(Long instructorId, Long sectionId) {
-    return courseSectionRepository
-        .findBySectionIdAndCourseInstructorId(sectionId, instructorId)
-        .orElseGet(
-            () -> {
-              if (courseSectionRepository.existsById(sectionId)) {
-                throw new CustomException(ErrorCode.FORBIDDEN);
-              }
-              throw new CustomException(ErrorCode.RESOURCE_NOT_FOUND);
-            });
-  }
-
-  // 현재 로그인한 강사가 소유한 레슨인지 검증하며 조회한다.
-  private Lesson getOwnedLesson(Long instructorId, Long lessonId) {
-    return lessonRepository
-        .findByLessonIdAndSectionCourseInstructorId(lessonId, instructorId)
-        .orElseGet(
-            () -> {
-              if (lessonRepository.existsById(lessonId)) {
-                throw new CustomException(ErrorCode.FORBIDDEN);
-              }
-              throw new CustomException(ErrorCode.RESOURCE_NOT_FOUND);
-            });
-  }
-
-  // 요청한 레슨 순서 정보가 실제 레슨 목록과 일치하는지 검증한다.
-  private void validateLessonOrders(
-      List<Lesson> lessons, InstructorLessonDto.UpdateLessonOrderRequest request) {
-    if (lessons.isEmpty()) {
-      throw new CustomException(ErrorCode.RESOURCE_NOT_FOUND);
-    }
-
-    Set<Long> actualLessonIds =
-        lessons.stream().map(Lesson::getLessonId).collect(Collectors.toSet());
-    Set<Long> requestedLessonIds =
-        request.getLessonOrders().stream()
-            .map(InstructorLessonDto.LessonOrderItem::getLessonId)
-            .collect(Collectors.toSet());
-
-    if (actualLessonIds.size() != request.getLessonOrders().size()
-        || !actualLessonIds.equals(requestedLessonIds)) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-
-    Set<Integer> requestedOrderIndexes = new HashSet<>();
-    for (InstructorLessonDto.LessonOrderItem item : request.getLessonOrders()) {
-      if (!requestedOrderIndexes.add(item.getOrderIndex())) {
-        throw new CustomException(ErrorCode.INVALID_INPUT);
-      }
-    }
-  }
-
   // 강의 하위 데이터를 먼저 정리한다.
   private void deleteCourseChildren(Long courseId) {
     List<Long> lessonIds =
@@ -505,46 +150,6 @@ public class InstructorCourseService {
     lessonRepository.deleteAllBySectionCourseCourseId(courseId);
     courseSectionRepository.deleteAllByCourseCourseId(courseId);
     metadataEditor.deleteAll(courseId);
-  }
-
-  // 선행 조건 후보가 같은 강의 내 레슨인지 검증한다.
-  private List<Lesson> loadValidPrerequisiteLessons(
-      Long instructorId, Lesson targetLesson, LinkedHashSet<Long> prerequisiteLessonIds) {
-    if (prerequisiteLessonIds.isEmpty()) {
-      return List.of();
-    }
-
-    List<Lesson> lessons =
-        lessonRepository.findAllByLessonIdInAndSectionCourseInstructorId(
-            new ArrayList<>(prerequisiteLessonIds), instructorId);
-
-    if (lessons.size() != prerequisiteLessonIds.size()) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-
-    Long targetCourseId = targetLesson.getSection().getCourse().getCourseId();
-    boolean hasDifferentCourseLesson =
-        lessons.stream()
-            .anyMatch(
-                lesson -> !targetCourseId.equals(lesson.getSection().getCourse().getCourseId()));
-
-    if (hasDifferentCourseLesson) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-
-    Map<Long, Lesson> lessonMap =
-        lessons.stream().collect(Collectors.toMap(Lesson::getLessonId, Function.identity()));
-
-    return prerequisiteLessonIds.stream()
-        .map(
-            prerequisiteLessonId -> {
-              Lesson prerequisiteLesson = lessonMap.get(prerequisiteLessonId);
-              if (prerequisiteLesson == null) {
-                throw new CustomException(ErrorCode.INVALID_INPUT);
-              }
-              return prerequisiteLesson;
-            })
-        .toList();
   }
 
   // 선행 조건 연결을 일괄 삭제한다.
