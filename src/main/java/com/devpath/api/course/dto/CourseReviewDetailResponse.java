@@ -1,4 +1,4 @@
-package com.devpath.api.admin.dto.governance;
+package com.devpath.api.course.dto;
 
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseSection;

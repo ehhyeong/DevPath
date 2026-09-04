@@ -5,8 +5,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.devpath.api.admin.service.AdminCourseGovernanceService;
 import com.devpath.api.admin.service.AdminDashboardService;
+import com.devpath.api.course.service.AdminCourseGovernanceService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;

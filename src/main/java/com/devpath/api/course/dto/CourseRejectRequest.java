@@ -1,4 +1,4 @@
-package com.devpath.api.admin.dto.governance;
+package com.devpath.api.course.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

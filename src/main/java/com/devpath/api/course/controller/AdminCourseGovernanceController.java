@@ -1,11 +1,11 @@
-package com.devpath.api.admin.controller;
+package com.devpath.api.course.controller;
 
-import com.devpath.api.admin.dto.governance.CourseApproveRequest;
-import com.devpath.api.admin.dto.governance.CourseRejectRequest;
-import com.devpath.api.admin.dto.governance.CourseReviewDetailResponse;
-import com.devpath.api.admin.dto.governance.CourseReviewHistoryResponse;
-import com.devpath.api.admin.dto.governance.PendingCourseResponse;
-import com.devpath.api.admin.service.AdminCourseGovernanceService;
+import com.devpath.api.course.dto.CourseApproveRequest;
+import com.devpath.api.course.dto.CourseRejectRequest;
+import com.devpath.api.course.dto.CourseReviewDetailResponse;
+import com.devpath.api.course.dto.CourseReviewHistoryResponse;
+import com.devpath.api.course.dto.PendingCourseResponse;
+import com.devpath.api.course.service.AdminCourseGovernanceService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

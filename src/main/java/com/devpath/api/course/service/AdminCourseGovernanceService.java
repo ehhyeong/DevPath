@@ -1,12 +1,10 @@
-package com.devpath.api.admin.service;
+package com.devpath.api.course.service;
 
-import com.devpath.api.admin.dto.governance.CourseApproveRequest;
-import com.devpath.api.admin.dto.governance.CourseRejectRequest;
-import com.devpath.api.admin.dto.governance.CourseReviewDetailResponse;
-import com.devpath.api.admin.dto.governance.CourseReviewHistoryResponse;
-import com.devpath.api.admin.dto.governance.PendingCourseResponse;
-import com.devpath.api.course.service.HlsPlaybackService;
-import com.devpath.api.notification.service.InstructorNotificationService;
+import com.devpath.api.course.dto.CourseApproveRequest;
+import com.devpath.api.course.dto.CourseRejectRequest;
+import com.devpath.api.course.dto.CourseReviewDetailResponse;
+import com.devpath.api.course.dto.CourseReviewHistoryResponse;
+import com.devpath.api.course.dto.PendingCourseResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.admin.entity.CourseReviewHistory;
@@ -18,6 +16,7 @@ import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -34,7 +33,7 @@ public class AdminCourseGovernanceService {
   private final CourseSectionRepository courseSectionRepository;
   private final LessonRepository lessonRepository;
   private final HlsPlaybackService hlsPlaybackService;
-  private final InstructorNotificationService instructorNotificationService;
+  private final InstructorNotificationPublisher instructorNotificationPublisher;
   private final CourseReviewHistoryRepository courseReviewHistoryRepository;
 
   public List<PendingCourseResponse> getPendingCourses() {
@@ -86,7 +85,7 @@ public class AdminCourseGovernanceService {
     }
     course.approve();
     saveHistory(course, adminId, "APPROVED", request.getReason());
-    instructorNotificationService.notifySystem(
+    instructorNotificationPublisher.notifySystem(
         course.getInstructor().getId(),
         "강좌가 승인되었습니다: " + course.getTitle() + " / 사유: " + request.getReason());
   }
@@ -102,7 +101,7 @@ public class AdminCourseGovernanceService {
     }
     course.reject();
     saveHistory(course, adminId, "REJECTED", request.getReason());
-    instructorNotificationService.notifySystem(
+    instructorNotificationPublisher.notifySystem(
         course.getInstructor().getId(),
         "강좌가 반려되었습니다: " + course.getTitle() + " / 사유: " + request.getReason());
   }
