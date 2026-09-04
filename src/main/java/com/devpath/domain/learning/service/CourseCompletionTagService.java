@@ -1,4 +1,4 @@
-package com.devpath.api.learning.service;
+package com.devpath.domain.learning.service;
 
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;

@@ -9,6 +9,7 @@ import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.learning.entity.LessonProgress;
 import com.devpath.domain.learning.repository.LessonProgressRepository;
+import com.devpath.domain.learning.service.CourseCompletionTagService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import java.util.Optional;
