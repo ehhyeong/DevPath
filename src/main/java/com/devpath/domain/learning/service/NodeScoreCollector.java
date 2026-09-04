@@ -1,4 +1,4 @@
-package com.devpath.api.learning.component;
+package com.devpath.domain.learning.service;
 
 import com.devpath.domain.learning.entity.SubmissionStatus;
 import com.devpath.domain.learning.repository.QuizAttemptRepository;
