@@ -1,4 +1,4 @@
-package com.devpath.api.learner.dto;
+package com.devpath.api.recommendation.dto;
 
 import com.devpath.domain.roadmap.entity.DiagnosisQuiz;
 import com.devpath.domain.roadmap.entity.DiagnosisResult;

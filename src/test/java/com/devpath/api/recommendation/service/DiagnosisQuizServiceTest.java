@@ -1,11 +1,10 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.recommendation.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.devpath.api.learner.component.CourseScoreAnalyzer;
-import com.devpath.api.learner.dto.DiagnosisQuizDto;
+import com.devpath.api.recommendation.dto.DiagnosisQuizDto;
 import com.devpath.domain.roadmap.entity.DiagnosisQuiz;
 import com.devpath.domain.roadmap.entity.DiagnosisResult;
 import com.devpath.domain.roadmap.entity.QuizDifficulty;
@@ -15,7 +14,6 @@ import com.devpath.domain.roadmap.repository.DiagnosisResultRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +31,6 @@ class DiagnosisQuizServiceTest {
   @Mock private DiagnosisResultRepository diagnosisResultRepository;
   @Mock private RoadmapRepository roadmapRepository;
   @Mock private UserRepository userRepository;
-  @Mock private CourseScoreAnalyzer courseScoreAnalyzer;
   @Mock private DiagnosisRecommendationService diagnosisRecommendationService;
 
   private DiagnosisQuizService diagnosisQuizService;
@@ -46,7 +43,6 @@ class DiagnosisQuizServiceTest {
             diagnosisResultRepository,
             roadmapRepository,
             userRepository,
-            courseScoreAnalyzer,
             diagnosisRecommendationService);
   }
 
@@ -87,11 +83,7 @@ class DiagnosisQuizServiceTest {
     ReflectionTestUtils.setField(quiz, "quizId", quizId);
     when(diagnosisQuizRepository.findByQuizIdAndUser_Id(quizId, userId))
         .thenReturn(Optional.of(quiz));
-    when(courseScoreAnalyzer.analyze(userId, null))
-        .thenReturn(
-            new CourseScoreAnalyzer.CourseScores(
-                List.of(new CourseScoreAnalyzer.CourseScore("Spring", 83)), 83.0, true));
-    when(diagnosisRecommendationService.recommendForQuiz(userId, null, 12L, courseScores(83)))
+    when(diagnosisRecommendationService.recommendForQuiz(userId, null, 12L))
         .thenReturn(new DiagnosisRecommendationService.RecommendationResult(83, ""));
     when(diagnosisResultRepository.save(any(DiagnosisResult.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -116,10 +108,5 @@ class DiagnosisQuizServiceTest {
 
   private Roadmap roadmap(long roadmapId) {
     return Roadmap.builder().roadmapId(roadmapId).title("백엔드 로드맵").build();
-  }
-
-  private CourseScoreAnalyzer.CourseScores courseScores(int score) {
-    return new CourseScoreAnalyzer.CourseScores(
-        List.of(new CourseScoreAnalyzer.CourseScore("Spring", score)), score, true);
   }
 }

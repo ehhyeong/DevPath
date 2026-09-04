@@ -1,9 +1,9 @@
-package com.devpath.api.learner.component;
+package com.devpath.api.recommendation.component;
 
-import com.devpath.api.learning.component.NodeScoreCollector;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.course.repository.CourseRepository;
+import com.devpath.domain.learning.service.NodeScoreCollector;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 // 클리어한 노드와 연관된(노드에 매핑된) 강의들의 성취도(퀴즈/과제 점수 평균)를 산출한다.
 @Component
 @RequiredArgsConstructor
-public class CourseScoreAnalyzer {
+public class RecommendationCourseScoreAnalyzer {
 
   private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final CourseRepository courseRepository;

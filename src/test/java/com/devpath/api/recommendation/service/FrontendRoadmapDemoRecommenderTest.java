@@ -1,4 +1,4 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.recommendation.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

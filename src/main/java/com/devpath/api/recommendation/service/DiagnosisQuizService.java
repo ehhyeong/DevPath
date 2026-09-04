@@ -1,7 +1,6 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.recommendation.service;
 
-import com.devpath.api.learner.component.CourseScoreAnalyzer;
-import com.devpath.api.learner.dto.DiagnosisQuizDto;
+import com.devpath.api.recommendation.dto.DiagnosisQuizDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.DiagnosisQuiz;
@@ -27,7 +26,6 @@ public class DiagnosisQuizService {
   private final DiagnosisResultRepository diagnosisResultRepository;
   private final RoadmapRepository roadmapRepository;
   private final UserRepository userRepository;
-  private final CourseScoreAnalyzer courseScoreAnalyzer;
   private final DiagnosisRecommendationService diagnosisRecommendationService;
 
   @Transactional
@@ -67,11 +65,9 @@ public class DiagnosisQuizService {
     }
     quiz.submit();
 
-    CourseScoreAnalyzer.CourseScores courseScores =
-        courseScoreAnalyzer.analyze(userId, clearedNodeId);
     DiagnosisRecommendationService.RecommendationResult recommendation =
         diagnosisRecommendationService.recommendForQuiz(
-            userId, clearedNodeId, quiz.getRoadmap().getRoadmapId(), courseScores);
+            userId, clearedNodeId, quiz.getRoadmap().getRoadmapId());
 
     DiagnosisResult result =
         DiagnosisResult.builder()
@@ -100,19 +96,6 @@ public class DiagnosisQuizService {
             .findLatestByUserAndRoadmap(userId, roadmapId)
             .orElseThrow(() -> new CustomException(ErrorCode.RESOURCE_NOT_FOUND));
     return DiagnosisQuizDto.QuizResultResponse.from(result);
-  }
-
-  @Transactional
-  public DiagnosisQuizDto.TestRunResponse testRunRecommend(
-      Long userId, Long roadmapId, Long originalNodeId) {
-    return diagnosisRecommendationService.testRunRecommend(userId, roadmapId, originalNodeId);
-  }
-
-  @Transactional
-  public DiagnosisQuizDto.TestRunResponse testRunRecommend(
-      Long userId, Long roadmapId, Long originalNodeId, Long customRoadmapId) {
-    return diagnosisRecommendationService.testRunRecommend(
-        userId, roadmapId, originalNodeId, customRoadmapId);
   }
 
   private int determineQuestionCount(QuizDifficulty difficulty) {

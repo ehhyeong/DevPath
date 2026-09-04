@@ -1,4 +1,4 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.recommendation.service;
 
 import com.devpath.domain.learning.entity.recommendation.NodeChangeType;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChange;

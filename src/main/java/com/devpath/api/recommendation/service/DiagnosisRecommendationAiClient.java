@@ -1,6 +1,6 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.recommendation.service;
 
-import com.devpath.api.learner.component.CourseScoreAnalyzer;
+import com.devpath.api.recommendation.component.RecommendationCourseScoreAnalyzer;
 import com.devpath.common.provider.GeminiProvider;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.NodeStatus;
@@ -30,7 +30,7 @@ class DiagnosisRecommendationAiClient {
       RoadmapNode clearedNode,
       int score,
       boolean lowScore,
-      CourseScoreAnalyzer.CourseScores courseScores,
+      RecommendationCourseScoreAnalyzer.CourseScores courseScores,
       List<String> branchCandidateTags,
       Map<Long, CustomRoadmapNode> deleteCandidates,
       Map<Long, CustomRoadmapNode> reorderCandidates,
@@ -78,7 +78,7 @@ class DiagnosisRecommendationAiClient {
       RoadmapNode clearedNode,
       int score,
       boolean lowScore,
-      CourseScoreAnalyzer.CourseScores courseScores,
+      RecommendationCourseScoreAnalyzer.CourseScores courseScores,
       List<String> branchCandidateTags,
       Map<Long, CustomRoadmapNode> deleteCandidates,
       Map<Long, CustomRoadmapNode> reorderCandidates,

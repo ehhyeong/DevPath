@@ -1,7 +1,7 @@
-package com.devpath.api.learner.controller;
+package com.devpath.api.recommendation.controller;
 
-import com.devpath.api.learner.service.DiagnosisRecommendationAsyncRunner;
 import com.devpath.api.recommendation.dto.RecommendationStatusResponse;
+import com.devpath.api.recommendation.service.DiagnosisRecommendationAsyncRunner;
 import com.devpath.api.recommendation.service.RecommendationStatusService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;

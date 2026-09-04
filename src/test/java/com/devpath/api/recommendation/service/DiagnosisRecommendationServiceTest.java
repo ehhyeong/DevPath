@@ -1,4 +1,4 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.recommendation.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,7 +8,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.devpath.api.learner.component.CourseScoreAnalyzer;
+import com.devpath.api.recommendation.component.DiagnosisRecommendationChangeApplier;
+import com.devpath.api.recommendation.component.RecommendationCourseScoreAnalyzer;
 import com.devpath.common.provider.GeminiProvider;
 import com.devpath.domain.learning.entity.recommendation.NodeChangeType;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChange;
@@ -47,7 +48,7 @@ class DiagnosisRecommendationServiceTest {
   @Mock private CustomRoadmapNodeRepository customRoadmapNodeRepository;
   @Mock private UserTechStackRepository userTechStackRepository;
   @Mock private ProofCardRepository proofCardRepository;
-  @Mock private CourseScoreAnalyzer courseScoreAnalyzer;
+  @Mock private RecommendationCourseScoreAnalyzer courseScoreAnalyzer;
   @Mock private FrontendRoadmapDemoRecommender frontendRoadmapDemoRecommender;
 
   private DiagnosisRecommendationService diagnosisRecommendationService;
@@ -59,9 +60,12 @@ class DiagnosisRecommendationServiceTest {
             roadmapNodeRepository,
             userRepository,
             nodeRequiredTagRepository,
-            recommendationChangeRepository,
-            systemDynamicRoadmapProvider,
             new DiagnosisRecommendationAiClient(geminiProvider, nodeRequiredTagRepository),
+            new DiagnosisRecommendationChangeApplier(
+                roadmapNodeRepository,
+                recommendationChangeRepository,
+                systemDynamicRoadmapProvider,
+                customRoadmapNodeRepository),
             customRoadmapRepository,
             customRoadmapNodeRepository,
             userTechStackRepository,
@@ -84,9 +88,10 @@ class DiagnosisRecommendationServiceTest {
             .title("Spring 트랜잭션")
             .sortOrder(3)
             .build();
-    CourseScoreAnalyzer.CourseScores scores =
-        new CourseScoreAnalyzer.CourseScores(
-            List.of(new CourseScoreAnalyzer.CourseScore("Spring", 50)), 50.0, true);
+    RecommendationCourseScoreAnalyzer.CourseScores scores =
+        new RecommendationCourseScoreAnalyzer.CourseScores(
+            List.of(new RecommendationCourseScoreAnalyzer.CourseScore("Spring", 50)), 50.0, true);
+    when(courseScoreAnalyzer.analyze(userId, nodeId)).thenReturn(scores);
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roadmapNodeRepository.findById(nodeId)).thenReturn(Optional.of(clearedNode));
     when(nodeRequiredTagRepository.findTagNamesByNodeId(nodeId))
@@ -107,7 +112,7 @@ class DiagnosisRecommendationServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     DiagnosisRecommendationService.RecommendationResult result =
-        diagnosisRecommendationService.recommendForQuiz(userId, nodeId, roadmapId, scores);
+        diagnosisRecommendationService.recommendForQuiz(userId, nodeId, roadmapId);
 
     ArgumentCaptor<RecommendationChange> changeCaptor =
         ArgumentCaptor.forClass(RecommendationChange.class);

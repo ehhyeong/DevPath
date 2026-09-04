@@ -1,7 +1,7 @@
-package com.devpath.api.learner.controller;
+package com.devpath.api.recommendation.controller;
 
-import com.devpath.api.learner.dto.DiagnosisQuizDto;
-import com.devpath.api.learner.service.DiagnosisQuizService;
+import com.devpath.api.recommendation.dto.DiagnosisQuizDto;
+import com.devpath.api.recommendation.service.DiagnosisQuizService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

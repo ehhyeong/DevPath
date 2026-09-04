@@ -1,6 +1,5 @@
-package com.devpath.api.learner.service;
+package com.devpath.api.recommendation.service;
 
-import com.devpath.api.recommendation.service.RecommendationStatusService;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChangeStatus;
 import com.devpath.domain.learning.repository.recommendation.RecommendationChangeRepository;
 import java.util.HashSet;
@@ -16,7 +15,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DiagnosisRecommendationAsyncRunner {
 
-  private final DiagnosisQuizService diagnosisQuizService;
+  private final DiagnosisRecommendationService diagnosisRecommendationService;
   private final RecommendationStatusService recommendationStatusService;
   private final RecommendationChangeRepository recommendationChangeRepository;
 
@@ -25,7 +24,8 @@ public class DiagnosisRecommendationAsyncRunner {
     recommendationStatusService.markRunning(userId, originalNodeId);
     try {
       int before = countSuggested(userId, roadmapId, customRoadmapId);
-      diagnosisQuizService.testRunRecommend(userId, roadmapId, originalNodeId, customRoadmapId);
+      diagnosisRecommendationService.testRunRecommend(
+          userId, roadmapId, originalNodeId, customRoadmapId);
       int after = countSuggested(userId, roadmapId, customRoadmapId);
       recommendationStatusService.markDone(userId, originalNodeId, Math.max(0, after - before));
     } catch (Exception e) {
