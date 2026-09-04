@@ -1,4 +1,4 @@
-package com.devpath.api.admin.dto.refund;
+package com.devpath.api.refund.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
