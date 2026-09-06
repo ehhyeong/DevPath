@@ -1,9 +1,11 @@
 package com.devpath.api.voice.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.devpath.api.voice.dto.VoiceRequest;
 import com.devpath.api.voice.dto.VoiceResponse;
 import com.devpath.common.provider.GeminiProvider;
 import com.devpath.domain.user.entity.User;
@@ -13,12 +15,16 @@ import com.devpath.domain.voice.entity.VoiceMeetingMinutes;
 import com.devpath.domain.voice.repository.VoiceChannelRepository;
 import com.devpath.domain.voice.repository.VoiceChatMessageRepository;
 import com.devpath.domain.voice.repository.VoiceMeetingMinutesRepository;
+import com.devpath.domain.workspace.entity.WorkspaceTask;
+import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
+import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,5 +111,55 @@ class VoiceMeetingMinutesServiceTest {
     assertThat(result.actionItems()).hasSize(1);
     assertThat(result.actionItems().getFirst().title()).isEqualTo("결제 UI 완성");
     assertThat(result.actionItems().getFirst().dueDate()).isEqualTo(LocalDate.of(2026, 8, 10));
+  }
+
+  @Test
+  void createKanbanTasksReturnsVoiceOwnedTaskResponse() {
+    long channelId = 5L;
+    long workspaceId = 9L;
+    long userId = 23L;
+    User user =
+        User.builder().email("voice@example.com").password("encoded").name("Voice User").build();
+    ReflectionTestUtils.setField(user, "id", userId);
+    VoiceChannel channel =
+        VoiceChannel.builder().workspaceId(workspaceId).creator(user).name("스쿼드 회의").build();
+    ReflectionTestUtils.setField(channel, "id", channelId);
+    LocalDate dueDate = LocalDate.of(2026, 8, 10);
+
+    when(voiceChannelRepository.findByIdAndIsDeletedFalse(channelId))
+        .thenReturn(Optional.of(channel));
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    when(workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(workspaceId, userId))
+        .thenReturn(true);
+    when(workspaceTaskRepository.save(any(WorkspaceTask.class)))
+        .thenAnswer(
+            invocation -> {
+              WorkspaceTask task = invocation.getArgument(0);
+              ReflectionTestUtils.setField(task, "id", 41L);
+              return task;
+            });
+
+    VoiceResponse.MinutesKanbanTasksDetail result =
+        voiceMeetingMinutesService.createKanbanTasksFromMinutes(
+            channelId,
+            userId,
+            new VoiceRequest.MinutesActionItemsCreate(
+                List.of(
+                    new VoiceRequest.MinutesActionItemCreate(
+                        "결제 UI 완성",
+                        "결제 화면을 마무리한다.",
+                        WorkspaceTaskPriority.HIGH,
+                        "Voice User",
+                        dueDate))));
+
+    VoiceResponse.MinutesKanbanTask task = result.tasks().getFirst();
+    assertThat(task.taskId()).isEqualTo(41L);
+    assertThat(task.workspaceId()).isEqualTo(workspaceId);
+    assertThat(task.title()).isEqualTo("결제 UI 완성");
+    assertThat(task.status()).isEqualTo(WorkspaceTaskStatus.TODO);
+    assertThat(task.priority()).isEqualTo(WorkspaceTaskPriority.HIGH);
+    assertThat(task.dueDate()).isEqualTo(dueDate);
+    assertThat(task.createdById()).isEqualTo(userId);
+    assertThat(task.description()).contains("회의에서 언급된 담당자: Voice User", "출처: 스쿼드 회의 AI 회의록");
   }
 }

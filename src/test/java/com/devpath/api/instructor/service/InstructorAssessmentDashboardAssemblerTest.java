@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.devpath.api.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.api.instructor.dto.analytics.InstructorAnalyticsDashboardResponse;
+import com.devpath.domain.analytics.service.InstructorAnalyticsMetrics;
 import com.devpath.domain.learning.entity.Quiz;
 import com.devpath.domain.learning.entity.QuizAttempt;
 import com.devpath.domain.roadmap.entity.RoadmapNode;

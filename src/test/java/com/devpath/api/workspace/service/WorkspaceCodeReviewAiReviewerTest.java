@@ -3,16 +3,13 @@ package com.devpath.api.workspace.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.devpath.api.ai.dto.AiCodeReviewRequest;
-import com.devpath.api.ai.dto.AiCodeReviewResponse;
-import com.devpath.api.ai.service.AiCodeReviewService;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewRequest;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewResponse;
 import com.devpath.domain.ai.entity.AiReviewCommentStatus;
+import com.devpath.domain.ai.service.CodeReviewAssistant;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,13 +23,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WorkspaceCodeReviewAiReviewerTest {
 
   @Mock private WorkspaceCodeReviewStore codeReviewStore;
-  @Mock private AiCodeReviewService aiCodeReviewService;
+  @Mock private CodeReviewAssistant codeReviewAssistant;
 
   private WorkspaceCodeReviewAiReviewer reviewer;
 
   @BeforeEach
   void setUp() {
-    reviewer = new WorkspaceCodeReviewAiReviewer(codeReviewStore, aiCodeReviewService);
+    reviewer = new WorkspaceCodeReviewAiReviewer(codeReviewStore, codeReviewAssistant);
   }
 
   @Test
@@ -41,9 +38,10 @@ class WorkspaceCodeReviewAiReviewerTest {
     long reviewId = 11L;
     long userId = 3L;
     WorkspaceCodeReviewStore.DetailRow row = detailRow(workspaceId, reviewId);
-    AiCodeReviewResponse.Detail aiReview = mock(AiCodeReviewResponse.Detail.class);
-    when(aiReview.reviewId()).thenReturn(55L);
-    when(aiCodeReviewService.createReview(eq(userId), any(AiCodeReviewRequest.Create.class)))
+    CodeReviewAssistant.Review aiReview =
+        new CodeReviewAssistant.Review(
+            55L, userId, null, null, null, null, 0, null, List.of(), null);
+    when(codeReviewAssistant.createReview(eq(userId), any(CodeReviewAssistant.Request.class)))
         .thenReturn(aiReview);
 
     reviewer.createReview(
@@ -53,9 +51,9 @@ class WorkspaceCodeReviewAiReviewerTest {
         new WorkspaceCodeReviewRequest.AiReviewCreate("src/Checkout.tsx"),
         row);
 
-    ArgumentCaptor<AiCodeReviewRequest.Create> requestCaptor =
-        ArgumentCaptor.forClass(AiCodeReviewRequest.Create.class);
-    verify(aiCodeReviewService).createReview(eq(userId), requestCaptor.capture());
+    ArgumentCaptor<CodeReviewAssistant.Request> requestCaptor =
+        ArgumentCaptor.forClass(CodeReviewAssistant.Request.class);
+    verify(codeReviewAssistant).createReview(eq(userId), requestCaptor.capture());
     String diffText = requestCaptor.getValue().diffText();
     assertThat(diffText).contains("Primary display file: src/Checkout.tsx");
     assertThat(diffText.indexOf("### FILE: src/Checkout.tsx"))
@@ -68,8 +66,8 @@ class WorkspaceCodeReviewAiReviewerTest {
   void getReviewMapsAiApiResponseToWorkspaceResponse() {
     LocalDateTime createdAt = LocalDateTime.of(2026, 8, 26, 10, 30);
     LocalDateTime decidedAt = createdAt.plusMinutes(5);
-    AiCodeReviewResponse.CommentDetail comment =
-        new AiCodeReviewResponse.CommentDetail(
+    CodeReviewAssistant.Comment comment =
+        new CodeReviewAssistant.Comment(
             21L,
             55L,
             "TEST",
@@ -80,8 +78,8 @@ class WorkspaceCodeReviewAiReviewerTest {
             AiReviewCommentStatus.ACCEPTED,
             decidedAt,
             createdAt);
-    AiCodeReviewResponse.Detail aiReview =
-        new AiCodeReviewResponse.Detail(
+    CodeReviewAssistant.Review aiReview =
+        new CodeReviewAssistant.Review(
             55L,
             3L,
             "Reviewer",
@@ -92,7 +90,7 @@ class WorkspaceCodeReviewAiReviewerTest {
             "GEMINI",
             List.of(comment),
             createdAt);
-    when(aiCodeReviewService.getReview(55L)).thenReturn(aiReview);
+    when(codeReviewAssistant.getReviewResult(55L)).thenReturn(aiReview);
 
     WorkspaceCodeReviewResponse.AiReview result = reviewer.getReview(55L);
 

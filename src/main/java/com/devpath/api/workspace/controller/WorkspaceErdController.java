@@ -4,7 +4,8 @@ import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 
 import com.devpath.api.workspace.dto.WorkspaceErdRequest;
 import com.devpath.api.workspace.dto.WorkspaceErdResponse;
-import com.devpath.api.workspace.service.WorkspaceErdService;
+import com.devpath.api.workspace.service.WorkspaceErdCommentService;
+import com.devpath.api.workspace.service.WorkspaceErdDocumentService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,14 +30,15 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Workspace ERD API", description = "Squad ERD design API")
 public class WorkspaceErdController {
 
-  private final WorkspaceErdService workspaceErdService;
+  private final WorkspaceErdDocumentService erdDocumentService;
+  private final WorkspaceErdCommentService erdCommentService;
 
   @GetMapping
   @Operation(summary = "Get ERD document", description = "Returns the workspace ERD document.")
   public ApiResponse<WorkspaceErdResponse.Document> getDocument(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(workspaceErdService.getDocument(workspaceId, requireUserId(userId)));
+    return ApiResponse.ok(erdDocumentService.getDocument(workspaceId, requireUserId(userId)));
   }
 
   @PutMapping
@@ -46,7 +48,7 @@ public class WorkspaceErdController {
       @Valid @RequestBody WorkspaceErdRequest.Save request,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(
-        workspaceErdService.saveDocument(workspaceId, requireUserId(userId), request));
+        erdDocumentService.saveDocument(workspaceId, requireUserId(userId), request));
   }
 
   @GetMapping("/versions")
@@ -54,7 +56,7 @@ public class WorkspaceErdController {
   public ApiResponse<List<WorkspaceErdResponse.Version>> getVersions(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(workspaceErdService.getVersions(workspaceId, requireUserId(userId)));
+    return ApiResponse.ok(erdDocumentService.getVersions(workspaceId, requireUserId(userId)));
   }
 
   @GetMapping("/recent-changes")
@@ -64,7 +66,7 @@ public class WorkspaceErdController {
   public ApiResponse<List<WorkspaceErdResponse.Version>> getRecentChanges(
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    return ApiResponse.ok(workspaceErdService.getRecentChanges(workspaceId, requireUserId(userId)));
+    return ApiResponse.ok(erdDocumentService.getRecentChanges(workspaceId, requireUserId(userId)));
   }
 
   @GetMapping("/versions/{version}")
@@ -74,7 +76,7 @@ public class WorkspaceErdController {
       @PathVariable Integer version,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(
-        workspaceErdService.getVersion(workspaceId, version, requireUserId(userId)));
+        erdDocumentService.getVersion(workspaceId, version, requireUserId(userId)));
   }
 
   @GetMapping("/comments")
@@ -85,7 +87,7 @@ public class WorkspaceErdController {
       @RequestParam(required = false) String targetId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(
-        workspaceErdService.getComments(workspaceId, requireUserId(userId), targetType, targetId));
+        erdCommentService.getComments(workspaceId, requireUserId(userId), targetType, targetId));
   }
 
   @PostMapping("/comments")
@@ -95,7 +97,7 @@ public class WorkspaceErdController {
       @Valid @RequestBody WorkspaceErdRequest.CommentCreate request,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(
-        workspaceErdService.createComment(workspaceId, requireUserId(userId), request));
+        erdCommentService.createComment(workspaceId, requireUserId(userId), request));
   }
 
   @DeleteMapping("/comments/{commentId}")
@@ -104,7 +106,7 @@ public class WorkspaceErdController {
       @Parameter(description = "Workspace ID", example = "1") @PathVariable Long workspaceId,
       @PathVariable Long commentId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
-    workspaceErdService.deleteComment(workspaceId, requireUserId(userId), commentId);
+    erdCommentService.deleteComment(workspaceId, requireUserId(userId), commentId);
     return ApiResponse.ok(null);
   }
 }

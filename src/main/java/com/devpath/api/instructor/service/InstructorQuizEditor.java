@@ -1,8 +1,5 @@
 package com.devpath.api.instructor.service;
 
-import com.devpath.api.evaluation.dto.request.CreateAiQuizDraftRequest;
-import com.devpath.api.evaluation.dto.response.AiQuizDraftResponse;
-import com.devpath.api.evaluation.service.AiQuizDraftService;
 import com.devpath.api.instructor.dto.InstructorLessonEvaluationDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -28,11 +25,9 @@ class InstructorQuizEditor {
   private static final int MAX_QUESTION_EXPLANATION_LENGTH = 120;
 
   private final QuizRepository quizRepository;
-  private final AiQuizDraftService aiQuizDraftService;
 
-  InstructorQuizEditor(QuizRepository quizRepository, AiQuizDraftService aiQuizDraftService) {
+  InstructorQuizEditor(QuizRepository quizRepository) {
     this.quizRepository = quizRepository;
-    this.aiQuizDraftService = aiQuizDraftService;
   }
 
   InstructorLessonEvaluationDto.QuizEditorResponse get(Lesson lesson, RoadmapNode node) {
@@ -148,90 +143,6 @@ class InstructorQuizEditor {
 
     Quiz savedQuiz = quizRepository.save(quiz);
     return mapQuizEditor(lesson, node, savedQuiz);
-  }
-
-  InstructorLessonEvaluationDto.QuizEditorResponse generate(
-      Long instructorId,
-      Lesson lesson,
-      RoadmapNode node,
-      InstructorLessonEvaluationDto.GenerateQuizRequest request) {
-    Quiz existingQuiz =
-        quizRepository
-            .findFirstByRoadmapNodeNodeIdAndIsDeletedFalseOrderByCreatedAtDesc(node.getNodeId())
-            .orElse(null);
-
-    AiQuizDraftResponse draft =
-        aiQuizDraftService.createDraft(
-            instructorId,
-            CreateAiQuizDraftRequest.builder()
-                .nodeId(node.getNodeId())
-                .title(
-                    existingQuiz == null
-                        ? defaultIfBlank(lesson.getTitle(), "새 퀴즈")
-                        : existingQuiz.getTitle())
-                .description(
-                    existingQuiz == null
-                        ? normalizeText(lesson.getDescription())
-                        : existingQuiz.getDescription())
-                .quizType(resolveGeneratedQuizType(request.getMode()))
-                .sourceText(buildQuizSourceText(lesson, request))
-                .sourceTimestamp(normalizeText(request.getVideoFileName()))
-                .sourceMimeType(normalizeText(request.getVideoMimeType()))
-                .sourceBase64Content(normalizeText(request.getVideoBase64Content()))
-                .fallbackOnly(!hasGenerationInput(request))
-                .questionCount(clampQuestionCount(request.getQuestionCount()))
-                .difficultyLevel(clampDifficultyLevel(request.getDifficultyLevel()))
-                .build());
-
-    return buildQuizDraftResponse(lesson, node, existingQuiz, draft);
-  }
-
-  private InstructorLessonEvaluationDto.QuizEditorResponse buildQuizDraftResponse(
-      Lesson lesson, RoadmapNode node, Quiz existingQuiz, AiQuizDraftResponse draft) {
-    return InstructorLessonEvaluationDto.QuizEditorResponse.builder()
-        .lessonId(lesson.getLessonId())
-        .nodeId(node.getNodeId())
-        .quizId(existingQuiz == null ? null : existingQuiz.getId())
-        .title(draft.getTitle())
-        .description(draft.getDescription())
-        .quizType(draft.getQuizType() == null ? QuizType.MANUAL.name() : draft.getQuizType().name())
-        .totalScore(
-            draft.getQuestions().stream()
-                .mapToInt(question -> question.getPoints() == null ? 0 : question.getPoints())
-                .sum())
-        .passScore(existingQuiz == null ? 60 : defaultNumber(existingQuiz.getPassScore(), 60))
-        .timeLimitMinutes(
-            existingQuiz == null ? 10 : defaultNumber(existingQuiz.getTimeLimitMinutes(), 10))
-        .exposeAnswer(existingQuiz != null && Boolean.TRUE.equals(existingQuiz.getExposeAnswer()))
-        .exposeExplanation(
-            existingQuiz != null && Boolean.TRUE.equals(existingQuiz.getExposeExplanation()))
-        .isPublished(existingQuiz != null && Boolean.TRUE.equals(existingQuiz.getIsPublished()))
-        .questions(
-            draft.getQuestions().stream()
-                .map(
-                    question ->
-                        InstructorLessonEvaluationDto.QuizQuestionItem.builder()
-                            .questionId(null)
-                            .questionType(question.getQuestionType().name())
-                            .questionText(question.getQuestionText())
-                            .explanation(question.getExplanation())
-                            .points(question.getPoints())
-                            .displayOrder(question.getDisplayOrder())
-                            .sourceTimestamp(question.getSourceTimestamp())
-                            .options(
-                                question.getOptions().stream()
-                                    .map(
-                                        option ->
-                                            InstructorLessonEvaluationDto.QuizOptionItem.builder()
-                                                .optionId(null)
-                                                .optionText(option.getOptionText())
-                                                .isCorrect(option.getCorrect())
-                                                .displayOrder(option.getDisplayOrder())
-                                                .build())
-                                    .toList())
-                            .build())
-                .toList())
-        .build();
   }
 
   private InstructorLessonEvaluationDto.QuizEditorResponse mapQuizEditor(
@@ -389,54 +300,6 @@ class InstructorQuizEditor {
     }
   }
 
-  private QuizType resolveGeneratedQuizType(String mode) {
-    return "video".equalsIgnoreCase(mode) ? QuizType.AI_VIDEO : QuizType.AI_TOPIC;
-  }
-
-  private String buildQuizSourceText(
-      Lesson lesson, InstructorLessonEvaluationDto.GenerateQuizRequest request) {
-    List<String> parts = new ArrayList<>();
-
-    if (request.getKeywords() != null && !request.getKeywords().isEmpty()) {
-      String keywordText =
-          request.getKeywords().stream()
-              .filter(value -> !isBlank(value))
-              .collect(Collectors.joining(", "));
-      if (!isBlank(keywordText)) {
-        parts.add("키워드: " + keywordText);
-      }
-    }
-
-    if (!isBlank(request.getScriptText())) {
-      parts.add(request.getScriptText().trim());
-    }
-
-    if (!isBlank(request.getVideoFileName())) {
-      parts.add("비디오 파일: " + request.getVideoFileName().trim());
-    }
-
-    if (!isBlank(lesson.getTitle())) {
-      parts.add("레슨 제목: " + lesson.getTitle().trim());
-    }
-
-    if (!isBlank(lesson.getDescription())) {
-      parts.add("레슨 설명: " + lesson.getDescription().trim());
-    }
-
-    return parts.isEmpty() ? "기본 학습 내용을 바탕으로 퀴즈를 생성합니다." : String.join("\n", parts);
-  }
-
-  private boolean hasGenerationInput(InstructorLessonEvaluationDto.GenerateQuizRequest request) {
-    if ("video".equalsIgnoreCase(request.getMode())) {
-      return !isBlank(request.getVideoBase64Content()) || !isBlank(request.getVideoFileName());
-    }
-
-    boolean hasKeyword =
-        request.getKeywords() != null
-            && request.getKeywords().stream().anyMatch(value -> !isBlank(value));
-    return hasKeyword || !isBlank(request.getScriptText());
-  }
-
   // 키워드 목록을 저장용 쉼표 구분 문자열로 합친다.
   private String joinKeywords(List<String> keywords) {
     if (keywords == null || keywords.isEmpty()) {
@@ -463,20 +326,6 @@ class InstructorQuizEditor {
         .map(String::trim)
         .filter(keyword -> !keyword.isBlank())
         .toList();
-  }
-
-  private int clampQuestionCount(Integer questionCount) {
-    if (questionCount == null) {
-      return 3;
-    }
-    return Math.max(1, Math.min(questionCount, 10));
-  }
-
-  private int clampDifficultyLevel(Integer difficultyLevel) {
-    if (difficultyLevel == null) {
-      return 2;
-    }
-    return Math.max(1, Math.min(difficultyLevel, 3));
   }
 
   private String defaultIfBlank(String value, String fallback) {

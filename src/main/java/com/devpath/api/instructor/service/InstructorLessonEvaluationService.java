@@ -27,6 +27,7 @@ public class InstructorLessonEvaluationService {
   private final RoadmapNodeRepository roadmapNodeRepository;
   private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final InstructorQuizEditor quizEditor;
+  private final InstructorQuizDraftGenerator quizDraftGenerator;
   private final InstructorAssignmentEditor assignmentEditor;
 
   @Transactional(readOnly = true)
@@ -52,7 +53,8 @@ public class InstructorLessonEvaluationService {
       Long instructorId, Long lessonId, InstructorLessonEvaluationDto.GenerateQuizRequest request) {
     validateAuthenticatedUser(instructorId);
     Lesson lesson = getOwnedLesson(instructorId, lessonId);
-    return quizEditor.generate(instructorId, lesson, ensureEvaluationNode(lesson, true), request);
+    return quizDraftGenerator.generate(
+        instructorId, lesson, ensureEvaluationNode(lesson, true), request);
   }
 
   @Transactional(readOnly = true)

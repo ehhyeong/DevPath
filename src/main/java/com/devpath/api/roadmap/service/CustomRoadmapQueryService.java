@@ -1,6 +1,5 @@
 package com.devpath.api.roadmap.service;
 
-import com.devpath.api.learning.service.CourseCompletionTagService;
 import com.devpath.api.roadmap.dto.MyRoadmapDto;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -10,6 +9,7 @@ import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
 import com.devpath.domain.learning.repository.clearance.NodeClearanceRepository;
+import com.devpath.domain.learning.service.CourseCompletionTagService;
 import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
@@ -20,6 +20,7 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeResourceRepository;
+import com.devpath.domain.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;

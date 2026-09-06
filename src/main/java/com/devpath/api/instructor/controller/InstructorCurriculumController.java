@@ -2,7 +2,7 @@ package com.devpath.api.instructor.controller;
 
 import com.devpath.api.instructor.dto.InstructorLessonDto;
 import com.devpath.api.instructor.dto.InstructorSectionDto;
-import com.devpath.api.instructor.service.InstructorCourseService;
+import com.devpath.api.instructor.service.InstructorCurriculumService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/instructor")
 public class InstructorCurriculumController {
 
-  private final InstructorCourseService instructorCourseService;
+  private final InstructorCurriculumService instructorCurriculumService;
 
   @Operation(summary = "섹션 생성")
   @PostMapping("/courses/{courseId}/sections")
@@ -33,7 +33,7 @@ public class InstructorCurriculumController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long courseId,
       @Valid @RequestBody InstructorSectionDto.CreateSectionRequest request) {
-    Long sectionId = instructorCourseService.createSection(userId, courseId, request);
+    Long sectionId = instructorCurriculumService.createSection(userId, courseId, request);
     return ApiResponse.success("섹션이 생성되었습니다.", sectionId);
   }
 
@@ -43,7 +43,7 @@ public class InstructorCurriculumController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long sectionId,
       @Valid @RequestBody InstructorSectionDto.UpdateSectionRequest request) {
-    instructorCourseService.updateSection(userId, sectionId, request);
+    instructorCurriculumService.updateSection(userId, sectionId, request);
     return ApiResponse.success("섹션이 수정되었습니다.", null);
   }
 
@@ -52,7 +52,7 @@ public class InstructorCurriculumController {
   public ApiResponse<Void> deleteSection(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long sectionId) {
-    instructorCourseService.deleteSection(userId, sectionId);
+    instructorCurriculumService.deleteSection(userId, sectionId);
     return ApiResponse.success("섹션이 삭제되었습니다.", null);
   }
 
@@ -62,7 +62,7 @@ public class InstructorCurriculumController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long sectionId,
       @Valid @RequestBody InstructorLessonDto.CreateLessonRequest request) {
-    Long lessonId = instructorCourseService.createLesson(userId, sectionId, request);
+    Long lessonId = instructorCurriculumService.createLesson(userId, sectionId, request);
     return ApiResponse.success("레슨이 생성되었습니다.", lessonId);
   }
 
@@ -72,7 +72,7 @@ public class InstructorCurriculumController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @PathVariable Long lessonId,
       @Valid @RequestBody InstructorLessonDto.UpdateLessonRequest request) {
-    instructorCourseService.updateLesson(userId, lessonId, request);
+    instructorCurriculumService.updateLesson(userId, lessonId, request);
     return ApiResponse.success("레슨이 수정되었습니다.", null);
   }
 
@@ -84,7 +84,7 @@ public class InstructorCurriculumController {
           @PathVariable Long lessonId,
           @Valid @RequestBody InstructorLessonDto.UpdateLessonPrerequisitesRequest request) {
     InstructorLessonDto.UpdateLessonPrerequisitesResponse response =
-        instructorCourseService.updateLessonPrerequisites(userId, lessonId, request);
+        instructorCurriculumService.updateLessonPrerequisites(userId, lessonId, request);
     return ApiResponse.success("레슨 선행 조건이 저장되었습니다.", response);
   }
 
@@ -92,7 +92,7 @@ public class InstructorCurriculumController {
   @DeleteMapping("/lessons/{lessonId}")
   public ApiResponse<Void> deleteLesson(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId, @PathVariable Long lessonId) {
-    instructorCourseService.deleteLesson(userId, lessonId);
+    instructorCurriculumService.deleteLesson(userId, lessonId);
     return ApiResponse.success("레슨이 삭제되었습니다.", null);
   }
 
@@ -101,7 +101,7 @@ public class InstructorCurriculumController {
   public ApiResponse<Void> updateLessonOrder(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
       @Valid @RequestBody InstructorLessonDto.UpdateLessonOrderRequest request) {
-    instructorCourseService.updateLessonOrder(userId, request);
+    instructorCurriculumService.updateLessonOrder(userId, request);
     return ApiResponse.success("레슨 순서가 변경되었습니다.", null);
   }
 }

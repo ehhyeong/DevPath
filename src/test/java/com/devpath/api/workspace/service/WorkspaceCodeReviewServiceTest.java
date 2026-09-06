@@ -3,10 +3,10 @@ package com.devpath.api.workspace.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.devpath.api.ai.service.AiCodeReviewService;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewRequest;
 import com.devpath.api.workspace.dto.WorkspaceCodeReviewResponse;
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
+import com.devpath.domain.ai.service.CodeReviewAssistant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
@@ -25,7 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class WorkspaceCodeReviewServiceTest {
 
   @Mock private WorkspaceService workspaceService;
-  @Mock private AiCodeReviewService aiCodeReviewService;
+  @Mock private CodeReviewAssistant codeReviewAssistant;
 
   private EmbeddedDatabase database;
   private WorkspaceCodeReviewService service;
@@ -46,7 +46,7 @@ class WorkspaceCodeReviewServiceTest {
         new WorkspaceCodeReviewService(
             codeReviewStore,
             workspaceService,
-            new WorkspaceCodeReviewAiReviewer(codeReviewStore, aiCodeReviewService));
+            new WorkspaceCodeReviewAiReviewer(codeReviewStore, codeReviewAssistant));
   }
 
   @AfterEach

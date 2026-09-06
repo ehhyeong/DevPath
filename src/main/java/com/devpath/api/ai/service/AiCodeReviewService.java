@@ -10,6 +10,7 @@ import com.devpath.domain.ai.entity.AiCodeReview;
 import com.devpath.domain.ai.entity.AiReviewComment;
 import com.devpath.domain.ai.repository.AiCodeReviewRepository;
 import com.devpath.domain.ai.repository.AiReviewCommentRepository;
+import com.devpath.domain.ai.service.CodeReviewAssistant;
 import com.devpath.domain.review.entity.PullRequestSubmission;
 import com.devpath.domain.review.repository.PullRequestSubmissionRepository;
 import com.devpath.domain.user.entity.User;
@@ -22,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AiCodeReviewService {
+public class AiCodeReviewService implements CodeReviewAssistant {
 
   private final AiCodeReviewRepository aiCodeReviewRepository;
   private final AiReviewCommentRepository aiReviewCommentRepository;
@@ -30,6 +31,21 @@ public class AiCodeReviewService {
   private final UserRepository userRepository;
   private final AiCodeReviewProvider aiCodeReviewProvider;
   private final NotificationEventService notificationEventService;
+
+  @Override
+  @Transactional
+  public Review createReview(Long requesterId, Request request) {
+    return toAssistantReview(
+        createReview(
+            requesterId,
+            new AiCodeReviewRequest.Create(
+                null, request.pullRequestId(), request.title(), request.diffText())));
+  }
+
+  @Override
+  public Review getReviewResult(Long reviewId) {
+    return toAssistantReview(getReview(reviewId));
+  }
 
   @Transactional
   public AiCodeReviewResponse.Detail createReview(
@@ -181,5 +197,33 @@ public class AiCodeReviewService {
     if (!userRepository.existsById(userId)) {
       throw new CustomException(ErrorCode.USER_NOT_FOUND);
     }
+  }
+
+  private Review toAssistantReview(AiCodeReviewResponse.Detail detail) {
+    return new Review(
+        detail.reviewId(),
+        detail.requesterId(),
+        detail.requesterName(),
+        detail.pullRequestId(),
+        detail.title(),
+        detail.summary(),
+        detail.commentCount(),
+        detail.providerName(),
+        detail.comments().stream()
+            .map(
+                comment ->
+                    new Comment(
+                        comment.commentId(),
+                        comment.reviewId(),
+                        comment.category(),
+                        comment.lineNumber(),
+                        comment.title(),
+                        comment.message(),
+                        comment.suggestion(),
+                        comment.status(),
+                        comment.decidedAt(),
+                        comment.createdAt()))
+            .toList(),
+        detail.createdAt());
   }
 }

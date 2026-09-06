@@ -1,12 +1,12 @@
 package com.devpath.api.job.service;
 
 import com.devpath.api.job.dto.JobActivityProfileResponse;
-import com.devpath.api.learning.component.NodeScoreCollector;
 import com.devpath.domain.learning.entity.proof.ProofCard;
 import com.devpath.domain.learning.entity.proof.ProofCardStatus;
 import com.devpath.domain.learning.entity.proof.ProofCardTag;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
+import com.devpath.domain.learning.service.NodeScoreCollector;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;

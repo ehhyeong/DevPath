@@ -9,8 +9,10 @@ import com.devpath.api.analytics.dto.InstructorAnalyticsProgressResponse;
 import com.devpath.api.analytics.dto.InstructorAnalyticsQuizResponse;
 import com.devpath.api.analytics.dto.InstructorAnalyticsStudentResponse;
 import com.devpath.api.analytics.dto.InstructorAnalyticsWeakPointResponse;
-import com.devpath.api.analytics.service.InstructorAssessmentAnalyticsService;
+import com.devpath.api.analytics.service.InstructorAssignmentAnalyticsService;
+import com.devpath.api.analytics.service.InstructorDifficultyAnalyticsService;
 import com.devpath.api.analytics.service.InstructorLearningProgressAnalyticsService;
+import com.devpath.api.analytics.service.InstructorQuizAnalyticsService;
 import com.devpath.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,7 +32,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class InstructorLearningAnalyticsController {
 
   private final InstructorLearningProgressAnalyticsService learningProgressAnalyticsService;
-  private final InstructorAssessmentAnalyticsService assessmentAnalyticsService;
+  private final InstructorAssignmentAnalyticsService assignmentAnalyticsService;
+  private final InstructorQuizAnalyticsService quizAnalyticsService;
+  private final InstructorDifficultyAnalyticsService difficultyAnalyticsService;
 
   @Operation(summary = "학습 분석 개요 조회", description = "강사 전체 학습 분석 개요를 조회합니다.")
   @GetMapping("/overview")
@@ -77,14 +81,14 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<InstructorAnalyticsAssignmentResponse.Detail>>
       getAssignmentStats(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(assessmentAnalyticsService.getAssignmentStats(instructorId)));
+        ApiResponse.ok(assignmentAnalyticsService.getAssignmentStats(instructorId)));
   }
 
   @Operation(summary = "퀴즈 통계 조회", description = "퀴즈 응시 분석 정보를 조회합니다.")
   @GetMapping("/quiz-stats")
   public ResponseEntity<ApiResponse<InstructorAnalyticsQuizResponse.Detail>> getQuizStats(
       @Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
-    return ResponseEntity.ok(ApiResponse.ok(assessmentAnalyticsService.getQuizStats(instructorId)));
+    return ResponseEntity.ok(ApiResponse.ok(quizAnalyticsService.getQuizStats(instructorId)));
   }
 
   @Operation(summary = "레슨별 이탈 분석 조회", description = "레슨별 이탈 분석 정보를 조회합니다.")
@@ -100,7 +104,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsDifficultyResponse.NodeItem>>>
       getDifficulty(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(assessmentAnalyticsService.getDifficulty(instructorId)));
+        ApiResponse.ok(difficultyAnalyticsService.getDifficulty(instructorId)));
   }
 
   @Operation(summary = "수강생 진도 순위 조회", description = "진도 기준으로 정렬된 수강생 목록을 조회합니다.")
@@ -116,7 +120,7 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsQuizResponse.QuestionPerformanceItem>>>
       getQuestionPerformance(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(assessmentAnalyticsService.getQuestionPerformance(instructorId)));
+        ApiResponse.ok(quizAnalyticsService.getQuestionPerformance(instructorId)));
   }
 
   @Operation(summary = "학습 퍼널 조회", description = "수강 등록부터 완료까지의 퍼널 분석 정보를 조회합니다.")
@@ -132,6 +136,6 @@ public class InstructorLearningAnalyticsController {
   public ResponseEntity<ApiResponse<List<InstructorAnalyticsWeakPointResponse.NodeItem>>>
       getWeakPoints(@Parameter(hidden = true) @AuthenticationPrincipal Long instructorId) {
     return ResponseEntity.ok(
-        ApiResponse.ok(assessmentAnalyticsService.getWeakPoints(instructorId)));
+        ApiResponse.ok(difficultyAnalyticsService.getWeakPoints(instructorId)));
   }
 }

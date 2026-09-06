@@ -14,6 +14,7 @@ import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
+import com.devpath.domain.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;

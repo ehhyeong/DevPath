@@ -12,6 +12,7 @@ import com.devpath.api.workspace.preview.WorkspaceDocxPreviewer;
 import com.devpath.api.workspace.preview.WorkspaceFilePreviewer;
 import com.devpath.api.workspace.preview.WorkspaceHwpxPreviewer;
 import com.devpath.api.workspace.preview.WorkspaceOfficeRenderer;
+import com.devpath.api.workspace.preview.WorkspacePptxPreviewer;
 import com.devpath.api.workspace.storage.WorkspaceFileStorage;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
@@ -59,9 +60,9 @@ class WorkspaceFileServiceTest {
             new WorkspaceFilePreviewer(
                 new WorkspaceArchivePreviewer(workspaceFileStorage),
                 new WorkspaceDocumentPreviewer(
-                    workspaceFileStorage,
-                    new WorkspaceOfficeRenderer(workspaceFileStorage),
                     new WorkspaceDocxPreviewer(
+                        workspaceFileStorage, new WorkspaceOfficeRenderer(workspaceFileStorage)),
+                    new WorkspacePptxPreviewer(
                         workspaceFileStorage, new WorkspaceOfficeRenderer(workspaceFileStorage)),
                     new WorkspaceHwpxPreviewer(workspaceFileStorage))));
   }

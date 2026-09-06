@@ -6,7 +6,7 @@ import com.devpath.api.learning.dto.TilResponse;
 import com.devpath.api.learning.dto.WeaknessAnalysisResponse;
 import com.devpath.api.learning.proof.dto.ProofCardResponse;
 import com.devpath.api.learning.proof.service.ProofCardService;
-import com.devpath.api.learning.service.SupplementRecommendationService;
+import com.devpath.api.learning.service.SupplementRecommendationQueryService;
 import com.devpath.api.learning.service.TilService;
 import com.devpath.api.learning.service.WeaknessAnalysisService;
 import com.devpath.domain.learning.entity.Submission;
@@ -29,7 +29,7 @@ public class LearningHistoryAssembler {
   private final SubmissionRepository submissionRepository;
   private final TilService tilService;
   private final WeaknessAnalysisService weaknessAnalysisService;
-  private final SupplementRecommendationService supplementRecommendationService;
+  private final SupplementRecommendationQueryService supplementRecommendationQueryService;
   private final ProofCardService proofCardService;
 
   public LearningHistoryResponse.Detail assemble(Long userId) {
@@ -39,7 +39,7 @@ public class LearningHistoryAssembler {
     List<TilResponse> tils = assembleTils(userId);
     List<ProofCardResponse.Summary> proofCards = proofCardService.getProofCardsForHistory(userId);
     List<SupplementRecommendationResponse> supplementRecommendations =
-        supplementRecommendationService.getRecommendationsForHistory(userId);
+        supplementRecommendationQueryService.getRecommendationsForHistory(userId);
     WeaknessAnalysisResponse latestWeaknessAnalysis =
         weaknessAnalysisService.getLatestAnalysisForHistory(userId);
 
@@ -62,7 +62,7 @@ public class LearningHistoryAssembler {
     List<TilResponse> tils = assembleTils(userId);
     List<ProofCardResponse.Summary> proofCards = proofCardService.getProofCardsForHistory(userId);
     List<SupplementRecommendationResponse> supplementRecommendations =
-        supplementRecommendationService.getRecommendationsForHistory(userId);
+        supplementRecommendationQueryService.getRecommendationsForHistory(userId);
 
     return buildSummary(completedNodes, assignments, tils, proofCards, supplementRecommendations);
   }
