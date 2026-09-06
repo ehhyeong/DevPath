@@ -139,6 +139,18 @@ public class UserProfile {
     this.blogUrl = blogUrl;
   }
 
+  // 회원 탈퇴 시 프로필에 남은 개인정보를 파기한다.
+  public void anonymize() {
+    this.profileImage = null;
+    this.channelName = null;
+    this.bio = null;
+    this.channelDescription = null;
+    this.phone = null;
+    this.dateOfBirth = null;
+    this.githubUrl = null;
+    this.blogUrl = null;
+  }
+
   public void changePublicVisibility(Boolean isPublic) {
     this.isPublic = Boolean.TRUE.equals(isPublic);
   }

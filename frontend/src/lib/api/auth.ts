@@ -57,6 +57,13 @@ export const userApi = {
       { auth: true },
     )
   },
+  withdraw() {
+    return request<void>(
+      '/api/users/me',
+      { method: 'DELETE' },
+      { auth: true },
+    )
+  },
   getOfficialTags(signal?: AbortSignal) {
     return request<TechTag[]>(
       '/api/users/tags/official',

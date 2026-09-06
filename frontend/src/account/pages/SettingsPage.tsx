@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { userApi } from '../../lib/api/auth'
+import { clearStoredAuthSession } from '../../lib/auth-session'
 import { LearnerContentRow, LearnerPageShell, MyMenuSidebar } from '../template'
 import { readLocalPreferences } from '../ui-utils'
 import type { AuthSession } from '../../types/auth'
@@ -59,6 +60,7 @@ export default function SettingsPage(props: { session: AuthSession }) {
   const [passwordError, setPasswordError] = useState('')
   const [toast, setToast] = useState<ToastState | null>(null)
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false)
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -141,21 +143,31 @@ export default function SettingsPage(props: { session: AuthSession }) {
     setToast({ message: checked ? enabledMessage : disabledMessage, iconClassName: 'fas fa-check-circle' })
   }
 
-  function handleWithdrawal() {
-    const firstCheck = window.confirm(
-      '정말로 회원 탈퇴를 진행하시겠습니까?\n탈퇴 시 회원의 모든 학습 진도율, 수강 중인 강의 내역 및 로드맵 스크랩 데이터가 영구히 복구 불가능합니다.',
-    )
-
-    if (!firstCheck) {
+  async function handleWithdrawal() {
+    if (isWithdrawing) {
       return
     }
 
-    const secondCheck = window.confirm(
-      '마지막 경고입니다. 작성하셨던 커뮤니티 게시글과 프로젝트 일지도 모두 관리 권한이 상실됩니다. 정말 삭제 처리를 최종 승인하시겠습니까?',
+    const confirmed = window.confirm(
+      '정말로 회원 탈퇴를 진행하시겠습니까?\n탈퇴 시 회원의 모든 학습 진도율, 수강 중인 강의 내역 및 로드맵 스크랩 데이터가 영구히 복구 불가능합니다.',
     )
 
-    if (secondCheck) {
-      window.alert('회원 탈퇴 API는 아직 연결되지 않았습니다.')
+    if (!confirmed) {
+      return
+    }
+
+    setIsWithdrawing(true)
+
+    try {
+      await userApi.withdraw()
+      clearStoredAuthSession({ toastMessage: '회원 탈퇴가 완료되었습니다.', persistToast: true })
+      window.location.assign('/')
+    } catch (withdrawError) {
+      setIsWithdrawing(false)
+      setToast({
+        message: resolveErrorMessage(withdrawError, '회원 탈퇴 중 문제가 발생했습니다.'),
+        iconClassName: 'fas fa-exclamation-circle',
+      })
     }
   }
 
@@ -291,13 +303,16 @@ export default function SettingsPage(props: { session: AuthSession }) {
 
             <section className="rounded-2xl border border-red-100 bg-white p-6 shadow-sm">
               <h3 className="mb-2 text-lg font-bold text-red-600">회원 탈퇴</h3>
-              <p className="mb-4 text-sm text-gray-600">탈퇴 시 작성한 게시글 및 학습 기록은 복구할 수 없습니다.</p>
+              <p className="mb-4 text-sm text-gray-600">
+                탈퇴 시 개인정보는 즉시 파기되며, 작성한 게시글은 익명으로 남습니다. 학습 기록은 복구할 수 없습니다.
+              </p>
               <button
                 type="button"
                 onClick={handleWithdrawal}
-                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-bold text-red-500 transition hover:bg-red-50"
+                disabled={isWithdrawing}
+                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-bold text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                계정 영구 삭제
+                {isWithdrawing ? '탈퇴 처리 중' : '회원 탈퇴'}
               </button>
             </section>
           </div>
