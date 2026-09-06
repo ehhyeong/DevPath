@@ -11,6 +11,7 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.service.CustomRoadmapCopyService;
+import com.devpath.domain.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.domain.roadmap.service.NodeRequiredTagRegistrar;
 import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import com.devpath.domain.roadmap.service.SystemDynamicRoadmapProvider;
@@ -28,6 +29,7 @@ class JobSkillRoadmapWriter {
   private final RoadmapNodeRepository roadmapNodeRepository;
   private final CustomRoadmapCopyService customRoadmapCopyService;
   private final RoadmapProgressService roadmapProgressService;
+  private final CustomRoadmapPrerequisiteSyncService prerequisiteSyncService;
   private final NodeRequiredTagRegistrar nodeRequiredTagRegistrar;
   private final SystemDynamicRoadmapProvider systemDynamicRoadmapProvider;
 
@@ -69,6 +71,8 @@ class JobSkillRoadmapWriter {
               .isBranch(false)
               .build());
     }
+    // 생성한 노드들에 레인을 도출하고 선행관계를 만든다(전부 척추 한 줄).
+    prerequisiteSyncService.relayoutAndRebuild(created);
     roadmapProgressService.updateProgressRate(
         created, customRoadmapNodeRepository.findAllByCustomRoadmap(created));
     return response(created);

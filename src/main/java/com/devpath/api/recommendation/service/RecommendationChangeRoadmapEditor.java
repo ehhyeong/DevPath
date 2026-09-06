@@ -13,6 +13,7 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.service.CustomRoadmapNodeCommandService;
+import com.devpath.domain.roadmap.service.CustomRoadmapPrerequisiteSyncService;
 import com.devpath.domain.roadmap.service.RoadmapProgressService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ class RecommendationChangeRoadmapEditor {
   private final RoadmapNodeRepository roadmapNodeRepository;
   private final RoadmapProgressService roadmapProgressService;
   private final CustomRoadmapNodeCommandService customRoadmapNodeCommandService;
+  private final CustomRoadmapPrerequisiteSyncService prerequisiteSyncService;
 
   void apply(RecommendationChange change, Long userId) {
     if (change.getTargetCustomRoadmapId() != null) {
@@ -94,6 +96,8 @@ class RecommendationChangeRoadmapEditor {
             .isBranch(branchFromNodeId != null)
             .branchFromNodeId(branchFromNodeId)
             .build());
+    // 새로 붙인 노드까지 포함해 레인을 다시 도출한 뒤 선행관계를 재생성한다.
+    prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
     roadmapProgressService.updateProgressRate(
         customRoadmap, customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap));
   }
@@ -148,17 +152,13 @@ class RecommendationChangeRoadmapEditor {
                 .branchType(change.getBranchType())
                 .build());
 
-    // 타깃이 이미 레인 모델이면(빌더 기원 등) 새 분기 노드도 레인 필드를 세팅한다(TASK-56 P5).
-    // 레거시 로드맵에 섞으면 판별이 뒤집혀 기존 노드가 평탄화되므로 조건부로만 적용한다.
-    boolean targetIsLane = allNodes.stream().anyMatch(n -> n.getBranchKind() != null);
-    if (targetIsLane) {
-      BranchKind kind =
-          "ADVANCED".equalsIgnoreCase(change.getBranchType())
-              ? BranchKind.ADVANCED
-              : BranchKind.REVIEW;
-      Long anchorNodeId = anchor != null ? anchor.getId() : null;
-      newNode.assignLane(kind, anchorNodeId, nextLaneKeyAt(allNodes, anchorNodeId), 0);
-    }
+    // 추천 분기는 기준 노드에 곁가지로 매단다. 복습/심화 구분은 제안이 지정한 분기 종류를 따른다.
+    BranchKind kind =
+        "ADVANCED".equalsIgnoreCase(change.getBranchType())
+            ? BranchKind.ADVANCED
+            : BranchKind.REVIEW;
+    Long anchorNodeId = anchor != null ? anchor.getId() : null;
+    newNode.assignLane(kind, anchorNodeId, nextLaneKeyAt(allNodes, anchorNodeId), 0);
 
     roadmapProgressService.updateProgressRate(
         customRoadmap, customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap));

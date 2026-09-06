@@ -177,7 +177,7 @@ class NodeRecommendationServiceTest {
     assertThat(supplement.getStatus())
         .isEqualTo(com.devpath.domain.learning.entity.recommendation.RecommendationStatus.APPROVED);
     verify(customRoadmapNodeRepository).save(any());
-    verify(prerequisiteSyncService).ensurePrerequisites(customRoadmap);
+    verify(prerequisiteSyncService).relayoutAndRebuild(customRoadmap);
   }
 
   @Test

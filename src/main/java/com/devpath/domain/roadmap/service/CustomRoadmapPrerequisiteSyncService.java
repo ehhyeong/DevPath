@@ -81,9 +81,7 @@ public class CustomRoadmapPrerequisiteSyncService {
   public void relayoutAndRebuild(CustomRoadmap customRoadmap) {
     List<CustomRoadmapNode> nodes =
         customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
-    if (nodes.stream().anyMatch(CustomRoadmapNode::isLaneModeled)) {
-      relayoutLanes(nodes);
-    }
+    relayoutLanes(nodes);
     rebuild(customRoadmap, nodes);
   }
 
@@ -101,9 +99,10 @@ public class CustomRoadmapPrerequisiteSyncService {
         positional, node -> node.getBranchKind() == BranchKind.BRANCH ? node.getLaneKey() : null);
   }
 
+  // 아직 레인이 배정되지 않은 노드(추천·채용 등이 새로 붙인 노드)도 위치 노드로 보고 척추에 편입한다.
   private boolean isPositional(CustomRoadmapNode node) {
     BranchKind kind = node.getBranchKind();
-    return kind == BranchKind.SPINE || kind == BranchKind.BRANCH;
+    return kind == null || kind == BranchKind.SPINE || kind == BranchKind.BRANCH;
   }
 
   /**

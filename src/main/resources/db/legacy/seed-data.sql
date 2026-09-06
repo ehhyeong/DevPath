@@ -19768,3 +19768,25 @@ FROM lane_anchor
 WHERE rn.roadmap_id = lane_anchor.roadmap_id
   AND rn.lane_key = lane_anchor.lane_key
   AND rn.branch_kind = 'BRANCH';
+
+-- 3) 시드가 직접 만든 커스텀 로드맵도 레인 모델로 맞춘다.
+--    이 로드맵들은 분기 없이 척추 한 줄이므로 앵커와 갈래 번호는 없고 순번만 부여한다.
+--    (복사·빌더로 만들어지는 커스텀 로드맵은 런타임이 레인을 채우므로 여기 대상이 아니다.)
+WITH spine_order AS (
+    SELECT
+        crn.custom_node_id,
+        ROW_NUMBER() OVER (
+            PARTITION BY crn.custom_roadmap_id
+            ORDER BY crn.custom_sort_order, crn.custom_node_id
+        ) - 1 AS lane_position
+    FROM custom_roadmap_nodes crn
+    WHERE crn.branch_kind IS NULL
+)
+UPDATE custom_roadmap_nodes crn
+SET
+    branch_kind = 'SPINE',
+    lane_key = NULL,
+    anchor_node_id = NULL,
+    order_in_lane = spine_order.lane_position
+FROM spine_order
+WHERE crn.custom_node_id = spine_order.custom_node_id;
