@@ -52,7 +52,10 @@ public class RoadmapNodeDto {
     @Schema(description = "Node sub topics")
     private String subTopics;
 
-    @Schema(description = "Branch group")
-    private Integer branchGroup;
+    @Schema(description = "갈래 번호 (비어 있으면 기본 흐름)")
+    private Integer laneKey;
+
+    @Schema(description = "레인 종류 (SPINE, BRANCH, REVIEW, ADVANCED)")
+    private String branchKind;
   }
 }

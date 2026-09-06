@@ -20,6 +20,7 @@ import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeResourceRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
+import com.devpath.domain.roadmap.service.OfficialRoadmapLaneSyncService;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.repository.TagRepository;
 import java.util.LinkedHashMap;
@@ -48,6 +49,7 @@ public class AdminNodeGovernanceService {
   private final PrerequisiteRepository prerequisiteRepository;
   private final NodeCompletionRuleRepository nodeCompletionRuleRepository;
   private final RoadmapNodeResourceRepository roadmapNodeResourceRepository;
+  private final OfficialRoadmapLaneSyncService laneSyncService;
 
   @Transactional(readOnly = true)
   // 관리자 표에 필요한 노드와 필수 조건 정보를 한 번에 조합한다.
@@ -105,8 +107,11 @@ public class AdminNodeGovernanceService {
                 .nodeType(nodeType)
                 .sortOrder(sortOrder)
                 .subTopics(normalizeNullableText(validRequest.getSubTopics()))
-                .branchGroup(normalizeOptionalNumber(validRequest.getBranchGroup()))
+                .laneKey(normalizeOptionalNumber(validRequest.getLaneKey()))
                 .build());
+
+    // 관리자는 갈래 번호까지만 입력하므로 나머지 레인 필드는 서버가 파생한다.
+    laneSyncService.resync(roadmap.getRoadmapId());
 
     return toAdminRoadmapNodeSummary(node, List.of(), List.of(), null);
   }
@@ -126,7 +131,9 @@ public class AdminNodeGovernanceService {
         normalizeNodeType(validRequest.getNodeType()),
         normalizeSortOrder(validRequest.getSortOrder()),
         normalizeNullableText(validRequest.getSubTopics()),
-        normalizeOptionalNumber(validRequest.getBranchGroup()));
+        normalizeOptionalNumber(validRequest.getLaneKey()));
+
+    laneSyncService.resync(roadmap.getRoadmapId());
 
     List<String> requiredTags =
         buildRequiredTagsMap(List.of(node.getNodeId())).getOrDefault(node.getNodeId(), List.of());
@@ -169,6 +176,7 @@ public class AdminNodeGovernanceService {
 
   public void deleteNode(Long nodeId) {
     RoadmapNode node = getNode(nodeId);
+    Long roadmapId = node.getRoadmap().getRoadmapId();
 
     // 사용자 로드맵이나 강의가 참조하는 노드는 DB 제약으로 삭제를 막아 기존 학습 데이터를 보존한다.
     nodeRequiredTagRepository.deleteAllByNodeId(nodeId);
@@ -182,6 +190,9 @@ public class AdminNodeGovernanceService {
       throw new CustomException(
           ErrorCode.INVALID_STATUS_TRANSITION, "강의 또는 학습 로드맵에서 사용 중인 노드는 삭제할 수 없습니다.");
     }
+
+    // 삭제로 앵커가 사라졌을 수 있으므로 남은 노드의 레인을 다시 계산한다.
+    laneSyncService.resync(roadmapId);
   }
 
   public void updateNodeType(Long nodeId, NodeTypeRequest request) {
@@ -410,7 +421,7 @@ public class AdminNodeGovernanceService {
         .nodeType(node.getNodeType())
         .sortOrder(node.getSortOrder())
         .subTopics(node.getSubTopics())
-        .branchGroup(node.getBranchGroup())
+        .laneKey(node.getLaneKey())
         .prerequisiteNodeIds(prerequisiteNodeIds)
         .required(!requiredTags.isEmpty())
         .requiredTagCount(requiredTags.size())

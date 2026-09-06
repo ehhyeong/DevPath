@@ -56,7 +56,9 @@ public class RoadmapService {
                         .nodeType(node.getNodeType())
                         .sortOrder(node.getSortOrder())
                         .subTopics(node.getSubTopics())
-                        .branchGroup(node.getBranchGroup())
+                        .laneKey(node.getLaneKey())
+                        .branchKind(
+                            node.getBranchKind() == null ? null : node.getBranchKind().name())
                         .build())
             .collect(Collectors.toList());
 

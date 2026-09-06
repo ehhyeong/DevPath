@@ -11349,7 +11349,7 @@ FROM users u
 WHERE u.email = 'admin@devpath.com'
   AND NOT EXISTS (SELECT 1 FROM roadmaps r WHERE r.title = 'DevPath 공개 강의 평가 데이터');
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, section_order)
 WITH activity_nodes(course_title, section_order, activity_kind, node_title, node_content, sort_order) AS (
     VALUES
         ('실무 Spring Boot 백엔드 입문', 1, 'QUIZ', '[CATALOG] 실무 Spring Boot 백엔드 입문 - 1 QUIZ', 'Spring Boot 계층 구조와 요청 흐름을 확인하는 퀴즈입니다.', 1001),
@@ -11413,7 +11413,7 @@ SET quiz_node_id = (
     FROM course_sections cs
     JOIN courses c ON c.course_id = cs.course_id
     JOIN roadmap_nodes rn ON rn.sub_topics = c.title
-                         AND rn.branch_group = cs.sort_order
+                         AND rn.section_order = cs.sort_order
                          AND rn.node_type = 'QUIZ'
     WHERE cs.section_id = l.section_id
 )
@@ -11425,7 +11425,7 @@ WHERE l.sort_order = 3
       FROM course_sections cs
       JOIN courses c ON c.course_id = cs.course_id
       JOIN roadmap_nodes rn ON rn.sub_topics = c.title
-                           AND rn.branch_group = cs.sort_order
+                           AND rn.section_order = cs.sort_order
                            AND rn.node_type = 'QUIZ'
       WHERE cs.section_id = l.section_id
   );
@@ -11436,7 +11436,7 @@ SET assignment_node_id = (
     FROM course_sections cs
     JOIN courses c ON c.course_id = cs.course_id
     JOIN roadmap_nodes rn ON rn.sub_topics = c.title
-                         AND rn.branch_group = cs.sort_order
+                         AND rn.section_order = cs.sort_order
                          AND rn.node_type = 'ASSIGNMENT'
     WHERE cs.section_id = l.section_id
 )
@@ -11448,7 +11448,7 @@ WHERE l.sort_order = 3
       FROM course_sections cs
       JOIN courses c ON c.course_id = cs.course_id
       JOIN roadmap_nodes rn ON rn.sub_topics = c.title
-                           AND rn.branch_group = cs.sort_order
+                           AND rn.section_order = cs.sort_order
                            AND rn.node_type = 'ASSIGNMENT'
       WHERE cs.section_id = l.section_id
   );
@@ -12115,7 +12115,7 @@ WHERE l.lesson_type = 'VIDEO'
       OR l.video_provider IS NOT NULL
   );
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, section_order)
 WITH git_activity_nodes(course_title, section_order, activity_kind, node_title, node_content, sort_order) AS (
     VALUES
         (
@@ -19709,21 +19709,13 @@ WHERE cr.custom_roadmap_id = progress.custom_roadmap_id;
 --     척추: branch_kind='SPINE',  lane_key=NULL,          anchor_node_id=NULL
 --     분기: branch_kind='BRANCH', lane_key=branch_group,  anchor_node_id=레인 시작 직전 척추
 --     order_in_lane: 레인 안에서 sort_order 오름차순 0-based
--- - 강의 활동 노드([CATALOG] 퀴즈/과제)의 branch_group은 분기가 아니라 강의 섹션 순번이므로
---   section_order로 분리한다.
+-- - 강의 활동 노드([CATALOG] 퀴즈/과제)는 section_order를 직접 저장하므로 구조 파생 대상이 아니다.
 -- - 모든 roadmap_nodes INSERT 이후 마지막에 실행되어야 한다. UPDATE만 있어 멱등.
 -- - 전제: 한 로드맵의 분기 구역은 하나다(lane 식별자가 (roadmap_id, branch_group)).
 --   현재 공식 로드맵은 전부 이 형태이며, 중첩/다구역 분기는 anchor_node_id를 직접 지정해 표현한다.
 -- =====================================================================
 
--- 1) 강의 활동 노드: 섹션 순번을 전용 컬럼으로 분리
-UPDATE roadmap_nodes rn
-SET section_order = rn.branch_group
-FROM roadmaps r
-WHERE r.roadmap_id = rn.roadmap_id
-  AND r.title = 'DevPath 공개 강의 평가 데이터';
-
--- 2) 구조 노드: 레인 종류와 레인 내 순서
+-- 1) 구조 노드: 레인 종류와 레인 내 순서
 WITH structural AS (
     SELECT
         rn.node_id,
@@ -19745,7 +19737,7 @@ SET
 FROM structural
 WHERE rn.node_id = structural.node_id;
 
--- 3) 분기 레인의 앵커: 레인 첫 노드보다 앞선 마지막 척추 노드를 레인 구성원 전체가 공유한다
+-- 2) 분기 레인의 앵커: 레인 첫 노드보다 앞선 마지막 척추 노드를 레인 구성원 전체가 공유한다
 WITH lane_start AS (
     SELECT
         rn.roadmap_id,

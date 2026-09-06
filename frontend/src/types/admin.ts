@@ -49,7 +49,7 @@ export interface AdminRoadmapNode {
   nodeType: string | null
   sortOrder: number | null
   subTopics: string | null
-  branchGroup: number | null
+  laneKey: number | null
   prerequisiteNodeIds: number[]
   required: boolean
   requiredTagCount: number

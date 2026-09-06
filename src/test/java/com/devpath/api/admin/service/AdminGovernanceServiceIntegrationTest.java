@@ -44,6 +44,7 @@ import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.LessonRepository;
 import com.devpath.domain.notification.service.InstructorNotificationPublisher;
+import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.NodeCompletionRule;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
 import com.devpath.domain.roadmap.entity.Prerequisite;
@@ -54,6 +55,7 @@ import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
 import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
+import com.devpath.domain.roadmap.service.OfficialRoadmapLaneSyncService;
 import com.devpath.domain.roadmap.service.TagValidationService;
 import com.devpath.domain.system.repository.SystemSettingRepository;
 import com.devpath.domain.system.service.SystemPolicyService;
@@ -90,6 +92,7 @@ import org.springframework.test.util.ReflectionTestUtils;
   AdminCourseNodeMappingService.class,
   AdminSystemPolicyService.class,
   AdminTagGovernanceService.class,
+  OfficialRoadmapLaneSyncService.class,
   SystemPolicyService.class,
   TagValidationService.class
 })
@@ -289,7 +292,50 @@ class AdminGovernanceServiceIntegrationTest {
     assertThat(node.getNodeType()).isEqualTo("PRACTICE");
     assertThat(node.getSortOrder()).isEqualTo(7);
     assertThat(node.getSubTopics()).isEqualTo("Redis,Cache");
-    assertThat(node.getBranchGroup()).isEqualTo(1);
+    // 관리자는 갈래 번호만 입력하고 나머지 레인 필드는 서버가 파생한다.
+    assertThat(node.getLaneKey()).isEqualTo(1);
+    assertThat(node.getBranchKind()).isEqualTo(BranchKind.BRANCH);
+    assertThat(node.getOrderInLane()).isZero();
+  }
+
+  @Test
+  @DisplayName("갈래 노드의 앵커는 갈래 시작 직전 척추 노드로 파생된다")
+  void createNodeDerivesLaneAnchorFromPrecedingSpine() {
+    Roadmap roadmap = saveOfficialRoadmap("Lane Anchor Roadmap");
+    RoadmapNode firstSpine = saveNode(roadmap, "Spine 1", "CONCEPT", 1);
+    RoadmapNode secondSpine = saveNode(roadmap, "Spine 2", "CONCEPT", 2);
+
+    adminNodeGovernanceService.createNode(
+        roadmapNodeUpsertRequest(
+            roadmap.getRoadmapId(), "Left 1", "content", "practice", 3, null, 1));
+    adminNodeGovernanceService.createNode(
+        roadmapNodeUpsertRequest(
+            roadmap.getRoadmapId(), "Left 2", "content", "practice", 4, null, 1));
+    adminNodeGovernanceService.createNode(
+        roadmapNodeUpsertRequest(
+            roadmap.getRoadmapId(), "Right 1", "content", "practice", 3, null, 2));
+    flushAndClear();
+
+    List<RoadmapNode> nodes = roadmapNodeRepository.findByRoadmapOrderBySortOrderAsc(roadmap);
+    RoadmapNode left1 = findByTitle(nodes, "Left 1");
+    RoadmapNode left2 = findByTitle(nodes, "Left 2");
+    RoadmapNode right1 = findByTitle(nodes, "Right 1");
+
+    // 척추는 앵커 없이 순번만 갖는다.
+    assertThat(findByTitle(nodes, "Spine 1").getBranchKind()).isEqualTo(BranchKind.SPINE);
+    assertThat(findByTitle(nodes, "Spine 2").getOrderInLane()).isEqualTo(1);
+
+    // 같은 갈래는 체인으로 이어지고, 두 갈래 모두 직전 척추를 앵커로 공유한다.
+    assertThat(left1.getAnchorNodeId()).isEqualTo(secondSpine.getNodeId());
+    assertThat(right1.getAnchorNodeId()).isEqualTo(secondSpine.getNodeId());
+    assertThat(left1.getOrderInLane()).isZero();
+    assertThat(left2.getOrderInLane()).isEqualTo(1);
+    assertThat(right1.getOrderInLane()).isZero();
+    assertThat(firstSpine.getNodeId()).isNotEqualTo(left1.getAnchorNodeId());
+  }
+
+  private RoadmapNode findByTitle(List<RoadmapNode> nodes, String title) {
+    return nodes.stream().filter(node -> node.getTitle().equals(title)).findFirst().orElseThrow();
   }
 
   @Test
@@ -654,7 +700,7 @@ class AdminGovernanceServiceIntegrationTest {
       String nodeType,
       Integer sortOrder,
       String subTopics,
-      Integer branchGroup) {
+      Integer laneKey) {
     RoadmapNodeUpsertRequest request = newInstance(RoadmapNodeUpsertRequest.class);
     ReflectionTestUtils.setField(request, "roadmapId", roadmapId);
     ReflectionTestUtils.setField(request, "title", title);
@@ -662,7 +708,7 @@ class AdminGovernanceServiceIntegrationTest {
     ReflectionTestUtils.setField(request, "nodeType", nodeType);
     ReflectionTestUtils.setField(request, "sortOrder", sortOrder);
     ReflectionTestUtils.setField(request, "subTopics", subTopics);
-    ReflectionTestUtils.setField(request, "branchGroup", branchGroup);
+    ReflectionTestUtils.setField(request, "laneKey", laneKey);
     return request;
   }
 

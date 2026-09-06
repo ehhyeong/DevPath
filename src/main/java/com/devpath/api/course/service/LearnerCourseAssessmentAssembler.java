@@ -2,7 +2,6 @@ package com.devpath.api.course.service;
 
 import com.devpath.api.course.dto.CourseDetailResponse;
 import com.devpath.domain.course.entity.Lesson;
-import com.devpath.domain.course.entity.LessonType;
 import com.devpath.domain.learning.entity.Assignment;
 import com.devpath.domain.learning.entity.Quiz;
 import com.devpath.domain.learning.entity.QuizQuestion;
@@ -12,15 +11,12 @@ import com.devpath.domain.learning.entity.SubmissionType;
 import com.devpath.domain.learning.repository.AssignmentRepository;
 import com.devpath.domain.learning.repository.QuizRepository;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
-import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +26,6 @@ public class LearnerCourseAssessmentAssembler {
 
   private final AssignmentRepository assignmentRepository;
   private final QuizRepository quizRepository;
-  private final RoadmapNodeRepository roadmapNodeRepository;
 
   AssessmentMapping loadAssessments(List<Lesson> lessons) {
     return new AssessmentMapping(loadAssignmentMapping(lessons), loadQuizMapping(lessons));
@@ -38,7 +33,7 @@ public class LearnerCourseAssessmentAssembler {
 
   CourseDetailResponse.AssignmentItem mapAssignmentForLesson(
       Lesson lesson, AssessmentMapping mapping) {
-    return mapAssignment(resolveAssignmentForLesson(lesson, mapping.assignmentMapping()));
+    return mapAssignment(resolveAssignmentForLesson(lesson, mapping.assignmentsByNodeId()));
   }
 
   CourseDetailResponse.QuizItem mapQuizForLesson(Lesson lesson, AssessmentMapping mapping) {
@@ -148,20 +143,16 @@ public class LearnerCourseAssessmentAssembler {
         .build();
   }
 
-  private AssignmentMapping loadAssignmentMapping(List<Lesson> lessons) {
-    Map<AssignmentLookupKey, Long> fallbackAssignmentNodeIdsByKey =
-        loadFallbackAssignmentNodeIdsByKey(lessons);
+  private Map<Long, Assignment> loadAssignmentMapping(List<Lesson> lessons) {
     List<Long> assignmentNodeIds =
-        Stream.concat(
-                lessons.stream()
-                    .map(Lesson::getAssignmentRoadmapNode)
-                    .filter(Objects::nonNull)
-                    .map(RoadmapNode::getNodeId),
-                fallbackAssignmentNodeIdsByKey.values().stream())
+        lessons.stream()
+            .map(Lesson::getAssignmentRoadmapNode)
+            .filter(Objects::nonNull)
+            .map(RoadmapNode::getNodeId)
             .distinct()
             .toList();
     if (assignmentNodeIds.isEmpty()) {
-      return new AssignmentMapping(Map.of(), fallbackAssignmentNodeIdsByKey);
+      return Map.of();
     }
 
     Map<Long, Assignment> assignmentsByNodeId = new LinkedHashMap<>();
@@ -176,83 +167,16 @@ public class LearnerCourseAssessmentAssembler {
 
               assignmentsByNodeId.putIfAbsent(assignment.getRoadmapNode().getNodeId(), assignment);
             });
-    return new AssignmentMapping(assignmentsByNodeId, fallbackAssignmentNodeIdsByKey);
-  }
-
-  private Map<AssignmentLookupKey, Long> loadFallbackAssignmentNodeIdsByKey(List<Lesson> lessons) {
-    List<AssignmentLookupKey> lookupKeys =
-        lessons.stream()
-            .filter(this::requiresAssignmentFallback)
-            .map(this::toAssignmentLookupKey)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-    if (lookupKeys.isEmpty()) {
-      return Map.of();
-    }
-
-    List<String> courseTitles =
-        lookupKeys.stream().map(AssignmentLookupKey::courseTitle).distinct().toList();
-    List<Integer> branchGroups =
-        lookupKeys.stream().map(AssignmentLookupKey::sectionOrder).distinct().toList();
-
-    return roadmapNodeRepository
-        .findOfficialPublicNodesByNodeTypeAndSubTopicsInAndBranchGroupIn(
-            "ASSIGNMENT", courseTitles, branchGroups)
-        .stream()
-        .collect(
-            Collectors.toMap(
-                node -> new AssignmentLookupKey(node.getSubTopics(), node.getBranchGroup()),
-                RoadmapNode::getNodeId,
-                (current, ignored) -> current,
-                LinkedHashMap::new));
+    return assignmentsByNodeId;
   }
 
   private Assignment resolveAssignmentForLesson(
-      Lesson lesson, AssignmentMapping assignmentMapping) {
-    Long assignmentNodeId =
-        lesson.getAssignmentRoadmapNode() != null
-            ? lesson.getAssignmentRoadmapNode().getNodeId()
-            : resolveFallbackAssignmentNodeId(lesson, assignmentMapping.assignmentNodeIdsByKey());
-    if (assignmentNodeId == null) {
+      Lesson lesson, Map<Long, Assignment> assignmentsByNodeId) {
+    if (lesson.getAssignmentRoadmapNode() == null) {
       return null;
     }
 
-    return assignmentMapping.assignmentsByNodeId().get(assignmentNodeId);
-  }
-
-  private Long resolveFallbackAssignmentNodeId(
-      Lesson lesson, Map<AssignmentLookupKey, Long> assignmentNodeIdsByKey) {
-    AssignmentLookupKey lookupKey = toAssignmentLookupKey(lesson);
-    if (lookupKey == null) {
-      return null;
-    }
-
-    return assignmentNodeIdsByKey.get(lookupKey);
-  }
-
-  private boolean requiresAssignmentFallback(Lesson lesson) {
-    return isAssignmentLesson(lesson) && lesson.getAssignmentRoadmapNode() == null;
-  }
-
-  private boolean isAssignmentLesson(Lesson lesson) {
-    return lesson.getLessonType() == LessonType.CODING;
-  }
-
-  private AssignmentLookupKey toAssignmentLookupKey(Lesson lesson) {
-    if (!isAssignmentLesson(lesson)
-        || lesson.getSection() == null
-        || lesson.getSection().getCourse() == null) {
-      return null;
-    }
-
-    String courseTitle = lesson.getSection().getCourse().getTitle();
-    Integer sectionOrder = lesson.getSection().getOrderIndex();
-    if (courseTitle == null || courseTitle.isBlank() || sectionOrder == null) {
-      return null;
-    }
-
-    return new AssignmentLookupKey(courseTitle, sectionOrder);
+    return assignmentsByNodeId.get(lesson.getAssignmentRoadmapNode().getNodeId());
   }
 
   private CourseDetailResponse.AssignmentItem mapAssignment(Assignment assignment) {
@@ -333,11 +257,6 @@ public class LearnerCourseAssessmentAssembler {
   private record AssignmentSubmissionFlags(
       boolean allowTextSubmission, boolean allowFileSubmission, boolean allowUrlSubmission) {}
 
-  private record AssignmentLookupKey(String courseTitle, Integer sectionOrder) {}
-
-  private record AssignmentMapping(
-      Map<Long, Assignment> assignmentsByNodeId,
-      Map<AssignmentLookupKey, Long> assignmentNodeIdsByKey) {}
-
-  record AssessmentMapping(AssignmentMapping assignmentMapping, Map<Long, Quiz> quizzesByNodeId) {}
+  record AssessmentMapping(
+      Map<Long, Assignment> assignmentsByNodeId, Map<Long, Quiz> quizzesByNodeId) {}
 }

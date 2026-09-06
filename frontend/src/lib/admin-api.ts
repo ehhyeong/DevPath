@@ -185,7 +185,7 @@ export const adminApi = {
     nodeType: string
     sortOrder: number
     subTopics?: string | null
-    branchGroup?: number | null
+    laneKey?: number | null
   }) {
     return request<AdminRoadmapNode>('/api/admin/nodes', {
       method: 'POST',
@@ -201,7 +201,7 @@ export const adminApi = {
       nodeType: string
       sortOrder: number
       subTopics?: string | null
-      branchGroup?: number | null
+      laneKey?: number | null
     },
   ) {
     return request<AdminRoadmapNode>(`/api/admin/nodes/${nodeId}`, {

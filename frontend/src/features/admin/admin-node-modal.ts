@@ -44,7 +44,7 @@ function getRoadmapNodeModalElements() {
     nodeTitleInput: getElement<HTMLInputElement>('nodeTitleInput'),
     nodeContentInput: getElement<HTMLTextAreaElement>('nodeContentInput'),
     sortOrderInput: getElement<HTMLInputElement>('sortOrderInput'),
-    branchGroupInput: getElement<HTMLInputElement>('branchGroupInput'),
+    laneKeyInput: getElement<HTMLInputElement>('laneKeyInput'),
     subTopicsInput: getElement<HTMLInputElement>('subTopicsInput'),
     cancelButton: getElement<HTMLButtonElement>('cancelAddNodeBtn'),
     confirmButton: getElement<HTMLButtonElement>('confirmAddNodeBtn'),
@@ -123,7 +123,7 @@ function readRoadmapNodeModalPayload() {
     nodeTitleInput,
     nodeContentInput,
     sortOrderInput,
-    branchGroupInput,
+    laneKeyInput,
     subTopicsInput,
   } = getRoadmapNodeModalElements()
 
@@ -172,9 +172,9 @@ function readRoadmapNodeModalPayload() {
     return null
   }
 
-  const branchGroup = parseOptionalNumber(branchGroupInput.value, '분기 그룹은 0 이상의 숫자로 입력하세요.')
-  if (branchGroup === null) {
-    branchGroupInput.focus()
+  const laneKey = parseOptionalNumber(laneKeyInput.value, '갈래 번호는 0 이상의 숫자로 입력하세요.')
+  if (laneKey === null) {
+    laneKeyInput.focus()
     return null
   }
 
@@ -185,7 +185,7 @@ function readRoadmapNodeModalPayload() {
     nodeType,
     sortOrder,
     subTopics: normalizeOptionalString(subTopicsInput.value),
-    branchGroup: branchGroup ?? null,
+    laneKey: laneKey ?? null,
   }
 }
 
@@ -271,7 +271,7 @@ export function openRoadmapNodeModal(node?: AdminRoadmapNode, selectedRoadmapFil
     nodeTitleInput,
     nodeContentInput,
     sortOrderInput,
-    branchGroupInput,
+    laneKeyInput,
     subTopicsInput,
     confirmButton,
   } = getRoadmapNodeModalElements()
@@ -293,7 +293,7 @@ export function openRoadmapNodeModal(node?: AdminRoadmapNode, selectedRoadmapFil
   nodeTitleInput.value = node?.title ?? ''
   nodeContentInput.value = node?.content ?? ''
   sortOrderInput.value = roadmapId === null ? '' : String(getDefaultNodeSortOrder(roadmapId, node))
-  branchGroupInput.value = node?.branchGroup?.toString() ?? ''
+  laneKeyInput.value = node?.laneKey?.toString() ?? ''
   subTopicsInput.value = node?.subTopics ?? ''
 
   return new Promise<RoadmapNodePayload | null>((resolve) => {

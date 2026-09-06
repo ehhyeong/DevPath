@@ -81,7 +81,7 @@ export type RoadmapNodePayload = {
   nodeType: string
   sortOrder: number
   subTopics: string | null
-  branchGroup: number | null
+  laneKey: number | null
 }
 
 export type RoadmapNodeResourcePayload = {
@@ -308,9 +308,9 @@ export function formatNodePrerequisites(node: AdminRoadmapNode) {
 }
 
 export function formatNodeStructure(node: AdminRoadmapNode) {
-  const branchText = node.branchGroup === null || node.branchGroup === undefined
+  const branchText = node.laneKey === null || node.laneKey === undefined
     ? '기본 흐름'
-    : `분기 ${node.branchGroup}`
+    : `갈래 ${node.laneKey}`
 
   return `순서 ${node.sortOrder ?? '-'} · ${branchText}`
 }

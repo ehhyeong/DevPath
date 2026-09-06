@@ -74,6 +74,15 @@ public class RoadmapNode {
   @Column(name = "section_order")
   private Integer sectionOrder;
 
+  // 레인 필드를 일괄 배치한다. 관리자가 입력한 (sortOrder, laneKey)에서 나머지를 파생할 때 사용한다.
+  public void assignLane(
+      BranchKind branchKind, Long anchorNodeId, Integer laneKey, Integer orderInLane) {
+    this.branchKind = branchKind;
+    this.anchorNodeId = anchorNodeId;
+    this.laneKey = laneKey;
+    this.orderInLane = orderInLane;
+  }
+
   public void changeNodeType(String nodeType) {
     this.nodeType = nodeType;
   }
@@ -90,12 +99,12 @@ public class RoadmapNode {
       String nodeType,
       Integer sortOrder,
       String subTopics,
-      Integer branchGroup) {
+      Integer laneKey) {
     this.title = title;
     this.content = content;
     this.nodeType = nodeType;
     this.sortOrder = sortOrder;
     this.subTopics = subTopics;
-    this.branchGroup = branchGroup;
+    this.laneKey = laneKey;
   }
 }
