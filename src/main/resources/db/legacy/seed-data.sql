@@ -19702,3 +19702,77 @@ FROM (
     GROUP BY crn.custom_roadmap_id
 ) progress
 WHERE cr.custom_roadmap_id = progress.custom_roadmap_id;
+
+-- =====================================================================
+-- 공식 로드맵 레인 구조 파생
+-- - 노드의 (sort_order, branch_group)에서 레인 필드를 계산한다.
+--     척추: branch_kind='SPINE',  lane_key=NULL,          anchor_node_id=NULL
+--     분기: branch_kind='BRANCH', lane_key=branch_group,  anchor_node_id=레인 시작 직전 척추
+--     order_in_lane: 레인 안에서 sort_order 오름차순 0-based
+-- - 강의 활동 노드([CATALOG] 퀴즈/과제)의 branch_group은 분기가 아니라 강의 섹션 순번이므로
+--   section_order로 분리한다.
+-- - 모든 roadmap_nodes INSERT 이후 마지막에 실행되어야 한다. UPDATE만 있어 멱등.
+-- - 전제: 한 로드맵의 분기 구역은 하나다(lane 식별자가 (roadmap_id, branch_group)).
+--   현재 공식 로드맵은 전부 이 형태이며, 중첩/다구역 분기는 anchor_node_id를 직접 지정해 표현한다.
+-- =====================================================================
+
+-- 1) 강의 활동 노드: 섹션 순번을 전용 컬럼으로 분리
+UPDATE roadmap_nodes rn
+SET section_order = rn.branch_group
+FROM roadmaps r
+WHERE r.roadmap_id = rn.roadmap_id
+  AND r.title = 'DevPath 공개 강의 평가 데이터';
+
+-- 2) 구조 노드: 레인 종류와 레인 내 순서
+WITH structural AS (
+    SELECT
+        rn.node_id,
+        rn.branch_group,
+        ROW_NUMBER() OVER (
+            PARTITION BY rn.roadmap_id, COALESCE(rn.branch_group, -1)
+            ORDER BY rn.sort_order, rn.node_id
+        ) - 1 AS lane_position
+    FROM roadmap_nodes rn
+    JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
+    WHERE rn.sort_order IS NOT NULL
+      AND r.title NOT IN ('DevPath 공개 강의 평가 데이터', '__SYSTEM_AI_DYNAMIC_NODES__')
+)
+UPDATE roadmap_nodes rn
+SET
+    branch_kind = CASE WHEN structural.branch_group IS NULL THEN 'SPINE' ELSE 'BRANCH' END,
+    lane_key = structural.branch_group,
+    order_in_lane = structural.lane_position
+FROM structural
+WHERE rn.node_id = structural.node_id;
+
+-- 3) 분기 레인의 앵커: 레인 첫 노드보다 앞선 마지막 척추 노드를 레인 구성원 전체가 공유한다
+WITH lane_start AS (
+    SELECT
+        rn.roadmap_id,
+        rn.lane_key,
+        MIN(rn.sort_order) AS first_sort_order
+    FROM roadmap_nodes rn
+    WHERE rn.branch_kind = 'BRANCH'
+    GROUP BY rn.roadmap_id, rn.lane_key
+),
+lane_anchor AS (
+    SELECT
+        lane_start.roadmap_id,
+        lane_start.lane_key,
+        (
+            SELECT spine.node_id
+            FROM roadmap_nodes spine
+            WHERE spine.roadmap_id = lane_start.roadmap_id
+              AND spine.branch_kind = 'SPINE'
+              AND spine.sort_order < lane_start.first_sort_order
+            ORDER BY spine.sort_order DESC, spine.node_id DESC
+            LIMIT 1
+        ) AS anchor_node_id
+    FROM lane_start
+)
+UPDATE roadmap_nodes rn
+SET anchor_node_id = lane_anchor.anchor_node_id
+FROM lane_anchor
+WHERE rn.roadmap_id = lane_anchor.roadmap_id
+  AND rn.lane_key = lane_anchor.lane_key
+  AND rn.branch_kind = 'BRANCH';

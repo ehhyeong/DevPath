@@ -2,6 +2,8 @@ package com.devpath.domain.roadmap.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -49,6 +51,28 @@ public class RoadmapNode {
 
   @Column(name = "branch_group")
   private Integer branchGroup;
+
+  // ── 레인 트리 모델. 커스텀 로드맵과 동일한 구조 표현을 공식 로드맵에도 적용한다. ──
+  // 이 레인이 갈라져 나온 부모 노드 id (null = 루트 척추 레인)
+  @Column(name = "anchor_node_id")
+  private Long anchorNodeId;
+
+  // 같은 앵커의 형제 레인 구분. 루트 척추 레인은 null.
+  @Column(name = "lane_key")
+  private Integer laneKey;
+
+  // 레인 종류: SPINE/BRANCH/REVIEW/ADVANCED
+  @Enumerated(EnumType.STRING)
+  @Column(name = "branch_kind", length = 20)
+  private BranchKind branchKind;
+
+  // 레인 내 순서
+  @Column(name = "order_in_lane")
+  private Integer orderInLane;
+
+  // 강의 활동 노드([CATALOG] 퀴즈/과제)가 연결된 강의 섹션 순번. 로드맵 분기와는 무관하다.
+  @Column(name = "section_order")
+  private Integer sectionOrder;
 
   public void changeNodeType(String nodeType) {
     this.nodeType = nodeType;
