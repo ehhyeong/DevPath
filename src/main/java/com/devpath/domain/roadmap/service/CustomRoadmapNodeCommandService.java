@@ -95,10 +95,6 @@ public class CustomRoadmapNodeCommandService {
             customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(
                 customRoadmap));
 
-    if (all.stream().noneMatch(CustomRoadmapNode::isLaneModeled)) {
-      moveLegacy(customRoadmap, node, up);
-      return;
-    }
     if (!moveLaneNode(all, node, up)) {
       return; // 경계 등 변경 없음
     }
@@ -107,21 +103,6 @@ public class CustomRoadmapNodeCommandService {
   }
 
   // 레거시 로드맵: 기존 customSortOrder 리스트 스왑 방식.
-  private void moveLegacy(CustomRoadmap customRoadmap, CustomRoadmapNode node, boolean up) {
-    List<CustomRoadmapNode> ordered =
-        new ArrayList<>(
-            customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(
-                customRoadmap));
-    int index = indexOfId(ordered, node.getId());
-    int neighborIndex = up ? index - 1 : index + 1;
-    if (index < 0 || neighborIndex < 0 || neighborIndex >= ordered.size()) {
-      return;
-    }
-    ordered.remove(index);
-    ordered.add(neighborIndex, node);
-    finalizeReorder(customRoadmap, ordered);
-  }
-
   // 레인 모델 이동. 변경이 있으면 true. 레인 필드를 직접 조작하며, 호출 측이 recomputeOrderAndRebuild로 순서·그래프를 재생성한다.
   private boolean moveLaneNode(List<CustomRoadmapNode> all, CustomRoadmapNode node, boolean up) {
     BranchKind kind = node.getBranchKind();
@@ -268,52 +249,25 @@ public class CustomRoadmapNodeCommandService {
   }
 
   /**
-   * 노드의 분기 소속을 변경한다(null=척추, 1=왼쪽, 2=오른쪽). 첫 분기 편집 시 모든 노드의 현재 유효 분기값을 override로 백필해 기존 분기 구성을 보존한
-   * 뒤 편집본으로 전환한다. 변경 후 현재 순서·분기 기준으로 선행관계를 재생성한다.
+   * 노드가 속한 갈래를 변경한다(null=척추, 1=왼쪽, 2=오른쪽). 편집 노드의 갈래 번호만 세팅하면 재배치가 앵커와 레인 내 순서를 다시 도출하고 선행관계를
+   * 재생성한다.
    */
   @Transactional
-  public void setNodeBranch(
-      Long userId, Long customRoadmapId, Long customNodeId, Integer branchGroup) {
-    if (branchGroup != null && branchGroup != 1 && branchGroup != 2) {
-      throw new CustomException(ErrorCode.INVALID_INPUT, "branchGroup must be null, 1, or 2.");
+  public void setNodeBranch(Long userId, Long customRoadmapId, Long customNodeId, Integer laneKey) {
+    if (laneKey != null && laneKey != 1 && laneKey != 2) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "laneKey must be null, 1, or 2.");
     }
 
     CustomRoadmapNode node = getOwnedNode(userId, customRoadmapId, customNodeId);
     CustomRoadmap customRoadmap = node.getCustomRoadmap();
 
-    List<CustomRoadmapNode> nodes =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
-    boolean laneModeled = nodes.stream().anyMatch(CustomRoadmapNode::isLaneModeled);
-
-    if (laneModeled) {
-      // 레인 로드맵: 편집 노드의 구조그룹만 세팅하고 relayout이 앵커/순서를 재도출한다.
-      if (branchGroup == null) {
-        node.assignLane(BranchKind.SPINE, null, null, node.getOrderInLane());
-      } else {
-        node.assignLane(
-            BranchKind.BRANCH, node.getAnchorNodeId(), branchGroup, node.getOrderInLane());
-      }
-      prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
+    if (laneKey == null) {
+      node.assignLane(BranchKind.SPINE, null, null, node.getOrderInLane());
     } else {
-      // 레거시 로드맵: 기존 override 백필 경로 유지.
-      backfillBranchGroupsIfNeeded(customRoadmap);
-      node.setBranchGroupOverride(branchGroup);
-      prerequisiteSyncService.rebuildFromCurrentOrder(customRoadmap);
+      node.assignLane(BranchKind.BRANCH, node.getAnchorNodeId(), laneKey, node.getOrderInLane());
     }
+    prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
     customRoadmap.markPrerequisitesCustomized();
-  }
-
-  // 분기 편집본 전환 전, 모든 노드의 현재 유효 분기값을 override 컬럼에 백필해 기존 분기 구성을 보존한다.
-  private void backfillBranchGroupsIfNeeded(CustomRoadmap customRoadmap) {
-    if (customRoadmap.isBranchesCustomized()) {
-      return;
-    }
-    List<CustomRoadmapNode> nodes =
-        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(customRoadmap);
-    for (CustomRoadmapNode n : nodes) {
-      n.setBranchGroupOverride(n.effectiveBranchGroup()); // 플래그 false라 원본 유효값을 반환
-    }
-    customRoadmap.markBranchesCustomized();
   }
 
   // 재배치된 리스트를 1..N으로 재번호 매기고 선행관계 그래프를 재생성한 뒤 편집본으로 고정한다.

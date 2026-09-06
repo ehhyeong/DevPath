@@ -68,13 +68,13 @@ function addGraphEdge(
 
 function buildMiniGraphLayout(nodes: RoadmapNodeItem[]): MiniGraphLayout {
   const sortedNodes = sortNodes(nodes)
-  const structuralNodes = sortedNodes.filter((node) => !node.isBranch)
-  const officialBranchNodes = structuralNodes.filter((node) => node.branchGroup != null)
+  const structuralNodes = sortedNodes.filter((node) => node.branchKind !== 'REVIEW' && node.branchKind !== 'ADVANCED')
+  const officialBranchNodes = structuralNodes.filter((node) => node.laneKey != null)
   const officialBranchGroups = Array.from(
     new Set(
       officialBranchNodes
-        .map((node) => node.branchGroup)
-        .filter((branchGroup): branchGroup is number => branchGroup != null),
+        .map((node) => node.laneKey)
+        .filter((laneKey): laneKey is number => laneKey != null),
     ),
   ).sort((left, right) => left - right)
 
@@ -82,7 +82,7 @@ function buildMiniGraphLayout(nodes: RoadmapNodeItem[]): MiniGraphLayout {
   const branchOrders = officialBranchNodes.map((node) => node.sortOrder)
   const minBranchOrder = hasOfficialBranches ? Math.min(...branchOrders) : Number.POSITIVE_INFINITY
   const maxBranchOrder = hasOfficialBranches ? Math.max(...branchOrders) : Number.NEGATIVE_INFINITY
-  const spineNodes = structuralNodes.filter((node) => node.branchGroup == null)
+  const spineNodes = structuralNodes.filter((node) => node.laneKey == null)
   const preBranchSpineNodes = hasOfficialBranches
     ? spineNodes.filter((node) => node.sortOrder < minBranchOrder)
     : spineNodes
@@ -128,10 +128,10 @@ function buildMiniGraphLayout(nodes: RoadmapNodeItem[]): MiniGraphLayout {
     const branchEndNodeIds: string[] = []
     let deepestBranchDepth = 0
 
-    officialBranchGroups.forEach((branchGroup, index) => {
+    officialBranchGroups.forEach((laneKey, index) => {
       const lane: MiniLane = index % 2 === 0 ? 'left' : 'right'
       const nodesInGroup = officialBranchNodes
-        .filter((node) => node.branchGroup === branchGroup)
+        .filter((node) => node.laneKey === laneKey)
         .sort((left, right) => left.sortOrder - right.sortOrder || left.customNodeId - right.customNodeId)
 
       deepestBranchDepth = Math.max(deepestBranchDepth, nodesInGroup.length)
@@ -167,7 +167,7 @@ function buildMiniGraphLayout(nodes: RoadmapNodeItem[]): MiniGraphLayout {
 }
 
 function pickFocusNode(nodes: RoadmapNodeItem[]) {
-  const candidates = sortNodes(nodes).filter((node) => !node.isBranch)
+  const candidates = sortNodes(nodes).filter((node) => node.branchKind !== 'REVIEW' && node.branchKind !== 'ADVANCED')
   return (
     candidates.find((node) => node.status === 'IN_PROGRESS') ??
     candidates.find((node) => node.status === 'PENDING') ??
@@ -319,8 +319,8 @@ export default function RoadmapMiniMap({ roadmap, roadmapSummary, progressPercen
   const nodesById = new Map(layout.nodes.map((node) => [node.id, node]))
   const focusNode = pickFocusNode(roadmap.nodes)
   const completedNodes = roadmap.nodes.filter((node) => node.status === 'COMPLETED').length
-  const totalStructuralNodes = roadmap.nodes.filter((node) => !node.isBranch).length
-  const hasBranch = roadmap.nodes.some((node) => node.branchGroup != null)
+  const totalStructuralNodes = roadmap.nodes.filter((node) => node.branchKind !== 'REVIEW' && node.branchKind !== 'ADVANCED').length
+  const hasBranch = roadmap.nodes.some((node) => node.laneKey != null)
   const lastActivityLabel = formatActivityLabel(
     roadmapSummary?.lastStudiedAt ?? roadmapSummary?.updatedAt ?? roadmapSummary?.createdAt ?? null,
   )

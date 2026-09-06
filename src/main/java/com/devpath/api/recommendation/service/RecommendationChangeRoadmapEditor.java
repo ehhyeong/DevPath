@@ -93,8 +93,6 @@ class RecommendationChangeRoadmapEditor {
             .customRoadmap(customRoadmap)
             .originalNode(roadmapNode)
             .customSortOrder(insertAt)
-            .isBranch(branchFromNodeId != null)
-            .branchFromNodeId(branchFromNodeId)
             .build());
     // 새로 붙인 노드까지 포함해 레인을 다시 도출한 뒤 선행관계를 재생성한다.
     prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
@@ -147,9 +145,6 @@ class RecommendationChangeRoadmapEditor {
                 .customRoadmap(customRoadmap)
                 .originalNode(change.getRoadmapNode())
                 .customSortOrder(insertAt)
-                .isBranch(true)
-                .branchFromNodeId(branchFromNodeId)
-                .branchType(change.getBranchType())
                 .build());
 
     // 추천 분기는 기준 노드에 곁가지로 매단다. 복습/심화 구분은 제안이 지정한 분기 종류를 따른다.

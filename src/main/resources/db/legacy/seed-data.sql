@@ -9537,7 +9537,7 @@ WHERE u.email = 'learner@devpath.com'
       WHERE cr.user_id = u.user_id AND cr.original_roadmap_id = r.roadmap_id
   );
 
-INSERT INTO custom_roadmap_nodes (custom_roadmap_id, original_node_id, status, custom_sort_order, is_branch, branch_from_node_id, branch_type, started_at, completed_at)
+INSERT INTO custom_roadmap_nodes (custom_roadmap_id, original_node_id, status, custom_sort_order, started_at, completed_at)
 SELECT cr.custom_roadmap_id,
        rn.node_id,
        CASE
@@ -9546,9 +9546,6 @@ SELECT cr.custom_roadmap_id,
            ELSE 'NOT_STARTED'
        END,
        rn.sort_order,
-       false,
-       NULL,
-       NULL,
        CASE WHEN rn.sort_order <= 3 THEN TIMESTAMP '2026-03-28 10:00:00' ELSE NULL END,
        CASE WHEN rn.sort_order <= 2 THEN TIMESTAMP '2026-03-29 18:00:00' ELSE NULL END
 FROM custom_roadmaps cr
@@ -19466,17 +19463,13 @@ demo_nodes AS (
     WHERE rn.title <> 'Security and JWT'
 )
 INSERT INTO custom_roadmap_nodes (
-    custom_roadmap_id, original_node_id, status, custom_sort_order, is_branch,
-    branch_from_node_id, branch_type, started_at, completed_at
+    custom_roadmap_id, original_node_id, status, custom_sort_order, started_at, completed_at
 )
 SELECT
     dn.custom_roadmap_id,
     dn.node_id,
     dn.seeded_status,
     dn.sort_order,
-    FALSE,
-    NULL,
-    NULL,
     dn.seeded_started_at,
     dn.seeded_completed_at
 FROM demo_nodes dn

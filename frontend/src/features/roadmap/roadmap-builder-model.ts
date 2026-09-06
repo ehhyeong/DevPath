@@ -27,7 +27,7 @@ export interface BuilderNode {
   instanceId: string
   module: SkillModule
   sortOrder: number        // 타임라인 위치 (1부터)
-  branchGroup: number | null  // null=척추, 1=왼쪽, 2=오른쪽
+  laneKey: number | null  // null=척추, 1=왼쪽, 2=오른쪽
 }
 
 export interface TimelineRow {
@@ -38,7 +38,7 @@ export interface TimelineRow {
 
 export type ActiveDrag =
   | { kind: 'MODULE'; module: SkillModule }
-  | { kind: 'NODE'; instanceId: string; sortOrder: number; branchGroup: number | null }
+  | { kind: 'NODE'; instanceId: string; sortOrder: number; laneKey: number | null }
 
 export function makeInstanceId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`

@@ -68,7 +68,6 @@ class JobSkillRoadmapWriter {
               .customRoadmap(created)
               .originalNode(dynamicNode)
               .customSortOrder(order++)
-              .isBranch(false)
               .build());
     }
     // 생성한 노드들에 레인을 도출하고 선행관계를 만든다(전부 척추 한 줄).

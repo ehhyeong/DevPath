@@ -11,10 +11,6 @@ export interface RoadmapNodeItem {
   prerequisiteCustomNodeIds: number[]
   content?: string
   subTopics?: string[]
-  branchGroup?: number | null
-  isBranch?: boolean
-  branchFromNodeId?: number | null
-  branchType?: string | null
   anchorNodeId?: number | null
   laneKey?: number | null
   branchKind?: string | null
@@ -57,7 +53,8 @@ export interface OfficialRoadmapNode {
   nodeType?: string | null
   sortOrder: number
   subTopics?: string | null
-  branchGroup?: number | null
+  laneKey?: number | null
+  branchKind?: string | null
 }
 
 export interface OfficialRoadmapDetail {

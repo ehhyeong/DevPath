@@ -38,15 +38,6 @@ public class CustomRoadmapNode {
   @JoinColumn(name = "builder_module_id")
   private BuilderModule builderModule;
 
-  // 빌더 기원 노드 전용 분기 그룹 (null=척추, 1=왼쪽, 2=오른쪽)
-  @Column(name = "builder_branch_group")
-  private Integer builderBranchGroup;
-
-  // 사용자가 직접 편집한 분기 소속 override (null=척추, 1=왼쪽, 2=오른쪽).
-  // 로드맵의 branchesCustomized=true일 때만 유효하며, 그 전에는 원본 노드의 branchGroup을 따른다.
-  @Column(name = "branch_group")
-  private Integer branchGroup;
-
   // 문자열(VARCHAR)로 DB에 저장하도록 지정
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 20)
@@ -56,22 +47,9 @@ public class CustomRoadmapNode {
   @Column(name = "custom_sort_order")
   private Integer customSortOrder;
 
-  // 진단 퀴즈 결과로 생성된 추천 분기 노드 여부
-  @Column(name = "is_branch", nullable = false)
-  private boolean isBranch = false;
-
-  // 어느 원본 노드(original_node_id)에서 갈라진 분기인지 (일반 노드는 null)
-  @Column(name = "branch_from_node_id")
-  private Long branchFromNodeId;
-
-  // 분기 종류: "REVIEW"(복습) | "ADVANCED"(심화) | null(일반 노드)
-  @Column(name = "branch_type", length = 20)
-  private String branchType;
-
-  // ── 레인 트리 모델(TASK-56). 그래프/잠금은 이 필드로 동작한다. ──
-  // 위치 노드(SPINE/BRANCH)는 customSortOrder + 구조그룹에서 재도출되는 파생값이고,
+  // ── 레인 트리 모델. 그래프/잠금은 이 필드로 동작한다. ──
+  // 위치 노드(SPINE/BRANCH)는 customSortOrder + 갈래 번호에서 재도출되는 파생값이고,
   // 앵커 분기(REVIEW/ADVANCED)의 anchorNodeId는 부모를 직접 가리키는 원본값이다(파생 불가).
-  // 옛 분기필드(builderBranchGroup/branchGroup/isBranch/branchFromNodeId/branchType)와 듀얼리드로 호환.
   // 이 레인이 갈라져 나온 부모 커스텀 노드 id (null = 루트 척추 레인)
   @Column(name = "anchor_node_id")
   private Long anchorNodeId;
@@ -112,12 +90,7 @@ public class CustomRoadmapNode {
 
   @Builder
   public CustomRoadmapNode(
-      CustomRoadmap customRoadmap,
-      RoadmapNode originalNode,
-      Integer customSortOrder,
-      boolean isBranch,
-      Long branchFromNodeId,
-      String branchType) {
+      CustomRoadmap customRoadmap, RoadmapNode originalNode, Integer customSortOrder) {
     this.customRoadmap = customRoadmap;
     this.originalNode = originalNode;
     this.status = NodeStatus.NOT_STARTED;
@@ -125,23 +98,16 @@ public class CustomRoadmapNode {
         customSortOrder != null
             ? customSortOrder
             : (originalNode != null ? originalNode.getSortOrder() : null);
-    this.isBranch = isBranch;
-    this.branchFromNodeId = branchFromNodeId;
-    this.branchType = branchType;
   }
 
   @Builder(builderMethodName = "builderNodeBuilder", builderClassName = "BuilderNodeBuilder")
   public CustomRoadmapNode(
-      CustomRoadmap customRoadmap,
-      BuilderModule builderModule,
-      Integer customSortOrder,
-      Integer builderBranchGroup) {
+      CustomRoadmap customRoadmap, BuilderModule builderModule, Integer customSortOrder) {
     this.customRoadmap = customRoadmap;
     this.builderModule = builderModule;
     this.originalNode = null;
     this.status = NodeStatus.NOT_STARTED;
     this.customSortOrder = customSortOrder;
-    this.builderBranchGroup = builderBranchGroup;
   }
 
   // 커스텀 순서 변경 비즈니스 메서드 (노드 삽입 시 기존 노드 밀기에 사용)
@@ -156,12 +122,7 @@ public class CustomRoadmapNode {
     this.customSortOrder = order;
   }
 
-  // 분기 소속 override를 설정한다(null=척추, 1=왼쪽, 2=오른쪽).
-  public void setBranchGroupOverride(Integer branchGroup) {
-    this.branchGroup = branchGroup;
-  }
-
-  // 레인 필드를 일괄 배치한다(TASK-56). 앵커는 저장 후 부여되는 커스텀노드 id라 2-pass에서 호출.
+  // 레인 필드를 일괄 배치한다. 앵커는 저장 후 부여되는 커스텀노드 id라 2-pass에서 호출.
   public void assignLane(
       BranchKind branchKind, Long anchorNodeId, Integer laneKey, Integer orderInLane) {
     this.branchKind = branchKind;
@@ -170,43 +131,9 @@ public class CustomRoadmapNode {
     this.orderInLane = orderInLane;
   }
 
-  /**
-   * 유효 분기 그룹을 해석한다. 빌더 노드는 builderBranchGroup, 공식 노드는 로드맵이 분기 편집본이면 override(branchGroup), 아니면 원본
-   * 노드의 branchGroup을 따른다(레거시 안전).
-   */
-  public Integer effectiveBranchGroup() {
-    if (builderModule != null) {
-      return builderBranchGroup;
-    }
-    if (customRoadmap != null && customRoadmap.isBranchesCustomized()) {
-      return branchGroup;
-    }
-    return originalNode != null ? originalNode.getBranchGroup() : null;
-  }
-
-  /** 유효 분기 종류. 신 모델(레인)은 branchKind 직접, 레거시는 옛 필드에서 파생한다(TASK-56 듀얼리드). */
-  public BranchKind effectiveBranchKind() {
-    if (branchKind != null) {
-      return branchKind;
-    }
-    if (isBranch) { // 레거시 추천 분기
-      return "ADVANCED".equalsIgnoreCase(branchType) ? BranchKind.ADVANCED : BranchKind.REVIEW;
-    }
-    if (effectiveBranchGroup() != null) {
-      return BranchKind.BRANCH;
-    }
-    return BranchKind.SPINE;
-  }
-
-  /** 재학습 게이트 대상(복습/심화)인가. 레거시에서는 기존 isBranch와 동치. */
+  /** 재학습 게이트 대상(복습/심화)인가. 앵커에 매달린 선택 학습 노드만 해당한다. */
   public boolean isRelearnGated() {
-    BranchKind kind = effectiveBranchKind();
-    return kind == BranchKind.REVIEW || kind == BranchKind.ADVANCED;
-  }
-
-  /** 이 노드가 레인 모델로 저장됐는가(branchKind 보유). 로드맵 단위 레인/레거시 판별의 단일 정의. */
-  public boolean isLaneModeled() {
-    return branchKind != null;
+    return branchKind == BranchKind.REVIEW || branchKind == BranchKind.ADVANCED;
   }
 
   // 학습 시작 상태로 변경하는 비즈니스 메서드

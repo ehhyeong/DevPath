@@ -85,10 +85,10 @@ export const roadmapApi = {
       { auth: true },
     )
   },
-  setNodeBranch(customRoadmapId: number, customNodeId: number, branchGroup: number | null) {
+  setNodeBranch(customRoadmapId: number, customNodeId: number, laneKey: number | null) {
     return request<void>(
       `/api/my-roadmaps/${customRoadmapId}/nodes/${customNodeId}/branch`,
-      { method: 'POST', body: JSON.stringify({ branchGroup }) },
+      { method: 'POST', body: JSON.stringify({ laneKey }) },
       { auth: true },
     )
   },

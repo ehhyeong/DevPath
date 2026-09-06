@@ -95,7 +95,7 @@ public class MyRoadmapService {
                       .myRoadmap(myRoadmap)
                       .builderModule(moduleMap.get(item.getBuilderModuleId()))
                       .sortOrder(item.getSortOrder())
-                      .branchGroup(item.getBranchGroup())
+                      .laneKey(item.getLaneKey())
                       .build();
               myRoadmap.addModule(module);
             });
@@ -193,7 +193,7 @@ public class MyRoadmapService {
                       .myRoadmap(myRoadmap)
                       .builderModule(moduleMap.get(item.getBuilderModuleId()))
                       .sortOrder(item.getSortOrder())
-                      .branchGroup(item.getBranchGroup())
+                      .laneKey(item.getLaneKey())
                       .build();
               myRoadmap.addModule(module);
             });
@@ -224,7 +224,7 @@ public class MyRoadmapService {
     myRoadmapRepository.delete(myRoadmap);
   }
 
-  // 빌더 flat payload(sortOrder + branchGroup)를 커스텀 노드로 저장하고, 레인 필드(anchor/laneKey/kind/order)를 도출해
+  // 빌더 flat payload(sortOrder + laneKey)를 커스텀 노드로 저장하고, 레인 필드(anchor/laneKey/kind/order)를 도출해
   // 배치한다.
   private void buildAndSaveCustomNodes(
       CustomRoadmap customRoadmap,
@@ -245,26 +245,22 @@ public class MyRoadmapService {
                   .customRoadmap(customRoadmap)
                   .builderModule(moduleMap.get(item.getBuilderModuleId()))
                   .customSortOrder(item.getSortOrder())
-                  .builderBranchGroup(item.getBranchGroup())
                   .build()
               : CustomRoadmapNode.builder()
                   .customRoadmap(customRoadmap)
                   .originalNode(originalNodeMap.get(item.getOriginalNodeId()))
                   .customSortOrder(item.getSortOrder())
-                  .isBranch(false)
-                  .branchFromNodeId(null)
-                  .branchType(null)
                   .build();
       nodes.add(customRoadmapNodeRepository.save(node));
     }
 
-    // 2-pass: flat(sortOrder + branchGroup)에서 레인 도출(sync 서비스 공유 로직). 빌더 노드는 전부 위치 노드다.
-    Map<Long, Integer> branchGroupByNodeId = new HashMap<>();
+    // 2-pass: flat(sortOrder + laneKey)에서 레인 도출(sync 서비스 공유 로직). 빌더 노드는 전부 위치 노드다.
+    Map<Long, Integer> laneKeyByNodeId = new HashMap<>();
     for (int i = 0; i < ordered.size(); i += 1) {
-      branchGroupByNodeId.put(nodes.get(i).getId(), ordered.get(i).getBranchGroup());
+      laneKeyByNodeId.put(nodes.get(i).getId(), ordered.get(i).getLaneKey());
     }
     CustomRoadmapPrerequisiteSyncService.assignPositionalLanes(
-        nodes, node -> branchGroupByNodeId.get(node.getId()));
+        nodes, node -> laneKeyByNodeId.get(node.getId()));
   }
 
   private void validateModuleSource(MyRoadmapSaveRequest.ModuleItem item) {

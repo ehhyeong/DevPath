@@ -33,10 +33,11 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, allNodes,
   async function handleDelete() {
     if (!node) return
     // cascade 고지: 이 노드를 앵커로 매달린 복습/심화 노드는 함께 삭제된다.
-    const cascadeChildren =
-      node.originalNodeId != null
-        ? allNodes.filter((n) => n.isBranch && n.branchFromNodeId === node.originalNodeId)
-        : []
+    const cascadeChildren = allNodes.filter(
+      (n) =>
+        n.anchorNodeId === node.customNodeId &&
+        (n.branchKind === 'REVIEW' || n.branchKind === 'ADVANCED'),
+    )
     const cascadeNotice =
       cascadeChildren.length > 0
         ? `\n\n다음 추천 노드도 함께 삭제됩니다:\n- ${cascadeChildren.map((n) => n.title).join('\n- ')}`
@@ -69,11 +70,11 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, allNodes,
     }
   }
 
-  async function handleSetBranch(branchGroup: number | null) {
+  async function handleSetBranch(laneKey: number | null) {
     if (!node) return
     setBusy(true)
     try {
-      await roadmapApi.setNodeBranch(customRoadmapId, node.customNodeId, branchGroup)
+      await roadmapApi.setNodeBranch(customRoadmapId, node.customNodeId, laneKey)
       onCleared()
       onClose()
     } catch (err) {
@@ -285,7 +286,7 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, allNodes,
                   { label: '좌', value: 1 as number | null },
                   { label: '우', value: 2 as number | null },
                 ]).map((opt) => {
-                  const current = (node.branchGroup ?? null) === opt.value
+                  const current = (node.laneKey ?? null) === opt.value
                   return (
                     <button
                       key={opt.label}

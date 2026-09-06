@@ -2,7 +2,6 @@ package com.devpath.domain.roadmap.service;
 
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
-import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.Roadmap;
@@ -125,45 +124,17 @@ public class CustomRoadmapCopyService {
                         customRoadmap, originalNodeMap, requiredTagsByNodeId, userTags, nodeItem))
             .toList();
 
-    // 저장 후에는 "원본 노드 ID -> 커스텀 노드" 연결 정보가 필요하다.
     List<CustomRoadmapNode> savedCustomNodes =
         customRoadmapNodeRepository.saveAll(customNodesToSave);
     roadmapProgressService.updateProgressRate(customRoadmap, savedCustomNodes);
-    Map<Long, CustomRoadmapNode> customNodeByOriginalId =
-        savedCustomNodes.stream()
-            .collect(
-                Collectors.toMap(node -> node.getOriginalNode().getNodeId(), Function.identity()));
 
-    copyLanes(originalNodes, savedCustomNodes, customNodeByOriginalId);
+    // 원본의 갈래 번호에서 레인을 도출한다(빌더 저장과 공유하는 규칙). 앵커는 저장 후 부여된 커스텀 노드 id가 된다.
+    CustomRoadmapPrerequisiteSyncService.assignPositionalLanes(
+        savedCustomNodes, node -> node.getOriginalNode().getLaneKey());
 
-    // 표시 순서와 선행관계는 레인 구조에서 파생한다(빌더 로드맵과 동일한 규칙).
+    // 표시 순서와 선행관계는 레인 구조에서 파생한다.
     prerequisiteSyncService.recomputeOrderAndRebuild(customRoadmap);
     return customRoadmap.getId();
-  }
-
-  // 원본 로드맵의 레인 구조를 커스텀 노드로 옮긴다. 앵커는 저장 후 부여된 커스텀 노드 id로 치환한다.
-  private void copyLanes(
-      List<RoadmapNode> originalNodes,
-      List<CustomRoadmapNode> savedCustomNodes,
-      Map<Long, CustomRoadmapNode> customNodeByOriginalId) {
-    // 레인화되지 않은 원본은 옛 분기 필드로 동작하는 경로를 그대로 둔다.
-    if (originalNodes.stream().noneMatch(node -> node.getBranchKind() != null)) {
-      return;
-    }
-
-    for (CustomRoadmapNode customNode : savedCustomNodes) {
-      RoadmapNode originalNode = customNode.getOriginalNode();
-      CustomRoadmapNode anchor =
-          originalNode.getAnchorNodeId() == null
-              ? null
-              : customNodeByOriginalId.get(originalNode.getAnchorNodeId());
-
-      customNode.assignLane(
-          originalNode.getBranchKind() == null ? BranchKind.SPINE : originalNode.getBranchKind(),
-          anchor == null ? null : anchor.getId(),
-          originalNode.getLaneKey(),
-          originalNode.getOrderInLane());
-    }
   }
 
   // 각 노드가 요구하는 기술 태그를 노드 ID 기준으로 묶어 둔다.

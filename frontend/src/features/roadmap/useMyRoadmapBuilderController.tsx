@@ -113,7 +113,7 @@ function readEditIdFromLocation(): number | null {
             bgColor: string
             topics: string[]
             sortOrder: number
-            branchGroup: number | null
+            laneKey: number | null
           }>
         }}>
       })
@@ -133,7 +133,7 @@ function readEditIdFromLocation(): number | null {
             return {
               instanceId: makeInstanceId(),
               sortOrder: m.sortOrder,
-              branchGroup: m.branchGroup,
+              laneKey: m.laneKey,
               module:
                 m.source === 'OFFICIAL_NODE'
                   ? {
@@ -340,8 +340,8 @@ function readEditIdFromLocation(): number | null {
       .sort(([a], [b]) => a - b)
       .map(([sortOrder, rowNodes]) => ({
         sortOrder,
-        nodes: [...rowNodes].sort((a, b) => (a.branchGroup ?? 0) - (b.branchGroup ?? 0)),
-        isBranching: rowNodes.some((n) => n.branchGroup !== null),
+        nodes: [...rowNodes].sort((a, b) => (a.laneKey ?? 0) - (b.laneKey ?? 0)),
+        isBranching: rowNodes.some((n) => n.laneKey !== null),
       }))
   }, [nodes])
 
@@ -383,7 +383,7 @@ function readEditIdFromLocation(): number | null {
       if (branchTarget === null) {
         setNodes((prev) => [
           ...prev,
-          { instanceId: makeInstanceId(), module, sortOrder: maxSortOrder + 1, branchGroup: null },
+          { instanceId: makeInstanceId(), module, sortOrder: maxSortOrder + 1, laneKey: null },
         ])
         setTimeout(() => {
           mainRef.current?.scrollTo({ top: mainRef.current.scrollHeight, behavior: 'smooth' })
@@ -391,13 +391,13 @@ function readEditIdFromLocation(): number | null {
       } else {
         setNodes((prev) => {
           const updated = prev.map((n) =>
-            n.sortOrder === branchTarget && n.branchGroup === null
-              ? { ...n, branchGroup: 1 }
+            n.sortOrder === branchTarget && n.laneKey === null
+              ? { ...n, laneKey: 1 }
               : n,
           )
           return [
             ...updated,
-            { instanceId: makeInstanceId(), module, sortOrder: branchTarget, branchGroup: 2 },
+            { instanceId: makeInstanceId(), module, sortOrder: branchTarget, laneKey: 2 },
           ]
         })
         setBranchTarget(null)
@@ -410,7 +410,7 @@ function readEditIdFromLocation(): number | null {
   const handleBranchActivate = useCallback(
     (sortOrder: number) => {
       const rowNodes = nodes.filter((n) => n.sortOrder === sortOrder)
-      if (rowNodes.some((n) => n.branchGroup !== null)) {
+      if (rowNodes.some((n) => n.laneKey !== null)) {
         alert('이미 분기가 존재하는 위치입니다. 분기는 위치당 최대 2개까지 가능합니다.')
         return
       }
@@ -425,12 +425,12 @@ function readEditIdFromLocation(): number | null {
       const target = prev.find((n) => n.instanceId === instanceId)
       if (!target) return prev
 
-      const { sortOrder, branchGroup } = target
+      const { sortOrder, laneKey } = target
       const sameRow = prev.filter((n) => n.sortOrder === sortOrder && n.instanceId !== instanceId)
 
       let updated: BuilderNode[]
 
-      if (branchGroup === null) {
+      if (laneKey === null) {
         // 척추 노드 삭제 → 이후 sortOrder 전부 -1 재정렬
         updated = prev
           .filter((n) => n.instanceId !== instanceId)
@@ -440,7 +440,7 @@ function readEditIdFromLocation(): number | null {
           // 분기 하나 남음 → 척추로 복원
           updated = prev
             .filter((n) => n.instanceId !== instanceId)
-            .map((n) => (n.sortOrder === sortOrder ? { ...n, branchGroup: null } : n))
+            .map((n) => (n.sortOrder === sortOrder ? { ...n, laneKey: null } : n))
         } else {
           // 마지막 분기 노드 삭제 → row 제거 + 이후 재정렬
           updated = prev
@@ -456,8 +456,8 @@ function readEditIdFromLocation(): number | null {
   const handleSwapBranch = useCallback((sortOrder: number) => {
     setNodes((prev) =>
       prev.map((n) =>
-        n.sortOrder === sortOrder && n.branchGroup !== null
-          ? { ...n, branchGroup: n.branchGroup === 1 ? 2 : 1 }
+        n.sortOrder === sortOrder && n.laneKey !== null
+          ? { ...n, laneKey: n.laneKey === 1 ? 2 : 1 }
           : n,
       ),
     )
@@ -507,7 +507,7 @@ function readEditIdFromLocation(): number | null {
             builderModuleId: n.module.source === 'BUILDER_MODULE' ? n.module.builderModuleId : null,
             originalNodeId: n.module.source === 'OFFICIAL_NODE' ? n.module.originalNodeId : null,
             sortOrder: n.sortOrder,
-            branchGroup: n.branchGroup,
+            laneKey: n.laneKey,
           })),
         }),
       })
@@ -559,31 +559,31 @@ function readEditIdFromLocation(): number | null {
           )
           return [
             ...shifted,
-            { instanceId: makeInstanceId(), module: drag.module, sortOrder: newSortOrder, branchGroup: null },
+            { instanceId: makeInstanceId(), module: drag.module, sortOrder: newSortOrder, laneKey: null },
           ]
         })
       } else if (overId.startsWith('on-spine-')) {
         const targetSortOrder = parseInt(overId.slice(9))
         setNodes((prev) => {
           const hasExistingBranch = prev.some(
-            (n) => n.sortOrder === targetSortOrder && n.branchGroup !== null,
+            (n) => n.sortOrder === targetSortOrder && n.laneKey !== null,
           )
           if (hasExistingBranch) return prev
           const updated = prev.map((n) =>
-            n.sortOrder === targetSortOrder && n.branchGroup === null
-              ? { ...n, branchGroup: 1 }
+            n.sortOrder === targetSortOrder && n.laneKey === null
+              ? { ...n, laneKey: 1 }
               : n,
           )
           return [
             ...updated,
-            { instanceId: makeInstanceId(), module: drag.module, sortOrder: targetSortOrder, branchGroup: 2 },
+            { instanceId: makeInstanceId(), module: drag.module, sortOrder: targetSortOrder, laneKey: 2 },
           ]
         })
       }
     } else if (drag.kind === 'NODE') {
       if (overId === 'trash') {
         handleRemove(drag.instanceId)
-      } else if (overId.startsWith('gap-') && drag.branchGroup === null) {
+      } else if (overId.startsWith('gap-') && drag.laneKey === null) {
         const insertAfter = parseInt(overId.slice(4))
         const movingSortOrder = drag.sortOrder
         if (insertAfter === movingSortOrder) return
@@ -605,14 +605,14 @@ function readEditIdFromLocation(): number | null {
         })
       } else if (overId.startsWith('branch-swap-')) {
         const targetInstanceId = overId.slice(12)
-        if (drag.branchGroup !== null) {
+        if (drag.laneKey !== null) {
           setNodes((prev) => {
             const dragNode = prev.find((n) => n.instanceId === drag.instanceId)
             const targetNode = prev.find((n) => n.instanceId === targetInstanceId)
             if (!dragNode || !targetNode || dragNode.sortOrder !== targetNode.sortOrder) return prev
             return prev.map((n) => {
-              if (n.instanceId === drag.instanceId) return { ...n, branchGroup: targetNode.branchGroup }
-              if (n.instanceId === targetInstanceId) return { ...n, branchGroup: dragNode.branchGroup }
+              if (n.instanceId === drag.instanceId) return { ...n, laneKey: targetNode.laneKey }
+              if (n.instanceId === targetInstanceId) return { ...n, laneKey: dragNode.laneKey }
               return n
             })
           })
