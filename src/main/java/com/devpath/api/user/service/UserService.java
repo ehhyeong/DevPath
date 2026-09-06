@@ -6,6 +6,7 @@ import com.devpath.api.user.dto.UserProfileSetupRequest;
 import com.devpath.api.user.dto.UserProfileUpdateRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
+import com.devpath.common.security.TokenRedisService;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
@@ -31,6 +32,7 @@ public class UserService {
   private final TagRepository tagRepository;
   private final UserTechStackRepository userTechStackRepository;
   private final PasswordEncoder passwordEncoder;
+  private final TokenRedisService tokenRedisService;
 
   // 온보딩 단계에서 프로필 기본 정보와 기술 태그를 함께 저장한다.
   @Transactional
@@ -91,6 +93,18 @@ public class UserService {
     }
 
     user.changePassword(passwordEncoder.encode(request.newPassword()));
+  }
+
+  // 본인 요청으로 계정을 탈퇴 처리하고 남은 개인정보를 파기한다.
+  @Transactional
+  public void withdraw(Long userId) {
+    User user = getUser(userId);
+
+    userProfileRepository.findByUserId(userId).ifPresent(UserProfile::anonymize);
+    user.withdraw();
+    tokenRedisService.deleteRefreshToken(userId);
+
+    log.info("회원 탈퇴가 완료되었습니다. userId={}", userId);
   }
 
   // 프로필 편집 화면에서 사용할 공식 태그 목록을 반환한다.

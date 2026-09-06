@@ -13,6 +13,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,6 +53,14 @@ public class UserController {
       @AuthenticationPrincipal Long userId, @Valid @RequestBody UserPasswordChangeRequest request) {
     userService.changePassword(userId, request);
     return ResponseEntity.ok(ApiResponse.success("비밀번호를 변경했습니다.", null));
+  }
+
+  // 계정 설정 화면에서 본인 계정을 탈퇴 처리한다.
+  @Operation(summary = "회원 탈퇴", description = "로그인한 사용자의 계정을 탈퇴 처리하고 개인정보를 파기합니다.")
+  @DeleteMapping("/me")
+  public ResponseEntity<ApiResponse<Void>> withdrawMyAccount(@AuthenticationPrincipal Long userId) {
+    userService.withdraw(userId);
+    return ResponseEntity.ok(ApiResponse.success("회원 탈퇴가 완료되었습니다.", null));
   }
 
   // 프로필 편집에 필요한 공식 태그 목록을 제공한다.

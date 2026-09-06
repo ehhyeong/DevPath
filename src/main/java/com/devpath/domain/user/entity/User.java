@@ -118,9 +118,12 @@ public class User {
     this.accountStatus = AccountStatus.ACTIVE;
   }
 
+  // 탈퇴 계정은 재로그인 경로를 막고 식별 정보를 즉시 파기해 같은 이메일로 재가입할 수 있게 한다.
   public void withdraw() {
     this.isActive = false;
     this.accountStatus = AccountStatus.WITHDRAWN;
+    this.email = "withdrawn_" + this.id + "@devpath.invalid";
+    this.name = "탈퇴한 회원";
     invalidateTokens();
   }
 
