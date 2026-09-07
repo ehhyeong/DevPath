@@ -2,14 +2,12 @@ package com.devpath.domain.roadmap.service;
 
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
-import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.port.OfficialRoadmapReader;
 import com.devpath.domain.roadmap.port.OfficialRoadmapSnapshot;
-import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
@@ -37,14 +35,13 @@ public class CustomRoadmapCopyService {
 
   // 공식 로드맵에 잘못 섞인 동적/평가용 노드는 복사하지 않는다.
   private static final Set<String> NON_COPYABLE_NODE_TYPES =
-      Set.of("BRANCH", "COURSE_QUIZ", "COURSE_ASSIGNMENT");
+      Set.of("BRANCH", "QUIZ", "ASSIGNMENT", "COURSE_QUIZ", "COURSE_ASSIGNMENT");
 
   private final UserRepository userRepository;
   private final RoadmapRepository roadmapRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
   private final CustomRoadmapRepository customRoadmapRepository;
   private final CustomRoadmapNodeRepository customRoadmapNodeRepository;
-  private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
   private final OfficialRoadmapReader officialRoadmapReader;
   private final TagValidationService tagValidationService;
   private final UserTechStackRepository userTechStackRepository;
@@ -127,28 +124,16 @@ public class CustomRoadmapCopyService {
                         customRoadmap, originalNodeMap, requiredTagsByNodeId, userTags, nodeItem))
             .toList();
 
-    // 저장 후에는 "원본 노드 ID -> 커스텀 노드" 연결 정보가 필요하다.
     List<CustomRoadmapNode> savedCustomNodes =
         customRoadmapNodeRepository.saveAll(customNodesToSave);
     roadmapProgressService.updateProgressRate(customRoadmap, savedCustomNodes);
-    Map<Long, CustomRoadmapNode> customNodeByOriginalId =
-        savedCustomNodes.stream()
-            .collect(
-                Collectors.toMap(node -> node.getOriginalNode().getNodeId(), Function.identity()));
 
-    // 원본 로드맵의 선수 관계를 커스텀 노드 기준 관계로 다시 생성한다.
-    List<CustomNodePrerequisite> prerequisitesToSave =
-        snapshot.prerequisiteEdges().stream()
-            .filter(
-                edge ->
-                    !excludedNodeIds.contains(edge.nodeId())
-                        && !excludedNodeIds.contains(edge.prerequisiteNodeId()))
-            .map(edge -> buildPrerequisite(customRoadmap, customNodeByOriginalId, edge))
-            .toList();
+    // 원본의 갈래 번호에서 레인을 도출한다(빌더 저장과 공유하는 규칙). 앵커는 저장 후 부여된 커스텀 노드 id가 된다.
+    CustomRoadmapPrerequisiteSyncService.assignPositionalLanes(
+        savedCustomNodes, node -> node.getOriginalNode().getLaneKey());
 
-    // 마지막으로 선수 관계까지 저장되면 커스텀 로드맵 복사가 완료된다.
-    customNodePrerequisiteRepository.saveAll(prerequisitesToSave);
-    prerequisiteSyncService.ensurePrerequisites(customRoadmap, savedCustomNodes);
+    // 표시 순서와 선행관계는 레인 구조에서 파생한다.
+    prerequisiteSyncService.recomputeOrderAndRebuild(customRoadmap);
     return customRoadmap.getId();
   }
 
@@ -200,26 +185,5 @@ public class CustomRoadmapCopyService {
       return false;
     }
     return node.getNodeType() == null || !NON_COPYABLE_NODE_TYPES.contains(node.getNodeType());
-  }
-
-  // 원본 로드맵의 선수 관계를 커스텀 로드맵의 선수 관계로 다시 연결한다.
-  private CustomNodePrerequisite buildPrerequisite(
-      CustomRoadmap customRoadmap,
-      Map<Long, CustomRoadmapNode> customNodeByOriginalId,
-      OfficialRoadmapSnapshot.PrerequisiteEdge edge) {
-    // 원본 선수 관계의 각 노드를 커스텀 노드로 치환한다.
-    CustomRoadmapNode node = customNodeByOriginalId.get(edge.nodeId());
-    CustomRoadmapNode prerequisite = customNodeByOriginalId.get(edge.prerequisiteNodeId());
-
-    // 복사 과정 중 누락된 노드가 있으면 잘못된 관계가 생기므로 즉시 예외 처리한다.
-    if (node == null || prerequisite == null) {
-      throw new CustomException(ErrorCode.ROADMAP_NODE_NOT_FOUND);
-    }
-
-    return CustomNodePrerequisite.builder()
-        .customRoadmap(customRoadmap)
-        .customNode(node)
-        .prerequisiteCustomNode(prerequisite)
-        .build();
   }
 }

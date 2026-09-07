@@ -258,8 +258,8 @@ export interface SlotRect {
   height: number
 }
 
-export function getBranchBadgeMeta(branchType?: string | null): BranchBadgeMeta {
-  if (branchType === 'REVIEW') {
+export function getBranchBadgeMeta(branchKind?: string | null): BranchBadgeMeta {
+  if (branchKind === 'REVIEW') {
     return {
       label: '복습',
       background: '#fff7ed',
@@ -268,7 +268,7 @@ export function getBranchBadgeMeta(branchType?: string | null): BranchBadgeMeta 
       theme: 'review',
     }
   }
-  if (branchType === 'ADVANCED') {
+  if (branchKind === 'ADVANCED') {
     return {
       label: '심화',
       background: '#eef2ff',
@@ -297,9 +297,9 @@ export function getSuggestionBadgeMeta(change: RecommendationChange): BranchBadg
   return getBranchBadgeMeta(null)
 }
 
-export function getOfficialBranchBadgeMeta(branchGroup: number): BranchBadgeMeta {
+export function getOfficialBranchBadgeMeta(laneKey: number): BranchBadgeMeta {
   return {
-    label: `분기 ${branchGroup}`,
+    label: `갈래 ${laneKey}`,
     background: '#f0f9ff',
     color: '#0369a1',
     borderColor: '#7dd3fc',
@@ -341,7 +341,7 @@ export const POST_BRANCH_SPINE_OFFSET_Y = 88
 
 // 레인 트리 레이아웃: anchorNodeId(부모 커스텀노드)로 트리를 만들어 척추=center, 분기=left/right,
 // 중첩·다구역은 side-left/side-right로 배치한다(다층 체인은 같은 레인 행 누적). 레인 모델 로드맵 전용.
-function buildLaneTreeLayout(
+export function buildRoadmapLayout(
   nodes: RoadmapNodeItem[],
   changes: RecommendationChange[],
 ): RoadmapLayout {
@@ -381,10 +381,10 @@ function buildLaneTreeLayout(
     const structural = child.branchKind === 'BRANCH'
     if (depth === 1) {
       if (structural) return child.laneKey === 1 ? 'left' : 'right'
-      return child.branchType === 'REVIEW' ? 'side-left' : 'side-right'
+      return child.branchKind === 'REVIEW' ? 'side-left' : 'side-right'
     }
     if (structural) return child.laneKey === 1 ? 'side-left' : 'side-right'
-    return child.branchType === 'REVIEW' ? 'side-left' : 'side-right'
+    return child.branchKind === 'REVIEW' ? 'side-left' : 'side-right'
   }
   function sortByOrderInLane(list: RoadmapNodeItem[]) {
     return list
@@ -429,14 +429,14 @@ function buildLaneTreeLayout(
               node: child,
               badge: structural
                 ? getOfficialBranchBadgeMeta(child.laneKey ?? 1)
-                : getBranchBadgeMeta(child.branchType),
+                : getBranchBadgeMeta(child.branchKind),
             })
             const laneId = child.laneKey ?? 0
             const prevId = prevByLane.get(laneId)
             const theme: EdgeTheme =
-              child.branchType === 'REVIEW'
+              child.branchKind === 'REVIEW'
                 ? 'review'
-                : child.branchType === 'ADVANCED'
+                : child.branchKind === 'ADVANCED'
                   ? 'advanced'
                   : 'default'
             pushEdge(prevId ?? parentSlotId, slot.id, prevId ? 'branch' : 'split', theme)
@@ -489,271 +489,6 @@ function buildLaneTreeLayout(
       pushEdge(slotId, slot.id, 'suggestion', 'suggestion')
     })
   })
-
-  return { slots, edges, rowCount }
-}
-
-export function buildRoadmapLayout(nodes: RoadmapNodeItem[], changes: RecommendationChange[]): RoadmapLayout {
-  // 레인 모델(노드에 branchKind 존재) → 트리 레이아웃. 레거시는 기존 단일구역 레이아웃 유지.
-  if (nodes.some((node) => node.branchKind != null)) {
-    return buildLaneTreeLayout(nodes, changes)
-  }
-  const slots: LayoutSlot[] = []
-  const edges: LayoutEdge[] = []
-  const sortedNodes = sortRoadmapNodes(nodes)
-  const suggestedBranchNodes = sortedNodes.filter((node) => node.isBranch)
-  const structuralNodes = sortedNodes.filter((node) => !node.isBranch)
-  const officialBranchNodes = structuralNodes.filter((node) => node.branchGroup != null)
-  const officialBranchGroups = Array.from(
-    new Set(
-      officialBranchNodes
-        .map((node) => node.branchGroup)
-        .filter((branchGroup): branchGroup is number => branchGroup != null),
-    ),
-  ).sort((a, b) => a - b)
-  const hasOfficialBranch = officialBranchGroups.length > 0
-  const branchOrders = officialBranchNodes.map((node) => node.sortOrder)
-  const minBranchOrder = hasOfficialBranch ? Math.min(...branchOrders) : Infinity
-  const maxBranchOrder = hasOfficialBranch ? Math.max(...branchOrders) : -Infinity
-  const spineNodes = structuralNodes.filter((node) => node.branchGroup == null)
-  const addChanges = sortChanges(changes.filter((change) => change.nodeChangeType === 'ADD'))
-  const branchAddChanges = addChanges.filter((change) => change.branchFromNodeId != null)
-  const spineAddChanges = addChanges.filter((change) => change.branchFromNodeId == null)
-  const suggestedNodesBySource = new Map<number, RoadmapNodeItem[]>()
-  const suggestedAddsBySource = new Map<number, RecommendationChange[]>()
-  const usedBranchRows = new Set<number>()
-  let row = 1
-  let rowCount = 1
-  let previousCenterSlotId: string | null = null
-
-  suggestedBranchNodes.forEach((node) => {
-    if (node.branchFromNodeId == null) return
-    const items = suggestedNodesBySource.get(node.branchFromNodeId) ?? []
-    items.push(node)
-    suggestedNodesBySource.set(node.branchFromNodeId, items)
-  })
-
-  branchAddChanges.forEach((change) => {
-    if (change.branchFromNodeId == null) return
-    const items = suggestedAddsBySource.get(change.branchFromNodeId) ?? []
-    items.push(change)
-    suggestedAddsBySource.set(change.branchFromNodeId, items)
-  })
-
-  function addSlot(slot: LayoutSlot) {
-    slots.push(slot)
-    rowCount = Math.max(rowCount, slot.row)
-    return slot
-  }
-
-  function addEdge(from: string | null | undefined, to: string | null | undefined, kind: LayoutEdgeKind, theme: EdgeTheme = 'default') {
-    if (!from || !to) return
-    edges.push({ id: `${kind}-${from}-${to}-${edges.length}`, from, to, kind, theme })
-  }
-
-  function addCenteredSlot(slot: Omit<LayoutSlot, 'lane' | 'row'>, edgeKind: LayoutEdgeKind, theme: EdgeTheme = 'default') {
-    const centeredSlot = addSlot({
-      ...slot,
-      lane: 'center',
-      row,
-    })
-    addEdge(previousCenterSlotId, centeredSlot.id, edgeKind, theme)
-    previousCenterSlotId = centeredSlot.id
-    row += 1
-    return centeredSlot
-  }
-
-  function reserveBranchRow(preferredRow: number) {
-    let branchRow = preferredRow
-    while (usedBranchRows.has(branchRow)) {
-      branchRow += 1
-    }
-    usedBranchRows.add(branchRow)
-    return branchRow
-  }
-
-  function addBranchSlot(
-    sourceSlot: LayoutSlot,
-    slot: Omit<LayoutSlot, 'lane' | 'row'>,
-    offset: number,
-    edgeKind: LayoutEdgeKind = 'suggestion',
-    theme: EdgeTheme = 'suggestion',
-  ) {
-    // 추천 노드는 출발 노드와 같은 쪽에 배치한다. 좌측 분기는 좌측, 우측 분기는 우측,
-    // 척추(center)에서 출발한 추천은 기존대로 우측에 둔다. (반대편 분기와의 겹침 방지)
-    const branchLane: RoadmapLane =
-      sourceSlot.lane === 'left' || sourceSlot.lane === 'side-left' ? 'left' : 'right'
-    const branchSlot = addSlot({
-      ...slot,
-      lane: branchLane,
-      row: reserveBranchRow(sourceSlot.row + offset),
-      stackOffset: slot.stackOffset ?? sourceSlot.stackOffset,
-    })
-    addEdge(sourceSlot.id, branchSlot.id, edgeKind, theme)
-    return branchSlot
-  }
-
-  function addSuggestedNode(node: RoadmapNodeItem, sourceSlot: LayoutSlot, offset: number) {
-    const badge = getBranchBadgeMeta(node.branchType)
-    addBranchSlot(sourceSlot, {
-      id: `suggested-node-${node.customNodeId}`,
-      kind: 'applied-branch',
-      node,
-      badge,
-    }, offset, 'applied-branch', badge.theme)
-  }
-
-  function addSuggestedChange(change: RecommendationChange, sourceSlot: LayoutSlot, offset: number) {
-    addBranchSlot(sourceSlot, {
-      id: `suggested-add-${change.changeId}`,
-      kind: 'suggested-branch',
-      change,
-      badge: getSuggestionBadgeMeta(change),
-    }, offset)
-  }
-
-  function addSuggestions(sourceOriginalNodeId: number | null, sourceSlot: LayoutSlot) {
-    if (sourceOriginalNodeId == null) {
-      return
-    }
-    const suggestedNodes = suggestedNodesBySource.get(sourceOriginalNodeId) ?? []
-    const suggestedAdds = suggestedAddsBySource.get(sourceOriginalNodeId) ?? []
-    let offset = 0
-
-    suggestedNodes.forEach((node) => {
-      addSuggestedNode(node, sourceSlot, offset)
-      offset += 1
-    })
-    suggestedAdds.forEach((change) => {
-      addSuggestedChange(change, sourceSlot, offset)
-      offset += 1
-    })
-  }
-
-  function addSpineItem(
-    item: LayoutSpineItem,
-    options: { connectFromPrevious?: boolean; edgeKind?: LayoutEdgeKind; theme?: EdgeTheme; stackOffset?: number } = {},
-  ) {
-    const {
-      connectFromPrevious = true,
-      edgeKind = item.kind === 'node' ? 'spine' : 'suggestion',
-      theme = item.kind === 'add' ? 'suggestion' : 'default',
-      stackOffset,
-    } = options
-    const id = makeLayoutSlotId(item)
-    if (!connectFromPrevious) previousCenterSlotId = null
-    const sourceSlot = addCenteredSlot({
-      id,
-      kind: item.kind === 'node' ? 'main-spine' : 'ghost-add',
-      stackOffset,
-      node: item.kind === 'node' ? item.node : undefined,
-      change: item.kind === 'add' ? item.change : undefined,
-      badge: item.kind === 'add' ? getSuggestionBadgeMeta(item.change) : undefined,
-    }, edgeKind, theme)
-    if (item.kind === 'node') {
-      addSuggestions(item.node.originalNodeId, sourceSlot)
-    }
-    return sourceSlot
-  }
-
-  function addOfficialBranchGroup(
-    branchGroup: number,
-    lane: RoadmapLane,
-    branchStartRow: number,
-    splitSourceSlotId: string | null,
-  ): string | null {
-    const groupNodes = officialBranchNodes
-      .filter((node) => node.branchGroup === branchGroup)
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.customNodeId - b.customNodeId)
-    let previousBranchSlotId: string | null = null
-    let lastBranchSlotId: string | null = null
-
-    groupNodes.forEach((node, index) => {
-      const branchSlot = addSlot({
-        id: `node-${node.customNodeId}`,
-        kind: 'official-branch',
-        lane,
-        row: branchStartRow + index,
-        stackOffset: OFFICIAL_BRANCH_OFFSET_Y,
-        node: {
-          ...node,
-          branchGroup: node.branchGroup ?? branchGroup,
-        },
-        badge: getOfficialBranchBadgeMeta(branchGroup),
-      })
-      usedBranchRows.add(branchSlot.row)
-
-      if (index === 0) {
-        addEdge(splitSourceSlotId, branchSlot.id, 'split')
-      } else {
-        addEdge(previousBranchSlotId, branchSlot.id, 'branch')
-      }
-
-      previousBranchSlotId = branchSlot.id
-      lastBranchSlotId = branchSlot.id
-      addSuggestions(node.originalNodeId, branchSlot)
-    })
-
-    return lastBranchSlotId
-  }
-
-  const preSpineNodes = hasOfficialBranch
-    ? spineNodes.filter((node) => node.sortOrder < minBranchOrder)
-    : spineNodes
-  const postSpineNodes = hasOfficialBranch
-    ? spineNodes.filter((node) => node.sortOrder > maxBranchOrder)
-    : []
-  const preSpineAdds = hasOfficialBranch
-    ? spineAddChanges.filter((change) => (change.nodeSortOrder ?? 9999) < minBranchOrder)
-    : spineAddChanges
-  const postSpineAdds = hasOfficialBranch
-    ? spineAddChanges.filter((change) => (change.nodeSortOrder ?? 9999) >= minBranchOrder)
-    : []
-
-  makeLayoutSpineItems(preSpineNodes, preSpineAdds).forEach((item) => {
-    addSpineItem(item)
-  })
-
-  if (hasOfficialBranch) {
-    const branchStartRow = row
-    const splitSourceSlotId = previousCenterSlotId
-    const maxBranchDepth = Math.max(
-      0,
-      ...officialBranchGroups.map((branchGroup) => (
-        officialBranchNodes.filter((node) => node.branchGroup === branchGroup).length
-      )),
-    )
-    // 공식 분기 노드가 차지할 행을 미리 선점해, 분기 노드에 달리는 추천 노드가
-    // 분기 팬 아래의 빈 행으로 안전하게 내려가도록 한다(같은 컬럼 행 충돌 방지).
-    for (let i = 0; i < maxBranchDepth; i += 1) {
-      usedBranchRows.add(branchStartRow + i)
-    }
-    const branchEndSlotIds = officialBranchGroups
-      .map((branchGroup, index) => addOfficialBranchGroup(
-        branchGroup,
-        getOfficialBranchLane(index),
-        branchStartRow,
-        splitSourceSlotId,
-      ))
-      .filter((slotId): slotId is string => slotId != null)
-    row = Math.max(branchStartRow + maxBranchDepth, rowCount + 1)
-
-    const postSpineItems = makeLayoutSpineItems(postSpineNodes, postSpineAdds)
-    if (branchEndSlotIds.length > 0 && postSpineItems.length > 0) {
-      const mergeSlot = addSpineItem(postSpineItems[0], {
-        connectFromPrevious: false,
-        stackOffset: POST_BRANCH_SPINE_OFFSET_Y,
-      })
-      branchEndSlotIds.forEach((slotId) => addEdge(slotId, mergeSlot.id, 'merge'))
-      postSpineItems.slice(1).forEach((item) => {
-        addSpineItem(item, { stackOffset: POST_BRANCH_SPINE_OFFSET_Y })
-      })
-    } else {
-      postSpineItems.forEach((item) => {
-        addSpineItem(item, { stackOffset: POST_BRANCH_SPINE_OFFSET_Y })
-      })
-    }
-  }
 
   return { slots, edges, rowCount }
 }

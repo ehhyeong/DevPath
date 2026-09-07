@@ -14,7 +14,6 @@ declare global {
     editRoadmapInfo: (roadmapId: number) => void
     clearRoadmapInfo: (roadmapId: number) => Promise<void>
     updateNodeTags: (nodeId: number) => Promise<void>
-    updateNodePrerequisites: (nodeId: number) => Promise<void>
     updateNodeRules: (nodeId: number) => Promise<void>
     editRoadmapNodeResource: (resourceId: number) => void
     deleteRoadmapNodeResource: (resourceId: number) => Promise<void>
@@ -74,7 +73,7 @@ declare global {
 export type AdminActionName =
   | 'refreshCurrentTab' | 'logout' | 'createTag' | 'editTag' | 'mergeTag' | 'deleteTag' | 'editOfficialRoadmap' | 'deleteOfficialRoadmap'
   | 'createRoadmapNode' | 'editRoadmapNode' | 'deleteRoadmapNode' | 'editRoadmapInfo' | 'clearRoadmapInfo' | 'updateNodeTags'
-  | 'updateNodePrerequisites' | 'updateNodeRules' | 'editRoadmapNodeResource' | 'deleteRoadmapNodeResource'
+  | 'updateNodeRules' | 'editRoadmapNodeResource' | 'deleteRoadmapNodeResource'
   | 'viewAccountDetails' | 'changeAccountStatus' | 'approveInstructor' | 'changeInstructorGrade' | 'createAdminRole' | 'editAdminRole' | 'deleteAdminRole' | 'assignAdminRole' | 'clearAdminRole'
   | 'requestAiMapping' | 'applySuggestedMapping' | 'clearCourseNodeMapping'
   | 'reviewCourse' | 'previewCourseReviewLesson' | 'blindContent' | 'unblindContent' | 'resolveReport'

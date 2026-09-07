@@ -185,7 +185,7 @@ export const adminApi = {
     nodeType: string
     sortOrder: number
     subTopics?: string | null
-    branchGroup?: number | null
+    laneKey?: number | null
   }) {
     return request<AdminRoadmapNode>('/api/admin/nodes', {
       method: 'POST',
@@ -201,7 +201,7 @@ export const adminApi = {
       nodeType: string
       sortOrder: number
       subTopics?: string | null
-      branchGroup?: number | null
+      laneKey?: number | null
     },
   ) {
     return request<AdminRoadmapNode>(`/api/admin/nodes/${nodeId}`, {
@@ -216,12 +216,6 @@ export const adminApi = {
     return request<void>(`/api/admin/nodes/${nodeId}/required-tags`, {
       method: 'PUT',
       body: JSON.stringify({ requiredTags }),
-    })
-  },
-  updateNodePrerequisites(nodeId: number, prerequisiteNodeIds: number[]) {
-    return request<void>(`/api/admin/nodes/${nodeId}/prerequisites`, {
-      method: 'PUT',
-      body: JSON.stringify({ prerequisiteNodeIds }),
     })
   },
   updateNodeCompletionRule(

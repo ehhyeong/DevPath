@@ -66,7 +66,7 @@ public class MyRoadmapResponse {
     private String bgColor;
     private List<String> topics;
     private int sortOrder;
-    private Integer branchGroup;
+    private Integer laneKey;
 
     public static MyRoadmapModuleDto from(MyRoadmapModule m) {
       BuilderModule bm = m.getBuilderModule();
@@ -82,7 +82,7 @@ public class MyRoadmapResponse {
           .bgColor(bm.getBgColor())
           .topics(bm.getTopics())
           .sortOrder(m.getSortOrder())
-          .branchGroup(m.getBranchGroup())
+          .laneKey(m.getLaneKey())
           .build();
     }
 
@@ -101,7 +101,7 @@ public class MyRoadmapResponse {
             .bgColor(bm.getBgColor())
             .topics(bm.getTopics())
             .sortOrder(n.getCustomSortOrder() != null ? n.getCustomSortOrder() : 0)
-            .branchGroup(resolveBranchGroup(n, n.getBuilderBranchGroup()))
+            .laneKey(resolveLaneKey(n))
             .build();
       }
       RoadmapNode rn = n.getOriginalNode();
@@ -117,16 +117,13 @@ public class MyRoadmapResponse {
           .bgColor("bg-green-50")
           .topics(splitSubTopics(rn.getSubTopics()))
           .sortOrder(n.getCustomSortOrder() != null ? n.getCustomSortOrder() : 0)
-          .branchGroup(resolveBranchGroup(n, rn.getBranchGroup()))
+          .laneKey(resolveLaneKey(n))
           .build();
     }
 
-    // 분기 소속: 레인 모델은 구조분기(BRANCH)의 laneKey, 레거시는 옛 필드 폴백.
-    private static Integer resolveBranchGroup(CustomRoadmapNode n, Integer legacyFallback) {
-      if (n.getBranchKind() != null) {
-        return n.getBranchKind() == BranchKind.BRANCH ? n.getLaneKey() : null;
-      }
-      return legacyFallback;
+    // 갈래 번호는 구조분기(BRANCH)일 때만 의미가 있다.
+    private static Integer resolveLaneKey(CustomRoadmapNode n) {
+      return n.getBranchKind() == BranchKind.BRANCH ? n.getLaneKey() : null;
     }
 
     private static List<String> splitSubTopics(String value) {

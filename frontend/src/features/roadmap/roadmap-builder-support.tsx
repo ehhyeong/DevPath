@@ -452,7 +452,7 @@ export function DraggableSpineCard({
     isDragging,
   } = useDraggable({
     id: `node-${instanceId}`,
-    data: { kind: 'NODE', instanceId, sortOrder, branchGroup: null } as ActiveDrag,
+    data: { kind: 'NODE', instanceId, sortOrder, laneKey: null } as ActiveDrag,
   })
 
   const { isOver, setNodeRef: setDropRef } = useDroppable({
@@ -556,12 +556,12 @@ export function DraggableBranchCard({
   onRemove: (id: string) => void
   isDraggingBranchSibling: boolean
 }) {
-  const { module, instanceId, sortOrder, branchGroup } = node
+  const { module, instanceId, sortOrder, laneKey } = node
   const colors = BRANCH_COLORS[label]
 
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: `node-${instanceId}`,
-    data: { kind: 'NODE', instanceId, sortOrder, branchGroup } as ActiveDrag,
+    data: { kind: 'NODE', instanceId, sortOrder, laneKey } as ActiveDrag,
   })
 
   const { isOver: isSwapOver, setNodeRef: setSwapRef } = useDroppable({

@@ -256,7 +256,6 @@ public class JobSkillSuggestionService {
             .nodeType(nodeType)
             .sortOrder(null)
             .subTopics(subTopics)
-            .branchGroup(null)
             .build());
   }
 

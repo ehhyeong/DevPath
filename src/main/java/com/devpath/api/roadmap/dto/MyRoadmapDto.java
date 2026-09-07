@@ -1,7 +1,6 @@
 package com.devpath.api.roadmap.dto;
 
 import com.devpath.domain.learning.entity.clearance.NodeClearance;
-import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
@@ -155,12 +154,12 @@ public class MyRoadmapDto {
   @Schema(name = "MyRoadmapNodeBranchRequest")
   public static class BranchRequest {
 
-    @Schema(description = "분기 소속 (null=척추, 1=왼쪽, 2=오른쪽)", example = "1")
-    private Integer branchGroup;
+    @Schema(description = "갈래 번호 (null=척추, 1=왼쪽, 2=오른쪽)", example = "1")
+    private Integer laneKey;
 
     @Builder
-    private BranchRequest(Integer branchGroup) {
-      this.branchGroup = branchGroup;
+    private BranchRequest(Integer laneKey) {
+      this.laneKey = laneKey;
     }
   }
 
@@ -317,26 +316,13 @@ public class MyRoadmapDto {
     @Schema(description = "서브토픽 칩 목록")
     private List<String> subTopics;
 
-    @Schema(description = "분기 그룹 (null=척추, 1=왼쪽, 2=오른쪽)")
-    private Integer branchGroup;
-
-    @Schema(description = "진단 퀴즈 추천 분기 노드 여부")
-    @JsonProperty("isBranch")
-    private boolean isBranch;
-
-    @Schema(description = "분기 출발 원본 노드 ID (isBranch=true 일 때만 존재)")
-    private Long branchFromNodeId;
-
-    @Schema(description = "분기 종류: REVIEW(복습) | ADVANCED(심화) | null(일반)")
-    private String branchType;
-
-    @Schema(description = "레인 트리: 부모(앵커) 커스텀 노드 id. null=루트 척추. 레거시 미이행 노드는 null")
+    @Schema(description = "레인 트리: 부모(앵커) 커스텀 노드 id. null=루트 척추")
     private Long anchorNodeId;
 
-    @Schema(description = "레인 트리: 형제 레인 구분키(좌/우/복습/심화). 레거시 미이행 노드는 null")
+    @Schema(description = "레인 트리: 형제 레인 구분키(좌/우/복습/심화)")
     private Integer laneKey;
 
-    @Schema(description = "레인 종류: SPINE/BRANCH/REVIEW/ADVANCED. 레거시 미이행 노드는 null")
+    @Schema(description = "레인 종류: SPINE/BRANCH/REVIEW/ADVANCED")
     private String branchKind;
 
     @Schema(description = "레인 내 순서. 레거시 미이행 노드는 null")
@@ -376,10 +362,6 @@ public class MyRoadmapDto {
         List<Long> prerequisiteCustomNodeIds,
         String content,
         List<String> subTopics,
-        Integer branchGroup,
-        boolean isBranch,
-        Long branchFromNodeId,
-        String branchType,
         Long anchorNodeId,
         Integer laneKey,
         String branchKind,
@@ -400,10 +382,6 @@ public class MyRoadmapDto {
       this.prerequisiteCustomNodeIds = prerequisiteCustomNodeIds;
       this.content = content;
       this.subTopics = subTopics;
-      this.branchGroup = branchGroup;
-      this.isBranch = isBranch;
-      this.branchFromNodeId = branchFromNodeId;
-      this.branchType = branchType;
       this.anchorNodeId = anchorNodeId;
       this.laneKey = laneKey;
       this.branchKind = branchKind;
@@ -435,7 +413,6 @@ public class MyRoadmapDto {
 
       String title;
       List<String> chips;
-      Integer branchGroup;
       String content;
       Long originalNodeId;
 
@@ -458,11 +435,6 @@ public class MyRoadmapDto {
         originalNodeId = node.getOriginalNode().getNodeId();
       }
       // 분기 소속: 레인 모델은 구조분기(BRANCH)의 laneKey, 레거시는 override 반영 유효값.
-      branchGroup =
-          node.getBranchKind() != null
-              ? (node.getBranchKind() == BranchKind.BRANCH ? node.getLaneKey() : null)
-              : node.effectiveBranchGroup();
-
       DisplayNodeStatus displayStatus;
       if (node.getStatus() == NodeStatus.COMPLETED) {
         displayStatus = DisplayNodeStatus.COMPLETED;
@@ -503,10 +475,6 @@ public class MyRoadmapDto {
           .prerequisiteCustomNodeIds(prerequisiteCustomNodeIds)
           .content(content)
           .subTopics(chips)
-          .branchGroup(branchGroup)
-          .isBranch(node.isBranch())
-          .branchFromNodeId(node.getBranchFromNodeId())
-          .branchType(node.getBranchType())
           .anchorNodeId(node.getAnchorNodeId())
           .laneKey(node.getLaneKey())
           .branchKind(node.getBranchKind() != null ? node.getBranchKind().name() : null)

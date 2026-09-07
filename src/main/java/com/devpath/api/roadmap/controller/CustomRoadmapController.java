@@ -156,7 +156,7 @@ public class CustomRoadmapController {
       @Parameter(description = "커스텀 노드 ID", example = "101") @PathVariable Long customNodeId,
       @RequestBody MyRoadmapDto.BranchRequest request) {
     customRoadmapNodeCommandService.setNodeBranch(
-        userId, customRoadmapId, customNodeId, request.getBranchGroup());
+        userId, customRoadmapId, customNodeId, request.getLaneKey());
     return ResponseEntity.ok(ApiResponse.success("노드 분기를 변경했습니다.", null));
   }
 

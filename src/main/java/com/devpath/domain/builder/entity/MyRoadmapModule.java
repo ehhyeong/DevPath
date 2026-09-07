@@ -38,16 +38,16 @@ public class MyRoadmapModule {
   @Column(name = "sort_order", nullable = false)
   private int sortOrder;
 
-  // null=척추, 1=왼쪽 분기, 2=오른쪽 분기
-  @Column(name = "branch_group")
-  private Integer branchGroup;
+  // null=척추, 1=왼쪽 갈래, 2=오른쪽 갈래
+  @Column(name = "lane_key")
+  private Integer laneKey;
 
   @Builder
   public MyRoadmapModule(
-      MyRoadmap myRoadmap, BuilderModule builderModule, int sortOrder, Integer branchGroup) {
+      MyRoadmap myRoadmap, BuilderModule builderModule, int sortOrder, Integer laneKey) {
     this.myRoadmap = myRoadmap;
     this.builderModule = builderModule;
     this.sortOrder = sortOrder;
-    this.branchGroup = branchGroup;
+    this.laneKey = laneKey;
   }
 }

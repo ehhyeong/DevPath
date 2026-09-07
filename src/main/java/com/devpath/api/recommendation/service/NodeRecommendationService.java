@@ -364,6 +364,7 @@ public class NodeRecommendationService {
             .originalNode(recommendedNode)
             .build());
 
-    prerequisiteSyncService.ensurePrerequisites(customRoadmap);
+    // 새로 붙인 노드까지 포함해 레인을 다시 도출한 뒤 선행관계를 재생성한다.
+    prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
   }
 }

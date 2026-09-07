@@ -81,7 +81,7 @@ export type RoadmapNodePayload = {
   nodeType: string
   sortOrder: number
   subTopics: string | null
-  branchGroup: number | null
+  laneKey: number | null
 }
 
 export type RoadmapNodeResourcePayload = {
@@ -301,16 +301,10 @@ export function nodeResourceSourceLabel(sourceType: string | null | undefined) {
   return NODE_RESOURCE_SOURCE_TYPES.find((item) => item.value === normalized)?.label ?? '기타'
 }
 
-export function formatNodePrerequisites(node: AdminRoadmapNode) {
-  return node.prerequisiteNodeIds.length
-    ? node.prerequisiteNodeIds.map((nodeId) => `#${nodeId}`).join(', ')
-    : '선행 노드 없음'
-}
-
 export function formatNodeStructure(node: AdminRoadmapNode) {
-  const branchText = node.branchGroup === null || node.branchGroup === undefined
+  const branchText = node.laneKey === null || node.laneKey === undefined
     ? '기본 흐름'
-    : `분기 ${node.branchGroup}`
+    : `갈래 ${node.laneKey}`
 
   return `순서 ${node.sortOrder ?? '-'} · ${branchText}`
 }
@@ -349,28 +343,6 @@ export function parseOptionalNumber(value: string | null, message: string) {
   }
 
   return parsed
-}
-
-export function parseNodeIdList(value: string | null) {
-  if (value === null) {
-    return null
-  }
-
-  if (!value.trim()) {
-    return []
-  }
-
-  const nodeIds = value
-    .split(',')
-    .map((item) => Number(item.trim()))
-    .filter((item) => Number.isFinite(item))
-
-  if (nodeIds.length !== value.split(',').filter((item) => item.trim()).length) {
-    window.alert('노드 ID는 쉼표로 구분한 숫자만 입력하세요.')
-    return null
-  }
-
-  return nodeIds
 }
 
 export function buildLoadingRow(colspan: number, message = '데이터를 불러오는 중입니다...') {

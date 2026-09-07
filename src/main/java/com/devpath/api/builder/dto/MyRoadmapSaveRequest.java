@@ -25,6 +25,6 @@ public class MyRoadmapSaveRequest {
 
     private int sortOrder;
 
-    private Integer branchGroup;
+    private Integer laneKey;
   }
 }

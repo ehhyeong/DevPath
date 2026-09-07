@@ -27,5 +27,7 @@ public class RoadmapNodeUpsertRequest {
 
   private String subTopics;
 
-  private Integer branchGroup;
+  // 갈래 번호. 비우면 척추(기본 흐름), 값이 있으면 그 번호의 병렬 갈래다.
+  // 나머지 레인 필드(branchKind·orderInLane·anchorNodeId)는 서버가 파생한다.
+  private Integer laneKey;
 }

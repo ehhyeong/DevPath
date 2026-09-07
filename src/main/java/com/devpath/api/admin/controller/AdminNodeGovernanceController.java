@@ -3,7 +3,6 @@ package com.devpath.api.admin.controller;
 import com.devpath.api.admin.dto.governance.AdminOfficialRoadmapOptionResponse;
 import com.devpath.api.admin.dto.governance.AdminRoadmapNodeSummaryResponse;
 import com.devpath.api.admin.dto.governance.NodeCompletionRuleRequest;
-import com.devpath.api.admin.dto.governance.NodePrerequisitesRequest;
 import com.devpath.api.admin.dto.governance.NodeRequiredTagsRequest;
 import com.devpath.api.admin.dto.governance.NodeTypeRequest;
 import com.devpath.api.admin.dto.governance.RoadmapNodeUpsertRequest;
@@ -84,14 +83,6 @@ public class AdminNodeGovernanceController {
       @PathVariable Long nodeId, @RequestBody @Valid NodeTypeRequest request) {
     adminNodeGovernanceService.updateNodeType(nodeId, request);
     return ApiResponse.success("노드 유형을 수정했습니다.", null);
-  }
-
-  @Operation(summary = "노드 선수조건 수정")
-  @PutMapping("/{nodeId}/prerequisites")
-  public ApiResponse<Void> updatePrerequisites(
-      @PathVariable Long nodeId, @RequestBody @Valid NodePrerequisitesRequest request) {
-    adminNodeGovernanceService.updatePrerequisites(nodeId, request);
-    return ApiResponse.success("노드 선수조건을 수정했습니다.", null);
   }
 
   @Operation(summary = "노드 완료기준 수정")

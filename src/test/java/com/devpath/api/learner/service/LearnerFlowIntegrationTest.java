@@ -45,7 +45,6 @@ import com.devpath.domain.learning.service.PlaybackDeviceRegistry;
 import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.NodeRecommendation;
-import com.devpath.domain.roadmap.entity.Prerequisite;
 import com.devpath.domain.roadmap.entity.RecommendationStatus;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
@@ -54,7 +53,6 @@ import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRecommendationRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
-import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.roadmap.service.CustomRoadmapCopyService;
@@ -149,7 +147,6 @@ class LearnerFlowIntegrationTest {
   @Autowired private RoadmapRepository roadmapRepository;
   @Autowired private RoadmapNodeRepository roadmapNodeRepository;
   @Autowired private NodeRequiredTagRepository nodeRequiredTagRepository;
-  @Autowired private PrerequisiteRepository prerequisiteRepository;
   @Autowired private CustomRoadmapRepository customRoadmapRepository;
   @Autowired private CustomRoadmapNodeRepository customRoadmapNodeRepository;
   @Autowired private NodeRecommendationRepository nodeRecommendationRepository;
@@ -360,10 +357,6 @@ class LearnerFlowIntegrationTest {
             .node(dockerNode)
             .tag(dockerTag)
             .build());
-
-    prerequisiteRepository.save(Prerequisite.builder().node(springNode).preNode(javaNode).build());
-    prerequisiteRepository.save(
-        Prerequisite.builder().node(dockerNode).preNode(springNode).build());
 
     flushAndClear();
   }

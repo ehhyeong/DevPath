@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
-import com.devpath.domain.roadmap.entity.CustomNodePrerequisite;
+import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.NodeStatus;
@@ -19,7 +19,6 @@ import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.port.OfficialRoadmapReader;
 import com.devpath.domain.roadmap.port.OfficialRoadmapSnapshot;
-import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
@@ -47,7 +46,6 @@ class CustomRoadmapCopyServiceTest {
   @Mock private RoadmapNodeRepository roadmapNodeRepository;
   @Mock private CustomRoadmapRepository customRoadmapRepository;
   @Mock private CustomRoadmapNodeRepository customRoadmapNodeRepository;
-  @Mock private CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
   @Mock private OfficialRoadmapReader officialRoadmapReader;
   @Mock private UserTechStackRepository userTechStackRepository;
   @Mock private NodeRequiredTagRepository nodeRequiredTagRepository;
@@ -64,7 +62,6 @@ class CustomRoadmapCopyServiceTest {
             roadmapNodeRepository,
             customRoadmapRepository,
             customRoadmapNodeRepository,
-            customNodePrerequisiteRepository,
             officialRoadmapReader,
             new TagValidationService(),
             userTechStackRepository,
@@ -82,10 +79,15 @@ class CustomRoadmapCopyServiceTest {
             });
     lenient()
         .when(customRoadmapNodeRepository.saveAll(anyList()))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-    lenient()
-        .when(customNodePrerequisiteRepository.saveAll(anyList()))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+        .thenAnswer(
+            invocation -> {
+              List<CustomRoadmapNode> nodes = invocation.getArgument(0);
+              long id = 1L;
+              for (CustomRoadmapNode node : nodes) {
+                ReflectionTestUtils.setField(node, "id", id++);
+              }
+              return nodes;
+            });
   }
 
   @Test
@@ -102,8 +104,7 @@ class CustomRoadmapCopyServiceTest {
             "Backend",
             List.of(
                 new OfficialRoadmapSnapshot.NodeItem(100L, null, "Java", "desc", 2),
-                new OfficialRoadmapSnapshot.NodeItem(200L, null, "Docker", "desc", 1)),
-            List.of(new OfficialRoadmapSnapshot.PrerequisiteEdge(100L, 200L)));
+                new OfficialRoadmapSnapshot.NodeItem(200L, null, "Docker", "desc", 1)));
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId))
@@ -135,10 +136,51 @@ class CustomRoadmapCopyServiceTest {
     assertThat(savedNodes.get(1).getStatus()).isEqualTo(NodeStatus.COMPLETED);
     assertThat(savedNodes.get(1).getCompletedAt()).isNotNull();
 
-    ArgumentCaptor<List<CustomNodePrerequisite>> prerequisiteCaptor =
-        ArgumentCaptor.forClass(List.class);
-    verify(customNodePrerequisiteRepository).saveAll(prerequisiteCaptor.capture());
-    assertThat(prerequisiteCaptor.getValue()).hasSize(1);
+    // 표시 순서와 선행관계는 복사 시점에 저장하지 않고 레인 구조에서 파생한다.
+    verify(prerequisiteSyncService).recomputeOrderAndRebuild(any(CustomRoadmap.class));
+  }
+
+  @Test
+  void copyToCustomRoadmap_copiesLaneStructureAndRemapsAnchor() {
+    Long userId = 1L;
+    Long roadmapId = 10L;
+    Roadmap roadmap = createRoadmap(roadmapId, "Backend");
+    RoadmapNode spineNode = laneNode(100L, roadmap, "Spine", BranchKind.SPINE, null, null, 0);
+    RoadmapNode branchNode = laneNode(200L, roadmap, "Branch", BranchKind.BRANCH, 100L, 1, 0);
+    OfficialRoadmapSnapshot snapshot =
+        new OfficialRoadmapSnapshot(
+            roadmapId,
+            "Backend",
+            List.of(
+                new OfficialRoadmapSnapshot.NodeItem(100L, null, "Spine", "desc", 1),
+                new OfficialRoadmapSnapshot.NodeItem(200L, null, "Branch", "desc", 2)));
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(createUser()));
+    when(roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId))
+        .thenReturn(Optional.of(roadmap));
+    when(customRoadmapRepository.existsByUserIdAndOriginalRoadmapRoadmapId(userId, roadmapId))
+        .thenReturn(false);
+    when(officialRoadmapReader.loadSnapshot(roadmapId)).thenReturn(snapshot);
+    when(roadmapNodeRepository.findAllById(anyList())).thenReturn(List.of(spineNode, branchNode));
+    when(userTechStackRepository.findTagNamesByUserId(userId)).thenReturn(List.of());
+    when(nodeRequiredTagRepository.findTagNamesByNodeIds(List.of(100L, 200L)))
+        .thenReturn(List.of());
+
+    service.copyToCustomRoadmap(userId, roadmapId);
+
+    ArgumentCaptor<List<CustomRoadmapNode>> nodeCaptor = ArgumentCaptor.forClass(List.class);
+    verify(customRoadmapNodeRepository).saveAll(nodeCaptor.capture());
+    List<CustomRoadmapNode> savedNodes = nodeCaptor.getValue();
+    CustomRoadmapNode copiedSpine = savedNodes.get(0);
+    CustomRoadmapNode copiedBranch = savedNodes.get(1);
+
+    assertThat(copiedSpine.getBranchKind()).isEqualTo(BranchKind.SPINE);
+    assertThat(copiedSpine.getAnchorNodeId()).isNull();
+    assertThat(copiedBranch.getBranchKind()).isEqualTo(BranchKind.BRANCH);
+    assertThat(copiedBranch.getLaneKey()).isEqualTo(1);
+    assertThat(copiedBranch.getOrderInLane()).isZero();
+    // 앵커는 원본 node_id(100)가 아니라 저장된 커스텀 노드 id로 치환돼야 한다.
+    assertThat(copiedBranch.getAnchorNodeId()).isEqualTo(copiedSpine.getId());
   }
 
   @Test
@@ -152,8 +194,7 @@ class CustomRoadmapCopyServiceTest {
         new OfficialRoadmapSnapshot(
             roadmapId,
             "Backend",
-            List.of(new OfficialRoadmapSnapshot.NodeItem(300L, null, "Spring", "desc", 1)),
-            List.of());
+            List.of(new OfficialRoadmapSnapshot.NodeItem(300L, null, "Spring", "desc", 1)));
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId))
@@ -187,8 +228,7 @@ class CustomRoadmapCopyServiceTest {
         new OfficialRoadmapSnapshot(
             roadmapId,
             "Backend",
-            List.of(new OfficialRoadmapSnapshot.NodeItem(400L, null, "Intro", "desc", 1)),
-            List.of());
+            List.of(new OfficialRoadmapSnapshot.NodeItem(400L, null, "Intro", "desc", 1)));
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId))
@@ -253,6 +293,28 @@ class CustomRoadmapCopyServiceTest {
         .content("content")
         .nodeType("STEP")
         .sortOrder(1)
+        .build();
+  }
+
+  private RoadmapNode laneNode(
+      Long nodeId,
+      Roadmap roadmap,
+      String title,
+      BranchKind branchKind,
+      Long anchorNodeId,
+      Integer laneKey,
+      Integer orderInLane) {
+    return RoadmapNode.builder()
+        .nodeId(nodeId)
+        .roadmap(roadmap)
+        .title(title)
+        .content("content")
+        .nodeType("STEP")
+        .sortOrder(1)
+        .branchKind(branchKind)
+        .anchorNodeId(anchorNodeId)
+        .laneKey(laneKey)
+        .orderInLane(orderInLane)
         .build();
   }
 

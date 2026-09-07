@@ -28,7 +28,7 @@ function MyRoadmapBuilderPage() {
   // ── DnD 파생값 ──
   const isDraggingModule    = activeDrag?.kind === 'MODULE'
   const isDraggingNode      = activeDrag?.kind === 'NODE'
-  const isDraggingSpineNode = activeDrag?.kind === 'NODE' && activeDrag.branchGroup === null
+  const isDraggingSpineNode = activeDrag?.kind === 'NODE' && activeDrag.laneKey === null
   const showGaps            = activeDrag !== null
   const draggedModule       = activeDrag?.kind === 'MODULE' ? activeDrag.module : null
   const terminalGapId       = rows.length === 0 ? 'gap-0' : `gap-${maxSortOrder}`
@@ -413,7 +413,7 @@ function MyRoadmapBuilderPage() {
               {rows.map((row, idx) => {
                 const isDraggingThisRowBranch =
                   activeDrag?.kind === 'NODE' &&
-                  activeDrag.branchGroup !== null &&
+                  activeDrag.laneKey !== null &&
                   activeDrag.sortOrder === row.sortOrder
                 const nodeA = row.nodes[0]
                 const nodeB = row.nodes[1]

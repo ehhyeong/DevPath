@@ -17,8 +17,7 @@ public class AdminRoadmapNodeSummaryResponse {
   private String nodeType;
   private Integer sortOrder;
   private String subTopics;
-  private Integer branchGroup;
-  private List<Long> prerequisiteNodeIds;
+  private Integer laneKey;
   private boolean required;
   private int requiredTagCount;
   private List<String> requiredTags;

@@ -72,10 +72,10 @@ export default function AdminNodeModal() {
                 <input type="number" id="sortOrderInput" className="devpath-modal-input" min="0" placeholder="예: 1" />
               </div>
               <div className="devpath-input-group">
-                <label htmlFor="branchGroupInput" className="devpath-input-label">
-                  {"분기 그룹"}
+                <label htmlFor="laneKeyInput" className="devpath-input-label">
+                  {"갈래 번호"}
                 </label>
-                <input type="number" id="branchGroupInput" className="devpath-modal-input" min="0" placeholder="기본 흐름이면 비워두세요" />
+                <input type="number" id="laneKeyInput" className="devpath-modal-input" min="0" placeholder="기본 흐름이면 비워두세요" />
               </div>
             </div>
             <div className="devpath-input-group devpath-input-group-last">
