@@ -3,7 +3,6 @@ package com.devpath.api.admin.service;
 import com.devpath.api.admin.dto.governance.AdminOfficialRoadmapOptionResponse;
 import com.devpath.api.admin.dto.governance.AdminRoadmapNodeSummaryResponse;
 import com.devpath.api.admin.dto.governance.NodeCompletionRuleRequest;
-import com.devpath.api.admin.dto.governance.NodePrerequisitesRequest;
 import com.devpath.api.admin.dto.governance.NodeRequiredTagsRequest;
 import com.devpath.api.admin.dto.governance.NodeTypeRequest;
 import com.devpath.api.admin.dto.governance.RoadmapNodeUpsertRequest;
@@ -11,12 +10,10 @@ import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.roadmap.entity.NodeCompletionRule;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
-import com.devpath.domain.roadmap.entity.Prerequisite;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.NodeCompletionRuleRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
-import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeResourceRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
@@ -24,7 +21,6 @@ import com.devpath.domain.roadmap.service.OfficialRoadmapLaneSyncService;
 import com.devpath.domain.user.entity.Tag;
 import com.devpath.domain.user.repository.TagRepository;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +42,6 @@ public class AdminNodeGovernanceService {
   private final RoadmapRepository roadmapRepository;
   private final TagRepository tagRepository;
   private final NodeRequiredTagRepository nodeRequiredTagRepository;
-  private final PrerequisiteRepository prerequisiteRepository;
   private final NodeCompletionRuleRepository nodeCompletionRuleRepository;
   private final RoadmapNodeResourceRepository roadmapNodeResourceRepository;
   private final OfficialRoadmapLaneSyncService laneSyncService;
@@ -62,7 +57,6 @@ public class AdminNodeGovernanceService {
 
     List<Long> nodeIds = nodes.stream().map(RoadmapNode::getNodeId).toList();
     Map<Long, List<String>> requiredTagsByNodeId = buildRequiredTagsMap(nodeIds);
-    Map<Long, List<Long>> prerequisiteNodeIdsByNodeId = buildPrerequisiteNodeIdsMap(nodeIds);
     Map<Long, NodeCompletionRule> completionRulesByNodeId =
         nodeCompletionRuleRepository.findAllByNodeNodeIdIn(nodeIds).stream()
             .collect(
@@ -78,7 +72,6 @@ public class AdminNodeGovernanceService {
                 toAdminRoadmapNodeSummary(
                     node,
                     requiredTagsByNodeId.getOrDefault(node.getNodeId(), List.of()),
-                    prerequisiteNodeIdsByNodeId.getOrDefault(node.getNodeId(), List.of()),
                     completionRulesByNodeId.get(node.getNodeId())))
         .toList();
   }
@@ -113,7 +106,7 @@ public class AdminNodeGovernanceService {
     // 관리자는 갈래 번호까지만 입력하므로 나머지 레인 필드는 서버가 파생한다.
     laneSyncService.resync(roadmap.getRoadmapId());
 
-    return toAdminRoadmapNodeSummary(node, List.of(), List.of(), null);
+    return toAdminRoadmapNodeSummary(node, List.of(), null);
   }
 
   public AdminRoadmapNodeSummaryResponse updateNode(Long nodeId, RoadmapNodeUpsertRequest request) {
@@ -137,13 +130,10 @@ public class AdminNodeGovernanceService {
 
     List<String> requiredTags =
         buildRequiredTagsMap(List.of(node.getNodeId())).getOrDefault(node.getNodeId(), List.of());
-    List<Long> prerequisiteNodeIds =
-        buildPrerequisiteNodeIdsMap(List.of(node.getNodeId()))
-            .getOrDefault(node.getNodeId(), List.of());
     NodeCompletionRule completionRule =
         nodeCompletionRuleRepository.findByNodeNodeId(node.getNodeId()).orElse(null);
 
-    return toAdminRoadmapNodeSummary(node, requiredTags, prerequisiteNodeIds, completionRule);
+    return toAdminRoadmapNodeSummary(node, requiredTags, completionRule);
   }
 
   // 노드 필수 태그를 전체 교체 방식으로 갱신한다.
@@ -180,7 +170,6 @@ public class AdminNodeGovernanceService {
 
     // 사용자 로드맵이나 강의가 참조하는 노드는 DB 제약으로 삭제를 막아 기존 학습 데이터를 보존한다.
     nodeRequiredTagRepository.deleteAllByNodeId(nodeId);
-    prerequisiteRepository.deleteAllByNodeOrPreNode(node, node);
     nodeCompletionRuleRepository.deleteAllByNodeNodeId(nodeId);
     roadmapNodeResourceRepository.deleteAllByNodeNodeId(nodeId);
     try {
@@ -202,34 +191,6 @@ public class AdminNodeGovernanceService {
     node.changeNodeType(nodeType);
   }
 
-  public void updatePrerequisites(Long nodeId, NodePrerequisitesRequest request) {
-    RoadmapNode node = getNode(nodeId);
-    List<Long> prerequisiteNodeIds =
-        normalizeUniqueIds(request == null ? null : request.getPrerequisiteNodeIds());
-
-    if (prerequisiteNodeIds.contains(nodeId)) {
-      throw new CustomException(ErrorCode.INVALID_INPUT);
-    }
-
-    List<RoadmapNode> prerequisiteNodes = loadNodes(prerequisiteNodeIds);
-    validateSameRoadmap(node, prerequisiteNodes);
-
-    prerequisiteRepository.deleteAllByNode(node);
-
-    if (prerequisiteNodes.isEmpty()) {
-      return;
-    }
-
-    List<Prerequisite> prerequisites =
-        prerequisiteNodes.stream()
-            .map(
-                prerequisiteNode ->
-                    Prerequisite.builder().node(node).preNode(prerequisiteNode).build())
-            .toList();
-    prerequisiteRepository.saveAll(prerequisites);
-  }
-
-  // 노드 완료 규칙은 없으면 생성하고 있으면 같은 레코드를 갱신한다.
   public void updateCompletionRule(Long nodeId, NodeCompletionRuleRequest request) {
     RoadmapNode node = getNode(nodeId);
     String criteriaType =
@@ -277,51 +238,6 @@ public class AdminNodeGovernanceService {
     return roadmapRepository
         .findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId)
         .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NOT_FOUND));
-  }
-
-  private List<RoadmapNode> loadNodes(List<Long> nodeIds) {
-    if (nodeIds.isEmpty()) {
-      return List.of();
-    }
-
-    List<RoadmapNode> nodes = roadmapNodeRepository.findAllById(nodeIds);
-
-    if (nodes.size() != nodeIds.size()) {
-      throw new CustomException(ErrorCode.ROADMAP_NODE_NOT_FOUND);
-    }
-
-    Map<Long, RoadmapNode> nodesById = new LinkedHashMap<>();
-    for (RoadmapNode node : nodes) {
-      nodesById.put(node.getNodeId(), node);
-    }
-
-    return nodeIds.stream().map(nodesById::get).toList();
-  }
-
-  private void validateSameRoadmap(RoadmapNode node, List<RoadmapNode> prerequisiteNodes) {
-    Long roadmapId = node.getRoadmap().getRoadmapId();
-
-    for (RoadmapNode prerequisiteNode : prerequisiteNodes) {
-      if (!roadmapId.equals(prerequisiteNode.getRoadmap().getRoadmapId())) {
-        throw new CustomException(ErrorCode.INVALID_INPUT);
-      }
-    }
-  }
-
-  private List<Long> normalizeUniqueIds(List<Long> values) {
-    if (values == null || values.isEmpty()) {
-      return List.of();
-    }
-
-    LinkedHashSet<Long> uniqueIds = new LinkedHashSet<>();
-
-    for (Long value : values) {
-      if (value == null || !uniqueIds.add(value)) {
-        throw new CustomException(ErrorCode.INVALID_INPUT);
-      }
-    }
-
-    return uniqueIds.stream().toList();
   }
 
   private String normalizeRequiredText(String value) {
@@ -385,24 +301,9 @@ public class AdminNodeGovernanceService {
   }
 
   // 노드별 선행 노드 ID 목록을 관리자 표 렌더링용 맵으로 모은다.
-  private Map<Long, List<Long>> buildPrerequisiteNodeIdsMap(List<Long> nodeIds) {
-    Map<Long, List<Long>> prerequisiteNodeIdsByNodeId = new LinkedHashMap<>();
-
-    for (PrerequisiteRepository.PrerequisiteNodeIdProjection projection :
-        prerequisiteRepository.findPrerequisiteNodeIdsByNodeIds(nodeIds)) {
-      prerequisiteNodeIdsByNodeId
-          .computeIfAbsent(projection.getNodeId(), ignored -> new java.util.ArrayList<>())
-          .add(projection.getPrerequisiteNodeId());
-    }
-
-    return prerequisiteNodeIdsByNodeId;
-  }
 
   private AdminRoadmapNodeSummaryResponse toAdminRoadmapNodeSummary(
-      RoadmapNode node,
-      List<String> requiredTags,
-      List<Long> prerequisiteNodeIds,
-      NodeCompletionRule completionRule) {
+      RoadmapNode node, List<String> requiredTags, NodeCompletionRule completionRule) {
     Integer requiredProgressRate = null;
     if (completionRule != null) {
       try {
@@ -422,7 +323,6 @@ public class AdminNodeGovernanceService {
         .sortOrder(node.getSortOrder())
         .subTopics(node.getSubTopics())
         .laneKey(node.getLaneKey())
-        .prerequisiteNodeIds(prerequisiteNodeIds)
         .required(!requiredTags.isEmpty())
         .requiredTagCount(requiredTags.size())
         .requiredTags(requiredTags)

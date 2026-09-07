@@ -104,8 +104,7 @@ class CustomRoadmapCopyServiceTest {
             "Backend",
             List.of(
                 new OfficialRoadmapSnapshot.NodeItem(100L, null, "Java", "desc", 2),
-                new OfficialRoadmapSnapshot.NodeItem(200L, null, "Docker", "desc", 1)),
-            List.of(new OfficialRoadmapSnapshot.PrerequisiteEdge(100L, 200L)));
+                new OfficialRoadmapSnapshot.NodeItem(200L, null, "Docker", "desc", 1)));
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId))
@@ -154,8 +153,7 @@ class CustomRoadmapCopyServiceTest {
             "Backend",
             List.of(
                 new OfficialRoadmapSnapshot.NodeItem(100L, null, "Spine", "desc", 1),
-                new OfficialRoadmapSnapshot.NodeItem(200L, null, "Branch", "desc", 2)),
-            List.of());
+                new OfficialRoadmapSnapshot.NodeItem(200L, null, "Branch", "desc", 2)));
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(createUser()));
     when(roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId))
@@ -196,8 +194,7 @@ class CustomRoadmapCopyServiceTest {
         new OfficialRoadmapSnapshot(
             roadmapId,
             "Backend",
-            List.of(new OfficialRoadmapSnapshot.NodeItem(300L, null, "Spring", "desc", 1)),
-            List.of());
+            List.of(new OfficialRoadmapSnapshot.NodeItem(300L, null, "Spring", "desc", 1)));
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId))
@@ -231,8 +228,7 @@ class CustomRoadmapCopyServiceTest {
         new OfficialRoadmapSnapshot(
             roadmapId,
             "Backend",
-            List.of(new OfficialRoadmapSnapshot.NodeItem(400L, null, "Intro", "desc", 1)),
-            List.of());
+            List.of(new OfficialRoadmapSnapshot.NodeItem(400L, null, "Intro", "desc", 1)));
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roadmapRepository.findByRoadmapIdAndIsOfficialTrueAndIsDeletedFalse(roadmapId))

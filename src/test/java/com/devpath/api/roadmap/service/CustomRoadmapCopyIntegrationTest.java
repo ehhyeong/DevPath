@@ -13,7 +13,6 @@ import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.DisplayNodeStatus;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
 import com.devpath.domain.roadmap.entity.NodeStatus;
-import com.devpath.domain.roadmap.entity.Prerequisite;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.port.OfficialRoadmapReader;
@@ -22,7 +21,6 @@ import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
-import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.roadmap.service.CustomRoadmapCopyService;
@@ -58,7 +56,6 @@ class CustomRoadmapCopyIntegrationTest {
   @Autowired private UserTechStackRepository userTechStackRepository;
   @Autowired private RoadmapRepository roadmapRepository;
   @Autowired private RoadmapNodeRepository roadmapNodeRepository;
-  @Autowired private PrerequisiteRepository prerequisiteRepository;
   @Autowired private NodeRequiredTagRepository nodeRequiredTagRepository;
   @Autowired private CustomRoadmapRepository customRoadmapRepository;
   @Autowired private CustomRoadmapNodeRepository customRoadmapNodeRepository;
@@ -123,10 +120,6 @@ class CustomRoadmapCopyIntegrationTest {
                 .nodeType("STEP")
                 .sortOrder(3)
                 .build());
-
-    prerequisiteRepository.save(Prerequisite.builder().node(springNode).preNode(javaNode).build());
-    prerequisiteRepository.save(
-        Prerequisite.builder().node(dockerNode).preNode(springNode).build());
 
     nodeRequiredTagRepository.saveAll(
         List.of(
@@ -310,8 +303,7 @@ class CustomRoadmapCopyIntegrationTest {
                 List.of(
                     new OfficialRoadmapSnapshot.NodeItem(
                         existingNode.getNodeId(), null, "Existing", "content", 1),
-                    new OfficialRoadmapSnapshot.NodeItem(999999L, null, "Missing", "content", 2)),
-                List.of()))
+                    new OfficialRoadmapSnapshot.NodeItem(999999L, null, "Missing", "content", 2))))
         .when(officialRoadmapReader)
         .loadSnapshot(roadmap.getRoadmapId());
 

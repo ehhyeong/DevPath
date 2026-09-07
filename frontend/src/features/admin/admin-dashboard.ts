@@ -15,7 +15,7 @@ import type { AdminAccount, AdminCourseReviewHistory, AdminModerationReport, Adm
 import type { AdminRoadmapHubCatalog, RoadmapHubItem } from '../../types/roadmap-hub'
 import '../../index.css'
 import type { AdminTabKey, DashboardFilterState, NodeHubEntry } from './admin-dashboard-support'
-import { NODE_HUB_UNLINKED_FILTER, buildEmptyRow, buildErrorRow, buildLoadingRow, escapeHtml, normalizeText, matchesKeyword, formatNumber, formatDateTime, roleLabel, roleBadgeClassName, nodeTypeLabel, formatNodePrerequisites, formatNodeStructure, normalizeOptionalString, shouldLoadAdminTab, updateFilterSummary } from './admin-dashboard-support'
+import { NODE_HUB_UNLINKED_FILTER, buildEmptyRow, buildErrorRow, buildLoadingRow, escapeHtml, normalizeText, matchesKeyword, formatNumber, formatDateTime, roleLabel, roleBadgeClassName, nodeTypeLabel, formatNodeStructure, normalizeOptionalString, shouldLoadAdminTab, updateFilterSummary } from './admin-dashboard-support'
 import { installAccountDetailModalBindings } from './admin-account-detail'
 import { fetchAdminGovernance, installAdminGovernanceBindings } from './admin-governance'
 import { paginateAdminItems, type AdminPagination } from './admin-pagination'
@@ -451,7 +451,6 @@ function renderNodeRows(nodes: AdminRoadmapNode[]) {
               </td>
               <td>
                 <div class="admin-node-detail"><span>구조</span><strong>${escapeHtml(formatNodeStructure(node))}</strong></div>
-                <div class="admin-node-detail"><span>선수</span><strong>${escapeHtml(formatNodePrerequisites(node))}</strong></div>
                 ${node.subTopics ? `<div class="admin-node-subtopics">${escapeHtml(node.subTopics)}</div>` : ''}
               </td>
               <td>
@@ -461,7 +460,6 @@ function renderNodeRows(nodes: AdminRoadmapNode[]) {
               <td>
                 <div class="admin-node-action-grid">
                   <button data-admin-click="editRoadmapNode(${node.nodeId})" type="button"><i class="fas fa-pen"></i>기본 정보</button>
-                  <button data-admin-click="updateNodePrerequisites(${node.nodeId})" type="button"><i class="fas fa-diagram-project"></i>선수 조건</button>
                   <button data-admin-click="updateNodeTags(${node.nodeId})" type="button"><i class="fas fa-tags"></i>태그 매핑</button>
                   <button data-admin-click="updateNodeRules(${node.nodeId})" class="is-primary" type="button"><i class="fas fa-check-double"></i>완료 기준</button>
                   <button data-admin-click="deleteRoadmapNode(${node.nodeId})" class="is-danger" type="button"><i class="fas fa-trash"></i>노드 삭제</button>

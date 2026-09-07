@@ -8,14 +8,12 @@ import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
 import com.devpath.domain.roadmap.entity.NodeStatus;
-import com.devpath.domain.roadmap.entity.Prerequisite;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.CustomNodePrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.CustomRoadmapRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
-import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.user.entity.Tag;
@@ -47,7 +45,6 @@ public class SkillCheckService {
   private final RoadmapRepository roadmapRepository;
   private final NodeRequiredTagRepository nodeRequiredTagRepository;
   private final RoadmapNodeRepository roadmapNodeRepository;
-  private final PrerequisiteRepository prerequisiteRepository;
   private final CustomRoadmapRepository customRoadmapRepository;
   private final CustomRoadmapNodeRepository customRoadmapNodeRepository;
   private final CustomNodePrerequisiteRepository customNodePrerequisiteRepository;
@@ -172,7 +169,7 @@ public class SkillCheckService {
     List<RoadmapNode> roadmapNodes =
         roadmapNodeRepository.findByRoadmapOrderBySortOrderAsc(roadmap);
     Map<Long, List<Long>> prerequisiteNodeIdsByNodeId =
-        getPrerequisiteNodeIdsByNodeId(userId, roadmapId, roadmapNodes);
+        getPrerequisiteNodeIdsByNodeId(userId, roadmapId);
     Map<Long, Boolean> unlockedStatusByNodeId = getUnlockedStatusByNodeId(userId, roadmapId);
 
     List<SkillCheckDto.NodeLockStatusResponse> nodeLockStatus =
@@ -217,7 +214,7 @@ public class SkillCheckService {
     List<RoadmapNode> roadmapNodes =
         roadmapNodeRepository.findByRoadmapOrderBySortOrderAsc(roadmap);
     Map<Long, List<Long>> prerequisiteNodeIdsByNodeId =
-        getPrerequisiteNodeIdsByNodeId(userId, roadmapId, roadmapNodes);
+        getPrerequisiteNodeIdsByNodeId(userId, roadmapId);
     Map<Long, CustomRoadmapNode> customNodesByOriginalNodeId =
         getCustomNodesByOriginalNodeId(userId, roadmapId);
 
@@ -248,57 +245,27 @@ public class SkillCheckService {
     return unlockedStatusByNodeId;
   }
 
-  private Map<Long, List<Long>> getPrerequisiteNodeIdsByNodeId(
-      Long userId, Long roadmapId, List<RoadmapNode> roadmapNodes) {
+  // 선행관계는 학습자의 커스텀 로드맵에서만 읽는다. 복사 전 로드맵은 선행 정보가 없다.
+  private Map<Long, List<Long>> getPrerequisiteNodeIdsByNodeId(Long userId, Long roadmapId) {
     Map<Long, List<Long>> prerequisiteNodeIdsByNodeId = new LinkedHashMap<>();
-    Map<Long, CustomRoadmapNode> customNodesByOriginalNodeId =
-        getCustomNodesByOriginalNodeId(userId, roadmapId);
     CustomRoadmap customRoadmap =
         customRoadmapRepository
             .findByUserIdAndOriginalRoadmapRoadmapId(userId, roadmapId)
             .orElse(null);
 
-    if (customRoadmap != null) {
-      for (CustomNodePrerequisite prerequisite :
-          customNodePrerequisiteRepository.findAllByCustomRoadmap(customRoadmap)) {
-        Long nodeId = prerequisite.getCustomNode().getOriginalNode().getNodeId();
-        Long prerequisiteNodeId =
-            prerequisite.getPrerequisiteCustomNode().getOriginalNode().getNodeId();
-
-        prerequisiteNodeIdsByNodeId
-            .computeIfAbsent(nodeId, ignored -> new ArrayList<>())
-            .add(prerequisiteNodeId);
-      }
-    }
-
-    if (prerequisiteNodeIdsByNodeId.isEmpty()) {
-      for (Prerequisite prerequisite :
-          prerequisiteRepository.findAllByNodeRoadmapRoadmapId(roadmapId)) {
-        prerequisiteNodeIdsByNodeId
-            .computeIfAbsent(prerequisite.getNode().getNodeId(), ignored -> new ArrayList<>())
-            .add(prerequisite.getPreNode().getNodeId());
-      }
+    if (customRoadmap == null) {
       return prerequisiteNodeIdsByNodeId;
     }
 
-    // 커스텀 노드가 일부만 있는 경우에는 공식 선행 관계를 기본값으로 보완한다.
-    Map<Long, List<Long>> officialPrerequisiteNodeIdsByNodeId = new LinkedHashMap<>();
-    for (Prerequisite prerequisite :
-        prerequisiteRepository.findAllByNodeRoadmapRoadmapId(roadmapId)) {
-      officialPrerequisiteNodeIdsByNodeId
-          .computeIfAbsent(prerequisite.getNode().getNodeId(), ignored -> new ArrayList<>())
-          .add(prerequisite.getPreNode().getNodeId());
-    }
+    for (CustomNodePrerequisite prerequisite :
+        customNodePrerequisiteRepository.findAllByCustomRoadmap(customRoadmap)) {
+      Long nodeId = prerequisite.getCustomNode().getOriginalNode().getNodeId();
+      Long prerequisiteNodeId =
+          prerequisite.getPrerequisiteCustomNode().getOriginalNode().getNodeId();
 
-    for (RoadmapNode roadmapNode : roadmapNodes) {
-      if (customNodesByOriginalNodeId.containsKey(roadmapNode.getNodeId())) {
-        prerequisiteNodeIdsByNodeId.putIfAbsent(roadmapNode.getNodeId(), List.of());
-        continue;
-      }
-
-      prerequisiteNodeIdsByNodeId.put(
-          roadmapNode.getNodeId(),
-          officialPrerequisiteNodeIdsByNodeId.getOrDefault(roadmapNode.getNodeId(), List.of()));
+      prerequisiteNodeIdsByNodeId
+          .computeIfAbsent(nodeId, ignored -> new ArrayList<>())
+          .add(prerequisiteNodeId);
     }
 
     return prerequisiteNodeIdsByNodeId;

@@ -50,7 +50,6 @@ export interface AdminRoadmapNode {
   sortOrder: number | null
   subTopics: string | null
   laneKey: number | null
-  prerequisiteNodeIds: number[]
   required: boolean
   requiredTagCount: number
   requiredTags: string[]

@@ -218,12 +218,6 @@ export const adminApi = {
       body: JSON.stringify({ requiredTags }),
     })
   },
-  updateNodePrerequisites(nodeId: number, prerequisiteNodeIds: number[]) {
-    return request<void>(`/api/admin/nodes/${nodeId}/prerequisites`, {
-      method: 'PUT',
-      body: JSON.stringify({ prerequisiteNodeIds }),
-    })
-  },
   updateNodeCompletionRule(
     nodeId: number,
     completionRuleDescription: string,

@@ -14,7 +14,6 @@ import com.devpath.api.admin.dto.PolicyGovernanceResponses.MappingCandidatesResp
 import com.devpath.api.admin.dto.PolicyGovernanceResponses.SystemPolicyResponse;
 import com.devpath.api.admin.dto.governance.CourseNodeMappingCandidateResponse;
 import com.devpath.api.admin.dto.governance.NodeCompletionRuleRequest;
-import com.devpath.api.admin.dto.governance.NodePrerequisitesRequest;
 import com.devpath.api.admin.dto.governance.NodeRequiredTagsRequest;
 import com.devpath.api.admin.dto.governance.NodeTypeRequest;
 import com.devpath.api.admin.dto.governance.RoadmapNodeUpsertRequest;
@@ -47,12 +46,10 @@ import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.NodeCompletionRule;
 import com.devpath.domain.roadmap.entity.NodeRequiredTag;
-import com.devpath.domain.roadmap.entity.Prerequisite;
 import com.devpath.domain.roadmap.entity.Roadmap;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.roadmap.repository.NodeCompletionRuleRepository;
 import com.devpath.domain.roadmap.repository.NodeRequiredTagRepository;
-import com.devpath.domain.roadmap.repository.PrerequisiteRepository;
 import com.devpath.domain.roadmap.repository.RoadmapNodeRepository;
 import com.devpath.domain.roadmap.repository.RoadmapRepository;
 import com.devpath.domain.roadmap.service.OfficialRoadmapLaneSyncService;
@@ -119,7 +116,6 @@ class AdminGovernanceServiceIntegrationTest {
   @Autowired private RoadmapRepository roadmapRepository;
   @Autowired private RoadmapNodeRepository roadmapNodeRepository;
   @Autowired private NodeRequiredTagRepository nodeRequiredTagRepository;
-  @Autowired private PrerequisiteRepository prerequisiteRepository;
   @Autowired private NodeCompletionRuleRepository nodeCompletionRuleRepository;
   @Autowired private UserTechStackRepository userTechStackRepository;
   @Autowired private SystemSettingRepository systemSettingRepository;
@@ -364,58 +360,6 @@ class AdminGovernanceServiceIntegrationTest {
     assertThat(updatedNode.getSortOrder()).isEqualTo(3);
     assertThat(updatedNode.getSubTopics()).isEqualTo("Project,Deploy");
     assertThat(updatedNode.getBranchGroup()).isNull();
-  }
-
-  @Test
-  @DisplayName("노드 선행조건을 교체 저장한다")
-  void updatePrerequisitesReplacesMappings() {
-    Roadmap roadmap = saveOfficialRoadmap("Prerequisite Roadmap");
-    RoadmapNode targetNode = saveNode(roadmap, "Spring Security", "CONCEPT", 3);
-    RoadmapNode prerequisiteOne = saveNode(roadmap, "Spring Boot", "CONCEPT", 1);
-    RoadmapNode prerequisiteTwo = saveNode(roadmap, "JPA", "CONCEPT", 2);
-
-    adminNodeGovernanceService.updatePrerequisites(
-        targetNode.getNodeId(),
-        updatePrerequisitesRequest(
-            List.of(prerequisiteOne.getNodeId(), prerequisiteTwo.getNodeId())));
-    flushAndClear();
-
-    List<Prerequisite> prerequisites =
-        prerequisiteRepository.findAllByNode(
-            roadmapNodeRepository.findById(targetNode.getNodeId()).orElseThrow());
-
-    assertThat(prerequisites).hasSize(2);
-    assertThat(prerequisites.stream().map(item -> item.getPreNode().getNodeId()).toList())
-        .containsExactly(prerequisiteOne.getNodeId(), prerequisiteTwo.getNodeId());
-  }
-
-  @Test
-  @DisplayName("노드 선행조건은 자기 자신, 중복, 다른 로드맵 노드를 허용하지 않는다")
-  void updatePrerequisitesRejectsInvalidRequests() {
-    Roadmap roadmap = saveOfficialRoadmap("Validation Roadmap");
-    RoadmapNode targetNode = saveNode(roadmap, "Target", "CONCEPT", 2);
-    RoadmapNode sameRoadmapNode = saveNode(roadmap, "Sibling", "CONCEPT", 1);
-    RoadmapNode foreignNode =
-        saveNode(saveOfficialRoadmap("Other Roadmap"), "Foreign", "CONCEPT", 1);
-
-    assertInvalidInput(
-        () ->
-            adminNodeGovernanceService.updatePrerequisites(
-                targetNode.getNodeId(),
-                updatePrerequisitesRequest(List.of(targetNode.getNodeId()))));
-
-    assertInvalidInput(
-        () ->
-            adminNodeGovernanceService.updatePrerequisites(
-                targetNode.getNodeId(),
-                updatePrerequisitesRequest(
-                    List.of(sameRoadmapNode.getNodeId(), sameRoadmapNode.getNodeId()))));
-
-    assertInvalidInput(
-        () ->
-            adminNodeGovernanceService.updatePrerequisites(
-                targetNode.getNodeId(),
-                updatePrerequisitesRequest(List.of(foreignNode.getNodeId()))));
   }
 
   @Test
@@ -709,12 +653,6 @@ class AdminGovernanceServiceIntegrationTest {
     ReflectionTestUtils.setField(request, "sortOrder", sortOrder);
     ReflectionTestUtils.setField(request, "subTopics", subTopics);
     ReflectionTestUtils.setField(request, "laneKey", laneKey);
-    return request;
-  }
-
-  private NodePrerequisitesRequest updatePrerequisitesRequest(List<Long> prerequisiteNodeIds) {
-    NodePrerequisitesRequest request = newInstance(NodePrerequisitesRequest.class);
-    ReflectionTestUtils.setField(request, "prerequisiteNodeIds", prerequisiteNodeIds);
     return request;
   }
 

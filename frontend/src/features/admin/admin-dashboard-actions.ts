@@ -7,7 +7,7 @@ import { installCourseCatalogActions } from './admin-course-catalog'
 import { installNodeResourceActions } from './admin-node-resources'
 import { installRoadmapHubActions } from './admin-roadmap-hub'
 import { installRoadmapInfoActions } from './admin-roadmap-info'
-import { parseNodeIdList, type RoadmapNodePayload } from './admin-dashboard-support'
+import { type RoadmapNodePayload } from './admin-dashboard-support'
 import { openAccountDetailModal } from './admin-account-detail'
 import { openCourseReviewModal, previewCourseReviewLesson } from './admin-course-review'
 import { installAdminGovernanceActions } from './admin-governance'
@@ -166,20 +166,6 @@ export function installAdminDashboardActions(deps: Dependencies) {
         return
       }
       await adminApi.updateNodeRequiredTags(nodeId, requiredTags)
-      await deps.fetchNodes()
-    })
-  }
-  adminActions.updateNodePrerequisites = async (nodeId: number) => {
-    await runAdminAction(async () => {
-      const node = deps.getRoadmapNode(nodeId)
-      if (!node) {
-        window.alert('수정할 노드를 찾지 못했습니다.')
-        return
-      }
-      const input = window.prompt('선행 노드 ID를 쉼표로 구분해서 입력하세요. 같은 로드맵의 노드만 지정할 수 있습니다.', node.prerequisiteNodeIds.join(', '))
-      const prerequisiteNodeIds = parseNodeIdList(input)
-      if (prerequisiteNodeIds === null) return
-      await adminApi.updateNodePrerequisites(nodeId, prerequisiteNodeIds)
       await deps.fetchNodes()
     })
   }

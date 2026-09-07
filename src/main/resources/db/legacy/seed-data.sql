@@ -426,66 +426,6 @@ WHERE r.title = 'Backend Master Roadmap'
         AND title = 'Docker Deployment Basics'
   );
 
-INSERT INTO prerequisites (node_id, pre_node_id)
-SELECT n2.node_id, n1.node_id
-FROM roadmap_nodes n1, roadmap_nodes n2
-WHERE n1.title = 'Java Basics'
-  AND n2.title = 'HTTP Fundamentals'
-  AND NOT EXISTS (
-      SELECT 1
-      FROM prerequisites p
-      WHERE p.node_id = n2.node_id
-        AND p.pre_node_id = n1.node_id
-  );
-
-INSERT INTO prerequisites (node_id, pre_node_id)
-SELECT n2.node_id, n1.node_id
-FROM roadmap_nodes n1, roadmap_nodes n2
-WHERE n1.title = 'HTTP Fundamentals'
-  AND n2.title = 'Spring Boot Basics'
-  AND NOT EXISTS (
-      SELECT 1
-      FROM prerequisites p
-      WHERE p.node_id = n2.node_id
-        AND p.pre_node_id = n1.node_id
-  );
-
-INSERT INTO prerequisites (node_id, pre_node_id)
-SELECT n2.node_id, n1.node_id
-FROM roadmap_nodes n1, roadmap_nodes n2
-WHERE n1.title = 'Spring Boot Basics'
-  AND n2.title = 'Spring Data JPA'
-  AND NOT EXISTS (
-      SELECT 1
-      FROM prerequisites p
-      WHERE p.node_id = n2.node_id
-        AND p.pre_node_id = n1.node_id
-  );
-
-INSERT INTO prerequisites (node_id, pre_node_id)
-SELECT n2.node_id, n1.node_id
-FROM roadmap_nodes n1, roadmap_nodes n2
-WHERE n1.title = 'Spring Data JPA'
-  AND n2.title = 'Security and JWT'
-  AND NOT EXISTS (
-      SELECT 1
-      FROM prerequisites p
-      WHERE p.node_id = n2.node_id
-        AND p.pre_node_id = n1.node_id
-  );
-
-INSERT INTO prerequisites (node_id, pre_node_id)
-SELECT n2.node_id, n1.node_id
-FROM roadmap_nodes n1, roadmap_nodes n2
-WHERE n1.title = 'Security and JWT'
-  AND n2.title = 'Docker Deployment Basics'
-  AND NOT EXISTS (
-      SELECT 1
-      FROM prerequisites p
-      WHERE p.node_id = n2.node_id
-        AND p.pre_node_id = n1.node_id
-  );
-
 INSERT INTO node_required_tags (node_id, tag_id)
 SELECT n.node_id, t.tag_id
 FROM roadmap_nodes n, tags t
@@ -9169,7 +9109,7 @@ WHERE node_id IN (
     WHERE roadmap_id = (SELECT roadmap_id FROM roadmaps WHERE title = 'Backend Master Roadmap')
 );
 
--- 18단계: node_completion_rules, node_recommendations, node_required_tags, prerequisites
+-- 18단계: node_completion_rules, node_recommendations, node_required_tags
 DELETE FROM node_completion_rules
 WHERE node_id IN (
     SELECT node_id FROM roadmap_nodes
@@ -9184,15 +9124,6 @@ WHERE node_id IN (
 
 DELETE FROM node_required_tags
 WHERE node_id IN (
-    SELECT node_id FROM roadmap_nodes
-    WHERE roadmap_id = (SELECT roadmap_id FROM roadmaps WHERE title = 'Backend Master Roadmap')
-);
-
-DELETE FROM prerequisites
-WHERE node_id IN (
-    SELECT node_id FROM roadmap_nodes
-    WHERE roadmap_id = (SELECT roadmap_id FROM roadmaps WHERE title = 'Backend Master Roadmap')
-) OR pre_node_id IN (
     SELECT node_id FROM roadmap_nodes
     WHERE roadmap_id = (SELECT roadmap_id FROM roadmaps WHERE title = 'Backend Master Roadmap')
 );
@@ -9340,131 +9271,6 @@ SELECT r.roadmap_id, '메시지 큐 & MSA',
        'CONCEPT', 15, '메시지 큐: 작업을 즉시 처리하지 않고 큐에 쌓아 비동기로 처리하는 구조,Kafka Topic과 Partition: 메시지를 분류하고 병렬 처리를 가능하게 하는 저장 단위,Producer와 Consumer: 메시지를 발행하고 읽어 처리하는 구성 요소,API Gateway: 여러 서비스 앞에서 라우팅 인증 공통 처리를 담당하는 진입점,서비스 분리 기준: 하나의 기능을 독립 서비스로 나눌지 판단하는 경계', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
--- Backend Master Roadmap 공식 선행 관계
-INSERT INTO prerequisites (node_id, pre_node_id)
-WITH target_nodes AS (
-    SELECT rn.node_id, rn.sort_order, rn.branch_group
-    FROM roadmap_nodes rn
-    JOIN roadmaps r ON r.roadmap_id = rn.roadmap_id
-    WHERE r.title = 'Backend Master Roadmap'
-),
-branch_bounds AS (
-    SELECT MIN(sort_order) AS min_branch_order, MAX(sort_order) AS max_branch_order
-    FROM target_nodes
-    WHERE branch_group IS NOT NULL
-),
-pre_branch_spine_edges AS (
-    SELECT child.node_id, pre_node.node_id AS pre_node_id
-    FROM target_nodes child
-    JOIN branch_bounds bounds ON bounds.min_branch_order IS NOT NULL
-    JOIN target_nodes pre_node
-        ON pre_node.branch_group IS NULL
-       AND pre_node.sort_order = (
-           SELECT MAX(prev.sort_order)
-           FROM target_nodes prev
-           WHERE prev.branch_group IS NULL
-             AND prev.sort_order < child.sort_order
-             AND prev.sort_order < bounds.min_branch_order
-       )
-    WHERE child.branch_group IS NULL
-      AND child.sort_order < bounds.min_branch_order
-),
-branch_first_edges AS (
-    SELECT child.node_id, pre_node.node_id AS pre_node_id
-    FROM target_nodes child
-    JOIN target_nodes pre_node
-        ON pre_node.branch_group IS NULL
-       AND pre_node.sort_order = (
-           SELECT MAX(prev.sort_order)
-           FROM target_nodes prev
-           WHERE prev.branch_group IS NULL
-             AND prev.sort_order < child.sort_order
-       )
-    WHERE child.branch_group IS NOT NULL
-      AND NOT EXISTS (
-          SELECT 1
-          FROM target_nodes prev
-          WHERE prev.branch_group = child.branch_group
-            AND prev.sort_order < child.sort_order
-      )
-),
-branch_chain_edges AS (
-    SELECT child.node_id, pre_node.node_id AS pre_node_id
-    FROM target_nodes child
-    JOIN target_nodes pre_node
-        ON pre_node.branch_group = child.branch_group
-       AND pre_node.sort_order = (
-           SELECT MAX(prev.sort_order)
-           FROM target_nodes prev
-           WHERE prev.branch_group = child.branch_group
-             AND prev.sort_order < child.sort_order
-       )
-    WHERE child.branch_group IS NOT NULL
-),
-branch_last_nodes AS (
-    SELECT branch_node.branch_group, branch_node.node_id
-    FROM target_nodes branch_node
-    WHERE branch_node.branch_group IS NOT NULL
-      AND branch_node.sort_order = (
-          SELECT MAX(prev.sort_order)
-          FROM target_nodes prev
-          WHERE prev.branch_group = branch_node.branch_group
-      )
-),
-first_post_branch_node AS (
-    SELECT post_node.node_id
-    FROM target_nodes post_node
-    JOIN branch_bounds bounds ON bounds.max_branch_order IS NOT NULL
-    WHERE post_node.branch_group IS NULL
-      AND post_node.sort_order = (
-          SELECT MIN(next_node.sort_order)
-          FROM target_nodes next_node
-          WHERE next_node.branch_group IS NULL
-            AND next_node.sort_order > bounds.max_branch_order
-      )
-),
-merge_edges AS (
-    SELECT post_node.node_id, branch_node.node_id AS pre_node_id
-    FROM first_post_branch_node post_node
-    JOIN branch_last_nodes branch_node ON 1 = 1
-),
-post_branch_spine_edges AS (
-    SELECT child.node_id, pre_node.node_id AS pre_node_id
-    FROM target_nodes child
-    JOIN branch_bounds bounds ON bounds.max_branch_order IS NOT NULL
-    JOIN target_nodes pre_node
-        ON pre_node.branch_group IS NULL
-       AND pre_node.sort_order = (
-           SELECT MAX(prev.sort_order)
-           FROM target_nodes prev
-           WHERE prev.branch_group IS NULL
-             AND prev.sort_order < child.sort_order
-             AND prev.sort_order > bounds.max_branch_order
-       )
-    WHERE child.branch_group IS NULL
-      AND child.sort_order > bounds.max_branch_order
-),
-desired_edges AS (
-    SELECT node_id, pre_node_id FROM pre_branch_spine_edges
-    UNION
-    SELECT node_id, pre_node_id FROM branch_first_edges
-    UNION
-    SELECT node_id, pre_node_id FROM branch_chain_edges
-    UNION
-    SELECT node_id, pre_node_id FROM merge_edges
-    UNION
-    SELECT node_id, pre_node_id FROM post_branch_spine_edges
-)
-SELECT edge.node_id, edge.pre_node_id
-FROM desired_edges edge
-WHERE edge.pre_node_id IS NOT NULL
-  AND NOT EXISTS (
-      SELECT 1
-      FROM prerequisites existing
-      WHERE existing.node_id = edge.node_id
-        AND existing.pre_node_id = edge.pre_node_id
-  );
-
 -- Backend Master Roadmap 노드 추천 무료 자료
 INSERT INTO roadmap_node_resources
     (node_id, title, url, description, source_type, sort_order, active, created_at, updated_at)
@@ -9558,26 +9364,6 @@ WHERE u.email = 'learner@devpath.com'
       SELECT 1 FROM custom_roadmap_nodes crn
       WHERE crn.custom_roadmap_id = cr.custom_roadmap_id
         AND crn.original_node_id = rn.node_id
-  );
-
--- 공식 prerequisite를 모든 커스텀 로드맵에 반영
-INSERT INTO custom_node_prerequisites (custom_roadmap_id, custom_node_id, prerequisite_custom_node_id)
-SELECT cr.custom_roadmap_id, child_node.custom_node_id, pre_node.custom_node_id
-FROM custom_roadmaps cr
-JOIN custom_roadmap_nodes child_node
-    ON child_node.custom_roadmap_id = cr.custom_roadmap_id
-JOIN prerequisites prerequisite
-    ON prerequisite.node_id = child_node.original_node_id
-JOIN custom_roadmap_nodes pre_node
-    ON pre_node.custom_roadmap_id = cr.custom_roadmap_id
-   AND pre_node.original_node_id = prerequisite.pre_node_id
-WHERE cr.original_roadmap_id IS NOT NULL
-  AND child_node.custom_node_id <> pre_node.custom_node_id
-  AND NOT EXISTS (
-      SELECT 1 FROM custom_node_prerequisites cnp
-      WHERE cnp.custom_roadmap_id = cr.custom_roadmap_id
-        AND cnp.custom_node_id = child_node.custom_node_id
-        AND cnp.prerequisite_custom_node_id = pre_node.custom_node_id
   );
 
 -- sort 1, 2 노드 NodeClearance 레코드 (CLEARED 상태)
@@ -15462,64 +15248,6 @@ WHERE NOT EXISTS (
 DROP TABLE IF EXISTS roadmap_hub_node_detail_seed;
 DROP TABLE IF EXISTS roadmap_hub_node_profile_seed;
 
-INSERT INTO prerequisites (node_id, pre_node_id)
-WITH target_roadmaps AS (
-    SELECT
-        r.roadmap_id,
-        COALESCE(MAX(item.subtitle), r.title) AS display_name
-    FROM roadmap_hub_items item
-    JOIN roadmap_hub_sections section_item ON section_item.id = item.section_id
-    JOIN roadmaps r ON r.roadmap_id = item.linked_roadmap_id
-    WHERE item.linked_roadmap_id IS NOT NULL
-      AND item.is_active = TRUE
-      AND section_item.is_active = TRUE
-      AND r.is_official = TRUE
-      AND r.is_deleted = FALSE
-      AND r.title <> 'Backend Master Roadmap'
-    GROUP BY r.roadmap_id, r.title
-    HAVING COALESCE(MAX(item.subtitle), r.title) <> 'Backend'
-),
-edge_seed(child_sort_order, child_branch_group, pre_sort_order, pre_branch_group) AS (
-    VALUES
-        (2, CAST(NULL AS INTEGER), 1, CAST(NULL AS INTEGER)),
-        (3, CAST(NULL AS INTEGER), 2, CAST(NULL AS INTEGER)),
-        (4, CAST(NULL AS INTEGER), 3, CAST(NULL AS INTEGER)),
-        (5, CAST(NULL AS INTEGER), 4, CAST(NULL AS INTEGER)),
-        (6, CAST(NULL AS INTEGER), 5, CAST(NULL AS INTEGER)),
-        (7, CAST(NULL AS INTEGER), 6, CAST(NULL AS INTEGER)),
-        (8, 1, 7, CAST(NULL AS INTEGER)),
-        (9, 1, 8, 1),
-        (8, 2, 7, CAST(NULL AS INTEGER)),
-        (9, 2, 8, 2),
-        (10, CAST(NULL AS INTEGER), 7, CAST(NULL AS INTEGER)),
-        (11, CAST(NULL AS INTEGER), 10, CAST(NULL AS INTEGER))
-)
-SELECT
-    child.node_id,
-    pre_node.node_id
-FROM target_roadmaps target
-JOIN edge_seed edge_item ON 1 = 1
-JOIN roadmap_nodes child
-    ON child.roadmap_id = target.roadmap_id
-   AND child.sort_order = edge_item.child_sort_order
-   AND (
-       child.branch_group = edge_item.child_branch_group
-       OR (child.branch_group IS NULL AND edge_item.child_branch_group IS NULL)
-   )
-JOIN roadmap_nodes pre_node
-    ON pre_node.roadmap_id = target.roadmap_id
-   AND pre_node.sort_order = edge_item.pre_sort_order
-   AND (
-       pre_node.branch_group = edge_item.pre_branch_group
-       OR (pre_node.branch_group IS NULL AND edge_item.pre_branch_group IS NULL)
-   )
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM prerequisites existing
-    WHERE existing.node_id = child.node_id
-      AND existing.pre_node_id = pre_node.node_id
-);
-
 INSERT INTO tags (name, category, is_official, is_deleted)
 WITH target_roadmaps AS (
     SELECT
@@ -19522,29 +19250,6 @@ FROM demo_nodes dn
 WHERE crn.custom_node_id = dn.custom_node_id
   AND dn.seeded_status <> 'NOT_STARTED'
   AND crn.status <> 'COMPLETED';
-
-INSERT INTO custom_node_prerequisites (
-    custom_roadmap_id, custom_node_id, prerequisite_custom_node_id
-)
-SELECT
-    cr.custom_roadmap_id,
-    child_node.custom_node_id,
-    pre_node.custom_node_id
-FROM custom_roadmaps cr
-JOIN users u ON u.user_id = cr.user_id AND u.email = 'learner@devpath.com'
-JOIN custom_roadmap_nodes child_node ON child_node.custom_roadmap_id = cr.custom_roadmap_id
-JOIN prerequisites prerequisite ON prerequisite.node_id = child_node.original_node_id
-JOIN custom_roadmap_nodes pre_node ON pre_node.custom_roadmap_id = cr.custom_roadmap_id
-    AND pre_node.original_node_id = prerequisite.pre_node_id
-WHERE cr.original_roadmap_id IS NOT NULL
-  AND child_node.custom_node_id <> pre_node.custom_node_id
-  AND NOT EXISTS (
-      SELECT 1
-      FROM custom_node_prerequisites existing
-      WHERE existing.custom_roadmap_id = cr.custom_roadmap_id
-        AND existing.custom_node_id = child_node.custom_node_id
-        AND existing.prerequisite_custom_node_id = pre_node.custom_node_id
-  );
 
 WITH demo_roadmaps(roadmap_title, completed_until, in_progress_sort) AS (
     VALUES

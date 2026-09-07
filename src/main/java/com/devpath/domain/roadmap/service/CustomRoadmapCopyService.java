@@ -34,8 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomRoadmapCopyService {
 
   // 공식 로드맵에 잘못 섞인 동적/평가용 노드는 복사하지 않는다.
-  private static final Set<String> NON_COPYABLE_NODE_TYPES =
-      Set.of("BRANCH", "COURSE_QUIZ", "COURSE_ASSIGNMENT");
+  private static final Set<String> NON_COPYABLE_NODE_TYPES = Set.of("BRANCH", "QUIZ", "ASSIGNMENT");
 
   private final UserRepository userRepository;
   private final RoadmapRepository roadmapRepository;
