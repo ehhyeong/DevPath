@@ -11492,7 +11492,7 @@ GitHub URL 또는 zip 파일, 실행 방법, 주요 컴포넌트 구조, 테스�
 WHERE title = '[CATALOG] React 19 프론트엔드 실전 가이드 - 2 ASSIGNMENT'
   AND node_type = 'ASSIGNMENT'
   AND sub_topics = 'React 19 프론트엔드 실전 가이드'
-  AND branch_group = 2;
+  AND section_order = 2;
 
 UPDATE assignments
 SET title = '학습 현황 대시보드 구현 및 E2E 테스트 과제',
@@ -11521,7 +11521,7 @@ WHERE node_id IN (
       WHERE rn.title = '[CATALOG] React 19 프론트엔드 실전 가이드 - 2 ASSIGNMENT'
         AND rn.node_type = 'ASSIGNMENT'
         AND rn.sub_topics = 'React 19 프론트엔드 실전 가이드'
-        AND rn.branch_group = 2
+        AND rn.section_order = 2
   )
   AND is_deleted = FALSE;
 
