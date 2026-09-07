@@ -83,7 +83,6 @@ class FrontendRoadmapDemoRecommender {
                 .nodeType("BRANCH")
                 .sortOrder(null)
                 .subTopics(subTopics(isLowScore))
-                .branchGroup(null)
                 .build());
 
     recommendationChangeRepository.save(

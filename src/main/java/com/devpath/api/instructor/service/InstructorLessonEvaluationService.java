@@ -124,7 +124,6 @@ public class InstructorLessonEvaluationService {
                 .nodeType(quizNode ? "COURSE_QUIZ" : "COURSE_ASSIGNMENT")
                 .sortOrder(0)
                 .subTopics(null)
-                .branchGroup(null)
                 .build());
 
     courseNodeMappingRepository.save(CourseNodeMapping.builder().course(course).node(node).build());

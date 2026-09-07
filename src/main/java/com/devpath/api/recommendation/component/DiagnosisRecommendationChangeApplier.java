@@ -75,7 +75,6 @@ public class DiagnosisRecommendationChangeApplier {
                   .nodeType("BRANCH")
                   .sortOrder(null)
                   .subTopics(String.join(", ", validatedTags))
-                  .branchGroup(null)
                   .build());
     } else {
       String fallbackTagList = String.join(", ", candidateTags.stream().limit(3).toList());
@@ -88,7 +87,6 @@ public class DiagnosisRecommendationChangeApplier {
                   .nodeType("BRANCH")
                   .sortOrder(null)
                   .subTopics(fallbackTagList)
-                  .branchGroup(null)
                   .build());
     }
 
@@ -231,7 +229,6 @@ public class DiagnosisRecommendationChangeApplier {
                   .nodeType("USER")
                   .sortOrder(null)
                   .subTopics(item.path("subTopics").asText(null))
-                  .branchGroup(null)
                   .build());
 
       String reason = item.path("reason").asText(null);

@@ -511,7 +511,7 @@ BEGIN
 
   IF v_quiz_node_id IS NULL THEN
     INSERT INTO roadmap_nodes (
-      roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group
+      roadmap_id, title, content, node_type, sort_order, sub_topics, section_order
     )
     VALUES (
       v_eval_roadmap_id,
@@ -530,7 +530,7 @@ BEGIN
            node_type = 'COURSE_QUIZ',
            sort_order = 0,
            sub_topics = v_course_title,
-           branch_group = 1
+           section_order = 1
      WHERE node_id = v_quiz_node_id;
   END IF;
 
@@ -755,7 +755,7 @@ Vite는 이 흐름을 빠르게 확인하기 위한 개발 서버 역할을 합�
 
   IF v_assignment_node_id IS NULL THEN
     INSERT INTO roadmap_nodes (
-      roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group
+      roadmap_id, title, content, node_type, sort_order, sub_topics, section_order
     )
     VALUES (
       v_eval_roadmap_id,
@@ -774,7 +774,7 @@ Vite는 이 흐름을 빠르게 확인하기 위한 개발 서버 역할을 합�
            node_type = 'COURSE_ASSIGNMENT',
            sort_order = 0,
            sub_topics = v_course_title,
-           branch_group = 2
+           section_order = 2
      WHERE node_id = v_assignment_node_id;
   END IF;
 

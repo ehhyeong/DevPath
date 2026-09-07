@@ -359,7 +359,8 @@ class AdminGovernanceServiceIntegrationTest {
     assertThat(updatedNode.getNodeType()).isEqualTo("PROJECT");
     assertThat(updatedNode.getSortOrder()).isEqualTo(3);
     assertThat(updatedNode.getSubTopics()).isEqualTo("Project,Deploy");
-    assertThat(updatedNode.getBranchGroup()).isNull();
+    assertThat(updatedNode.getLaneKey()).isNull();
+    assertThat(updatedNode.getBranchKind()).isEqualTo(BranchKind.SPINE);
   }
 
   @Test

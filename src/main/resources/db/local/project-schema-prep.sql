@@ -1931,7 +1931,7 @@ BEGIN
         SELECT
             target.roadmap_id,
             rn.sort_order,
-            rn.branch_group,
+            rn.lane_key,
             CASE
                 WHEN rn.title LIKE target.display_name || ' - %'
                     THEN substring(rn.title FROM char_length(target.display_name) + 4)
@@ -1944,7 +1944,7 @@ BEGIN
         SELECT
             segment_rows.roadmap_id,
             segment_rows.sort_order,
-            segment_rows.branch_group,
+            segment_rows.lane_key,
             segment_rows.segment_order,
             segment_rows.segment_total,
             NULLIF(split_part(btrim(segment_rows.segment), ':', 1), '') AS topic_text
@@ -1953,7 +1953,7 @@ BEGIN
                 target.roadmap_id,
                 rn.node_id,
                 rn.sort_order,
-                rn.branch_group,
+                rn.lane_key,
                 split_item.segment,
                 split_item.segment_order,
                 COUNT(*) OVER (PARTITION BY rn.node_id) AS segment_total
@@ -1965,13 +1965,13 @@ BEGIN
     segment_profile AS (
         SELECT
             roadmap_id,
-            MAX(topic_text) FILTER (WHERE branch_group IS NULL AND sort_order IN (1, 2, 3) AND segment_total >= 3 AND segment_order = 2) AS core_topic,
-            MAX(topic_text) FILTER (WHERE branch_group IS NULL AND sort_order IN (1, 2, 3) AND segment_total >= 3 AND segment_order = 3) AS tool_topic,
-            MAX(topic_text) FILTER (WHERE branch_group IS NULL AND sort_order IN (4, 5, 6, 7) AND segment_total >= 4 AND segment_order = 1) AS practice_topic,
-            MAX(topic_text) FILTER (WHERE branch_group IS NULL AND sort_order IN (4, 5, 6, 7) AND segment_total >= 4 AND segment_order = 2) AS model_topic,
-            MAX(topic_text) FILTER (WHERE branch_group IS NULL AND sort_order IN (4, 5, 6, 7) AND segment_total >= 4 AND segment_order = 3) AS quality_topic,
+            MAX(topic_text) FILTER (WHERE lane_key IS NULL AND sort_order IN (1, 2, 3) AND segment_total >= 3 AND segment_order = 2) AS core_topic,
+            MAX(topic_text) FILTER (WHERE lane_key IS NULL AND sort_order IN (1, 2, 3) AND segment_total >= 3 AND segment_order = 3) AS tool_topic,
+            MAX(topic_text) FILTER (WHERE lane_key IS NULL AND sort_order IN (4, 5, 6, 7) AND segment_total >= 4 AND segment_order = 1) AS practice_topic,
+            MAX(topic_text) FILTER (WHERE lane_key IS NULL AND sort_order IN (4, 5, 6, 7) AND segment_total >= 4 AND segment_order = 2) AS model_topic,
+            MAX(topic_text) FILTER (WHERE lane_key IS NULL AND sort_order IN (4, 5, 6, 7) AND segment_total >= 4 AND segment_order = 3) AS quality_topic,
             COALESCE(
-                MAX(topic_text) FILTER (WHERE branch_group IS NULL AND sort_order IN (4, 5, 6, 7) AND segment_total >= 4 AND segment_order = 4),
+                MAX(topic_text) FILTER (WHERE lane_key IS NULL AND sort_order IN (4, 5, 6, 7) AND segment_total >= 4 AND segment_order = 4),
                 MAX(topic_text) FILTER (WHERE segment_total >= 5 AND segment_order = 5)
             ) AS project_topic,
             MAX(topic_text) FILTER (WHERE segment_total >= 5 AND segment_order = 1) AS perf_topic,
@@ -1984,18 +1984,18 @@ BEGIN
     title_profile AS (
         SELECT
             roadmap_id,
-            MAX(clean_title) FILTER (WHERE branch_group IS NULL AND sort_order = 1) AS core_topic,
-            MAX(clean_title) FILTER (WHERE branch_group IS NULL AND sort_order = 2) AS tool_topic,
-            MAX(clean_title) FILTER (WHERE branch_group IS NULL AND sort_order = 3) AS practice_topic,
-            MAX(clean_title) FILTER (WHERE branch_group IS NULL AND sort_order = 4) AS model_topic,
-            MAX(clean_title) FILTER (WHERE branch_group IS NULL AND sort_order = 5) AS quality_topic,
-            MAX(clean_title) FILTER (WHERE branch_group IS NULL AND sort_order = 6) AS security_topic,
-            MAX(clean_title) FILTER (WHERE branch_group IS NULL AND sort_order = 10) AS project_topic,
-            MAX(clean_title) FILTER (WHERE branch_group = 1 AND sort_order = 8) AS perf_topic,
-            MAX(clean_title) FILTER (WHERE branch_group = 1 AND sort_order = 9) AS ops_topic,
-            MAX(clean_title) FILTER (WHERE branch_group = 2 AND sort_order = 8) AS arch_topic,
+            MAX(clean_title) FILTER (WHERE lane_key IS NULL AND sort_order = 1) AS core_topic,
+            MAX(clean_title) FILTER (WHERE lane_key IS NULL AND sort_order = 2) AS tool_topic,
+            MAX(clean_title) FILTER (WHERE lane_key IS NULL AND sort_order = 3) AS practice_topic,
+            MAX(clean_title) FILTER (WHERE lane_key IS NULL AND sort_order = 4) AS model_topic,
+            MAX(clean_title) FILTER (WHERE lane_key IS NULL AND sort_order = 5) AS quality_topic,
+            MAX(clean_title) FILTER (WHERE lane_key IS NULL AND sort_order = 6) AS security_topic,
+            MAX(clean_title) FILTER (WHERE lane_key IS NULL AND sort_order = 10) AS project_topic,
+            MAX(clean_title) FILTER (WHERE lane_key = 1 AND sort_order = 8) AS perf_topic,
+            MAX(clean_title) FILTER (WHERE lane_key = 1 AND sort_order = 9) AS ops_topic,
+            MAX(clean_title) FILTER (WHERE lane_key = 2 AND sort_order = 8) AS arch_topic,
             regexp_replace(
-                regexp_replace(MAX(clean_title) FILTER (WHERE branch_group = 2 AND sort_order = 9), '^보안 심화 ', ''),
+                regexp_replace(MAX(clean_title) FILTER (WHERE lane_key = 2 AND sort_order = 9), '^보안 심화 ', ''),
                 ' 심화$',
                 ''
             ) AS branch_security_topic
@@ -2020,7 +2020,7 @@ BEGIN
         LEFT JOIN segment_profile ON segment_profile.roadmap_id = target.roadmap_id
         LEFT JOIN title_profile ON title_profile.roadmap_id = target.roadmap_id
     ),
-    node_seed(sort_order, branch_group, node_type) AS (
+    node_seed(sort_order, lane_key, node_type) AS (
         VALUES
             (1, CAST(NULL AS INTEGER), 'CONCEPT'),
             (2, CAST(NULL AS INTEGER), 'CONCEPT'),
@@ -2040,7 +2040,7 @@ BEGIN
         SELECT
             profile.roadmap_id,
             seed.sort_order,
-            seed.branch_group,
+            seed.lane_key,
             seed.node_type,
             CASE
                 WHEN seed.sort_order = 1 THEN profile.core_topic
@@ -2050,10 +2050,10 @@ BEGIN
                 WHEN seed.sort_order = 5 THEN profile.quality_topic
                 WHEN seed.sort_order = 6 THEN profile.security_topic
                 WHEN seed.sort_order = 7 THEN '협업 산출물과 변경 기록'
-                WHEN seed.sort_order = 8 AND seed.branch_group = 1 THEN profile.perf_topic
-                WHEN seed.sort_order = 9 AND seed.branch_group = 1 THEN profile.ops_topic
-                WHEN seed.sort_order = 8 AND seed.branch_group = 2 THEN profile.arch_topic
-                WHEN seed.sort_order = 9 AND seed.branch_group = 2 THEN '보안 심화 ' || profile.security_topic
+                WHEN seed.sort_order = 8 AND seed.lane_key = 1 THEN profile.perf_topic
+                WHEN seed.sort_order = 9 AND seed.lane_key = 1 THEN profile.ops_topic
+                WHEN seed.sort_order = 8 AND seed.lane_key = 2 THEN profile.arch_topic
+                WHEN seed.sort_order = 9 AND seed.lane_key = 2 THEN '보안 심화 ' || profile.security_topic
                 WHEN seed.sort_order = 10 THEN profile.project_topic
                 ELSE '포트폴리오 ' || profile.project_topic
             END AS title,
@@ -2065,10 +2065,10 @@ BEGIN
                 WHEN seed.sort_order = 5 THEN profile.tool_topic
                 WHEN seed.sort_order = 6 THEN profile.tool_topic
                 WHEN seed.sort_order = 7 THEN profile.tool_topic
-                WHEN seed.sort_order = 8 AND seed.branch_group = 1 THEN profile.tool_topic
-                WHEN seed.sort_order = 9 AND seed.branch_group = 1 THEN profile.tool_topic
-                WHEN seed.sort_order = 8 AND seed.branch_group = 2 THEN profile.tool_topic
-                WHEN seed.sort_order = 9 AND seed.branch_group = 2 THEN profile.tool_topic
+                WHEN seed.sort_order = 8 AND seed.lane_key = 1 THEN profile.tool_topic
+                WHEN seed.sort_order = 9 AND seed.lane_key = 1 THEN profile.tool_topic
+                WHEN seed.sort_order = 8 AND seed.lane_key = 2 THEN profile.tool_topic
+                WHEN seed.sort_order = 9 AND seed.lane_key = 2 THEN profile.tool_topic
                 WHEN seed.sort_order = 10 THEN profile.tool_topic
                 ELSE profile.tool_topic
             END AS related_topic,
@@ -2080,10 +2080,10 @@ BEGIN
                 WHEN seed.sort_order = 5 THEN profile.quality_topic || '을 기준으로 결과물을 검증합니다. 정상 동작만 확인하지 않고 실패 케이스, 경계값, 리뷰 기준을 포함해 품질 기준을 세웁니다.'
                 WHEN seed.sort_order = 6 THEN profile.security_topic || '을 중심으로 안정성을 보강합니다. 권한, 입력값, 예외, 장애 상황을 검토하고 운영 중 문제가 생겼을 때 추적 가능한 기준을 만듭니다.'
                 WHEN seed.sort_order = 7 THEN profile.project_topic || '을 팀에 설명할 수 있도록 문서와 변경 기록을 남깁니다. 이슈, PR, 의사결정 이유, 테스트 결과를 정리해 다음 사람이 ' || profile.tool_topic || ' 흐름을 그대로 재현할 수 있게 만듭니다.'
-                WHEN seed.sort_order = 8 AND seed.branch_group = 1 THEN profile.perf_topic || '을 깊게 다룹니다. 측정 지표를 먼저 정하고 병목을 찾은 뒤, ' || profile.display_name || ' 결과물에서 가장 효과가 큰 최적화 순서를 선택합니다.'
-                WHEN seed.sort_order = 9 AND seed.branch_group = 1 THEN profile.ops_topic || '을 운영 관점에서 설계합니다. 배포, 모니터링, 알림, 롤백, 반복 작업 자동화를 정리해 학습 결과물이 한 번 만들고 끝나는 수준에 머물지 않게 합니다.'
-                WHEN seed.sort_order = 8 AND seed.branch_group = 2 THEN profile.arch_topic || '을 기준으로 구조를 다시 봅니다. 책임 경계, 모듈 분리, 확장 전략을 점검하고 ' || profile.model_topic || '이 커져도 유지보수 가능한 형태인지 판단합니다.'
-                WHEN seed.sort_order = 9 AND seed.branch_group = 2 THEN profile.security_topic || '을 심화 기준으로 점검합니다. 권한, 입력값, 예외, 장애 상황을 검토하고 운영 중 문제가 생겼을 때 추적 가능한 기준을 만듭니다.'
+                WHEN seed.sort_order = 8 AND seed.lane_key = 1 THEN profile.perf_topic || '을 깊게 다룹니다. 측정 지표를 먼저 정하고 병목을 찾은 뒤, ' || profile.display_name || ' 결과물에서 가장 효과가 큰 최적화 순서를 선택합니다.'
+                WHEN seed.sort_order = 9 AND seed.lane_key = 1 THEN profile.ops_topic || '을 운영 관점에서 설계합니다. 배포, 모니터링, 알림, 롤백, 반복 작업 자동화를 정리해 학습 결과물이 한 번 만들고 끝나는 수준에 머물지 않게 합니다.'
+                WHEN seed.sort_order = 8 AND seed.lane_key = 2 THEN profile.arch_topic || '을 기준으로 구조를 다시 봅니다. 책임 경계, 모듈 분리, 확장 전략을 점검하고 ' || profile.model_topic || '이 커져도 유지보수 가능한 형태인지 판단합니다.'
+                WHEN seed.sort_order = 9 AND seed.lane_key = 2 THEN profile.security_topic || '을 심화 기준으로 점검합니다. 권한, 입력값, 예외, 장애 상황을 검토하고 운영 중 문제가 생겼을 때 추적 가능한 기준을 만듭니다.'
                 WHEN seed.sort_order = 10 THEN profile.project_topic || '을 하나의 완성물로 묶습니다. 요구사항, 설계, 구현, 검증, 회고가 모두 남도록 만들고 ' || profile.quality_topic || '을 통과한 결과물을 목표로 합니다.'
                 ELSE profile.project_topic || ' 포트폴리오는 왜 만들었고 어떤 선택을 했는지 설명할 수 있어야 합니다. 핵심 개념, 구조, 보안에서 내린 판단을 면접 답변처럼 정리합니다.'
             END AS content
@@ -2099,8 +2099,8 @@ BEGIN
      WHERE rn.roadmap_id = desired.roadmap_id
        AND rn.sort_order = desired.sort_order
        AND (
-           rn.branch_group = desired.branch_group
-           OR (rn.branch_group IS NULL AND desired.branch_group IS NULL)
+           rn.lane_key = desired.lane_key
+           OR (rn.lane_key IS NULL AND desired.lane_key IS NULL)
        );
 END $$;
 ^^^ END OF SCRIPT ^^^

@@ -49,9 +49,6 @@ public class RoadmapNode {
   @Column(name = "sub_topics", columnDefinition = "TEXT")
   private String subTopics;
 
-  @Column(name = "branch_group")
-  private Integer branchGroup;
-
   // ── 레인 트리 모델. 커스텀 로드맵과 동일한 구조 표현을 공식 로드맵에도 적용한다. ──
   // 이 레인이 갈라져 나온 부모 노드 id (null = 루트 척추 레인)
   @Column(name = "anchor_node_id")

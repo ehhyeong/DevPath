@@ -60,7 +60,6 @@ class JobSkillRoadmapWriter {
                   .subTopics(String.join(",", draft.tags()))
                   .nodeType("NODE")
                   .sortOrder(null)
-                  .branchGroup(null)
                   .build());
       nodeRequiredTagRegistrar.registerFromSubTopics(dynamicNode);
       customRoadmapNodeRepository.save(

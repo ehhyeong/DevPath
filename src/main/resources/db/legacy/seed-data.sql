@@ -9166,106 +9166,106 @@ WHERE node_id IN (
 DELETE FROM roadmap_nodes
 WHERE roadmap_id = (SELECT roadmap_id FROM roadmaps WHERE title = 'Backend Master Roadmap');
 
--- 척추 노드 (branch_group = NULL)
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+-- 척추 노드 (lane_key = NULL)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, '인터넷 & 웹 기초',
        '백엔드 개발자는 브라우저 요청이 DNS 조회, TCP/TLS 연결, HTTP 요청/응답을 거쳐 서버 애플리케이션까지 도달하는 흐름을 이해해야 합니다. 이 단계에서는 URL을 입력했을 때 어떤 네트워크 계층을 지나고 서버가 어떤 기준으로 응답을 만드는지 익힙니다.',
        'CONCEPT', 1, 'HTTP 요청/응답: 클라이언트가 리소스를 요청하고 서버가 상태 코드와 본문을 돌려주는 구조,DNS: 도메인 이름을 실제 서버 IP로 찾는 이름 해석 시스템,HTTPS와 TLS: 통신 내용을 암호화하고 서버 신뢰성을 검증하는 보안 계층,브라우저와 서버 흐름: URL 입력부터 렌더링 직전까지 이어지는 전체 요청 경로', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'OS & 터미널',
        '운영체제는 백엔드 애플리케이션이 실제로 실행되는 바닥입니다. 파일 권한, 프로세스, 포트, 로그, 환경 변수, 메모리 사용량을 터미널에서 확인할 수 있어야 장애 상황에서 원인을 좁힐 수 있습니다.',
        'CONCEPT', 2, '프로세스와 스레드: 프로그램 실행 단위와 동시 처리의 기본 구조,파일 시스템과 권한: 서버 파일 위치와 읽기 쓰기 실행 권한을 다루는 기준,셸 명령과 파이프: 로그 확인과 배포 작업을 자동화하는 터미널 활용법,포트와 I/O: 네트워크 연결과 입출력 자원이 애플리케이션에 미치는 영향', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Java 기초',
        'Spring Boot를 제대로 쓰려면 Java 문법을 단순 암기보다 객체 모델과 타입 시스템 관점에서 이해해야 합니다. 클래스, 인터페이스, 컬렉션, 예외 처리, 제네릭을 익히면 서비스 계층과 도메인 코드를 안정적으로 설계할 수 있습니다.',
        'CONCEPT', 3, 'JVM: Java 코드가 운영체제와 무관하게 실행되는 런타임 구조,OOP: 책임을 가진 객체들이 협력하도록 코드를 나누는 설계 방식,컬렉션 프레임워크: List Set Map으로 데이터를 목적에 맞게 다루는 표준 도구,예외 처리: 실패 상황을 호출 흐름 안에서 명확하게 다루는 방법,제네릭: 타입 안정성을 유지하면서 재사용 가능한 코드를 만드는 문법', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Git & 버전 관리',
        'Git은 코드 저장 도구를 넘어 팀 작업의 변경 이력과 의사결정을 남기는 시스템입니다. 브랜치 전략, 커밋 단위, PR 리뷰 흐름을 이해하면 기능 개발과 버그 수정이 섞이지 않고 안전하게 배포할 수 있습니다.',
        'PRACTICE', 4, '커밋: 의미 있는 변경 단위를 기록하는 기본 단위,브랜치: 기능 개발과 배포 라인을 분리하는 작업 공간,Pull Request: 코드 리뷰와 변경 검증을 거쳐 병합하는 협업 절차,충돌 해결: 같은 코드 영역의 변경을 사람이 판단해 정리하는 과정', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'RDB & SQL',
        '대부분의 백엔드 서비스는 관계형 데이터베이스에 핵심 데이터를 저장합니다. 테이블 설계, JOIN, 인덱스, 트랜잭션을 이해해야 데이터 정합성을 지키면서도 조회 성능을 유지할 수 있습니다.',
        'CONCEPT', 5, '테이블과 관계: 데이터를 행과 열로 저장하고 외래키로 연결하는 구조,JOIN: 여러 테이블에 나뉜 데이터를 하나의 결과로 조합하는 방법,인덱스: 조회 속도를 높이지만 쓰기 비용을 함께 고려해야 하는 자료구조,트랜잭션과 ACID: 여러 데이터 변경을 하나의 안전한 작업 단위로 묶는 원칙', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'REST API 설계',
        'REST API는 프론트엔드와 백엔드가 약속하는 가장 흔한 통신 규칙입니다. URI를 리소스 중심으로 설계하고 HTTP 메서드와 상태 코드를 일관되게 쓰면 클라이언트가 예측 가능한 API를 사용할 수 있습니다.',
        'CONCEPT', 6, '리소스 중심 URI: 행위보다 대상을 기준으로 API 주소를 설계하는 방식,HTTP 메서드: GET POST PUT PATCH DELETE의 의도를 구분하는 약속,상태 코드: 요청 결과를 숫자로 명확하게 전달하는 표준,OpenAPI: API 사용법과 스키마를 문서로 공유하는 명세', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Spring Boot & MVC',
        'Spring Boot는 설정 부담을 줄여 애플리케이션을 빠르게 띄우고 Spring MVC는 요청이 컨트롤러까지 도달하는 웹 계층 흐름을 담당합니다. DI, Bean, DispatcherServlet, 계층 구조를 이해해야 기능이 커져도 코드가 무너지지 않습니다.',
        'CONCEPT', 7, 'DI와 IoC: 객체 생성과 의존성 연결을 프레임워크가 관리하는 구조,Bean: Spring 컨테이너가 생명주기를 관리하는 객체,DispatcherServlet: HTTP 요청을 컨트롤러로 라우팅하는 MVC의 중심 진입점,3계층 구조: Controller Service Repository로 책임을 나누는 기본 설계', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Spring Data JPA',
        'JPA는 객체 중심 코드와 관계형 데이터베이스 사이의 차이를 줄여주는 ORM 기술입니다. 엔티티 매핑과 연관관계를 제대로 잡지 못하면 N+1, 영속성 컨텍스트, 트랜잭션 경계 문제로 성능과 데이터 정합성이 흔들릴 수 있습니다.',
        'CONCEPT', 8, 'Entity 매핑: 객체 필드와 데이터베이스 테이블 컬럼을 연결하는 규칙,연관관계: 객체 참조와 외래키 관계를 일관되게 표현하는 방법,영속성 컨텍스트: 엔티티 변경을 추적하고 DB 반영 시점을 관리하는 공간,Fetch 전략: 연관 데이터를 즉시 가져올지 늦게 가져올지 정하는 기준,N+1 문제: 반복 조회로 SQL이 과도하게 발생하는 성능 문제', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
 -- 분기 노드 (sort 9-10, 좌: Redis, 우: 테스트)
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Redis 기초',
        'Redis는 단순 캐시 저장소가 아니라 빠른 읽기 쓰기와 다양한 자료구조를 제공하는 인메모리 데이터 저장소입니다. 캐시, 랭킹, 임시 토큰, 카운터처럼 응답 속도가 중요한 기능에서 TTL과 자료구조 선택이 핵심입니다.',
        'PRACTICE', 9, '인메모리 저장소: 디스크보다 빠른 메모리에 데이터를 보관하는 방식,String Hash List Set ZSet: 목적에 따라 선택하는 Redis 핵심 자료구조,TTL: 일정 시간이 지나면 데이터를 자동 삭제하는 만료 전략,캐시 전략: DB 부하를 줄이기 위해 자주 읽는 데이터를 임시 저장하는 방식', 1
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Redis 심화',
        'Redis를 서비스 운영에 깊게 쓰면 세션 저장, 토큰 무효화, Pub/Sub, 분산 락처럼 여러 서버가 공유해야 하는 상태를 다루게 됩니다. 특히 분산 환경에서는 락 만료 시간과 장애 상황을 고려하지 않으면 중복 처리나 데이터 꼬임이 생길 수 있습니다.',
        'PRACTICE', 10, '세션 저장: 여러 서버가 같은 로그인 상태를 공유하도록 저장하는 방식,JWT 블랙리스트: 만료 전 토큰을 강제로 무효화하기 위한 차단 목록,Pub/Sub: 발행자와 구독자가 메시지를 비동기로 주고받는 패턴,분산 락: 여러 인스턴스가 같은 작업을 동시에 처리하지 못하게 막는 장치', 1
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'JUnit5 & Mockito',
        '테스트 코드는 기능이 의도대로 동작하는지 반복해서 확인하게 해주는 안전장치입니다. JUnit5로 테스트 구조를 만들고 Mockito로 외부 의존성을 대체하면 서비스 로직을 빠르고 독립적으로 검증할 수 있습니다.',
        'PRACTICE', 9, '테스트 생명주기: 테스트 실행 전후 준비와 정리를 관리하는 흐름,Assertion: 실제 결과가 기대값과 맞는지 검증하는 표현,Mock과 Spy: 외부 의존성이나 일부 동작을 테스트용 객체로 대체하는 방법,verify: 협력 객체가 기대한 방식으로 호출됐는지 확인하는 검증', 2
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Spring Boot 테스트',
        'Spring 애플리케이션은 단위 테스트만으로는 필터, 컨트롤러, DI 설정, DB 연동 흐름을 모두 검증하기 어렵습니다. 테스트 슬라이스와 통합 테스트를 구분해서 사용하면 빠른 피드백과 실제 동작 검증을 균형 있게 가져갈 수 있습니다.',
        'PRACTICE', 10, '@SpringBootTest: 전체 애플리케이션 컨텍스트를 띄워 통합 흐름을 확인하는 테스트,@WebMvcTest: 웹 계층만 가볍게 띄워 컨트롤러 요청 응답을 검증하는 테스트,MockMvc: 실제 서버 없이 MVC 요청을 시뮬레이션하는 도구,TestRestTemplate: 테스트 환경에서 실제 HTTP 호출 흐름을 확인하는 도구', 2
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
--- 척추 뒷부분 (sort 11-15, branch_group = NULL)
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+-- 척추 뒷부분 (sort 11-15, lane_key = NULL)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Spring Security & JWT',
        '인증과 인가는 사용자가 누구인지 확인하고 어떤 기능을 쓸 수 있는지 결정하는 백엔드 핵심 영역입니다. Spring Security의 필터 체인과 JWT 흐름을 이해해야 로그인, 토큰 재발급, 권한 체크, OAuth2 연동을 안전하게 구현할 수 있습니다.',
        'CONCEPT', 11, '인증과 인가: 사용자의 신원 확인과 접근 권한 판단을 구분하는 개념,SecurityFilterChain: 요청이 컨트롤러에 도달하기 전 보안 처리를 수행하는 필터 흐름,JWT: 서버 세션 없이 인증 정보를 전달하는 토큰 형식,OAuth2 로그인: 외부 제공자의 인증 결과를 서비스 로그인으로 연결하는 방식', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'Docker & CI/CD',
        'Docker는 애플리케이션 실행 환경을 이미지로 고정해 개발 PC와 서버의 차이를 줄여줍니다. CI/CD 파이프라인까지 연결하면 코드 변경이 테스트, 이미지 빌드, 배포 단계로 자동 이어져 반복 작업과 실수를 줄일 수 있습니다.',
        'PRACTICE', 12, '이미지와 컨테이너: 실행 환경을 패키징하고 독립된 프로세스로 실행하는 단위,Dockerfile: 애플리케이션 이미지를 만드는 빌드 절차 정의서,docker-compose: 여러 컨테이너를 한 번에 실행하고 연결하는 설정,GitHub Actions: 코드 변경을 기준으로 빌드 테스트 배포를 자동화하는 도구', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, 'SOLID & 디자인패턴',
        '객체지향 설계 원칙과 디자인 패턴은 코드가 커질수록 변경 비용을 낮추기 위한 공통 언어입니다. SOLID를 기준으로 책임을 나누고 반복되는 문제에는 검증된 패턴을 적용하면 서비스 로직의 결합도를 줄일 수 있습니다.',
        'CONCEPT', 13, 'SRP: 하나의 클래스가 하나의 변경 이유만 갖도록 책임을 분리하는 원칙,OCP: 기존 코드를 덜 수정하고 확장으로 기능을 추가하는 원칙,DIP: 구체 구현보다 추상에 의존해 결합도를 낮추는 원칙,전략 패턴: 실행 시점에 알고리즘이나 정책을 바꿔 끼우는 패턴,팩토리 패턴: 객체 생성 책임을 별도 구성 요소로 분리하는 패턴', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, '웹 보안 기초',
        '웹 보안은 기능이 완성된 뒤 덧붙이는 작업이 아니라 API 설계부터 함께 고려해야 하는 기본 조건입니다. OWASP Top 10, XSS, CSRF, SQL Injection, CORS, HTTPS를 이해하면 흔한 공격 경로를 줄이고 안전한 기본값을 만들 수 있습니다.',
        'CONCEPT', 14, 'XSS: 악성 스크립트가 사용자 브라우저에서 실행되는 공격,CSRF: 로그인된 사용자의 권한으로 원치 않는 요청을 보내게 만드는 공격,SQL Injection: 입력값으로 SQL을 조작해 데이터를 탈취하거나 변경하는 공격,CORS: 브라우저가 다른 출처 요청을 제한하고 허용하는 보안 정책,HTTPS와 TLS: 네트워크 구간에서 데이터 변조와 도청을 줄이는 암호화 계층', NULL
 FROM roadmaps r WHERE r.title = 'Backend Master Roadmap';
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT r.roadmap_id, '메시지 큐 & MSA',
        '메시지 큐와 MSA는 서비스가 커졌을 때 기능을 분리하고 비동기 처리를 안정적으로 운영하기 위한 선택지입니다. Kafka의 Topic, Producer, Consumer 흐름과 API Gateway의 진입점 역할을 이해하면 서비스 간 결합을 줄이면서 확장할 수 있습니다.',
        'CONCEPT', 15, '메시지 큐: 작업을 즉시 처리하지 않고 큐에 쌓아 비동기로 처리하는 구조,Kafka Topic과 Partition: 메시지를 분류하고 병렬 처리를 가능하게 하는 저장 단위,Producer와 Consumer: 메시지를 발행하고 읽어 처리하는 구성 요소,API Gateway: 여러 서비스 앞에서 라우팅 인증 공통 처리를 담당하는 진입점,서비스 분리 기준: 하나의 기능을 독립 서비스로 나눌지 판단하는 경계', NULL
@@ -15128,7 +15128,7 @@ WITH target_roadmaps AS (
     GROUP BY r.roadmap_id, r.title
     HAVING COALESCE(MAX(item.subtitle), r.title) <> 'Backend'
 ),
-node_seed(sort_order, branch_group, node_type, stage_label) AS (
+node_seed(sort_order, lane_key, node_type, stage_label) AS (
     VALUES
         (1, CAST(NULL AS INTEGER), 'CONCEPT', 'FOUNDATION'),
         (2, CAST(NULL AS INTEGER), 'CONCEPT', 'FOUNDATION'),
@@ -15150,7 +15150,7 @@ node_detail AS (
         target.display_name,
         seed.node_type,
         seed.sort_order,
-        seed.branch_group,
+        seed.lane_key,
         CASE
             WHEN seed.sort_order = 1 THEN profile.core_topic
             WHEN seed.sort_order = 2 THEN profile.tool_topic
@@ -15159,10 +15159,10 @@ node_detail AS (
             WHEN seed.sort_order = 5 THEN profile.quality_topic
             WHEN seed.sort_order = 6 THEN profile.security_topic
             WHEN seed.sort_order = 7 THEN '협업 산출물과 변경 기록'
-            WHEN seed.sort_order = 8 AND seed.branch_group = 1 THEN profile.perf_topic
-            WHEN seed.sort_order = 9 AND seed.branch_group = 1 THEN profile.ops_topic
-            WHEN seed.sort_order = 8 AND seed.branch_group = 2 THEN profile.arch_topic
-            WHEN seed.sort_order = 9 AND seed.branch_group = 2 THEN '보안 심화 ' || profile.security_topic
+            WHEN seed.sort_order = 8 AND seed.lane_key = 1 THEN profile.perf_topic
+            WHEN seed.sort_order = 9 AND seed.lane_key = 1 THEN profile.ops_topic
+            WHEN seed.sort_order = 8 AND seed.lane_key = 2 THEN profile.arch_topic
+            WHEN seed.sort_order = 9 AND seed.lane_key = 2 THEN '보안 심화 ' || profile.security_topic
             WHEN seed.sort_order = 10 THEN profile.project_topic
             ELSE '포트폴리오 ' || profile.project_topic
         END AS title_topic,
@@ -15174,10 +15174,10 @@ node_detail AS (
             WHEN seed.sort_order = 5 THEN profile.tool_topic
             WHEN seed.sort_order = 6 THEN profile.tool_topic
             WHEN seed.sort_order = 7 THEN profile.tool_topic
-            WHEN seed.sort_order = 8 AND seed.branch_group = 1 THEN profile.tool_topic
-            WHEN seed.sort_order = 9 AND seed.branch_group = 1 THEN profile.tool_topic
-            WHEN seed.sort_order = 8 AND seed.branch_group = 2 THEN profile.tool_topic
-            WHEN seed.sort_order = 9 AND seed.branch_group = 2 THEN profile.tool_topic
+            WHEN seed.sort_order = 8 AND seed.lane_key = 1 THEN profile.tool_topic
+            WHEN seed.sort_order = 9 AND seed.lane_key = 1 THEN profile.tool_topic
+            WHEN seed.sort_order = 8 AND seed.lane_key = 2 THEN profile.tool_topic
+            WHEN seed.sort_order = 9 AND seed.lane_key = 2 THEN profile.tool_topic
             WHEN seed.sort_order = 10 THEN profile.tool_topic
             ELSE profile.tool_topic
         END AS related_topic,
@@ -15189,10 +15189,10 @@ node_detail AS (
             WHEN seed.sort_order = 5 THEN profile.quality_topic || '을 기준으로 결과물을 검증합니다. 정상 동작만 확인하지 않고 실패 케이스, 경계값, 리뷰 기준을 포함해 품질 기준을 세웁니다.'
             WHEN seed.sort_order = 6 THEN profile.security_topic || '을 중심으로 안정성을 보강합니다. 권한, 입력값, 예외, 장애 상황을 검토하고 운영 중 문제가 생겼을 때 추적 가능한 기준을 만듭니다.'
             WHEN seed.sort_order = 7 THEN profile.project_topic || '을 팀에 설명할 수 있도록 문서와 변경 기록을 남깁니다. 이슈, PR, 의사결정 이유, 테스트 결과를 정리해 다음 사람이 ' || profile.tool_topic || ' 흐름을 그대로 재현할 수 있게 만듭니다.'
-            WHEN seed.sort_order = 8 AND seed.branch_group = 1 THEN profile.perf_topic || '을 깊게 다룹니다. 측정 지표를 먼저 정하고 병목을 찾은 뒤, ' || target.display_name || ' 결과물에서 가장 효과가 큰 최적화 순서를 선택합니다.'
-            WHEN seed.sort_order = 9 AND seed.branch_group = 1 THEN profile.ops_topic || '을 운영 관점에서 설계합니다. 배포, 모니터링, 알림, 롤백, 반복 작업 자동화를 정리해 학습 결과물이 한 번 만들고 끝나는 수준에 머물지 않게 합니다.'
-            WHEN seed.sort_order = 8 AND seed.branch_group = 2 THEN profile.arch_topic || '을 기준으로 구조를 다시 봅니다. 책임 경계, 모듈 분리, 확장 전략을 점검하고 ' || profile.model_topic || '이 커져도 유지보수 가능한 형태인지 판단합니다.'
-            WHEN seed.sort_order = 9 AND seed.branch_group = 2 THEN profile.security_topic || '을 심화 기준으로 점검합니다. 권한, 입력값, 예외, 장애 상황을 검토하고 운영 중 문제가 생겼을 때 추적 가능한 기준을 만듭니다.'
+            WHEN seed.sort_order = 8 AND seed.lane_key = 1 THEN profile.perf_topic || '을 깊게 다룹니다. 측정 지표를 먼저 정하고 병목을 찾은 뒤, ' || target.display_name || ' 결과물에서 가장 효과가 큰 최적화 순서를 선택합니다.'
+            WHEN seed.sort_order = 9 AND seed.lane_key = 1 THEN profile.ops_topic || '을 운영 관점에서 설계합니다. 배포, 모니터링, 알림, 롤백, 반복 작업 자동화를 정리해 학습 결과물이 한 번 만들고 끝나는 수준에 머물지 않게 합니다.'
+            WHEN seed.sort_order = 8 AND seed.lane_key = 2 THEN profile.arch_topic || '을 기준으로 구조를 다시 봅니다. 책임 경계, 모듈 분리, 확장 전략을 점검하고 ' || profile.model_topic || '이 커져도 유지보수 가능한 형태인지 판단합니다.'
+            WHEN seed.sort_order = 9 AND seed.lane_key = 2 THEN profile.security_topic || '을 심화 기준으로 점검합니다. 권한, 입력값, 예외, 장애 상황을 검토하고 운영 중 문제가 생겼을 때 추적 가능한 기준을 만듭니다.'
             WHEN seed.sort_order = 10 THEN profile.project_topic || '을 하나의 완성물로 묶습니다. 요구사항, 설계, 구현, 검증, 회고가 모두 남도록 만들고 ' || profile.quality_topic || '을 통과한 결과물을 목표로 합니다.'
             ELSE profile.project_topic || ' 포트폴리오는 왜 만들었고 어떤 선택을 했는지 설명할 수 있어야 합니다. ' || profile.core_topic || ', ' || profile.arch_topic || ', ' || profile.security_topic || '에서 내린 판단을 면접 답변처럼 정리합니다.'
         END AS content
@@ -15207,7 +15207,7 @@ SELECT
     node_detail.node_type,
     node_detail.sort_order,
     node_detail.title_topic || ': 핵심 주제,' || node_detail.related_topic || ': 관련 기술' AS sub_topics,
-    node_detail.branch_group
+    node_detail.lane_key
 FROM node_detail;
 
 UPDATE roadmap_nodes rn
@@ -15220,11 +15220,11 @@ FROM roadmap_hub_node_detail_seed detail
 WHERE rn.roadmap_id = detail.roadmap_id
   AND rn.sort_order = detail.sort_order
   AND (
-      rn.branch_group = detail.branch_group
-      OR (rn.branch_group IS NULL AND detail.branch_group IS NULL)
+      rn.lane_key = detail.lane_key
+      OR (rn.lane_key IS NULL AND detail.lane_key IS NULL)
   );
 
-INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, branch_group)
+INSERT INTO roadmap_nodes (roadmap_id, title, content, node_type, sort_order, sub_topics, lane_key)
 SELECT
     detail.roadmap_id,
     detail.title,
@@ -15232,7 +15232,7 @@ SELECT
     detail.node_type,
     detail.sort_order,
     detail.sub_topics,
-    detail.branch_group
+    detail.lane_key
 FROM roadmap_hub_node_detail_seed detail
 WHERE NOT EXISTS (
     SELECT 1
@@ -15240,8 +15240,8 @@ WHERE NOT EXISTS (
     WHERE existing.roadmap_id = detail.roadmap_id
       AND existing.sort_order = detail.sort_order
       AND (
-          existing.branch_group = detail.branch_group
-          OR (existing.branch_group IS NULL AND detail.branch_group IS NULL)
+          existing.lane_key = detail.lane_key
+          OR (existing.lane_key IS NULL AND detail.lane_key IS NULL)
       )
 );
 
@@ -19403,13 +19403,13 @@ WHERE cr.custom_roadmap_id = progress.custom_roadmap_id;
 
 -- =====================================================================
 -- 공식 로드맵 레인 구조 파생
--- - 노드의 (sort_order, branch_group)에서 레인 필드를 계산한다.
---     척추: branch_kind='SPINE',  lane_key=NULL,          anchor_node_id=NULL
---     분기: branch_kind='BRANCH', lane_key=branch_group,  anchor_node_id=레인 시작 직전 척추
+-- - 노드는 (sort_order, lane_key)만 직접 저장하고, 나머지 레인 필드는 여기서 계산한다.
+--     척추(lane_key 없음): branch_kind='SPINE',  anchor_node_id=NULL
+--     분기(lane_key 있음): branch_kind='BRANCH', anchor_node_id=레인 시작 직전 척추
 --     order_in_lane: 레인 안에서 sort_order 오름차순 0-based
 -- - 강의 활동 노드([CATALOG] 퀴즈/과제)는 section_order를 직접 저장하므로 구조 파생 대상이 아니다.
 -- - 모든 roadmap_nodes INSERT 이후 마지막에 실행되어야 한다. UPDATE만 있어 멱등.
--- - 전제: 한 로드맵의 분기 구역은 하나다(lane 식별자가 (roadmap_id, branch_group)).
+-- - 전제: 한 로드맵의 분기 구역은 하나다(lane 식별자가 (roadmap_id, lane_key)).
 --   현재 공식 로드맵은 전부 이 형태이며, 중첩/다구역 분기는 anchor_node_id를 직접 지정해 표현한다.
 -- =====================================================================
 
@@ -19417,9 +19417,9 @@ WHERE cr.custom_roadmap_id = progress.custom_roadmap_id;
 WITH structural AS (
     SELECT
         rn.node_id,
-        rn.branch_group,
+        rn.lane_key,
         ROW_NUMBER() OVER (
-            PARTITION BY rn.roadmap_id, COALESCE(rn.branch_group, -1)
+            PARTITION BY rn.roadmap_id, COALESCE(rn.lane_key, -1)
             ORDER BY rn.sort_order, rn.node_id
         ) - 1 AS lane_position
     FROM roadmap_nodes rn
@@ -19429,8 +19429,7 @@ WITH structural AS (
 )
 UPDATE roadmap_nodes rn
 SET
-    branch_kind = CASE WHEN structural.branch_group IS NULL THEN 'SPINE' ELSE 'BRANCH' END,
-    lane_key = structural.branch_group,
+    branch_kind = CASE WHEN structural.lane_key IS NULL THEN 'SPINE' ELSE 'BRANCH' END,
     order_in_lane = structural.lane_position
 FROM structural
 WHERE rn.node_id = structural.node_id;
