@@ -123,38 +123,48 @@ class RecommendationChangeRoadmapEditor {
                 .filter(node -> node.getId().equals(change.getAnchorCustomNodeId()))
                 .findFirst()
                 .orElse(null);
-    int insertAt =
-        anchor != null && anchor.getCustomSortOrder() != null
-            ? anchor.getCustomSortOrder() + 1
-            : allNodes.stream()
-                    .map(CustomRoadmapNode::getCustomSortOrder)
-                    .filter(java.util.Objects::nonNull)
-                    .max(Integer::compareTo)
-                    .orElse(0)
-                + 1;
-    customRoadmapNodeRepository
-        .findAllByCustomRoadmapAndCustomSortOrderGreaterThanEqual(customRoadmap, insertAt)
-        .forEach(node -> node.shiftSortOrder(1));
-    Long branchFromNodeId =
-        anchor != null && anchor.getOriginalNode() != null
-            ? anchor.getOriginalNode().getNodeId()
-            : null;
-    CustomRoadmapNode newNode =
-        customRoadmapNodeRepository.save(
-            CustomRoadmapNode.builder()
-                .customRoadmap(customRoadmap)
-                .originalNode(change.getRoadmapNode())
-                .customSortOrder(insertAt)
-                .build());
+    if (anchor == null) {
+      // 앵커 없는 곁가지는 레인 그래프에도 화면 트리에도 걸리지 않아 사라진다. 척추 말미 일반 노드로 붙인다.
+      appendAsSpineNode(customRoadmap, change.getRoadmapNode(), allNodes);
+      return;
+    }
 
     // 추천 분기는 기준 노드에 곁가지로 매단다. 복습/심화 구분은 제안이 지정한 분기 종류를 따른다.
     BranchKind kind =
         "ADVANCED".equalsIgnoreCase(change.getBranchType())
             ? BranchKind.ADVANCED
             : BranchKind.REVIEW;
-    Long anchorNodeId = anchor != null ? anchor.getId() : null;
-    newNode.assignLane(kind, anchorNodeId, nextLaneKeyAt(allNodes, anchorNodeId), 0);
+    CustomRoadmapNode newNode =
+        customRoadmapNodeRepository.save(
+            CustomRoadmapNode.builder()
+                .customRoadmap(customRoadmap)
+                .originalNode(change.getRoadmapNode())
+                .build());
+    newNode.assignLane(kind, anchor.getId(), nextLaneKeyAt(allNodes, anchor.getId()), 0);
 
+    // 표시 순서(customSortOrder)는 레인 트리에서 파생시키고 선행관계도 함께 재생성한다.
+    prerequisiteSyncService.recomputeOrderAndRebuild(customRoadmap);
+    roadmapProgressService.updateProgressRate(
+        customRoadmap, customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap));
+  }
+
+  // 곁가지로 매달 앵커가 없을 때의 폴백. 레인 없이 저장하면 relayout이 척추(SPINE)로 편입한다.
+  private void appendAsSpineNode(
+      CustomRoadmap customRoadmap, RoadmapNode roadmapNode, List<CustomRoadmapNode> allNodes) {
+    int insertAt =
+        allNodes.stream()
+                .map(CustomRoadmapNode::getCustomSortOrder)
+                .filter(java.util.Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0)
+            + 1;
+    customRoadmapNodeRepository.save(
+        CustomRoadmapNode.builder()
+            .customRoadmap(customRoadmap)
+            .originalNode(roadmapNode)
+            .customSortOrder(insertAt)
+            .build());
+    prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
     roadmapProgressService.updateProgressRate(
         customRoadmap, customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap));
   }
