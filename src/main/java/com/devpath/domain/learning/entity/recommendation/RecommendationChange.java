@@ -46,8 +46,9 @@ public class RecommendationChange {
   @Column(name = "branch_from_node_id")
   private Long branchFromNodeId;
 
-  // 성장공고(TASK-39) 기원 추천 전용: 삽입 대상 커스텀 로드맵 / anchor 커스텀 노드 / 분기 종류.
-  // 셋 다 null이면 기존(진단퀴즈/보강) 경로, target_custom_roadmap_id가 있으면 명시적 타깃 삽입 경로로 분기한다.
+  // 삽입 대상 커스텀 로드맵 / 기준(anchor) 커스텀 노드 / 곁가지 종류. 성장공고·진단퀴즈 추천이 함께 쓴다.
+  // ADD 적용 시 target_custom_roadmap_id와 branch_type이 모두 있으면 앵커에 매다는 곁가지, 그 밖에는 척추 삽입이다.
+  // target_custom_roadmap_id는 원본 공식 로드맵이 없는 빌더 기원 로드맵을 지목하는 데도 쓰인다.
   @Column(name = "target_custom_roadmap_id")
   private Long targetCustomRoadmapId;
 
