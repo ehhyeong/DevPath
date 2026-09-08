@@ -31,6 +31,12 @@ public class RecommendationChangeResponse {
     @Schema(description = "진단 퀴즈 추천 시 클리어한 원본 노드 ID (분기 위치 결정용)")
     private Long branchFromNodeId;
 
+    @Schema(description = "곁가지 제안이 매달릴 앵커 커스텀 노드 ID (제안 카드 표시 위치 결정용)")
+    private Long anchorCustomNodeId;
+
+    @Schema(description = "곁가지 종류 (REVIEW / ADVANCED). null이면 척추 삽입 제안", example = "ADVANCED")
+    private String branchType;
+
     @Schema(description = "REORDER 전용: 이동 노드를 이 원본 노드 뒤로 옮김 (null=맨 앞)")
     private Long reorderAfterNodeId;
 

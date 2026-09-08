@@ -73,6 +73,8 @@ export interface RecommendationChange {
   nodeTitle: string
   nodeSortOrder: number | null
   branchFromNodeId: number | null
+  anchorCustomNodeId: number | null
+  branchType: string | null
   reorderAfterNodeId: number | null
   reorderAfterNodeTitle: string | null
   reason: string

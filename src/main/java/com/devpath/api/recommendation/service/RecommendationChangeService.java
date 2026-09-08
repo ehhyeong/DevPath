@@ -360,6 +360,8 @@ public class RecommendationChangeService {
         .nodeTitle(recommendationChange.getRoadmapNode().getTitle())
         .nodeSortOrder(recommendationChange.getRoadmapNode().getSortOrder())
         .branchFromNodeId(recommendationChange.getBranchFromNodeId())
+        .anchorCustomNodeId(recommendationChange.getAnchorCustomNodeId())
+        .branchType(recommendationChange.getBranchType())
         .reorderAfterNodeId(recommendationChange.getReorderAfterNodeId())
         .reorderAfterNodeTitle(reorderAfterNodeTitle)
         .reason(recommendationChange.getReason())
