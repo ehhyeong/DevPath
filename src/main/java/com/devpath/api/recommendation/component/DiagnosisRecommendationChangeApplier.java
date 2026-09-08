@@ -81,7 +81,8 @@ public class DiagnosisRecommendationChangeApplier {
       generated =
           roadmapNodeRepository.save(
               RoadmapNode.builder()
-                  .roadmap(clearedNode.getRoadmap())
+                  // 동적 생성 노드는 공식 로드맵에 섞이지 않도록 시스템 로드맵에 보관한다.
+                  .roadmap(systemDynamicRoadmapProvider.resolve())
                   .title(clampNodeTitle((isLowScore ? "[복습] " : "[심화] ") + clearedNode.getTitle()))
                   .content(fallbackTagList + " 관련 학습 내용입니다.")
                   .nodeType("BRANCH")
