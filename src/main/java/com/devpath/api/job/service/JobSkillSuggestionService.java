@@ -6,6 +6,7 @@ import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.learning.entity.recommendation.NodeChangeType;
 import com.devpath.domain.learning.entity.recommendation.RecommendationChange;
 import com.devpath.domain.learning.repository.recommendation.RecommendationChangeRepository;
+import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.CustomRoadmap;
 import com.devpath.domain.roadmap.entity.CustomRoadmapNode;
 import com.devpath.domain.roadmap.entity.Roadmap;
@@ -259,12 +260,14 @@ public class JobSkillSuggestionService {
             .build());
   }
 
+  // 곁가지(복습/심화)에 또 곁가지를 매달지 않도록 척추 중 마지막 노드를 고른다.
   private CustomRoadmapNode lastNodeOf(CustomRoadmap roadmap) {
-    return customRoadmapNodeRepository
-        .findAllByCustomRoadmapOrderByCustomSortOrderAsc(roadmap)
-        .stream()
+    List<CustomRoadmapNode> nodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmapOrderByCustomSortOrderAsc(roadmap);
+    return nodes.stream()
+        .filter(node -> node.getBranchKind() == BranchKind.SPINE)
         .reduce((first, second) -> second)
-        .orElse(null);
+        .orElseGet(() -> nodes.stream().reduce((first, second) -> second).orElse(null));
   }
 
   private String nodeDisplayTitle(CustomRoadmapNode node) {

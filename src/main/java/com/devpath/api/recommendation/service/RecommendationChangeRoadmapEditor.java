@@ -32,54 +32,45 @@ class RecommendationChangeRoadmapEditor {
   private final CustomRoadmapPrerequisiteSyncService prerequisiteSyncService;
 
   void apply(RecommendationChange change, Long userId) {
-    if (change.getTargetCustomRoadmapId() != null) {
-      addBranchNodeByExplicitTarget(change);
-    } else if (change.getNodeChangeType() == NodeChangeType.ADD) {
-      addNodeToCustomRoadmap(change.getRoadmapNode(), userId, change.getBranchFromNodeId());
-    } else if (change.getNodeChangeType() == NodeChangeType.DELETE) {
+    if (change.getNodeChangeType() == NodeChangeType.DELETE) {
       deleteNodeFromCustomRoadmaps(change.getRoadmapNode().getNodeId(), userId);
-    } else if (change.getNodeChangeType() == NodeChangeType.REORDER) {
-      reorderNodeInCustomRoadmap(change, userId);
+      return;
     }
+    if (change.getNodeChangeType() == NodeChangeType.REORDER) {
+      reorderNodeInCustomRoadmap(change, userId);
+      return;
+    }
+    if (change.getNodeChangeType() != NodeChangeType.ADD) {
+      return;
+    }
+    // 분기 종류를 지정한 제안만 곁가지로 매단다. 그 밖의 신규 노드 제안은 척추에 삽입한다.
+    if (change.getTargetCustomRoadmapId() != null && change.getBranchType() != null) {
+      addBranchNodeByExplicitTarget(change);
+      return;
+    }
+    addNodeToCustomRoadmap(change, userId);
   }
 
-  private void addNodeToCustomRoadmap(RoadmapNode roadmapNode, Long userId, Long branchFromNodeId) {
-    Long roadmapId;
-    if (branchFromNodeId != null) {
-      RoadmapNode branchFromNode =
-          roadmapNodeRepository
-              .findById(branchFromNodeId)
-              .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NODE_NOT_FOUND));
-      roadmapId = branchFromNode.getRoadmap().getRoadmapId();
-    } else {
-      roadmapId = roadmapNode.getRoadmap().getRoadmapId();
-    }
-
+  private void addNodeToCustomRoadmap(RecommendationChange change, Long userId) {
+    RoadmapNode roadmapNode = change.getRoadmapNode();
+    Long branchFromNodeId = change.getBranchFromNodeId();
     CustomRoadmap customRoadmap =
-        customRoadmapRepository
-            .findByUserIdAndOriginalRoadmapRoadmapId(userId, roadmapId)
-            .orElseThrow(() -> new CustomException(ErrorCode.CUSTOM_ROADMAP_NOT_FOUND));
+        change.getTargetCustomRoadmapId() != null
+            ? findOwnedRoadmap(change.getTargetCustomRoadmapId(), userId)
+            : findCopiedRoadmap(roadmapNode, branchFromNodeId, userId);
     if (customRoadmapNodeRepository
         .findByCustomRoadmapAndOriginalNode(customRoadmap, roadmapNode)
         .isPresent()) {
       return;
     }
 
+    List<CustomRoadmapNode> allNodes =
+        customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap);
+    Integer anchorOrder =
+        anchorSortOrder(allNodes, change.getAnchorCustomNodeId(), branchFromNodeId);
     int insertAt;
-    if (branchFromNodeId != null) {
-      insertAt =
-          customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap).stream()
-              .filter(n -> n.getOriginalNode().getNodeId().equals(branchFromNodeId))
-              .mapToInt(
-                  n ->
-                      n.getCustomSortOrder() != null
-                          ? n.getCustomSortOrder() + 1
-                          : Integer.MAX_VALUE)
-              .findFirst()
-              .orElse(
-                  roadmapNode.getSortOrder() != null
-                      ? roadmapNode.getSortOrder() + 1
-                      : Integer.MAX_VALUE);
+    if (anchorOrder != null) {
+      insertAt = anchorOrder + 1;
     } else {
       insertAt =
           roadmapNode.getSortOrder() != null ? roadmapNode.getSortOrder() + 1 : Integer.MAX_VALUE;
@@ -100,14 +91,67 @@ class RecommendationChangeRoadmapEditor {
         customRoadmap, customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap));
   }
 
-  private void addBranchNodeByExplicitTarget(RecommendationChange change) {
+  // 삽입 기준 노드의 표시 순서. 제안이 지목한 앵커 커스텀 노드를 우선하고, 없으면 출발 원본 노드로 찾는다.
+  // 빌더 모듈 노드는 originalNode가 없으므로 후자 탐색에서 걸러낸다.
+  private Integer anchorSortOrder(
+      List<CustomRoadmapNode> allNodes, Long anchorCustomNodeId, Long branchFromNodeId) {
+    if (anchorCustomNodeId != null) {
+      Integer order =
+          allNodes.stream()
+              .filter(node -> anchorCustomNodeId.equals(node.getId()))
+              .map(CustomRoadmapNode::getCustomSortOrder)
+              .filter(java.util.Objects::nonNull)
+              .findFirst()
+              .orElse(null);
+      if (order != null) {
+        return order;
+      }
+    }
+    if (branchFromNodeId == null) {
+      return null;
+    }
+    return allNodes.stream()
+        .filter(node -> node.getOriginalNode() != null)
+        .filter(node -> branchFromNodeId.equals(node.getOriginalNode().getNodeId()))
+        .map(CustomRoadmapNode::getCustomSortOrder)
+        .filter(java.util.Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }
+
+  // 제안이 타깃 로드맵을 지정한 경우(빌더 기원 포함). 소유자 검증 후 그대로 사용한다.
+  private CustomRoadmap findOwnedRoadmap(Long customRoadmapId, Long userId) {
     CustomRoadmap customRoadmap =
         customRoadmapRepository
-            .findById(change.getTargetCustomRoadmapId())
+            .findById(customRoadmapId)
             .orElseThrow(() -> new CustomException(ErrorCode.CUSTOM_ROADMAP_NOT_FOUND));
-    if (!customRoadmap.getUser().getId().equals(change.getUser().getId())) {
+    if (!customRoadmap.getUser().getId().equals(userId)) {
       throw new CustomException(ErrorCode.CUSTOM_ROADMAP_NOT_FOUND);
     }
+    return customRoadmap;
+  }
+
+  // 타깃 지정이 없는 경로. 출발 노드가 속한 공식 로드맵의 학습자 복사본을 찾는다.
+  private CustomRoadmap findCopiedRoadmap(
+      RoadmapNode roadmapNode, Long branchFromNodeId, Long userId) {
+    Long roadmapId;
+    if (branchFromNodeId != null) {
+      RoadmapNode branchFromNode =
+          roadmapNodeRepository
+              .findById(branchFromNodeId)
+              .orElseThrow(() -> new CustomException(ErrorCode.ROADMAP_NODE_NOT_FOUND));
+      roadmapId = branchFromNode.getRoadmap().getRoadmapId();
+    } else {
+      roadmapId = roadmapNode.getRoadmap().getRoadmapId();
+    }
+    return customRoadmapRepository
+        .findByUserIdAndOriginalRoadmapRoadmapId(userId, roadmapId)
+        .orElseThrow(() -> new CustomException(ErrorCode.CUSTOM_ROADMAP_NOT_FOUND));
+  }
+
+  private void addBranchNodeByExplicitTarget(RecommendationChange change) {
+    CustomRoadmap customRoadmap =
+        findOwnedRoadmap(change.getTargetCustomRoadmapId(), change.getUser().getId());
     if (customRoadmapNodeRepository
         .findByCustomRoadmapAndOriginalNode(customRoadmap, change.getRoadmapNode())
         .isPresent()) {
@@ -123,38 +167,48 @@ class RecommendationChangeRoadmapEditor {
                 .filter(node -> node.getId().equals(change.getAnchorCustomNodeId()))
                 .findFirst()
                 .orElse(null);
-    int insertAt =
-        anchor != null && anchor.getCustomSortOrder() != null
-            ? anchor.getCustomSortOrder() + 1
-            : allNodes.stream()
-                    .map(CustomRoadmapNode::getCustomSortOrder)
-                    .filter(java.util.Objects::nonNull)
-                    .max(Integer::compareTo)
-                    .orElse(0)
-                + 1;
-    customRoadmapNodeRepository
-        .findAllByCustomRoadmapAndCustomSortOrderGreaterThanEqual(customRoadmap, insertAt)
-        .forEach(node -> node.shiftSortOrder(1));
-    Long branchFromNodeId =
-        anchor != null && anchor.getOriginalNode() != null
-            ? anchor.getOriginalNode().getNodeId()
-            : null;
-    CustomRoadmapNode newNode =
-        customRoadmapNodeRepository.save(
-            CustomRoadmapNode.builder()
-                .customRoadmap(customRoadmap)
-                .originalNode(change.getRoadmapNode())
-                .customSortOrder(insertAt)
-                .build());
+    if (anchor == null) {
+      // 앵커 없는 곁가지는 레인 그래프에도 화면 트리에도 걸리지 않아 사라진다. 척추 말미 일반 노드로 붙인다.
+      appendAsSpineNode(customRoadmap, change.getRoadmapNode(), allNodes);
+      return;
+    }
 
     // 추천 분기는 기준 노드에 곁가지로 매단다. 복습/심화 구분은 제안이 지정한 분기 종류를 따른다.
     BranchKind kind =
         "ADVANCED".equalsIgnoreCase(change.getBranchType())
             ? BranchKind.ADVANCED
             : BranchKind.REVIEW;
-    Long anchorNodeId = anchor != null ? anchor.getId() : null;
-    newNode.assignLane(kind, anchorNodeId, nextLaneKeyAt(allNodes, anchorNodeId), 0);
+    CustomRoadmapNode newNode =
+        customRoadmapNodeRepository.save(
+            CustomRoadmapNode.builder()
+                .customRoadmap(customRoadmap)
+                .originalNode(change.getRoadmapNode())
+                .build());
+    newNode.assignLane(kind, anchor.getId(), nextLaneKeyAt(allNodes, anchor.getId()), 0);
 
+    // 표시 순서(customSortOrder)는 레인 트리에서 파생시키고 선행관계도 함께 재생성한다.
+    prerequisiteSyncService.recomputeOrderAndRebuild(customRoadmap);
+    roadmapProgressService.updateProgressRate(
+        customRoadmap, customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap));
+  }
+
+  // 곁가지로 매달 앵커가 없을 때의 폴백. 레인 없이 저장하면 relayout이 척추(SPINE)로 편입한다.
+  private void appendAsSpineNode(
+      CustomRoadmap customRoadmap, RoadmapNode roadmapNode, List<CustomRoadmapNode> allNodes) {
+    int insertAt =
+        allNodes.stream()
+                .map(CustomRoadmapNode::getCustomSortOrder)
+                .filter(java.util.Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0)
+            + 1;
+    customRoadmapNodeRepository.save(
+        CustomRoadmapNode.builder()
+            .customRoadmap(customRoadmap)
+            .originalNode(roadmapNode)
+            .customSortOrder(insertAt)
+            .build());
+    prerequisiteSyncService.relayoutAndRebuild(customRoadmap);
     roadmapProgressService.updateProgressRate(
         customRoadmap, customRoadmapNodeRepository.findAllByCustomRoadmap(customRoadmap));
   }
