@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef } from 'react'
+import { useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { lessonSessionApi, nodeClearanceApi, qnaApi } from '../../lib/api/learner'
 import { warmupOcrWorker } from '../../lib/videoOcr'
 import type { LearningLesson, LearningLessonProgress } from '../../types/learning'
@@ -103,6 +103,15 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     () => lessons.find((item) => item.lessonId === selectedLessonId) ?? lessons[0] ?? null,
     [lessons, selectedLessonId],
   )
+  // 강의가 바뀌면 이전 강의의 질문 상세·작성 중인 질문이 남지 않도록 Q&A 탭을 초기화
+  const [qnaLessonId, setQnaLessonId] = useState(lesson?.lessonId)
+  if (lesson?.lessonId !== qnaLessonId) {
+    setQnaLessonId(lesson?.lessonId)
+    setOpenQuestionId(null)
+    setQuestionComposerOpen(false)
+    setQuestionForm((current) => ({ ...current, title: '', content: '' }))
+    setQuestionMessage(null)
+  }
   const selectedLessonIndex = useMemo(
     () => (lesson ? lessons.findIndex((item) => item.lessonId === lesson.lessonId) : -1),
     [lesson, lessons],
@@ -257,6 +266,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   )
   const visibleQuestions = useMemo(() => (
     qnaQuestions.filter((item) => {
+      if (item.lessonId !== lesson?.lessonId) return false
       const answered = isQuestionAnswered(item)
       const statusMatched = qnaStatusFilter === 'ALL'
         || (qnaStatusFilter === 'MINE' && isOwnQnaQuestion(item, sessionUserId))
@@ -266,7 +276,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         .toLowerCase()
       return statusMatched && (!deferredQnaSearch || searchTarget.includes(deferredQnaSearch))
     })
-  ), [deferredQnaSearch, qnaDetails, qnaQuestions, qnaStatusFilter, sessionUserId])
+  ), [deferredQnaSearch, lesson?.lessonId, qnaDetails, qnaQuestions, qnaStatusFilter, sessionUserId])
   const refreshQnaQuestion = useCallback(async (questionId: number, options?: { showLoading?: boolean }) => {
     if (options?.showLoading) {
       setLoadingQuestionId(questionId)
