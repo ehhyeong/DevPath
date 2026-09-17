@@ -3,7 +3,7 @@ import { lessonSessionApi, nodeClearanceApi, qnaApi } from '../../lib/api/learne
 import { warmupOcrWorker } from '../../lib/videoOcr'
 import type { LearningLesson, LearningLessonProgress } from '../../types/learning'
 import type { QnaQuestionDetail } from '../../types/qna'
-import { ASSIGNMENT_LOADING_MESSAGES, buildAssignmentResultReportRows, buildCelebrationParticles, buildCompletionProofCard, buildQuizModalQuestions, clampPercent, createAssignmentFormState, getAvailableVideoQuality, getProofCardTheme, getVideoErrorMessage, isAbortError, isAssignmentLesson, isAssignmentSubmissionFormReady, isCourse127DemoCourse, isLessonProgressCompleted, isNativeKeyboardControlTarget, isOwnQnaQuestion, isPlaybackBlockedError, isQuestionAnswered, isQuizLesson, isSampleVideoUrl, readEnabledSearchParam, readNonNegativeNumberSearchParam, readOptionalSafeReturnHref, readSafeReturnHref, readStudentPreviewFromLocation, readVideoDuration, resolveAssignmentHistoryScorePercent, resolveAssignmentResultBadge, resolveAssignmentResultPassed, resolveAssignmentResultScore, resolveAssignmentResultScorePercent, resolveAssignmentReviewFeedback, resolveAssignmentSubmissionMethods, resolveLessonAssignment, resolveVideoQualitySources, resolveVideoUrl, toQuestionSummary, type AssignmentGradingResultState, type PersistCompletionOptions } from './learning-player-model'
+import { ASSIGNMENT_LOADING_MESSAGES, buildAssignmentResultReportRows, buildCelebrationParticles, buildCompletionProofCard, buildQuizModalQuestions, clampPercent, createAssignmentFormState, getAvailableVideoQuality, getProofCardTheme, getVideoErrorMessage, isAbortError, isAssignmentLesson, isAssignmentSubmissionFormReady, isCourse127DemoCourse, isLessonProgressCompleted, isNativeKeyboardControlTarget, isOwnQnaQuestion, isPlaybackBlockedError, isQuestionAnswered, isQuizLesson, isSampleVideoUrl, parseLectureTimestamp, readEnabledSearchParam, readNonNegativeNumberSearchParam, readOptionalSafeReturnHref, readSafeReturnHref, readStudentPreviewFromLocation, readVideoDuration, resolveAssignmentHistoryScorePercent, resolveAssignmentResultBadge, resolveAssignmentResultPassed, resolveAssignmentResultScore, resolveAssignmentResultScorePercent, resolveAssignmentReviewFeedback, resolveAssignmentSubmissionMethods, resolveLessonAssignment, resolveVideoQualitySources, resolveVideoUrl, toQuestionSummary, type AssignmentGradingResultState, type PersistCompletionOptions, type QnaStatusFilter } from './learning-player-model'
 import { createDefaultProgress, getFlattenedLessons, getProgressStorageKey, readNumberSearchParam, writeJsonStorage } from './learning-player-support'
 import { useLearningPlayerEnvironment } from './useLearningPlayerEnvironment'
 import { useLearningCourseLoader } from './useLearningCourseLoader'
@@ -25,7 +25,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const playbackState = useLearningPlaybackState()
   const { settingsOpen,setSettingsOpen,selectedVideoQuality,setSelectedVideoQuality,currentTime,setCurrentTime,duration,setDuration,actualDurationByLessonId,setActualDurationByLessonId,isPlaying,setIsPlaying,isMuted,setIsMuted,volume,isPipActive,setIsPipActive,isFrameFullscreen,setIsFrameFullscreen,ocrBusy,isSelectMode,setIsSelectMode,selectDrag,setSelectDrag,videoFailed,setVideoFailed } = playbackState
   const notesAndQnaState = useLearningNotesAndQnaState()
-  const { notes,noteContent,setNoteContent,noteComposerOpen,setNoteComposerOpen,noteMessage,setNoteMessage,qnaTemplates,qnaQuestions,setQnaQuestions,qnaDetails,setQnaDetails,loadingQna,qnaError,setQnaError,qnaStatusFilter,setQnaStatusFilter,qnaSearch,setQnaSearch,openQuestionId,setOpenQuestionId,loadingQuestionId,setLoadingQuestionId,questionForm,setQuestionForm,questionMessage,setQuestionMessage,questionBusy,questionComposerOpen,setQuestionComposerOpen,openNoteId,setOpenNoteId,editingNoteContent,setEditingNoteContent } = notesAndQnaState
+  const { notes,noteContent,setNoteContent,noteComposerOpen,setNoteComposerOpen,noteMessage,setNoteMessage,qnaTemplates,qnaQuestions,setQnaQuestions,qnaDetails,setQnaDetails,loadingQna,qnaError,setQnaError,qnaStatusFilter,setQnaStatusFilter,qnaNearestAnchorSecond,setQnaNearestAnchorSecond,qnaSearch,setQnaSearch,openQuestionId,setOpenQuestionId,loadingQuestionId,setLoadingQuestionId,questionForm,setQuestionForm,questionMessage,setQuestionMessage,questionBusy,questionComposerOpen,setQuestionComposerOpen,openNoteId,setOpenNoteId,editingNoteContent,setEditingNoteContent } = notesAndQnaState
   const assessmentState = useLearningAssessmentState()
   const { quizModalLessonId,quizQuestionIndex,setQuizQuestionIndex,quizAnswers,quizSubmitBusy,quizAttemptResult,quizMessage,assignmentModalLessonId,setAssignmentModalLessonId,assignmentForm,setAssignmentForm,assignmentFileDragActive,assignmentSubmitBusy,assignmentMessage,setAssignmentMessage,assignmentLoadingVisible,setAssignmentLoadingVisible,assignmentLoadingText,setAssignmentLoadingText,assignmentGradingResult,setAssignmentGradingResult,assignmentHistoryByAssignmentId,completionProofCard,setCompletionProofCard,completionVisible,setCompletionVisible,completionCardFlipped,setCompletionCardFlipped,completionBurstKey,setCompletionBurstKey } = assessmentState
 
@@ -111,6 +111,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     setQuestionComposerOpen(false)
     setQuestionForm((current) => ({ ...current, title: '', content: '' }))
     setQuestionMessage(null)
+    setQnaNearestAnchorSecond(0)
   }
   const selectedLessonIndex = useMemo(
     () => (lesson ? lessons.findIndex((item) => item.lessonId === lesson.lessonId) : -1),
@@ -264,11 +265,12 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     () => templateOptions.find((item) => item.templateType === questionForm.templateType) ?? null,
     [questionForm.templateType, templateOptions],
   )
-  const visibleQuestions = useMemo(() => (
-    qnaQuestions.filter((item) => {
+  const visibleQuestions = useMemo(() => {
+    const filtered = qnaQuestions.filter((item) => {
       if (item.lessonId !== lesson?.lessonId) return false
       const answered = isQuestionAnswered(item)
       const statusMatched = qnaStatusFilter === 'ALL'
+        || qnaStatusFilter === 'NEAREST'
         || (qnaStatusFilter === 'MINE' && isOwnQnaQuestion(item, sessionUserId))
         || (qnaStatusFilter === 'UNANSWERED' && !answered)
       const searchTarget = [item.authorName, item.title, item.lectureTimestamp ?? '', qnaDetails[item.id]?.content ?? '']
@@ -276,7 +278,21 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         .toLowerCase()
       return statusMatched && (!deferredQnaSearch || searchTarget.includes(deferredQnaSearch))
     })
-  ), [deferredQnaSearch, lesson?.lessonId, qnaDetails, qnaQuestions, qnaStatusFilter, sessionUserId])
+    if (qnaStatusFilter !== 'NEAREST') return filtered
+
+    // 칩을 누른 시점의 재생 위치와 가까운 순, 시간이 없는 질문은 뒤로
+    return filtered
+      .map((item) => ({ item, second: parseLectureTimestamp(item.lectureTimestamp) }))
+      .sort((left, right) => {
+        if (left.second === null || right.second === null) return (left.second === null ? 1 : 0) - (right.second === null ? 1 : 0)
+        return Math.abs(left.second - qnaNearestAnchorSecond) - Math.abs(right.second - qnaNearestAnchorSecond)
+      })
+      .map(({ item }) => item)
+  }, [deferredQnaSearch, lesson?.lessonId, qnaDetails, qnaNearestAnchorSecond, qnaQuestions, qnaStatusFilter, sessionUserId])
+  function handleSelectQnaStatusFilter(value: QnaStatusFilter) {
+    if (value === 'NEAREST') setQnaNearestAnchorSecond(Math.floor(videoRef.current?.currentTime ?? currentTime))
+    setQnaStatusFilter(value)
+  }
   const refreshQnaQuestion = useCallback(async (questionId: number, options?: { showLoading?: boolean }) => {
     if (options?.showLoading) {
       setLoadingQuestionId(questionId)
@@ -857,7 +873,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     visibleQuestions,
     qnaSearch,
     setQnaSearch,
-    setQnaStatusFilter,
+    handleSelectQnaStatusFilter,
     qnaStatusFilter,
     qnaError,
     loadingQna,

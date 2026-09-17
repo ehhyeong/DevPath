@@ -27,7 +27,7 @@ export default function LearningPlayerSidebar({ model }: Props) {
     visibleQuestions,
     qnaSearch,
     setQnaSearch,
-    setQnaStatusFilter,
+    handleSelectQnaStatusFilter,
     qnaStatusFilter,
     qnaError,
     loadingQna,
@@ -249,11 +249,12 @@ export default function LearningPlayerSidebar({ model }: Props) {
                         ['ALL', '전체 질문'],
                         ['MINE', '내 질문'],
                         ['UNANSWERED', '답변 대기중'],
+                        ['NEAREST', '현재 구간순'],
                       ] as const).map(([value, label]) => (
                         <button
                           key={value}
                           type="button"
-                          onClick={() => setQnaStatusFilter(value)}
+                          onClick={() => handleSelectQnaStatusFilter(value)}
                           className={qnaStatusFilter === value
                             ? 'learning-qna-filter-button is-active h-[28px] shrink-0 whitespace-nowrap rounded-[9999px] border-0 bg-[#111827] px-[14px] py-[6px] text-[12px]! leading-[16px]! font-bold text-white [box-sizing:border-box]'
                             : 'learning-qna-filter-button h-[28px] shrink-0 whitespace-nowrap rounded-[9999px] border-0 bg-[#F3F4F6] px-[14px] py-[6px] text-[12px]! leading-[16px]! font-medium text-[#4B5563] hover:bg-gray-200 [box-sizing:border-box]'}
