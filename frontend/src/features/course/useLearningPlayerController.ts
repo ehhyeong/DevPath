@@ -738,6 +738,9 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const handleKeyboardTogglePlay = useEffectEvent(() => {
     void handleTogglePlaySafe()
   })
+  const handleKeyboardTogglePip = useEffectEvent(() => {
+    void handleTogglePip()
+  })
 
   useEffect(() => {
     const syncFullscreenState = () => {
@@ -749,7 +752,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
   }, [setIsFrameFullscreen])
 
-  // ESC 키로 구간 선택 모드 취소
+  // 키보드 단축키: ESC 구간 선택 취소 · Space 재생/정지 · P PIP
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -758,11 +761,17 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         return
       }
 
-      if (e.code !== 'Space' && e.key !== ' ') return
+      const isPlayToggleKey = e.code === 'Space' || e.key === ' '
+      const isPipToggleKey = e.code === 'KeyP' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
+      if (!isPlayToggleKey && !isPipToggleKey) return
       if (!resolvedVideoUrl || selectedLessonIsQuiz || quizModalLessonId || assignmentModalLessonId || completionVisible) return
       if (isNativeKeyboardControlTarget(e.target)) return
 
       e.preventDefault()
+      if (isPipToggleKey) {
+        if (!e.repeat) handleKeyboardTogglePip()
+        return
+      }
       handleKeyboardTogglePlay()
     }
     window.addEventListener('keydown', onKey)
