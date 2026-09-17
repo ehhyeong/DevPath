@@ -43,6 +43,7 @@ export default function LearningVideoPanel({ model }: Props) {
     isMuted,
     volume,
     handleVolumeChange,
+    rememberVolumeBeforeAdjust,
     setSettingsOpen,
     handleCyclePlaybackRate,
     settingsOpen,
@@ -345,6 +346,8 @@ export default function LearningVideoPanel({ model }: Props) {
                       step={0.01}
                       value={isMuted ? 0 : volume}
                       onChange={(event) => handleVolumeChange(Number(event.target.value))}
+                      onPointerDown={rememberVolumeBeforeAdjust}
+                      onKeyDown={rememberVolumeBeforeAdjust}
                       className="h-1 w-0 cursor-pointer accent-[#00C471] opacity-0 transition-all duration-200 group-hover/volume:w-20 group-hover/volume:opacity-100 group-focus-within/volume:w-20 group-focus-within/volume:opacity-100"
                       aria-label="볼륨"
                     />

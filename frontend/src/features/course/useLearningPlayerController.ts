@@ -733,7 +733,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   // OCR 워커 미리 초기화 (첫 클릭 지연 최소화)
   useEffect(() => { warmupOcrWorker() }, [])
 
-  const { handleTogglePlaySafe,handleRetryVideoLoad,handleOcr,handleToggleMute,handleVolumeChange,handleSeek,handleTogglePip,handleToggleFullscreen,handleCyclePlaybackRate,handleSetPlaybackRate,handleSetVideoQuality } = useLearningPlaybackActions({ state: playbackState, lesson, resolvedVideoUrl, playerConfig, setPlayerConfig, videoQualitySources, activeVideoQuality, setNotice, getPlaybackLimit, videoRef, frameRef, resumeTimeRef, lastRenderedSecondRef, pendingVideoLoadRef, resumePlaybackAfterQualitySwitchRef })
+  const { handleTogglePlaySafe,handleRetryVideoLoad,handleOcr,handleToggleMute,handleVolumeChange,rememberVolumeBeforeAdjust,handleSeek,handleTogglePip,handleToggleFullscreen,handleCyclePlaybackRate,handleSetPlaybackRate,handleSetVideoQuality } = useLearningPlaybackActions({ state: playbackState, lesson, resolvedVideoUrl, playerConfig, setPlayerConfig, videoQualitySources, activeVideoQuality, setNotice, getPlaybackLimit, videoRef, frameRef, resumeTimeRef, lastRenderedSecondRef, pendingVideoLoadRef, resumePlaybackAfterQualitySwitchRef })
 
   const handleKeyboardTogglePlay = useEffectEvent(() => {
     void handleTogglePlaySafe()
@@ -741,7 +741,8 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const handleKeyboardTogglePip = useEffectEvent(() => {
     void handleTogglePip()
   })
-  const handleKeyboardChangeVolume = useEffectEvent((delta: number) => {
+  const handleKeyboardChangeVolume = useEffectEvent((delta: number, isRepeat: boolean) => {
+    if (!isRepeat) rememberVolumeBeforeAdjust()
     const current = isMuted ? 0 : volume
     const next = Math.round(Math.min(1, Math.max(0, current + delta)) * 100) / 100
     if (next !== current) handleVolumeChange(next)
@@ -788,7 +789,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         return
       }
       if (volumeDelta) {
-        handleKeyboardChangeVolume(volumeDelta)
+        handleKeyboardChangeVolume(volumeDelta, e.repeat)
         return
       }
       handleKeyboardTogglePlay()
@@ -871,6 +872,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     isMuted,
     volume,
     handleVolumeChange,
+    rememberVolumeBeforeAdjust,
     setSettingsOpen,
     handleCyclePlaybackRate,
     settingsOpen,

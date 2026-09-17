@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react'
+import { useRef, type MutableRefObject } from 'react'
 import { learningPlayerApi } from '../../lib/api/learner'
 import { captureAndOcr, type ScreenRegion } from '../../lib/videoOcr'
 import type { LearningPlayerConfig, LearningVideoQuality } from '../../types/learning'
@@ -28,6 +28,7 @@ export function useLearningPlaybackActions(props: Props) {
   const { state, lesson, resolvedVideoUrl, playerConfig, setPlayerConfig, videoQualitySources, activeVideoQuality, setNotice, getPlaybackLimit, videoRef, frameRef, resumeTimeRef, lastRenderedSecondRef, pendingVideoLoadRef, resumePlaybackAfterQualitySwitchRef } = props
   const { videoFailed, setVideoFailed, currentTime, setCurrentTime, volume: _volume, setVolume, isPipActive, setIsMuted, setIsPlaying, ocrBusy, setOcrBusy, setIsSelectMode, setSelectDrag, setSettingsOpen, setSelectedVideoQuality } = state
   void _volume
+  const volumeBeforeAdjustRef = useRef(1)
 
   async function handleTogglePlaySafe() {
     const video = videoRef.current
@@ -129,10 +130,20 @@ export function useLearningPlaybackActions(props: Props) {
     }
   }
 
+  // 볼륨 조절을 시작하기 직전 값을 기억해, 0까지 내린 뒤 음소거를 풀 때 복원한다
+  function rememberVolumeBeforeAdjust() {
+    const video = videoRef.current
+    if (video && video.volume > 0) volumeBeforeAdjustRef.current = video.volume
+  }
+
   function handleToggleMute() {
     const video = videoRef.current
     if (!video) return
     const next = !video.muted
+    if (!next && video.volume === 0) {
+      video.volume = volumeBeforeAdjustRef.current
+      setVolume(volumeBeforeAdjustRef.current)
+    }
     video.muted = next
     setIsMuted(next)
   }
@@ -261,5 +272,5 @@ export function useLearningPlaybackActions(props: Props) {
     setSettingsOpen(false)
   }
 
-  return { handleTogglePlaySafe, handleRetryVideoLoad, handleOcr, handleToggleMute, handleVolumeChange, handleSeek, handleTogglePip, handleToggleFullscreen, handleCyclePlaybackRate, handleSetPlaybackRate, handleSetVideoQuality }
+  return { handleTogglePlaySafe, handleRetryVideoLoad, handleOcr, handleToggleMute, handleVolumeChange, rememberVolumeBeforeAdjust, handleSeek, handleTogglePip, handleToggleFullscreen, handleCyclePlaybackRate, handleSetPlaybackRate, handleSetVideoQuality }
 }
