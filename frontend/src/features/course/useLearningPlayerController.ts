@@ -741,6 +741,19 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const handleKeyboardTogglePip = useEffectEvent(() => {
     void handleTogglePip()
   })
+  const handleKeyboardChangeVolume = useEffectEvent((delta: number) => {
+    const current = isMuted ? 0 : volume
+    const next = Math.round(Math.min(1, Math.max(0, current + delta)) * 100) / 100
+    if (next !== current) handleVolumeChange(next)
+  })
+
+  // 강의·화질 변경으로 video 요소가 새로 만들어져도 볼륨·음소거 상태를 유지
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.volume = volume
+    video.muted = isMuted
+  }, [activeVideoQuality, isMuted, lesson?.lessonId, volume])
 
   useEffect(() => {
     const syncFullscreenState = () => {
@@ -752,7 +765,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
   }, [setIsFrameFullscreen])
 
-  // 키보드 단축키: ESC 구간 선택 취소 · Space 재생/정지 · P PIP
+  // 키보드 단축키: ESC 구간 선택 취소 · Space 재생/정지 · P PIP · ↑↓ 볼륨
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -762,14 +775,20 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
       }
 
       const isPlayToggleKey = e.code === 'Space' || e.key === ' '
-      const isPipToggleKey = e.code === 'KeyP' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
-      if (!isPlayToggleKey && !isPipToggleKey) return
+      const hasModifier = e.ctrlKey || e.metaKey || e.altKey || e.shiftKey
+      const isPipToggleKey = e.code === 'KeyP' && !hasModifier
+      const volumeDelta = hasModifier ? 0 : e.code === 'ArrowUp' ? 0.05 : e.code === 'ArrowDown' ? -0.05 : 0
+      if (!isPlayToggleKey && !isPipToggleKey && !volumeDelta) return
       if (!resolvedVideoUrl || selectedLessonIsQuiz || quizModalLessonId || assignmentModalLessonId || completionVisible) return
       if (isNativeKeyboardControlTarget(e.target)) return
 
       e.preventDefault()
       if (isPipToggleKey) {
         if (!e.repeat) handleKeyboardTogglePip()
+        return
+      }
+      if (volumeDelta) {
+        handleKeyboardChangeVolume(volumeDelta)
         return
       }
       handleKeyboardTogglePlay()
