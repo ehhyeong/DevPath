@@ -1,6 +1,6 @@
 import { describe,expect,it } from 'vitest'
 import type { LearningLessonAssignment,LearningLessonProgress } from '../../types/learning'
-import { buildQuizModalQuestions,createAssignmentFormState,isAssignmentSubmissionFormReady,isLessonProgressCompleted,normalizeScorePercent,resolveAssignmentSubmissionMethods,resolveVideoQualitySources } from './learning-player-model'
+import { buildQuizModalQuestions,createAssignmentFormState,isAssignmentSubmissionFormReady,isLessonProgressCompleted,normalizeScorePercent,parseLectureTimestamp,resolveAssignmentSubmissionMethods,resolveVideoQualitySources } from './learning-player-model'
 
 const assignment: LearningLessonAssignment = {
   assignmentId: 1,
@@ -134,5 +134,16 @@ describe('learning player model', () => {
 
     expect(sources['1080']).toBeUndefined()
     expect(sources['720']).toBe('https://cdn.example/video-720p.mp4')
+  })
+
+  it('parses lecture timestamps in mm:ss and hh:mm:ss formats', () => {
+    expect(parseLectureTimestamp('02:15')).toBe(135)
+    expect(parseLectureTimestamp('00:31:10')).toBe(1870)
+    expect(parseLectureTimestamp('01:02:03')).toBe(3723)
+    expect(parseLectureTimestamp('')).toBeNull()
+    expect(parseLectureTimestamp(null)).toBeNull()
+    expect(parseLectureTimestamp('abc')).toBeNull()
+    expect(parseLectureTimestamp('1:xx')).toBeNull()
+    expect(parseLectureTimestamp('15')).toBeNull()
   })
 })

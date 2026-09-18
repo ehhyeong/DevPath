@@ -1,9 +1,9 @@
-import { useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef } from 'react'
+import { useCallback, useDeferredValue, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { lessonSessionApi, nodeClearanceApi, qnaApi } from '../../lib/api/learner'
 import { warmupOcrWorker } from '../../lib/videoOcr'
 import type { LearningLesson, LearningLessonProgress } from '../../types/learning'
 import type { QnaQuestionDetail } from '../../types/qna'
-import { ASSIGNMENT_LOADING_MESSAGES, buildAssignmentResultReportRows, buildCelebrationParticles, buildCompletionProofCard, buildQuizModalQuestions, clampPercent, createAssignmentFormState, getAvailableVideoQuality, getProofCardTheme, getVideoErrorMessage, isAbortError, isAssignmentLesson, isAssignmentSubmissionFormReady, isCourse127DemoCourse, isLessonProgressCompleted, isNativeKeyboardControlTarget, isOwnQnaQuestion, isPlaybackBlockedError, isQuestionAnswered, isQuizLesson, isSampleVideoUrl, readEnabledSearchParam, readNonNegativeNumberSearchParam, readOptionalSafeReturnHref, readSafeReturnHref, readStudentPreviewFromLocation, readVideoDuration, resolveAssignmentHistoryScorePercent, resolveAssignmentResultBadge, resolveAssignmentResultPassed, resolveAssignmentResultScore, resolveAssignmentResultScorePercent, resolveAssignmentReviewFeedback, resolveAssignmentSubmissionMethods, resolveLessonAssignment, resolveVideoQualitySources, resolveVideoUrl, toQuestionSummary, type AssignmentGradingResultState, type PersistCompletionOptions } from './learning-player-model'
+import { ASSIGNMENT_LOADING_MESSAGES, buildAssignmentResultReportRows, buildCelebrationParticles, buildCompletionProofCard, buildQuizModalQuestions, clampPercent, createAssignmentFormState, getAvailableVideoQuality, getProofCardTheme, getVideoErrorMessage, isAbortError, isAssignmentLesson, isAssignmentSubmissionFormReady, isCourse127DemoCourse, isLessonProgressCompleted, isNativeKeyboardControlTarget, isOwnQnaQuestion, isPlaybackBlockedError, isQuestionAnswered, isQuizLesson, isSampleVideoUrl, parseLectureTimestamp, readEnabledSearchParam, readNonNegativeNumberSearchParam, readOptionalSafeReturnHref, readSafeReturnHref, readStudentPreviewFromLocation, readVideoDuration, resolveAssignmentHistoryScorePercent, resolveAssignmentResultBadge, resolveAssignmentResultPassed, resolveAssignmentResultScore, resolveAssignmentResultScorePercent, resolveAssignmentReviewFeedback, resolveAssignmentSubmissionMethods, resolveLessonAssignment, resolveVideoQualitySources, resolveVideoUrl, toQuestionSummary, type AssignmentGradingResultState, type PersistCompletionOptions, type QnaStatusFilter } from './learning-player-model'
 import { createDefaultProgress, getFlattenedLessons, getProgressStorageKey, readNumberSearchParam, writeJsonStorage } from './learning-player-support'
 import { useLearningPlayerEnvironment } from './useLearningPlayerEnvironment'
 import { useLearningCourseLoader } from './useLearningCourseLoader'
@@ -25,7 +25,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   const playbackState = useLearningPlaybackState()
   const { settingsOpen,setSettingsOpen,selectedVideoQuality,setSelectedVideoQuality,currentTime,setCurrentTime,duration,setDuration,actualDurationByLessonId,setActualDurationByLessonId,isPlaying,setIsPlaying,isMuted,setIsMuted,volume,isPipActive,setIsPipActive,isFrameFullscreen,setIsFrameFullscreen,ocrBusy,isSelectMode,setIsSelectMode,selectDrag,setSelectDrag,videoFailed,setVideoFailed } = playbackState
   const notesAndQnaState = useLearningNotesAndQnaState()
-  const { notes,noteContent,setNoteContent,noteComposerOpen,setNoteComposerOpen,noteMessage,setNoteMessage,qnaTemplates,qnaQuestions,setQnaQuestions,qnaDetails,setQnaDetails,loadingQna,qnaError,setQnaError,qnaStatusFilter,setQnaStatusFilter,qnaSearch,setQnaSearch,openQuestionId,setOpenQuestionId,loadingQuestionId,setLoadingQuestionId,questionForm,setQuestionForm,questionMessage,setQuestionMessage,questionBusy,questionComposerOpen,setQuestionComposerOpen,openNoteId,setOpenNoteId,editingNoteContent,setEditingNoteContent } = notesAndQnaState
+  const { notes,noteContent,setNoteContent,noteComposerOpen,setNoteComposerOpen,noteMessage,setNoteMessage,qnaTemplates,qnaQuestions,setQnaQuestions,qnaDetails,setQnaDetails,loadingQna,qnaError,setQnaError,qnaStatusFilter,setQnaStatusFilter,qnaNearestAnchorSecond,setQnaNearestAnchorSecond,qnaSearch,setQnaSearch,openQuestionId,setOpenQuestionId,loadingQuestionId,setLoadingQuestionId,questionForm,setQuestionForm,questionMessage,setQuestionMessage,questionBusy,questionComposerOpen,setQuestionComposerOpen,openNoteId,setOpenNoteId,editingNoteContent,setEditingNoteContent } = notesAndQnaState
   const assessmentState = useLearningAssessmentState()
   const { quizModalLessonId,quizQuestionIndex,setQuizQuestionIndex,quizAnswers,quizSubmitBusy,quizAttemptResult,quizMessage,assignmentModalLessonId,setAssignmentModalLessonId,assignmentForm,setAssignmentForm,assignmentFileDragActive,assignmentSubmitBusy,assignmentMessage,setAssignmentMessage,assignmentLoadingVisible,setAssignmentLoadingVisible,assignmentLoadingText,setAssignmentLoadingText,assignmentGradingResult,setAssignmentGradingResult,assignmentHistoryByAssignmentId,completionProofCard,setCompletionProofCard,completionVisible,setCompletionVisible,completionCardFlipped,setCompletionCardFlipped,completionBurstKey,setCompletionBurstKey } = assessmentState
 
@@ -103,6 +103,16 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     () => lessons.find((item) => item.lessonId === selectedLessonId) ?? lessons[0] ?? null,
     [lessons, selectedLessonId],
   )
+  // 강의가 바뀌면 이전 강의의 질문 상세·작성 중인 질문이 남지 않도록 Q&A 탭을 초기화
+  const [qnaLessonId, setQnaLessonId] = useState(lesson?.lessonId)
+  if (lesson?.lessonId !== qnaLessonId) {
+    setQnaLessonId(lesson?.lessonId)
+    setOpenQuestionId(null)
+    setQuestionComposerOpen(false)
+    setQuestionForm((current) => ({ ...current, title: '', content: '' }))
+    setQuestionMessage(null)
+    setQnaNearestAnchorSecond(0)
+  }
   const selectedLessonIndex = useMemo(
     () => (lesson ? lessons.findIndex((item) => item.lessonId === lesson.lessonId) : -1),
     [lesson, lessons],
@@ -255,10 +265,12 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     () => templateOptions.find((item) => item.templateType === questionForm.templateType) ?? null,
     [questionForm.templateType, templateOptions],
   )
-  const visibleQuestions = useMemo(() => (
-    qnaQuestions.filter((item) => {
+  const visibleQuestions = useMemo(() => {
+    const filtered = qnaQuestions.filter((item) => {
+      if (item.lessonId !== lesson?.lessonId) return false
       const answered = isQuestionAnswered(item)
       const statusMatched = qnaStatusFilter === 'ALL'
+        || qnaStatusFilter === 'NEAREST'
         || (qnaStatusFilter === 'MINE' && isOwnQnaQuestion(item, sessionUserId))
         || (qnaStatusFilter === 'UNANSWERED' && !answered)
       const searchTarget = [item.authorName, item.title, item.lectureTimestamp ?? '', qnaDetails[item.id]?.content ?? '']
@@ -266,7 +278,21 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         .toLowerCase()
       return statusMatched && (!deferredQnaSearch || searchTarget.includes(deferredQnaSearch))
     })
-  ), [deferredQnaSearch, qnaDetails, qnaQuestions, qnaStatusFilter, sessionUserId])
+    if (qnaStatusFilter !== 'NEAREST') return filtered
+
+    // 칩을 누른 시점의 재생 위치와 가까운 순, 시간이 없는 질문은 뒤로
+    return filtered
+      .map((item) => ({ item, second: parseLectureTimestamp(item.lectureTimestamp) }))
+      .sort((left, right) => {
+        if (left.second === null || right.second === null) return (left.second === null ? 1 : 0) - (right.second === null ? 1 : 0)
+        return Math.abs(left.second - qnaNearestAnchorSecond) - Math.abs(right.second - qnaNearestAnchorSecond)
+      })
+      .map(({ item }) => item)
+  }, [deferredQnaSearch, lesson?.lessonId, qnaDetails, qnaNearestAnchorSecond, qnaQuestions, qnaStatusFilter, sessionUserId])
+  function handleSelectQnaStatusFilter(value: QnaStatusFilter) {
+    if (value === 'NEAREST') setQnaNearestAnchorSecond(Math.floor(videoRef.current?.currentTime ?? currentTime))
+    setQnaStatusFilter(value)
+  }
   const refreshQnaQuestion = useCallback(async (questionId: number, options?: { showLoading?: boolean }) => {
     if (options?.showLoading) {
       setLoadingQuestionId(questionId)
@@ -707,11 +733,28 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
   // OCR 워커 미리 초기화 (첫 클릭 지연 최소화)
   useEffect(() => { warmupOcrWorker() }, [])
 
-  const { handleTogglePlaySafe,handleRetryVideoLoad,handleOcr,handleToggleMute,handleVolumeChange,handleSeek,handleTogglePip,handleToggleFullscreen,handleCyclePlaybackRate,handleSetPlaybackRate,handleSetVideoQuality } = useLearningPlaybackActions({ state: playbackState, lesson, resolvedVideoUrl, playerConfig, setPlayerConfig, videoQualitySources, activeVideoQuality, setNotice, getPlaybackLimit, videoRef, frameRef, resumeTimeRef, lastRenderedSecondRef, pendingVideoLoadRef, resumePlaybackAfterQualitySwitchRef })
+  const { handleTogglePlaySafe,handleRetryVideoLoad,handleOcr,handleToggleMute,handleVolumeChange,rememberVolumeBeforeAdjust,handleSeek,handleTogglePip,handleToggleFullscreen,handleCyclePlaybackRate,handleSetPlaybackRate,handleSetVideoQuality } = useLearningPlaybackActions({ state: playbackState, lesson, resolvedVideoUrl, playerConfig, setPlayerConfig, videoQualitySources, activeVideoQuality, setNotice, getPlaybackLimit, videoRef, frameRef, resumeTimeRef, lastRenderedSecondRef, pendingVideoLoadRef, resumePlaybackAfterQualitySwitchRef })
 
   const handleKeyboardTogglePlay = useEffectEvent(() => {
     void handleTogglePlaySafe()
   })
+  const handleKeyboardTogglePip = useEffectEvent(() => {
+    void handleTogglePip()
+  })
+  const handleKeyboardChangeVolume = useEffectEvent((delta: number, isRepeat: boolean) => {
+    if (!isRepeat) rememberVolumeBeforeAdjust()
+    const current = isMuted ? 0 : volume
+    const next = Math.round(Math.min(1, Math.max(0, current + delta)) * 100) / 100
+    if (next !== current) handleVolumeChange(next)
+  })
+
+  // 강의·화질 변경으로 video 요소가 새로 만들어져도 볼륨·음소거 상태를 유지
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    video.volume = volume
+    video.muted = isMuted
+  }, [activeVideoQuality, isMuted, lesson?.lessonId, volume])
 
   useEffect(() => {
     const syncFullscreenState = () => {
@@ -723,7 +766,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
   }, [setIsFrameFullscreen])
 
-  // ESC 키로 구간 선택 모드 취소
+  // 키보드 단축키: ESC 구간 선택 취소 · Space 재생/정지 · P PIP · ↑↓ 볼륨
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -732,11 +775,23 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
         return
       }
 
-      if (e.code !== 'Space' && e.key !== ' ') return
+      const isPlayToggleKey = e.code === 'Space' || e.key === ' '
+      const hasModifier = e.ctrlKey || e.metaKey || e.altKey || e.shiftKey
+      const isPipToggleKey = e.code === 'KeyP' && !hasModifier
+      const volumeDelta = hasModifier ? 0 : e.code === 'ArrowUp' ? 0.05 : e.code === 'ArrowDown' ? -0.05 : 0
+      if (!isPlayToggleKey && !isPipToggleKey && !volumeDelta) return
       if (!resolvedVideoUrl || selectedLessonIsQuiz || quizModalLessonId || assignmentModalLessonId || completionVisible) return
       if (isNativeKeyboardControlTarget(e.target)) return
 
       e.preventDefault()
+      if (isPipToggleKey) {
+        if (!e.repeat) handleKeyboardTogglePip()
+        return
+      }
+      if (volumeDelta) {
+        handleKeyboardChangeVolume(volumeDelta, e.repeat)
+        return
+      }
       handleKeyboardTogglePlay()
     }
     window.addEventListener('keydown', onKey)
@@ -817,6 +872,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     isMuted,
     volume,
     handleVolumeChange,
+    rememberVolumeBeforeAdjust,
     setSettingsOpen,
     handleCyclePlaybackRate,
     settingsOpen,
@@ -847,7 +903,7 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
     visibleQuestions,
     qnaSearch,
     setQnaSearch,
-    setQnaStatusFilter,
+    handleSelectQnaStatusFilter,
     qnaStatusFilter,
     qnaError,
     loadingQna,

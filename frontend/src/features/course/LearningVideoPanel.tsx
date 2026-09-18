@@ -43,6 +43,7 @@ export default function LearningVideoPanel({ model }: Props) {
     isMuted,
     volume,
     handleVolumeChange,
+    rememberVolumeBeforeAdjust,
     setSettingsOpen,
     handleCyclePlaybackRate,
     settingsOpen,
@@ -334,19 +335,23 @@ export default function LearningVideoPanel({ model }: Props) {
                   <span className="text-xs text-white font-mono mb-1">
                     {formatTime(currentTime)} / {formatTime(duration || (lesson.durationSeconds ?? 0))}
                   </span>
-                  <button type="button" onClick={handleToggleMute} className="text-white hover:text-[#00C471] transition">
-                    <i className={`fas ${isMuted || volume === 0 ? 'fa-volume-xmark' : 'fa-volume-up'}`} />
-                  </button>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={isMuted ? 0 : volume}
-                    onChange={(event) => handleVolumeChange(Number(event.target.value))}
-                    className="sr-only"
-                    aria-label="볼륨"
-                  />
+                  <div className="group/volume flex items-center gap-2">
+                    <button type="button" onClick={handleToggleMute} className="text-white hover:text-[#00C471] transition">
+                      <i className={`fas ${isMuted || volume === 0 ? 'fa-volume-mute' : volume <= 0.5 ? 'fa-volume-down' : 'fa-volume-up'}`} />
+                    </button>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      value={isMuted ? 0 : volume}
+                      onChange={(event) => handleVolumeChange(Number(event.target.value))}
+                      onPointerDown={rememberVolumeBeforeAdjust}
+                      onKeyDown={rememberVolumeBeforeAdjust}
+                      className="h-1 w-0 cursor-pointer accent-[#00C471] opacity-0 transition-all duration-200 group-hover/volume:w-20 group-hover/volume:opacity-100 group-focus-within/volume:w-20 group-focus-within/volume:opacity-100"
+                      aria-label="볼륨"
+                    />
+                  </div>
                   <div className="relative">
                     <button
                       type="button"
@@ -404,28 +409,21 @@ export default function LearningVideoPanel({ model }: Props) {
                             </button>
                           )
                         })}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSettingsOpen(false)
-                            void handleTogglePip()
-                          }}
-                          aria-pressed={isPipActive}
-                          className={`mt-1 border-t border-gray-700 text-left px-4 py-2 text-sm transition ${
-                            isPipActive
-                              ? 'text-[#00C471] bg-gray-800 font-bold flex justify-between items-center'
-                              : 'text-gray-200 hover:bg-gray-800 hover:text-white'
-                          }`}
-                        >
-                          {isPipActive ? (
-                            <>
-                              PIP 종료 <i className="fas fa-check text-xs" />
-                            </>
-                          ) : 'PIP 모드'}
-                        </button>
                       </div>
                     ) : null}
                   </div>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.currentTarget.blur()
+                      void handleTogglePip()
+                    }}
+                    className={`transition hover:text-[#00C471] ${isPipActive ? 'text-[#00C471]' : 'text-white'}`}
+                    aria-label={isPipActive ? 'PIP 종료' : 'PIP 모드'}
+                    aria-pressed={isPipActive}
+                  >
+                    <i className="fas fa-clone" />
+                  </button>
                   <button
                     type="button"
                     onClick={(event) => {

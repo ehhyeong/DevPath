@@ -4,7 +4,7 @@ import { formatDateLabel,type FlattenedLesson } from './learning-player-support'
 
 
 export type TabKey = 'curriculum' | 'qna' | 'notes'
-export type QnaStatusFilter = 'ALL' | 'MINE' | 'UNANSWERED'
+export type QnaStatusFilter = 'ALL' | 'MINE' | 'UNANSWERED' | 'NEAREST'
 export type QnaRealtimeEvent = {
   type?: string
   courseId?: number
@@ -122,6 +122,13 @@ export function isAbortError(error: unknown) {
 
 export function isPlaybackBlockedError(error: unknown) {
   return error instanceof DOMException && error.name === 'NotAllowedError'
+}
+
+export function parseLectureTimestamp(value: string | null) {
+  if (!value) return null
+  const parts = value.trim().split(':')
+  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !/^\d+$/.test(part))) return null
+  return parts.reduce((total, part) => total * 60 + Number(part), 0)
 }
 
 export function isNativeKeyboardControlTarget(target: EventTarget | null) {

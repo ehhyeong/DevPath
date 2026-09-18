@@ -54,6 +54,7 @@ export function useLearningNotesAndQnaState() {
   const [loadingQna,setLoadingQna] = useState(false)
   const [qnaError,setQnaError] = useState<string | null>(null)
   const [qnaStatusFilter,setQnaStatusFilter] = useState<QnaStatusFilter>('ALL')
+  const [qnaNearestAnchorSecond,setQnaNearestAnchorSecond] = useState(0)
   const [qnaSearch,setQnaSearch] = useState('')
   const [openQuestionId,setOpenQuestionId] = useState<number | null>(null)
   const [loadingQuestionId,setLoadingQuestionId] = useState<number | null>(null)
@@ -64,7 +65,7 @@ export function useLearningNotesAndQnaState() {
   const [openNoteId,setOpenNoteId] = useState<number | null>(null)
   const [editingNoteContent,setEditingNoteContent] = useState('')
 
-  return { notes,setNotes,noteContent,setNoteContent,noteComposerOpen,setNoteComposerOpen,noteMessage,setNoteMessage,qnaTemplates,setQnaTemplates,qnaQuestions,setQnaQuestions,qnaDetails,setQnaDetails,loadingQna,setLoadingQna,qnaError,setQnaError,qnaStatusFilter,setQnaStatusFilter,qnaSearch,setQnaSearch,openQuestionId,setOpenQuestionId,loadingQuestionId,setLoadingQuestionId,questionForm,setQuestionForm,questionMessage,setQuestionMessage,questionBusy,setQuestionBusy,questionComposerOpen,setQuestionComposerOpen,openNoteId,setOpenNoteId,editingNoteContent,setEditingNoteContent }
+  return { notes,setNotes,noteContent,setNoteContent,noteComposerOpen,setNoteComposerOpen,noteMessage,setNoteMessage,qnaTemplates,setQnaTemplates,qnaQuestions,setQnaQuestions,qnaDetails,setQnaDetails,loadingQna,setLoadingQna,qnaError,setQnaError,qnaStatusFilter,setQnaStatusFilter,qnaNearestAnchorSecond,setQnaNearestAnchorSecond,qnaSearch,setQnaSearch,openQuestionId,setOpenQuestionId,loadingQuestionId,setLoadingQuestionId,questionForm,setQuestionForm,questionMessage,setQuestionMessage,questionBusy,setQuestionBusy,questionComposerOpen,setQuestionComposerOpen,openNoteId,setOpenNoteId,editingNoteContent,setEditingNoteContent }
 }
 
 export function useLearningAssessmentState() {
