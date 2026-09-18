@@ -10,7 +10,7 @@ useEffect,
 useMemo,
 useRef,
 } from 'react'
-import { clearStoredAuthSession,getPostLoginRedirect,readStoredAuthSession } from '../../../lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT,clearStoredAuthSession,getPostLoginRedirect,readStoredAuthSession,touchAuthSessionActivity } from '../../../lib/auth-session'
 import { showAuthToast } from '../../../lib/auth-toast'
 import { getVoiceIceServers } from '../../../lib/voice-webrtc'
 import {
@@ -41,6 +41,9 @@ import { useMeetingVoiceInput } from './useMeetingVoiceInput'
 import { useMeetingMediaTracks } from './useMeetingMediaTracks'
 import { useMeetingRemoteMedia } from './useMeetingRemoteMedia'
 import { useMeetingReactions } from './useMeetingReactions'
+
+const MEETING_ACTIVITY_TOUCH_INTERVAL_MS = 30 * 1000
+
 export function useSquadMeetingController() {
   useSquadMeetingViewport()
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
@@ -73,6 +76,8 @@ export function useSquadMeetingController() {
   })
   const { showFloatingReaction,sendRoomReaction } = useMeetingReactions({ currentUserId: session?.userId, currentUserName: session?.name, controlBoxRef, reactionTimerIdsRef, setFloatingReactions, sendReaction: (reaction) => sendVoiceTransportMessage({ type: 'reaction', payload: { reaction } }) })
   const disconnectVoiceSessionRef = useLatest(disconnectVoiceSession)
+  const sessionRef = useLatest(session)
+  const loggingOutRef = useRef(false)
   const applySelectedOutputToRemoteAudioRef = useLatest(applySelectedOutputToRemoteAudio)
   const reconnectExistingVoiceSessionRef = useLatest(reconnectExistingVoiceSession)
   const currentParticipant = participants.find((participant) => participant.userId === session?.userId) ?? null
@@ -267,10 +272,51 @@ export function useSquadMeetingController() {
   }, [isJoined, setNow])
 
   function handleLogout() {
+    loggingOutRef.current = true
+    disconnectVoiceSession()
     clearStoredAuthSession()
     setSession(null)
     setAuthView('login')
   }
+  // 회의 화면을 열어두는 동안은 조작이 없어도 활동으로 기록해 유휴 만료를 막는다.
+  useEffect(() => {
+    touchAuthSessionActivity()
+    const intervalId = window.setInterval(() => touchAuthSessionActivity(), MEETING_ACTIVITY_TOUCH_INTERVAL_MS)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
+
+  // 세션이 만료되면(유휴 만료·토큰 재발급 실패) 통화와 마이크를 정리하고 로그인 화면으로 돌린다.
+  useEffect(() => {
+    const handleSessionSync = () => {
+      if (readStoredAuthSession()) {
+        return
+      }
+
+      if (loggingOutRef.current) {
+        loggingOutRef.current = false
+        return
+      }
+
+      if (!sessionRef.current) {
+        return
+      }
+
+      disconnectVoiceSessionRef.current()
+      setSession(null)
+      setAuthView('login')
+      showAuthToast({ message: '세션이 만료되어 음성 회의에서 나왔습니다.', durationMs: 2600 })
+    }
+
+    window.addEventListener(AUTH_SESSION_SYNC_EVENT, handleSessionSync)
+    window.addEventListener('storage', handleSessionSync)
+
+    return () => {
+      window.removeEventListener(AUTH_SESSION_SYNC_EVENT, handleSessionSync)
+      window.removeEventListener('storage', handleSessionSync)
+    }
+  }, [disconnectVoiceSessionRef, sessionRef, setAuthView, setSession])
+
   function handleAuthenticated() {
     const nextSession = readStoredAuthSession()
 
