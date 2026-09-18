@@ -9,7 +9,6 @@ import com.devpath.domain.learning.entity.proof.SkillEvidenceType;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
 import com.devpath.domain.learning.service.NodeScoreCollector;
-import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceTask;
@@ -94,14 +93,15 @@ public class JobActivityProfileService {
 
   public JobActivityProfileResponse.Summary getMyActivityProfile(Long userId) {
     ActivityData activityData = loadActivityData(userId);
+    Map<Long, Double> scoreByProofCard = calculateScoreByProofCard(activityData, userId);
     List<JobActivityProfileResponse.SkillKeywordDetail> skillKeywords =
-        extractSkillKeywords(activityData, userId);
+        extractSkillKeywords(activityData, scoreByProofCard);
 
     return new JobActivityProfileResponse.Summary(
         countProjects(activityData),
         activityData.completedTasks().size(),
         activityData.proofCards().size(),
-        calculateAverageGrade(activityData.proofCards(), userId),
+        calculateAverageGrade(scoreByProofCard),
         skillKeywords.stream()
             .map(JobActivityProfileResponse.SkillKeywordDetail::name)
             .distinct()
@@ -152,7 +152,7 @@ public class JobActivityProfileService {
 
   // 활동에서 뽑은 키워드에 증빙(Proof Card 검증 여부·개수·성적)을 붙여 근거 순으로 정렬한다.
   private List<JobActivityProfileResponse.SkillKeywordDetail> extractSkillKeywords(
-      ActivityData activityData, Long userId) {
+      ActivityData activityData, Map<Long, Double> scoreByProofCard) {
     Map<String, SkillEvidence> evidences = new LinkedHashMap<>();
 
     activityData
@@ -181,8 +181,6 @@ public class JobActivityProfileService {
             });
 
     activityData.proofCardTags().forEach(proofCardTag -> addTagEvidences(evidences, proofCardTag));
-
-    Map<Long, Double> scoreByProofCard = calculateScoreByProofCard(activityData, userId);
 
     return evidences.values().stream()
         .map(evidence -> evidence.toDetail(scoreByProofCard))
@@ -313,28 +311,15 @@ public class JobActivityProfileService {
     return activityData.workspaceProjects().size();
   }
 
-  // 클리어한 노드들의 퀴즈/과제 채점 성적을 백분율로 정규화해 평균낸다. (성적이 없으면 null)
-  private Double calculateAverageGrade(List<ProofCard> proofCards, Long userId) {
-    List<Long> nodeIds =
-        proofCards.stream()
-            .map(ProofCard::getNode)
-            .filter(Objects::nonNull)
-            .map(RoadmapNode::getNodeId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-
-    if (nodeIds.isEmpty()) {
+  // Proof Card별 퀴즈/과제 성적을 카드 단위로 평균낸다. (성적 근거가 없으면 null)
+  private Double calculateAverageGrade(Map<Long, Double> scoreByProofCard) {
+    if (scoreByProofCard.isEmpty()) {
       return null;
     }
 
-    List<BigDecimal> scores = nodeScoreCollector.collectScores(nodeIds, userId);
-    if (scores.isEmpty()) {
-      return null;
-    }
-
-    BigDecimal total = scores.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-    return total.divide(BigDecimal.valueOf(scores.size()), 1, RoundingMode.HALF_UP).doubleValue();
+    double average =
+        scoreByProofCard.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    return BigDecimal.valueOf(average).setScale(1, RoundingMode.HALF_UP).doubleValue();
   }
 
   // 노드별 퀴즈/과제 성적 수집은 NodeScoreCollector로 공통화했다.

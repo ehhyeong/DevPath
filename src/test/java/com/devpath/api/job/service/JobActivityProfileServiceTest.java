@@ -100,6 +100,35 @@ class JobActivityProfileServiceTest {
   }
 
   @Test
+  void averageGradeCoversCourseCompletionCardsThatHaveNoNode() {
+    ProofCard courseCard = proofCardWithCourse(31L, 81L);
+    ProofCard anotherCourseCard = proofCardWithCourse(32L, 82L);
+    givenActivity(List.of(courseCard, anotherCourseCard));
+    when(courseNodeMappingRepository.findNodeIdsByCourseId(81L)).thenReturn(List.of(1080L));
+    when(courseNodeMappingRepository.findNodeIdsByCourseId(82L)).thenReturn(List.of(1081L));
+    when(nodeScoreCollector.collectScores(eq(List.of(1080L)), eq(USER_ID)))
+        .thenReturn(List.of(BigDecimal.valueOf(80), BigDecimal.valueOf(90)));
+    when(nodeScoreCollector.collectScores(eq(List.of(1081L)), eq(USER_ID)))
+        .thenReturn(List.of(BigDecimal.valueOf(60)));
+
+    JobActivityProfileResponse.Summary summary =
+        jobActivityProfileService.getMyActivityProfile(USER_ID);
+
+    // 카드별 평균(85, 60)을 카드 단위로 다시 평균낸다.
+    assertThat(summary.averageProofCardScore()).isEqualTo(72.5);
+  }
+
+  @Test
+  void averageGradeIsNullWithoutAnyGradedData() {
+    givenActivity(List.of(proofCardWithNode(41L, 71L)));
+
+    JobActivityProfileResponse.Summary summary =
+        jobActivityProfileService.getMyActivityProfile(USER_ID);
+
+    assertThat(summary.averageProofCardScore()).isNull();
+  }
+
+  @Test
   void emptyActivityProducesNoKeywords() {
     givenActivity(List.of());
 
