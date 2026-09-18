@@ -22,5 +22,25 @@ public class JobActivityProfileResponse {
               example = "92.5")
           Double averageProofCardScore,
       @Schema(description = "Skill signals extracted from internal DevPath activity")
-          List<String> skillSignals) {}
+          List<String> skillSignals,
+      @Schema(description = "Skill signals with the evidence each one was extracted from")
+          List<SkillKeywordDetail> skillKeywords) {}
+
+  @Schema(
+      name = "JobActivityProfileSkillKeyword",
+      description = "Skill signal with its extraction evidence")
+  public record SkillKeywordDetail(
+      @Schema(description = "Skill keyword", example = "Spring Boot") String name,
+      @Schema(description = "Whether a proof card verified this skill", example = "true")
+          boolean verified,
+      @Schema(description = "Number of issued proof cards carrying this skill", example = "2")
+          int proofCardCount,
+      @Schema(
+              description = "Average quiz/assignment grade behind this skill (null if no data)",
+              example = "92")
+          Integer scorePercent,
+      @Schema(
+              description = "Primary evidence source: PROOF_CARD, PROJECT or TASK",
+              example = "PROOF_CARD")
+          String source) {}
 }
