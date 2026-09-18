@@ -9,7 +9,7 @@ import { AUTH_SESSION_SYNC_EVENT,clearStoredAuthSession,getPostLoginRedirect,rea
 import { showAuthToast } from '../../lib/auth-toast'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import { projectApiRequest } from '../project/api'
-import { type ActivityProfile,buildQuery,type CareerFilter,careerOptions,clearJobMatchingSnapshot,extractStretchJobs,filterDbJobs,type GeminiAnalysis,initials,type JobkoreaResult,type JobMatchingSnapshot,type LoadingStep,loadJobMatchingSnapshot,mapJobkoreaPosting,mapRecommendedJob,type MatchingJob,optionOf,type RecommendedJob,type RegionFilter,regionOptions,type RoleFilter,roleOptions,saveJobMatchingSnapshot,type SkillSuggestionResult,sortJobs,STEP_MESSAGES,toDisplayDate,type UserProfile } from './job-matching-model'
+import { type ActivityProfile,buildQuery,type CareerFilter,careerOptions,clearJobMatchingSnapshot,extractStretchJobs,filterDbJobs,type GeminiAnalysis,initials,type JobkoreaResult,type JobMatchingSnapshot,type LoadingStep,loadJobMatchingSnapshot,mapJobkoreaPosting,mapRecommendedJob,type MatchingJob,optionOf,type RecommendedJob,type RegionFilter,regionOptions,type RoleFilter,roleOptions,isExcellentKeyword,keywordEvidenceLabel,saveJobMatchingSnapshot,type SkillSuggestionResult,sortJobs,STEP_MESSAGES,toDisplayDate,type UserProfile } from './job-matching-model'
 
 
 export default function JobMatchingApp() {
@@ -39,15 +39,12 @@ export default function JobMatchingApp() {
   const [skillSuggestion, setSkillSuggestion] = useState<SkillSuggestionResult | null>(null)
   const [skillApplying, setSkillApplying] = useState(false)
 
-  const role = useMemo(() => optionOf(roleOptions, roleFilter), [roleFilter])
   const visibleJobs = useMemo(
     () => jobs.filter((job) => !highMatchOnly || job.matchScore >= 70),
     [highMatchOnly, jobs],
   )
   const averageProofCardScore = activityProfile?.averageProofCardScore ?? null
-  const displayedSkills = activityProfile?.skillSignals.length
-    ? activityProfile.skillSignals.slice(0, 8)
-    : role.skills
+  const displayedKeywords = activityProfile?.skillKeywords.slice(0, 8) ?? []
 
   const currentLoadingMessage = loadingStep
     ? (STEP_MESSAGES[loadingStep][loadingMsgIdx] ?? STEP_MESSAGES[loadingStep][0])
@@ -459,18 +456,27 @@ export default function JobMatchingApp() {
 
                 <div className="mb-6">
                   <div className="text-xs text-gray-500 mb-2">추출된 핵심 키워드</div>
-                  <div className="flex flex-wrap gap-2">
-                    {displayedSkills.map((skill, index) => (
-                      <span
-                        key={skill}
-                        className={index < 3
-                          ? 'px-2 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded text-xs font-bold'
-                          : 'px-2 py-1 bg-gray-100 text-gray-500 border border-gray-200 rounded text-xs'}
-                      >
-                        {skill}{index === 0 ? ' (우수)' : ''}
-                      </span>
-                    ))}
-                  </div>
+                  {displayedKeywords.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {displayedKeywords.map((keyword) => (
+                        <span
+                          key={keyword.name}
+                          title={keywordEvidenceLabel(keyword)}
+                          className={keyword.verified
+                            ? 'px-2 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded text-xs font-bold'
+                            : 'px-2 py-1 bg-gray-100 text-gray-500 border border-gray-200 rounded text-xs'}
+                        >
+                          {keyword.name}{isExcellentKeyword(keyword) ? ' (우수)' : ''}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs leading-5 text-gray-500">
+                      아직 추출된 키워드가 없습니다.
+                      <br />
+                      강의를 수료해 Proof Card를 받거나 스쿼드 활동을 하면 자동으로 채워집니다.
+                    </p>
+                  )}
                 </div>
 
               </div>

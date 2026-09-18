@@ -42,12 +42,37 @@ export type JobkoreaResult = {
   items?: JobkoreaPosting[] | null
 }
 
+export type SkillKeyword = {
+  name: string
+  verified: boolean
+  proofCardCount: number
+  scorePercent: number | null
+  source: 'PROOF_CARD' | 'PROJECT' | 'TASK'
+}
+
+// Proof Card로 검증되고 퀴즈/과제 성적이 이 점수 이상일 때만 '우수'로 표시한다.
+export const EXCELLENT_KEYWORD_SCORE = 80
+
+export function isExcellentKeyword(keyword: SkillKeyword) {
+  return keyword.verified && keyword.scorePercent != null && keyword.scorePercent >= EXCELLENT_KEYWORD_SCORE
+}
+
+export function keywordEvidenceLabel(keyword: SkillKeyword) {
+  const parts = [keyword.verified ? '검증됨' : '보유']
+  if (keyword.proofCardCount > 0) parts.push(`Proof Card ${keyword.proofCardCount}개`)
+  if (keyword.scorePercent != null) parts.push(`평균 ${keyword.scorePercent}점`)
+  if (keyword.source === 'PROJECT') parts.push('프로젝트 활동에서 추출')
+  if (keyword.source === 'TASK') parts.push('완료한 업무에서 추출')
+  return parts.join(' · ')
+}
+
 export type ActivityProfile = {
   projectCount: number
   completedTaskCount: number
   proofCardCount: number
   averageProofCardScore: number | null
   skillSignals: string[]
+  skillKeywords: SkillKeyword[]
 }
 
 export type RecommendedJob = ApiJob & {

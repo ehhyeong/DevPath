@@ -1,13 +1,14 @@
 package com.devpath.api.job.service;
 
 import com.devpath.api.job.dto.JobActivityProfileResponse;
+import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.learning.entity.proof.ProofCard;
 import com.devpath.domain.learning.entity.proof.ProofCardStatus;
 import com.devpath.domain.learning.entity.proof.ProofCardTag;
+import com.devpath.domain.learning.entity.proof.SkillEvidenceType;
 import com.devpath.domain.learning.repository.proof.ProofCardRepository;
 import com.devpath.domain.learning.repository.proof.ProofCardTagRepository;
 import com.devpath.domain.learning.service.NodeScoreCollector;
-import com.devpath.domain.roadmap.entity.RoadmapNode;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceTask;
@@ -17,9 +18,12 @@ import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class JobActivityProfileService {
 
   private static final int MAX_SKILL_SIGNALS = 24;
+
+  private static final String SOURCE_PROOF_CARD = "PROOF_CARD";
+  private static final String SOURCE_PROJECT = "PROJECT";
+  private static final String SOURCE_TASK = "TASK";
+  private static final List<String> SOURCE_PRIORITY =
+      List.of(SOURCE_PROOF_CARD, SOURCE_PROJECT, SOURCE_TASK);
+
+  // 검증된 키워드 -> 높은 성적 -> 많은 Proof Card 순으로 노출한다.
+  private static final Comparator<JobActivityProfileResponse.SkillKeywordDetail>
+      SKILL_KEYWORD_ORDER =
+          Comparator.comparing(
+                  (JobActivityProfileResponse.SkillKeywordDetail detail) -> !detail.verified())
+              .thenComparing(
+                  detail -> detail.scorePercent() == null ? -1 : detail.scorePercent(),
+                  Comparator.reverseOrder())
+              .thenComparing(
+                  JobActivityProfileResponse.SkillKeywordDetail::proofCardCount,
+                  Comparator.reverseOrder());
 
   private static final List<SkillKeyword> SKILL_KEYWORDS =
       List.of(
@@ -66,18 +88,25 @@ public class JobActivityProfileService {
   private final ProofCardRepository proofCardRepository;
   private final ProofCardTagRepository proofCardTagRepository;
   private final NodeScoreCollector nodeScoreCollector;
+  private final CourseNodeMappingRepository courseNodeMappingRepository;
   private final UserRepository userRepository;
 
   public JobActivityProfileResponse.Summary getMyActivityProfile(Long userId) {
     ActivityData activityData = loadActivityData(userId);
-    Set<String> skillSignals = extractSkillSignals(activityData);
+    Map<Long, Double> scoreByProofCard = calculateScoreByProofCard(activityData, userId);
+    List<JobActivityProfileResponse.SkillKeywordDetail> skillKeywords =
+        extractSkillKeywords(activityData, scoreByProofCard);
 
     return new JobActivityProfileResponse.Summary(
         countProjects(activityData),
         activityData.completedTasks().size(),
         activityData.proofCards().size(),
-        calculateAverageGrade(activityData.proofCards(), userId),
-        skillSignals.stream().toList());
+        calculateAverageGrade(scoreByProofCard),
+        skillKeywords.stream()
+            .map(JobActivityProfileResponse.SkillKeywordDetail::name)
+            .distinct()
+            .toList(),
+        skillKeywords);
   }
 
   public Set<String> collectSkillSignals(Long userId) {
@@ -119,6 +148,123 @@ public class JobActivityProfileService {
             : proofCardTagRepository.findAllByProofCardIdInOrderByProofCardIdAscIdAsc(proofCardIds);
 
     return new ActivityData(workspaceProjects, completedTasks, proofCards, proofCardTags);
+  }
+
+  // 활동에서 뽑은 키워드에 증빙(Proof Card 검증 여부·개수·성적)을 붙여 근거 순으로 정렬한다.
+  private List<JobActivityProfileResponse.SkillKeywordDetail> extractSkillKeywords(
+      ActivityData activityData, Map<Long, Double> scoreByProofCard) {
+    Map<String, SkillEvidence> evidences = new LinkedHashMap<>();
+
+    activityData
+        .workspaceProjects()
+        .forEach(
+            workspace -> {
+              addEvidences(evidences, workspace.getName(), SOURCE_PROJECT, null);
+              addEvidences(evidences, workspace.getDescription(), SOURCE_PROJECT, null);
+            });
+
+    activityData
+        .completedTasks()
+        .forEach(
+            task -> {
+              addEvidences(evidences, task.getTitle(), SOURCE_TASK, null);
+              addEvidences(evidences, task.getDescription(), SOURCE_TASK, null);
+            });
+
+    activityData
+        .proofCards()
+        .forEach(
+            proofCard -> {
+              addEvidences(evidences, proofCard.getTitle(), SOURCE_PROOF_CARD, proofCard.getId());
+              addEvidences(
+                  evidences, proofCard.getDescription(), SOURCE_PROOF_CARD, proofCard.getId());
+            });
+
+    activityData.proofCardTags().forEach(proofCardTag -> addTagEvidences(evidences, proofCardTag));
+
+    return evidences.values().stream()
+        .map(evidence -> evidence.toDetail(scoreByProofCard))
+        .sorted(SKILL_KEYWORD_ORDER)
+        .limit(MAX_SKILL_SIGNALS)
+        .toList();
+  }
+
+  private void addEvidences(
+      Map<String, SkillEvidence> evidences, String text, String source, Long proofCardId) {
+    collectKnownSkills(text)
+        .forEach(
+            skill -> {
+              SkillEvidence evidence = evidences.computeIfAbsent(skill, SkillEvidence::new);
+              evidence.addSource(source);
+              evidence.addProofCard(proofCardId);
+            });
+  }
+
+  private void addTagEvidences(Map<String, SkillEvidence> evidences, ProofCardTag proofCardTag) {
+    if (proofCardTag.getTag() == null || !isNotBlank(proofCardTag.getTag().getName())) {
+      return;
+    }
+
+    String tagName = proofCardTag.getTag().getName().trim();
+    Long proofCardId =
+        proofCardTag.getProofCard() == null ? null : proofCardTag.getProofCard().getId();
+    boolean verified = proofCardTag.getEvidenceType() == SkillEvidenceType.VERIFIED;
+
+    Set<String> skills = new LinkedHashSet<>();
+    skills.add(tagName);
+    skills.addAll(collectKnownSkills(tagName));
+
+    skills.forEach(
+        skill -> {
+          SkillEvidence evidence = evidences.computeIfAbsent(skill, SkillEvidence::new);
+          evidence.addSource(SOURCE_PROOF_CARD);
+          evidence.addProofCard(proofCardId);
+          if (verified) {
+            evidence.markVerified();
+          }
+        });
+  }
+
+  // Proof Card별 성적을 모은다. 노드 직결 카드는 그 노드, 강의 수료 카드는 강의에 매핑된 노드들을 본다.
+  private Map<Long, Double> calculateScoreByProofCard(ActivityData activityData, Long userId) {
+    Map<Long, Double> scores = new LinkedHashMap<>();
+
+    activityData
+        .proofCards()
+        .forEach(
+            proofCard -> {
+              Double average = averageNodeScore(resolveScoreNodeIds(proofCard), userId);
+              if (average != null) {
+                scores.put(proofCard.getId(), average);
+              }
+            });
+
+    return scores;
+  }
+
+  private List<Long> resolveScoreNodeIds(ProofCard proofCard) {
+    if (proofCard.getNode() != null && proofCard.getNode().getNodeId() != null) {
+      return List.of(proofCard.getNode().getNodeId());
+    }
+
+    if (proofCard.getCourse() != null && proofCard.getCourse().getCourseId() != null) {
+      return courseNodeMappingRepository.findNodeIdsByCourseId(proofCard.getCourse().getCourseId());
+    }
+
+    return List.of();
+  }
+
+  private Double averageNodeScore(List<Long> nodeIds, Long userId) {
+    if (nodeIds.isEmpty()) {
+      return null;
+    }
+
+    List<BigDecimal> scores = nodeScoreCollector.collectScores(nodeIds, userId);
+    if (scores.isEmpty()) {
+      return null;
+    }
+
+    return scores.stream().mapToDouble(BigDecimal::doubleValue).average().orElse(0.0);
   }
 
   private Set<String> extractSkillSignals(ActivityData activityData) {
@@ -165,31 +311,24 @@ public class JobActivityProfileService {
     return activityData.workspaceProjects().size();
   }
 
-  // 클리어한 노드들의 퀴즈/과제 채점 성적을 백분율로 정규화해 평균낸다. (성적이 없으면 null)
-  private Double calculateAverageGrade(List<ProofCard> proofCards, Long userId) {
-    List<Long> nodeIds =
-        proofCards.stream()
-            .map(ProofCard::getNode)
-            .filter(Objects::nonNull)
-            .map(RoadmapNode::getNodeId)
-            .filter(Objects::nonNull)
-            .distinct()
-            .toList();
-
-    if (nodeIds.isEmpty()) {
+  // Proof Card별 퀴즈/과제 성적을 카드 단위로 평균낸다. (성적 근거가 없으면 null)
+  private Double calculateAverageGrade(Map<Long, Double> scoreByProofCard) {
+    if (scoreByProofCard.isEmpty()) {
       return null;
     }
 
-    List<BigDecimal> scores = nodeScoreCollector.collectScores(nodeIds, userId);
-    if (scores.isEmpty()) {
-      return null;
-    }
-
-    BigDecimal total = scores.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-    return total.divide(BigDecimal.valueOf(scores.size()), 1, RoundingMode.HALF_UP).doubleValue();
+    double average =
+        scoreByProofCard.values().stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+    return BigDecimal.valueOf(average).setScale(1, RoundingMode.HALF_UP).doubleValue();
   }
 
   // 노드별 퀴즈/과제 성적 수집은 NodeScoreCollector로 공통화했다.
+
+  private Set<String> collectKnownSkills(String text) {
+    Set<String> skills = new LinkedHashSet<>();
+    addKnownSkills(skills, text);
+    return skills;
+  }
 
   private void addKnownSkills(Set<String> skills, String text) {
     if (!isNotBlank(text)) {
@@ -231,6 +370,57 @@ public class JobActivityProfileService {
   }
 
   private record SkillKeyword(String skill, List<String> keywords) {}
+
+  // 키워드 1건의 증빙을 모으는 누적기다.
+  private static final class SkillEvidence {
+
+    private final String name;
+    private final Set<Long> proofCardIds = new LinkedHashSet<>();
+    private final Set<String> sources = new LinkedHashSet<>();
+    private boolean verified;
+
+    private SkillEvidence(String name) {
+      this.name = name;
+    }
+
+    private void addSource(String source) {
+      sources.add(source);
+    }
+
+    private void addProofCard(Long proofCardId) {
+      if (proofCardId != null) {
+        proofCardIds.add(proofCardId);
+      }
+    }
+
+    private void markVerified() {
+      verified = true;
+    }
+
+    private JobActivityProfileResponse.SkillKeywordDetail toDetail(
+        Map<Long, Double> scoreByProofCard) {
+      List<Double> scores =
+          proofCardIds.stream().map(scoreByProofCard::get).filter(Objects::nonNull).toList();
+      Integer scorePercent =
+          scores.isEmpty()
+              ? null
+              : (int)
+                  Math.round(
+                      scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0));
+
+      return new JobActivityProfileResponse.SkillKeywordDetail(
+          name, verified, proofCardIds.size(), scorePercent, primarySource());
+    }
+
+    private String primarySource() {
+      for (String source : SOURCE_PRIORITY) {
+        if (sources.contains(source)) {
+          return source;
+        }
+      }
+      return SOURCE_PROJECT;
+    }
+  }
 
   private record ActivityData(
       List<Workspace> workspaceProjects,
