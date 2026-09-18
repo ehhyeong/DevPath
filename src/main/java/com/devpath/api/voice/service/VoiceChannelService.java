@@ -19,9 +19,12 @@ import com.devpath.domain.voice.repository.VoiceEventRepository;
 import com.devpath.domain.voice.repository.VoiceLobbyPresenceRepository;
 import com.devpath.domain.voice.repository.VoiceMeetingMinutesRepository;
 import com.devpath.domain.voice.repository.VoiceParticipantRepository;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,9 @@ public class VoiceChannelService {
 
   private static final int VOICE_CHAT_VISIBLE_MESSAGE_LIMIT = 500;
   private static final int VOICE_CHAT_RETENTION_DAYS = 30;
+
+  // 하트비트가 이 시간 이상 끊긴 참가자는 접속이 끊긴 것으로 보고 퇴장 처리한다.
+  private static final Duration PARTICIPANT_HEARTBEAT_GRACE = Duration.ofSeconds(30);
 
   private final VoiceChannelAccess voiceChannelAccess;
   private final VoiceChannelRepository voiceChannelRepository;
@@ -75,9 +81,12 @@ public class VoiceChannelService {
         .toList();
   }
 
+  @Transactional
   public List<VoiceResponse.ParticipantDetail> getParticipants(Long channelId, Long userId) {
     VoiceChannel channel = voiceChannelAccess.getActiveChannel(channelId);
     voiceChannelAccess.validateWorkspaceMember(channel.getWorkspaceId(), userId);
+
+    releaseStaleParticipants(channel);
 
     return voiceParticipantRepository
         .findAllByChannel_IdAndActiveTrueAndIsDeletedFalseOrderByJoinedAtAsc(channel.getId())
@@ -316,6 +325,44 @@ public class VoiceChannelService {
 
     voiceChatMessageRepository.deleteByChannel_IdAndCreatedAtBefore(
         channel.getId(), oldestVisibleMessage.getCreatedAt());
+  }
+
+  // 세션 만료·탭 종료·네트워크 끊김으로 하트비트가 멈춘 참가자를 퇴장 처리한다.
+  private void releaseStaleParticipants(VoiceChannel channel) {
+    LocalDateTime threshold = LocalDateTime.now().minus(PARTICIPANT_HEARTBEAT_GRACE);
+    List<VoiceParticipant> activeParticipants =
+        voiceParticipantRepository
+            .findAllByChannel_IdAndActiveTrueAndIsDeletedFalseOrderByJoinedAtAsc(channel.getId());
+
+    if (activeParticipants.isEmpty()) {
+      return;
+    }
+
+    Set<Long> aliveUserIds =
+        new HashSet<>(voiceLobbyPresenceRepository.findAliveUserIds(channel.getId(), threshold));
+
+    // 입장 직후라 아직 첫 하트비트를 보내지 못한 참가자는 정리 대상에서 제외한다.
+    List<VoiceParticipant> staleParticipants =
+        activeParticipants.stream()
+            .filter(participant -> !aliveUserIds.contains(participant.getUser().getId()))
+            .filter(
+                participant ->
+                    participant.getJoinedAt() != null
+                        && participant.getJoinedAt().isBefore(threshold))
+            .toList();
+
+    if (staleParticipants.isEmpty()) {
+      return;
+    }
+
+    staleParticipants.forEach(VoiceParticipant::leave);
+
+    // 마지막 참가자까지 끊겼으면 정상 퇴장과 동일하게 회의 세션과 데이터를 정리한다.
+    if (staleParticipants.size() == activeParticipants.size()) {
+      channel.endCurrentSession();
+      resetVoiceRoomSessionData(
+          channel, staleParticipants.get(staleParticipants.size() - 1).getUser());
+    }
   }
 
   private void resetVoiceRoomSessionData(VoiceChannel channel, User user) {
