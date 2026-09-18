@@ -10,7 +10,7 @@ useEffect,
 useMemo,
 useRef,
 } from 'react'
-import { AUTH_SESSION_SYNC_EVENT,clearStoredAuthSession,getPostLoginRedirect,readStoredAuthSession } from '../../../lib/auth-session'
+import { AUTH_SESSION_SYNC_EVENT,clearStoredAuthSession,getPostLoginRedirect,readStoredAuthSession,touchAuthSessionActivity } from '../../../lib/auth-session'
 import { showAuthToast } from '../../../lib/auth-toast'
 import { getVoiceIceServers } from '../../../lib/voice-webrtc'
 import {
@@ -41,6 +41,9 @@ import { useMeetingVoiceInput } from './useMeetingVoiceInput'
 import { useMeetingMediaTracks } from './useMeetingMediaTracks'
 import { useMeetingRemoteMedia } from './useMeetingRemoteMedia'
 import { useMeetingReactions } from './useMeetingReactions'
+
+const MEETING_ACTIVITY_TOUCH_INTERVAL_MS = 30 * 1000
+
 export function useSquadMeetingController() {
   useSquadMeetingViewport()
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
@@ -275,6 +278,14 @@ export function useSquadMeetingController() {
     setSession(null)
     setAuthView('login')
   }
+  // 회의 화면을 열어두는 동안은 조작이 없어도 활동으로 기록해 유휴 만료를 막는다.
+  useEffect(() => {
+    touchAuthSessionActivity()
+    const intervalId = window.setInterval(() => touchAuthSessionActivity(), MEETING_ACTIVITY_TOUCH_INTERVAL_MS)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
+
   // 세션이 만료되면(유휴 만료·토큰 재발급 실패) 통화와 마이크를 정리하고 로그인 화면으로 돌린다.
   useEffect(() => {
     const handleSessionSync = () => {

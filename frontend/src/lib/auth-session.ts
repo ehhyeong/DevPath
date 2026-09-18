@@ -391,6 +391,11 @@ function touchSessionActivity(force = false) {
   scheduleSessionExpiry(updateSessionActivity(session, now))
 }
 
+// 세션 유휴 만료 판정용 활동 시각을 외부(예: 음성 회의 화면)에서 갱신한다.
+export function touchAuthSessionActivity() {
+  touchSessionActivity()
+}
+
 function ensureIdleActivityListeners() {
   if (idleActivityListenersAttached) {
     return
