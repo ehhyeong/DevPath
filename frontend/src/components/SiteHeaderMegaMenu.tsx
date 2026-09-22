@@ -32,21 +32,41 @@ const iconClassByHref: Record<string, string> = {
   '/instructor-marketing': 'fas fa-bullhorn',
 }
 
+const iconToneByHref: Record<string, string> = {
+  '/survey': 'violet',
+  '/roadmap-hub': 'teal',
+  '/my-roadmap-list': 'indigo',
+  '/lounge-dashboard': 'blue',
+  '/community-lounge': 'cyan',
+  '/mentoring-hub': 'amber',
+  '/workspace-hub': 'indigo',
+  '/dev-showcase': 'rose',
+  '/community-list?category=all': 'slate',
+  '/community-list?category=qa': 'blue',
+  '/community-list?category=tech': 'violet',
+  '/community-list?category=career': 'amber',
+  '/community-list?category=free': 'teal',
+  '/instructor-dashboard': 'blue',
+  '/course-management': 'indigo',
+  '/instructor-mentoring': 'amber',
+  '/student-analytics': 'cyan',
+  '/instructor-qna': 'blue',
+  '/instructor-reviews': 'rose',
+  '/instructor-revenue': 'amber',
+  '/instructor-marketing': 'violet',
+}
+
 export default function SiteHeaderMegaMenu({ label, items }: SiteHeaderMegaMenuProps) {
   return (
     <div className="site-header-mega-menu" role="menu" aria-label={`${label} 세부 메뉴`}>
       <div className="site-header-mega-panel">
-        <div className="site-header-mega-heading">
-          <div>
-            <span className="site-header-mega-eyebrow">DEVPATH NAVIGATION</span>
-            <strong className="site-header-mega-title">{label}</strong>
-          </div>
-        </div>
-
         <div className="site-header-mega-links">
           {items.map((item) => (
             <a key={item.href + item.label} href={item.href} className="site-header-mega-link" role="menuitem">
-              <span className="site-header-mega-link-icon" aria-hidden="true">
+              <span
+                className={`site-header-mega-link-icon site-header-mega-link-icon--${iconToneByHref[item.href] ?? 'slate'}`}
+                aria-hidden="true"
+              >
                 <i className={iconClassByHref[item.href] ?? 'fas fa-external-link-alt'} />
               </span>
               <span className="site-header-mega-link-label">{item.label}</span>
