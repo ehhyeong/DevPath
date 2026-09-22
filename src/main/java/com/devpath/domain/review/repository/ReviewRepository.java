@@ -2,6 +2,7 @@ package com.devpath.domain.review.repository;
 
 import com.devpath.domain.review.entity.Review;
 import com.devpath.domain.review.entity.ReviewStatus;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -124,4 +125,15 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             ORDER BY r.createdAt DESC
             """)
   List<Review> findAllByInstructorIdOrderByCreatedAtDesc(@Param("instructorId") Long instructorId);
+
+  @Query(
+      """
+            SELECT r.courseId, AVG(r.rating)
+            FROM Review r
+            WHERE r.courseId IN :courseIds
+            AND r.isDeleted = false
+            AND r.isHidden = false
+            GROUP BY r.courseId
+            """)
+  List<Object[]> findAverageRatingsByCourseIds(@Param("courseIds") Collection<Long> courseIds);
 }
