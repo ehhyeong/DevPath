@@ -111,6 +111,7 @@ const WorkspaceHubApp = lazy(routeLoaders.workspaceHub)
 const ROUTE_PAGES: Record<string, ReactElement> = {
   '/': <App />,
   '/home': <App />,
+  '/about': <App page="about" />,
   '/login': <LoginApp />,
   '/signup': <SignupApp />,
   '/oauth2/redirect': <OAuthRedirectApp />,
@@ -188,6 +189,7 @@ const ROUTE_PAGES: Record<string, ReactElement> = {
 const routePreloaders = new Map<string, () => Promise<unknown>>([
   ['/', routeLoaders.app],
   ['/home', routeLoaders.app],
+  ['/about', routeLoaders.app],
   ['/login', routeLoaders.login],
   ['/signup', routeLoaders.signup],
   ['/oauth2/redirect', routeLoaders.oauthRedirect],

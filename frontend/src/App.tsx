@@ -3,6 +3,8 @@ import { type CSSProperties, useEffect, useState } from 'react'
 import AccountUserMenu from './components/AccountUserMenu'
 import AuthModal, { type AuthView } from './components/AuthModal'
 import SiteHeader from './components/SiteHeader'
+import SiteFooter from './components/SiteFooter'
+import WelcomeHome from './features/home/WelcomeHome'
 import { authApi, userApi } from './lib/api/auth'
 import {
   AUTH_SESSION_SYNC_EVENT,
@@ -40,26 +42,6 @@ const headerMoveOffsets: Record<HeaderMoveKey, { x: number; y: number }> = {
   brandGroup: { x: 7.5, y: 0 },
   navGroup: { x: -10, y: 0 },
 }
-
-const serviceLinks = [
-  { href: '/roadmap-hub', label: '로드맵' },
-  { href: '/lecture-list', label: '강의' },
-  { href: '/workspace-hub', label: '워크스페이스' },
-  { href: '/job-matching', label: '채용 분석' },
-]
-
-const communityLinks = [
-  { href: '/community-lounge', label: '라운지' },
-  { href: '/mentoring-hub', label: '멘토링 찾기' },
-  { href: '/dev-showcase', label: '쇼케이스' },
-  { href: '/project-list', label: '프로젝트' },
-]
-
-const supportLinks = [
-  { href: '#', label: '공지사항' },
-  { href: '#', label: '자주 묻는 질문' },
-  { href: '#', label: '문의하기' },
-]
 
 function go(path: string) {
   navigateTo(path)
@@ -123,8 +105,10 @@ function getHeaderMoveStyle(key: HeaderMoveKey): CSSProperties {
 }
 
 const glassPanelClassName = 'glass-panel border-[1px] border-solid border-[rgba(255,255,255,0.5)] bg-[rgba(255,255,255,0.7)] [backdrop-filter:blur(12px)] [box-shadow:0_8px_32px_rgba(0,0,0,0.05)]'
+const homePageZoomClassName = "ml-[calc((100%-(100%/var(--home-page-body-zoom)))/2)] w-[calc(100%/var(--home-page-body-zoom))] origin-top-left [--home-page-body-zoom:0.9] [zoom:var(--home-page-body-zoom)] max-[1023px]:ml-0 max-[1023px]:w-full max-[1023px]:[zoom:1]"
+const homeScrollAreaClassName = 'mt-[var(--app-header-height)] h-[calc(100dvh-var(--app-header-height))] min-h-0 w-full min-w-0 overflow-x-hidden overflow-y-auto pr-[calc(var(--devpath-scrollbar-size)*0.9)] overscroll-y-contain scroll-smooth [scrollbar-gutter:stable] max-[1023px]:pr-0 max-[1023px]:[scrollbar-gutter:auto]'
 
-function App() {
+function App({ page = 'home' }: { page?: 'home' | 'about' }) {
   const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(() => readAuthViewFromLocation())
@@ -132,14 +116,15 @@ function App() {
   const [noticesOpen, setNoticesOpen] = useState(false)
   const [noticesError, setNoticesError] = useState('')
   const showInstructorDashboard = session?.role === 'ROLE_INSTRUCTOR'
+  const showDashboard = Boolean(session) && page !== 'about'
   const navGroupOffset = headerMoveOffsets.navGroup
   const headerUserStyle = { transform: 'translateX(-20px)' }
   const headerNavStyle = { transform: `translate(${17.5 + navGroupOffset.x}px, ${navGroupOffset.y}px)` }
 
   useEffect(() => {
     document.title = 'DevPath - 개발자 성장의 모든 것'
-    return initAos()
-  }, [])
+    if (!showDashboard) return initAos()
+  }, [showDashboard])
 
   useEffect(() => {
     const documentClasses = ['h-full', 'overflow-hidden']
@@ -253,7 +238,7 @@ function App() {
   }
 
   return (
-    <div className="h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden text-gray-800">
+    <div className={`h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden text-gray-800 ${showDashboard ? 'bg-[#F8F9FA]' : ''}`}>
       <SiteHeader
         session={session}
         profileImage={profileImage}
@@ -261,6 +246,14 @@ function App() {
         onLoginClick={() => openAuthModal('login')}
       />
 
+      {showDashboard && session ? <>
+        <main className={homeScrollAreaClassName} data-testid="home-scroll-area">
+          <WelcomeHome displayName={session.name} />
+          <div className={homePageZoomClassName}>
+            <SiteFooter onOpenNotices={() => void openPlatformNotices()} />
+          </div>
+        </main>
+      </> : <>
       {showLegacyHeader ? <nav className="app-header">
         <div className="mx-auto flex h-full w-full max-w-[1600px] items-center gap-8 px-8">
           <div className="hidden w-60 items-center px-4 lg:flex" style={{ transform: 'translateX(var(--logo-nudge))' }}>
@@ -340,8 +333,8 @@ function App() {
         </div>
       </nav> : null}
 
-      <main className="mt-[var(--app-header-height)] h-[calc(100dvh-var(--app-header-height))] min-h-0 w-full min-w-0 overflow-x-hidden overflow-y-auto pr-[calc(var(--devpath-scrollbar-size)*0.9)] overscroll-y-contain scroll-smooth [scrollbar-gutter:stable] max-[1023px]:pr-0 max-[1023px]:[scrollbar-gutter:auto]">
-      <div className="ml-[calc((100%-(100%/var(--home-page-body-zoom)))/2)] w-[calc(100%/var(--home-page-body-zoom))] origin-top-left [--home-page-body-zoom:0.9] [zoom:var(--home-page-body-zoom)] max-[1023px]:ml-0 max-[1023px]:w-full max-[1023px]:transform-none max-[1023px]:[zoom:1]">
+      <main className={homeScrollAreaClassName} data-testid="home-scroll-area">
+      <div className={`${homePageZoomClassName} max-[1023px]:transform-none`}>
       <section className="relative min-h-[calc(111.111111dvh-71.111111px)] overflow-hidden px-6 pt-16 pb-8 max-[1023px]:min-h-[calc(100dvh-var(--app-header-height))] max-[767px]:px-[var(--app-page-gutter)] max-[767px]:pt-[clamp(40px,8vh,64px)]">
         <div className="relative z-10 mx-auto max-w-6xl text-center" data-aos="fade-up">
           <span className="text-brand mb-[24px] inline-block rounded-full border border-green-200 bg-white px-[12px] py-[4px] text-[12px] leading-[16px] [font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,'Helvetica_Neue','Segoe_UI','Apple_SD_Gothic_Neo','Noto_Sans_KR','Malgun_Gothic',sans-serif] [font-weight:700] [letter-spacing:0] shadow-sm max-[767px]:mb-[18px] max-[767px]:whitespace-normal">
@@ -690,67 +683,10 @@ function App() {
         </div>
       </section>
 
-      <footer className="border-t border-gray-200 bg-gray-50 pt-16 pb-8">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="mb-12 grid grid-cols-1 gap-12 md:grid-cols-4">
-            <div className="md:col-span-1">
-              <a href="#" className="mb-4 flex items-center gap-2 text-xl font-bold text-gray-900">
-                <i className="fas fa-code-branch text-brand" /> DevPath
-              </a>
-              <p className="text-sm leading-relaxed text-gray-500">
-                개발자의 성장을 돕는 올인원 플랫폼.
-                <br />
-                Learn, Build, and Grow.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="mb-4 font-bold text-gray-900">서비스</h4>
-              <ul className="space-y-2 text-sm text-gray-500">
-                {serviceLinks.map((item) => (
-                  <li key={item.href}>
-                    <a href={item.href} className="hover:text-brand">
-                      {item.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="mb-4 font-bold text-gray-900">커뮤니티</h4>
-              <ul className="space-y-2 text-sm text-gray-500">
-                {communityLinks.map((item) => (
-                  <li key={item.href}>
-                    <a href={item.href} className="hover:text-brand">
-                      {item.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="mb-4 font-bold text-gray-900">고객지원</h4>
-              <ul className="space-y-2 text-sm text-gray-500">
-                {supportLinks.map((item) => (
-                  <li key={item.label}>
-                    {item.label === '공지사항'
-                      ? <button type="button" className="hover:text-brand" onClick={() => void openPlatformNotices()}>{item.label}</button>
-                      : <a href={item.href} className="hover:text-brand">{item.label}</a>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200 pt-8 text-center text-xs text-gray-400">
-            &copy; 2026 DevPath Inc. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <SiteFooter onOpenNotices={() => void openPlatformNotices()} />
       </div>
       </main>
+      </>}
 
       {authView ? (
         <AuthModal
