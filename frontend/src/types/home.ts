@@ -47,3 +47,56 @@ export interface HomeOverview {
   featuredStudyGroups: HomeContentPreview[]
   journeySteps: HomeJourneyStep[]
 }
+
+export interface HomeLearningStatus {
+  courseId: number
+  lessonId: number
+  courseTitle: string
+  lessonTitle: string
+  progressPercentage: number
+  href: string
+  lastWatchedAt: string | null
+}
+
+export interface HomeProjectSummary {
+  projectId: number
+  typeLabel: string
+  title: string
+  description: string
+  progressPercentage: number
+  href: string
+}
+
+export interface HomeRecentCourse {
+  courseId: number
+  title: string
+  thumbnailUrl: string | null
+  progressPercentage: number
+  href: string
+  lastWatchedAt: string | null
+}
+
+export interface HomeTopCourse {
+  courseId: number
+  title: string
+  thumbnailUrl: string | null
+  categoryLabel: string
+  averageRating: number | null
+  enrollmentCount: number
+  price: number | null
+  currency: string | null
+  href: string
+}
+
+export interface HomeCourseCategory {
+  key: string
+  label: string
+  courses: HomeTopCourse[]
+}
+
+export interface AuthenticatedHomeDashboard {
+  currentLearning: HomeLearningStatus | null
+  participatingProjects: HomeProjectSummary[]
+  recentCourses: HomeRecentCourse[]
+  topCourseCategories: HomeCourseCategory[]
+}

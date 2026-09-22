@@ -66,6 +66,7 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
             from LessonProgress lp
             join fetch lp.lesson l
             join fetch l.section s
+            join fetch s.course c
             where lp.user.id = :userId
             and lp.lastWatchedAt is not null
             order by lp.lastWatchedAt desc
