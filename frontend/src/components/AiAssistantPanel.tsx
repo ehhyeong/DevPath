@@ -25,7 +25,13 @@ type AiAssistantPanelProps = {
   // 화면에 이미 우하단 플로팅 버튼이 있을 때 FAB를 그 위로 올린다.
   fabRaised?: boolean
   // 미지정이면 AI를 호출하지 않고 대체 응답만 보여준다.
-  onAsk?: (question: string) => Promise<AiAnswer>
+  // history는 후속 질문을 위한 직전 대화이며 오래된 것부터 정렬된다.
+  onAsk?: (question: string, history: AiHistoryMessage[]) => Promise<AiAnswer>
+}
+
+export type AiHistoryMessage = {
+  role: 'user' | 'assistant'
+  text: string
 }
 
 type ChatMessage = {
@@ -39,6 +45,8 @@ type ChatMessage = {
 /** AI 호출이 없거나 실패했을 때 보여주는 안전한 대체 응답. */
 const FALLBACK_MESSAGE = 'AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.'
 const FALLBACK_DELAY_MS = 600
+/** 후속 질문용으로 함께 보내는 직전 대화 수. */
+const HISTORY_LIMIT = 6
 
 export default function AiAssistantPanel({
   fabLabel,
@@ -191,8 +199,17 @@ export default function AiAssistantPanel({
       return
     }
 
+    // 대체 응답(error)은 실제 대화가 아니라 제외한다.
+    const history = messages
+      .filter((message) => message.role !== 'error')
+      .slice(-HISTORY_LIMIT)
+      .map((message) => ({
+        role: message.role === 'user' ? ('user' as const) : ('assistant' as const),
+        text: message.text,
+      }))
+
     try {
-      const answer = await onAsk(text)
+      const answer = await onAsk(text, history)
 
       if (mountedRef.current) {
         appendMessage('bot', answer.text, answer.action)

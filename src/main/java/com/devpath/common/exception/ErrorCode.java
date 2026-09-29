@@ -229,6 +229,7 @@ public enum ErrorCode {
   PORTFOLIO_PDF_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "포트폴리오 PDF 생성에 실패했습니다."),
 
   BUILDER_AI_ASSIST_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 로드맵 제안을 생성하지 못했습니다."),
+  WORKSPACE_AI_ASSIST_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 답변을 생성하지 못했습니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");
 

@@ -36,6 +36,19 @@ public class WorkspaceErdDocumentService {
     return toDocument(row, dashboard);
   }
 
+  /** 조회 전용 경로. getDocument와 달리 문서가 없어도 새로 만들지 않는다. */
+  public String findMermaidCodeForRead(Long workspaceId, Long userId) {
+    workspaceService.getWorkspaceDashboard(workspaceId, userId);
+
+    List<String> codes =
+        jdbcTemplate.queryForList(
+            "SELECT mermaid_code FROM workspace_erd_documents WHERE workspace_id = ?",
+            String.class,
+            workspaceId);
+
+    return codes.isEmpty() ? null : codes.get(0);
+  }
+
   @Transactional
   public WorkspaceErdResponse.Document saveDocument(
       Long workspaceId, Long userId, WorkspaceErdRequest.Save request) {
