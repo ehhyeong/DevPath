@@ -1,7 +1,7 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import AiAssistantPanel from '../../components/AiAssistantPanel'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
@@ -617,19 +617,7 @@ export default function SquadWorkspaceApp() {
         </main>
       </div>
 
-      <AiAssistantPanel
-        fabLabel="AI 에이전트"
-        panelTitle="DevPath AI · 워크스페이스"
-        greeting="작업 등록, 마감 임박 태스크 브리핑, 팀원별 업무 조회를 자연어로 요청하세요."
-        resetGreeting="새 세션입니다. 필요한 스쿼드 작업이나 일정 문의를 입력해 주세요."
-        placeholder="예: FE 담당자에게 장바구니 리팩토링 D-3으로 등록해줘"
-        thinkingLabel="작업 보드 분석 중"
-        suggestions={[
-          { label: '마감 일정 요약', prompt: '마감 임박한 긴급 작업 요약해줘' },
-          { label: '새 작업 등록', prompt: 'BE 담당자 김개발에게 결제 검증 API 작업 카드 등록해줘' },
-          { label: '리뷰 상태 확인', prompt: '현재 리뷰 대기 중인 작업 진행 상태 알려줘' },
-        ]}
-      />
+      <SquadWorkspaceAiPanel />
 
       {modalOpen ? (
         <div className="squad-workspace-task-modal fixed inset-0 z-[1050] flex visible items-center justify-center bg-gray-900/60 p-4 opacity-100 backdrop-blur-sm [transition:opacity_0.2s,visibility_0.2s] [&_input]:text-[14px]! [&_input:not([type=radio])]:leading-[20px]! [&_select]:text-[14px]! [&_select]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]! [&_button]:text-[14px]! [&_button]:leading-[20px]!">

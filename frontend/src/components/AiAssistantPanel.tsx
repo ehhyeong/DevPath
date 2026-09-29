@@ -22,6 +22,8 @@ type AiAssistantPanelProps = {
   placeholder: string
   thinkingLabel: string
   suggestions: AiSuggestion[]
+  // 화면에 이미 우하단 플로팅 버튼이 있을 때 FAB를 그 위로 올린다.
+  fabRaised?: boolean
   // 미지정이면 AI를 호출하지 않고 대체 응답만 보여준다.
   onAsk?: (question: string) => Promise<AiAnswer>
 }
@@ -46,6 +48,7 @@ export default function AiAssistantPanel({
   placeholder,
   thinkingLabel,
   suggestions,
+  fabRaised = false,
   onAsk,
 }: AiAssistantPanelProps) {
   const [open, setOpen] = useState(false)
@@ -244,7 +247,7 @@ export default function AiAssistantPanel({
         aria-expanded={open}
         aria-controls="aiPromptBar"
         aria-label={fabLabel}
-        className={open ? 'ai-fab is-hidden' : 'ai-fab'}
+        className={`ai-fab${fabRaised ? ' ai-fab--raised' : ''}${open ? ' is-hidden' : ''}`}
       >
         <i aria-hidden="true" className="fas fa-compass ai-fab__icon" />
         <span className="ai-fab__label">{fabLabel}</span>

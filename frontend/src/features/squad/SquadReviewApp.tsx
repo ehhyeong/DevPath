@@ -2,6 +2,7 @@
 
 
 import AuthModal from '../../components/AuthModal'
+import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
@@ -402,6 +403,8 @@ export default function SquadReviewApp() {
           </div>
         </div>
       ) : null}
+
+      <SquadWorkspaceAiPanel />
 
       {authView ? (
         <AuthModal view={authView} onClose={() => setAuthView(null)} onViewChange={setAuthView} onAuthenticated={handleAuthenticated} />

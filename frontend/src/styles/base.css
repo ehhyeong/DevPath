@@ -1050,6 +1050,8 @@ aside:hover .sidebar-text {
 .ai-fab:active { transform: translateY(0) scale(.97); }
 .ai-fab:focus, .ai-fab:focus-visible { outline: none; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, .1), 0 4px 6px -4px rgba(0, 0, 0, .1); }
 .ai-fab.is-hidden { opacity: 0; pointer-events: none; transform: scale(.9); }
+/* 화면에 이미 우하단 플로팅 버튼이 있는 경우(스쿼드 대시보드 채팅 버튼) 그 위로 올린다. */
+.ai-fab--raised { bottom: 5.75rem; }
 .ai-fab__icon { font-size: .875rem; color: var(--ai-brand); }
 .ai-fab__label { font-size: .8125rem; font-weight: 600; display: none; }
 @media (min-width: 640px) { .ai-fab__label { display: inline; } }

@@ -1,5 +1,6 @@
 import type { SquadErdReadyModel } from './useSquadErdController'
 import AuthModal from '../../components/AuthModal'
+import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import { ON_DELETE_OPTIONS,RELATIONSHIP_TYPE_OPTIONS,SQL_TYPE_OPTIONS,exportSql,formatRelativeTime,safeSchemaFromJson,schemaStats } from './erd-support'
 import type { ErdRelationship } from './erd-types'
@@ -464,6 +465,9 @@ export default function SquadErdView({ model }: SquadErdViewProps) {
           </div>
         </div>
       </main>
+
+      {/* ERD 모달들이 z-50이라 AI 패널을 모달보다 앞에 두어 모달이 위에 오게 한다. */}
+      <SquadWorkspaceAiPanel />
 
       {versionOpen ? (
         <div className="erd-version-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
