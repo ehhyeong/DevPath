@@ -7,12 +7,11 @@ import com.devpath.common.exception.ErrorCode;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+// Collector와 같은 이유로 트랜잭션을 열지 않는다.
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class WorkspaceAiAssistService {
 
   private final WorkspaceAiContextCollector workspaceAiContextCollector;

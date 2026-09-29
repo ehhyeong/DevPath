@@ -8,25 +8,27 @@ import com.devpath.api.workspace.dto.WorkspaceDocResponse;
 import com.devpath.api.workspace.dto.WorkspaceFileResponse;
 import com.devpath.api.workspace.dto.WorkspaceMemberResponse;
 import com.devpath.api.workspace.dto.WorkspaceTaskResponse;
+import com.devpath.api.workspace.preview.WorkspaceDocumentPreviewer;
 import com.devpath.domain.workspace.entity.WorkspaceDocType;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /**
  * AI 비서 프롬프트에 넣을 워크스페이스 현황을 모은다. 기존 Service를 그대로 호출하므로 각 Service의 멤버 권한 검사가 그대로 적용된다. 조회만 하며 어떤 데이터도
  * 변경하지 않는다.
  */
+// 트랜잭션을 열지 않는다. 각 Service가 자체 트랜잭션을 갖고 있고, 파일 추출 실패처럼 잡아서 넘기는
+// 예외가 공유 트랜잭션을 rollback-only로 만들어 커밋 시점에 터지는 것을 피하기 위해서다.
 @Component
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class WorkspaceAiContextCollector {
 
   private static final int MAX_TASKS = 60;
@@ -38,6 +40,12 @@ public class WorkspaceAiContextCollector {
   private static final int MAX_ERD_LENGTH = 4000;
   private static final int EVENT_DAYS_BEFORE = 30;
   private static final int EVENT_DAYS_AFTER = 90;
+  // 파일 본문 주입 상한. 프롬프트 비대화와 대용량 파일 반복 파싱을 함께 막는다.
+  private static final int MAX_FILE_CONTENT_CHARS = 8000;
+  private static final int MAX_TOTAL_CONTENT_CHARS = 40000;
+  private static final int MAX_EXTRACT_FILES = 10;
+  private static final long MAX_EXTRACT_FILE_BYTES = 2L * 1024 * 1024;
+  private static final long MAX_TOTAL_EXTRACT_BYTES = 8L * 1024 * 1024;
 
   private static final DateTimeFormatter DATE_TIME =
       DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -231,6 +239,81 @@ public class WorkspaceAiContextCollector {
                         nullToDash(file.getUploadedByName()))));
 
     appendOmitted(context, files.size(), MAX_FILES);
+    context.append("\n");
+    appendFileContents(context, files, userId);
+  }
+
+  /**
+   * 읽을 수 있는 파일의 본문을 상한 안에서 덧붙인다. 개별 파일 추출 실패가 전체 답변을 막지 않도록 파일 단위로 예외를 삼키고 이유만 남긴다.
+   */
+  private void appendFileContents(
+      StringBuilder context, List<WorkspaceFileResponse> files, Long userId) {
+    StringBuilder contents = new StringBuilder();
+    List<String> skipped = new ArrayList<>();
+    int usedChars = 0;
+    long usedBytes = 0;
+    int extractedCount = 0;
+
+    for (WorkspaceFileResponse file : files) {
+      String name = nullToDash(file.getDisplayName());
+
+      if (!"FILE".equalsIgnoreCase(file.getItemType())) {
+        continue;
+      }
+
+      if (!WorkspaceDocumentPreviewer.isTextExtractable(file.getOriginalFileName())) {
+        skipped.add(String.format("%s(내용을 읽을 수 없는 형식)", name));
+        continue;
+      }
+
+      if (file.getFileSize() > MAX_EXTRACT_FILE_BYTES) {
+        skipped.add(String.format("%s(용량 초과)", name));
+        continue;
+      }
+
+      if (extractedCount >= MAX_EXTRACT_FILES
+          || usedChars >= MAX_TOTAL_CONTENT_CHARS
+          || usedBytes >= MAX_TOTAL_EXTRACT_BYTES) {
+        skipped.add(String.format("%s(분량 한도 초과)", name));
+        continue;
+      }
+
+      String text;
+
+      try {
+        text = workspaceFileService.getDocumentPreview(file.getFileId(), userId).getText();
+      } catch (Exception e) {
+        skipped.add(String.format("%s(본문 추출 실패)", name));
+        continue;
+      }
+
+      if (!StringUtils.hasText(text)) {
+        skipped.add(String.format("%s(본문 텍스트 없음)", name));
+        continue;
+      }
+
+      int budget = Math.min(MAX_FILE_CONTENT_CHARS, MAX_TOTAL_CONTENT_CHARS - usedChars);
+      String body = truncate(text.trim(), budget);
+      contents.append(String.format("--- %s ---%n%s%n%n", name, body));
+      usedChars += body.length();
+      usedBytes += file.getFileSize();
+      extractedCount++;
+    }
+
+    if (contents.length() == 0 && skipped.isEmpty()) {
+      return;
+    }
+
+    context.append("[파일 본문]\n");
+
+    if (contents.length() > 0) {
+      context.append(contents);
+    }
+
+    if (!skipped.isEmpty()) {
+      context.append(String.format("(본문을 싣지 못한 파일: %s)%n", String.join(", ", skipped)));
+    }
+
     context.append("\n");
   }
 
