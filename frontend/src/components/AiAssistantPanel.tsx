@@ -5,6 +5,15 @@ export type AiSuggestion = {
   prompt: string
 }
 
+/** AI 답변. action이 있으면 답변 말풍선 안에 실행 버튼을 함께 노출한다. */
+export type AiAnswer = {
+  text: string
+  action?: {
+    label: string
+    run: () => void
+  }
+}
+
 type AiAssistantPanelProps = {
   fabLabel: string
   panelTitle: string
@@ -13,15 +22,19 @@ type AiAssistantPanelProps = {
   placeholder: string
   thinkingLabel: string
   suggestions: AiSuggestion[]
+  // 미지정이면 AI를 호출하지 않고 대체 응답만 보여준다.
+  onAsk?: (question: string) => Promise<AiAnswer>
 }
 
 type ChatMessage = {
   id: number
-  role: 'user' | 'error'
+  role: 'user' | 'bot' | 'error'
   text: string
+  action?: AiAnswer['action']
+  actionDone?: boolean
 }
 
-/** 실제 AI 연동 전까지 사용하는 안전한 대체 응답. 연동 시 이 지점만 교체한다. */
+/** AI 호출이 없거나 실패했을 때 보여주는 안전한 대체 응답. */
 const FALLBACK_MESSAGE = 'AI 응답을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.'
 const FALLBACK_DELAY_MS = 600
 
@@ -33,6 +46,7 @@ export default function AiAssistantPanel({
   placeholder,
   thinkingLabel,
   suggestions,
+  onAsk,
 }: AiAssistantPanelProps) {
   const [open, setOpen] = useState(false)
   const [greetingText, setGreetingText] = useState(greeting)
@@ -48,6 +62,7 @@ export default function AiAssistantPanel({
   const listRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const messageSeq = useRef(0)
+  const mountedRef = useRef(true)
 
   // 패널을 열면 입력창으로 포커스 이동 (열림 애니메이션 이후)
   useEffect(() => {
@@ -123,6 +138,8 @@ export default function AiAssistantPanel({
 
   useEffect(() => {
     return () => {
+      mountedRef.current = false
+
       if (timerRef.current) {
         clearTimeout(timerRef.current)
       }
@@ -143,13 +160,13 @@ export default function AiAssistantPanel({
     setOpen(true)
   }
 
-  function appendMessage(role: ChatMessage['role'], text: string) {
+  function appendMessage(role: ChatMessage['role'], text: string, action?: AiAnswer['action']) {
     messageSeq.current += 1
     const id = messageSeq.current
-    setMessages((current) => [...current, { id, role, text }])
+    setMessages((current) => [...current, { id, role, text, action }])
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const text = input.trim()
 
     if (!text || busy) {
@@ -162,11 +179,43 @@ export default function AiAssistantPanel({
     setInput('')
     setBusy(true)
 
-    timerRef.current = setTimeout(() => {
-      timerRef.current = null
-      appendMessage('error', FALLBACK_MESSAGE)
-      setBusy(false)
-    }, FALLBACK_DELAY_MS)
+    if (!onAsk) {
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null
+        appendMessage('error', FALLBACK_MESSAGE)
+        setBusy(false)
+      }, FALLBACK_DELAY_MS)
+      return
+    }
+
+    try {
+      const answer = await onAsk(text)
+
+      if (mountedRef.current) {
+        appendMessage('bot', answer.text, answer.action)
+      }
+    } catch {
+      if (mountedRef.current) {
+        appendMessage('error', FALLBACK_MESSAGE)
+      }
+    } finally {
+      if (mountedRef.current) {
+        setBusy(false)
+      }
+    }
+  }
+
+  function runAction(messageId: number) {
+    const target = messages.find((message) => message.id === messageId)
+
+    if (!target?.action || target.actionDone) {
+      return
+    }
+
+    target.action.run()
+    setMessages((current) =>
+      current.map((message) => (message.id === messageId ? { ...message, actionDone: true } : message)),
+    )
   }
 
   function handleReset() {
@@ -235,16 +284,39 @@ export default function AiAssistantPanel({
             className={`ai-chat-body ai-chat-list ${expanded ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'}`}
           >
             <div className="ai-msg-bot">{greetingText}</div>
-            {messages.map((message) => (
-              message.role === 'user' ? (
-                <div key={message.id} className="ai-msg-user ai-bubble-in">{message.text}</div>
-              ) : (
-                <div key={message.id} className="ai-msg-bot ai-msg-bot--error ai-bubble-in">
-                  <i aria-hidden="true" className="fas fa-exclamation-circle mr-1.5" />
-                  {message.text}
+            {messages.map((message) => {
+              if (message.role === 'user') {
+                return <div key={message.id} className="ai-msg-user ai-bubble-in">{message.text}</div>
+              }
+
+              if (message.role === 'error') {
+                return (
+                  <div key={message.id} className="ai-msg-bot ai-msg-bot--error ai-bubble-in">
+                    <i aria-hidden="true" className="fas fa-exclamation-circle mr-1.5" />
+                    {message.text}
+                  </div>
+                )
+              }
+
+              return (
+                <div key={message.id} className="ai-msg-bot ai-bubble-in">
+                  <p className="whitespace-pre-line">{message.text}</p>
+                  {message.action && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => runAction(message.id)}
+                        disabled={message.actionDone}
+                        className="ai-inline-btn"
+                      >
+                        <i aria-hidden="true" className={message.actionDone ? 'fas fa-check' : 'fas fa-plus'} />
+                        {message.actionDone ? '캔버스에 추가함' : message.action.label}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )
-            ))}
+            })}
             {busy && (
               <div className="ai-bubble-in">
                 <div className="ai-typing">

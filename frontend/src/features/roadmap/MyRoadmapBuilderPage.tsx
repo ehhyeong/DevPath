@@ -15,7 +15,7 @@ import { TrashZone, TerminalDropZone, DroppableGap, MiniDragPreview, ModulePrevi
 import { useMyRoadmapBuilderController } from './useMyRoadmapBuilderController'
 
 function MyRoadmapBuilderPage() {
-  const { session, profileImage, authView, setAuthView, templates, selectedRoadmapId, templateSearch, templateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, setPreviewModuleKey, loading, fetchError, nodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, setRoadmapTitle, saving, saveError, savedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, editMyRoadmapId, editLoading, editLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, templateOptions, handleTemplateChange, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, openSaveModal, handleSave, handleDragStart, handleDragEnd } = useMyRoadmapBuilderController()
+  const { session, profileImage, authView, setAuthView, templates, selectedRoadmapId, templateSearch, templateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, setPreviewModuleKey, loading, fetchError, nodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, setRoadmapTitle, saving, saveError, savedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, editMyRoadmapId, editLoading, editLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, templateOptions, handleTemplateChange, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, handleAiAsk, openSaveModal, handleSave, handleDragStart, handleDragEnd } = useMyRoadmapBuilderController()
 
 
   // ────────────────────────────────────────────
@@ -541,6 +541,7 @@ function MyRoadmapBuilderPage() {
         resetGreeting="새 대화입니다. 반영하고 싶은 스택이나 학습 목표를 알려주세요."
         placeholder="예: 3개월 안에 백엔드 기초부터 배포까지"
         thinkingLabel="로드맵 분석 중"
+        onAsk={handleAiAsk}
         suggestions={[
           { label: 'React 프론트엔드', prompt: '초보자를 위한 프론트엔드 React 필수 마스터 코스' },
           { label: 'DevOps 집중', prompt: '실무형 DevOps 클라우드 배포 집중 트랙' },

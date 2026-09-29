@@ -1130,6 +1130,18 @@ aside:hover .sidebar-text {
 .ai-chip:hover { color: var(--ai-brand-deep); border-color: rgba(0, 196, 113, .5); background: rgba(0, 196, 113, .06); }
 .ai-chip:focus-visible { outline: 2px solid var(--ai-brand); outline-offset: 1px; }
 
+/* 메시지 안의 액션 버튼 — 제안 칩과 역할이 달라 별도 스타일 */
+.ai-inline-btn {
+  display: inline-flex; align-items: center; gap: .375rem;
+  min-height: 32px; padding: .375rem .75rem; border-radius: .5rem;
+  font-size: .75rem; font-weight: 700; color: var(--ai-brand-deep);
+  background: #FFFFFF; border: 1px solid rgba(0, 196, 113, .45);
+  transition: background .18s ease, border-color .18s ease;
+}
+.ai-inline-btn:hover:not(:disabled) { background: rgba(0, 196, 113, .08); border-color: var(--ai-brand); }
+.ai-inline-btn:disabled { color: #9CA3AF; border-color: #E5E7EB; cursor: default; }
+.ai-inline-btn:focus-visible { outline: 2px solid var(--ai-brand); outline-offset: 2px; }
+
 @media (prefers-reduced-motion: reduce) {
   .ai-live-dot, .ai-typing span.dot, .ai-bubble-in { animation: none; }
 }

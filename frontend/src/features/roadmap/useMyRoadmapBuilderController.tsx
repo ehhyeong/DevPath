@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
 import { type AuthView } from '../../components/AuthModal'
+import type { AiAnswer } from '../../components/AiAssistantPanel'
 
 
 import { authApi, userApi } from '../../lib/api/auth'
@@ -406,6 +407,89 @@ function readEditIdFromLocation(): number | null {
     [usedIds, branchTarget, maxSortOrder],
   )
 
+  // AI 추천 모듈 일괄 추가. handleAdd는 maxSortOrder memo를 읽어 1개씩만 처리하므로
+  // 여러 개를 넣을 때는 prev 기준으로 순번을 매기는 이 함수를 쓴다.
+  const handleAddMany = useCallback((modules: SkillModule[]) => {
+    if (modules.length === 0) return
+
+    setNodes((prev) => {
+      const used = new Set(prev.map((n) => getModuleUsageKey(n.module)))
+      let nextSortOrder = prev.reduce((max, n) => Math.max(max, n.sortOrder), 0)
+      const added: BuilderNode[] = []
+
+      modules.forEach((module) => {
+        const key = getModuleUsageKey(module)
+        if (used.has(key)) return
+        used.add(key)
+        nextSortOrder += 1
+        added.push({ instanceId: makeInstanceId(), module, sortOrder: nextSortOrder, laneKey: null })
+      })
+
+      return added.length === 0 ? prev : [...prev, ...added]
+    })
+
+    setBranchTarget(null)
+    setTimeout(() => {
+      mainRef.current?.scrollTo({ top: mainRef.current.scrollHeight, behavior: 'smooth' })
+    }, 50)
+  }, [])
+
+  // AI 네비게이터 질의. 선택된 템플릿의 노드 중에서 추천받아 캔버스 추가 액션까지 만들어 돌려준다.
+  const handleAiAsk = useCallback(
+    async (question: string): Promise<AiAnswer> => {
+      if (!session?.userId) {
+        return { text: '로그인 후 이용할 수 있습니다.' }
+      }
+
+      if (selectedRoadmapId === null) {
+        return { text: '먼저 왼쪽에서 로드맵 템플릿을 선택해 주세요. 선택한 템플릿의 모듈 중에서 추천해 드립니다.' }
+      }
+
+      const res = await fetch('/api/builder/ai-assist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.accessToken ?? ''}`,
+        },
+        body: JSON.stringify({
+          question,
+          roadmapId: selectedRoadmapId,
+          usedNodeIds: nodes
+            .map((n) => n.module.originalNodeId)
+            .filter((nodeId): nodeId is number => nodeId !== null),
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error(`AI 제안 실패 (${res.status})`)
+      }
+
+      const payload = await res.json() as {
+        data: { answer: string; modules: Array<{ nodeId: number; title: string; reason: string }> }
+      }
+      const picked = payload.data.modules
+        .map((module) =>
+          items.find(
+            (item) => item.source === 'OFFICIAL_NODE' && item.originalNodeId === module.nodeId,
+          ),
+        )
+        .filter((module): module is SkillModule => module !== undefined)
+
+      if (picked.length === 0) {
+        return { text: payload.data.answer }
+      }
+
+      return {
+        text: payload.data.answer,
+        action: {
+          label: `추천 모듈 ${picked.length}개 추가`,
+          run: () => handleAddMany(picked),
+        },
+      }
+    },
+    [session, selectedRoadmapId, nodes, items, handleAddMany],
+  )
+
   // 분기 모드 진입
   const handleBranchActivate = useCallback(
     (sortOrder: number) => {
@@ -621,5 +705,5 @@ function readEditIdFromLocation(): number | null {
       // NODE → on-spine, 분기 NODE → gap: 무시
     }
   }
-  return { session, setSession, profileImage, setProfileImage, authView, setAuthView, templates, setTemplates, selectedRoadmapId, setSelectedRoadmapId, templateSearch, setTemplateSearch, templateSection, setTemplateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, items, setItems, previewModuleKey, setPreviewModuleKey, loading, setLoading, fetchError, setFetchError, nodes, setNodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, setRoadmapTitle, saving, setSaving, saveError, setSaveError, savedCustomRoadmapId, setSavedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, setActiveDrag, editMyRoadmapId, editLoading, setEditLoading, editLoadError, setEditLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, filteredTemplates, templateOptions, loadSelectedRoadmap, loadRoadmapCatalog, handleTemplateChange, resetTemplateSelection, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, openSaveModal, handleSave, handleDragStart, handleDragEnd }
+  return { session, setSession, profileImage, setProfileImage, authView, setAuthView, templates, setTemplates, selectedRoadmapId, setSelectedRoadmapId, templateSearch, setTemplateSearch, templateSection, setTemplateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, items, setItems, previewModuleKey, setPreviewModuleKey, loading, setLoading, fetchError, setFetchError, nodes, setNodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, setRoadmapTitle, saving, setSaving, saveError, setSaveError, savedCustomRoadmapId, setSavedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, setActiveDrag, editMyRoadmapId, editLoading, setEditLoading, editLoadError, setEditLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, filteredTemplates, templateOptions, loadSelectedRoadmap, loadRoadmapCatalog, handleTemplateChange, resetTemplateSelection, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleAiAsk, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, openSaveModal, handleSave, handleDragStart, handleDragEnd }
 }

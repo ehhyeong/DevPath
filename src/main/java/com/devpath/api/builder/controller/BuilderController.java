@@ -2,10 +2,13 @@ package com.devpath.api.builder.controller;
 
 import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 
+import com.devpath.api.builder.dto.BuilderAiAssistRequest;
+import com.devpath.api.builder.dto.BuilderAiAssistResponse;
 import com.devpath.api.builder.dto.BuilderModuleDto;
 import com.devpath.api.builder.dto.MyRoadmapResponse;
 import com.devpath.api.builder.dto.MyRoadmapSaveRequest;
 import com.devpath.api.builder.dto.MyRoadmapSummary;
+import com.devpath.api.builder.service.BuilderAiAssistService;
 import com.devpath.api.builder.service.BuilderModuleService;
 import com.devpath.api.builder.service.MyRoadmapService;
 import com.devpath.common.response.ApiResponse;
@@ -35,6 +38,7 @@ public class BuilderController {
 
   private final BuilderModuleService builderModuleService;
   private final MyRoadmapService myRoadmapService;
+  private final BuilderAiAssistService builderAiAssistService;
 
   @Operation(summary = "빌더 모듈 목록 조회", description = "카테고리별 빌더 모듈 목록을 조회합니다.")
   @GetMapping("/modules")
@@ -42,6 +46,17 @@ public class BuilderController {
       @Parameter(description = "카테고리 키 (예: backend, frontend)", example = "backend") @RequestParam
           String category) {
     return ResponseEntity.ok(ApiResponse.ok(builderModuleService.getModulesByCategory(category)));
+  }
+
+  @Operation(
+      summary = "빌더 AI 네비게이터 제안",
+      description = "학습자의 자연어 요청을 받아 선택된 공식 로드맵 템플릿의 노드 중에서 추천 모듈을 학습 순서대로 제안합니다.")
+  @PostMapping("/ai-assist")
+  public ResponseEntity<ApiResponse<BuilderAiAssistResponse>> suggestModules(
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody BuilderAiAssistRequest request) {
+    requireUserId(userId);
+    return ResponseEntity.ok(ApiResponse.ok(builderAiAssistService.suggest(request)));
   }
 
   @Operation(summary = "나만의 로드맵 저장", description = "빌더에서 구성한 로드맵을 저장합니다.")
