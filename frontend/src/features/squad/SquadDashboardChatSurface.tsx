@@ -298,7 +298,7 @@ export default function SquadDashboardChatSurface(props: Props) {
     <>
       <button
         onClick={() => void openChatSurface()}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-gray-900 text-white rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.3)] flex items-center justify-center hover:bg-black transition-transform hover:scale-105 z-40 group"
+        className="fixed bottom-[5.75rem] right-8 w-14 h-14 bg-gray-900 text-white rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.3)] flex items-center justify-center hover:bg-black transition-transform hover:scale-105 z-40 group"
         title={window.documentPictureInPicture ? 'PiP 채팅 열기' : '채팅 열기'}
       >
         <i className="fas fa-comment-dots text-2xl group-hover:animate-bounce"></i>

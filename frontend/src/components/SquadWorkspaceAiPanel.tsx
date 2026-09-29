@@ -3,7 +3,7 @@ import { projectApiRequest } from '../features/project/api'
 import { readWorkspaceIdFromLocation } from '../lib/location-state'
 
 /** 스쿼드 워크스페이스 공용 AI 패널. 대시보드·현황판·일정·자료실·ERD·코드 피드백이 같은 문구를 쓴다. */
-export default function SquadWorkspaceAiPanel({ fabRaised = false }: { fabRaised?: boolean }) {
+export default function SquadWorkspaceAiPanel() {
   async function handleAsk(question: string, history: AiHistoryMessage[]): Promise<AiAnswer> {
     const workspaceId = readWorkspaceIdFromLocation()
 
@@ -28,7 +28,6 @@ export default function SquadWorkspaceAiPanel({ fabRaised = false }: { fabRaised
       resetGreeting="새 세션입니다. 필요한 스쿼드 작업이나 일정 문의를 입력해 주세요."
       placeholder="예: 이번 주 마감 임박한 작업 알려줘"
       thinkingLabel="워크스페이스 분석 중"
-      fabRaised={fabRaised}
       onAsk={handleAsk}
       suggestions={[
         { label: '마감 일정 요약', prompt: '마감 임박한 긴급 작업 요약해줘' },

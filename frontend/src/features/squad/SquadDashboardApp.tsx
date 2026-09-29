@@ -669,7 +669,7 @@ export default function SquadDashboardApp() {
         </div>
       ) : null}
 
-      <SquadWorkspaceAiPanel fabRaised />
+      <SquadWorkspaceAiPanel />
 
       {authView ? (
         <AuthModal
