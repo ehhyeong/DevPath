@@ -20,7 +20,8 @@ import org.springframework.util.StringUtils;
 class WorkspaceAiAssistClient {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final int MAX_OUTPUT_TOKENS = 1024;
+  // 구조 설명·분석 답변은 단순 조회보다 길어 상한을 넉넉히 둔다.
+  private static final int MAX_OUTPUT_TOKENS = 2048;
 
   private final GeminiProvider geminiProvider;
 
@@ -91,14 +92,19 @@ class WorkspaceAiAssistClient {
     prompt.append("[팀원의 질문]\n").append(question).append("\n\n");
 
     prompt.append("[규칙]\n");
-    prompt.append("1. 위 워크스페이스 정보에 없는 내용은 절대 지어내지 마라. 모르면 해당 정보가 워크스페이스에 없다고 답하라.\n");
-    prompt.append("2. 너는 지금 조회만 할 수 있다. 작업 추가·수정·삭제, 일정 등록, ERD 저장 같은 변경 요청을 받으면 ");
-    prompt.append("실행한 것처럼 말하지 말고 아직 조회만 지원한다고 안내하라.\n");
+    prompt.append("1. 워크스페이스 정보에 없는 '사실'을 지어내지 마라. 다만 주어진 정보를 근거로 한 분석·평가·제안은 네 역할이다. ");
+    prompt.append("판단을 말할 때는 어떤 데이터를 근거로 했는지 함께 밝혀라.\n");
+    prompt.append("2. 너는 데이터를 변경(생성·수정·삭제)할 수 없다. 작업 추가, 일정 등록, ERD 저장 같은 변경 요청을 받으면 ");
+    prompt.append("실행한 것처럼 말하지 말고 아직 지원하지 않는다고 안내하라. 분석·설명·조언은 제한 없이 하라.\n");
     prompt.append("3. 팀 자료실은 파일 목록만 알 수 있고 파일 내용은 읽을 수 없다. 내용을 물으면 솔직히 그렇게 답하라.\n");
     prompt.append("4. 날짜는 위 [오늘]을 기준으로 계산하라.\n");
-    prompt.append("5. 답변은 한국어 존댓말로 3~5문장. 항목이 여럿이면 각 줄을 '- '로 시작하는 짧은 목록으로 쓰라.\n");
+    prompt.append("5. 단순 조회는 한국어 존댓말 3~5문장. 상세 설명이나 분석을 요구하면 필요한 만큼 길게, ");
+    prompt.append("각 줄을 '- '로 시작하는 항목별 목록으로 답하라.\n");
     prompt.append("6. 워크스페이스와 무관한 질문에는 답하지 말고 스쿼드 관련 질문을 유도하라.\n");
-    prompt.append("7. 담당자는 이름으로 부르고 내부 ID는 언급하지 마라.\n\n");
+    prompt.append("7. 담당자는 이름으로 부르고 내부 ID는 언급하지 마라.\n");
+    prompt.append("8. [ERD] 블록은 mermaid erDiagram 원문이다. 테이블·컬럼·PK/FK·관계 카디널리티를 직접 읽어 구조를 설명하고 ");
+    prompt.append("정규화·인덱스·확장성 관점에서 분석할 수 있다. 다른 문서를 참고하라고 떠넘기지 마라. ");
+    prompt.append("ERD가 비어 있거나 엔티티 이름만 있으면 그 사실을 알리고 무엇을 보완하면 좋을지 제안하라.\n\n");
 
     prompt.append("아래 JSON 스키마로만 응답하라.\n");
     prompt.append("{\"answer\":\"답변 문장\"}");
