@@ -1,6 +1,7 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
@@ -667,6 +668,8 @@ export default function SquadDashboardApp() {
           </form>
         </div>
       ) : null}
+
+      <SquadWorkspaceAiPanel />
 
       {authView ? (
         <AuthModal

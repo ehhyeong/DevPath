@@ -1,6 +1,7 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
@@ -615,6 +616,8 @@ export default function SquadWorkspaceApp() {
           </div>
         </main>
       </div>
+
+      <SquadWorkspaceAiPanel />
 
       {modalOpen ? (
         <div className="squad-workspace-task-modal fixed inset-0 z-[1050] flex visible items-center justify-center bg-gray-900/60 p-4 opacity-100 backdrop-blur-sm [transition:opacity_0.2s,visibility_0.2s] [&_input]:text-[14px]! [&_input:not([type=radio])]:leading-[20px]! [&_select]:text-[14px]! [&_select]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]! [&_button]:text-[14px]! [&_button]:leading-[20px]!">

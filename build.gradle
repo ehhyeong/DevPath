@@ -54,6 +54,8 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.4'
     // HTML 기반 포트폴리오를 PDF로 렌더링한다.
     implementation 'com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10'
+    // 팀 자료실 PDF 본문 추출. openhtmltopdf의 전이 의존과 같은 버전을 명시해 둔다.
+    implementation 'org.apache.pdfbox:pdfbox:2.0.24'
     // JWT (JSON Web Token)
     implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'

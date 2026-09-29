@@ -1,6 +1,7 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
+import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
@@ -955,6 +956,8 @@ export default function SquadScheduleApp() {
           </form>
         </div>
       ) : null}
+
+      <SquadWorkspaceAiPanel />
 
       {renderAuthModal()}
     </div>

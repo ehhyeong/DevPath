@@ -3,6 +3,7 @@
 import { type CSSProperties } from 'react'
 
 
+import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 
@@ -598,6 +599,8 @@ export default function SquadFilesApp() {
           </form>
         </div>
       ) : null}
+
+      <SquadWorkspaceAiPanel />
 
       {renderAuthModal()}
     </div>
