@@ -130,6 +130,32 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
+test('라운지 대시보드 사이드바 제목은 접힌 상태에서 숨겨진다', async ({ page }) => {
+  await login(page, '/lounge-dashboard')
+  await page.goto('/lounge-dashboard')
+  await page.mouse.move(640, 32)
+
+  const sidebar = page.locator('aside').first()
+  const menuTitle = sidebar.getByText('MENU', { exact: true })
+  const projectsTitle = sidebar.getByText('MY PROJECTS', { exact: true })
+
+  await expect(sidebar).toHaveCSS('width', '80px')
+  await expect(menuTitle).toHaveCSS('opacity', '0')
+  await expect(menuTitle).toHaveCSS('height', '0px')
+  await expect(projectsTitle).toHaveCSS('opacity', '0')
+  await expect(projectsTitle).toHaveCSS('height', '0px')
+
+  await sidebar.hover()
+  await expect(sidebar).toHaveCSS('width', '256px')
+  await expect(menuTitle).toHaveCSS('opacity', '1')
+  await expect(projectsTitle).toHaveCSS('opacity', '1')
+
+  await page.mouse.move(640, 32)
+  await expect(sidebar).toHaveCSS('width', '80px')
+  await expect(menuTitle).toHaveCSS('opacity', '0')
+  await expect(projectsTitle).toHaveCSS('opacity', '0')
+})
+
 test('로그인 후 계정 메뉴를 이동할 수 있다', async ({ page }) => {
   await login(page)
   await page.goto('/dashboard')
