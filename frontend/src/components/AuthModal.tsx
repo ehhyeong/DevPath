@@ -311,6 +311,7 @@ function AuthModal({ view, onClose, onViewChange, onAuthenticated }: AuthModalPr
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(event) => setRememberMe(event.target.checked)}
+                      className="accent-[#00C471]"
                     />
                     로그인 상태 유지
                   </label>
@@ -463,7 +464,7 @@ function AuthModal({ view, onClose, onViewChange, onAuthenticated }: AuthModalPr
                       type="checkbox"
                       checked={agreedToTerms}
                       onChange={(event) => setAgreedToTerms(event.target.checked)}
-                      className="mt-0.5"
+                      className="mt-0.5 accent-[#00C471]"
                       required
                     />
                     <span>
