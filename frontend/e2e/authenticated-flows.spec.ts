@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 
 let instructorApiDelayMs = 0
+let projectHubApiDelayMs = 0
 
 const profile = {
   userId: 101,
@@ -55,6 +56,19 @@ function responseData(pathname: string) {
       passedAssignmentCount: 0,
       supplementRecommendationCount: 0,
     }
+  }
+  if (pathname === '/api/workspaces/me') return []
+  if (pathname === '/api/lounge/shell') {
+    return { user: { name: profile.name, profileImage: null }, mySquads: [] }
+  }
+  if (pathname === '/api/lounge/squads') return []
+  if (pathname === '/api/lounge/applications/sent') return []
+  if (pathname === '/api/lounge/applications/received') return []
+  if (pathname === '/api/mentorings/hub') return { openPosts: [], summary: { openPostCount: 0, totalPostCount: 0 } }
+  if (pathname === '/api/showcases') return []
+  if (pathname === '/api/projects/recommendations/me') return []
+  if (pathname === '/api/jobs/activity-profile/me') {
+    return { projectCount: 0, completedTaskCount: 0, proofCardCount: 0, averageProofCardScore: 0, skillSignals: [] }
   }
   if (pathname.includes('/posts')) {
     return { content: [], page: 0, size: 10, totalElements: 0, totalPages: 0, hasNext: false }
@@ -120,6 +134,19 @@ async function mockApi(route: Route) {
     return
   }
 
+  if (
+    projectHubApiDelayMs > 0
+    && (
+      pathname.startsWith('/api/lounge/')
+      || pathname.startsWith('/api/mentorings/')
+      || pathname.startsWith('/api/showcases')
+      || pathname.startsWith('/api/workspaces/')
+      || pathname.startsWith('/api/projects/recommendations')
+    )
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, projectHubApiDelayMs))
+  }
+
   await route.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -145,6 +172,7 @@ async function loginAsInstructor(page: Page, returnPath = '/instructor-dashboard
 
 test.beforeEach(async ({ page }) => {
   instructorApiDelayMs = 0
+  projectHubApiDelayMs = 0
 
   await page.route('**/*', async (route) => {
     const { pathname } = new URL(route.request().url())
@@ -156,6 +184,61 @@ test.beforeEach(async ({ page }) => {
 
     await route.continue()
   })
+})
+
+test('프로젝트 허브 화면은 방문 상태와 조회 결과 및 aside 펼침을 유지한다', async ({ page }) => {
+  test.setTimeout(60_000)
+
+  const requestCounts = new Map<string, number>()
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url())
+    if (pathname.startsWith('/api/')) {
+      requestCounts.set(pathname, (requestCounts.get(pathname) ?? 0) + 1)
+    }
+  })
+
+  await login(page, '/lounge-dashboard')
+  await page.goto('/lounge-dashboard')
+
+  const visibleAside = () => page.locator('aside.project-aside:visible')
+  const openProjectPage = async (href: string) => {
+    await visibleAside().locator(`a[href="${href}"]`).click()
+    await expect(page).toHaveURL(new RegExp(`${href}$`))
+  }
+
+  await visibleAside().hover()
+  await expect(visibleAside()).toHaveCSS('width', '256px')
+  await openProjectPage('/community-lounge')
+  await expect(visibleAside()).toHaveCSS('width', '256px')
+
+  const loungeSearch = page.locator('#searchInput:visible')
+  await expect(loungeSearch).toBeVisible()
+  await loungeSearch.fill('상태 유지 확인')
+
+  await openProjectPage('/mentoring-hub')
+  await expect(page.locator('.mentoring-hub-page')).toBeVisible()
+  await openProjectPage('/workspace-hub')
+  await expect(visibleAside().locator('a[href="/workspace-hub"]')).toHaveClass(/active/)
+  await openProjectPage('/dev-showcase')
+  await expect(page.locator('.dev-showcase-page')).toBeVisible()
+
+  const requestBaseline = new Map(requestCounts)
+  projectHubApiDelayMs = 5_000
+
+  await openProjectPage('/lounge-dashboard')
+  await expect(visibleAside().locator('a[href="/lounge-dashboard"]')).toHaveClass(/active/)
+  await openProjectPage('/community-lounge')
+  await expect(loungeSearch).toHaveValue('상태 유지 확인', { timeout: 1_000 })
+  await openProjectPage('/mentoring-hub')
+  await expect(page.locator('.mentoring-hub-page')).toBeVisible({ timeout: 1_000 })
+  await openProjectPage('/workspace-hub')
+  await expect(visibleAside().locator('a[href="/workspace-hub"]')).toHaveClass(/active/)
+  await openProjectPage('/dev-showcase')
+  await expect(page.locator('.dev-showcase-page')).toBeVisible({ timeout: 1_000 })
+
+  expect(requestCounts).toEqual(requestBaseline)
+  expect(requestCounts.get('/api/lounge/shell')).toBeLessThanOrEqual(2)
+  expect(requestCounts.get('/api/lounge/squads')).toBe(1)
 })
 
 test('강사 주요 화면은 API 응답 전에도 공통 레이아웃과 기본 UI를 표시한다', async ({ page }) => {
