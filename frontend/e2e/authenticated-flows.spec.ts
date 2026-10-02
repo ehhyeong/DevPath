@@ -1,5 +1,7 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 
+let instructorApiDelayMs = 0
+
 const profile = {
   userId: 101,
   name: 'E2E 학습자',
@@ -27,8 +29,8 @@ const proofCard = {
   tags: [{ tagId: 1, tagName: 'Spring Boot', evidenceType: 'COURSE' }],
 }
 
-function token() {
-  const payload = Buffer.from(JSON.stringify({ sub: '101', role: 'LEARNER', exp: 4_102_444_800 })).toString('base64url')
+function token(role = 'LEARNER') {
+  const payload = Buffer.from(JSON.stringify({ sub: '101', role, exp: 4_102_444_800 })).toString('base64url')
   return `e2e.${payload}.signature`
 }
 
@@ -86,6 +88,9 @@ async function mockApi(route: Route) {
   const { pathname } = new URL(request.url())
 
   if (pathname === '/api/auth/login') {
+    const credentials = request.postDataJSON() as { email?: string }
+    const isInstructor = credentials.email === 'instructor@devpath.test'
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -93,11 +98,24 @@ async function mockApi(route: Route) {
         success: true,
         data: {
           tokenType: 'Bearer',
-          accessToken: token(),
+          accessToken: token(isInstructor ? 'ROLE_INSTRUCTOR' : 'LEARNER'),
           refreshToken: 'e2e-refresh-token',
-          name: profile.name,
+          name: isInstructor ? 'E2E 강사' : profile.name,
         },
       }),
+    })
+    return
+  }
+
+  if (pathname.startsWith('/api/instructor/')) {
+    if (instructorApiDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, instructorApiDelayMs))
+    }
+
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: false, message: 'E2E instructor data unavailable', data: null }),
     })
     return
   }
@@ -117,7 +135,17 @@ async function login(page: Page, returnPath = '/dashboard') {
   await expect(page.getByText('DevPath에 오신 것을 환영합니다')).toBeHidden()
 }
 
+async function loginAsInstructor(page: Page, returnPath = '/instructor-dashboard') {
+  await page.goto(`/login?returnTo=${encodeURIComponent(returnPath)}`)
+  await page.getByLabel('이메일').fill('instructor@devpath.test')
+  await page.getByLabel('비밀번호').fill('devpath-e2e-password')
+  await page.getByRole('button', { name: '로그인하기' }).click()
+  await expect(page.getByText('DevPath에 오신 것을 환영합니다')).toBeHidden()
+}
+
 test.beforeEach(async ({ page }) => {
+  instructorApiDelayMs = 0
+
   await page.route('**/*', async (route) => {
     const { pathname } = new URL(route.request().url())
 
@@ -128,6 +156,98 @@ test.beforeEach(async ({ page }) => {
 
     await route.continue()
   })
+})
+
+test('강사 주요 화면은 API 응답 전에도 공통 레이아웃과 기본 UI를 표시한다', async ({ page }) => {
+  await loginAsInstructor(page, '/home')
+  instructorApiDelayMs = 5_000
+
+  await page.goto('/instructor-dashboard')
+
+  const sidebar = page.locator('aside.instructor-sidebar')
+  const sidebarElement = await sidebar.elementHandle()
+  await expect(page.locator('.instructor-layout-content > div[aria-busy="true"]')).toBeVisible({ timeout: 2_500 })
+
+  await sidebar.locator('a[href="/course-management"]').click()
+  await expect(page).toHaveURL(/\/course-management$/)
+  await expect(page.locator('.course-management-page[aria-busy="true"] h1')).toBeVisible({ timeout: 2_500 })
+
+  await sidebar.locator('a[href="/instructor-qna"]').click()
+  await expect(page).toHaveURL(/\/instructor-qna$/)
+  await expect(page.locator('.instructor-qna-page h2')).toBeVisible({ timeout: 2_500 })
+  expect(await sidebarElement?.evaluate((element) => element.isConnected)).toBe(true)
+})
+
+test('강사 대시보드 사이드바는 기본 접힘 상태에서 hover 시 펼쳐진다', async ({ page }) => {
+  await loginAsInstructor(page)
+  await page.goto('/instructor-dashboard')
+  await page.mouse.move(640, 32)
+
+  const sidebar = page.locator('aside.instructor-sidebar')
+  const header = page.locator('nav.app-header')
+  const sectionTitle = sidebar.getByText('개요', { exact: true })
+  const menuLabel = sidebar.getByText('대시보드', { exact: true })
+  const guideLabel = sidebar.getByText('강사 가이드', { exact: true })
+  const headerMetrics = await header.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  })
+
+  await expect(sidebar).toHaveCSS('width', '80px')
+  await expect(sectionTitle).toHaveCSS('opacity', '0')
+  await expect(sectionTitle).toHaveCSS('height', '0px')
+  await expect(menuLabel).toHaveCSS('opacity', '0')
+  await expect(guideLabel).toHaveCSS('opacity', '0')
+
+  await sidebar.hover()
+  await expect(sidebar).toHaveCSS('width', '250px')
+  await expect(sectionTitle).toHaveCSS('opacity', '1')
+  await expect(menuLabel).toHaveCSS('opacity', '1')
+  await expect(guideLabel).toHaveCSS('opacity', '1')
+  expect(await header.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+  })).toEqual(headerMetrics)
+
+  await page.mouse.move(640, 180)
+  await expect(sidebar).toHaveCSS('width', '80px')
+  await expect(menuLabel).toHaveCSS('opacity', '0')
+})
+
+test('강사 대시보드 헤더는 홈과 같은 상단 메뉴와 hover 하위 메뉴를 사용한다', async ({ page }) => {
+  await loginAsInstructor(page)
+  await page.goto('/instructor-dashboard')
+
+  const header = page.locator('nav.app-header')
+  const topLevelLabels = ['로드맵', '강의', '프로젝트', '채용분석', '커뮤니티', '강사 대시보드']
+
+  for (const label of topLevelLabels) {
+    await expect(header.getByRole('link', { name: label, exact: true })).toBeVisible()
+  }
+
+  const dropdowns = [
+    { label: '로드맵', items: ['로드맵 추천', '로드맵 탐색', '내 로드맵'] },
+    { label: '프로젝트', items: ['프로젝트 대시보드', '라운지 (팀 찾기)', '멘토링 찾기', '워크스페이스', '런칭 쇼케이스'] },
+    { label: '커뮤니티', items: ['전체글', 'Q&A', '기술 공유', '커리어/이직', '자유게시판'] },
+    { label: '강사 대시보드', items: ['대시보드', '강의 관리', '멘토링 관리', '수강생 분석', '질문 게시판', '수강평 관리', '정산 관리', '마케팅 관리'] },
+  ]
+
+  for (const dropdown of dropdowns) {
+    const topLevelLink = header.getByRole('link', { name: dropdown.label, exact: true })
+    await expect(topLevelLink.locator('.site-header-nav-chevron')).toBeVisible()
+    await topLevelLink.hover()
+
+    const menu = header.getByRole('menu', { name: `${dropdown.label} 세부 메뉴` })
+    await expect(menu).toBeVisible()
+    await expect(menu.getByRole('menuitem')).toHaveCount(dropdown.items.length)
+    await expect(menu.locator('.site-header-mega-link-icon')).toHaveCount(dropdown.items.length)
+
+    for (const item of dropdown.items) {
+      await expect(menu.getByRole('menuitem', { name: item, exact: true })).toBeVisible()
+    }
+  }
+
+  await expect(header.getByRole('link', { name: '강사 대시보드', exact: true })).toHaveClass(/site-header-nav-link--active/)
 })
 
 test('일반 체크박스는 공통 브랜드 스타일을 사용한다', async ({ page }) => {
