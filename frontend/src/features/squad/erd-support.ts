@@ -606,7 +606,8 @@ export function loadMermaid() {
   }
 
   mermaidLoadPromise = import('mermaid').then(({ default: mermaid }) => {
-    mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' })
+    // 정화(sanitizeSvg)가 foreignObject를 지우므로 라벨을 HTML이 아닌 SVG <text>로 그리게 한다.
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict', htmlLabels: false })
     return mermaid
   })
 
