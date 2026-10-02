@@ -1,20 +1,45 @@
 import { useAuthSession } from '../../lib/useAuthSession'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { authApi, userApi } from '../../lib/api/auth'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
 import type { AuthSession } from '../../types/auth'
 import LoginRequiredGate from '../../components/LoginRequiredView'
 import InstructorLayout from '../layout/InstructorLayout'
-import { getCurrentInstructorPageKey, getInstructorPageMeta, type InstructorPageKey } from '../navigation'
-import CourseManagementPage from '../pages/CourseManagementPage'
-import InstructorDashboardPage from '../pages/InstructorDashboardPage'
-import InstructorMarketingPage from '../pages/InstructorMarketingPage'
-import InstructorMentoringPage from '../pages/InstructorMentoringPage'
-import InstructorQnaPage from '../pages/InstructorQnaPage'
-import InstructorReviewsPage from '../pages/InstructorReviewsPage'
-import InstructorRevenuePage from '../pages/InstructorRevenuePage'
-import StudentAnalyticsPage from '../pages/StudentAnalyticsPage'
+import { getCurrentInstructorPageKey, getInstructorPageKey, getInstructorPageMeta, type InstructorPageKey } from '../navigation'
+
+const instructorPageLoaders = {
+  dashboard: () => import('../pages/InstructorDashboardPage'),
+  'course-management': () => import('../pages/CourseManagementPage'),
+  mentoring: () => import('../pages/InstructorMentoringPage'),
+  'student-analytics': () => import('../pages/StudentAnalyticsPage'),
+  qna: () => import('../pages/InstructorQnaPage'),
+  reviews: () => import('../pages/InstructorReviewsPage'),
+  revenue: () => import('../pages/InstructorRevenuePage'),
+  marketing: () => import('../pages/InstructorMarketingPage'),
+}
+
+const InstructorDashboardPage = lazy(instructorPageLoaders.dashboard)
+const CourseManagementPage = lazy(instructorPageLoaders['course-management'])
+const InstructorMentoringPage = lazy(instructorPageLoaders.mentoring)
+const StudentAnalyticsPage = lazy(instructorPageLoaders['student-analytics'])
+const InstructorQnaPage = lazy(instructorPageLoaders.qna)
+const InstructorReviewsPage = lazy(instructorPageLoaders.reviews)
+const InstructorRevenuePage = lazy(instructorPageLoaders.revenue)
+const InstructorMarketingPage = lazy(instructorPageLoaders.marketing)
+
+export function preloadInstructorPage(pathname: string) {
+  return instructorPageLoaders[getInstructorPageKey(pathname)]()
+}
+
+function InstructorPageLoadingView() {
+  return (
+    <div className="flex min-h-[240px] items-center justify-center bg-[#F8F9FA] text-sm font-semibold text-gray-500" role="status">
+      <i className="fas fa-circle-notch fa-spin mr-2 text-[#00c471]" aria-hidden="true" />
+      강사 화면을 준비하는 중입니다.
+    </div>
+  )
+}
 
 function LoginRequiredView() {
   return <LoginRequiredGate message="강사 전용 대시보드는 로그인한 강사 계정으로만 접근할 수 있습니다." />
@@ -168,7 +193,9 @@ export default function InstructorApp() {
       currentPageKey={currentPageKey}
       onLogout={handleLogout}
     >
-      <InstructorPageRouter currentPageKey={currentPageKey} session={session} />
+      <Suspense fallback={<InstructorPageLoadingView />}>
+        <InstructorPageRouter currentPageKey={currentPageKey} session={session} />
+      </Suspense>
     </InstructorLayout>
   )
 }

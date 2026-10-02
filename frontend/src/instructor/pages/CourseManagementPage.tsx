@@ -231,14 +231,6 @@ export default function CourseManagementPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="course-management-page p-6">
-        <LoadingCard label="강의 목록을 불러오는 중입니다." />
-      </div>
-    )
-  }
-
   if (error) {
     return (
       <div className="course-management-page p-6">
@@ -248,7 +240,7 @@ export default function CourseManagementPage() {
   }
 
   return (
-    <div className="course-management-page min-h-full bg-[#F8F9FA] p-6">
+    <div className="course-management-page min-h-full bg-[#F8F9FA] p-6" aria-busy={loading}>
       <div className="mx-auto max-w-[1200px] pb-10">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -403,14 +395,16 @@ export default function CourseManagementPage() {
         </div>
 
         <div className="space-y-3">
-          {visibleCourses.length === 0 ? (
+          {loading ? (
+            <LoadingCard label="강의 목록을 불러오는 중입니다." />
+          ) : visibleCourses.length === 0 ? (
             <EmptyCard
               title="조건에 맞는 강의가 없습니다."
               description="필터를 조정하거나 검색어를 바꿔서 다시 확인해보세요."
             />
           ) : null}
 
-          {visibleCourses.map((course) =>
+          {!loading && visibleCourses.map((course) =>
             course.displayStatus === 'published' ? (
               <PublishedCourseCard key={course.courseId} course={course} onOpenNotice={openNoticeModal} />
             ) : course.displayStatus === 'review' ? (

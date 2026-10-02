@@ -32,9 +32,13 @@ const pageKeyByFileName = new Map(
   instructorNavItems.map((item) => [item.href.replace(/^\//, ''), item.key] as const),
 )
 
-export function getCurrentInstructorPageKey(): InstructorPageKey {
-  const fileName = window.location.pathname.replace(/\/+$/, '').split('/').pop() ?? 'instructor-dashboard'
+export function getInstructorPageKey(pathname: string): InstructorPageKey {
+  const fileName = pathname.replace(/\/+$/, '').split('/').pop() ?? 'instructor-dashboard'
   return pageKeyByFileName.get(fileName) ?? 'dashboard'
+}
+
+export function getCurrentInstructorPageKey(): InstructorPageKey {
+  return getInstructorPageKey(window.location.pathname)
 }
 
 export function getInstructorPageMeta(key: InstructorPageKey) {

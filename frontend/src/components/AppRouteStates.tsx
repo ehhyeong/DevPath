@@ -28,6 +28,7 @@ export function NotFoundPage({ pathname }: { pathname: string }) {
 
 type RouteErrorBoundaryProps = {
   children: ReactNode
+  resetKey?: string
 }
 
 type RouteErrorBoundaryState = {
@@ -43,6 +44,12 @@ export class RouteErrorBoundary extends Component<RouteErrorBoundaryProps,RouteE
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Failed to render the requested page.', error, info)
+  }
+
+  componentDidUpdate(previousProps: RouteErrorBoundaryProps) {
+    if (this.state.hasError && previousProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false })
+    }
   }
 
   render() {

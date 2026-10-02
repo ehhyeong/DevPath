@@ -9,7 +9,7 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js'
-import { ErrorCard, LoadingCard } from '../../account/ui'
+import { ErrorCard } from '../../account/ui'
 import { instructorAnalyticsApi, instructorCourseApi, instructorMentoringApi, instructorQnaApi, instructorReviewApi } from '../../lib/api/instructor'
 import type { AuthSession } from '../../types/auth'
 import type {
@@ -282,14 +282,6 @@ export default function InstructorDashboardPage({ session }: { session: AuthSess
     }
   }
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        <LoadingCard label="강사 대시보드를 불러오는 중입니다." />
-      </div>
-    )
-  }
-
   if (error) {
     return (
       <div className="p-6">
@@ -320,7 +312,7 @@ export default function InstructorDashboardPage({ session }: { session: AuthSess
   })
 
   return (
-    <div className="min-h-[calc(100dvh-var(--app-header-height))] bg-[#F8F9FA]">
+    <div className="min-h-[calc(100dvh-var(--app-header-height))] bg-[#F8F9FA]" aria-busy={loading}>
       <section className="border-b border-gray-200 bg-white px-5 py-5 shadow-sm sm:px-6 lg:px-8">
         <div className="flex flex-col gap-4">
           <div>
@@ -342,6 +334,13 @@ export default function InstructorDashboardPage({ session }: { session: AuthSess
       </section>
 
       <div className="p-5 sm:p-6 lg:p-8">
+        {loading ? (
+          <div className="mb-5 flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-500" role="status">
+            <i className="fas fa-circle-notch fa-spin text-[#00c471]" aria-hidden="true" />
+            최신 강사 데이터를 불러오는 중입니다.
+          </div>
+        ) : null}
+
         {loadWarning ? (
           <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
             {loadWarning}

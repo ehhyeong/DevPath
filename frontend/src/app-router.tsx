@@ -230,7 +230,12 @@ const routePreloaders = new Map<string, () => Promise<unknown>>([
 ])
 
 ACCOUNT_PAGE_ROUTES.forEach((pathname) => routePreloaders.set(pathname, routeLoaders.learner))
-INSTRUCTOR_PAGE_ROUTES.forEach((pathname) => routePreloaders.set(pathname, routeLoaders.instructor))
+INSTRUCTOR_PAGE_ROUTES.forEach((pathname) => {
+  routePreloaders.set(pathname, async () => {
+    const instructorModule = await routeLoaders.instructor()
+    await instructorModule.preloadInstructorPage(pathname)
+  })
+})
 
 for (const pathname of [
   '/instructor-ws-dashboard',
@@ -329,8 +334,10 @@ export default function AppRouter() {
       ? <InstructorApp />
       : ROUTE_PAGES[pathname] ?? <NotFoundPage pathname={pathname} />
 
+  const routeGroupKey = INSTRUCTOR_PAGE_ROUTES.has(pathname) ? 'instructor' : locationKey
+
   return (
-    <RouteErrorBoundary key={locationKey}>
+    <RouteErrorBoundary key={routeGroupKey} resetKey={locationKey}>
       <Suspense fallback={<RouteLoadingView />}>{page}</Suspense>
     </RouteErrorBoundary>
   )
