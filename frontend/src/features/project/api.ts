@@ -1,4 +1,5 @@
 import { expireStoredAuthSession, readStoredAuthSession, refreshStoredAuthSession } from '../../lib/auth-session'
+import { getCachedQuery, invalidateCachedQueries } from '../../lib/memory-query-cache'
 
 export type ApiEnvelope<T> = {
   success: boolean
@@ -9,6 +10,11 @@ export type ApiEnvelope<T> = {
 type AuthMode = 'none' | 'optional' | 'required'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
+const PROJECT_QUERY_TTL_MS = 60_000
+
+export function invalidateProjectApiCache() {
+  invalidateCachedQueries((key) => key.includes('|project:'))
+}
 
 export async function projectApiRequest<T>(
   path: string,
@@ -32,26 +38,45 @@ export async function projectApiRequest<T>(
     throw new Error('로그인이 필요합니다.')
   }
 
-  let response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
-  let payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
+  const execute = async (requestInit: RequestInit) => {
+    let response = await fetch(`${API_BASE_URL}${path}`, { ...requestInit, headers })
+    let payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
 
-  if (authMode !== 'none' && response.status === 401 && session?.refreshToken) {
-    const refreshedSession = await refreshStoredAuthSession({ force: true }).catch(() => null)
+    if (authMode !== 'none' && response.status === 401 && session?.refreshToken) {
+      const refreshedSession = await refreshStoredAuthSession({ force: true }).catch(() => null)
 
-    if (refreshedSession?.accessToken) {
-      headers.set('Authorization', `${refreshedSession.tokenType} ${refreshedSession.accessToken}`)
-      response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers })
-      payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
+      if (refreshedSession?.accessToken) {
+        headers.set('Authorization', `${refreshedSession.tokenType} ${refreshedSession.accessToken}`)
+        response = await fetch(`${API_BASE_URL}${path}`, { ...requestInit, headers })
+        payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
+      }
     }
+
+    if (authMode !== 'none' && response.status === 401 && readStoredAuthSession()) {
+      expireStoredAuthSession({ reload: false, force: true })
+    }
+
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.message ?? `Request failed with status ${response.status}`)
+    }
+
+    return payload.data
   }
 
-  if (authMode !== 'none' && response.status === 401 && readStoredAuthSession()) {
-    expireStoredAuthSession({ reload: false, force: true })
+  const method = (init.method ?? 'GET').toUpperCase()
+
+  if (method === 'GET') {
+    const { signal, ...sharedInit } = init
+    const cacheIdentity = session?.userId ? `user-${session.userId}` : 'anonymous'
+
+    return getCachedQuery(
+      `${cacheIdentity}|project:${path}`,
+      () => execute(sharedInit),
+      { signal: signal ?? undefined, ttlMs: PROJECT_QUERY_TTL_MS },
+    )
   }
 
-  if (!response.ok || !payload?.success) {
-    throw new Error(payload?.message ?? `Request failed with status ${response.status}`)
-  }
-
-  return payload.data
+  const result = await execute(init)
+  invalidateProjectApiCache()
+  return result
 }

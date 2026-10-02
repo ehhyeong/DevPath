@@ -1,7 +1,7 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import axios from 'axios'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
-import { navigateTo } from '../../lib/spa-navigation'
+import { getCurrentLocationKey, navigateTo, SPA_NAVIGATION_EVENT } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from '../../components/ProjectAside'
 import { ProjectCreatePanel } from './ProjectCreateApp'
@@ -11,6 +11,7 @@ import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, 
 import LoginRequiredView from '../../components/LoginRequiredView'
 import { showAuthToast } from '../../lib/auth-toast'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
+import { invalidateProjectApiCache, projectApiRequest } from './api'
 
 type ProjectType = 'all' | 'solo' | 'squad' | 'mentoring'
 type ProjectStatus = 'all' | 'progress' | 'completed'
@@ -113,6 +114,7 @@ export default function WorkspaceHubApp() {
   const [loading, setLoading] = useState(true)
   const [acceptedInviteToken, setAcceptedInviteToken] = useState<string | null>(null)
   const [leavingProjectId, setLeavingProjectId] = useState<number | null>(null)
+  const [locationKey, setLocationKey] = useState(getCurrentLocationKey)
 
   useEffect(() => {
     document.title = 'DevPath - 워크스페이스 허브'
@@ -131,29 +133,25 @@ export default function WorkspaceHubApp() {
     const controller = new AbortController()
     const currentSession = readStoredAuthSession()
     setSession(currentSession)
-    const headers = currentSession?.accessToken
-      ? { Authorization: `${currentSession.tokenType} ${currentSession.accessToken}` }
-      : undefined
-
     async function load() {
       setLoading(true)
       try {
-        const [shellResponse, projectsResponse] = await Promise.all([
-          axios
-            .get<ApiEnvelope<LoungeShellResponse>>(`${API_BASE_URL}/api/lounge/shell`, {
-              headers,
-              signal: controller.signal,
-            })
-            .catch(() => null),
-          axios.get<ApiEnvelope<WorkspaceHubProject[]>>(`${API_BASE_URL}/api/workspaces/hub/projects`, {
-            headers,
-            signal: controller.signal,
-          }),
+        const [shell, nextProjects] = await Promise.all([
+          projectApiRequest<LoungeShellResponse>(
+            '/api/lounge/shell',
+            { signal: controller.signal },
+            'optional',
+          ).catch(() => null),
+          projectApiRequest<WorkspaceHubProject[]>(
+            '/api/workspaces/hub/projects',
+            { signal: controller.signal },
+            'required',
+          ),
         ])
 
-        setAsideSquads(shellResponse?.data.data.mySquads ?? [])
-        setProfileImage(shellResponse?.data.data.user?.profileImage ?? null)
-        setProjects(projectsResponse.data.data ?? [])
+        setAsideSquads(shell?.mySquads ?? [])
+        setProfileImage(shell?.user?.profileImage ?? null)
+        setProjects(nextProjects)
       } catch (error) {
         if ((error as Error).name !== 'CanceledError') {
           console.error(error)
@@ -195,6 +193,16 @@ export default function WorkspaceHubApp() {
   }, [setSession])
 
   useEffect(() => {
+    const syncLocation = () => setLocationKey(getCurrentLocationKey())
+    window.addEventListener('popstate', syncLocation)
+    window.addEventListener(SPA_NAVIGATION_EVENT, syncLocation)
+    return () => {
+      window.removeEventListener('popstate', syncLocation)
+      window.removeEventListener(SPA_NAVIGATION_EVENT, syncLocation)
+    }
+  }, [])
+
+  useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('inviteToken')
     if (!token || !session?.accessToken || acceptedInviteToken === token) {
       return
@@ -209,6 +217,7 @@ export default function WorkspaceHubApp() {
         { headers },
       )
       .then((response) => {
+        invalidateProjectApiCache()
         const result = response.data.data
         showAuthToast({
           message: result.alreadyMember
@@ -229,7 +238,7 @@ export default function WorkspaceHubApp() {
           durationMs: 3200,
         })
       })
-  }, [acceptedInviteToken, session])
+  }, [acceptedInviteToken, locationKey, session])
 
   const visibleProjects = useMemo(
     () =>
@@ -351,6 +360,7 @@ export default function WorkspaceHubApp() {
           { headers },
         )
       }
+      invalidateProjectApiCache()
       setProjects((current) => current.filter((item) => item.projectId !== project.projectId))
       setAsideSquads((current) => current.filter((squad) => !asideSquadMatchesProject(squad, project.projectId)))
       if (settingsProject?.projectId === project.projectId) {

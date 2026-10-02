@@ -2,6 +2,10 @@
 .workspace-sidebar-section-title { opacity: 0; height: 0; overflow: hidden; transition: all 0.3s ease; }
 aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
 
+.project-aside.is-expanded { width: 16rem !important; }
+.project-aside.is-expanded .workspace-sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
+.project-aside.is-expanded .sidebar-text { opacity: 1; width: auto; margin-left: 0.75rem; }
+
 .hover-card { transition: all 0.3s ease; border: 1px solid #E5E7EB; }
 .hover-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); border-color: #D1D5DB; }
 

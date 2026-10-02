@@ -2,7 +2,7 @@ import { Suspense,lazy,useEffect,useState,type ReactElement } from 'react'
 import { NotFoundPage,RouteErrorBoundary,RouteLoadingView } from './components/AppRouteStates'
 import { getCurrentLocationKey,installSpaNavigation,SPA_NAVIGATION_EVENT } from './lib/spa-navigation'
 import { installWorkspacePresenceHeartbeat } from './lib/workspace-presence'
-import { ACCOUNT_PAGE_ROUTES,INSTRUCTOR_PAGE_ROUTES,getCurrentPathname,normalizePathname } from './routes'
+import { ACCOUNT_PAGE_ROUTES,INSTRUCTOR_PAGE_ROUTES,PROJECT_HUB_PAGE_ROUTES,getCurrentPathname,normalizePathname } from './routes'
 
 function loadWithStyle<Module>(
   loadStyle: () => Promise<unknown>,
@@ -23,10 +23,8 @@ const routeLoaders = {
   contentAssignmentEditor: () => import('./features/course/ContentAssignmentEditorApp'),
   courseDetail: () => import('./features/course/CourseDetailApp'),
   courseEditor: () => import('./features/course/CourseEditorApp'),
-  communityLounge: () => import('./features/community/CommunityLoungeApp'),
   communityList: () => import('./features/community/CommunityListPage'),
   communityWrite: () => import('./features/community/CommunityWritePage'),
-  devShowcase: () => import('./features/community/DevShowcaseApp'),
   instructor: loadWithStyle(loadInstructorStyles, () => import('./instructor/apps/InstructorApp')),
   instructorChannel: loadWithStyle(loadInstructorStyles, () => import('./instructor/channel/InstructorChannelApp')),
   instructorCourseDetail: loadWithStyle(loadInstructorStyles, () => import('./instructor/apps/InstructorCourseDetailApp')),
@@ -38,9 +36,8 @@ const routeLoaders = {
   learningPlayer: () => import('./features/course/LearningPlayerApp'),
   lectureList: () => import('./features/course/LectureListApp'),
   login: () => import('./features/auth/LoginApp'),
-  loungeDashboard: loadWithStyle(loadWorkspaceStyles, () => import('./features/community/LoungeDashboardApp')),
+  projectHub: loadWithStyle(loadWorkspaceStyles, () => import('./features/project/ProjectHubApp')),
   mentoringWorkspace: loadWithStyle(loadWorkspaceStyles, () => import('./features/mentoring/MentoringCommonWorkspaceApp')),
-  mentoringHub: loadWithStyle(loadWorkspaceStyles, () => import('./features/mentoring/MentoringHubApp')),
   myRoadmapBuilder: loadWithStyle(loadRoadmapStyles, () => import('./features/roadmap/MyRoadmapBuilderApp')),
   myRoadmapList: loadWithStyle(loadRoadmapStyles, () => import('./features/roadmap/MyRoadmapListPage')),
   oauthRedirect: () => import('./features/auth/OAuthRedirectApp'),
@@ -61,17 +58,14 @@ const routeLoaders = {
   teamWorkspaceDashboard: loadWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/TeamWorkspaceDashboardApp')),
   teamWorkspaceMilestone: loadWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/TeamWorkspaceMilestoneApp')),
   teamWorkspaceSuite: loadWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/TeamWorkspaceSuiteApp')),
-  workspaceHub: loadWithStyle(loadWorkspaceStyles, () => import('./features/project/WorkspaceHubApp')),
 }
 
 const App = lazy(routeLoaders.app)
 const ContentAssignmentEditorApp = lazy(routeLoaders.contentAssignmentEditor)
 const CourseDetailApp = lazy(routeLoaders.courseDetail)
 const CourseEditorApp = lazy(routeLoaders.courseEditor)
-const CommunityLoungeApp = lazy(routeLoaders.communityLounge)
 const CommunityListPage = lazy(routeLoaders.communityList)
 const CommunityWritePage = lazy(routeLoaders.communityWrite)
-const DevShowcaseApp = lazy(routeLoaders.devShowcase)
 const InstructorApp = lazy(routeLoaders.instructor)
 const InstructorChannelApp = lazy(routeLoaders.instructorChannel)
 const InstructorCourseDetailApp = lazy(routeLoaders.instructorCourseDetail)
@@ -83,9 +77,8 @@ const LearnerApp = lazy(routeLoaders.learner)
 const LearningPlayerApp = lazy(routeLoaders.learningPlayer)
 const LectureListApp = lazy(routeLoaders.lectureList)
 const LoginApp = lazy(routeLoaders.login)
-const LoungeDashboardApp = lazy(routeLoaders.loungeDashboard)
+const ProjectHubApp = lazy(routeLoaders.projectHub)
 const MentoringCommonWorkspaceApp = lazy(routeLoaders.mentoringWorkspace)
-const MentoringHubApp = lazy(routeLoaders.mentoringHub)
 const MyRoadmapBuilderApp = lazy(routeLoaders.myRoadmapBuilder)
 const MyRoadmapListPage = lazy(routeLoaders.myRoadmapList)
 const OAuthRedirectApp = lazy(routeLoaders.oauthRedirect)
@@ -106,7 +99,6 @@ const SurveyApp = lazy(routeLoaders.survey)
 const TeamWorkspaceDashboardApp = lazy(routeLoaders.teamWorkspaceDashboard)
 const TeamWorkspaceMilestoneApp = lazy(routeLoaders.teamWorkspaceMilestone)
 const TeamWorkspaceSuiteApp = lazy(routeLoaders.teamWorkspaceSuite)
-const WorkspaceHubApp = lazy(routeLoaders.workspaceHub)
 
 const ROUTE_PAGES: Record<string, ReactElement> = {
   '/': <App />,
@@ -140,12 +132,12 @@ const ROUTE_PAGES: Record<string, ReactElement> = {
   '/course-editor': <CourseEditorApp />,
   '/quiz-creator': <QuizCreatorApp />,
   '/content-assignment-editor': <ContentAssignmentEditorApp />,
-  '/lounge-dashboard': <LoungeDashboardApp />,
+  '/lounge-dashboard': <ProjectHubApp />,
   '/community-list': <CommunityListPage />,
   '/community-write': <CommunityWritePage />,
-  '/community-lounge': <CommunityLoungeApp />,
-  '/mentoring-hub': <MentoringHubApp />,
-  '/workspace-hub': <WorkspaceHubApp />,
+  '/community-lounge': <ProjectHubApp />,
+  '/mentoring-hub': <ProjectHubApp />,
+  '/workspace-hub': <ProjectHubApp />,
   '/mentoring-dashboard': <MentoringCommonWorkspaceApp page="dashboard" />,
   '/mentoring-workspace': <MentoringCommonWorkspaceApp page="workspace" />,
   '/mentoring-curriculum': <MentoringCommonWorkspaceApp page="curriculum" />,
@@ -155,7 +147,7 @@ const ROUTE_PAGES: Record<string, ReactElement> = {
   '/mentoring-meeting': <MentoringCommonWorkspaceApp page="meeting" />,
   '/mentoring-live-meeting': <InstructorWsDashboardApp page="live-meeting" />,
   '/mentoring-erd': <MentoringCommonWorkspaceApp page="erd" />,
-  '/dev-showcase': <DevShowcaseApp />,
+  '/dev-showcase': <ProjectHubApp />,
   '/project-create': <ProjectCreateApp />,
   '/learning': <LearningPlayerApp />,
   '/course-detail': <CourseDetailApp />,
@@ -200,13 +192,8 @@ const routePreloaders = new Map<string, () => Promise<unknown>>([
   ['/course-editor', routeLoaders.courseEditor],
   ['/quiz-creator', routeLoaders.quizCreator],
   ['/content-assignment-editor', routeLoaders.contentAssignmentEditor],
-  ['/lounge-dashboard', routeLoaders.loungeDashboard],
   ['/community-list', routeLoaders.communityList],
   ['/community-write', routeLoaders.communityWrite],
-  ['/community-lounge', routeLoaders.communityLounge],
-  ['/mentoring-hub', routeLoaders.mentoringHub],
-  ['/workspace-hub', routeLoaders.workspaceHub],
-  ['/dev-showcase', routeLoaders.devShowcase],
   ['/project-create', routeLoaders.projectCreate],
   ['/learning', routeLoaders.learningPlayer],
   ['/course-detail', routeLoaders.courseDetail],
@@ -234,6 +221,12 @@ INSTRUCTOR_PAGE_ROUTES.forEach((pathname) => {
   routePreloaders.set(pathname, async () => {
     const instructorModule = await routeLoaders.instructor()
     await instructorModule.preloadInstructorPage(pathname)
+  })
+})
+PROJECT_HUB_PAGE_ROUTES.forEach((pathname) => {
+  routePreloaders.set(pathname, async () => {
+    const projectHubModule = await routeLoaders.projectHub()
+    await projectHubModule.preloadProjectHubPage(pathname)
   })
 })
 
@@ -333,8 +326,11 @@ export default function AppRouter() {
     : INSTRUCTOR_PAGE_ROUTES.has(pathname)
       ? <InstructorApp />
       : ROUTE_PAGES[pathname] ?? <NotFoundPage pathname={pathname} />
-
-  const routeGroupKey = INSTRUCTOR_PAGE_ROUTES.has(pathname) ? 'instructor' : locationKey
+  const routeGroupKey = INSTRUCTOR_PAGE_ROUTES.has(pathname)
+    ? 'instructor'
+    : PROJECT_HUB_PAGE_ROUTES.has(pathname)
+      ? 'project-hub'
+      : locationKey
 
   return (
     <RouteErrorBoundary key={routeGroupKey} resetKey={locationKey}>

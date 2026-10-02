@@ -19,6 +19,14 @@ export const INSTRUCTOR_PAGE_ROUTES = new Set([
   '/instructor-marketing',
 ])
 
+export const PROJECT_HUB_PAGE_ROUTES = new Set([
+  '/lounge-dashboard',
+  '/community-lounge',
+  '/mentoring-hub',
+  '/workspace-hub',
+  '/dev-showcase',
+])
+
 export function normalizePathname(pathname: string) {
   const normalized = pathname.replace(/\/+$/, '') || '/'
   return normalized === '/singup' ? '/signup' : normalized
