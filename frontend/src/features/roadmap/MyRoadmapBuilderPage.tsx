@@ -148,7 +148,10 @@ function MyRoadmapBuilderPage() {
         <aside className="z-10 flex w-80 flex-col border-r border-gray-200 bg-white shadow-lg md:w-96">
 
           {/* 카테고리 선택 */}
-          <div className="shrink-0 border-b border-gray-200 bg-gray-50 p-3">
+          <div
+            className="shrink-0 border-b border-gray-200 bg-gray-50 p-3"
+            style={{ zoom: 0.9 }}
+          >
             <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
@@ -258,7 +261,10 @@ function MyRoadmapBuilderPage() {
           )}
 
           {/* 검색 */}
-          <div className="shrink-0 border-b border-gray-100 bg-white p-4">
+          <div
+            className="shrink-0 border-b border-gray-100 bg-white p-4"
+            style={{ zoom: 0.9 }}
+          >
             <div className="relative">
               <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" />
               <input
