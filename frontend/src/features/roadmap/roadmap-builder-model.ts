@@ -83,17 +83,17 @@ export function getCategoryBadgeVisual(category: string) {
   }
 }
 
-function mapOfficialNodeToModule(
-  detail: OfficialRoadmapDetail,
-  node: OfficialRoadmapNode,
+export function mapOfficialNodeToModule(
+  roadmapTitle: string,
+  node: Pick<OfficialRoadmapNode, 'nodeId' | 'title' | 'subTopics' | 'nodeType'>,
   template: RoadmapTemplate | null,
 ): SkillModule {
   const visual = getRoadmapNodeVisual({
     title: node.title,
     subTopics: node.subTopics,
     nodeType: node.nodeType,
-    roadmapTitle: template?.item.subtitle ?? template?.label ?? detail.title,
-    category: template?.sectionTitle ?? detail.title,
+    roadmapTitle: template?.item.subtitle ?? template?.label ?? roadmapTitle,
+    category: template?.sectionTitle ?? roadmapTitle,
   })
   const topics = splitSubTopics(node.subTopics)
 
@@ -104,11 +104,11 @@ function mapOfficialNodeToModule(
     originalNodeId: node.nodeId,
     id: `official-${node.nodeId}`,
     title: node.title,
-    category: template?.sectionTitle ?? detail.title,
+    category: template?.sectionTitle ?? roadmapTitle,
     icon: visual.icon,
     color: visual.color,
     bgColor: visual.bgColor,
-    topics: topics.length > 0 ? topics : [node.nodeType ?? detail.title],
+    topics: topics.length > 0 ? topics : [node.nodeType ?? roadmapTitle],
   }
 }
 
@@ -118,7 +118,7 @@ export function mapDetailToModules(
 ) {
   return [...detail.nodes]
     .sort((a, b) => a.sortOrder - b.sortOrder || a.nodeId - b.nodeId)
-    .map((node) => mapOfficialNodeToModule(detail, node, template))
+    .map((node) => mapOfficialNodeToModule(detail.title, node, template))
 }
 
 export function buildRoadmapTemplates(catalog: RoadmapHubCatalog): RoadmapTemplate[] {
