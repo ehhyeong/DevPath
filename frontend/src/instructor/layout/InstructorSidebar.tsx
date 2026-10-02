@@ -66,7 +66,7 @@ export default function InstructorSidebar({
 
   return (
     <>
-      <aside className="instructor-sidebar box-border hidden h-[calc(100dvh-var(--app-header-height))] min-h-[calc(100dvh-var(--app-header-height))] w-[250px] shrink-0 self-stretch flex-col border-r border-[#e2e8f0] bg-white px-4 py-6 font-['Pretendard',-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,Helvetica,Arial,sans-serif] lg:flex">
+      <aside className="instructor-sidebar box-border hidden h-[calc(100dvh-var(--app-header-height))] min-h-[calc(100dvh-var(--app-header-height))] w-20 shrink-0 self-stretch flex-col overflow-x-hidden border-r border-[#e2e8f0] bg-white px-4 py-6 font-['Pretendard',-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,Helvetica,Arial,sans-serif] transition-[width] duration-300 ease-in-out hover:w-[250px] lg:flex">
         <div className="sidebar-sticky-content">
           <nav className="sidebar-nav hide-scroll">
             {sections.map((section) => (
@@ -120,7 +120,7 @@ export default function InstructorSidebar({
                 <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                 <path d="M12 17h.01" />
               </svg>
-              강사 가이드
+              <span className="help-label">강사 가이드</span>
             </button>
           </div>
         </div>
