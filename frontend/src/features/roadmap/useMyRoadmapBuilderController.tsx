@@ -11,7 +11,7 @@ import { roadmapApi } from '../../lib/api/roadmap'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, readStoredAuthSession } from '../../lib/auth-session'
 import { getRoadmapNodeVisual } from '../../lib/roadmap-icons'
 import type { SkillModule, RoadmapTemplate, BuilderNode, TimelineRow, ActiveDrag } from './roadmap-builder-model'
-import { makeInstanceId, getModuleUsageKey, mapDetailToModules, buildRoadmapTemplates, filterRoadmapTemplates } from './roadmap-builder-model'
+import { makeInstanceId, getModuleUsageKey, mapDetailToModules, mapOfficialNodeToModule, buildRoadmapTemplates, filterRoadmapTemplates } from './roadmap-builder-model'
 
 
 // ────────────────────────────────────────────
@@ -407,43 +407,71 @@ function readEditIdFromLocation(): number | null {
     [usedIds, branchTarget, maxSortOrder],
   )
 
-  // AI 추천 모듈 일괄 추가. handleAdd는 maxSortOrder memo를 읽어 1개씩만 처리하므로
-  // 여러 개를 넣을 때는 prev 기준으로 순번을 매기는 이 함수를 쓴다.
-  const handleAddMany = useCallback((modules: SkillModule[]) => {
-    if (modules.length === 0) return
-
+  // AI 제안 적용. 기존 캔버스 노드에 분기를 붙인 뒤 새 단계를 끝에 이어 붙인다.
+  // 단계는 모듈 1개면 척추, 2개면 같은 sortOrder의 좌/우 분기다.
+  // 답변 이후 캔버스가 바뀌었을 수 있으므로 prev 기준으로 다시 검증한다.
+  const applyAiSuggestion = useCallback((
+    branches: Array<{ anchorNodeId: number; module: SkillModule }>,
+    steps: SkillModule[][],
+  ) => {
     setNodes((prev) => {
       const used = new Set(prev.map((n) => getModuleUsageKey(n.module)))
-      let nextSortOrder = prev.reduce((max, n) => Math.max(max, n.sortOrder), 0)
-      const added: BuilderNode[] = []
+      let next = prev
 
-      modules.forEach((module) => {
+      branches.forEach(({ anchorNodeId, module }) => {
         const key = getModuleUsageKey(module)
         if (used.has(key)) return
+        const anchor = next.find(
+          (n) => n.module.source === 'OFFICIAL_NODE' && n.module.originalNodeId === anchorNodeId && n.laneKey === null,
+        )
+        if (!anchor || next.some((n) => n.sortOrder === anchor.sortOrder && n.laneKey !== null)) return
         used.add(key)
-        nextSortOrder += 1
-        added.push({ instanceId: makeInstanceId(), module, sortOrder: nextSortOrder, laneKey: null })
+        next = [
+          ...next.map((n) => (n.instanceId === anchor.instanceId ? { ...n, laneKey: 1 } : n)),
+          { instanceId: makeInstanceId(), module, sortOrder: anchor.sortOrder, laneKey: 2 },
+        ]
       })
 
-      return added.length === 0 ? prev : [...prev, ...added]
+      let nextSortOrder = next.reduce((max, n) => Math.max(max, n.sortOrder), 0)
+      const added: BuilderNode[] = []
+
+      steps.forEach((stepModules) => {
+        const fresh = stepModules.filter((module) => !used.has(getModuleUsageKey(module)))
+        if (fresh.length === 0) return
+        fresh.forEach((module) => used.add(getModuleUsageKey(module)))
+        nextSortOrder += 1
+        fresh.forEach((module, index) => {
+          added.push({
+            instanceId: makeInstanceId(),
+            module,
+            sortOrder: nextSortOrder,
+            laneKey: fresh.length === 1 ? null : index + 1,
+          })
+        })
+      })
+
+      return added.length === 0 ? next : [...next, ...added]
     })
 
     setBranchTarget(null)
-    setTimeout(() => {
-      mainRef.current?.scrollTo({ top: mainRef.current.scrollHeight, behavior: 'smooth' })
-    }, 50)
+    if (steps.length > 0) {
+      setTimeout(() => {
+        mainRef.current?.scrollTo({ top: mainRef.current.scrollHeight, behavior: 'smooth' })
+      }, 50)
+    }
   }, [])
 
-  // AI 네비게이터 질의. 선택된 템플릿의 노드 중에서 추천받아 캔버스 추가 액션까지 만들어 돌려준다.
+  // AI 네비게이터 질의. 모든 템플릿의 노드 중에서 추천받아 캔버스 적용 액션까지 만들어 돌려준다.
   const handleAiAsk = useCallback(
     async (question: string): Promise<AiAnswer> => {
       if (!session?.userId) {
         return { text: '로그인 후 이용할 수 있습니다.' }
       }
 
-      if (selectedRoadmapId === null) {
-        return { text: '먼저 왼쪽에서 로드맵 템플릿을 선택해 주세요. 선택한 템플릿의 모듈 중에서 추천해 드립니다.' }
-      }
+      const orderedNodes = [...nodes].sort((a, b) => a.sortOrder - b.sortOrder || (a.laneKey ?? 0) - (b.laneKey ?? 0))
+      const branchingRows = new Set(nodes.filter((n) => n.laneKey !== null).map((n) => n.sortOrder))
+      const officialNodeIdOf = (n: BuilderNode) =>
+        n.module.source === 'OFFICIAL_NODE' ? n.module.originalNodeId : null
 
       const res = await fetch('/api/builder/ai-assist', {
         method: 'POST',
@@ -454,8 +482,12 @@ function readEditIdFromLocation(): number | null {
         body: JSON.stringify({
           question,
           roadmapId: selectedRoadmapId,
-          usedNodeIds: nodes
-            .map((n) => n.module.originalNodeId)
+          usedNodeIds: orderedNodes
+            .map(officialNodeIdOf)
+            .filter((nodeId): nodeId is number => nodeId !== null),
+          anchorableNodeIds: orderedNodes
+            .filter((n) => n.laneKey === null && !branchingRows.has(n.sortOrder))
+            .map(officialNodeIdOf)
             .filter((nodeId): nodeId is number => nodeId !== null),
         }),
       })
@@ -464,30 +496,50 @@ function readEditIdFromLocation(): number | null {
         throw new Error(`AI 제안 실패 (${res.status})`)
       }
 
-      const payload = await res.json() as {
-        data: { answer: string; modules: Array<{ nodeId: number; title: string; reason: string }> }
+      type AiModule = {
+        nodeId: number
+        roadmapId: number
+        roadmapTitle: string
+        title: string
+        subTopics: string | null
+        nodeType: string | null
       }
-      const picked = payload.data.modules
-        .map((module) =>
-          items.find(
-            (item) => item.source === 'OFFICIAL_NODE' && item.originalNodeId === module.nodeId,
-          ),
+      const payload = await res.json() as {
+        data: {
+          answer: string
+          steps: Array<{ modules: AiModule[] }>
+          branches: Array<{ anchorNodeId: number; module: AiModule }>
+        }
+      }
+      const toModule = (module: AiModule) =>
+        mapOfficialNodeToModule(
+          module.roadmapTitle,
+          module,
+          templates.find((template) => template.roadmapId === module.roadmapId) ?? null,
         )
-        .filter((module): module is SkillModule => module !== undefined)
+      const steps = payload.data.steps.map((step) => step.modules.map(toModule))
+      const branches = payload.data.branches.map((branch) => ({
+        anchorNodeId: branch.anchorNodeId,
+        module: toModule(branch.module),
+      }))
+      const moduleCount = steps.reduce((sum, step) => sum + step.length, 0) + branches.length
+      const branchCount = steps.filter((step) => step.length > 1).length + branches.length
 
-      if (picked.length === 0) {
+      if (moduleCount === 0) {
         return { text: payload.data.answer }
       }
 
       return {
         text: payload.data.answer,
         action: {
-          label: `추천 모듈 ${picked.length}개 추가`,
-          run: () => handleAddMany(picked),
+          label: branchCount > 0
+            ? `추천 적용 (모듈 ${moduleCount}개 · 분기 ${branchCount}곳)`
+            : `추천 모듈 ${moduleCount}개 추가`,
+          run: () => applyAiSuggestion(branches, steps),
         },
       }
     },
-    [session, selectedRoadmapId, nodes, items, handleAddMany],
+    [session, selectedRoadmapId, nodes, templates, applyAiSuggestion],
   )
 
   // 분기 모드 진입

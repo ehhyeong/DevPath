@@ -50,7 +50,7 @@ public class BuilderController {
 
   @Operation(
       summary = "빌더 AI 네비게이터 제안",
-      description = "학습자의 자연어 요청을 받아 선택된 공식 로드맵 템플릿의 노드 중에서 추천 모듈을 학습 순서대로 제안합니다.")
+      description = "학습자의 자연어 요청을 받아 모든 공식 로드맵 템플릿의 노드 중에서 추천 모듈을 학습 순서대로 제안하고, 갈림길 단계와 기존 캔버스 노드에 붙일 분기도 함께 제안합니다.")
   @PostMapping("/ai-assist")
   public ResponseEntity<ApiResponse<BuilderAiAssistResponse>> suggestModules(
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId,

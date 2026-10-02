@@ -1,0 +1,19 @@
+package com.devpath.api.workspace.dto;
+
+/** 워크스페이스 AI 비서가 제안할 수 있는 변경 종류. */
+public enum WorkspaceAiActionType {
+  TASK_CREATE,
+  TASK_UPDATE,
+  TASK_DELETE,
+  EVENT_CREATE,
+  EVENT_UPDATE,
+  EVENT_DELETE,
+  MILESTONE_CREATE,
+  MILESTONE_UPDATE,
+  MILESTONE_DELETE,
+  MEETING_NOTE_CREATE,
+  MEETING_NOTE_UPDATE,
+  MEETING_NOTE_DELETE,
+  ERD_UPDATE,
+  API_SPEC_UPDATE
+}

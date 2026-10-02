@@ -230,6 +230,7 @@ public enum ErrorCode {
 
   BUILDER_AI_ASSIST_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 로드맵 제안을 생성하지 못했습니다."),
   WORKSPACE_AI_ASSIST_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 답변을 생성하지 못했습니다."),
+  WORKSPACE_AI_ACTION_INVALID(HttpStatus.BAD_REQUEST, "AI 변경 제안을 실행할 수 없습니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");
 
