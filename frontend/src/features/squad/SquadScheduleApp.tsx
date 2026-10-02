@@ -8,6 +8,7 @@ import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } f
 import { showAuthToast } from '../../lib/auth-toast'
 import { projectApiRequest } from '../project/api'
 import { createSquadNotification, squadActorName } from './notifications'
+import { useWorkspaceDataVersion } from '../../lib/workspace-events'
 import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
@@ -312,6 +313,7 @@ function sortEvents(events: CalendarEvent[]) {
 
 export default function SquadScheduleApp() {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
+  const dataVersion = useWorkspaceDataVersion()
   const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
@@ -364,7 +366,10 @@ export default function SquadScheduleApp() {
     let ignore = false
 
     async function load() {
-      setLoading(true)
+      // AI 비서 변경 후 재조회(dataVersion > 0)는 로딩 화면 없이 갱신한다. 로딩 화면이 AI 패널을 다시 그려 대화가 사라지기 때문이다.
+      if (dataVersion === 0) {
+        setLoading(true)
+      }
       setError(null)
 
       try {
@@ -395,7 +400,7 @@ export default function SquadScheduleApp() {
     return () => {
       ignore = true
     }
-  }, [workspaceId])
+  }, [dataVersion, workspaceId])
 
   const members = dashboard?.members ?? []
   const projectName = dashboard?.name ?? '스쿼드 일정'

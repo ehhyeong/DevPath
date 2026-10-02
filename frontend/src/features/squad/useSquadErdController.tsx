@@ -7,6 +7,7 @@ import { showAuthToast } from '../../lib/auth-toast'
 import { sanitizeSvg } from '../../lib/html-sanitizer'
 import { projectApiRequest } from '../project/api'
 import { createSquadNotification,squadActorName } from './notifications'
+import { useWorkspaceDataVersion } from '../../lib/workspace-events'
 
 import { DEFAULT_MERMAID_CODE,EMPTY_SCHEMA,formatRelativeTime,generateMermaidCode,getErdDraftKey,getErdHistoryKey,getValidationIssues,getWorkspaceIdFromUrl,loadMermaid,normalizeTableName,parseMermaidCode,parseSqlToSchema,readErdHistory,safeSchemaFromJson,schemaStats,writeErdHistory } from './erd-support'
 import type {
@@ -23,6 +24,7 @@ WorkspaceMember,
 
 export function useSquadErdController() {
 const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
+const dataVersion = useWorkspaceDataVersion()
   const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [projectName, setProjectName] = useState('스쿼드 프로젝트')
@@ -151,7 +153,10 @@ const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
     let ignore = false
 
     async function load() {
-      setLoading(true)
+      // AI 비서 변경 후 재조회(dataVersion > 0)는 로딩 화면 없이 갱신한다. 로딩 화면이 AI 패널을 다시 그려 대화가 사라지기 때문이다.
+      if (dataVersion === 0) {
+        setLoading(true)
+      }
 
       try {
         const [documentData, messageData, versionData, commentData] = await Promise.all([
@@ -198,7 +203,7 @@ const workspaceId = useMemo(getWorkspaceIdFromUrl, [])
     return () => {
       ignore = true
     }
-  }, [renderDiagram, storeCurrentDraft, workspaceId])
+  }, [dataVersion, renderDiagram, storeCurrentDraft, workspaceId])
 
   useEffect(() => {
     if (!workspaceId) {

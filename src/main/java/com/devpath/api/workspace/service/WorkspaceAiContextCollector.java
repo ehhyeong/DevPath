@@ -23,7 +23,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * AI 비서 프롬프트에 넣을 워크스페이스 현황을 모은다. 기존 Service를 그대로 호출하므로 각 Service의 멤버 권한 검사가 그대로 적용된다. 조회만 하며 어떤 데이터도
- * 변경하지 않는다.
+ * 변경하지 않는다. 변경 제안이 대상을 가리킬 수 있도록 항목마다 id를 함께 싣는다.
  */
 // 트랜잭션을 열지 않는다. 각 Service가 자체 트랜잭션을 갖고 있고, 파일 추출 실패처럼 잡아서 넘기는
 // 예외가 공유 트랜잭션을 rollback-only로 만들어 커밋 시점에 터지는 것을 피하기 위해서다.
@@ -36,8 +36,11 @@ public class WorkspaceAiContextCollector {
   private static final int MAX_FILES = 50;
   private static final int MAX_MEETING_NOTES = 20;
   private static final int MAX_DESCRIPTION_LENGTH = 200;
-  private static final int MAX_DOC_LENGTH = 1500;
-  private static final int MAX_ERD_LENGTH = 4000;
+  // 아래 상한은 WorkspaceAiActionService가 '전체를 본 문서만 교체 가능' 판정에 함께 쓴다.
+  static final int MAX_DOC_LENGTH = 1500;
+  static final int MAX_ERD_LENGTH = 4000;
+  static final int MAX_API_SPEC_LENGTH = 4000;
+  static final int MAX_MEETING_NOTE_BODIES = 5;
   private static final int EVENT_DAYS_BEFORE = 30;
   private static final int EVENT_DAYS_AFTER = 90;
   // 파일 본문 주입 상한. 프롬프트 비대화와 대용량 파일 반복 파싱을 함께 막는다.
@@ -104,7 +107,8 @@ public class WorkspaceAiContextCollector {
         member ->
             context.append(
                 String.format(
-                    "- %s (%s, %s)%n",
+                    "- id=%d %s (%s, %s)%n",
+                    member.getLearnerId(),
                     nullToDash(member.getLearnerName()),
                     nullToDash(member.getPosition()),
                     nullToDash(member.getRoleLabel()))));
@@ -134,7 +138,8 @@ public class WorkspaceAiContextCollector {
             task -> {
               context.append(
                   String.format(
-                      "- [%s] %s (담당 %s, 우선순위 %s, 마감 %s)",
+                      "- id=%d [%s] %s (담당 %s, 우선순위 %s, 마감 %s)",
+                      task.getTaskId(),
                       task.getStatus(),
                       task.getTitle(),
                       task.getAssigneeId() == null
@@ -177,7 +182,8 @@ public class WorkspaceAiContextCollector {
         event -> {
           context.append(
               String.format(
-                  "- %s (%s ~ %s)",
+                  "- id=%d %s (%s ~ %s)",
+                  event.getEventId(),
                   event.getTitle(),
                   event.getStartAt().format(DATE_TIME),
                   event.getEndAt() == null ? "-" : event.getEndAt().format(DATE_TIME)));
@@ -207,7 +213,8 @@ public class WorkspaceAiContextCollector {
             milestone ->
                 context.append(
                     String.format(
-                        "- [%s] %s (%s ~ %s)%n",
+                        "- id=%d [%s] %s (%s ~ %s)%n",
+                        milestone.getMilestoneId(),
                         milestone.getStatus(),
                         milestone.getTitle(),
                         milestone.getStartDate() == null ? "-" : milestone.getStartDate(),
@@ -327,12 +334,14 @@ public class WorkspaceAiContextCollector {
     }
 
     // mermaid는 줄바꿈이 구문의 일부라 공백 정규화 없이 길이만 자른다.
-    context.append(truncate(mermaidCode.trim(), MAX_ERD_LENGTH)).append("\n\n");
+    context.append(truncate(mermaidCode.trim(), MAX_ERD_LENGTH)).append("\n");
+    appendTruncatedNotice(context, mermaidCode.trim(), MAX_ERD_LENGTH, "ERD");
+    context.append("\n");
   }
 
   private void appendDocs(StringBuilder context, Long workspaceId, Long userId) {
     context.append("[팀 문서]\n");
-    appendDoc(context, workspaceId, userId, WorkspaceDocType.API_SPEC, "API 명세");
+    appendApiSpec(context, workspaceId, userId);
     appendDoc(context, workspaceId, userId, WorkspaceDocType.ERD, "ERD 설명");
     appendDoc(context, workspaceId, userId, WorkspaceDocType.INFRA, "인프라 문서");
 
@@ -343,17 +352,54 @@ public class WorkspaceAiContextCollector {
       return;
     }
 
-    context.append("회의록 목록(제목과 작성일만, 본문은 제공되지 않음):\n");
+    context.append(
+        String.format("회의록 목록(최신순, 본문은 최근 %d건만 아래에 제공):%n", MAX_MEETING_NOTE_BODIES));
     notes.stream()
         .limit(MAX_MEETING_NOTES)
         .forEach(
             note ->
                 context.append(
                     String.format(
-                        "- %s (%s)%n",
+                        "- id=%d %s (%s)%n",
+                        note.getNoteId(),
                         note.getTitle(),
                         note.getCreatedAt() == null ? "-" : note.getCreatedAt().toLocalDate())));
     appendOmitted(context, notes.size(), MAX_MEETING_NOTES);
+
+    context.append("\n[회의록 본문]\n");
+    notes.stream()
+        .limit(MAX_MEETING_NOTE_BODIES)
+        .forEach(
+            note -> {
+              String content = note.getContent() == null ? "" : note.getContent().trim();
+              context.append(String.format("--- id=%d %s ---%n", note.getNoteId(), note.getTitle()));
+              context.append(content.isEmpty() ? "(본문 없음)" : truncate(content, MAX_DOC_LENGTH));
+              context.append("\n");
+              appendTruncatedNotice(context, content, MAX_DOC_LENGTH, "이 회의록");
+            });
+  }
+
+  // API 명세는 한 줄이 엔드포인트 하나라 줄바꿈을 살려 싣는다.
+  private void appendApiSpec(StringBuilder context, Long workspaceId, Long userId) {
+    WorkspaceDocResponse doc =
+        workspaceDocService.getDoc(workspaceId, userId, WorkspaceDocType.API_SPEC);
+
+    if (doc == null || !StringUtils.hasText(doc.getContent())) {
+      context.append("API 명세: 작성되지 않음\n");
+      return;
+    }
+
+    String content = doc.getContent().trim();
+    context.append("API 명세:\n").append(truncate(content, MAX_API_SPEC_LENGTH)).append("\n");
+    appendTruncatedNotice(context, content, MAX_API_SPEC_LENGTH, "API 명세");
+  }
+
+  // 일부만 실린 문서를 AI가 통째로 교체하면 안 본 부분이 사라지므로 수정 불가를 명시한다.
+  private void appendTruncatedNotice(
+      StringBuilder context, String content, int maxLength, String label) {
+    if (content.length() > maxLength) {
+      context.append(String.format("(%s는 길어서 일부만 실었다. 수정 제안 불가)%n", label));
+    }
   }
 
   private void appendDoc(

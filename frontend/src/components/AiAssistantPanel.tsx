@@ -5,12 +5,18 @@ export type AiSuggestion = {
   prompt: string
 }
 
-/** AI 답변. action이 있으면 답변 말풍선 안에 실행 버튼을 함께 노출한다. */
+/**
+ * AI 답변. action이 있으면 답변 말풍선 안에 실행 버튼을 함께 노출한다.
+ * run이 Promise를 돌려주면 끝날 때까지 버튼을 잠그고, 돌려준 문자열을 결과 메시지로 보여준다.
+ */
 export type AiAnswer = {
   text: string
   action?: {
     label: string
-    run: () => void
+    run: () => void | Promise<string | void>
+    // 미지정이면 빌더 기본값(fa-plus / '캔버스에 추가함')을 쓴다.
+    icon?: string
+    doneLabel?: string
   }
 }
 
@@ -38,6 +44,7 @@ type ChatMessage = {
   text: string
   action?: AiAnswer['action']
   actionDone?: boolean
+  actionRunning?: boolean
 }
 
 /** AI 호출이 없거나 실패했을 때 보여주는 안전한 대체 응답. */
@@ -222,17 +229,45 @@ export default function AiAssistantPanel({
     }
   }
 
-  function runAction(messageId: number) {
+  function updateMessage(messageId: number, patch: Partial<ChatMessage>) {
+    setMessages((current) =>
+      current.map((message) => (message.id === messageId ? { ...message, ...patch } : message)),
+    )
+  }
+
+  async function runAction(messageId: number) {
     const target = messages.find((message) => message.id === messageId)
 
-    if (!target?.action || target.actionDone) {
+    if (!target?.action || target.actionDone || target.actionRunning) {
       return
     }
 
-    target.action.run()
-    setMessages((current) =>
-      current.map((message) => (message.id === messageId ? { ...message, actionDone: true } : message)),
-    )
+    const pending = target.action.run()
+
+    if (!(pending instanceof Promise)) {
+      updateMessage(messageId, { actionDone: true })
+      return
+    }
+
+    updateMessage(messageId, { actionRunning: true })
+
+    try {
+      const resultText = await pending
+
+      if (mountedRef.current) {
+        updateMessage(messageId, { actionRunning: false, actionDone: true })
+
+        if (resultText) {
+          appendMessage('bot', resultText)
+        }
+      }
+    } catch (error) {
+      // 실패하면 다시 누를 수 있게 버튼을 풀어 둔다.
+      if (mountedRef.current) {
+        updateMessage(messageId, { actionRunning: false })
+        appendMessage('error', error instanceof Error && error.message ? error.message : FALLBACK_MESSAGE)
+      }
+    }
   }
 
   function handleReset() {
@@ -322,12 +357,21 @@ export default function AiAssistantPanel({
                     <div className="pt-2">
                       <button
                         type="button"
-                        onClick={() => runAction(message.id)}
-                        disabled={message.actionDone}
+                        onClick={() => void runAction(message.id)}
+                        disabled={message.actionDone || message.actionRunning}
                         className="ai-inline-btn"
                       >
-                        <i aria-hidden="true" className={message.actionDone ? 'fas fa-check' : 'fas fa-plus'} />
-                        {message.actionDone ? '캔버스에 추가함' : message.action.label}
+                        <i
+                          aria-hidden="true"
+                          className={
+                            message.actionDone
+                              ? 'fas fa-check'
+                              : message.actionRunning
+                                ? 'fas fa-spinner fa-spin'
+                                : `fas ${message.action.icon ?? 'fa-plus'}`
+                          }
+                        />
+                        {message.actionDone ? (message.action.doneLabel ?? '캔버스에 추가함') : message.action.label}
                       </button>
                     </div>
                   )}
