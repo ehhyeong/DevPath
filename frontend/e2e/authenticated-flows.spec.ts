@@ -30,6 +30,20 @@ const proofCard = {
   tags: [{ tagId: 1, tagName: 'Spring Boot', evidenceType: 'COURSE' }],
 }
 
+const workspaceDashboard = {
+  workspaceId: 11,
+  name: 'E2E 프로젝트',
+  description: 'aside 상태 검증용 워크스페이스',
+  type: 'SQUAD',
+  status: 'ACTIVE',
+  ownerId: 101,
+  ownerName: profile.name,
+  ownerProfileImage: null,
+  members: [],
+  unresolvedTaskCount: 0,
+  activeMilestoneCount: 0,
+}
+
 function token(role = 'LEARNER') {
   const payload = Buffer.from(JSON.stringify({ sub: '101', role, exp: 4_102_444_800 })).toString('base64url')
   return `e2e.${payload}.signature`
@@ -58,6 +72,23 @@ function responseData(pathname: string) {
     }
   }
   if (pathname === '/api/workspaces/me') return []
+  if (pathname === '/api/workspaces/11/dashboard') return workspaceDashboard
+  if (pathname === '/api/workspaces/11/erd') return null
+  if (
+    pathname === '/api/workspaces/11/tasks'
+    || pathname === '/api/workspaces/11/calendar-events'
+    || pathname === '/api/workspaces/11/notices'
+    || pathname === '/api/workspaces/11/activities/recent'
+    || pathname === '/api/workspaces/11/erd/recent-changes'
+    || pathname === '/api/workspaces/11/erd/versions'
+    || pathname === '/api/workspaces/11/voice-channels'
+    || pathname === '/api/workspaces/11/questions'
+    || pathname === '/api/workspaces/11/files'
+    || pathname === '/api/workspaces/11/meeting-notes'
+    || pathname === '/api/workspaces/11/integrations'
+    || pathname === '/api/lounge/chats/messages'
+    || pathname === '/api/workspaces/11/mentoring-header-notifications'
+  ) return []
   if (pathname === '/api/lounge/shell') {
     return { user: { name: profile.name, profileImage: null }, mySquads: [] }
   }
@@ -304,10 +335,17 @@ test('프로젝트 허브 화면은 방문 상태와 조회 결과 및 aside 펼
   test.setTimeout(60_000)
 
   const requestCounts = new Map<string, number>()
+  const completedRequests = new Set<string>()
   page.on('request', (request) => {
     const { pathname } = new URL(request.url())
-    if (pathname.startsWith('/api/')) {
+    if (request.method() === 'GET' && pathname.startsWith('/api/')) {
       requestCounts.set(pathname, (requestCounts.get(pathname) ?? 0) + 1)
+    }
+  })
+  page.on('response', (response) => {
+    const { pathname } = new URL(response.url())
+    if (response.request().method() === 'GET' && pathname.startsWith('/api/') && response.ok()) {
+      completedRequests.add(pathname)
     }
   })
 
@@ -320,39 +358,108 @@ test('프로젝트 허브 화면은 방문 상태와 조회 결과 및 aside 펼
     await expect(page).toHaveURL(new RegExp(`${href}$`))
   }
 
-  await visibleAside().hover()
-  await expect(visibleAside()).toHaveCSS('width', '256px')
-  await openProjectPage('/community-lounge')
-  await expect(visibleAside()).toHaveCSS('width', '256px')
-
-  const loungeSearch = page.locator('#searchInput:visible')
-  await expect(loungeSearch).toBeVisible()
-  await loungeSearch.fill('상태 유지 확인')
-
-  await openProjectPage('/mentoring-hub')
-  await expect(page.locator('.mentoring-hub-page')).toBeVisible()
-  await openProjectPage('/workspace-hub')
-  await expect(visibleAside().locator('a[href="/workspace-hub"]')).toHaveClass(/active/)
-  await openProjectPage('/dev-showcase')
-  await expect(page.locator('.dev-showcase-page')).toBeVisible()
+  await expect.poll(() => [
+    '/api/lounge/shell',
+    '/api/mentorings/hub',
+    '/api/workspaces/me',
+    '/api/showcases',
+  ].every((path) => completedRequests.has(path))).toBe(true)
 
   const requestBaseline = new Map(requestCounts)
   projectHubApiDelayMs = 5_000
 
-  await openProjectPage('/lounge-dashboard')
-  await expect(visibleAside().locator('a[href="/lounge-dashboard"]')).toHaveClass(/active/)
+  await visibleAside().hover()
+  await expect(visibleAside()).toHaveCSS('width', '256px')
   await openProjectPage('/community-lounge')
-  await expect(loungeSearch).toHaveValue('상태 유지 확인', { timeout: 1_000 })
+  await expect(visibleAside()).toHaveCSS('width', '256px', { timeout: 1_000 })
+
+  const loungeSearch = page.locator('#searchInput:visible')
+  await expect(loungeSearch).toBeVisible({ timeout: 1_000 })
+  await loungeSearch.fill('상태 유지 확인')
+
   await openProjectPage('/mentoring-hub')
   await expect(page.locator('.mentoring-hub-page')).toBeVisible({ timeout: 1_000 })
   await openProjectPage('/workspace-hub')
-  await expect(visibleAside().locator('a[href="/workspace-hub"]')).toHaveClass(/active/)
+  await expect(visibleAside().locator('a[href="/workspace-hub"]')).toHaveClass(/active/, { timeout: 1_000 })
   await openProjectPage('/dev-showcase')
   await expect(page.locator('.dev-showcase-page')).toBeVisible({ timeout: 1_000 })
+
+  await openProjectPage('/lounge-dashboard')
+  await expect(visibleAside().locator('a[href="/lounge-dashboard"]')).toHaveClass(/active/, { timeout: 1_000 })
+  await openProjectPage('/community-lounge')
+  await expect(loungeSearch).toHaveValue('상태 유지 확인', { timeout: 1_000 })
 
   expect(requestCounts).toEqual(requestBaseline)
   expect(requestCounts.get('/api/lounge/shell')).toBeLessThanOrEqual(2)
   expect(requestCounts.get('/api/lounge/squads')).toBe(1)
+})
+
+test('스쿼드와 멘토링 aside는 내부 이동 중 펼침 상태를 유지한다', async ({ page }) => {
+  test.setTimeout(60_000)
+
+  const requestCounts = new Map<string, number>()
+  const completedRequests = new Set<string>()
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url())
+    if (request.method() === 'GET' && pathname.startsWith('/api/')) {
+      requestCounts.set(pathname, (requestCounts.get(pathname) ?? 0) + 1)
+    }
+  })
+  page.on('response', (response) => {
+    const { pathname } = new URL(response.url())
+    if (response.request().method() === 'GET' && pathname.startsWith('/api/') && response.ok()) {
+      completedRequests.add(pathname)
+    }
+  })
+
+  projectHubApiDelayMs = 5_000
+  await login(page, '/squad-dashboard?workspaceId=11')
+  await page.goto('/squad-dashboard?workspaceId=11')
+
+  const squadAside = () => page.locator('aside.squad-workspace-aside:visible')
+  const dashboardHeading = page.getByRole('heading', { name: /반갑습니다/ })
+  await expect(dashboardHeading).toBeVisible({ timeout: 1_000 })
+  await expect(page.getByText('스쿼드 대시보드를 불러오는 중입니다.')).toHaveCount(0)
+  const dashboardHeadingElement = await dashboardHeading.elementHandle()
+
+  projectHubApiDelayMs = 0
+  await expect(squadAside()).toBeVisible()
+  await expect.poll(() => [
+    '/api/workspaces/11/calendar-events',
+    '/api/workspaces/11/code-reviews',
+    '/api/workspaces/11/settings',
+  ].every((path) => completedRequests.has(path))).toBe(true)
+
+  const requestBaseline = new Map(requestCounts)
+  projectHubApiDelayMs = 5_000
+
+  await squadAside().hover()
+  await expect(squadAside()).toHaveCSS('width', '256px')
+  await squadAside().locator('a[href="/squad-schedule?workspaceId=11"]').click()
+  await expect(page).toHaveURL(/\/squad-schedule\?workspaceId=11$/)
+  await expect(squadAside()).toHaveCSS('width', '256px', { timeout: 1_000 })
+  expect(requestCounts).toEqual(requestBaseline)
+
+  await squadAside().locator('a[href="/squad-dashboard?workspaceId=11"]').click()
+  await expect(page).toHaveURL(/\/squad-dashboard\?workspaceId=11$/)
+  await expect(dashboardHeading).toBeVisible({ timeout: 1_000 })
+  await expect(page.getByText('스쿼드 대시보드를 불러오는 중입니다.')).toHaveCount(0)
+  expect(await dashboardHeadingElement?.evaluate((element) => element.isConnected)).toBe(true)
+
+  await page.mouse.move(900, 120)
+  await expect(squadAside()).toHaveCSS('width', '80px')
+
+  await page.goto('/mentoring-dashboard?workspaceId=11')
+
+  const mentoringAside = page.locator('aside.mentoring-common-sidebar')
+  await expect(mentoringAside).toBeVisible()
+  const mentoringAsideElement = await mentoringAside.elementHandle()
+  await mentoringAside.hover()
+  await expect(mentoringAside).toHaveCSS('width', '256px')
+  await mentoringAside.locator('a[href="/mentoring-workspace?workspaceId=11"]').click()
+  await expect(page).toHaveURL(/\/mentoring-workspace\?workspaceId=11$/)
+  await expect(mentoringAside).toHaveCSS('width', '256px')
+  expect(await mentoringAsideElement?.evaluate((element) => element.isConnected)).toBe(true)
 })
 
 test('강사 주요 화면은 API 응답 전에도 공통 레이아웃과 기본 UI를 표시한다', async ({ page }) => {

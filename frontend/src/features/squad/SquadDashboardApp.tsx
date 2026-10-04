@@ -568,17 +568,6 @@ export default function SquadDashboardApp() {
     })
   }
 
-  if (loading) {
-    return (
-      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
-        <div className="text-center">
-          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
-          <p className="text-sm font-bold text-gray-500">스쿼드 대시보드를 불러오는 중입니다.</p>
-        </div>
-      </div>
-    )
-  }
-
   if (error && !dashboard) {
     return (
       <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
@@ -602,7 +591,7 @@ export default function SquadDashboardApp() {
   }
 
   return (
-    <div className="squad-dashboard-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.squad-dashboard-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
+    <div aria-busy={loading} className="squad-dashboard-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.squad-dashboard-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
       <SquadWorkspaceAside
         activePage="dashboard"
         workspaceId={workspaceId}

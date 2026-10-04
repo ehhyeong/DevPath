@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 
 const projectHubPageLoaders = {
   '/lounge-dashboard': () => import('../community/LoungeDashboardApp'),
@@ -9,6 +9,7 @@ const projectHubPageLoaders = {
 }
 
 type ProjectHubPath = keyof typeof projectHubPageLoaders
+const projectHubPaths = Object.keys(projectHubPageLoaders) as ProjectHubPath[]
 
 const projectHubPages = {
   '/lounge-dashboard': lazy(projectHubPageLoaders['/lounge-dashboard']),
@@ -51,17 +52,12 @@ function ProjectHubPageLoadingView() {
 
 export default function ProjectHubApp() {
   const currentPath = getCurrentProjectHubPath()
-  const [visitedPaths, setVisitedPaths] = useState<Set<ProjectHubPath>>(() => new Set([currentPath]))
-  const renderedPaths = visitedPaths.has(currentPath)
-    ? visitedPaths
-    : new Set([...visitedPaths, currentPath])
 
   useEffect(() => {
-    setVisitedPaths((current) => current.has(currentPath) ? current : new Set([...current, currentPath]))
     document.title = pageTitles[currentPath]
   }, [currentPath])
 
-  return Array.from(renderedPaths).map((path) => {
+  return projectHubPaths.map((path) => {
     const Page = projectHubPages[path]
 
     return (

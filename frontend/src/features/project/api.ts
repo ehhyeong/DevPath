@@ -8,9 +8,12 @@ export type ApiEnvelope<T> = {
 }
 
 type AuthMode = 'none' | 'optional' | 'required'
+type ProjectRequestOptions = {
+  invalidateCache?: boolean
+}
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
-const PROJECT_QUERY_TTL_MS = 60_000
+const PROJECT_QUERY_TTL_MS = 5 * 60_000
 
 export function invalidateProjectApiCache() {
   invalidateCachedQueries((key) => key.includes('|project:'))
@@ -20,6 +23,7 @@ export async function projectApiRequest<T>(
   path: string,
   init: RequestInit = {},
   authMode: AuthMode = 'none',
+  options: ProjectRequestOptions = {},
 ): Promise<T> {
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
@@ -77,6 +81,8 @@ export async function projectApiRequest<T>(
   }
 
   const result = await execute(init)
-  invalidateProjectApiCache()
+  if (options.invalidateCache !== false) {
+    invalidateProjectApiCache()
+  }
   return result
 }
