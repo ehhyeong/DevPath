@@ -1,6 +1,6 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect,useMemo,useState,type FormEvent } from 'react'
-import { navigateTo } from '../../lib/spa-navigation'
+import { navigateTo, SPA_NAVIGATION_EVENT } from '../../lib/spa-navigation'
 import AuthModal,{ type AuthView } from '../../components/AuthModal'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import ProjectAside,{ type ProjectAsideSquad } from '../../components/ProjectAside'
@@ -123,6 +123,27 @@ export default function CommunityLoungeApp() {
   useEffect(() => {
     setCurrentPage(1)
   }, [activeFilter, hideClosed, search, sort])
+
+  useEffect(() => {
+    const syncRouteDetail = () => {
+      if (window.location.pathname.replace(/\/+$/, '') !== '/community-lounge') {
+        return
+      }
+
+      const nextDetailSquadId = readInitialDetailSquadId()
+      setInitialDetailSquadId(nextDetailSquadId)
+      if (!nextDetailSquadId) {
+        setDetailSquad(null)
+      }
+    }
+
+    window.addEventListener('popstate', syncRouteDetail)
+    window.addEventListener(SPA_NAVIGATION_EVENT, syncRouteDetail)
+    return () => {
+      window.removeEventListener('popstate', syncRouteDetail)
+      window.removeEventListener(SPA_NAVIGATION_EVENT, syncRouteDetail)
+    }
+  }, [])
 
   useEffect(() => {
     const syncSession = () => {

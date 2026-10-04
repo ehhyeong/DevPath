@@ -9,12 +9,7 @@ import { authApi } from '../../lib/api/auth'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import LoginRequiredView from '../../components/LoginRequiredView'
 import { showAuthToast } from '../../lib/auth-toast'
-
-type ApiEnvelope<T> = {
-  success: boolean
-  message?: string
-  data: T
-}
+import { projectApiRequest } from '../project/api'
 
 type UserProfileResponse = {
   name?: string | null
@@ -97,33 +92,12 @@ type LoungeShellResponse = {
   mySquads?: LoungeShellSquad[]
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
-
 function isFulfilled<T>(result: PromiseSettledResult<T>): result is PromiseFulfilledResult<T> {
   return result.status === 'fulfilled'
 }
 
 async function apiGet<T>(path: string, signal: AbortSignal, auth = false): Promise<T> {
-  const headers = new Headers({ Accept: 'application/json' })
-
-  if (auth) {
-    const session = readStoredAuthSession()
-
-    if (!session?.accessToken) {
-      throw new Error('Authentication is required')
-    }
-
-    headers.set('Authorization', `${session.tokenType} ${session.accessToken}`)
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, { headers, signal })
-  const payload = await response.json().catch(() => null) as ApiEnvelope<T> | null
-
-  if (!response.ok || !payload?.success) {
-    throw new Error(payload?.message ?? `Request failed with status ${response.status}`)
-  }
-
-  return payload.data
+  return projectApiRequest<T>(path, { signal }, auth ? 'required' : 'none')
 }
 
 function goTo(path: string) {

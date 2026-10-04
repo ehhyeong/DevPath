@@ -29,6 +29,7 @@ export function installWorkspacePresenceHeartbeat(pathname: string) {
       `/api/workspaces/${workspaceId}/presence`,
       { method: 'POST' },
       'optional',
+      { invalidateCache: false },
     ).catch(() => undefined)
   }
 

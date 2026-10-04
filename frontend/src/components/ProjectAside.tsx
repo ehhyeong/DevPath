@@ -1,3 +1,4 @@
+import { useEffect, useSyncExternalStore } from 'react'
 import { projectAsideItems, type ProjectAsideKey } from '../features/project/shell'
 
 export type { ProjectAsideKey }
@@ -14,9 +15,83 @@ type ProjectAsideProps = {
   mySquads?: ProjectAsideSquad[]
 }
 
+let projectAsideExpanded = false
+let projectAsideNavigationPending = false
+let projectAsidePointerMoveListener: ((event: PointerEvent) => void) | null = null
+const projectAsideListeners = new Set<() => void>()
+
+function setProjectAsideExpanded(expanded: boolean) {
+  if (projectAsideExpanded === expanded) {
+    return
+  }
+
+  projectAsideExpanded = expanded
+  projectAsideListeners.forEach((listener) => listener())
+}
+
+function subscribeProjectAside(listener: () => void) {
+  projectAsideListeners.add(listener)
+  return () => projectAsideListeners.delete(listener)
+}
+
+function preserveExpandedStateForNavigation() {
+  projectAsideNavigationPending = true
+
+  if (projectAsidePointerMoveListener) {
+    window.removeEventListener('pointermove', projectAsidePointerMoveListener, true)
+  }
+
+  projectAsidePointerMoveListener = (event) => {
+    projectAsideNavigationPending = false
+    window.removeEventListener('pointermove', projectAsidePointerMoveListener!, true)
+    projectAsidePointerMoveListener = null
+
+    const target = event.target instanceof Element ? event.target : null
+    setProjectAsideExpanded(Boolean(target?.closest('.project-aside')))
+  }
+  window.addEventListener('pointermove', projectAsidePointerMoveListener, true)
+}
+
+function resetProjectAsideState() {
+  if (projectAsidePointerMoveListener) {
+    window.removeEventListener('pointermove', projectAsidePointerMoveListener, true)
+    projectAsidePointerMoveListener = null
+  }
+
+  projectAsideNavigationPending = false
+  setProjectAsideExpanded(false)
+}
+
 export default function ProjectAside({ activeKey, mySquads = [] }: ProjectAsideProps) {
+  const expanded = useSyncExternalStore(
+    subscribeProjectAside,
+    () => projectAsideExpanded,
+    () => false,
+  )
+
+  useEffect(() => () => resetProjectAsideState(), [])
+
   return (
-    <aside className="w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-xl">
+    <aside
+      className={`project-aside w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-xl${expanded ? ' is-expanded' : ''}`}
+      onMouseEnter={() => setProjectAsideExpanded(true)}
+      onMouseLeave={() => {
+        if (!projectAsideNavigationPending) {
+          setProjectAsideExpanded(false)
+        }
+      }}
+      onClickCapture={(event) => {
+        const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null
+        if (!anchor) {
+          return
+        }
+
+        const pathname = new URL(anchor.href, window.location.href).pathname.replace(/\/+$/, '') || '/'
+        if (projectAsideItems.some((item) => item.href === pathname)) {
+          preserveExpandedStateForNavigation()
+        }
+      }}
+    >
       <a
         href="/home"
         className="h-20 flex items-center px-5 cursor-pointer hover:bg-gray-50 transition border-b border-gray-100 shrink-0"

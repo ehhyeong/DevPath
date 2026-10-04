@@ -19,6 +19,39 @@ export const INSTRUCTOR_PAGE_ROUTES = new Set([
   '/instructor-marketing',
 ])
 
+export const PROJECT_HUB_PAGE_ROUTES = new Set([
+  '/lounge-dashboard',
+  '/community-lounge',
+  '/mentoring-hub',
+  '/workspace-hub',
+  '/dev-showcase',
+])
+
+export const MENTORING_WORKSPACE_ROUTES = new Set([
+  '/mentoring-dashboard',
+  '/mentoring-workspace',
+  '/mentoring-curriculum',
+  '/mentoring-qna',
+  '/mentoring-schedule',
+  '/mentoring-files',
+  '/mentoring-meeting',
+  '/mentoring-erd',
+])
+
+export const SQUAD_WORKSPACE_ROUTES = new Set([
+  '/squad-dashboard',
+  '/squad-blueprint',
+  '/squad-workspace',
+  '/squad-review',
+  '/squad-erd',
+  '/squad-api',
+  '/squad-schedule',
+  '/squad-files',
+  '/squad-meeting',
+  '/squad-interview',
+  '/squad-settings',
+])
+
 export function normalizePathname(pathname: string) {
   const normalized = pathname.replace(/\/+$/, '') || '/'
   return normalized === '/singup' ? '/signup' : normalized

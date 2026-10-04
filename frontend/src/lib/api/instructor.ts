@@ -1,7 +1,19 @@
 import type { InstructorAnalyticsDashboard, InstructorAnnouncementDetail, InstructorAnnouncementSummary, InstructorChannel, InstructorConversionSummary, InstructorCouponItem, InstructorCourseListItem, InstructorMentoringBoard, InstructorNotificationItem, InstructorQnaAnswer, InstructorQnaDraft, InstructorQnaInboxItem, InstructorQnaTemplate, InstructorQnaTimeline, InstructorRevenueSummary, InstructorRevenueTransaction, InstructorReviewHelpful, InstructorReviewListItem, InstructorReviewReply, InstructorReviewSummary, InstructorReviewTemplate, InstructorSettlementItem, InstructorSubscriptionResponse, InstructorPromotionItem } from '../../types/instructor'
 import type { LearningCourseDetail } from '../../types/learning'
 import type { GenerateInstructorQuizRequest, InstructorAssignmentEditor, InstructorQuizEditor, SaveInstructorAssignmentEditorRequest, SaveInstructorQuizEditorRequest } from '../../types/instructor-evaluation'
-import { request, buildQueryString } from './client'
+import { request, buildQueryString, invalidateRequestCache } from './client'
+
+const INSTRUCTOR_QUERY_TTL_MS = 60_000
+
+function qnaInboxCacheKey(status?: string) {
+  return `instructor:qna-inbox:${status ?? 'all'}`
+}
+
+async function invalidateAfter<T>(promise: Promise<T>, ...cacheKeys: string[]) {
+  const result = await promise
+  invalidateRequestCache(...cacheKeys)
+  return result
+}
 
 export interface InstructorUploadedAsset {
   url: string
@@ -205,7 +217,7 @@ export const instructorCourseApi = {
     return request<InstructorCourseListItem[]>(
       '/api/instructor/courses',
       { method: 'GET', signal },
-      { auth: true },
+      { auth: true, cache: { key: 'instructor:courses', ttlMs: INSTRUCTOR_QUERY_TTL_MS } },
     )
   },
   getCourseDetail(courseId: number, signal?: AbortSignal) {
@@ -241,14 +253,14 @@ export const instructorCourseApi = {
     hasCertificate: boolean
     tagIds: number[]
   }) {
-    return request<number>(
+    return invalidateAfter(request<number>(
       '/api/instructor/courses',
       {
         method: 'POST',
         body: JSON.stringify(payload),
       },
       { auth: true },
-    )
+    ), 'instructor:courses')
   },
   updateCourse(
     courseId: number,
@@ -264,24 +276,24 @@ export const instructorCourseApi = {
       hasCertificate: boolean
     },
   ) {
-    return request<void>(
+    return invalidateAfter(request<void>(
       `/api/instructor/courses/${courseId}`,
       {
         method: 'PUT',
         body: JSON.stringify(payload),
       },
       { auth: true },
-    )
+    ), 'instructor:courses')
   },
   updateCourseStatus(courseId: number, status: string) {
-    return request<void>(
+    return invalidateAfter(request<void>(
       `/api/instructor/courses/${courseId}/status`,
       {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       },
       { auth: true },
-    )
+    ), 'instructor:courses')
   },
   updateMetadata(
     courseId: number,
@@ -606,7 +618,7 @@ export const instructorQnaApi = {
     return request<InstructorQnaInboxItem[]>(
       `/api/instructor/qna-inbox${buildQueryString({ status })}`,
       { method: 'GET', signal },
-      { auth: true },
+      { auth: true, cache: { key: qnaInboxCacheKey(status), ttlMs: INSTRUCTOR_QUERY_TTL_MS } },
     )
   },
   getTimeline(questionId: number, signal?: AbortSignal) {
@@ -619,82 +631,82 @@ export const instructorQnaApi = {
     }>(
       `/api/instructor/qna-inbox/${questionId}/timeline`,
       { method: 'GET', signal },
-      { auth: true },
+      { auth: true, cache: { key: `instructor:qna-timeline:${questionId}`, ttlMs: INSTRUCTOR_QUERY_TTL_MS } },
     ).then(mapQnaTimeline)
   },
   updateStatus(questionId: number, status: string) {
-    return request<void>(
+    return invalidateAfter(request<void>(
       `/api/instructor/qna-inbox/${questionId}/status`,
       {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       },
       { auth: true },
-    )
+    ), qnaInboxCacheKey('UNANSWERED'), qnaInboxCacheKey('ANSWERED'), `instructor:qna-timeline:${questionId}`)
   },
   saveDraft(questionId: number, draftContent: string) {
-    return request<InstructorQnaDraft>(
+    return invalidateAfter(request<InstructorQnaDraft>(
       `/api/instructor/qna-inbox/${questionId}/drafts`,
       {
         method: 'POST',
         body: JSON.stringify({ draftContent }),
       },
       { auth: true },
-    )
+    ), `instructor:qna-timeline:${questionId}`)
   },
   createAnswer(questionId: number, content: string) {
-    return request<InstructorQnaAnswer>(
+    return invalidateAfter(request<InstructorQnaAnswer>(
       `/api/instructor/qna-inbox/${questionId}/answers`,
       {
         method: 'POST',
         body: JSON.stringify({ content }),
       },
       { auth: true },
-    )
+    ), qnaInboxCacheKey('UNANSWERED'), qnaInboxCacheKey('ANSWERED'), `instructor:qna-timeline:${questionId}`)
   },
   updateAnswer(questionId: number, answerId: number, content: string) {
-    return request<InstructorQnaAnswer>(
+    return invalidateAfter(request<InstructorQnaAnswer>(
       `/api/instructor/qna-inbox/${questionId}/answers/${answerId}`,
       {
         method: 'PUT',
         body: JSON.stringify({ content }),
       },
       { auth: true },
-    )
+    ), qnaInboxCacheKey('UNANSWERED'), qnaInboxCacheKey('ANSWERED'), `instructor:qna-timeline:${questionId}`)
   },
   getTemplates(signal?: AbortSignal) {
     return request<InstructorQnaTemplate[]>(
       '/api/instructor/qna-inbox/templates',
       { method: 'GET', signal },
-      { auth: true },
+      { auth: true, cache: { key: 'instructor:qna-templates', ttlMs: INSTRUCTOR_QUERY_TTL_MS } },
     )
   },
   createTemplate(payload: { title: string; content: string }) {
-    return request<InstructorQnaTemplate>(
+    return invalidateAfter(request<InstructorQnaTemplate>(
       '/api/instructor/qna-inbox/templates',
       {
         method: 'POST',
         body: JSON.stringify(payload),
       },
       { auth: true },
-    )
+    ), 'instructor:qna-templates')
   },
   updateTemplate(templateId: number, payload: { title: string; content: string }) {
-    return request<InstructorQnaTemplate>(
+    return invalidateAfter(request<InstructorQnaTemplate>(
       `/api/instructor/qna-inbox/templates/${templateId}`,
       {
         method: 'PUT',
         body: JSON.stringify(payload),
       },
       { auth: true },
-    )
+    ), 'instructor:qna-templates')
   },
   deleteTemplate(templateId: number) {
-    return request<void>(
+    return invalidateAfter(request<void>(
       `/api/instructor/qna-inbox/templates/${templateId}`,
       { method: 'DELETE' },
       { auth: true },
-    )
+    ), 'instructor:qna-templates')
   },
 }
 
@@ -703,7 +715,7 @@ export const instructorReviewApi = {
     return request<InstructorReviewListItem[]>(
       '/api/instructor/reviews',
       { method: 'GET', signal },
-      { auth: true },
+      { auth: true, cache: { key: 'instructor:reviews', ttlMs: INSTRUCTOR_QUERY_TTL_MS } },
     ).then((items) =>
       items.map((item) => ({
         ...item,
@@ -715,7 +727,7 @@ export const instructorReviewApi = {
     return request<InstructorReviewSummary>(
       '/api/instructor/reviews/summary',
       { method: 'GET', signal },
-      { auth: true },
+      { auth: true, cache: { key: 'instructor:review-summary', ttlMs: INSTRUCTOR_QUERY_TTL_MS } },
     )
   },
   getHelpful(signal?: AbortSignal) {
@@ -726,7 +738,7 @@ export const instructorReviewApi = {
     )
   },
   createReply(reviewId: number, content: string) {
-    return request<{
+    return invalidateAfter(request<{
       id: number
       reviewId: number
       instructorId: number
@@ -740,10 +752,10 @@ export const instructorReviewApi = {
         body: JSON.stringify({ content }),
       },
       { auth: true },
-    ).then(mapReviewReply)
+    ).then(mapReviewReply), 'instructor:reviews', 'instructor:review-summary')
   },
   updateReply(reviewId: number, replyId: number, content: string) {
-    return request<{
+    return invalidateAfter(request<{
       id: number
       reviewId: number
       instructorId: number
@@ -757,7 +769,7 @@ export const instructorReviewApi = {
         body: JSON.stringify({ content }),
       },
       { auth: true },
-    ).then(mapReviewReply)
+    ).then(mapReviewReply), 'instructor:reviews', 'instructor:review-summary')
   },
   getTemplates(signal?: AbortSignal) {
     return request<InstructorReviewTemplate[]>(
@@ -794,14 +806,14 @@ export const instructorReviewApi = {
     )
   },
   addIssueTags(reviewId: number, issueTags: string[]) {
-    return request<void>(
+    return invalidateAfter(request<void>(
       `/api/instructor/reviews/${reviewId}/issue-tags`,
       {
         method: 'POST',
         body: JSON.stringify({ issueTags }),
       },
       { auth: true },
-    )
+    ), 'instructor:reviews')
   },
 }
 
@@ -894,18 +906,18 @@ export const instructorMentoringApi = {
     return request<InstructorMentoringBoard>(
       '/api/instructor/mentoring/board',
       { method: 'GET', signal },
-      { auth: true },
+      { auth: true, cache: { key: 'instructor:mentoring-board', ttlMs: INSTRUCTOR_QUERY_TTL_MS } },
     )
   },
   saveBoard(payload: InstructorMentoringBoard) {
-    return request<InstructorMentoringBoard>(
+    return invalidateAfter(request<InstructorMentoringBoard>(
       '/api/instructor/mentoring/board',
       {
         method: 'PUT',
         body: JSON.stringify(payload),
       },
       { auth: true },
-    )
+    ), 'instructor:mentoring-board')
   },
 }
 
@@ -914,7 +926,13 @@ export const instructorAnalyticsApi = {
     return request<InstructorAnalyticsDashboard>(
       `/api/instructor/analytics/dashboard${buildQueryString({ courseId })}`,
       { method: 'GET', signal },
-      { auth: true },
+      {
+        auth: true,
+        cache: {
+          key: `instructor:analytics-dashboard:${courseId ?? 'all'}`,
+          ttlMs: INSTRUCTOR_QUERY_TTL_MS,
+        },
+      },
     )
   },
 }

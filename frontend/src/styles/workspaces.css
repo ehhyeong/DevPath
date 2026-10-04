@@ -2,6 +2,10 @@
 .workspace-sidebar-section-title { opacity: 0; height: 0; overflow: hidden; transition: all 0.3s ease; }
 aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
 
+.project-aside.is-expanded { width: 16rem !important; }
+.project-aside.is-expanded .workspace-sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
+.project-aside.is-expanded .sidebar-text { opacity: 1; width: auto; margin-left: 0.75rem; }
+
 .hover-card { transition: all 0.3s ease; border: 1px solid #E5E7EB; }
 .hover-card:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); border-color: #D1D5DB; }
 
@@ -96,6 +100,99 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
   to {
     opacity: 1;
   }
+}
+
+@keyframes aiBlueprintTabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-squad-workspace .ai-blueprint-tab-panel {
+  animation: aiBlueprintTabFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes aiApiDetailFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-squad-workspace .ai-api-detail-panel {
+  animation: aiApiDetailFadeIn 0.25s ease-out;
+}
+
+/* 원본 스쿼드 화면처럼 각 콘텐츠 패널만 스크롤되도록 전역 body 스크롤을 잠근다. */
+body:has(.ai-squad-workspace) {
+  overflow-y: hidden;
+}
+
+@media print {
+  body:has(.ai-squad-workspace) {
+    overflow: visible;
+  }
+
+  .ai-squad-workspace > aside,
+  .ai-squad-workspace > div > header,
+  .ai-squad-workspace button:has(.fa-file-pdf),
+  .ai-squad-workspace button:has(.fa-sliders-h) {
+    display: none !important;
+  }
+
+  .ai-squad-workspace,
+  .ai-squad-workspace > div,
+  .ai-squad-workspace main {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+.ai-squad-workspace {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+}
+
+/* base.css makes controls inherit 16px after Tailwind utilities; restore the source HTML control sizes here. */
+.ai-squad-workspace :is(button, input, select, textarea).text-\[9px\] {
+  font-size: 9px;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-\[10px\] {
+  font-size: 10px;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-\[11px\] {
+  font-size: 11px;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
 }
 
 @keyframes squadDashboardPlusMenuIn {
@@ -352,4 +449,197 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
   100% {
     opacity: 1;
   }
+}
+
+/* 제공 시안의 새 프로젝트 모달 전환과 AI 분석 상태를 같은 움직임으로 표시한다. */
+.workspace-project-modal-enter {
+  animation: workspaceProjectModalEnter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.workspace-project-ai-modal {
+  height: 90vh;
+}
+
+.workspace-project-ai-input--manual {
+  gap: 0.75rem;
+}
+
+.workspace-project-ai-input--manual .workspace-project-ai-input-intro > span {
+  margin-bottom: 0.5rem;
+}
+
+.workspace-project-ai-input--manual .workspace-project-ai-input-intro > h1 {
+  margin-bottom: 0.25rem;
+  font-size: 1.5rem;
+}
+
+.workspace-project-ai-input--manual .workspace-project-ai-difficulty {
+  padding: 0.625rem;
+}
+
+.workspace-project-ai-input--manual .workspace-project-ai-stack-toggle {
+  margin-bottom: 0.5rem;
+}
+
+.workspace-project-ai-input--manual .workspace-project-ai-idea {
+  height: 5.5rem;
+}
+
+.workspace-project-ai-input--manual .workspace-project-ai-footer {
+  padding-top: 0.5rem;
+  padding-bottom: 0;
+}
+
+.workspace-project-ai-input--manual .workspace-project-ai-submit {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+@media (max-height: 780px) {
+  .workspace-project-ai-input {
+    gap: 0.5rem;
+  }
+
+  .workspace-project-ai-input-intro > span {
+    margin-bottom: 0.5rem;
+  }
+
+  .workspace-project-ai-input-intro > h1 {
+    margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+  }
+
+  .workspace-project-ai-difficulty {
+    padding: 0.625rem;
+  }
+
+  .workspace-project-ai-options {
+    gap: 0.5rem;
+  }
+
+  .workspace-project-ai-stack-toggle {
+    margin-bottom: 0.5rem;
+  }
+
+  .workspace-project-ai-manual-fields {
+    padding: 0.625rem;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-input-intro > span {
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-input-intro > h1 {
+    line-height: 1;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-input-intro > p,
+  .workspace-project-ai-input--manual .workspace-project-ai-difficulty p {
+    line-height: 1rem;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-difficulty,
+  .workspace-project-ai-input--manual .workspace-project-ai-manual-fields {
+    padding: 0.5rem;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-stack-toggle {
+    padding: 0.25rem;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-stack-toggle button {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-manual-fields select {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-idea {
+    height: 4.25rem;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-footer {
+    padding-top: 0;
+  }
+
+  .workspace-project-ai-input--manual .workspace-project-ai-submit {
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+  }
+
+  .workspace-project-ai-idea {
+    height: 4.25rem;
+  }
+
+  .workspace-project-ai-footer {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .workspace-project-ai-submit {
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+  }
+}
+
+.workspace-project-modal-view {
+  animation: workspaceProjectModalView 0.5s ease forwards;
+}
+
+.workspace-project-modal-ai-pulse {
+  animation: workspaceProjectModalPulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.workspace-project-modal-progress {
+  animation: workspaceProjectModalProgress 2s ease-in-out infinite;
+}
+
+.workspace-project-modal-gradient {
+  background: linear-gradient(135deg, #00c471 0%, #0d9488 100%);
+  background-clip: text;
+  color: transparent;
+}
+
+.workspace-project-modal-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.workspace-project-modal-scroll::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: #cbd5e1;
+}
+
+.workspace-project-modal-hide-scroll {
+  scrollbar-width: none;
+}
+
+.workspace-project-modal-hide-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes workspaceProjectModalEnter {
+  from { transform: scale(0.95); }
+  to { transform: scale(1); }
+}
+
+@keyframes workspaceProjectModalView {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes workspaceProjectModalPulse {
+  0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 196, 113, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(0, 196, 113, 0); }
+  100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(0, 196, 113, 0); }
+}
+
+@keyframes workspaceProjectModalProgress {
+  0% { width: 0; left: 0; }
+  50% { width: 40%; left: 30%; }
+  100% { width: 0; left: 100%; }
 }

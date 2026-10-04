@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import AccountUserMenu from '../../components/AccountUserMenu'
 import HeaderAlerts from '../../components/HeaderAlerts'
+import SiteHeaderMegaMenu from '../../components/SiteHeaderMegaMenu'
 import { instructorDashboardLinks, siteHeaderLinks, siteHeaderTuning } from '../../components/site-header-config'
 import type { AuthSession } from '../../types/auth'
 
@@ -78,25 +79,10 @@ export default function InstructorHeader({
                       aria-haspopup={hasChildren ? 'menu' : undefined}
                     >
                       {item.label}
+                      {hasChildren ? <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" /> : null}
                     </a>
 
-                    {hasChildren ? (
-                      <div
-                        className="site-header-mega-menu"
-                        role="menu"
-                        aria-label={`${item.label} \uC138\uBD80 \uBA54\uB274`}
-                      >
-                        <div className="site-header-mega-panel">
-                          <div className="site-header-mega-links">
-                            {children.map((child) => (
-                              <a key={child.href + child.label} href={child.href} className="site-header-mega-link" role="menuitem">
-                                {child.label}
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : null}
+                    {hasChildren ? <SiteHeaderMegaMenu label={item.label} items={children} /> : null}
                   </div>
                 )
               })}
@@ -107,23 +93,10 @@ export default function InstructorHeader({
                   aria-haspopup="menu"
                 >
                   {'\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC'}
+                  <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" />
                 </a>
 
-                <div
-                  className="site-header-mega-menu"
-                  role="menu"
-                  aria-label={'\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC \uC138\uBD80 \uBA54\uB274'}
-                >
-                  <div className="site-header-mega-panel">
-                    <div className="site-header-mega-links">
-                      {instructorDashboardLinks.map((item) => (
-                        <a key={item.href} href={item.href} className="site-header-mega-link" role="menuitem">
-                          {item.label}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <SiteHeaderMegaMenu label={'\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC'} items={instructorDashboardLinks} />
               </div>
             </div>
           </div>
