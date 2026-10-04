@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { getCurrentLocationKey, navigateTo, SPA_NAVIGATION_EVENT } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from '../../components/ProjectAside'
-import { ProjectCreatePanel } from './ProjectCreateApp'
+import WorkspaceProjectStartModal from './WorkspaceProjectStartModal'
 import ProjectHeader from '../../components/ProjectHeader'
 import UserAvatar from '../../components/UserAvatar'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
@@ -386,10 +386,6 @@ export default function WorkspaceHubApp() {
     }
   }
 
-  function handleProjectCreated() {
-    navigateTo('/workspace-hub')
-  }
-
   if (!session) return <LoginRequiredView />
 
   return (
@@ -474,10 +470,9 @@ export default function WorkspaceHubApp() {
         currentUserProfileImage={profileImage}
         onClose={() => setMembersProject(null)}
       />
-      <ProjectCreateModal
+      <WorkspaceProjectStartModal
         open={projectCreateModalOpen}
         onClose={() => setProjectCreateModalOpen(false)}
-        onCreated={handleProjectCreated}
       />
 
       {authView ? (
@@ -905,28 +900,6 @@ function MembersModal({
             닫기
           </button>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function ProjectCreateModal({
-  open,
-  onClose,
-  onCreated,
-}: {
-  open: boolean
-  onClose: () => void
-  onCreated: () => void
-}) {
-  if (!open) {
-    return null
-  }
-
-  return (
-    <div className="workspace-hub-modal-overlay active fixed inset-0 z-[1000]! flex items-center justify-center bg-gray-900/40 p-4 opacity-100! visible! backdrop-blur-sm [transition:opacity_0.2s]!" onClick={onClose}>
-      <div className="workspace-hub-modal-content workspace-hub-project-create-modal w-full max-w-[64rem]! [transform:scale(1)]! [transition:transform_0.2s_cubic-bezier(0.16,1,0.3,1)]!" onClick={(event) => event.stopPropagation()}>
-        <ProjectCreatePanel onClose={onClose} onCreated={onCreated} />
       </div>
     </div>
   )
