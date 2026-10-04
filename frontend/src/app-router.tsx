@@ -1,8 +1,10 @@
 import { Suspense,lazy,useEffect,useState,type ReactElement } from 'react'
 import { NotFoundPage,RouteErrorBoundary,RouteLoadingView } from './components/AppRouteStates'
+import SquadHubApp from './features/squad/SquadHubApp'
 import { getCurrentLocationKey,installSpaNavigation,SPA_NAVIGATION_EVENT } from './lib/spa-navigation'
 import { installWorkspacePresenceHeartbeat } from './lib/workspace-presence'
-import { ACCOUNT_PAGE_ROUTES,INSTRUCTOR_PAGE_ROUTES,PROJECT_HUB_PAGE_ROUTES,getCurrentPathname,normalizePathname } from './routes'
+import { ACCOUNT_PAGE_ROUTES,INSTRUCTOR_PAGE_ROUTES,MENTORING_WORKSPACE_ROUTES,PROJECT_HUB_PAGE_ROUTES,SQUAD_WORKSPACE_ROUTES,getCurrentPathname,normalizePathname } from './routes'
+import './styles/workspaces.css'
 
 function loadWithStyle<Module>(
   loadStyle: () => Promise<unknown>,
@@ -16,7 +18,7 @@ function loadWithStyle<Module>(
 
 const loadInstructorStyles = () => import('./styles/instructor.css')
 const loadRoadmapStyles = () => import('./styles/roadmaps.css')
-const loadWorkspaceStyles = () => import('./styles/workspaces.css')
+const loadWorkspaceStyles = () => Promise.resolve()
 
 const routeLoaders = {
   app: () => import('./App'),
@@ -46,14 +48,6 @@ const routeLoaders = {
   roadmap: loadWithStyle(loadRoadmapStyles, () => import('./features/roadmap/RoadmapApp')),
   roadmapHub: loadWithStyle(loadRoadmapStyles, () => import('./features/roadmap/RoadmapHubApp')),
   signup: () => import('./features/auth/SignupApp'),
-  squadDashboard: loadWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadDashboardApp')),
-  squadErd: loadWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadErdApp')),
-  squadFiles: loadWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadFilesApp')),
-  squadMeeting: loadWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadMeetingApp')),
-  squadReview: loadWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadReviewApp')),
-  squadSchedule: loadWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadScheduleApp')),
-  squadSettings: loadWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadSettingsApp')),
-  squadWorkspace: loadWithStyle(loadWorkspaceStyles, () => import('./features/squad/SquadWorkspaceApp')),
   survey: loadWithStyle(loadRoadmapStyles, () => import('./features/roadmap/SurveyApp')),
   teamWorkspaceDashboard: loadWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/TeamWorkspaceDashboardApp')),
   teamWorkspaceMilestone: loadWithStyle(loadWorkspaceStyles, () => import('./features/team-workspace/TeamWorkspaceMilestoneApp')),
@@ -87,14 +81,6 @@ const QuizCreatorApp = lazy(routeLoaders.quizCreator)
 const RoadmapApp = lazy(routeLoaders.roadmap)
 const RoadmapHubApp = lazy(routeLoaders.roadmapHub)
 const SignupApp = lazy(routeLoaders.signup)
-const SquadDashboardApp = lazy(routeLoaders.squadDashboard)
-const SquadErdApp = lazy(routeLoaders.squadErd)
-const SquadFilesApp = lazy(routeLoaders.squadFiles)
-const SquadMeetingApp = lazy(routeLoaders.squadMeeting)
-const SquadReviewApp = lazy(routeLoaders.squadReview)
-const SquadScheduleApp = lazy(routeLoaders.squadSchedule)
-const SquadSettingsApp = lazy(routeLoaders.squadSettings)
-const SquadWorkspaceApp = lazy(routeLoaders.squadWorkspace)
 const SurveyApp = lazy(routeLoaders.survey)
 const TeamWorkspaceDashboardApp = lazy(routeLoaders.teamWorkspaceDashboard)
 const TeamWorkspaceMilestoneApp = lazy(routeLoaders.teamWorkspaceMilestone)
@@ -168,14 +154,17 @@ const ROUTE_PAGES: Record<string, ReactElement> = {
   '/team-ws-meeting': <TeamWorkspaceSuiteApp page="meeting" />,
   '/team-ws-live-meeting': <TeamWorkspaceSuiteApp page="live-meeting" />,
   '/team-voice-channel': <TeamWorkspaceSuiteApp page="voice-channel" />,
-  '/squad-dashboard': <SquadDashboardApp />,
-  '/squad-workspace': <SquadWorkspaceApp />,
-  '/squad-review': <SquadReviewApp />,
-  '/squad-erd': <SquadErdApp />,
-  '/squad-schedule': <SquadScheduleApp />,
-  '/squad-files': <SquadFilesApp />,
-  '/squad-meeting': <SquadMeetingApp />,
-  '/squad-settings': <SquadSettingsApp />,
+  '/squad-dashboard': <SquadHubApp />,
+  '/squad-blueprint': <SquadHubApp />,
+  '/squad-workspace': <SquadHubApp />,
+  '/squad-review': <SquadHubApp />,
+  '/squad-erd': <SquadHubApp />,
+  '/squad-api': <SquadHubApp />,
+  '/squad-schedule': <SquadHubApp />,
+  '/squad-files': <SquadHubApp />,
+  '/squad-meeting': <SquadHubApp />,
+  '/squad-interview': <SquadHubApp />,
+  '/squad-settings': <SquadHubApp />,
 }
 
 const routePreloaders = new Map<string, () => Promise<unknown>>([
@@ -206,14 +195,6 @@ const routePreloaders = new Map<string, () => Promise<unknown>>([
   ['/my-roadmap', routeLoaders.myRoadmapBuilder],
   ['/team-ws-dashboard', routeLoaders.teamWorkspaceDashboard],
   ['/team-ws-milestone', routeLoaders.teamWorkspaceMilestone],
-  ['/squad-dashboard', routeLoaders.squadDashboard],
-  ['/squad-workspace', routeLoaders.squadWorkspace],
-  ['/squad-review', routeLoaders.squadReview],
-  ['/squad-erd', routeLoaders.squadErd],
-  ['/squad-schedule', routeLoaders.squadSchedule],
-  ['/squad-files', routeLoaders.squadFiles],
-  ['/squad-meeting', routeLoaders.squadMeeting],
-  ['/squad-settings', routeLoaders.squadSettings],
 ])
 
 ACCOUNT_PAGE_ROUTES.forEach((pathname) => routePreloaders.set(pathname, routeLoaders.learner))
@@ -293,7 +274,22 @@ function preloadRoute(href: string) {
     return Promise.resolve()
   }
 
-  return routePreloaders.get(normalizePathname(url.pathname))?.() ?? Promise.resolve()
+  const pathname = normalizePathname(url.pathname)
+  const routePreload = routePreloaders.get(pathname)?.() ?? Promise.resolve()
+
+  if (!SQUAD_WORKSPACE_ROUTES.has(pathname)) {
+    return routePreload
+  }
+
+  const workspaceId = Number(url.searchParams.get('workspaceId'))
+  if (!Number.isInteger(workspaceId) || workspaceId <= 0) {
+    return routePreload
+  }
+
+  return Promise.all([
+    routePreload,
+    import('./features/squad/preload').then((module) => module.preloadSquadWorkspace(workspaceId)),
+  ])
 }
 
 export default function AppRouter() {
@@ -321,6 +317,19 @@ export default function AppRouter() {
 
   useEffect(() => installWorkspacePresenceHeartbeat(pathname), [locationKey, pathname])
 
+  useEffect(() => {
+    if (!SQUAD_WORKSPACE_ROUTES.has(pathname)) {
+      return
+    }
+
+    const workspaceId = Number(new URL(locationKey, window.location.origin).searchParams.get('workspaceId'))
+    if (!Number.isInteger(workspaceId) || workspaceId <= 0) {
+      return
+    }
+
+    void import('./features/squad/preload').then((module) => module.preloadSquadWorkspace(workspaceId))
+  }, [locationKey, pathname])
+
   const page = ACCOUNT_PAGE_ROUTES.has(pathname)
     ? <LearnerApp />
     : INSTRUCTOR_PAGE_ROUTES.has(pathname)
@@ -330,7 +339,11 @@ export default function AppRouter() {
     ? 'instructor'
     : PROJECT_HUB_PAGE_ROUTES.has(pathname)
       ? 'project-hub'
-      : locationKey
+      : MENTORING_WORKSPACE_ROUTES.has(pathname)
+        ? `mentoring-workspace:${new URLSearchParams(window.location.search).get('workspaceId') ?? ''}`
+        : SQUAD_WORKSPACE_ROUTES.has(pathname)
+          ? `squad-workspace:${new URLSearchParams(window.location.search).get('workspaceId') ?? ''}:${new URLSearchParams(window.location.search).get('ai') ?? ''}`
+          : locationKey
 
   return (
     <RouteErrorBoundary key={routeGroupKey} resetKey={locationKey}>

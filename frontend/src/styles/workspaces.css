@@ -102,6 +102,99 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
   }
 }
 
+@keyframes aiBlueprintTabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-squad-workspace .ai-blueprint-tab-panel {
+  animation: aiBlueprintTabFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes aiApiDetailFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-squad-workspace .ai-api-detail-panel {
+  animation: aiApiDetailFadeIn 0.25s ease-out;
+}
+
+/* 원본 스쿼드 화면처럼 각 콘텐츠 패널만 스크롤되도록 전역 body 스크롤을 잠근다. */
+body:has(.ai-squad-workspace) {
+  overflow-y: hidden;
+}
+
+@media print {
+  body:has(.ai-squad-workspace) {
+    overflow: visible;
+  }
+
+  .ai-squad-workspace > aside,
+  .ai-squad-workspace > div > header,
+  .ai-squad-workspace button:has(.fa-file-pdf),
+  .ai-squad-workspace button:has(.fa-sliders-h) {
+    display: none !important;
+  }
+
+  .ai-squad-workspace,
+  .ai-squad-workspace > div,
+  .ai-squad-workspace main {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+.ai-squad-workspace {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
+}
+
+/* base.css makes controls inherit 16px after Tailwind utilities; restore the source HTML control sizes here. */
+.ai-squad-workspace :is(button, input, select, textarea).text-\[9px\] {
+  font-size: 9px;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-\[10px\] {
+  font-size: 10px;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-\[11px\] {
+  font-size: 11px;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-xs {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-sm {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.ai-squad-workspace :is(button, input, select, textarea).text-base {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
 @keyframes squadDashboardPlusMenuIn {
   from {
     transform: translateY(10px);

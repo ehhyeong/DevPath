@@ -186,6 +186,120 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
+test('워크스페이스 허브 새 프로젝트 모달은 제공 시안의 화면 전환만 수행한다', async ({ page }) => {
+  const projectMutationRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.method() !== 'GET' && new URL(request.url()).pathname.startsWith('/api/projects')) {
+      projectMutationRequests.push(request.url())
+    }
+  })
+
+  await login(page, '/workspace-hub')
+  await page.goto('/workspace-hub')
+  await page.getByRole('button', { name: '새 프로젝트 시작' }).first().click()
+
+  const startModal = page.getByRole('dialog', { name: '프로젝트 시작하기' })
+  await expect(startModal).toBeVisible()
+  await expect(startModal).toHaveCSS('max-width', '512px')
+  await expect.poll(async () => (await startModal.boundingBox())?.width).toBeCloseTo(512, 0)
+  await expect(startModal.getByRole('button', { name: 'AI에게 주제 추천받기' })).toBeVisible()
+  await expect(startModal.getByRole('button', { name: '내가 직접 설정하기' })).toBeVisible()
+
+  await startModal.getByRole('button', { name: '내가 직접 설정하기' }).click()
+  const manualModal = page.getByRole('dialog', { name: '직접 프로젝트 설정' })
+  await expect(manualModal).toBeVisible()
+  await expect(manualModal).toHaveCSS('max-width', '896px')
+  await expect.poll(async () => (await manualModal.boundingBox())?.width).toBeCloseTo(896, 0)
+  await expect.poll(async () => {
+    const height = (await manualModal.boundingBox())?.height ?? 0
+    return height >= 590 && height <= 600
+  }).toBe(true)
+  await expect(manualModal.getByText('워크스페이스 프로필 설정')).toBeVisible()
+  await expect(manualModal.getByPlaceholder('예: 배달비 절약 플랫폼 빌드')).toHaveCSS('font-size', '12px')
+  await expect(manualModal.getByPlaceholder('예: 배달비 절약 플랫폼 빌드')).toHaveCSS('line-height', '16px')
+  await expect(manualModal.getByRole('button', { name: '이전 선택으로 돌아가기' })).toHaveCSS('font-size', '12px')
+  const createSquadButton = manualModal.getByRole('button', { name: '엔터프라이즈 스쿼드 생성' })
+  await expect(createSquadButton).toHaveCSS('font-size', '14px')
+  await expect(createSquadButton).toHaveCSS('line-height', '20px')
+  await createSquadButton.click()
+  expect(projectMutationRequests).toEqual([])
+
+  await manualModal.getByRole('button', { name: '이전 선택으로 돌아가기' }).click()
+  await startModal.getByRole('button', { name: 'AI에게 주제 추천받기' }).click()
+  const aiModal = page.getByRole('dialog', { name: 'DevPath AI Builder' })
+  await expect(aiModal.getByText('어떤 규모와 기술로 구성할까요?')).toBeVisible()
+  await expect(aiModal).toHaveCSS('height', `${(page.viewportSize()?.height ?? 0) * 0.9}px`)
+  await expect(aiModal).toHaveCSS('transform', 'none')
+  const aiInputBounds = await aiModal.boundingBox()
+  const aiModalScroller = aiModal.locator('.workspace-project-modal-scroll')
+  await expect.poll(() => aiModalScroller.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true)
+  await expect(aiModal.getByRole('button', { name: '닫기' })).toHaveCSS('font-size', '14px')
+  const manualStackButton = aiModal.getByRole('button', { name: '⚙️ 사용자가 직접 설정' })
+  await expect(manualStackButton).toHaveCSS('font-size', '14px')
+  await expect(manualStackButton).toHaveCSS('line-height', '20px')
+  const ideaInput = aiModal.getByPlaceholder(/우리 동네 남는 식재료/)
+  await expect(ideaInput).toHaveCSS('font-size', '14px')
+  await expect(ideaInput).toHaveCSS('line-height', '20px')
+  await manualStackButton.click()
+  await expect(aiModal.getByText('Frontend')).toBeVisible()
+  await expect(aiModal.locator('select').first()).toHaveCSS('font-size', '14px')
+  const stackSelects = aiModal.locator('select')
+  await stackSelects.nth(0).selectOption('Angular')
+  await stackSelects.nth(1).selectOption('Python / FastAPI')
+  await stackSelects.nth(2).selectOption('Redis')
+  await expect(stackSelects.nth(0)).toHaveValue('Angular')
+  await expect(stackSelects.nth(1)).toHaveValue('Python / FastAPI')
+  await expect(stackSelects.nth(2)).toHaveValue('Redis')
+  const manualFieldsBounds = await aiModal.locator('.workspace-project-ai-manual-fields').boundingBox()
+  const ideaSectionBounds = await aiModal.locator('.workspace-project-ai-idea-section').boundingBox()
+  expect((manualFieldsBounds?.y ?? 0) + (manualFieldsBounds?.height ?? 0)).toBeLessThan(ideaSectionBounds?.y ?? 0)
+  expect(manualFieldsBounds?.width).toBeCloseTo(ideaSectionBounds?.width ?? 0, 0)
+  await expect.poll(() => aiModalScroller.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true)
+  await aiModal.getByRole('button', { name: '이 설정으로 AI 설계 시작하기' }).click()
+  await expect(aiModal.getByText('요구사항을 분석 중입니다...')).toBeVisible()
+  await expect(aiModal.getByText('독립 출판 콘텐츠 구독 플랫폼')).toBeVisible({ timeout: 5_000 })
+  await expect(aiModalScroller).toHaveCSS('padding', '40px')
+  const aiResultBounds = await aiModal.boundingBox()
+  expect(aiResultBounds?.width).toBeCloseTo(aiInputBounds?.width ?? 0, 0)
+  expect(aiResultBounds?.height).toBeCloseTo(aiInputBounds?.height ?? 0, 0)
+  await expect(aiModal.getByRole('button', { name: /워크스페이스 생성/ })).toHaveCSS('font-size', '14px')
+  await expect(aiModal.getByRole('button', { name: /워크스페이스 생성/ })).toHaveCSS('line-height', '20px')
+  await aiModal.getByRole('button', { name: 'API 명세서' }).click()
+  await expect(aiModal.getByText('/api/members/signup')).toBeVisible()
+  await aiModal.getByRole('button', { name: /워크스페이스 생성/ }).click()
+  await expect(page).toHaveURL(/\/squad-dashboard\?ai=1$/)
+  await expect(page.getByRole('heading', { name: '반갑습니다, 이태형님! 👋' })).toBeVisible()
+
+  const aiReviewLink = page.locator('aside.squad-workspace-aside a[href="/squad-review?ai=1"]')
+  await expect(aiReviewLink).toHaveAttribute('aria-disabled', 'true')
+  await expect(aiReviewLink).toHaveCSS('opacity', '0.5')
+  await aiReviewLink.click({ force: true })
+  await expect(page).toHaveURL(/\/squad-dashboard\?ai=1$/)
+  await expect(page.getByText('코드 피드백은 GitHub 저장소를 연동한 뒤 이용할 수 있습니다.')).toBeVisible()
+
+  const aiWorkspaceApiRequests: string[] = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.startsWith('/api/')) {
+      aiWorkspaceApiRequests.push(request.url())
+    }
+  })
+
+  for (const [path, heading] of [
+    ['/squad-blueprint', '독립 출판 콘텐츠 구독 플랫폼'],
+    ['/squad-api', 'API 명세서'],
+    ['/squad-interview', '면접 준비'],
+    ['/squad-workspace', '팀 작업 현황판'],
+    ['/squad-meeting', '주간 스프린트 회의'],
+  ] as const) {
+    await page.locator(`aside.squad-workspace-aside a[href="${path}?ai=1"]`).click()
+    await expect(page).toHaveURL(new RegExp(`${path.replace('/', '\\/')}\\?ai=1$`))
+    await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible()
+  }
+
+  expect(aiWorkspaceApiRequests).toEqual([])
+  expect(projectMutationRequests).toEqual([])
+})
+
 test('프로젝트 허브 화면은 방문 상태와 조회 결과 및 aside 펼침을 유지한다', async ({ page }) => {
   test.setTimeout(60_000)
 
