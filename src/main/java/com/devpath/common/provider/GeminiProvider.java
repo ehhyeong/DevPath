@@ -24,7 +24,9 @@ public class GeminiProvider {
 
   private static final String GEMINI_URL_FORMAT =
       "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
-  private static final int MAX_ATTEMPTS_PER_MODEL = 1;
+  private static final int QUOTA_AWARE_MAX_ATTEMPTS_PER_MODEL = 2;
+  private static final long DEFAULT_RETRY_DELAY_MILLIS = 5_000;
+  private static final long MAX_RETRY_DELAY_MILLIS = 60_000;
   private static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 500, 502, 503, 504);
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -91,6 +93,19 @@ public class GeminiProvider {
    */
   public String generateJson(
       String prompt, Map<String, Object> responseSchema, int maxOutputTokens) {
+    return generateJson(prompt, responseSchema, maxOutputTokens, false);
+  }
+
+  public String generateJsonOrThrowOnQuota(
+      String prompt, Map<String, Object> responseSchema, int maxOutputTokens) {
+    return generateJson(prompt, responseSchema, maxOutputTokens, true);
+  }
+
+  private String generateJson(
+      String prompt,
+      Map<String, Object> responseSchema,
+      int maxOutputTokens,
+      boolean throwOnQuota) {
     Map<String, Object> generationConfig = new java.util.HashMap<>();
     generationConfig.put("responseMimeType", "application/json");
     generationConfig.put("thinkingConfig", Map.of("thinkingBudget", 0));
@@ -105,10 +120,14 @@ public class GeminiProvider {
             List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
             "generationConfig",
             generationConfig);
-    return execute(body);
+    return execute(body, throwOnQuota);
   }
 
   private String execute(Map<String, Object> body) {
+    return execute(body, false);
+  }
+
+  private String execute(Map<String, Object> body, boolean throwOnQuota) {
     String apiKey = normalize(geminiProperties.getKey());
 
     if (apiKey.isBlank()) {
@@ -121,11 +140,13 @@ public class GeminiProvider {
 
     HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
     List<String> models = resolveModels();
+    boolean quotaExceeded = false;
+    int maxAttemptsPerModel = throwOnQuota ? QUOTA_AWARE_MAX_ATTEMPTS_PER_MODEL : 1;
 
     for (String model : models) {
       String url = GEMINI_URL_FORMAT.formatted(model, apiKey);
 
-      for (int attempt = 1; attempt <= MAX_ATTEMPTS_PER_MODEL; attempt++) {
+      for (int attempt = 1; attempt <= maxAttemptsPerModel; attempt++) {
         try {
           String raw = restTemplate.postForObject(url, request, String.class);
           String text = extractText(raw);
@@ -142,7 +163,7 @@ public class GeminiProvider {
               "[GeminiProvider] model={} attempt={}/{} failed with status {}: {}",
               model,
               attempt,
-              MAX_ATTEMPTS_PER_MODEL,
+              maxAttemptsPerModel,
               status,
               shorten(e.getResponseBodyAsString(), 180));
 
@@ -150,29 +171,36 @@ public class GeminiProvider {
             return null;
           }
 
-          if (!RETRYABLE_STATUS_CODES.contains(status) || attempt == MAX_ATTEMPTS_PER_MODEL) {
+          if (status == 429) {
+            quotaExceeded = true;
+          }
+
+          if (!RETRYABLE_STATUS_CODES.contains(status) || attempt == maxAttemptsPerModel) {
             break;
           }
 
-          pauseBeforeRetry();
+          pauseBeforeRetry(e, attempt);
         } catch (Exception e) {
           log.warn(
               "[GeminiProvider] model={} attempt={}/{} failed: {}",
               model,
               attempt,
-              MAX_ATTEMPTS_PER_MODEL,
+              maxAttemptsPerModel,
               e.getMessage());
 
-          if (attempt == MAX_ATTEMPTS_PER_MODEL) {
+          if (attempt == maxAttemptsPerModel) {
             break;
           }
 
-          pauseBeforeRetry();
+          pauseBeforeRetry(null, attempt);
         }
       }
     }
 
     log.warn("[GeminiProvider] all configured models failed: {}", String.join(", ", models));
+    if (throwOnQuota && quotaExceeded) {
+      throw new GeminiQuotaExceededException();
+    }
     return null;
   }
 
@@ -215,11 +243,58 @@ public class GeminiProvider {
     }
   }
 
-  private void pauseBeforeRetry() {
+  private void pauseBeforeRetry(RestClientResponseException exception, int attempt) {
     try {
-      Thread.sleep(300);
+      Thread.sleep(resolveRetryDelayMillis(exception, attempt));
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+    }
+  }
+
+  private long resolveRetryDelayMillis(RestClientResponseException exception, int attempt) {
+    if (exception != null && exception.getResponseHeaders() != null) {
+      Long headerDelay = parseDelaySeconds(exception.getResponseHeaders().getFirst("Retry-After"));
+      if (headerDelay != null) {
+        return headerDelay;
+      }
+
+      Long bodyDelay = parseRetryDelayFromBody(exception.getResponseBodyAsString());
+      if (bodyDelay != null) {
+        return bodyDelay;
+      }
+    }
+
+    return Math.min(DEFAULT_RETRY_DELAY_MILLIS * attempt, MAX_RETRY_DELAY_MILLIS);
+  }
+
+  private Long parseRetryDelayFromBody(String responseBody) {
+    try {
+      JsonNode details = MAPPER.readTree(responseBody).path("error").path("details");
+      if (details.isArray()) {
+        for (JsonNode detail : details) {
+          Long delay = parseDelaySeconds(detail.path("retryDelay").asText(null));
+          if (delay != null) {
+            return delay;
+          }
+        }
+      }
+    } catch (Exception ignored) {
+      // 재시도 시간이 없는 오류 본문은 기본 지수 백오프로 처리한다.
+    }
+    return null;
+  }
+
+  private Long parseDelaySeconds(String value) {
+    String normalized = normalize(value);
+    if (normalized.endsWith("s")) {
+      normalized = normalized.substring(0, normalized.length() - 1);
+    }
+    try {
+      double seconds = Double.parseDouble(normalized);
+      long millis = Math.max(0L, Math.round(seconds * 1_000));
+      return Math.min(millis, MAX_RETRY_DELAY_MILLIS);
+    } catch (NumberFormatException ignored) {
+      return null;
     }
   }
 
