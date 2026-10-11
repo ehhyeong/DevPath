@@ -149,35 +149,49 @@ function Card({ children, className = '' }: { children: ReactNode; className?: s
 }
 
 function DashboardPage() {
-  const counts = Object.fromEntries((['todo', 'progress', 'review', 'done'] as AiTaskStatus[]).map((status) => [status, aiTasks.filter((task) => task.status === status).length]))
+  const { dashboard, activities, notices } = useAiWorkspace()
+  const tasks = useDisplayedTasks()
+  const counts = Object.fromEntries((['todo', 'progress', 'review', 'done'] as AiTaskStatus[]).map((status) => [status, tasks.filter((task) => task.status === status).length]))
+  const completed = counts.done ?? 0
+  const completion = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0
+  const ownerName = dashboard?.ownerName?.trim()
+    || dashboard?.members.find((member) => member.learnerId === dashboard.ownerId)?.learnerName?.trim()
+    || '프로젝트 오너'
+  const currentRoadmap = aiRoadmap[0]
+  const summaryCards = [
+    ['fa-route', 'text-purple-500', '기획 & 시나리오', `MVP 기능 ${aiFeatures.length}개`],
+    ['fa-database', 'text-blue-500', '아키텍처 & DB', `${aiErdTables.length}개 테이블`],
+    ['fa-plug', 'text-brand', 'API 명세서', `${aiApis.length}개 엔드포인트`],
+    ['fa-user-tie', 'text-orange-500', '로드맵 & 면접', `${aiRoadmap.length}단계 · ${getBlueprintInterviewQuestions().length}문항`],
+  ]
   return (
     <main className="custom-scrollbar flex-1 overflow-y-auto p-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <Card className="relative flex flex-col items-start justify-between gap-6 overflow-hidden p-8 md:flex-row md:items-center">
           <div className="pointer-events-none absolute top-0 right-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-brand opacity-[0.03] blur-3xl" />
-          <div><p className="mb-1 flex items-center gap-2 text-sm font-bold text-gray-500">Phase 2 · 인증/인가 구현 진행 중 <AiChip>AI 로드맵</AiChip></p><h2 className="text-2xl font-extrabold tracking-tight text-gray-900">반갑습니다, 이태형님! 👋</h2><p className="mt-2 text-sm font-medium text-gray-600">전체 14개 작업 중 <strong className="text-brand">3개 완료 (21%)</strong> · 이번 Phase 마감 02.24</p></div>
+          <div><p className="mb-1 flex items-center gap-2 text-sm font-bold text-gray-500">{currentRoadmap ? `Phase ${currentRoadmap.phase} · ${currentRoadmap.title}` : 'AI 로드맵'} <AiChip>AI 로드맵</AiChip></p><h2 className="text-2xl font-extrabold tracking-tight text-gray-900">반갑습니다, {ownerName}님! 👋</h2><p className="mt-2 text-sm font-medium text-gray-600">전체 {tasks.length}개 작업 중 <strong className="text-brand">{completed}개 완료 ({completion}%)</strong></p></div>
           <div className="z-10 flex w-full gap-3 md:w-auto"><button onClick={() => go('/squad-workspace')} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:border-brand hover:text-brand md:flex-none" type="button"><i className="fas fa-columns" /> 내 작업 현황판</button><button onClick={() => go('/squad-meeting')} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white shadow-lg md:flex-none" type="button"><i className="fas fa-video" /> 회의실 입장</button></div>
         </Card>
 
         <Card className="relative overflow-hidden border-green-200 bg-[linear-gradient(135deg,#F0FDF4_0%,#F0FDFA_100%)] p-7">
           <i className="fas fa-magic pointer-events-none absolute -right-6 -bottom-8 text-[140px] text-brand/5" />
           <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
-            <div><div className="mb-2 flex items-center gap-2"><AiChip>AI 포트폴리오 설계서</AiChip><span className="rounded-full border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold text-gray-500">{aiSquadProject.difficulty}</span></div><h3 className="bg-gradient-to-r from-brand to-teal-600 bg-clip-text text-xl font-black tracking-tight text-transparent">{aiSquadProject.title}</h3><p className="mt-1 text-sm font-medium text-gray-600">{aiSquadProject.oneLiner}</p><div className="mt-3 flex flex-wrap gap-1.5">{[...aiSquadProject.stack.frontend, ...aiSquadProject.stack.backend, ...aiSquadProject.stack.database].map((stack) => <span key={stack} className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold text-gray-600">{stack}</span>)}</div></div>
+            <div><div className="mb-2 flex items-center gap-2"><AiChip>AI 포트폴리오 설계서</AiChip><span className="rounded-full border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold text-gray-500">{aiSquadProject.difficulty}</span></div><h3 className="text-xl font-black leading-snug tracking-tight text-[#00C471]">{aiSquadProject.title}</h3><p className="mt-1 text-sm font-medium text-gray-600">{aiSquadProject.oneLiner}</p><div className="mt-3 flex flex-wrap gap-1.5">{[...aiSquadProject.stack.frontend, ...aiSquadProject.stack.backend, ...aiSquadProject.stack.database].map((stack) => <span key={stack} className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold text-gray-600">{stack}</span>)}</div></div>
             <button onClick={() => go('/squad-blueprint')} className="flex w-fit shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-md" type="button"><i className="fas fa-book-open" /> AI 설계서 전체 보기</button>
           </div>
-          <div className="relative mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">{[['fa-route','기획 & 시나리오','MVP 기능 5개'],['fa-database','아키텍처 & DB','4개 테이블'],['fa-plug','API 명세서','9개 엔드포인트'],['fa-user-tie','로드맵 & 면접','4단계 · 5문항']].map(([icon,title,copy]) => <div key={title} className="rounded-xl border border-white bg-white/80 p-3"><p className="text-xs font-extrabold text-gray-900"><i className={`fas ${icon} mr-1.5 text-brand`} />{title}</p><p className="mt-1 text-[10px] font-bold text-gray-400">{copy}</p></div>)}</div>
+          <div className="relative mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">{summaryCards.map(([icon,color,title,copy]) => <div key={title} className="rounded-xl border border-white bg-white/80 p-3"><p className="text-xs font-extrabold text-gray-900"><i className={`fas ${icon} mr-1.5 ${color}`} />{title}</p><p className="mt-1 text-[10px] font-bold text-gray-400">{copy}</p></div>)}</div>
         </Card>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="space-y-6 lg:col-span-8">
             <Card className="p-7"><div className="mb-6 flex items-center justify-between"><h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-tasks text-brand" /> 팀 작업 현황 <AiChip>로드맵 자동 생성</AiChip></h3><button onClick={() => go('/squad-workspace')} className="text-xs font-bold text-gray-400 hover:text-brand" type="button">전체보기 <i className="fas fa-chevron-right ml-1" /></button></div><div className="grid grid-cols-2 gap-6 md:grid-cols-4">{(['todo','progress','review','done'] as AiTaskStatus[]).map((status) => <div key={status}><p className="text-[11px] font-bold text-gray-400">{statusMeta[status].label}</p><div className="mt-1 flex items-end gap-2"><strong className="text-3xl font-black text-gray-900">{counts[status]}</strong><span className={`mb-1.5 h-2 w-2 rounded-full ${statusMeta[status].dot}`} /></div></div>)}</div></Card>
             <Card className="p-7"><div className="mb-5 flex items-center justify-between"><h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-star text-yellow-500" /> MVP 검증 기능 진행률</h3><AiChip>기획 & 시나리오</AiChip></div><div className="space-y-4">{aiFeatures.map((feature) => <div key={feature.id}><div className="mb-1.5 flex items-center justify-between text-xs"><span className="font-bold text-gray-700">{feature.id}. {feature.title}</span><span className="font-black text-brand">{feature.progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-gray-100"><div className="h-full rounded-full bg-brand" style={{ width: `${feature.progress}%` }} /></div></div>)}</div></Card>
-            <Card className="p-7"><h3 className="mb-6 flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-history text-gray-400" /> 최근 팀 활동</h3><div className="space-y-4">{[['fa-code-branch','김개발님이 리뷰 요청을 올렸습니다.','feat: Spring Security 세션 로그인 및 Role 기반 접근 제어','1시간 전'],['fa-check','Phase 1 마일스톤 달성 🎉','환경 설정 및 엔티티 구성 단계 작업 3개가 완료되었습니다.','6일 전'],['fa-magic','AI 설계서로 워크스페이스가 생성되었습니다.',aiSquadProject.oneLiner,'02.09']].map(([icon,title,copy,time]) => <div key={title} className="flex gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-green-50 text-brand shadow-sm"><i className={`fas ${icon}`} /></div><div className="flex-1 rounded-2xl border border-gray-100 bg-gray-50 p-4"><div className="flex justify-between gap-3"><p className="text-sm font-bold text-gray-900">{title}</p><span className="text-[10px] font-bold text-gray-400">{time}</span></div><p className="mt-1 text-xs text-gray-500">{copy}</p></div></div>)}</div></Card>
+            <Card className="p-7"><h3 className="mb-6 flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-history text-gray-400" /> 최근 팀 활동</h3>{activities.length ? <div className="space-y-4">{activities.map((activity) => <div key={activity.logId} className="flex gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white bg-green-50 text-brand shadow-sm"><i className="fas fa-bolt" /></div><div className="flex-1 rounded-2xl border border-gray-100 bg-gray-50 p-4"><div className="flex justify-between gap-3"><p className="text-sm font-bold text-gray-900">{activity.description || '워크스페이스 활동'}</p><span className="text-[10px] font-bold text-gray-400">{formatDate(activity.createdAt)}</span></div></div></div>)}</div> : <p className="rounded-xl bg-gray-50 px-4 py-8 text-center text-xs font-bold text-gray-400">아직 기록된 팀 활동이 없습니다.</p>}</Card>
           </div>
           <div className="space-y-6 lg:col-span-4">
-            <Card className="p-7"><div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-3"><h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-route text-purple-500" /> 개발 로드맵</h3><AiChip>AI</AiChip></div><div className="ml-2 space-y-5 border-l-2 border-gray-100">{aiRoadmap.map((item, index) => <div key={item.phase} className="relative pl-5"><span className={`absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-white ${index < 2 ? 'bg-brand' : 'bg-gray-300'}`} /><div className="flex justify-between gap-2"><p className="text-xs font-extrabold text-gray-900">Phase {item.phase}. {item.title}</p><span className="text-[9px] font-bold text-gray-400">{item.period}</span></div><p className="mt-1 text-[10px] leading-relaxed text-gray-500">{item.desc}</p></div>)}</div></Card>
-            <Card className="p-7"><h3 className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3 text-lg font-extrabold text-gray-900"><i className="fas fa-clock text-orange-500" /> 마감 임박 작업</h3>{aiTasks.filter((task) => task.urgent).map((task) => <div key={task.id} className="mb-3 rounded-xl border border-red-100 bg-red-50 p-3"><p className="text-[10px] font-black text-red-500">{task.id} · {task.due} 마감</p><p className="mt-1 text-xs font-bold text-gray-800">{task.title}</p></div>)}</Card>
-            <Card className="p-7"><h3 className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3 text-lg font-extrabold text-gray-900"><i className="fas fa-bullhorn text-brand" /> 팀 공지사항</h3><div className="rounded-xl border border-brand/20 bg-brand/5 p-4"><span className="rounded bg-red-500 px-1.5 py-0.5 text-[9px] font-extrabold text-white">필독</span><p className="mt-2 text-sm font-extrabold text-gray-900">핵심 난제 설계 방식 결정 필요</p><p className="mt-1 text-xs leading-relaxed text-gray-600">Phase 3 시작 전 orderIndex 재정렬 방식을 회의에서 확정합니다.</p></div></Card>
+            <Card className="p-7"><div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-3"><h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-route text-purple-500" /> 개발 로드맵</h3><AiChip>AI</AiChip></div><div className="ml-2 space-y-5 border-l-2 border-gray-100">{aiRoadmap.map((item) => <div key={item.phase} className="relative pl-5"><span className="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-white bg-gray-300" /><div className="flex justify-between gap-2"><p className="text-xs font-extrabold text-gray-900">Phase {item.phase}. {item.title}</p><span className="text-[9px] font-bold text-gray-400">{item.period}</span></div><p className="mt-1 text-[10px] leading-relaxed text-gray-500">{item.desc}</p></div>)}</div></Card>
+            <Card className="p-7"><h3 className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3 text-lg font-extrabold text-gray-900"><i className="fas fa-clock text-orange-500" /> 마감 임박 작업</h3>{tasks.some((task) => task.urgent) ? tasks.filter((task) => task.urgent).map((task) => <div key={task.id} className="mb-3 rounded-xl border border-red-100 bg-red-50 p-3"><p className="text-[10px] font-black text-red-500">{task.id} · {task.due} 마감</p><p className="mt-1 text-xs font-bold text-gray-800">{task.title}</p></div>) : <p className="py-4 text-center text-xs font-bold text-gray-400">마감 임박 작업이 없습니다.</p>}</Card>
+            <Card className="p-7"><h3 className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3 text-lg font-extrabold text-gray-900"><i className="fas fa-bullhorn text-brand" /> 팀 공지사항</h3>{notices.length ? notices.slice(0, 3).map((notice) => <div key={notice.id} className="mb-3 rounded-xl border border-brand/20 bg-brand/5 p-4"><p className="text-sm font-extrabold text-gray-900">{notice.title}</p><p className="mt-1 text-xs leading-relaxed text-gray-600">{notice.content}</p></div>) : <p className="py-4 text-center text-xs font-bold text-gray-400">등록된 공지사항이 없습니다.</p>}</Card>
           </div>
         </div>
       </div>
@@ -373,8 +387,11 @@ const emptyTaskForm: LocalTaskForm = {
 }
 
 function WorkspacePage() {
+  const runtime = useAiWorkspace()
+  const displayedTasks = useDisplayedTasks()
+  const members = runtime.dashboard?.members ?? []
   const columns: AiTaskStatus[] = ['todo', 'progress', 'review', 'done']
-  const [tasks, setTasks] = useState<AiTask[]>(aiTasks)
+  const [tasks, setTasks] = useState<AiTask[]>(displayedTasks)
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState<LocalTaskForm>(emptyTaskForm)
 
@@ -383,16 +400,43 @@ function WorkspacePage() {
     setForm(emptyTaskForm)
   }
 
-  function addTask(event: FormEvent<HTMLFormElement>) {
+  async function addTask(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const title = form.title.trim()
     if (!title) return
+
+    if (runtime.workspaceId) {
+      try {
+        const created = await projectApiRequest<WorkspaceTask>(
+          `/api/workspaces/${runtime.workspaceId}/tasks`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              title,
+              description: form.description.trim(),
+              priority: form.urgent ? 'HIGH' : 'MEDIUM',
+              assigneeId: form.assignee ? Number(form.assignee) : null,
+              dueDate: form.due || null,
+            }),
+          },
+          'required',
+        )
+        runtime.setTasks((current) => [created, ...current])
+        setTasks((current) => [toAiTask(created, members), ...current])
+        closeModal()
+        showAuthToast({ message: '작업이 추가되었습니다.', durationMs: 1800 })
+      } catch (error) {
+        showAuthToast({ message: error instanceof Error ? error.message : '작업을 추가하지 못했습니다.', variant: 'error' })
+      }
+      return
+    }
+
     const id = `DP-${String(tasks.length + 1).padStart(2, '0')}`
     setTasks((current) => [...current, {
       id,
       title,
       tag: form.tag,
-      assignee: form.assignee || '미지정',
+      assignee: members.find((member) => String(member.learnerId) === form.assignee)?.learnerName || '미지정',
       status: 'todo',
       due: form.due || '미정',
       urgent: form.urgent,
@@ -427,7 +471,7 @@ function WorkspacePage() {
               <label className="block"><span className="mb-2 block text-xs font-bold text-gray-700">작업 제목 <span className="text-red-500">*</span></span><input aria-label="작업 제목" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm font-bold shadow-sm outline-none transition focus:border-brand" placeholder="무엇을 작업하시나요?" /></label>
               <div className="grid grid-cols-2 gap-4">
                 <label className="block"><span className="mb-2 block text-xs font-bold text-gray-700">담당 직군 (태그)</span><select aria-label="담당 직군" value={form.tag} onChange={(event) => setForm((current) => ({ ...current, tag: event.target.value as AiTask['tag'] }))} className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium shadow-sm outline-none focus:border-brand"><option value="FE">프론트엔드 (FE)</option><option value="BE">백엔드 (BE)</option><option value="UX/UI">디자인 (UX/UI)</option><option value="DevOps">인프라 (DevOps)</option></select></label>
-                <label className="block"><span className="mb-2 block text-xs font-bold text-gray-700">담당자 배정</span><select aria-label="담당자 배정" value={form.assignee} onChange={(event) => setForm((current) => ({ ...current, assignee: event.target.value }))} className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium shadow-sm outline-none focus:border-brand"><option value="">미지정</option>{aiSquadMembers.map((member) => <option key={member.memberId} value={member.learnerName}>{member.learnerName}</option>)}</select></label>
+                <label className="block"><span className="mb-2 block text-xs font-bold text-gray-700">담당자 배정</span><select aria-label="담당자 배정" value={form.assignee} onChange={(event) => setForm((current) => ({ ...current, assignee: event.target.value }))} className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium shadow-sm outline-none focus:border-brand"><option value="">미지정</option>{members.map((member) => <option key={member.memberId} value={member.learnerId}>{member.learnerName?.trim() || `멤버 ${member.memberId}`}</option>)}</select></label>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><span className="mb-2 block text-xs font-bold text-gray-700">우선순위</span><div className="flex items-center gap-4 rounded-xl border border-gray-100 bg-gray-50 p-3.5"><label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-gray-700"><input type="radio" name="urgency" checked={!form.urgent} onChange={() => setForm((current) => ({ ...current, urgent: false }))} className="h-4 w-4 accent-brand" />보통</label><label className="flex cursor-pointer items-center gap-2 text-sm font-bold text-red-500"><input type="radio" name="urgency" checked={form.urgent} onChange={() => setForm((current) => ({ ...current, urgent: true }))} className="h-4 w-4 accent-red-500" />🔥 긴급</label></div></div>

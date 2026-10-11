@@ -1,15 +1,18 @@
+import { aiWorkspacePageHref } from './ai-workspace-navigation'
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
-import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
-import { projectApiRequest } from '../project/api'
+import { projectApiRequest, workspaceFeatureId } from '../project/api'
 import { createSquadNotification, squadActorName } from './notifications'
 import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
 import { useWorkspaceDataVersion } from '../../lib/workspace-events'
+import { type AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
+import type { AiApi } from './ai-squad-data'
+import { findApiTask, linkApisToTask, readWorkspaceApiDocument, readWorkspaceApis } from './api-workspace-links'
 
 import type {
   FilterType,
@@ -64,8 +67,10 @@ const TASK_COLUMNS: Array<{
 
 function createEmptyForm(): TaskFormState {
   return {
+    tag: 'FE',
     title: '',
     description: '',
+    featureIds: [],
     status: 'TODO',
     priority: 'MEDIUM',
     assigneeId: '',
@@ -114,9 +119,11 @@ function statusAccent(status: TaskStatus) {
 }
 
 function tagForTask(task: WorkspaceTask) {
+  const savedTag = task.description?.match(/^\[task-tag:(FE|BE|UX\/UI|DevOps)\]\n?/)
+  if (savedTag) return { label: savedTag[1], className: savedTag[1] === 'FE' ? 'bg-blue-50 text-blue-600 border-blue-200' : savedTag[1] === 'BE' ? 'bg-purple-50 text-purple-600 border-purple-200' : savedTag[1] === 'UX/UI' ? 'bg-pink-50 text-pink-600 border-pink-200' : 'bg-gray-50 text-gray-600 border-gray-200' }
   const haystack = `${task.title} ${task.description ?? ''}`.toLowerCase()
 
-  if (/(react|ui|frontend|front|next|tailwind)/i.test(haystack)) {
+  if (/(react|ui|frontend|front|next|tailwind|화면|프론트)/i.test(haystack)) {
     return { label: '프론트엔드 (FE)', className: 'bg-blue-50 text-blue-600 border-blue-200' }
   }
 
@@ -124,8 +131,12 @@ function tagForTask(task: WorkspaceTask) {
     return { label: '백엔드 (BE)', className: 'bg-purple-50 text-purple-600 border-purple-200' }
   }
 
-  if (/(design|ux|figma|wireframe)/i.test(haystack)) {
+  if (/(design|ux|figma|wireframe|디자인)/i.test(haystack)) {
     return { label: '디자인 (UX/UI)', className: 'bg-pink-50 text-pink-600 border-pink-200' }
+  }
+
+  if (/(deploy|devops|ci\/cd|배포|인프라|모니터링)/i.test(haystack)) {
+    return { label: '인프라 (DevOps)', className: 'bg-gray-50 text-gray-600 border-gray-200' }
   }
 
   return { label: '작업', className: 'bg-gray-50 text-gray-600 border-gray-200' }
@@ -187,8 +198,10 @@ function isUrgentTask(task: WorkspaceTask) {
 
 function taskToForm(task: WorkspaceTask): TaskFormState {
   return {
+    tag: task.description?.match(/^\[task-tag:(FE|BE|UX\/UI|DevOps)\]/)?.[1] ?? 'BE',
     title: task.title,
-    description: task.description ?? '',
+    description: (task.description ?? '').replace(/^\[task-tag:(FE|BE|UX\/UI|DevOps)\]\n?/, ''),
+    featureIds: task.featureIds ?? [],
     status: task.status,
     priority: task.priority ?? 'MEDIUM',
     assigneeId: task.assigneeId ? String(task.assigneeId) : '',
@@ -196,7 +209,7 @@ function taskToForm(task: WorkspaceTask): TaskFormState {
   }
 }
 
-export default function SquadWorkspaceApp() {
+export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const dataVersion = useWorkspaceDataVersion()
   const [session,setSession] = useAuthSession()
@@ -211,6 +224,43 @@ export default function SquadWorkspaceApp() {
   const [form, setForm] = useState<TaskFormState>(createEmptyForm)
   const [saving, setSaving] = useState(false)
   const [draggingTaskId, setDraggingTaskId] = useState<number | null>(null)
+  const [linkedApis, setLinkedApis] = useState<AiApi[]>([])
+  const [apiLinkError, setApiLinkError] = useState('')
+  const [apiLinksLoaded, setApiLinksLoaded] = useState(false)
+  const [selectedApiIds, setSelectedApiIds] = useState<string[] | null>(null)
+  const [saveError, setSaveError] = useState('')
+  const taskApiIds = selectedApiIds ?? linkedApis.filter((api) => editingTask && findApiTask(api.task, [editingTask])).map((api) => api.id)
+
+  useEffect(() => {
+    if (!aiWorkspace || !workspaceId) return
+    const controller = new AbortController()
+    setApiLinksLoaded(false)
+    projectApiRequest<{ content: string } | null>(`/api/workspaces/${workspaceId}/api-spec`, { signal: controller.signal }, 'required').then((doc) => {
+      if (controller.signal.aborted) return
+      setLinkedApis(doc?.content ? readWorkspaceApis(doc.content) : [])
+      setApiLinkError('')
+      setApiLinksLoaded(true)
+    }).catch((error) => {
+      if (!controller.signal.aborted) setApiLinkError(error instanceof Error ? error.message : '연결된 API를 불러오지 못했습니다.')
+    })
+    return () => controller.abort()
+  }, [aiWorkspace, workspaceId, dataVersion])
+
+  useEffect(() => {
+    if (!aiWorkspace || loading || modalOpen) return
+    const openLinkedTask = () => {
+      const task = findApiTask(window.location.hash.slice(1), tasks)
+      if (!task) return
+      setEditingTask(task)
+      setForm(taskToForm(task))
+      setSelectedApiIds(null)
+      setSaveError('')
+      setModalOpen(true)
+    }
+    openLinkedTask()
+    window.addEventListener('hashchange', openLinkedTask)
+    return () => window.removeEventListener('hashchange', openLinkedTask)
+  }, [aiWorkspace, loading, tasks, modalOpen])
 
   useEffect(() => {
     document.title = 'DevPath - 작업 현황판'
@@ -304,12 +354,16 @@ export default function SquadWorkspaceApp() {
   function openCreateModal(status: TaskStatus = 'TODO') {
     setEditingTask(null)
     setForm({ ...createEmptyForm(), status })
+    setSelectedApiIds(null)
+    setSaveError('')
     setModalOpen(true)
   }
 
   function openEditModal(task: WorkspaceTask) {
     setEditingTask(task)
     setForm(taskToForm(task))
+    setSelectedApiIds(null)
+    setSaveError('')
     setModalOpen(true)
   }
 
@@ -317,19 +371,25 @@ export default function SquadWorkspaceApp() {
     setModalOpen(false)
     setEditingTask(null)
     setForm(createEmptyForm())
+    setSelectedApiIds(null)
+    setSaveError('')
+    if (/^#DP-\d+$/.test(window.location.hash)) window.history.replaceState(null, '', window.location.pathname + window.location.search)
   }
 
   async function saveTask(event: FormEvent) {
     event.preventDefault()
 
-    if (!workspaceId || !form.title.trim()) {
+    if (!workspaceId || !form.title.trim() || saving || (aiWorkspace && !apiLinksLoaded)) {
       return
     }
 
     setSaving(true)
+    setSaveError('')
+    let linkingApis = false
 
     try {
       const assigneeId = form.assigneeId ? Number(form.assigneeId) : null
+      let savedTask: WorkspaceTask
 
       if (editingTask) {
         const updated = await projectApiRequest<WorkspaceTask>(
@@ -338,7 +398,8 @@ export default function SquadWorkspaceApp() {
             method: 'PUT',
             body: JSON.stringify({
               title: form.title.trim(),
-              description: form.description.trim(),
+              description: `[task-tag:${form.tag}]\n${form.description.trim()}`,
+              featureIds: aiWorkspace && design ? form.featureIds : undefined,
               priority: form.priority,
               dueDate: form.dueDate || null,
             }),
@@ -363,6 +424,7 @@ export default function SquadWorkspaceApp() {
         )
 
         updateTaskInState(withStatus)
+        savedTask = withStatus
         void createSquadNotification(workspaceId, {
           pageKey: 'squad-workspace',
           message: `${squadActorName(session?.name)}님이 작업 "${withStatus.title}"을 수정했습니다.`,
@@ -375,7 +437,8 @@ export default function SquadWorkspaceApp() {
             method: 'POST',
             body: JSON.stringify({
               title: form.title.trim(),
-              description: form.description.trim(),
+              description: `[task-tag:${form.tag}]\n${form.description.trim()}`,
+              featureIds: aiWorkspace && design ? form.featureIds : undefined,
               priority: form.priority,
               assigneeId,
               dueDate: form.dueDate || null,
@@ -383,6 +446,9 @@ export default function SquadWorkspaceApp() {
           },
           'required',
         )
+        // 명세 저장이나 후속 상태 변경이 실패해도 재시도는 이미 생성된 작업을 수정한다.
+        setEditingTask(created)
+        setTasks((current) => [created, ...current])
         const normalized =
           form.status === 'TODO'
             ? created
@@ -395,7 +461,8 @@ export default function SquadWorkspaceApp() {
                 'required',
               )
 
-        setTasks((current) => [normalized, ...current])
+        updateTaskInState(normalized)
+        savedTask = normalized
         void createSquadNotification(workspaceId, {
           pageKey: 'squad-workspace',
           message: `${squadActorName(session?.name)}님이 새 작업 "${normalized.title}"을 등록했습니다.`,
@@ -403,7 +470,30 @@ export default function SquadWorkspaceApp() {
         })
       }
 
+      // 구버전 서버가 알 수 없는 필드를 무시해도 기능 연결 저장을 성공으로 표시하지 않는다.
+      if (aiWorkspace && design && (!Array.isArray(savedTask.featureIds)
+        || savedTask.featureIds.length !== form.featureIds.length
+        || form.featureIds.some((id) => !savedTask.featureIds!.includes(id)))) {
+        throw new Error('MVP 기능 연결이 서버에 저장되지 않았습니다. 백엔드를 최신 코드로 다시 실행한 뒤 저장해 주세요.')
+      }
+      if (aiWorkspace) {
+        linkingApis = true
+        // 다른 화면에서 변경한 상태·명세를 보존하도록 저장 직전에 최신 문서를 읽는다.
+        const doc = await projectApiRequest<{ content: string } | null>(`/api/workspaces/${workspaceId}/api-spec`, {}, 'required')
+        const currentDocument = doc?.content ? readWorkspaceApiDocument(doc.content) : { format: 'devpath-api-v1', endpoints: [], groups: [] }
+        const currentApis = currentDocument.endpoints
+        if (taskApiIds.some((id) => !currentApis.some((api) => api.id === id))) throw new Error('선택한 API가 삭제되었습니다. 창을 닫고 다시 확인해 주세요.')
+        const nextApis = linkApisToTask(currentApis, savedTask.taskId, taskApiIds)
+        if (nextApis.some((api, index) => api.task !== currentApis[index].task)) {
+          await projectApiRequest(`/api/workspaces/${workspaceId}/api-spec`, { method: 'PUT', body: JSON.stringify({ content: JSON.stringify({ ...currentDocument, endpoints: nextApis }) }) }, 'required')
+        }
+        setLinkedApis(nextApis)
+      }
+
       closeModal()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '작업을 저장하지 못했습니다.'
+      setSaveError(linkingApis ? `작업은 저장되었지만 API 연결을 저장하지 못했습니다. 다시 저장해 주세요. ${message}` : message)
     } finally {
       setSaving(false)
     }
@@ -459,6 +549,12 @@ export default function SquadWorkspaceApp() {
   })
 
 
+  function renderTaskApiLinks(task: WorkspaceTask) {
+    const apis = linkedApis.filter((api) => findApiTask(api.task, [task]))
+    if (!apis.length) return null
+    return <div className="mt-3 space-y-1 border-t border-gray-100 pt-3"><p className="text-[10px] font-bold text-gray-400">연결된 API</p>{apis.map((api) => <a key={api.id} href={`${aiWorkspacePageHref('/squad-api', workspaceId)}#${api.id}`} onClick={(event) => event.stopPropagation()} className="block break-all font-mono text-xs font-bold text-brand hover:underline">{api.method} {api.path}</a>)}</div>
+  }
+
   function renderTaskCard(task: WorkspaceTask) {
     const assignee = task.assigneeId ? memberById.get(task.assigneeId) : null
     const tag = tagForTask(task)
@@ -479,6 +575,8 @@ export default function SquadWorkspaceApp() {
           <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">#{task.taskId}</span>
         </div>
         <h4 className="font-bold text-gray-900 text-sm mb-3 leading-snug">{task.title}</h4>
+
+        {aiWorkspace && task.featureIds?.length ? <div className="mb-3 flex flex-wrap gap-1">{task.featureIds.map((id) => <span key={id} title={design?.scenario.coreFeatures[design.scenario.coreFeatures.findIndex((_, index) => workspaceFeatureId(design.scenario, index) === id)]} className="rounded border border-teal-100 bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold text-teal-700">{id}</span>)}</div> : null}
 
         <div className="flex justify-between items-center mb-3 pt-3 border-t border-gray-50">
           <div className={`text-[10px] font-bold flex items-center gap-1 ${urgent ? 'text-red-500' : 'text-gray-500'}`}>
@@ -512,6 +610,7 @@ export default function SquadWorkspaceApp() {
             {priorityLabel(task.priority)}
           </span>
         </div>
+        {aiWorkspace ? renderTaskApiLinks(task) : null}
       </div>
     )
   }
@@ -541,14 +640,16 @@ export default function SquadWorkspaceApp() {
   return (
     <div className="squad-dashboard-page squad-workspace-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
       <SquadWorkspaceAside
+        aiWorkspace={aiWorkspace}
         activePage="workspace"
         workspaceId={workspaceId}
         projectName={projectName}
-        reviewBadgeCount={tasks.length > 0 ? 1 : 0}
+        reviewBadgeCount={aiWorkspace ? 0 : tasks.length > 0 ? 1 : 0}
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <SquadWorkspaceHeader
+          aiWorkspace={aiWorkspace}
           workspaceId={workspaceId}
           projectName={projectName}
           members={members}
@@ -558,12 +659,13 @@ export default function SquadWorkspaceApp() {
         />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
+          {aiWorkspace && apiLinkError ? <p role="alert" className="px-6 pt-3 text-xs text-red-500">{apiLinkError}</p> : null}
           <div className="px-8 py-6 shrink-0 bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 z-10">
             <div>
               <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
                 <i className="fas fa-columns text-brand"></i> 팀 작업 현황판
               </h1>
-              <p className="text-sm text-gray-500 mt-1">팀원들의 작업 내역을 추가하고, 카드를 이동하여 진행 상태를 직관적으로 공유하세요.</p>
+              <p className="text-sm text-gray-500 mt-1">팀원들의 작업 내역을 추가하고, 카드를 이동하여 진행 상태를 직관적으로 공유하세요.{aiWorkspace && design ? <a href={`${aiWorkspacePageHref('/squad-blueprint', workspaceId)}#roadmap`} className="ml-2 text-xs font-bold text-teal-700"><i className="fas fa-magic mr-1" />AI 로드맵 · {design.roadmap.length}단계</a> : null}</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -622,11 +724,10 @@ export default function SquadWorkspaceApp() {
         </main>
       </div>
 
-      <SquadWorkspaceAiPanel />
 
       {modalOpen ? (
         <div className="squad-workspace-task-modal fixed inset-0 z-[1050] flex visible items-center justify-center bg-gray-900/60 p-4 opacity-100 backdrop-blur-sm [transition:opacity_0.2s,visibility_0.2s] [&_input]:text-[14px]! [&_input:not([type=radio])]:leading-[20px]! [&_select]:text-[14px]! [&_select]:leading-[20px]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]! [&_button]:text-[14px]! [&_button]:leading-[20px]!">
-          <form onSubmit={saveTask} className="squad-workspace-task-modal-content relative flex w-full max-w-[448px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <form onSubmit={saveTask} className="squad-workspace-task-modal-content relative flex max-h-[calc(100dvh-2rem)] w-full max-w-[448px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
               <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
                 <i className="fas fa-ticket-alt text-brand"></i> {editingTask ? '작업 수정' : '새 작업 추가'}
@@ -638,14 +739,16 @@ export default function SquadWorkspaceApp() {
 
             <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-2">작업 제목 <span className="text-red-500">*</span></label>
-                <input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm font-bold" placeholder="무엇을 작업하시나요?" />
+                <label htmlFor="task-title" className="block text-xs font-bold text-gray-700 mb-2">작업 제목 <span className="text-red-500">*</span></label>
+                <input id="task-title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand transition shadow-sm font-bold" placeholder="무엇을 작업하시나요?" />
               </div>
+
+              {saveError ? <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">{saveError}</p> : null}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-2">담당 직군 (태그)</label>
-                  <select className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand font-medium shadow-sm bg-white cursor-pointer" defaultValue="FE">
+                  <select className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand font-medium shadow-sm bg-white cursor-pointer" value={form.tag} onChange={(event) => setForm((current) => ({ ...current, tag: event.target.value }))}>
                     <option value="FE">프론트엔드 (FE)</option>
                     <option value="BE">백엔드 (BE)</option>
                     <option value="UX/UI">디자인 (UX/UI)</option>
@@ -653,8 +756,8 @@ export default function SquadWorkspaceApp() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-2">담당자 배정</label>
-                  <select value={form.assigneeId} onChange={(event) => setForm((current) => ({ ...current, assigneeId: event.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand font-medium shadow-sm bg-white cursor-pointer">
+                  <label htmlFor="task-assignee" className="block text-xs font-bold text-gray-700 mb-2">담당자 배정</label>
+                  <select id="task-assignee" value={form.assigneeId} onChange={(event) => setForm((current) => ({ ...current, assigneeId: event.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand font-medium shadow-sm bg-white cursor-pointer">
                     <option value="">미지정</option>
                     {members.map((member) => (
                       <option key={member.memberId} value={member.learnerId}>{member.learnerName ?? `팀원 ${member.learnerId}`}</option>
@@ -662,6 +765,31 @@ export default function SquadWorkspaceApp() {
                   </select>
                 </div>
               </div>
+
+              {aiWorkspace && design ? <fieldset className="space-y-2">
+                <legend className="mb-2 text-xs font-bold text-gray-700">연결할 MVP 기능</legend>
+                <p className="text-xs text-gray-500">이 작업이 구현하는 기능을 선택하세요. 대시보드는 기능별 연결 작업 중 완료된 비율을 표시합니다.</p>
+                <div className="space-y-1 rounded-xl border border-gray-200 p-2">
+                  {design.scenario.coreFeatures.map((feature, index) => {
+                    const id = workspaceFeatureId(design.scenario, index)
+                    return <label key={id} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 hover:bg-gray-50">
+                      <input type="checkbox" checked={form.featureIds.includes(id)} disabled={saving} onChange={(event) => setForm((current) => ({ ...current, featureIds: event.target.checked ? [...current.featureIds, id] : current.featureIds.filter((value) => value !== id) }))} className="mt-0.5 h-4 w-4 shrink-0 accent-brand" />
+                      <span className="text-xs font-medium text-gray-700">{id}. {feature}</span>
+                    </label>
+                  })}
+                </div>
+              </fieldset> : null}
+
+              {aiWorkspace ? <fieldset className="space-y-2">
+                <legend className="mb-2 text-xs font-bold text-gray-700">연결할 API</legend>
+                <p className="text-xs text-gray-500">선택한 API에 이 작업의 담당자와 마감일이 표시됩니다.</p>
+                {apiLinkError ? <p role="alert" className="text-xs text-red-600">{apiLinkError}</p> : !apiLinksLoaded ? <p className="text-xs text-gray-400">API를 불러오는 중입니다.</p> : linkedApis.length ? <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-gray-200 p-2">
+                  {linkedApis.map((api) => <label key={api.id} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 hover:bg-gray-50">
+                    <input type="checkbox" checked={taskApiIds.includes(api.id)} disabled={saving} onChange={(event) => setSelectedApiIds(event.target.checked ? [...taskApiIds, api.id] : taskApiIds.filter((id) => id !== api.id))} className="mt-0.5 h-4 w-4 shrink-0 accent-brand" />
+                    <span className="min-w-0 text-xs text-gray-700"><span className="break-all font-mono font-bold">{api.method} {api.path}</span><span className="block text-gray-500">{api.desc}{api.task && (!editingTask || !findApiTask(api.task, [editingTask])) ? ` · ${api.task}에서 이 작업으로 연결 변경` : ''}</span></span>
+                  </label>)}
+                </div> : <p className="text-xs text-gray-400">등록된 API가 없습니다.</p>}
+              </fieldset> : null}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -685,6 +813,7 @@ export default function SquadWorkspaceApp() {
                 <label className="block text-xs font-bold text-gray-700 mb-2">상세 설명 <span className="text-gray-400 font-normal">(선택)</span></label>
                 <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className="w-full border border-gray-200 rounded-xl p-4 text-[14px] leading-[20px] h-24 resize-none outline-none focus:border-brand transition shadow-sm" placeholder="작업에 필요한 세부 사항이나 참고 링크를 남겨주세요." />
               </div>
+              {aiWorkspace && editingTask ? renderTaskApiLinks(editingTask) : null}
             </div>
 
             <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
@@ -693,7 +822,7 @@ export default function SquadWorkspaceApp() {
               </button>
               <div className="flex gap-2 ml-auto">
                 <button type="button" onClick={closeModal} className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition shadow-sm">취소</button>
-                <button type="submit" disabled={saving || !form.title.trim()} className="px-6 py-2.5 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-black transition shadow-md flex items-center gap-1.5 disabled:opacity-40">
+                <button type="submit" disabled={saving || !form.title.trim() || (aiWorkspace && !apiLinksLoaded)} className="px-6 py-2.5 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-black transition shadow-md flex items-center gap-1.5 disabled:opacity-40">
                   <i className="fas fa-save"></i> {saving ? '저장 중' : '저장하기'}
                 </button>
               </div>

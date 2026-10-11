@@ -1,22 +1,18 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
-import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import { showAuthToast } from '../../lib/auth-toast'
-import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
 import { projectApiRequest } from '../project/api'
 import { createSquadNotification, squadActorName } from './notifications'
 import SquadDashboardContent from './SquadDashboardContent'
-import SquadDashboardChatSurface from './SquadDashboardChatSurface'
-import { copyDocumentPictureInPictureStyles,getWorkspaceIdFromUrl,percent,readSidebarPinned,statusLabel,storeSidebarPinned } from './squad-dashboard-support'
+import type { AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
+import { getWorkspaceIdFromUrl,percent,readSidebarPinned,statusLabel,storeSidebarPinned } from './squad-dashboard-support'
 
 import type {
   ActivityLog,
-  ChatTab,
-  DirectMessage,
   CalendarEvent,
   Notice,
   TeamMessage,
@@ -27,41 +23,26 @@ import type {
   WorkspaceTask,
 } from './dashboard-types'
 
-export default function SquadDashboardApp() {
+export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [tasks, setTasks] = useState<WorkspaceTask[]>([])
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [roadmapToday, setRoadmapToday] = useState(() => new Date().toDateString())
   const [notices, setNotices] = useState<Notice[]>([])
   const [activities, setActivities] = useState<ActivityLog[]>([])
   const [erdChanges, setErdChanges] = useState<WorkspaceErdChange[]>([])
   const [voiceChannels, setVoiceChannels] = useState<VoiceChannel[]>([])
   const [messages, setMessages] = useState<TeamMessage[]>([])
-  const [selectedDmMember, setSelectedDmMember] = useState<WorkspaceMember | null>(null)
-  const [directMessages, setDirectMessages] = useState<DirectMessage[]>([])
-  const [directInput, setDirectInput] = useState('')
-  const [directLoading, setDirectLoading] = useState(false)
-  const [profileImageOverride, setProfileImageOverride] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [chatOpen, setChatOpen] = useState(false)
-  const [chatInPip, setChatInPip] = useState(false)
-  const [chatPipContainer, setChatPipContainer] = useState<HTMLElement | null>(null)
-  const [chatTab, setChatTab] = useState<ChatTab>('team')
-  const [plusMenuOpen, setPlusMenuOpen] = useState(false)
-  const [messageInput, setMessageInput] = useState('')
   const [noticeModalOpen, setNoticeModalOpen] = useState(false)
   const [noticeType, setNoticeType] = useState<'important' | 'normal'>('important')
   const [noticeTitle, setNoticeTitle] = useState('')
   const [noticeContent, setNoticeContent] = useState('')
   const [sidebarPinned, setSidebarPinned] = useState(readSidebarPinned)
-  const chatScrollRef = useRef<HTMLDivElement | null>(null)
-  const directScrollRef = useRef<HTMLDivElement | null>(null)
-  const pipChatScrollRef = useRef<HTMLDivElement | null>(null)
-  const pipDirectScrollRef = useRef<HTMLDivElement | null>(null)
-  const chatPipWindowRef = useRef<Window | null>(null)
   const dashboardRefreshRef = useRef(false)
 
   const loadDashboardData = useCallback(async (options?: { signal?: AbortSignal; blocking?: boolean; silent?: boolean }) => {
@@ -145,53 +126,6 @@ export default function SquadDashboardApp() {
     }
   }, [workspaceId])
 
-  const refreshTeamMessages = useCallback(async () => {
-    if (!workspaceId || !readStoredAuthSession()?.accessToken) {
-      return
-    }
-
-    try {
-      const nextMessages = await projectApiRequest<TeamMessage[]>(
-        `/api/lounge/chats/messages?loungeId=${workspaceId}`,
-        {},
-        'required',
-      )
-
-      setMessages(nextMessages ?? [])
-    } catch {
-      // Keep the last successful chat snapshot during transient polling failures.
-    }
-  }, [workspaceId])
-
-  const loadDirectMessages = useCallback(async (member: WorkspaceMember, silent = false) => {
-    if (!workspaceId) {
-      return
-    }
-
-    if (!silent) {
-      setDirectLoading(true)
-    }
-
-    try {
-      const nextMessages = await projectApiRequest<DirectMessage[]>(
-        `/api/workspaces/${workspaceId}/direct-messages/${member.learnerId}`,
-        {},
-        'required',
-      )
-
-      setDirectMessages(nextMessages ?? [])
-    } catch (loadError) {
-      if (!silent) {
-        const message = loadError instanceof Error ? loadError.message : '1:1 메시지를 불러오지 못했습니다.'
-        showAuthToast({ message, variant: 'error', durationMs: 2200 })
-      }
-    } finally {
-      if (!silent) {
-        setDirectLoading(false)
-      }
-    }
-  }, [workspaceId])
-
   useEffect(() => {
     document.title = 'DevPath - 스쿼드 대시보드'
     const html = document.documentElement
@@ -208,25 +142,6 @@ export default function SquadDashboardApp() {
       body.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
       root?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
       appViewport?.classList.remove('h-dvh!', 'min-h-0!', 'overflow-hidden!')
-    }
-  }, [])
-
-  useEffect(() => {
-    const syncProfile = (event: Event) => {
-      const profileEvent = event as CustomEvent<ProfileSyncPayload>
-      setProfileImageOverride(profileEvent.detail?.profileImage ?? null)
-    }
-
-    window.addEventListener(PROFILE_UPDATED_EVENT, syncProfile)
-
-    return () => window.removeEventListener(PROFILE_UPDATED_EVENT, syncProfile)
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (chatPipWindowRef.current && !chatPipWindowRef.current.closed) {
-        chatPipWindowRef.current.close()
-      }
     }
   }, [])
 
@@ -265,6 +180,8 @@ export default function SquadDashboardApp() {
 
       dashboardRefreshRef.current = true
       try {
+        // API 캐시가 같은 객체를 반환해도 자정 이후 로드맵 날짜는 갱신한다.
+        setRoadmapToday(new Date().toDateString())
         await loadDashboardData({ silent: true })
       } finally {
         dashboardRefreshRef.current = false
@@ -293,50 +210,6 @@ export default function SquadDashboardApp() {
     }
   }, [loadDashboardData, loading, session?.accessToken, workspaceId])
 
-  useEffect(() => {
-    if (!workspaceId || !session?.accessToken) {
-      return undefined
-    }
-
-    const intervalId = window.setInterval(() => {
-      void refreshTeamMessages()
-    }, 3000)
-
-    return () => window.clearInterval(intervalId)
-  }, [workspaceId, session?.accessToken, refreshTeamMessages])
-
-  useEffect(() => {
-    if (chatOpen && chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight
-    }
-
-    if (chatOpen && pipChatScrollRef.current) {
-      pipChatScrollRef.current.scrollTop = pipChatScrollRef.current.scrollHeight
-    }
-  }, [chatOpen, messages])
-
-  useEffect(() => {
-    if (!workspaceId || !session?.accessToken || !selectedDmMember) {
-      return undefined
-    }
-
-    const intervalId = window.setInterval(() => {
-      void loadDirectMessages(selectedDmMember, true)
-    }, 3000)
-
-    return () => window.clearInterval(intervalId)
-  }, [workspaceId, session?.accessToken, selectedDmMember, loadDirectMessages])
-
-  useEffect(() => {
-    if (directScrollRef.current) {
-      directScrollRef.current.scrollTop = directScrollRef.current.scrollHeight
-    }
-
-    if (pipDirectScrollRef.current) {
-      pipDirectScrollRef.current.scrollTop = pipDirectScrollRef.current.scrollHeight
-    }
-  }, [selectedDmMember, directMessages])
-
   const memberById = useMemo(() => {
     const map = new Map<number, WorkspaceMember>()
     dashboard?.members.forEach((member) => map.set(member.learnerId, member))
@@ -345,7 +218,6 @@ export default function SquadDashboardApp() {
 
   const currentMember = session?.userId ? memberById.get(session.userId) : null
   const currentUserName = currentMember?.learnerName ?? session?.name ?? '사용자'
-  const currentProfileImage = profileImageOverride ?? currentMember?.profileImage ?? null
   const activeMembers = dashboard?.members ?? []
   const myTasks = tasks.filter((task) => session?.userId && task.assigneeId === session.userId)
   const taskTotal = myTasks.length
@@ -353,14 +225,15 @@ export default function SquadDashboardApp() {
   const doingCount = myTasks.filter((task) => task.status === 'IN_PROGRESS').length
   const doneCount = myTasks.filter((task) => task.status === 'DONE').length
   const liveVoiceChannel = voiceChannels.find((channel) => (channel.activeParticipantCount ?? 0) > 0)
-  const goalRemainingPercent = taskTotal > 0 ? Math.max(0, 100 - percent(doneCount, taskTotal)) : 35
+  const goalRemainingPercent = aiWorkspace
+    ? taskTotal > 0 ? 100 - Math.round(doneCount / taskTotal * 100) : 100
+    : taskTotal > 0 ? Math.max(0, 100 - percent(doneCount, taskTotal)) : 35
   const hasAnyDashboardData =
     taskTotal > 0 || events.length > 0 || notices.length > 0 || activities.length > 0 || messages.length > 0
   const hasDashboardBodyData =
     taskTotal > 0 || events.length > 0 || notices.length > 0 || activities.length > 0 || erdChanges.length > 0 || Boolean(liveVoiceChannel)
   const upcomingEvents = events.slice(0, 3)
   const sideProjectName = dashboard?.name ?? '새로운 스쿼드'
-  const dmMembers = activeMembers.filter((member) => member.learnerId !== session?.userId)
 
   function handleLogout() {
     clearStoredAuthSession()
@@ -379,143 +252,6 @@ export default function SquadDashboardApp() {
     setSession(nextSession)
     setAuthView(null)
     window.location.reload()
-  }
-
-  function closeChatSurface() {
-    if (chatPipWindowRef.current && !chatPipWindowRef.current.closed) {
-      chatPipWindowRef.current.close()
-    }
-
-    chatPipWindowRef.current = null
-    setChatPipContainer(null)
-    setChatInPip(false)
-    setChatOpen(false)
-  }
-
-  async function openChatSurface() {
-    const documentPictureInPicture = window.documentPictureInPicture
-
-    if (!documentPictureInPicture) {
-      setChatInPip(false)
-      setChatOpen(true)
-      return
-    }
-
-    if (chatPipWindowRef.current && !chatPipWindowRef.current.closed) {
-      chatPipWindowRef.current.focus()
-      return
-    }
-
-    try {
-      const pipWindow = await documentPictureInPicture.requestWindow({
-        width: 400,
-        height: 640,
-      })
-      const root = pipWindow.document.createElement('div')
-
-      pipWindow.document.title = dashboard?.name?.trim() || '스쿼드 소통방'
-      root.id = 'squad-dashboard-pip-root'
-      pipWindow.document.body.append(root)
-      try {
-        copyDocumentPictureInPictureStyles(pipWindow)
-      } catch {
-        // Keep the PiP window open even if one stylesheet cannot be mirrored.
-      }
-      pipWindow.addEventListener(
-        'pagehide',
-        () => {
-          chatPipWindowRef.current = null
-          setChatPipContainer(null)
-          setChatInPip(false)
-          setChatOpen(false)
-        },
-        { once: true },
-      )
-
-      chatPipWindowRef.current = pipWindow
-      setChatPipContainer(root)
-      setChatInPip(true)
-      setChatOpen(true)
-    } catch {
-      setChatInPip(false)
-      setChatOpen(true)
-      showAuthToast({ message: 'PiP 창을 열 수 없어 일반 채팅창으로 열었습니다.', durationMs: 1800 })
-    }
-  }
-
-  async function sendTeamMessage(content = messageInput.trim()) {
-    if (!workspaceId || !content) {
-      return
-    }
-
-    try {
-      const created = await projectApiRequest<TeamMessage>(
-        '/api/lounge/chats/messages',
-        {
-          method: 'POST',
-          body: JSON.stringify({ loungeId: workspaceId, content }),
-        },
-        'required',
-      )
-
-      setMessages((current) => [...current, created])
-      setMessageInput('')
-      setPlusMenuOpen(false)
-      void createSquadNotification(workspaceId, {
-        pageKey: 'squad-dashboard',
-        message: `${squadActorName(session?.name)}님이 스쿼드 채팅에 메시지를 보냈습니다.`,
-        targetPath: '/squad-dashboard',
-      })
-    } catch (sendError) {
-      const message = sendError instanceof Error ? sendError.message : '메시지를 보내지 못했습니다.'
-      showAuthToast({ message, variant: 'error', durationMs: 2200 })
-    }
-  }
-
-  async function openDirectRoom(member: WorkspaceMember) {
-    setSelectedDmMember(member)
-    setDirectMessages([])
-    await loadDirectMessages(member)
-  }
-
-  async function sendDirectMessage() {
-    if (!workspaceId || !selectedDmMember || !directInput.trim()) {
-      return
-    }
-
-    const content = directInput.trim()
-
-    try {
-      const created = await projectApiRequest<DirectMessage>(
-        `/api/workspaces/${workspaceId}/direct-messages`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ receiverId: selectedDmMember.learnerId, content }),
-        },
-        'required',
-      )
-
-      setDirectMessages((current) => [...current, created])
-      setDirectInput('')
-      void createSquadNotification(workspaceId, {
-        pageKey: 'squad-dashboard',
-        message: `${squadActorName(session?.name)}님이 ${selectedDmMember.learnerName ?? '팀원'}님에게 1:1 메시지를 보냈습니다.`,
-        targetPath: '/squad-dashboard',
-      })
-    } catch (sendError) {
-      const message = sendError instanceof Error ? sendError.message : '1:1 메시지를 보내지 못했습니다.'
-      showAuthToast({ message, variant: 'error', durationMs: 2200 })
-    }
-  }
-
-  function sendPlusMessage(type: 'code' | 'meeting' | 'remind') {
-    const contentByType = {
-      code: '[코드 공유] 확인이 필요한 코드 스니펫을 공유했습니다.',
-      meeting: '[회의 초대] 주간 스프린트 회의 링크를 공유했습니다.',
-      remind: '[마감 리마인더] 오늘 마감 작업을 확인해주세요.',
-    }
-
-    void sendTeamMessage(contentByType[type])
   }
 
   async function createNotice(event: FormEvent<HTMLFormElement>) {
@@ -593,16 +329,18 @@ export default function SquadDashboardApp() {
   return (
     <div aria-busy={loading} className="squad-dashboard-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.squad-dashboard-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
       <SquadWorkspaceAside
+        aiWorkspace={aiWorkspace}
         activePage="dashboard"
         workspaceId={workspaceId}
         projectName={sideProjectName}
         pinned={sidebarPinned}
         onTogglePinned={toggleSidebarPin}
-        reviewBadgeCount={hasAnyDashboardData ? 1 : 0}
+        reviewBadgeCount={aiWorkspace ? 0 : hasAnyDashboardData ? 1 : 0}
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <SquadWorkspaceHeader
+          aiWorkspace={aiWorkspace}
           workspaceId={workspaceId}
           projectName={dashboard?.name ?? '새 스쿼드 프로젝트'}
           members={activeMembers}
@@ -612,17 +350,8 @@ export default function SquadDashboardApp() {
           onLogout={handleLogout}
         />
 
-        <SquadDashboardContent workspaceId={workspaceId} notices={notices} activities={activities} erdChanges={erdChanges} memberById={memberById} currentUserName={currentUserName} doingCount={doingCount} doneCount={doneCount} goalRemainingPercent={goalRemainingPercent} hasDashboardBodyData={hasDashboardBodyData} liveVoiceChannel={liveVoiceChannel} taskTotal={taskTotal} todoCount={todoCount} upcomingEvents={upcomingEvents} onOpenNotice={() => setNoticeModalOpen(true)} />
+        <SquadDashboardContent tasks={tasks} workspaceId={workspaceId} notices={notices} activities={activities} erdChanges={erdChanges} memberById={memberById} currentUserName={currentUserName} doingCount={doingCount} doneCount={doneCount} goalRemainingPercent={goalRemainingPercent} hasDashboardBodyData={hasDashboardBodyData} liveVoiceChannel={liveVoiceChannel} taskTotal={taskTotal} todoCount={todoCount} upcomingEvents={upcomingEvents} calendarEvents={events} workspaceCreatedAt={dashboard?.createdAt} roadmapToday={roadmapToday} onOpenNotice={() => setNoticeModalOpen(true)} design={aiWorkspace ? design : null} />
       </div>
-
-      <SquadDashboardChatSurface
-        sessionUserId={session?.userId ?? null} dashboard={dashboard} messages={messages} directMessages={directMessages} dmMembers={dmMembers} memberById={memberById}
-        selectedDmMember={selectedDmMember} currentProfileImage={currentProfileImage} chatInPip={chatInPip} chatPipContainer={chatPipContainer} chatOpen={chatOpen} chatTab={chatTab}
-        plusMenuOpen={plusMenuOpen} messageInput={messageInput} directInput={directInput} directLoading={directLoading} chatScrollRef={chatScrollRef} directScrollRef={directScrollRef}
-        pipChatScrollRef={pipChatScrollRef} pipDirectScrollRef={pipDirectScrollRef} setChatTab={setChatTab} setPlusMenuOpen={setPlusMenuOpen} setMessageInput={setMessageInput}
-        setDirectInput={setDirectInput} setSelectedDmMember={setSelectedDmMember} setDirectMessages={setDirectMessages} openChatSurface={openChatSurface}
-        closeChatSurface={closeChatSurface} openDirectRoom={openDirectRoom} sendTeamMessage={sendTeamMessage} sendDirectMessage={sendDirectMessage} sendPlusMessage={sendPlusMessage}
-      />
 
       {noticeModalOpen ? (
         <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-[1050]">
@@ -658,7 +387,6 @@ export default function SquadDashboardApp() {
         </div>
       ) : null}
 
-      <SquadWorkspaceAiPanel />
 
       {authView ? (
         <AuthModal

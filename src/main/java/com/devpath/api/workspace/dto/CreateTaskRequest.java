@@ -3,7 +3,10 @@ package com.devpath.api.workspace.dto;
 import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,6 +20,9 @@ public class CreateTaskRequest {
 
   @Schema(description = "태스크 설명", example = "JWT 기반 로그인 API 구현")
   private String description;
+
+  @Schema(description = "연결할 MVP 기능 ID (선택)", example = "[\"F1\", \"F2\"]")
+  private List<@NotNull @Pattern(regexp = "F[1-9][0-9]*") String> featureIds;
 
   @Schema(description = "우선순위 (LOW, MEDIUM, HIGH)", example = "MEDIUM")
   private WorkspaceTaskPriority priority;

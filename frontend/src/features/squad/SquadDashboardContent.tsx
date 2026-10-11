@@ -1,5 +1,10 @@
-import { activityFallback, activityIcon, formatChatTime, formatEventDay, formatEventMonth, formatShortDate, getDday, isImportantNotice, navHref, percent, stripNoticePrefix, stripScheduleCategoryDescription } from './squad-dashboard-support'
+import { aiWorkspacePageHref } from './ai-workspace-navigation'
+import { activityFallback, activityIcon, formatChatTime, formatEventDay, formatEventMonth, formatShortDate, getDday, isImportantNotice, navHref as standardNavHref, percent, stripNoticePrefix, stripScheduleCategoryDescription } from './squad-dashboard-support'
+import type { WorkspaceAiDesign } from '../project/api'
+import { AiDesignSummary, AiRoadmapCard } from './AiWorkspaceDesignPanels'
+import MvpFeatureProgress from './MvpFeatureProgress'
 import type { ActivityLog, CalendarEvent, Notice, VoiceChannel, WorkspaceErdChange, WorkspaceMember } from './dashboard-types'
+import type { WorkspaceTask } from './dashboard-types'
 
 type Props = {
   workspaceId: number | null
@@ -16,11 +21,18 @@ type Props = {
   taskTotal: number
   todoCount: number
   upcomingEvents: CalendarEvent[]
+  calendarEvents: CalendarEvent[]
+  workspaceCreatedAt?: string | null
+  roadmapToday: string
   onOpenNotice: () => void
+  design?: WorkspaceAiDesign | null
+  tasks: WorkspaceTask[]
 }
 
 export default function SquadDashboardContent(props: Props) {
-  const { workspaceId, notices, activities, erdChanges, memberById, currentUserName, doingCount, doneCount, goalRemainingPercent, hasDashboardBodyData, liveVoiceChannel, taskTotal, todoCount, upcomingEvents, onOpenNotice } = props
+  const { workspaceId, notices, activities, erdChanges, memberById, currentUserName, doingCount, doneCount, goalRemainingPercent, hasDashboardBodyData, liveVoiceChannel, taskTotal, todoCount, upcomingEvents, onOpenNotice, design } = props
+  const navHref = (path: string, id: number | null) => design ? aiWorkspacePageHref(path, id) : standardNavHref(path, id)
+  const taskPercent = (count: number) => design ? taskTotal > 0 ? Math.round(count / taskTotal * 100) : 0 : percent(count, taskTotal)
 
   function renderActivity(activity: ActivityLog) {
     const actor = activity.actorId ? memberById.get(activity.actorId) : null
@@ -79,10 +91,10 @@ export default function SquadDashboardContent(props: Props) {
               <div>
                 {hasDashboardBodyData ? (
                   <>
-                    <p className="text-sm font-bold text-gray-500 mb-1">스프린트 2주차 진행 중</p>
+                    <p className="text-sm font-bold text-gray-500 mb-1">{design ? `AI 로드맵 · ${design.roadmap.length}단계` : '스프린트 2주차 진행 중'}</p>
                     <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">반갑습니다, {currentUserName}님! 👋</h2>
                     <p className="text-sm text-gray-600 mt-2 font-medium">
-                      이번 주 팀 목표 달성까지 <span className="text-brand font-bold">{goalRemainingPercent}%</span> 남았습니다. 화이팅!
+                      {design ? <>내 작업 완료율 <span className="text-brand font-bold">{100 - goalRemainingPercent}%</span> · 완료 {doneCount}개 / 전체 {taskTotal}개</> : <>이번 주 팀 목표 달성까지 <span className="text-brand font-bold">{goalRemainingPercent}%</span> 남았습니다. 화이팅!</>}
                     </p>
                   </>
                 ) : (
@@ -104,6 +116,7 @@ export default function SquadDashboardContent(props: Props) {
               </div>
             </div>
 
+            {design ? <AiDesignSummary design={design} workspaceId={workspaceId} /> : null}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-8 space-y-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
@@ -126,7 +139,7 @@ export default function SquadDashboardContent(props: Props) {
                           <span className="text-lg font-black text-gray-800">{todoCount}</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                          <div className="bg-gray-300 h-2.5 rounded-full" style={{ width: `${percent(todoCount, taskTotal)}%` }}></div>
+                          <div className="bg-gray-300 h-2.5 rounded-full" style={{ width: `${taskPercent(todoCount)}%` }}></div>
                         </div>
                       </div>
                       <div>
@@ -135,7 +148,7 @@ export default function SquadDashboardContent(props: Props) {
                           <span className="text-lg font-black text-blue-600">{doingCount}</span>
                         </div>
                         <div className="w-full bg-blue-50 rounded-full h-2.5 overflow-hidden">
-                          <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${percent(doingCount, taskTotal)}%` }}></div>
+                          <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${taskPercent(doingCount)}%` }}></div>
                         </div>
                       </div>
                       <div>
@@ -144,7 +157,7 @@ export default function SquadDashboardContent(props: Props) {
                           <span className="text-lg font-black text-brand">{doneCount}</span>
                         </div>
                         <div className="w-full bg-green-50 rounded-full h-2.5 overflow-hidden">
-                          <div className="bg-brand h-2.5 rounded-full" style={{ width: `${percent(doneCount, taskTotal)}%` }}></div>
+                          <div className="bg-brand h-2.5 rounded-full" style={{ width: `${taskPercent(doneCount)}%` }}></div>
                         </div>
                       </div>
                     </div>
@@ -162,6 +175,7 @@ export default function SquadDashboardContent(props: Props) {
                   )}
                 </div>
 
+                {design ? <MvpFeatureProgress workspaceId={workspaceId} features={design.scenario.coreFeatures} featureIds={design.scenario.featureIds} tasks={props.tasks} /> : null}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
                   <h3 className="font-extrabold text-gray-900 flex items-center gap-2 text-lg mb-6">
                     <i className="fas fa-history text-gray-400"></i> 최근 팀 활동
@@ -180,6 +194,7 @@ export default function SquadDashboardContent(props: Props) {
                   )}
                 </div>
 
+                {!design ? (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="font-extrabold text-gray-900 flex items-center gap-2 text-lg">
@@ -203,9 +218,11 @@ export default function SquadDashboardContent(props: Props) {
                     </div>
                   )}
                 </div>
+                ) : null}
               </div>
 
               <div className="lg:col-span-4 space-y-6">
+                {design ? <AiRoadmapCard design={design} workspaceId={workspaceId} events={props.calendarEvents.filter((event) => event.description?.startsWith('[schedule-category:milestone]'))} createdAt={props.workspaceCreatedAt} today={props.roadmapToday} /> : null}
                 <div className="squad-dashboard-side-card squad-dashboard-compact-side-card squad-dashboard-schedule-card box-border rounded-[16px]! border border-gray-100 bg-white p-[20px]! shadow-sm">
                   <h3 className="squad-dashboard-side-title mb-[12px]! box-border flex items-center gap-2 border-b border-gray-100 pb-[9px]! text-lg font-extrabold text-gray-900">
                     <i className={`fas fa-clock ${upcomingEvents.length > 0 ? 'text-orange-500' : 'text-gray-400'}`}></i> 마감 임박 일정
@@ -241,6 +258,7 @@ export default function SquadDashboardContent(props: Props) {
                   )}
                 </div>
 
+                {!design ? (
                 <div className="squad-dashboard-side-card box-border rounded-[16px]! border border-gray-100 bg-white p-7 shadow-sm">
                   <h3 className="squad-dashboard-side-title mb-5 box-border flex items-center gap-2 border-b border-gray-100 pb-3 text-lg font-extrabold text-gray-900">
                     <i className={`fas fa-headset ${liveVoiceChannel ? 'text-red-500' : 'text-gray-400'}`}></i> 라이브 음성 회의
@@ -274,6 +292,7 @@ export default function SquadDashboardContent(props: Props) {
                     </div>
                   )}
                 </div>
+                ) : null}
 
                 <div className="squad-dashboard-side-card squad-dashboard-compact-side-card box-border rounded-[16px]! border border-gray-100 bg-white p-[22px]! shadow-sm">
                   <div className="squad-dashboard-side-title mb-[14px]! flex box-border items-center justify-between border-b border-gray-100 pb-[10px]!">

@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,6 +42,9 @@ public class WorkspaceTask {
 
   @Column(columnDefinition = "TEXT")
   private String description;
+
+  @Column(name = "mvp_feature_ids", columnDefinition = "TEXT")
+  private String mvpFeatureIds;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -83,6 +87,16 @@ public class WorkspaceTask {
 
   public void changeStatus(WorkspaceTaskStatus status) {
     this.status = status;
+  }
+
+  public List<String> getFeatureIds() {
+    return mvpFeatureIds == null || mvpFeatureIds.isEmpty()
+        ? List.of()
+        : List.of(mvpFeatureIds.split(","));
+  }
+
+  public void changeFeatureIds(List<String> featureIds) {
+    this.mvpFeatureIds = String.join(",", featureIds);
   }
 
   public void changeAssignee(Long assigneeId) {
