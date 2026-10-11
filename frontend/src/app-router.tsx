@@ -1,5 +1,6 @@
 import { Suspense,lazy,useEffect,useState,type ReactElement } from 'react'
 import { NotFoundPage,RouteErrorBoundary,RouteLoadingView } from './components/AppRouteStates'
+import WorkspaceProjectStartLayer from './features/project/WorkspaceProjectStartLayer'
 import SquadHubApp from './features/squad/SquadHubApp'
 import { getCurrentLocationKey,installSpaNavigation,SPA_NAVIGATION_EVENT } from './lib/spa-navigation'
 import { installWorkspacePresenceHeartbeat } from './lib/workspace-presence'
@@ -346,8 +347,11 @@ export default function AppRouter() {
           : locationKey
 
   return (
-    <RouteErrorBoundary key={routeGroupKey} resetKey={locationKey}>
-      <Suspense fallback={<RouteLoadingView />}>{page}</Suspense>
-    </RouteErrorBoundary>
+    <>
+      <RouteErrorBoundary key={routeGroupKey} resetKey={locationKey}>
+        <Suspense fallback={<RouteLoadingView />}>{page}</Suspense>
+      </RouteErrorBoundary>
+      <WorkspaceProjectStartLayer />
+    </>
   )
 }
