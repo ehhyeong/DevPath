@@ -1,8 +1,10 @@
 package com.devpath.api.workspace.service;
 
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteAcceptResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteLinkResponse;
+import com.devpath.api.workspace.dto.WorkspaceInviteRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.project.entity.Project;
@@ -10,6 +12,8 @@ import com.devpath.domain.project.entity.ProjectRoleType;
 import com.devpath.domain.project.entity.ProjectType;
 import com.devpath.domain.project.repository.ProjectMemberRepository;
 import com.devpath.domain.project.repository.ProjectRepository;
+import com.devpath.domain.user.entity.User;
+import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.ActivityLog;
 import com.devpath.domain.workspace.entity.ActivityLogType;
 import com.devpath.domain.workspace.entity.Workspace;
@@ -21,6 +25,7 @@ import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +43,8 @@ class WorkspaceMembershipService {
   private final ProjectMemberRepository projectMemberRepository;
   private final ActivityLogRepository activityLogRepository;
   private final WorkspaceInviteTokenCodec inviteTokenCodec;
+  private final UserRepository userRepository;
+  private final NotificationEventService notificationEventService;
 
   WorkspaceInviteLinkResponse createInviteLink(Long workspaceId, Long userId) {
     Workspace workspace = getWorkspace(workspaceId);
@@ -47,6 +54,30 @@ class WorkspaceMembershipService {
         LocalDateTime.now().plusDays(INVITE_EXPIRE_DAYS).truncatedTo(ChronoUnit.SECONDS);
     return new WorkspaceInviteLinkResponse(
         workspace.getId(), inviteTokenCodec.encode(workspace.getId(), expiresAt), expiresAt);
+  }
+
+  @Transactional
+  void sendInvite(Long workspaceId, Long userId, WorkspaceInviteRequest request) {
+    Workspace workspace = getWorkspace(workspaceId);
+    validateWorkspaceInviteSharer(workspace, userId);
+    User invitee =
+        userRepository
+            .findByEmail(request.email().trim().toLowerCase(Locale.ROOT))
+            .filter(user -> Boolean.TRUE.equals(user.getIsActive()))
+            .orElseThrow(
+                () ->
+                    new CustomException(
+                        ErrorCode.USER_NOT_FOUND, "해당 이메일로 가입된 계정이 없습니다. 초대 링크를 공유해 주세요."));
+    if (workspace.getOwnerId().equals(invitee.getId())
+        || workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(
+            workspaceId, invitee.getId())) {
+      throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "이미 참여 중인 팀원입니다.");
+    }
+
+    WorkspaceInviteLinkResponse link = createInviteLink(workspaceId, userId);
+    // 초대 알림만 저장하고, 멤버 등록은 수신자가 링크 참여를 수락할 때 수행한다.
+    notificationEventService.notifyWorkspaceInvited(
+        invitee.getId(), workspace.getName(), "/workspace-hub?inviteToken=" + link.token());
   }
 
   @Transactional

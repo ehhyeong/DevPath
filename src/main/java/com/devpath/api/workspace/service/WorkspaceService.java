@@ -1,5 +1,6 @@
 package com.devpath.api.workspace.service;
 
+import com.devpath.api.workspace.dto.UpdateWorkspaceMemberPositionRequest;
 import com.devpath.api.workspace.dto.UpdateWorkspaceSettingsRequest;
 import com.devpath.api.workspace.dto.WorkspaceDashboardResponse;
 import com.devpath.api.workspace.dto.WorkspaceHubSummaryResponse;
@@ -152,6 +153,32 @@ public class WorkspaceService {
   }
 
   @Transactional
+  public WorkspaceSettingsResponse updateMemberPosition(
+      Long workspaceId, Long memberId, Long userId, UpdateWorkspaceMemberPositionRequest request) {
+    Workspace workspace = getWorkspaceEntity(workspaceId);
+    validateOwner(workspace, userId);
+    WorkspaceMember member =
+        workspaceMemberRepository
+            .findById(memberId)
+            .filter(candidate -> workspaceId.equals(candidate.getWorkspaceId()))
+            .orElseThrow(
+                () -> new CustomException(ErrorCode.INVALID_INPUT_VALUE, "해당 워크스페이스의 팀원이 아닙니다."));
+    String position =
+        switch (request.position()) {
+          case "" -> null;
+          case "FE" -> "Frontend 개발자";
+          case "BE" -> "Backend 개발자";
+          case "FS" -> "Fullstack 개발자";
+          case "DES" -> "UI/UX 디자이너";
+          case "OPS" -> "DevOps 엔지니어";
+          case "PM" -> "PM 기획자";
+          default -> throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        };
+    member.assignPositionLabel(position);
+    return buildWorkspaceSettingsResponse(workspace, userId);
+  }
+
+  @Transactional
   public WorkspaceSettingsResponse restoreWorkspace(Long workspaceId, Long userId) {
     Workspace workspace = getWorkspaceEntity(workspaceId);
     validateOwner(workspace, userId);
@@ -224,7 +251,11 @@ public class WorkspaceService {
             member -> {
               String positionLabel =
                   firstNonBlank(
-                      member.getPositionLabel(), positionsByLearnerId.get(member.getLearnerId()));
+                      // 기존 OWNER 값은 직군이 아니며 방장 권한은 workspace.ownerId로 판별한다.
+                      "OWNER".equalsIgnoreCase(member.getPositionLabel())
+                          ? null
+                          : member.getPositionLabel(),
+                      positionsByLearnerId.get(member.getLearnerId()));
               return WorkspaceMemberResponse.from(
                   member,
                   usersById.get(member.getLearnerId()),

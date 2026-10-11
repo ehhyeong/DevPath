@@ -39,7 +39,10 @@ public class ProjectHeaderNotificationResponse {
         .text(notification.getMessage())
         .dateText(timeText(notification.getCreatedAt()))
         .read(Boolean.TRUE.equals(notification.getIsRead()))
-        .targetPath(targetPathFor(type))
+        .targetPath(
+            notification.getTargetPath() == null
+                ? targetPathFor(type)
+                : notification.getTargetPath())
         .createdAt(notification.getCreatedAt())
         .source("learner")
         .build();

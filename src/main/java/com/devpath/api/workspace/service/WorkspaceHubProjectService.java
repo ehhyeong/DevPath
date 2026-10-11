@@ -3,6 +3,7 @@ package com.devpath.api.workspace.service;
 import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteAcceptResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteLinkResponse;
+import com.devpath.api.workspace.dto.WorkspaceInviteRequest;
 import com.devpath.domain.mentoring.entity.Mentoring;
 import com.devpath.domain.mentoring.repository.MentoringRepository;
 import com.devpath.domain.user.entity.User;
@@ -62,6 +63,11 @@ public class WorkspaceHubProjectService {
 
   public WorkspaceInviteLinkResponse createInviteLink(Long workspaceId, Long userId) {
     return membershipService.createInviteLink(workspaceId, userId);
+  }
+
+  @Transactional
+  public void sendInvite(Long workspaceId, Long userId, WorkspaceInviteRequest request) {
+    membershipService.sendInvite(workspaceId, userId, request);
   }
 
   @Transactional

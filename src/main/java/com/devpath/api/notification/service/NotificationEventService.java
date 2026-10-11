@@ -72,6 +72,16 @@ public class NotificationEventService implements SystemNotificationSender {
   }
 
   @Transactional
+  public NotificationResponse notifyWorkspaceInvited(
+      Long receiverId, String workspaceName, String targetPath) {
+    return notify(
+        receiverId,
+        LearnerNotificationType.SQUAD_INVITED,
+        "스쿼드 초대가 도착했습니다: " + workspaceName,
+        targetPath);
+  }
+
+  @Transactional
   public NotificationResponse notifySquadKicked(Long receiverId, String squadName) {
     return notify(
         receiverId, LearnerNotificationType.SQUAD_KICKED, "Squad에서 강제 퇴장되었습니다: " + squadName);
@@ -129,10 +139,20 @@ public class NotificationEventService implements SystemNotificationSender {
 
   private NotificationResponse notify(
       Long receiverId, LearnerNotificationType type, String message) {
+    return notify(receiverId, type, message, null);
+  }
+
+  private NotificationResponse notify(
+      Long receiverId, LearnerNotificationType type, String message, String targetPath) {
     validateNotification(receiverId, type, message);
 
     LearnerNotification notification =
-        LearnerNotification.builder().learnerId(receiverId).type(type).message(message).build();
+        LearnerNotification.builder()
+            .learnerId(receiverId)
+            .type(type)
+            .message(message)
+            .targetPath(targetPath)
+            .build();
 
     LearnerNotification savedNotification = learnerNotificationRepository.save(notification);
     NotificationResponse response = NotificationResponse.from(savedNotification);

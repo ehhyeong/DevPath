@@ -2,6 +2,7 @@ package com.devpath.api.workspace.controller;
 
 import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 
+import com.devpath.api.workspace.dto.UpdateWorkspaceMemberPositionRequest;
 import com.devpath.api.workspace.dto.UpdateWorkspaceSettingsRequest;
 import com.devpath.api.workspace.dto.WorkspaceSettingsResponse;
 import com.devpath.api.workspace.service.WorkspaceService;
@@ -70,6 +71,18 @@ public class WorkspaceSettingsController {
       @Parameter(description = "워크스페이스 ID", example = "1") @PathVariable Long workspaceId,
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(workspaceService.archiveWorkspace(workspaceId, requireUserId(userId)));
+  }
+
+  @PatchMapping("/members/{memberId}/position")
+  @Operation(summary = "팀원 직군 수정", description = "방장이 자신과 팀원의 담당 직군을 수정합니다. 방장 권한은 유지됩니다.")
+  public ApiResponse<WorkspaceSettingsResponse> updateMemberPosition(
+      @PathVariable Long workspaceId,
+      @PathVariable Long memberId,
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody UpdateWorkspaceMemberPositionRequest request) {
+    return ApiResponse.ok(
+        workspaceService.updateMemberPosition(
+            workspaceId, memberId, requireUserId(userId), request));
   }
 
   @PatchMapping("/restore")

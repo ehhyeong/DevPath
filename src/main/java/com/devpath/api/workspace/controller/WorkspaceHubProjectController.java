@@ -9,6 +9,7 @@ import com.devpath.api.workspace.dto.WorkspaceAiDesignWorkspaceResponse;
 import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteAcceptResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteLinkResponse;
+import com.devpath.api.workspace.dto.WorkspaceInviteRequest;
 import com.devpath.api.workspace.service.WorkspaceAiDesignJobService;
 import com.devpath.api.workspace.service.WorkspaceAiDesignService;
 import com.devpath.api.workspace.service.WorkspaceAiDesignWorkspaceService;
@@ -94,6 +95,15 @@ public class WorkspaceHubProjectController {
   public ApiResponse<WorkspaceInviteAcceptResponse> acceptInvite(
       @PathVariable String token, @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(workspaceHubProjectService.acceptInvite(token, requireUserId(userId)));
+  }
+
+  @PostMapping("/projects/{workspaceId}/invites")
+  public ApiResponse<Void> sendInvite(
+      @PathVariable Long workspaceId,
+      @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody WorkspaceInviteRequest request) {
+    workspaceHubProjectService.sendInvite(workspaceId, requireUserId(userId), request);
+    return ApiResponse.ok(null);
   }
 
   @DeleteMapping("/projects/{workspaceId}/membership")

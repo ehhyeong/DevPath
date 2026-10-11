@@ -11,11 +11,13 @@ import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteAcceptResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteLinkResponse;
+import com.devpath.api.workspace.dto.WorkspaceInviteRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.domain.mentoring.repository.MentoringRepository;
 import com.devpath.domain.project.entity.ProjectType;
 import com.devpath.domain.project.repository.ProjectMemberRepository;
 import com.devpath.domain.project.repository.ProjectRepository;
+import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.ActivityLog;
@@ -127,6 +129,73 @@ class WorkspaceHubProjectServiceTest {
     assertThatThrownBy(() -> service.acceptInvite(tamperedToken, 2L))
         .isInstanceOf(CustomException.class);
     verify(workspaceMemberRepository, never()).save(any(WorkspaceMember.class));
+  }
+
+  @Test
+  void emailInviteNotifiesRegisteredAccountWithoutAddingMember() {
+    Workspace workspace = workspace(10L, 1L);
+    User invitee = User.builder().email("invitee@example.com").name("초대받을 팀원").build();
+    ReflectionTestUtils.setField(invitee, "id", 2L);
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L)).thenReturn(Optional.of(workspace));
+    when(userRepository.findByEmail("invitee@example.com")).thenReturn(Optional.of(invitee));
+
+    service.sendInvite(10L, 1L, new WorkspaceInviteRequest(" Invitee@Example.com "));
+
+    ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
+    verify(notificationEventService)
+        .notifyWorkspaceInvited(
+            org.mockito.ArgumentMatchers.eq(2L),
+            org.mockito.ArgumentMatchers.eq(workspace.getName()),
+            pathCaptor.capture());
+    String token = pathCaptor.getValue().substring("/workspace-hub?inviteToken=".length());
+    assertThat(
+            new WorkspaceInviteTokenCodec("workspace-invite-test-secret")
+                .decode(token)
+                .workspaceId())
+        .isEqualTo(10L);
+    verify(workspaceMemberRepository, never()).save(any(WorkspaceMember.class));
+  }
+
+  @Test
+  void nonMemberCannotSendInviteOrLookUpRecipient() {
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L))
+        .thenReturn(Optional.of(workspace(10L, 1L)));
+
+    assertThatThrownBy(
+            () -> service.sendInvite(10L, 3L, new WorkspaceInviteRequest("invitee@example.com")))
+        .isInstanceOf(CustomException.class)
+        .hasMessage("워크스페이스에 접근할 권한이 없습니다.");
+    verify(userRepository, never()).findByEmail(any());
+    verify(notificationEventService, never()).notifyWorkspaceInvited(any(), any(), any());
+  }
+
+  @Test
+  void emailInviteRejectsUnknownAccountAndDoesNotSendNotification() {
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L))
+        .thenReturn(Optional.of(workspace(10L, 1L)));
+    when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(
+            () -> service.sendInvite(10L, 1L, new WorkspaceInviteRequest("missing@example.com")))
+        .isInstanceOf(CustomException.class)
+        .hasMessageContaining("초대 링크를 공유");
+    verify(notificationEventService, never()).notifyWorkspaceInvited(any(), any(), any());
+  }
+
+  @Test
+  void emailInviteRejectsExistingMember() {
+    User invitee = User.builder().email("invitee@example.com").name("참여 중인 팀원").build();
+    ReflectionTestUtils.setField(invitee, "id", 2L);
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L))
+        .thenReturn(Optional.of(workspace(10L, 1L)));
+    when(userRepository.findByEmail("invitee@example.com")).thenReturn(Optional.of(invitee));
+    when(workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(10L, 2L)).thenReturn(true);
+
+    assertThatThrownBy(
+            () -> service.sendInvite(10L, 1L, new WorkspaceInviteRequest("invitee@example.com")))
+        .isInstanceOf(CustomException.class)
+        .hasMessage("이미 참여 중인 팀원입니다.");
+    verify(notificationEventService, never()).notifyWorkspaceInvited(any(), any(), any());
   }
 
   @Test

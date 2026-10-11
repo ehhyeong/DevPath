@@ -21,6 +21,8 @@ public class NotificationResponse {
   @Schema(description = "알림 메시지 내용", example = "PR 리뷰가 등록되었습니다.")
   private String message;
 
+  private String targetPath;
+
   @Schema(description = "읽음 여부", example = "false")
   private Boolean isRead;
 
@@ -32,6 +34,7 @@ public class NotificationResponse {
         .id(notification.getId())
         .type(notification.getType())
         .message(notification.getMessage())
+        .targetPath(notification.getTargetPath())
         .isRead(notification.getIsRead())
         .createdAt(notification.getCreatedAt())
         .build();

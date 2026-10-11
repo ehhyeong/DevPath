@@ -38,6 +38,9 @@ public class LearnerNotification {
   @Column(nullable = false)
   private String message;
 
+  @Column(name = "target_path", length = 1024)
+  private String targetPath;
+
   @Column(name = "is_read", nullable = false)
   @Builder.Default
   private Boolean isRead = false;
