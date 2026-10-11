@@ -237,6 +237,9 @@ public enum ErrorCode {
   WORKSPACE_AI_DESIGN_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "AI 설계 작업을 찾을 수 없습니다."),
   WORKSPACE_AI_DESIGN_NOT_COMPLETED(HttpStatus.CONFLICT, "AI 설계가 아직 완료되지 않았습니다."),
   WORKSPACE_AI_DESIGN_NOT_FOUND(HttpStatus.NOT_FOUND, "저장된 AI 설계를 찾을 수 없습니다."),
+  WORKSPACE_AI_DESIGN_CONFLICT(HttpStatus.CONFLICT, "설계가 다른 곳에서 수정되었습니다. 새로고침 후 다시 수정해 주세요."),
+  WORKSPACE_AI_FEATURE_IN_USE(
+      HttpStatus.CONFLICT, "작업이 연결된 MVP 기능은 삭제할 수 없습니다. 작업 현황판에서 연결을 먼저 해제해 주세요."),
   WORKSPACE_AI_ACTION_INVALID(HttpStatus.BAD_REQUEST, "AI 변경 제안을 실행할 수 없습니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");

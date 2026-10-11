@@ -1,5 +1,6 @@
 package com.devpath.api.workspace.service;
 
+import com.devpath.api.workspace.dto.WorkspaceAiDesignEditRequest;
 import com.devpath.api.workspace.dto.WorkspaceAiDesignResponse;
 import com.devpath.api.workspace.dto.WorkspaceAiDesignWorkspaceResponse;
 import com.devpath.common.exception.CustomException;
@@ -24,6 +25,10 @@ import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -86,6 +91,173 @@ public class WorkspaceAiDesignWorkspaceService {
             .findByWorkspaceId(workspaceId)
             .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_AI_DESIGN_NOT_FOUND));
     return toResponse(design);
+  }
+
+  @Transactional
+  public WorkspaceAiDesignWorkspaceResponse update(
+      Long userId, Long workspaceId, WorkspaceAiDesignEditRequest request) {
+    validateWorkspaceMember(workspaceId, userId);
+    if (!request.isSingleSection() || request.expectedDesign() == null)
+      throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    // 행 잠금과 편집 시작 시의 값 비교로 다른 팀원이 저장한 설계를 덮어쓰지 않는다.
+    WorkspaceAiDesign saved =
+        designRepository
+            .findForUpdateByWorkspaceId(workspaceId)
+            .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_AI_DESIGN_NOT_FOUND));
+    WorkspaceAiDesignResponse previous = readDesign(saved.getDesignJson());
+    if (!previous.equals(request.expectedDesign()))
+      throw new CustomException(ErrorCode.WORKSPACE_AI_DESIGN_CONFLICT);
+    var scenario = previous.scenario();
+    var stack = previous.stack();
+    var architecture = previous.architecture();
+    var roadmap = previous.roadmap();
+    String title = previous.title();
+    String summary = previous.summary();
+    if (request.planning() != null) {
+      var planning = request.planning();
+      title = planning.title().trim();
+      summary = planning.summary().trim();
+      List<String> ids = new ArrayList<>();
+      int nextNumber = scenario.nextFeatureNumber();
+      for (var feature : planning.features()) {
+        if (feature.id() == null) ids.add("F" + nextNumber++);
+        else {
+          if (!scenario.featureIds().contains(feature.id()) || ids.contains(feature.id()))
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+          ids.add(feature.id());
+        }
+      }
+      var removed = new HashSet<>(scenario.featureIds());
+      removed.removeAll(ids);
+      if (!removed.isEmpty()
+          && taskRepository
+              .findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(workspaceId)
+              .stream()
+              .anyMatch(task -> task.getFeatureIds().stream().anyMatch(removed::contains))) {
+        throw new CustomException(ErrorCode.WORKSPACE_AI_FEATURE_IN_USE);
+      }
+      scenario =
+          new WorkspaceAiDesignResponse.Scenario(
+              planning.userFlows().stream()
+                  .map(
+                      flow ->
+                          new WorkspaceAiDesignResponse.UserFlow(
+                              flow.actor().trim(), flow.action().trim()))
+                  .toList(),
+              planning.features().stream().map(feature -> feature.title().trim()).toList(),
+              ids,
+              nextNumber);
+      var workspace =
+          workspaceRepository
+              .findByIdAndIsDeletedFalse(workspaceId)
+              .orElseThrow(() -> new CustomException(ErrorCode.WORKSPACE_NOT_FOUND));
+      workspace.updateSettings(title, summary);
+    }
+    if (request.architecture() != null) {
+      var edit = request.architecture();
+      stack =
+          new WorkspaceAiDesignResponse.RecommendedStack(
+              edit.frontend().trim(),
+              edit.backend().trim(),
+              edit.database().trim(),
+              edit.libraries(),
+              edit.selectionReason().trim());
+      // 실제 ERD와 API는 각 편집 페이지에서 관리하므로 설명 수정으로 덮어쓰지 않는다.
+      architecture =
+          new WorkspaceAiDesignResponse.Architecture(
+              edit.style().trim(),
+              edit.description().trim(),
+              edit.components().stream()
+                  .map(
+                      component ->
+                          new WorkspaceAiDesignResponse.ArchitectureComponent(
+                              component.name().trim(), component.responsibility().trim()))
+                  .toList(),
+              architecture.erdMermaid(),
+              architecture.entities(),
+              edit.technicalChallenges());
+    }
+    if (request.roadmap() != null) {
+      if (request.roadmap().size() != roadmap.size())
+        throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+      List<WorkspaceAiDesignResponse.RoadmapPhase> phases = new ArrayList<>();
+      for (int i = 0; i < roadmap.size(); i++) {
+        var old = roadmap.get(i);
+        var edit = request.roadmap().get(i);
+        if (edit.phase() != old.phase()) throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        phases.add(
+            new WorkspaceAiDesignResponse.RoadmapPhase(
+                old.phase(),
+                edit.title().trim(),
+                edit.goal().trim(),
+                old.estimatedWeeks(),
+                edit.tasks()));
+      }
+      syncRoadmap(workspaceId, roadmap, phases);
+      roadmap = phases;
+    }
+    var updated =
+        new WorkspaceAiDesignResponse(
+            title,
+            summary,
+            previous.difficulty(),
+            stack,
+            scenario,
+            architecture,
+            previous.apis(),
+            roadmap,
+            previous.interviewQuestions());
+    try {
+      saved.updateDesign(objectMapper.writeValueAsString(updated));
+    } catch (JsonProcessingException exception) {
+      throw new CustomException(ErrorCode.WORKSPACE_AI_DESIGN_FAILED);
+    }
+    return toResponse(saved, updated);
+  }
+
+  private void syncRoadmap(
+      Long workspaceId,
+      List<WorkspaceAiDesignResponse.RoadmapPhase> previous,
+      List<WorkspaceAiDesignResponse.RoadmapPhase> updated) {
+    var milestones =
+        milestoneRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByDueDateAsc(workspaceId);
+    var events =
+        calendarRepository.findAllByWorkspaceIdAndIsDeletedFalseOrderByStartAtAsc(workspaceId);
+    for (int i = 0; i < previous.size(); i++) {
+      var old = previous.get(i);
+      var phase = updated.get(i);
+      String oldTitle = old.phase() + ". " + old.title();
+      String newTitle = phase.phase() + ". " + phase.title();
+      milestones.stream()
+          .filter(m -> m.getTitle().equals(oldTitle))
+          .forEach(
+              m ->
+                  m.update(
+                      newTitle,
+                      Objects.equals(m.getDescription(), old.goal())
+                          ? phase.goal()
+                          : m.getDescription(),
+                      m.getStartDate(),
+                      m.getDueDate(),
+                      m.getStatus()));
+      // 일정의 날짜와 팀이 별도로 작성한 설명을 유지하며 자동 생성된 Phase 제목만 갱신한다.
+      String oldDescription = "[schedule-category:milestone]\n" + old.goal();
+      events.stream()
+          .filter(
+              e ->
+                  e.getTitle().equals("Phase " + oldTitle)
+                      && e.getDescription() != null
+                      && e.getDescription().contains("[schedule-category:milestone]"))
+          .forEach(
+              e ->
+                  e.update(
+                      "Phase " + newTitle,
+                      oldDescription.equals(e.getDescription())
+                          ? "[schedule-category:milestone]\n" + phase.goal()
+                          : e.getDescription(),
+                      e.getStartAt(),
+                      e.getEndAt()));
+    }
   }
 
   private void createRoadmap(Long workspaceId, Long userId, WorkspaceAiDesignResponse design) {

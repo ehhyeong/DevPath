@@ -1,17 +1,35 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode, createContext, lazy, Suspense, useContext, type Dispatch, type SetStateAction } from 'react'
+import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import SquadWorkspaceAside, { type SquadWorkspaceAsidePage } from '../../components/SquadWorkspaceAside'
-import { showAuthToast } from '../../lib/auth-toast'
-import { navigateTo } from '../../lib/spa-navigation'
-import { aiApis, aiErdTables, aiFeatures, aiInterviewQuestions, aiRoadmap, aiSquadProject, aiTasks, aiUserFlow, type AiApi, type AiTask, type AiTaskStatus, aiWorkspaceHref, applyWorkspaceAiDesign, configureAiWorkspaceNavigation, mapWorkspaceApis, formatApiGroupLabel, aiArchitecture } from './ai-squad-data'
-import { loadMermaid, parseMermaidCode } from './erd-support'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession } from '../../lib/auth-session'
+import { showAuthToast } from '../../lib/auth-toast'
+import { navigateTo } from '../../lib/spa-navigation'
 import { getWorkspaceAiDesign, projectApiRequest, type WorkspaceAiDesign, type WorkspaceAiDesignEdit, type WorkspaceAiDesignWorkspace } from '../project/api'
-import { type ActivityLog, type CalendarEvent, type Notice, type VoiceChannel, type WorkspaceDashboard, type WorkspaceMember, type WorkspaceTask } from './dashboard-types'
+import {
+  aiWorkspaceHref,
+  applyWorkspaceAiDesign,
+  configureAiWorkspaceNavigation,
+  aiApis,
+  mapWorkspaceApis,
+  formatApiGroupLabel,
+  aiArchitecture,
+  aiErdTables,
+  aiFeatures,
+  aiInterviewQuestions,
+  aiRoadmap,
+  aiSquadProject,
+  aiTasks,
+  aiUserFlow,
+  type AiApi,
+  type AiTask,
+  type AiTaskStatus,
+} from './ai-squad-data'
+import type { ActivityLog, CalendarEvent, Notice, VoiceChannel, WorkspaceDashboard, WorkspaceMember, WorkspaceTask } from './dashboard-types'
 import WorkspaceInviteModal from './WorkspaceInviteModal'
-import { type CodeReviewBoard } from './review-types'
-import { type ExternalIntegration } from './settings-types'
+import type { CodeReviewBoard } from './review-types'
+import type { ExternalIntegration } from './settings-types'
+import { loadMermaid, parseMermaidCode } from './erd-support'
 import AiWorkspaceCreatedModal from './AiWorkspaceCreatedModal'
 import AiSquadIntegrationsPanel from './AiSquadIntegrationsPanel'
 import AiInterviewGenerationModal from './AiInterviewGenerationModal'
@@ -19,11 +37,23 @@ import AiInterviewQuestionBank from './AiInterviewQuestionBank'
 import AiInterviewReport from './AiInterviewReport'
 import SquadDashboardApp from './SquadDashboardApp'
 import { emptyInterviewAnswer, matchedInterviewKeywords, useInterviewAnswers } from './interview-practice'
-import { type InterviewEvidenceLinks } from './interview-evidence'
+import type { InterviewEvidenceLinks } from './interview-evidence'
 import { apiAuthLabel, findApiTask, readWorkspaceApiDocument } from './api-workspace-links'
 import ApiResponseExampleFields from './ApiResponseExampleFields'
+import AiBlueprintEditor from './AiBlueprintEditor'
 import { WORKSPACE_DATA_CHANGED_EVENT, useWorkspaceDataVersion } from '../../lib/workspace-events'
 import { parseApiResponseExample, type ApiResponseExampleDraft } from './api-response-example'
+
+const SquadFilesApp = lazy(() => import('./SquadFilesApp'))
+const persistedPages = {
+  '/squad-dashboard': SquadDashboardApp,
+  '/squad-workspace': lazy(() => import('./SquadWorkspaceApp')),
+  '/squad-review': lazy(() => import('./SquadReviewApp')),
+  '/squad-schedule': lazy(() => import('./SquadScheduleApp')),
+  '/squad-meeting': lazy(() => import('./SquadMeetingApp')),
+  '/squad-settings': lazy(() => import('./SquadSettingsApp')),
+  '/squad-erd': lazy(() => import('./SquadErdApp')),
+}
 
 type AiRoute =
   | '/squad-dashboard'
@@ -82,9 +112,40 @@ const tagMeta = {
 
 type BlueprintTab = 'scenario' | 'arch' | 'api' | 'roadmap'
 
-const blueprintTabs: BlueprintTab[] = ['scenario', 'arch', 'api', 'roadmap']
+type AiWorkspaceRuntime = {
+  design: WorkspaceAiDesign | null
+  saveDesign: (request: WorkspaceAiDesignEdit) => Promise<void>
+  workspaceId: number | null
+  dashboard: WorkspaceDashboard | null
+  tasks: WorkspaceTask[]
+  setTasks: Dispatch<SetStateAction<WorkspaceTask[]>>
+  activities: ActivityLog[]
+  notices: Notice[]
+  events: CalendarEvent[]
+  voiceChannels: VoiceChannel[]
+  integrations: ExternalIntegration[]
+}
 
-const blueprintInterviewQuestions = aiInterviewQuestions.filter((question) => question.id.startsWith('Q'))
+const AiWorkspaceContext = createContext<AiWorkspaceRuntime>({
+  design: null,
+  saveDesign: async () => { throw new Error('워크스페이스를 먼저 만들어 주세요.') },
+  workspaceId: null,
+  dashboard: null,
+  tasks: [],
+  setTasks: () => undefined,
+  activities: [],
+  notices: [],
+  events: [],
+  voiceChannels: [],
+  integrations: [],
+})
+
+function useAiWorkspace() {
+  return useContext(AiWorkspaceContext)
+}
+
+const blueprintTabs: BlueprintTab[] = ['scenario', 'arch', 'api', 'roadmap']
+const getBlueprintInterviewQuestions = () => aiInterviewQuestions.filter((question) => question.id.startsWith('Q'))
 
 function blueprintTabFromHash(): BlueprintTab {
   const hash = window.location.hash.slice(1)
@@ -156,6 +217,47 @@ function Card({ children, className = '' }: { children: ReactNode; className?: s
   return <section className={`rounded-2xl border border-gray-100 bg-white shadow-sm ${className}`}>{children}</section>
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return '미정'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
+}
+
+function taskStatus(status: WorkspaceTask['status']): AiTaskStatus {
+  if (status === 'IN_PROGRESS') return 'progress'
+  if (status === 'IN_REVIEW') return 'review'
+  if (status === 'DONE') return 'done'
+  return 'todo'
+}
+
+function taskTag(task: WorkspaceTask): AiTask['tag'] {
+  const tag = task.description?.match(/^\[task-tag:(FE|BE|UX\/UI|DevOps)\]/)?.[1]
+  if (tag) return tag as AiTask['tag']
+  const value = `${task.title} ${task.description ?? ''}`
+  if (/화면|UI|UX|디자인|프론트/i.test(value)) return 'FE'
+  if (/배포|CI|CD|인프라|모니터링/i.test(value)) return 'DevOps'
+  return 'BE'
+}
+
+function toAiTask(task: WorkspaceTask, members: WorkspaceMember[]): AiTask {
+  const assignee = members.find((member) => member.learnerId === task.assigneeId)
+  return {
+    id: `DP-${String(task.taskId).padStart(2, '0')}`,
+    title: task.title,
+    tag: taskTag(task),
+    assignee: assignee?.learnerName?.trim() || '미지정',
+    status: taskStatus(task.status),
+    due: formatDate(task.dueDate),
+    urgent: task.priority === 'HIGH',
+  }
+}
+
+function useDisplayedTasks() {
+  const { workspaceId, dashboard, tasks } = useAiWorkspace()
+  return workspaceId ? tasks.map((task) => toAiTask(task, dashboard?.members ?? [])) : aiTasks
+}
+
 function DashboardPage() {
   const { dashboard, activities, notices } = useAiWorkspace()
   const tasks = useDisplayedTasks()
@@ -208,11 +310,14 @@ function DashboardPage() {
 }
 
 function BlueprintPage() {
+  const { design, saveDesign, workspaceId } = useAiWorkspace()
+  const [editing, setEditing] = useState(false)
   const tabBarRef = useRef<HTMLDivElement>(null)
   const [tab, setTab] = useState<BlueprintTab>(blueprintTabFromHash)
 
   useEffect(() => {
     const selectFromHash = () => setTab(blueprintTabFromHash())
+    selectFromHash()
     window.addEventListener('hashchange', selectFromHash)
     if (window.location.hash) {
       tabBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -220,55 +325,16 @@ function BlueprintPage() {
     return () => window.removeEventListener('hashchange', selectFromHash)
   }, [])
 
-  const selectTab = (nextTab: BlueprintTab, scroll = false) => {
+  const selectTab = (nextTab: BlueprintTab) => {
     setTab(nextTab)
     window.history.replaceState(null, '', `#${nextTab}`)
-    if (scroll) {
-      tabBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
   }
 
-  const destinations = [
-    { tab: 'scenario' as const, icon: 'fa-route', title: '기획 & 시나리오', links: [['/squad-dashboard','fa-chart-pie','대시보드','MVP 기능 5개 진행률'],['/squad-workspace','fa-columns','작업 현황판','작업 14개 (완료 3)']] },
-    { tab: 'arch' as const, icon: 'fa-database', title: '아키텍처 & DB', links: [['/squad-erd','fa-project-diagram','ERD 설계','초기 스키마 4개 테이블'],['/squad-settings','fa-cog','스쿼드 설정','기술 스택 · 프로젝트 정보']] },
-    { tab: 'api' as const, icon: 'fa-plug', title: 'API 명세서', links: [['/squad-api','fa-plug','API 명세서','9개 · 완료 0'],['/squad-review','fa-code-branch','코드 피드백','PR ↔ 엔드포인트 연결']] },
-    { tab: 'roadmap' as const, icon: 'fa-user-tie', title: '로드맵 & 면접', links: [['/squad-schedule','fa-calendar-alt','일정 관리','Phase 4단계 마일스톤'],['/squad-interview','fa-user-tie','면접 준비',`예상 질문 ${blueprintInterviewQuestions.length}개`],['/squad-meeting','fa-video','화상 회의','회의 안건 자동 구성']] },
-  ] satisfies Array<{ tab: BlueprintTab; icon: string; title: string; links: Array<[AiRoute, string, string, string]> }>
   return <main className="custom-scrollbar flex-1 overflow-y-auto p-8"><div className="mx-auto max-w-6xl space-y-6">
-    <section className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-8 shadow-sm"><div className="pointer-events-none absolute top-0 right-0 h-72 w-72 translate-x-1/3 -translate-y-1/3 rounded-full bg-brand opacity-[0.05] blur-3xl" /><div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div className="min-w-0"><div className="mb-3 flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-white"><i className="fas fa-check" /> AI 포트폴리오 설계서</span><span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-extrabold text-gray-600">{aiSquadProject.difficulty}</span><span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-extrabold text-gray-600">⚙️ 직접 설정 스택</span><span className="text-[10px] font-bold text-gray-400">2026-02-09 생성</span></div><h1 className="bg-[linear-gradient(135deg,#00C471_0%,#0D9488_100%)] bg-clip-text text-3xl leading-tight font-black tracking-tight text-transparent">{aiSquadProject.title}</h1><p className="mt-2 text-sm font-medium text-gray-600">{aiSquadProject.oneLiner}</p><p className="mt-1 text-xs font-medium text-gray-400">{aiSquadProject.summary}</p></div><div className="flex shrink-0 gap-2"><button onClick={() => window.print()} className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm" type="button"><i className="fas fa-file-pdf mr-1" /> PDF 저장</button><button onClick={() => go('/squad-settings')} className="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-bold text-white shadow-md" type="button"><i className="fas fa-sliders-h mr-1" /> 생성 조건</button></div></div></section>
-    <Card className="p-7"><div className="mb-5"><h2 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-sitemap text-brand" /> 워크스페이스 반영 맵</h2><p className="mt-1 text-xs text-gray-500">설계서의 각 섹션이 어느 메뉴에 배치되었는지 보여줍니다. 카드를 눌러 바로 이동하세요.</p></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">{destinations.map((group) => <div key={group.tab} className="flex flex-col rounded-2xl border border-gray-100 bg-gray-50/60 p-4"><button onClick={() => selectTab(group.tab, true)} className="mb-3 flex items-center gap-2.5 text-left" type="button"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-brand shadow-sm"><i className={`fas ${group.icon}`} /></div><div><p className="text-sm font-extrabold text-gray-900">{group.title}</p><p className="text-[10px] font-bold text-gray-400">설계서 섹션 보기 ↓</p></div></button><div className="space-y-2">{group.links.map(([path,icon,title,copy]) => <button key={path} onClick={() => go(path)} className="flex w-full items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left transition hover:border-brand/30" type="button"><i className={`fas ${icon} w-4 text-center text-xs text-gray-400`} /><div className="min-w-0 flex-1"><p className="text-xs font-bold text-gray-800">{title}</p><p className="truncate text-[10px] text-gray-500">{copy}</p></div><i className="fas fa-arrow-right text-[9px] text-gray-300" /></button>)}</div></div>)}</div></Card>
-    <Card className="overflow-hidden"><div ref={tabBarRef} className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 px-4">{([['scenario','기획 & 시나리오'],['arch','아키텍처 & DB'],['api','API 명세서'],['roadmap','개발 로드맵 & 면접']] as const).map(([key,label]) => <button key={key} onClick={() => selectTab(key)} className={`shrink-0 border-b-2 px-4 py-4 text-sm font-bold ${tab === key ? 'border-brand text-brand' : 'border-transparent text-gray-500'}`} type="button">{label}</button>)}</div><div key={tab} className="ai-blueprint-tab-panel bg-[#FAFBFC] p-7">{tab === 'scenario' ? <ScenarioBlueprint /> : tab === 'arch' ? <ArchitectureBlueprint /> : tab === 'api' ? <ApiBlueprint /> : <RoadmapBlueprint />}</div></Card>
+    <section className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-8 shadow-sm"><div className="pointer-events-none absolute top-0 right-0 h-72 w-72 translate-x-1/3 -translate-y-1/3 rounded-full bg-brand opacity-[0.05] blur-3xl" /><div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div className="min-w-0"><div className="mb-3 flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-white"><i className="fas fa-check" /> AI 포트폴리오 설계서</span><span className="rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] font-extrabold text-gray-600">{aiSquadProject.difficulty}</span></div><h1 className="bg-[linear-gradient(135deg,#00C471_0%,#0D9488_100%)] bg-clip-text text-3xl leading-tight font-black tracking-tight text-transparent">{aiSquadProject.title}</h1><p className="mt-2 text-sm font-medium text-gray-600">{aiSquadProject.oneLiner}</p><p className="mt-1 text-xs font-medium text-gray-400">{aiSquadProject.summary}</p></div><div className="flex shrink-0 gap-2"><button onClick={() => window.print()} className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm" type="button"><i className="fas fa-file-pdf mr-1" /> PDF 저장</button><button onClick={() => go('/squad-settings')} className="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-bold text-white shadow-md" type="button"><i className="fas fa-sliders-h mr-1" /> 생성 조건</button></div></div></section>
+    <Card className="overflow-hidden"><div ref={tabBarRef} className="flex items-center gap-1 overflow-x-auto border-b border-gray-200 px-4">{([['scenario','기획 & 시나리오'],['arch','아키텍처 & DB'],['api','API 명세서'],['roadmap','개발 로드맵 & 면접']] as const).map(([key,label]) => <button key={key} disabled={editing} onClick={() => selectTab(key)} className={`shrink-0 border-b-2 px-4 py-4 text-sm font-bold ${tab === key ? 'border-brand text-brand' : 'border-transparent text-gray-500'}`} type="button">{label}</button>)}</div><div key={tab} className="ai-blueprint-tab-panel bg-[#FAFBFC] p-7">{workspaceId && design ? <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-gray-500">설명과 계획은 여기에서, 실제 구현 명세는 해당 메뉴에서 수정하세요.</p><div className="flex flex-wrap gap-2">{tab !== 'api' && !editing ? <button type="button" onClick={() => setEditing(true)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700"><i className="fas fa-pen mr-1.5" aria-hidden="true" />{tab === 'scenario' ? '기획·시나리오 수정' : tab === 'arch' ? '아키텍처 설명 수정' : '로드맵 수정'}</button> : null}{!editing && tab === 'arch' ? <BlueprintLink onClick={() => go('/squad-erd')}>ERD 편집하기</BlueprintLink> : null}{tab === 'api' ? <BlueprintLink onClick={() => go('/squad-api')}>API 편집하기</BlueprintLink> : null}{!editing && tab === 'roadmap' ? <><BlueprintLink onClick={() => go('/squad-schedule')}>날짜·일정 수정</BlueprintLink><BlueprintLink onClick={() => go('/squad-interview')}>질문·모범답안 수정</BlueprintLink></> : null}</div></div> : null}{editing && design && tab !== 'api' ? <AiBlueprintEditor design={design} section={tab} onSave={saveDesign} onCancel={() => setEditing(false)} /> : tab === 'scenario' ? <ScenarioBlueprint /> : tab === 'arch' ? <ArchitectureBlueprint /> : tab === 'api' ? <ApiBlueprint /> : <RoadmapBlueprint />}</div></Card>
   </div></main>
 }
-
-const blueprintErdCode = `erDiagram
-    MEMBER {
-        bigint memberId PK
-        varchar email UK
-        varchar encodedPassword
-        varchar role "AUTHOR, READER"
-    }
-    SERIES {
-        bigint seriesId PK
-        bigint memberId FK
-        varchar title
-        varchar publishStatus "DRAFT, PUBLISHED"
-    }
-    ARTICLE {
-        bigint articleId PK
-        bigint seriesId FK
-        int orderIndex "핵심 난제"
-        varchar publishStatus
-    }
-    SUBSCRIPTION {
-        bigint subscriptionId PK
-        bigint memberId FK
-        bigint seriesId FK
-    }
-    MEMBER ||--o{ SERIES : "creates"
-    SERIES ||--o{ ARTICLE : "contains"
-    MEMBER ||--o{ SUBSCRIPTION : "subscribes"
-    SERIES ||--o{ SUBSCRIPTION : "is subscribed by"`
 
 function methodClass(method: AiApi['method']) {
   if (method === 'GET') return 'bg-green-100 text-green-700'
@@ -277,7 +343,7 @@ function methodClass(method: AiApi['method']) {
 }
 
 function BlueprintLink({ children, onClick }: { children: ReactNode; onClick: () => void }) {
-  return <button onClick={onClick} className="inline-flex items-center gap-1.5 rounded-lg border border-teal-100 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-700 transition hover:bg-teal-100" type="button"><i className="fas fa-share" />{children}</button>
+  return <button onClick={onClick} className="inline-flex items-center gap-1.5 rounded-lg border border-teal-100 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-700 transition hover:bg-teal-100" type="button"><i className="fas fa-share" aria-hidden="true" />{children}</button>
 }
 
 function BlueprintAiChip({ children }: { children: ReactNode }) {
@@ -290,39 +356,33 @@ function TeamChip({ children }: { children: ReactNode }) {
 
 function BlueprintErdDiagram() {
   const [svg, setSvg] = useState('')
+  const erdCode = aiArchitecture.erdMermaid || 'erDiagram'
 
   useEffect(() => {
     let ignore = false
-    void loadMermaid().then((mermaid) => mermaid.render(`blueprint-erd-${Date.now()}`, blueprintErdCode)).then(({ svg: renderedSvg }) => {
+    void loadMermaid().then((mermaid) => mermaid.render(`blueprint-erd-${Date.now()}`, erdCode)).then(({ svg: renderedSvg }) => {
       if (!ignore) setSvg(renderedSvg)
     })
     return () => {
       ignore = true
     }
-  }, [])
+  }, [erdCode])
 
   return <div className="w-full [&_svg]:mx-auto [&_svg]:h-auto [&_svg]:max-w-full" dangerouslySetInnerHTML={{ __html: svg }} />
 }
 
 function ScenarioBlueprint() {
-  const actors = [
-    { name: '작가', key: 'AUTHOR', desc: '시리즈를 만들고 글을 연재·발행합니다.' },
-    { name: '독자', key: 'READER', desc: '태그로 시리즈를 탐색하고 구독하여 순서대로 읽습니다.' },
-  ]
-  const featureLinks: Record<string, { tasks: string[]; apis: string[] }> = {
-    F1: { tasks: ['DP-04', 'DP-05', 'DP-06', 'DP-07'], apis: ['A1', 'A2'] },
-    F2: { tasks: ['DP-08'], apis: ['A4', 'A5', 'A6'] },
-    F3: { tasks: ['DP-09', 'DP-10'], apis: ['A7'] },
-    F4: { tasks: ['DP-11', 'DP-12'], apis: ['A3', 'A8'] },
-    F5: { tasks: ['DP-13'], apis: ['A9'] },
-  }
+  const actors = Array.from(new Set(aiUserFlow.map(([actor]) => actor))).map((actor) => ({
+    name: actor,
+    desc: aiUserFlow.find(([flowActor]) => flowActor === actor)?.[1] ?? '',
+  }))
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <Card className="border-gray-200 p-6">
         <h3 className="mb-4 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-route text-blue-500" /> 핵심 사용자 흐름 (User Flow)</h3>
         <div className="mb-5 flex gap-2">
-          {actors.map((actor) => <div key={actor.key} className="flex-1 rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="text-xs font-extrabold text-gray-900">{actor.name} <span className="font-mono text-[10px] text-gray-400">{actor.key}</span></p><p className="mt-0.5 text-[11px] text-gray-500">{actor.desc}</p></div>)}
+          {actors.map((actor) => <div key={actor.name} className="flex-1 rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="text-xs font-extrabold text-gray-900">{actor.name}</p><p className="mt-0.5 text-[11px] text-gray-500">{actor.desc}</p></div>)}
         </div>
         <div className="space-y-4">
           {aiUserFlow.map(([actor, text], index) => <div key={text} className="flex gap-3"><span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${actor === '독자' ? 'bg-green-50 text-brand' : 'bg-blue-50 text-blue-600'}`}>{index + 1}</span><p className="text-sm leading-relaxed text-gray-600"><strong className="text-gray-900">{actor}</strong>는 {text}</p></div>)}
@@ -331,9 +391,9 @@ function ScenarioBlueprint() {
       <Card className="border-gray-200 p-6">
         <div className="mb-4 flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-star text-yellow-500" /> MVP 검증 기능</h3><BlueprintLink onClick={() => go('/squad-dashboard')}>대시보드 진행률</BlueprintLink></div>
         <ul>
-          {aiFeatures.map((feature) => {
-            const links = featureLinks[feature.id]
-            return <li key={feature.id} className="flex items-start gap-2.5 border-b border-gray-50 py-2.5 last:border-0"><i className={`fas ${feature.progress >= 100 ? 'fa-check-circle text-brand' : feature.progress > 0 ? 'fa-spinner text-blue-500' : 'fa-circle text-gray-300'} mt-1`} /><div className="min-w-0 flex-1"><p className="text-sm font-medium text-gray-700">{feature.title}</p><div className="mt-1.5 flex flex-wrap gap-1">{links.tasks.map((id) => { const task = aiTasks.find((item) => item.id === id)!; return <button key={id} onClick={() => go('/squad-workspace')} className={`rounded border px-1.5 py-0.5 text-[9px] font-bold ${statusMeta[task.status].badge}`} type="button">#{id}</button> })}{links.apis.map((id) => { const api = aiApis.find((item) => item.id === id)!; return <button key={id} onClick={() => go('/squad-api', `#${id}`)} className={`rounded px-1.5 py-0.5 font-mono text-[9px] font-bold ${methodClass(api.method)}`} type="button">{api.method}{api.path}</button> })}</div></div><span className="shrink-0 text-xs font-black text-gray-400">{feature.progress}%</span></li>
+          {aiFeatures.map((feature, index) => {
+            const api = aiApis[index]
+            return <li key={feature.id} className="flex items-start gap-2.5 border-b border-gray-50 py-2.5 last:border-0"><i className="fas fa-circle mt-1 text-gray-300" /><div className="min-w-0 flex-1"><p className="text-sm font-medium text-gray-700">{feature.title}</p>{api ? <button onClick={() => go('/squad-api', `#${api.id}`)} className={`mt-1.5 rounded px-1.5 py-0.5 font-mono text-[9px] font-bold ${methodClass(api.method)}`} type="button">{api.method} {api.path}</button> : null}</div><span className="shrink-0 text-xs font-black text-gray-400">0%</span></li>
           })}
         </ul>
       </Card>
@@ -342,6 +402,7 @@ function ScenarioBlueprint() {
 }
 
 function ArchitectureBlueprint() {
+  const { design } = useAiWorkspace()
   const stacks = [
     ['Frontend', 'fa-laptop-code text-blue-500', aiSquadProject.stack.frontend, 'border-gray-200 bg-gray-100 text-gray-700'],
     ['Backend', 'fa-server text-green-500', aiSquadProject.stack.backend, 'border-green-200 bg-green-50 text-green-700'],
@@ -349,7 +410,7 @@ function ArchitectureBlueprint() {
     ['Deploy', 'fa-cloud-upload-alt text-purple-500', aiSquadProject.stack.deploy, 'border-purple-200 bg-purple-50 text-purple-700'],
   ] as const
 
-  return <div className="space-y-6"><div className="flex items-start gap-4 rounded-2xl border border-red-100 bg-red-50 p-5"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-lg text-red-500"><i className="fas fa-fire" /></div><div className="flex-1"><h3 className="mb-1 text-sm font-extrabold text-red-900">핵심 기술적 난제 (포트폴리오 어필 포인트) · Article 엔티티의 순서 관리</h3><p className="text-xs leading-relaxed text-red-700">orderIndex를 정수 순번으로 관리할 경우 중간 삽입 시 전체 재정렬이 필요합니다. 특정 글 기준으로 이전·다음 글을 조회하는 쿼리를 seriesId와 orderIndex 조건으로 정확하게 설계해야 하며, 초급 수준에서는 명시적 재정렬 로직으로 구현하여 유지보수 명확성을 확보합니다.</p><div className="mt-3 flex flex-wrap items-center gap-1.5">{['DP-09', 'DP-10'].map((id) => <button key={id} onClick={() => go('/squad-workspace')} className="rounded border border-red-200 bg-white px-2 py-0.5 text-[10px] font-bold text-red-600" type="button">#{id}{aiTasks.find((task) => task.id === id)?.title}</button>)}<button onClick={() => go('/squad-interview', '#Q1')} className="rounded border border-purple-200 bg-white px-2 py-0.5 text-[10px] font-bold text-purple-600" type="button">면접 Q1</button></div></div></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">{stacks.map(([label, icon, values, cls]) => <Card key={label} className="border-gray-200 p-5"><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className={`fas ${icon}`} /> {label}</h3><div className="flex flex-wrap gap-2">{values.map((value) => <span key={value} className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${cls}`}>{value}</span>)}</div></Card>)}</div><Card className="overflow-hidden border-gray-200"><div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-4"><h3 className="text-sm font-extrabold text-gray-900">Database Schema (ERD)</h3><BlueprintLink onClick={() => go('/squad-erd')}>ERD 설계에서 편집</BlueprintLink></div><div className="grid grid-cols-1 lg:grid-cols-2"><div className="flex min-h-[280px] items-center justify-center border-b border-gray-100 bg-white p-6 lg:border-r lg:border-b-0"><BlueprintErdDiagram /></div><div className="overflow-x-auto bg-[#111827] p-4"><pre className="font-mono text-xs leading-relaxed text-gray-300">{blueprintErdCode}</pre></div></div></Card></div>
+  return <div className="space-y-6"><div className="flex items-start gap-4 rounded-2xl border border-red-100 bg-red-50 p-5"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-lg text-red-500"><i className="fas fa-fire" /></div><div className="flex-1"><h3 className="mb-1 text-sm font-extrabold text-red-900">{aiArchitecture.style}의 핵심 기술적 난제</h3><p className="text-xs leading-relaxed text-red-700">{aiArchitecture.description}</p><ul className="mt-3 space-y-1 text-xs font-bold text-red-700">{aiArchitecture.technicalChallenges.map((challenge) => <li key={challenge}>• {challenge}</li>)}</ul></div></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">{stacks.filter(([, , values]) => values.length > 0).map(([label, icon, values, cls]) => <Card key={label} className="border-gray-200 p-5"><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className={`fas ${icon}`} /> {label}</h3><div className="flex flex-wrap gap-2">{values.map((value) => <span key={value} className={`rounded-lg border px-2.5 py-1 text-xs font-bold ${cls}`}>{value}</span>)}</div></Card>)}</div><Card className="border-gray-200 p-6"><h3 className="text-sm font-extrabold text-gray-900">기술 선택 근거와 구성 요소</h3><p className="mt-3 text-xs leading-relaxed text-gray-600">{design?.stack.selectionReason}</p><div className="mt-4 grid gap-3 md:grid-cols-2">{aiArchitecture.components.map((component) => <div key={component.name} className="rounded-lg bg-gray-50 p-3"><p className="text-xs font-bold text-gray-900">{component.name}</p><p className="mt-1 text-xs text-gray-600">{component.responsibility}</p></div>)}</div></Card><Card className="overflow-hidden border-gray-200"><div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-4"><h3 className="text-sm font-extrabold text-gray-900">Database Schema (ERD)</h3><BlueprintLink onClick={() => go('/squad-erd')}>ERD 설계에서 편집</BlueprintLink></div><div className="grid grid-cols-1 lg:grid-cols-2"><div className="flex min-h-[280px] items-center justify-center border-b border-gray-100 bg-white p-6 lg:border-r lg:border-b-0"><BlueprintErdDiagram /></div><div className="overflow-x-auto bg-[#111827] p-4"><pre className="font-mono text-xs leading-relaxed text-gray-300">{aiArchitecture.erdMermaid}</pre></div></div></Card></div>
 }
 
 function ApiBlueprint() {
@@ -359,21 +420,22 @@ function ApiBlueprint() {
 }
 
 function RoadmapBlueprint() {
-  const phaseTaskRanges = [[1, 3], [4, 7], [8, 12], [13, 14]] as const
-
+  const { workspaceId } = useAiWorkspace()
+  const version = useWorkspaceDataVersion()
+  const [questions, setQuestions] = useState<LocalInterviewQuestion[]>(getBlueprintInterviewQuestions)
+  useEffect(() => {
+    if (!workspaceId) return
+    const controller = new AbortController()
+    projectApiRequest<{ questions: LocalInterviewQuestion[] }>('/api/workspaces/' + workspaceId + '/interview/questions', { signal: controller.signal }, 'required').then((response) => {
+      if (!controller.signal.aborted && Array.isArray(response.questions)) setQuestions(response.questions)
+    }).catch(() => undefined)
+    return () => controller.abort()
+  }, [workspaceId, version])
   return <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><Card className="border-gray-200 p-6"><div className="mb-4 flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-tasks text-purple-500" />개발 구현 로드맵</h3><BlueprintLink onClick={() => go('/squad-schedule')}>일정 관리</BlueprintLink></div><div className="relative ml-3 space-y-6 border-l-2 border-gray-100">{aiRoadmap.map((item, index) => {
-    const [start, end] = phaseTaskRanges[index]
-    const tasks = aiTasks.filter((task) => {
-      const taskNumber = Number(task.id.slice(3))
-      return taskNumber >= start && taskNumber <= end
-    })
-    const doneCount = tasks.filter((task) => task.status === 'done').length
-    const phaseStatus = index === 0 ? 'done' : index === 1 ? 'current' : 'planned'
-    const dotClass = phaseStatus === 'done' ? 'bg-brand' : phaseStatus === 'current' ? 'bg-purple-500' : 'bg-gray-300'
-    const progress = Math.round(doneCount / tasks.length * 100)
+    const dotClass = index === 0 ? 'bg-purple-500' : 'bg-gray-300'
 
-    return <div key={item.phase} className="relative pl-6"><span className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-4 border-white ${dotClass}`} /><div className="flex items-center gap-2"><h4 className="text-sm font-bold text-gray-900">{item.phase}. {item.title}</h4>{phaseStatus === 'done' ? <span className="text-[10px] font-extrabold text-brand">완료</span> : phaseStatus === 'current' ? <span className="rounded bg-purple-500 px-1.5 py-0.5 text-[10px] font-extrabold text-white">진행 중</span> : <span className="text-[10px] font-bold text-gray-400">예정</span>}</div><p className="mt-1 text-xs text-gray-500">{item.desc}</p><p className="mt-1 text-[10px] font-bold text-gray-400">{item.period} · 작업 {doneCount}/{tasks.length}</p><div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-gray-100"><div className={`h-1 ${dotClass}`} style={{ width: `${progress}%` }} /></div></div>
-  })}</div></Card><Card className="border-gray-200 p-6"><div className="mb-4 flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-user-tie text-blue-500" />실무 면접 예상 질문</h3><BlueprintLink onClick={() => go('/squad-interview')}>면접 연습하기</BlueprintLink></div><div className="space-y-4">{blueprintInterviewQuestions.map((question) => <button key={question.id} onClick={() => go('/squad-interview', `#${question.id}`)} className="block w-full rounded-xl border border-gray-100 bg-gray-50 p-4 text-left transition hover:border-purple-200 hover:bg-purple-50/50" type="button"><p className="mb-1 text-sm font-bold text-gray-900">Q. {question.question}</p><p className="text-xs text-gray-600">A. &quot;{question.answer}&quot;</p></button>)}</div></Card></div>
+    return <div key={item.phase} className="relative pl-6"><span className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-4 border-white ${dotClass}`} /><div className="flex items-center gap-2"><h4 className="text-sm font-bold text-gray-900">{item.phase}. {item.title}</h4><span className="text-[10px] font-bold text-gray-400">예정</span></div><p className="mt-1 text-xs text-gray-500">{item.desc}</p><p className="mt-1 text-[10px] font-bold text-gray-400">{item.period} · 작업 {item.tasks.length}개</p><ul className="mt-2 space-y-1 text-[11px] text-gray-500">{item.tasks.map((task) => <li key={task}>• {task}</li>)}</ul></div>
+  })}</div></Card><Card className="border-gray-200 p-6"><div className="mb-4 flex items-center justify-between gap-3"><h3 className="flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-user-tie text-blue-500" />실무 면접 예상 질문</h3><BlueprintLink onClick={() => go('/squad-interview')}>면접 연습하기</BlueprintLink></div><div className="space-y-4">{questions.map((question) => <button key={question.id} onClick={() => go('/squad-interview', `#${question.id}`)} className="block w-full rounded-xl border border-gray-100 bg-gray-50 p-4 text-left transition hover:border-purple-200 hover:bg-purple-50/50" type="button"><p className="mb-1 text-sm font-bold text-gray-900">Q. {question.question}</p><p className="text-xs text-gray-600">A. &quot;{question.answer}&quot;</p></button>)}</div></Card></div>
 }
 
 type LocalTaskForm = {
@@ -546,7 +608,6 @@ function ReviewPage() {
     </main>
   )
 }
-
 type LocalErdColumn = {
   name: string
   type: string
@@ -573,6 +634,13 @@ type LocalErdRelationship = {
 type LocalErdSchema = {
   tables: LocalErdTable[]
   relationships: LocalErdRelationship[]
+}
+
+function relationshipsFromMermaid(value: string): LocalErdRelationship[] {
+  return value.split('\n').flatMap((line) => {
+    const match = line.trim().match(/^(\w+)\s+([^\s]+)\s+(\w+)\s*:\s*"?([^"]*)"?$/)
+    return match ? [{ from: match[1], type: match[2], to: match[3], label: match[4].trim() }] : []
+  })
 }
 
 function createInitialErdSchema(): LocalErdSchema {
@@ -997,7 +1065,6 @@ function MeetingPage() {
 
   return <AiShell activePage="meeting" workspaceId={workspaceId}><main className="custom-scrollbar flex flex-1 items-center justify-center overflow-y-auto p-8"><Card className="w-full max-w-3xl p-8"><div className="text-center"><div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-2xl text-2xl ${activeChannel ? 'bg-green-50 text-brand' : 'bg-gray-100 text-gray-400'}`}><i className="fas fa-video" /></div><h1 className="mt-5 text-xl font-black text-gray-900">{activeChannel ? activeChannel.name : '현재 진행 중인 회의가 없습니다.'}</h1><p className="mt-2 text-sm text-gray-500">{activeChannel ? `현재 ${activeChannel.activeParticipantCount ?? 0}명이 참여 중입니다.` : '회의가 시작되면 실제 참여자와 회의 상태가 이 화면에 표시됩니다.'}</p></div><div className="mt-8 border-t border-gray-100 pt-6"><h2 className="mb-4 text-xs font-extrabold text-gray-500">워크스페이스 멤버 {members.length}명</h2><div className="flex flex-wrap gap-3">{members.map((member)=><div key={member.memberId} className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3"><AiMemberAvatar name={member.learnerName?.trim() || `멤버 ${member.memberId}`} imageUrl={member.profileImage} className="h-9 w-9" /><div><p className="text-xs font-extrabold text-gray-800">{member.learnerName?.trim() || `멤버 ${member.memberId}`}</p><p className="text-[10px] text-gray-400">{member.roleLabel || member.position || '역할 미지정'}</p></div></div>)}</div></div></Card></main></AiShell>
 }
-
 type LocalInterviewQuestion = (typeof aiInterviewQuestions)[number] & {
   source?: 'ai' | 'generated' | 'team'
   from?: string
@@ -1221,7 +1288,6 @@ function InterviewPage() {
     {modal === 'mock' && mockSession ? <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-gray-900/85 p-4 backdrop-blur-sm"><section role="dialog" aria-labelledby="mock-title" className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"><header className="flex shrink-0 items-center justify-between border-b border-gray-100 px-7 py-4"><div className="flex items-center gap-3"><h2 id="mock-title" className="flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-user-tie text-brand" />모의 면접</h2><div className="flex gap-1">{mockSession.questions.map((question, index) => <span key={question.id} className={`h-1.5 w-6 rounded-full ${index < mockSession.index ? 'bg-brand' : index === mockSession.index ? 'bg-gray-900' : 'bg-gray-200'}`} />)}</div></div><button onClick={() => { setModal(null); setMockSession(null) }} className="text-xs font-bold text-gray-500 hover:text-red-500" type="button">그만하기 <i className="fas fa-times ml-1" /></button></header><div className="custom-scrollbar flex-1 overflow-y-auto p-7">{mockSession.stage === 'answer' ? <div><div className="mb-6 flex items-start gap-5"><div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[6px] border-brand text-lg font-black text-gray-900">{mockSession.remaining}</div><div className="min-w-0 flex-1"><p className="text-xs font-bold text-gray-500">면접관 · {mockSession.questions[mockSession.index].id} {mockSession.questions[mockSession.index].category}</p><h3 className="mt-2 text-xl font-black text-gray-900">{mockSession.questions[mockSession.index].question}</h3><p className="mt-2 text-xs text-gray-500">{mockOptions.time}초 안에 답해 주세요. 말로 답하면 자동으로 받아 적습니다.</p></div></div><div className="overflow-hidden rounded-xl border border-gray-200"><textarea aria-label="모의 면접 답변" value={mockAnswer} onChange={(event) => setMockAnswer(event.target.value)} className="h-36 w-full resize-none p-4 text-sm outline-none" placeholder="답변을 입력하거나 [말로 답하기]를 누르세요." /><div className="flex items-center justify-between border-t border-gray-100 bg-gray-50 p-3"><button onClick={dictateMockAnswer} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-600" type="button"><i className="fas fa-microphone mr-1" />말로 답하기</button><button disabled={evaluating || !mockAnswer.trim()} onClick={() => void submitMockAnswer()} className="rounded-lg bg-gray-900 px-5 py-2 text-xs font-bold text-white" type="button">{evaluating ? '평가 중...' : '답변 제출'} <i className="fas fa-arrow-right ml-1" /></button></div></div></div> : mockSession.stage === 'feedback' ? <div><div className="mb-5 flex items-center gap-4"><div className="flex h-16 w-16 flex-col items-center justify-center rounded-2xl bg-brand text-white"><span className="text-2xl font-black leading-none">{mockSession.score}</span><span className="text-[9px] font-bold">점수</span></div><div><p className="text-xs font-bold text-gray-500">{mockSession.questions[mockSession.index].id} 답변 피드백</p><h3 className="mt-1 text-base font-black text-gray-900">{mockSession.questions[mockSession.index].question}</h3></div></div><div className="rounded-xl border border-green-100 bg-green-50 p-5"><p className="text-xs font-extrabold text-green-700">AI 답변 피드백</p><p className="mt-2 whitespace-pre-line text-sm text-gray-700">{mockFeedback}</p><p className="mt-4 text-xs font-bold text-green-700">모범 답안</p><p className="mt-2 text-sm leading-relaxed text-gray-700">{mockSession.questions[mockSession.index].answer}</p><div className="mt-3 flex flex-wrap gap-1.5">{mockSession.questions[mockSession.index].keywords.map((keyword) => <span key={keyword} className="rounded border border-green-200 bg-white px-2 py-1 text-[10px] font-bold text-green-700">{keyword}</span>)}</div></div><div className="mt-6 text-center"><p className="mb-3 text-xs font-bold text-gray-500">답변할 때 얼마나 자신 있었나요?</p><div className="flex justify-center gap-2">{[['😵','막혔어요'],['🤔','애매해요'],['😎','자신 있어요']].map(([emoji,label]) => <button key={label} onClick={continueMockInterview} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 hover:border-brand hover:bg-green-50" type="button"><span className="mr-1">{emoji}</span>{label}</button>)}</div></div></div> : <div className="py-6 text-center"><div className="mx-auto mb-4 flex h-20 w-20 flex-col items-center justify-center rounded-3xl bg-brand text-white shadow-lg"><span className="text-3xl font-black leading-none">{Math.round(mockSession.scores.reduce((sum, score) => sum + score, 0) / Math.max(1, mockSession.scores.length))}</span><span className="text-[10px] font-bold">평균</span></div><h3 className="text-xl font-black text-gray-900">모의 면접 완료!</h3><p className="mt-2 text-sm text-gray-500">답변 기록을 질문 은행의 연습 리포트에 반영했습니다.</p><button onClick={() => { setModal(null); setMockSession(null); setTab('history') }} className="mt-6 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white" type="button">기록 확인하기</button></div>}</div></section></div> : null}
   </div></main>
 }
-
 type SettingsTab = 'general' | 'members' | 'integrations' | 'ai' | 'danger'
 
 function SettingsPage() {
@@ -1448,95 +1514,3 @@ export default function AiSquadWorkspaceApp() {
     </AiWorkspaceContext.Provider>
   )
 }
-
-type AiWorkspaceRuntime = {
-  design: WorkspaceAiDesign | null
-  saveDesign: (request: WorkspaceAiDesignEdit) => Promise<void>
-  workspaceId: number | null
-  dashboard: WorkspaceDashboard | null
-  tasks: WorkspaceTask[]
-  setTasks: Dispatch<SetStateAction<WorkspaceTask[]>>
-  activities: ActivityLog[]
-  notices: Notice[]
-  events: CalendarEvent[]
-  voiceChannels: VoiceChannel[]
-  integrations: ExternalIntegration[]
-}
-
-const AiWorkspaceContext = createContext<AiWorkspaceRuntime>({
-  design: null,
-  saveDesign: async () => { throw new Error('워크스페이스를 먼저 만들어 주세요.') },
-  workspaceId: null,
-  dashboard: null,
-  tasks: [],
-  setTasks: () => undefined,
-  activities: [],
-  notices: [],
-  events: [],
-  voiceChannels: [],
-  integrations: [],
-})
-
-function useAiWorkspace() {
-  return useContext(AiWorkspaceContext)
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return '미정'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
-}
-
-function taskStatus(status: WorkspaceTask['status']): AiTaskStatus {
-  if (status === 'IN_PROGRESS') return 'progress'
-  if (status === 'IN_REVIEW') return 'review'
-  if (status === 'DONE') return 'done'
-  return 'todo'
-}
-
-function taskTag(task: WorkspaceTask): AiTask['tag'] {
-  const tag = task.description?.match(/^\[task-tag:(FE|BE|UX\/UI|DevOps)\]/)?.[1]
-  if (tag) return tag as AiTask['tag']
-  const value = `${task.title} ${task.description ?? ''}`
-  if (/화면|UI|UX|디자인|프론트/i.test(value)) return 'FE'
-  if (/배포|CI|CD|인프라|모니터링/i.test(value)) return 'DevOps'
-  return 'BE'
-}
-
-function toAiTask(task: WorkspaceTask, members: WorkspaceMember[]): AiTask {
-  const assignee = members.find((member) => member.learnerId === task.assigneeId)
-  return {
-    id: `DP-${String(task.taskId).padStart(2, '0')}`,
-    title: task.title,
-    tag: taskTag(task),
-    assignee: assignee?.learnerName?.trim() || '미지정',
-    status: taskStatus(task.status),
-    due: formatDate(task.dueDate),
-    urgent: task.priority === 'HIGH',
-  }
-}
-
-function useDisplayedTasks() {
-  const { workspaceId, dashboard, tasks } = useAiWorkspace()
-  return workspaceId ? tasks.map((task) => toAiTask(task, dashboard?.members ?? [])) : aiTasks
-}
-
-function relationshipsFromMermaid(value: string): LocalErdRelationship[] {
-  return value.split('\n').flatMap((line) => {
-    const match = line.trim().match(/^(\w+)\s+([^\s]+)\s+(\w+)\s*:\s*"?([^"]*)"?$/)
-    return match ? [{ from: match[1], type: match[2], to: match[3], label: match[4].trim() }] : []
-  })
-}
-
-const persistedPages = {
-  '/squad-dashboard': SquadDashboardApp,
-  '/squad-workspace': lazy(() => import('./SquadWorkspaceApp')),
-  '/squad-review': lazy(() => import('./SquadReviewApp')),
-  '/squad-schedule': lazy(() => import('./SquadScheduleApp')),
-  '/squad-meeting': lazy(() => import('./SquadMeetingApp')),
-  '/squad-settings': lazy(() => import('./SquadSettingsApp')),
-  '/squad-erd': lazy(() => import('./SquadErdApp')),
-}
-
-const SquadFilesApp = lazy(() => import('./SquadFilesApp'))

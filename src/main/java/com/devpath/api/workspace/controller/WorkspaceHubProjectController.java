@@ -2,6 +2,7 @@ package com.devpath.api.workspace.controller;
 
 import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 
+import com.devpath.api.workspace.dto.WorkspaceAiDesignEditRequest;
 import com.devpath.api.workspace.dto.WorkspaceAiDesignJobResponse;
 import com.devpath.api.workspace.dto.WorkspaceAiDesignRequest;
 import com.devpath.api.workspace.dto.WorkspaceAiDesignResponse;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -82,6 +84,15 @@ public class WorkspaceHubProjectController {
       @AuthenticationPrincipal Long userId, @PathVariable Long workspaceId) {
     return ApiResponse.ok(
         workspaceAiDesignWorkspaceService.get(requireUserId(userId), workspaceId));
+  }
+
+  @PatchMapping("/projects/{workspaceId}/ai-design")
+  public ApiResponse<WorkspaceAiDesignWorkspaceResponse> updateAiWorkspaceDesign(
+      @AuthenticationPrincipal Long userId,
+      @PathVariable Long workspaceId,
+      @Valid @RequestBody WorkspaceAiDesignEditRequest request) {
+    return ApiResponse.ok(
+        workspaceAiDesignWorkspaceService.update(requireUserId(userId), workspaceId, request));
   }
 
   @PostMapping("/projects/{workspaceId}/invite-link")
