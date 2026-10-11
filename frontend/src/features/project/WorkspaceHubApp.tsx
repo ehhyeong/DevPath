@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { getCurrentLocationKey, navigateTo, SPA_NAVIGATION_EVENT } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from '../../components/ProjectAside'
-import WorkspaceProjectStartModal from './WorkspaceProjectStartModal'
 import ProjectHeader from '../../components/ProjectHeader'
 import UserAvatar from '../../components/UserAvatar'
 import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
@@ -12,6 +11,7 @@ import LoginRequiredView from '../../components/LoginRequiredView'
 import { showAuthToast } from '../../lib/auth-toast'
 import { PROFILE_UPDATED_EVENT, type ProfileSyncPayload } from '../../lib/profile-sync'
 import { invalidateProjectApiCache, projectApiRequest } from './api'
+import { openWorkspaceProjectStart } from './workspace-project-start-event'
 
 type ProjectType = 'all' | 'solo' | 'squad' | 'mentoring'
 type ProjectStatus = 'all' | 'progress' | 'completed'
@@ -110,7 +110,6 @@ export default function WorkspaceHubApp() {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const [settingsProject, setSettingsProject] = useState<WorkspaceHubProject | null>(null)
   const [membersProject, setMembersProject] = useState<WorkspaceHubProject | null>(null)
-  const [projectCreateModalOpen, setProjectCreateModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [acceptedInviteToken, setAcceptedInviteToken] = useState<string | null>(null)
   const [leavingProjectId, setLeavingProjectId] = useState<number | null>(null)
@@ -317,7 +316,7 @@ export default function WorkspaceHubApp() {
       openAuthModal('프로젝트 시작은 로그인 후 이용할 수 있습니다.')
       return
     }
-    setProjectCreateModalOpen(true)
+    openWorkspaceProjectStart()
   }
 
   function openProjectCreateFromCard() {
@@ -326,7 +325,7 @@ export default function WorkspaceHubApp() {
       openAuthModal('프로젝트 시작은 로그인 후 이용할 수 있습니다.')
       return
     }
-    setProjectCreateModalOpen(true)
+    openWorkspaceProjectStart()
   }
 
   async function leaveProject(event: MouseEvent<HTMLElement>, project: WorkspaceHubProject) {
@@ -470,11 +469,6 @@ export default function WorkspaceHubApp() {
         currentUserProfileImage={profileImage}
         onClose={() => setMembersProject(null)}
       />
-      <WorkspaceProjectStartModal
-        open={projectCreateModalOpen}
-        onClose={() => setProjectCreateModalOpen(false)}
-      />
-
       {authView ? (
         <AuthModal
           view={authView}
@@ -510,6 +504,7 @@ function WorkspaceProjectCard({
 }) {
   const currentUserMemberSeed = currentUserId == null ? null : `workspace-member-${currentUserId}`
   const progressPercent = clampProgressPercent(project.progressPercent)
+  const isAiSquad = project.type === 'squad' && new URL(project.dashboardUrl, window.location.origin).searchParams.get('ai') === '1'
   const hasVisibleRole = project.type === 'mentoring' ? Boolean(project.roleLabel) : project.type === 'squad' && Boolean(project.roleLabel)
   const footerClassName = hasVisibleRole ? '' : 'mt-auto'
 
@@ -597,11 +592,15 @@ function WorkspaceProjectCard({
   }
 
   return (
-    <div id={project.domId} className="project-card bg-white rounded-xl p-5 cursor-pointer relative group flex flex-col" data-type={project.type} data-status={project.status} onClick={goToProject}>
+    <div id={project.domId} className={`project-card ${isAiSquad ? 'workspace-ai-card' : 'bg-white'} rounded-xl p-5 cursor-pointer relative group flex flex-col`} data-type={project.type} data-status={project.status} onClick={goToProject}>
       <div>
         <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
           <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap">
-            <span className={getTypeBadgeClass(project.type)}>{getTypeLabel(project.type)}</span>
+            {isAiSquad ? (
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-blue-600 to-sky-500 px-2.5 py-1 text-[10px] font-bold text-white">
+                <i className="fas fa-wand-magic-sparkles" aria-hidden="true"></i> AI 설계 스쿼드
+              </span>
+            ) : <span className={getTypeBadgeClass(project.type)}>{getTypeLabel(project.type)}</span>}
             <span className={getStatusBadgeClass(project.status)}>{getStatusLabel(project.status)}</span>
           </div>
 
@@ -634,7 +633,7 @@ function WorkspaceProjectCard({
 
       <div className={footerClassName}>
         <div className="w-full bg-gray-100 rounded-full h-1.5 mb-3">
-          <div className={getProgressBarClass(project)} style={{ width: `${progressPercent}%` }}></div>
+          <div className={isAiSquad ? 'bg-gradient-to-r from-blue-500 to-sky-400 h-1.5 rounded-full' : getProgressBarClass(project)} style={{ width: `${progressPercent}%` }}></div>
         </div>
         <div className="flex items-center justify-between text-xs text-gray-400 border-t border-gray-100 pt-3">
           <span>

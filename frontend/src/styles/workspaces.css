@@ -39,6 +39,8 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
 
 .project-card { transition: all 0.2s; border: 1px solid #E5E7EB; }
 .project-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); border-color: #00C471; }
+.project-card.workspace-ai-card { background: linear-gradient(145deg, #EFF6FF, #FFFFFF 65%); border-color: #BFDBFE; }
+.project-card.workspace-ai-card:hover { border-color: #60A5FA; box-shadow: 0 10px 20px rgba(37,99,235,0.08); }
 
 @keyframes workspaceHubFadeIn {
   from { opacity: 0; transform: translateY(-5px); }
@@ -133,7 +135,7 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
   }
 }
 
-:is(.ai-squad-workspace, .ai-squad-meeting) .ai-blueprint-tab-panel {
+.ai-squad-workspace .ai-blueprint-tab-panel {
   animation: aiBlueprintTabFadeIn 0.3s ease-out forwards;
 }
 
@@ -149,7 +151,7 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
   }
 }
 
-:is(.ai-squad-workspace, .ai-squad-meeting) .ai-api-detail-panel {
+.ai-squad-workspace .ai-api-detail-panel {
   animation: aiApiDetailFadeIn 0.25s ease-out;
 }
 
@@ -212,6 +214,16 @@ body:has(.ai-squad-workspace) {
 :is(.ai-squad-workspace, .ai-squad-meeting) :is(button, input, select, textarea).text-base {
   font-size: 1rem;
   line-height: 1.5rem;
+}
+
+.ai-interview-page {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', '맑은 고딕', sans-serif;
+  font-size: 14px;
+}
+
+/* 공통 입력 요소 스타일에 덮인 원본 HTML의 leading-relaxed 줄 간격을 복원한다. */
+.ai-interview-page :is(button, textarea).text-sm.leading-relaxed {
+  line-height: 1.625;
 }
 
 @keyframes squadDashboardPlusMenuIn {
@@ -661,16 +673,6 @@ body:has(.ai-squad-workspace) {
   0% { width: 0; left: 0; }
   50% { width: 40%; left: 30%; }
   100% { width: 0; left: 100%; }
-}
-
-.ai-interview-page {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', '맑은 고딕', sans-serif;
-  font-size: 14px;
-}
-
-/* 공통 입력 요소 스타일에 덮인 원본 HTML의 leading-relaxed 줄 간격을 복원한다. */
-.ai-interview-page :is(button, textarea).text-sm.leading-relaxed {
-  line-height: 1.625;
 }
 
 .ai-squad-meeting {
