@@ -170,7 +170,8 @@ const dataVersion = useWorkspaceDataVersion()
           return
         }
 
-        const nextSchema = safeSchemaFromJson(documentData.schemaJson)
+        const storedSchema = safeSchemaFromJson(documentData.schemaJson)
+        const nextSchema = storedSchema.tables.length ? storedSchema : parseMermaidCode(documentData.mermaidCode ?? '')
         const nextCode = documentData.mermaidCode || generateMermaidCode(nextSchema)
 
         setProjectName(documentData.projectName)
@@ -333,12 +334,14 @@ const dataVersion = useWorkspaceDataVersion()
     applyMermaidDraft(value)
   }
 
-  async function saveDocument() {
+  async function saveDocument(overrideCode?: string) {
     if (!workspaceId) {
       return
     }
 
     setSaving(true)
+    const codeToSave = overrideCode ?? mermaidCode
+    const schemaToSave = overrideCode ? parseMermaidCode(overrideCode) : schema
 
     try {
       const saved = await projectApiRequest<ErdDocument>(
@@ -346,15 +349,16 @@ const dataVersion = useWorkspaceDataVersion()
         {
           method: 'PUT',
           body: JSON.stringify({
-            mermaidCode,
-            schemaJson: JSON.stringify(schema),
-            changeSummary: `Saved ${schema.tables.length} tables and ${schema.relationships.length} relationships`,
+            mermaidCode: codeToSave,
+            schemaJson: JSON.stringify(schemaToSave),
+            changeSummary: overrideCode ? 'AI 원본 데이터 모델 복구' : `Saved ${schema.tables.length} tables and ${schema.relationships.length} relationships`,
           }),
         },
         'required',
       )
 
       setProjectName(saved.projectName)
+      if (overrideCode) applyMermaidDraft(overrideCode)
       setMembers(saved.members ?? members)
       await Promise.all([refreshVersions(true), refreshMessages(true)])
       setSavedOpen(true)

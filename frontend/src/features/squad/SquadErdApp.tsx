@@ -1,7 +1,8 @@
 import SquadErdView from './SquadErdView'
 import { useSquadErdController } from './useSquadErdController'
+import type { AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
 
-export default function SquadErdApp() {
+export default function SquadErdApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const model = useSquadErdController()
 
   if (model.status === 'loading') {
@@ -12,5 +13,5 @@ export default function SquadErdApp() {
     )
   }
 
-  return <SquadErdView model={model} />
+  return <SquadErdView model={model} aiWorkspace={aiWorkspace} design={design} />
 }

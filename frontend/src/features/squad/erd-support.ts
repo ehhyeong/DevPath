@@ -600,6 +600,14 @@ export function schemaStats(schema: ErdSchema) {
   }
 }
 
+export function getErdViewportScale(diagramWidth: number, diagramHeight: number, viewportWidth: number, viewportHeight: number) {
+  // 사용자가 확대한 기준 화면의 도면 배율 0.698에 맞춰 16px 라벨의 읽기 크기를 유지한다.
+  const readableScale = 0.7
+  // 도면 둘레에 48px씩 남겨 테이블 테두리와 캔버스 가장자리가 붙지 않게 한다.
+  const padding = 96
+  return Math.max(readableScale, Math.min(1, (viewportWidth - padding) / diagramWidth, (viewportHeight - padding) / diagramHeight))
+}
+
 export function loadMermaid() {
   if (mermaidLoadPromise) {
     return mermaidLoadPromise
