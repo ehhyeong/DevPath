@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore, type MouseEvent } from 'react'
 import { showAuthToast } from '../lib/auth-toast'
 import { projectApiRequest } from '../features/project/api'
+import { useWorkspaceDataVersion } from '../lib/workspace-events'
 
 export type SquadWorkspaceAsidePage =
   | 'dashboard'
@@ -33,6 +34,7 @@ type NavItem = {
   path: string
   badgeCount?: number | null
   ai?: boolean
+  description?: string
 }
 
 type ExternalIntegration = {
@@ -111,8 +113,9 @@ function storeSidebarPinned(value: boolean) {
   window.localStorage.setItem(SIDEBAR_PINNED_STORAGE_KEY, value ? 'true' : 'false')
 }
 
-function navHref(path: string, workspaceId: number | null) {
-  return workspaceId ? `${path}?workspaceId=${workspaceId}` : path
+function navHref(path: string, workspaceId: number | null, aiWorkspace = false) {
+  if (workspaceId) return `${path}?workspaceId=${workspaceId}${aiWorkspace ? '&ai=1' : ''}`
+  return aiWorkspace ? `${path}?ai=1` : path
 }
 
 function isGithubLinked(integrations: ExternalIntegration[]) {
@@ -140,6 +143,7 @@ export default function SquadWorkspaceAside({
   const sidebarPinned = pinned ?? localPinned
   const sidebarOpen = sidebarPinned || expanded
   const activeGithubLinked = workspaceId ? githubLinked : false
+  const dataVersion = useWorkspaceDataVersion()
   const projectLabel = projectName?.trim() || '스쿼드 프로젝트'
   const standardSections: NavSection[] = [
     {
@@ -180,27 +184,46 @@ export default function SquadWorkspaceAside({
     {
       title: '개요',
       items: [
-        { key: 'dashboard', label: '대시보드', icon: 'fas fa-chart-pie', path: '/squad-dashboard' },
+        { key: 'dashboard', label: '대시보드', icon: 'fas fa-chart-pie', path: '/squad-dashboard', description: 'MVP 기능 · 작업 진행률' },
         { key: 'blueprint', label: 'AI 설계서', icon: 'fas fa-magic', path: '/squad-blueprint', ai: true },
-        { key: 'workspace', label: '작업 현황판', icon: 'fas fa-columns', path: '/squad-workspace' },
-        { key: 'review', label: '코드 피드백', icon: 'fas fa-code-branch', path: '/squad-review', badgeCount: reviewBadgeCount },
-        { key: 'erd', label: 'ERD 설계', icon: 'fas fa-project-diagram', path: '/squad-erd' },
-        { key: 'api', label: 'API 명세서', icon: 'fas fa-plug', path: '/squad-api', ai: true },
-        { key: 'schedule', label: '일정 관리', icon: 'fas fa-calendar-alt', path: '/squad-schedule' },
-        { key: 'files', label: '팀 자료실', icon: 'fas fa-folder-open', path: '/squad-files' },
-        { key: 'meeting', label: '화상 회의', icon: 'fas fa-video', path: '/squad-meeting' },
-        { key: 'interview', label: '면접 준비', icon: 'fas fa-user-tie', path: '/squad-interview', ai: true },
       ],
     },
     {
+      title: '프로젝트 진행',
+      items: [
+        { key: 'workspace', label: '작업 현황판', icon: 'fas fa-columns', path: '/squad-workspace', description: '로드맵 기반 작업 카드' },
+        { key: 'schedule', label: '일정 관리', icon: 'fas fa-calendar-alt', path: '/squad-schedule', description: 'Phase 마일스톤 · 작업 마감일' },
+      ],
+    },
+    {
+      title: '설계/리뷰',
+      items: [
+        { key: 'erd', label: 'ERD 설계', icon: 'fas fa-project-diagram', path: '/squad-erd', description: 'AI 추천 스키마 · 관계 편집' },
+        { key: 'api', label: 'API 명세서', icon: 'fas fa-plug', path: '/squad-api', ai: true, description: '엔드포인트 · 구현 상태' },
+        { key: 'review', label: '코드 피드백', icon: 'fas fa-code-branch', path: '/squad-review', badgeCount: reviewBadgeCount, description: 'GitHub PR · 코드 리뷰' },
+      ],
+    },
+    {
+      title: '팀 협업',
+      items: [
+        { key: 'meeting', label: '화상 회의', icon: 'fas fa-video', path: '/squad-meeting', description: '로드맵 기반 회의 안건' },
+        { key: 'files', label: '팀 자료실', icon: 'fas fa-folder-open', path: '/squad-files', description: 'AI 설계 문서 · 팀 파일' },
+      ],
+    },
+    {
+      title: '면접 대비',
+      items: [{ key: 'interview', label: '면접 준비', icon: 'fas fa-user-tie', path: '/squad-interview', ai: true, description: '설계서 기반 면접 질문' }],
+    },
+    {
       title: '관리',
-      items: [{ key: 'settings', label: '스쿼드 설정', icon: 'fas fa-cog', path: '/squad-settings' }],
+      items: [{ key: 'settings', label: '스쿼드 설정', icon: 'fas fa-cog', path: '/squad-settings', description: '기술 스택 · 프로젝트 정보' }],
     },
   ]
   const sections = aiWorkspace ? aiSections : standardSections
+  const sectionGroups = aiWorkspace ? [sections.slice(0, -1), sections.slice(-1)] : [sections]
 
   useEffect(() => {
-    if (!workspaceId || aiWorkspace) {
+    if (!workspaceId) {
       return
     }
 
@@ -229,9 +252,14 @@ export default function SquadWorkspaceAside({
     return () => {
       ignore = true
     }
-  }, [aiWorkspace, workspaceId])
+  }, [workspaceId, dataVersion])
 
-  useEffect(() => () => resetSquadWorkspaceAsideState(), [])
+  useEffect(() => () => {
+    // 메뉴 전환 중 재마운트되면 포인터가 그대로여서 mouseenter가 다시 발생하지 않는다.
+    if (!squadWorkspaceAsideNavigationPending) {
+      resetSquadWorkspaceAsideState()
+    }
+  }, [])
 
   function handleNavigate(event: MouseEvent<HTMLAnchorElement>, href: string, item?: NavItem) {
     if (item?.key === 'review' && activeGithubLinked !== true) {
@@ -272,7 +300,7 @@ export default function SquadWorkspaceAside({
 
   return (
     <aside
-      className={`${sidebarPinned ? 'pinned w-[256px]! ' : ''}${expanded ? 'is-expanded w-[256px]! ' : ''}squad-workspace-aside w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}
+      className={`${sidebarPinned ? 'pinned w-[256px]! ' : ''}${expanded ? 'is-expanded w-[256px]! ' : ''}${aiWorkspace ? 'ai-squad-aside ' : ''}squad-workspace-aside w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}
       onMouseEnter={() => setSquadWorkspaceAsideExpanded(true)}
       onMouseLeave={() => {
         if (!squadWorkspaceAsideNavigationPending) {
@@ -306,41 +334,43 @@ export default function SquadWorkspaceAside({
         )}
       </div>
 
-      <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
-        {sections.map((section) => (
-          <div key={section.title}>
-            <p className={`workspace-sidebar-section-title px-4 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 ${sidebarOpen ? 'mt-[24px]! mb-[8px]! h-auto! opacity-100!' : ''}`}>
-              {section.title}
-            </p>
-            {section.items.map((item) => {
-              const href = aiWorkspace ? `${item.path}?ai=1` : navHref(item.path, workspaceId)
-              const badgeCount = item.badgeCount ?? 0
-              const blocked = item.key === 'review' && activeGithubLinked !== true
+      <nav className={`flex-1 px-3 ${aiWorkspace ? 'flex min-h-0 flex-col overflow-hidden' : 'py-6 overflow-y-auto custom-scrollbar'}`}>
+        {sectionGroups.map((group, index) => <div key={index} className={aiWorkspace ? index === 0 ? 'ai-squad-menu-list min-h-0 flex-1 overflow-hidden py-3' : 'shrink-0 border-t border-gray-100 bg-white pb-2' : 'contents'}>
+          {group.map((section) => (
+            <div key={section.title}>
+              <p className={`workspace-sidebar-section-title px-4 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 ${sidebarOpen ? `${aiWorkspace ? 'mt-[8px]! mb-[4px]!' : 'mt-[24px]! mb-[8px]!'} h-auto! opacity-100!` : ''}`}>
+                {section.title}
+              </p>
+              {section.items.map((item) => {
+                const href = navHref(item.path, workspaceId, aiWorkspace)
+                const badgeCount = item.badgeCount ?? 0
+                const blocked = item.key === 'review' && activeGithubLinked !== true
 
-              return (
-                <a
-                  key={item.key}
-                  href={href}
-                  onClick={(event) => handleNavigate(event, href, item)}
-                  className={`workspace-nav-item mb-[4px] flex min-h-[48px]! box-border items-center rounded-[12px]! px-[16px]! py-[14px]! [transition:all_0.2s_ease-in-out]! hover:translate-x-[4px]! ${activePage === item.key ? 'active bg-[#EBFDF5]! font-bold! text-[#00C471]! hover:bg-[#EBFDF5]! hover:text-[#00C471]!' : 'font-semibold! text-[#6B7280]! hover:bg-[#F3F4F6]! hover:text-[#111827]!'} ${blocked ? 'cursor-not-allowed opacity-50 hover:translate-x-0!' : ''}`}
-                  aria-disabled={blocked}
-                >
-                  <i className={`${item.icon} w-6 shrink-0 grow-0 basis-[24px] text-center text-lg leading-[28px]!`}></i>
-                  <span className={`sidebar-text squad-dashboard-review-link w-0 flex-1 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-[ease] group-hover:ml-[12px] group-hover:flex group-hover:w-auto group-hover:min-w-0 group-hover:flex-auto group-hover:items-center group-hover:justify-between group-hover:gap-[8px] group-hover:opacity-100 ${sidebarOpen ? 'ml-[12px]! flex! w-auto! min-w-0 flex-auto items-center justify-between gap-[8px] opacity-100!' : ''}`}>
-                    <span className="truncate">{item.label}</span>
-                    {badgeCount > 0 ? (
-                      <span className="squad-dashboard-review-badge inline-flex h-[16px] w-[16px] shrink-0 basis-[16px] items-center justify-center rounded-full bg-red-500 p-0! text-[9px] leading-[16px]! font-black text-white">
-                        {badgeCount}
-                      </span>
-                    ) : item.ai ? (
-                      <span className="rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-black text-white">AI</span>
-                    ) : null}
-                  </span>
-                </a>
-              )
-            })}
-          </div>
-        ))}
+                return (
+                  <a
+                    key={item.key}
+                    href={href}
+                    onClick={(event) => handleNavigate(event, href, item)}
+                    className={`workspace-nav-item flex box-border items-center rounded-[12px]! px-[16px]! ${aiWorkspace ? '' : 'mb-[4px] min-h-[48px]! py-[14px]!'} [transition:all_0.2s_ease-in-out]! ${aiWorkspace ? 'hover:translate-x-0!' : 'hover:translate-x-[4px]!'} ${activePage === item.key ? 'active bg-[#EBFDF5]! font-bold! text-[#00C471]! hover:bg-[#EBFDF5]! hover:text-[#00C471]!' : 'font-semibold! text-[#6B7280]! hover:bg-[#F3F4F6]! hover:text-[#111827]!'} ${blocked ? 'cursor-not-allowed opacity-50 hover:translate-x-0!' : ''}`}
+                    aria-disabled={blocked}
+                  >
+                    <i className={`${item.icon} w-6 shrink-0 grow-0 basis-[24px] text-center text-lg leading-[28px]!`}></i>
+                    <span className={`sidebar-text squad-dashboard-review-link w-0 flex-1 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-[ease] group-hover:ml-[12px] group-hover:flex group-hover:w-auto group-hover:min-w-0 group-hover:flex-auto group-hover:items-center group-hover:justify-between group-hover:gap-[8px] group-hover:opacity-100 ${sidebarOpen ? 'ml-[12px]! flex! w-auto! min-w-0 flex-auto items-center justify-between gap-[8px] opacity-100!' : ''}`}>
+                      <span className="min-w-0"><span className={`block truncate ${aiWorkspace ? 'text-[13px] leading-[18px]' : ''}`}>{item.label}</span>{sidebarOpen && item.description ? <span className="ai-squad-menu-description mt-0.5 block truncate text-[10px] leading-tight font-medium text-gray-400">{item.description}</span> : null}</span>
+                      {badgeCount > 0 ? (
+                        <span className="squad-dashboard-review-badge inline-flex h-[16px] w-[16px] shrink-0 basis-[16px] items-center justify-center rounded-full bg-red-500 p-0! text-[9px] leading-[16px]! font-black text-white">
+                          {badgeCount}
+                        </span>
+                      ) : item.ai ? (
+                        <span className="rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-black text-white">AI</span>
+                      ) : null}
+                    </span>
+                  </a>
+                )
+              })}
+            </div>
+          ))}
+        </div>)}
       </nav>
     </aside>
   )
