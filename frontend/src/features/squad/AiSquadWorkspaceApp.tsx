@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode, createCont
 import SquadWorkspaceAside, { type SquadWorkspaceAsidePage } from '../../components/SquadWorkspaceAside'
 import { showAuthToast } from '../../lib/auth-toast'
 import { navigateTo } from '../../lib/spa-navigation'
-import { aiApis, aiErdTables, aiFeatures, aiFiles, aiInterviewQuestions, aiRoadmap, aiSquadMembers, aiSquadProject, aiTasks, aiUserFlow, type AiApi, type AiTask, type AiTaskStatus, aiWorkspaceHref, mapWorkspaceApis } from './ai-squad-data'
+import { aiApis, aiErdTables, aiFeatures, aiFiles, aiInterviewQuestions, aiRoadmap, aiSquadMembers, aiSquadProject, aiTasks, aiUserFlow, type AiApi, type AiTask, type AiTaskStatus, aiWorkspaceHref, mapWorkspaceApis, formatApiGroupLabel } from './ai-squad-data'
 import { loadMermaid, parseMermaidCode } from './erd-support'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
@@ -15,7 +15,10 @@ import AiInterviewQuestionBank from './AiInterviewQuestionBank'
 import AiInterviewReport from './AiInterviewReport'
 import { emptyInterviewAnswer, matchedInterviewKeywords, useInterviewAnswers } from './interview-practice'
 import { type InterviewEvidenceLinks } from './interview-evidence'
+import { apiAuthLabel, findApiTask, readWorkspaceApiDocument } from './api-workspace-links'
+import ApiResponseExampleFields from './ApiResponseExampleFields'
 import { WORKSPACE_DATA_CHANGED_EVENT } from '../../lib/workspace-events'
+import { parseApiResponseExample, type ApiResponseExampleDraft } from './api-response-example'
 
 type AiRoute =
   | '/squad-dashboard'
@@ -739,57 +742,95 @@ function ApiJsonCode({ value }: { value: unknown }) {
   })}</>
 }
 
-function ApiJsonPanel({ title, value, status, headers }: { title: string; value: unknown; status?: number; headers?: string }) {
-  return <section className="overflow-hidden rounded-2xl bg-[#111827] shadow-sm"><div className="flex items-center justify-between border-b border-gray-800 px-5 py-3"><span className="text-xs font-bold text-gray-400">{title}</span>{status === undefined ? <span className="font-mono text-[10px] text-gray-500">application/json</span> : <span className={`rounded px-2 py-0.5 text-[10px] font-extrabold ${status < 300 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>{status}</span>}</div><pre className="overflow-x-auto p-5 text-xs leading-relaxed text-gray-300"><ApiJsonCode value={value} /></pre>{headers ? <p className="px-5 pb-4 font-mono text-[11px] text-gray-500">{headers}</p> : null}</section>
-}
-
-function roadmapPhaseForTask(taskId: string) {
-  const taskNumber = Number(taskId.slice(3))
-  const index = taskNumber <= 3 ? 0 : taskNumber <= 7 ? 1 : taskNumber <= 12 ? 2 : 3
-  return aiRoadmap[index]
+function ApiJsonPanel({ title, value, status, headers, action, pending = false }: { title: string; value: unknown; status?: number; headers?: string; action?: ReactNode; pending?: boolean }) {
+  return <section className="overflow-hidden rounded-2xl bg-[#111827] shadow-sm"><div className="flex items-center justify-between border-b border-gray-800 px-5 py-3"><span className="text-xs font-bold text-gray-400">{title}</span><div className="flex items-center gap-3">{action}{pending ? null : status === undefined ? <span className="font-mono text-[10px] text-gray-500">application/json</span> : <span className={`rounded px-2 py-0.5 text-[10px] font-extrabold ${status < 300 ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>{status}</span>}</div></div>{pending ? <div className="p-5"><p className="text-sm font-bold text-gray-300">응답 미정</p><p className="mt-2 text-xs leading-relaxed text-gray-500">예상 응답을 정한 뒤 상태 코드와 JSON 예시를 작성해 주세요.</p></div> : <pre className="overflow-x-auto p-5 text-xs leading-relaxed text-gray-300">{value === undefined ? '응답 본문 없음' : <ApiJsonCode value={value} />}</pre>}{headers ? <p className="px-5 pb-4 font-mono text-[11px] text-gray-500">{headers}</p> : null}</section>
 }
 
 function ApiPage() {
+  const { workspaceId, tasks: workspaceTasks, dashboard } = useAiWorkspace()
+  const [saving, setSaving] = useState(false)
+  const [loaded, setLoaded] = useState(!workspaceId)
+  const [apiError, setApiError] = useState('')
   const [apis, setApis] = useState<AiApi[]>(() => aiApis.map((api) => ({ ...api })))
+  const [groups, setGroups] = useState<string[]>(() => [...new Set(aiApis.map((api) => api.group))])
+  useEffect(() => {
+    if (!workspaceId) return
+    const controller = new AbortController()
+    projectApiRequest<{ content: string } | null>(`/api/workspaces/${workspaceId}/api-spec`, { signal: controller.signal }, 'required').then((doc) => {
+      if (doc?.content) {
+        const document = readWorkspaceApiDocument(doc.content)
+        setApis(document.endpoints)
+        setGroups(document.groups)
+      }
+      setLoaded(true)
+    }).catch((error) => { if (!controller.signal.aborted) setApiError(error instanceof Error ? error.message : 'API 명세를 불러오지 못했습니다.') })
+    return () => controller.abort()
+  }, [workspaceId])
+
+  async function saveApis(next: AiApi[], nextGroups = groups) {
+    if (!loaded || saving) return false
+    setSaving(true)
+    try {
+      if (workspaceId) await projectApiRequest(`/api/workspaces/${workspaceId}/api-spec`, { method: 'PUT', body: JSON.stringify({ content: JSON.stringify({ format: 'devpath-api-v1', endpoints: next, groups: nextGroups }) }) }, 'required')
+      setApis(next)
+      setGroups(nextGroups)
+      return true
+    } catch (error) {
+      showAuthToast({ message: error instanceof Error ? error.message : 'API 명세를 저장하지 못했습니다.', variant: 'error' })
+      return false
+    } finally { setSaving(false) }
+  }
+
   const [selectedId, setSelectedId] = useState(() => {
     const hash = window.location.hash.slice(1)
-    return aiApis.some((api) => api.id === hash) ? hash : aiApis[0].id
+    return aiApis.some((api) => api.id === hash) ? hash : aiApis[0]?.id ?? ''
   })
   const [filter, setFilter] = useState<AiTaskStatus | 'all'>('all')
   const [search, setSearch] = useState('')
   const [addOpen, setAddOpen] = useState(false)
-  const [draft, setDraft] = useState<{ method: AiApi['method']; path: string; desc: string; group: string; feature: string }>({ method: 'GET', path: '', desc: '', group: aiApis[0].group, feature: '' })
+  const [responseEditingId, setResponseEditingId] = useState<string | null>(null)
+  const [responseDraft, setResponseDraft] = useState<ApiResponseExampleDraft>({ status: '', body: '' })
+  const [responseError, setResponseError] = useState('')
+  const [generatingResponse, setGeneratingResponse] = useState(false)
+  const [groupOpen, setGroupOpen] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [groupError, setGroupError] = useState('')
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false)
+  const [draft, setDraft] = useState<{ method: AiApi['method']; path: string; desc: string; group: string; feature: string }>({ method: 'GET', path: '', desc: '', group: aiApis[0]?.group ?? '', feature: '' })
 
   useEffect(() => {
     const selectFromHash = () => {
       const hash = window.location.hash.slice(1)
       if (apis.some((api) => api.id === hash)) setSelectedId(hash)
     }
+    selectFromHash()
     window.addEventListener('hashchange', selectFromHash)
     return () => window.removeEventListener('hashchange', selectFromHash)
   }, [apis])
 
   const selected = apis.find((api) => api.id === selectedId) ?? apis[0]
   const filtered = apis.filter((api) => (filter === 'all' || api.status === filter) && `${api.path} ${api.desc}`.toLowerCase().includes(search.trim().toLowerCase()))
-  const groups = [...new Set(apis.map((api) => api.group))]
   const doneCount = apis.filter((api) => api.status === 'done').length
   const activeCount = apis.filter((api) => api.status === 'progress' || api.status === 'review').length
-  const progress = Math.round((doneCount + activeCount * 0.5) / apis.length * 100)
-  const task = aiTasks.find((item) => item.id === selected.task)
-  const feature = aiFeatures.find((item) => item.id === selected.feature)
-  const phase = task ? roadmapPhaseForTask(task.id) : null
-  const interviewQuestions = blueprintInterviewQuestions.filter((question) => question.apis?.includes(selected.id))
-  const pathParameters = [...selected.path.matchAll(/\{(\w+)\}/g)].map((match) => match[1])
-  const queryParameters = selected.query?.split('&').map((value) => { const [name, example] = value.split('='); return { name, example } }) ?? []
-  const curl = `curl -X ${selected.method} "http://localhost:8080${selected.path.replace(/\{\w+\}/g, '1')}${selected.query ? `?${selected.query}` : ''}"${selected.request ? ` \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(selected.request)}'` : ''}${selected.auth !== '없음' ? ` \\\n  -b "JSESSIONID=<session>"` : ''}`
+  const progress = apis.length ? Math.round((doneCount + activeCount * 0.5) / apis.length * 100) : 0
+  const linkedTask = selected ? findApiTask(selected.task, workspaceTasks) : undefined
+  const task = workspaceId ? linkedTask && toAiTask(linkedTask, dashboard?.members ?? []) : aiTasks.find((item) => item.id === selected?.task)
+  const assignee = dashboard?.members.find((member) => member.learnerId === linkedTask?.assigneeId)
+  const auth = apiAuthLabel(selected?.auth ?? '')
+  const hasRequestBody = selected?.method !== 'GET' && Boolean(selected?.request)
+  const pathParameters = [...(selected?.path.matchAll(/\{(\w+)\}/g) ?? [])].map((match) => match[1])
+  const queryParameters = selected?.query?.split('&').map((value) => { const [name, example] = value.split('='); return { name, example } }) ?? []
+  const curl = selected ? `curl -X ${selected.method} "http://localhost:8080${selected.path.replace(/\{\w+\}/g, '1')}${selected.query ? `?${selected.query}` : ''}"${hasRequestBody ? ` \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(selected.request)}'` : ''}${auth !== '없음' ? /JWT|Bearer|OAuth|토큰/i.test(auth) ? ` \\\n  -H "Authorization: Bearer <access-token>"` : ` \\\n  -b "JSESSIONID=<session>"` : ''}` : ''
 
   const selectApi = (id: string) => {
+    setStatusMenuOpen(false)
     setSelectedId(id)
     window.history.replaceState(null, '', `#${id}`)
   }
 
-  const updateStatus = (status: AiTaskStatus) => {
-    setApis((current) => current.map((api) => api.id === selected.id ? { ...api, status } : api))
+  const updateStatus = async (status: AiTaskStatus) => {
+    if (!selected) return
+    if (!await saveApis(apis.map((api) => api.id === selected.id ? { ...api, status } : api))) return
     showAuthToast({ message: `${selected.id} 상태가 '${statusMeta[status].label}'(으)로 변경되었습니다.`, durationMs: 1800 })
   }
 
@@ -801,45 +842,106 @@ function ApiPage() {
     void navigator.clipboard.writeText(curl).then(() => showAuthToast('cURL을 복사했습니다.')).catch(() => showAuthToast({ message: '복사에 실패했습니다. 직접 선택해 주세요.', variant: 'error' }))
   }
 
-  const addEndpoint = () => {
-    if (!draft.path.trim() || !draft.desc.trim()) return
-    const id = `A${apis.length + 1}`
-    const nextApi: AiApi = { id, group: draft.group, method: draft.method, path: draft.path.trim(), desc: draft.desc.trim(), auth: '로그인 사용자', source: 'team', status: 'todo', task: '', feature: draft.feature || undefined, response: { status: 200, body: {} } }
-    setApis((current) => [...current, nextApi])
+  const addEndpoint = async () => {
+    if (!draft.path.trim() || !draft.desc.trim() || !groups.includes(draft.group)) return
+    const id = `A${Math.max(0, ...apis.map((api) => Number(api.id.match(/^A(\d+)$/)?.[1] ?? 0))) + 1}`
+    let response: AiApi['response']
+    try { response = parseApiResponseExample(responseDraft) }
+    catch (error) { setResponseError((error as Error).message); return }
+    const nextApi: AiApi = { id, group: draft.group, method: draft.method, path: draft.path.trim(), desc: draft.desc.trim(), auth: '로그인 사용자', source: 'team', status: 'todo', task: '', feature: draft.feature || undefined, response }
+    if (!await saveApis([...apis, nextApi])) return
     setAddOpen(false)
     selectApi(id)
     showAuthToast('새 엔드포인트가 추가되었습니다.')
   }
 
+  const editResponse = () => {
+    if (!selected) return
+    setResponseEditingId(selected.id)
+    setResponseDraft({ status: selected.response ? String(selected.response.status) : '', body: selected.response?.body === undefined ? '' : JSON.stringify(selected.response.body, null, 2) })
+    setResponseError('')
+  }
+
+  const saveResponse = async () => {
+    if (!responseEditingId) return
+    let response: AiApi['response']
+    try { response = parseApiResponseExample(responseDraft) }
+    catch (error) { setResponseError((error as Error).message); return }
+    const current = apis.find((api) => api.id === responseEditingId)
+    if (response && current?.response?.headers) response.headers = current.response.headers
+    if (!await saveApis(apis.map((api) => api.id === responseEditingId ? { ...api, response } : api))) return
+    setResponseEditingId(null)
+    showAuthToast('응답 예시가 저장되었습니다.')
+  }
+
+  const generateResponse = async () => {
+    const endpoint = addOpen ? draft : selected
+    if (!workspaceId || !endpoint || generatingResponse) return
+    if (!endpoint.path.trim() || !endpoint.desc.trim()) { setResponseError('AI 초안을 만들려면 경로와 설명을 먼저 입력해 주세요.'); return }
+    setGeneratingResponse(true)
+    setResponseError('')
+    try {
+      const result = await projectApiRequest<{ status: number; body: string }>(`/api/workspaces/${workspaceId}/api-spec/response-draft`, { method: 'POST', body: JSON.stringify({ method: endpoint.method, path: endpoint.path.trim(), description: endpoint.desc.trim(), group: endpoint.group, requestExample: !addOpen && selected?.request !== undefined ? JSON.stringify(selected.request) : '' }) }, 'required')
+      const next = { status: String(result.status), body: result.body }
+      parseApiResponseExample(next)
+      setResponseDraft(next)
+    } catch (error) { setResponseError(error instanceof Error ? error.message : 'AI 응답 초안을 생성하지 못했습니다. 직접 입력하거나 다시 시도해 주세요.') }
+    finally { setGeneratingResponse(false) }
+  }
+
+  const responseFields = <ApiResponseExampleFields id={addOpen ? 'new-api-response' : 'edit-api-response'} value={responseDraft} onChange={(value) => { setResponseDraft(value); setResponseError('') }} onGenerate={() => void generateResponse()} disabled={saving || generatingResponse} generating={generatingResponse} canGenerate={Boolean(workspaceId)} error={responseError} />
+
+  const deleteEndpoint = async () => {
+    if (!selected || saving || !window.confirm(`${selected.method} ${selected.path} 엔드포인트를 삭제할까요?`)) return
+    const next = apis.filter((api) => api.id !== selected.id)
+    if (!await saveApis(next)) return
+    selectApi(next[0]?.id ?? '')
+    showAuthToast('엔드포인트가 삭제되었습니다.')
+  }
+
+  const openGroup = () => { setGroupName(''); setGroupError(''); setGroupOpen(true) }
+  const addGroup = async () => {
+    const name = groupName.trim()
+    if (!name) { setGroupError('그룹 이름을 입력해 주세요.'); return }
+    if (groups.some((group) => group.toLowerCase() === name.toLowerCase())) { setGroupError('이미 있는 리소스 그룹입니다.'); return }
+    if (!await saveApis(apis, [...groups, name])) return
+    setDraft((current) => ({ ...current, group: name }))
+    setGroupOpen(false)
+    showAuthToast('새 리소스 그룹이 추가되었습니다.')
+  }
+
+  if (apiError || !loaded) return <main className="p-8 text-sm text-gray-500">{apiError || 'API 명세를 불러오는 중입니다...'}</main>
+
   return <main className="flex flex-1 flex-col overflow-hidden">
-    <PageHeading icon="fas fa-plug" title="API 명세서" copy={<span className="flex flex-wrap items-center gap-2">AI 설계서의 API 명세를 기반으로 팀이 함께 관리합니다. <button onClick={() => go('/squad-blueprint', '#api')} type="button"><AiChip>원본 보기</AiChip></button></span>} action={<div className="flex flex-wrap items-center gap-3"><div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2"><div className="text-right"><p className="text-[10px] font-bold text-gray-400">구현 진행률</p><p className="text-sm font-black text-gray-900">{progress}% <span className="text-[10px] font-bold text-gray-400">완료 {doneCount} · 진행 {activeCount} / {apis.length}</span></p></div><div className="h-2 w-24 overflow-hidden rounded-full bg-gray-200"><div className="h-2 rounded-full bg-brand transition-all" style={{ width: `${progress}%` }} /></div></div><button onClick={() => { setDraft({ method: 'GET', path: '', desc: '', group: groups[0], feature: '' }); setAddOpen(true) }} className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-black" type="button"><i className="fas fa-plus" />엔드포인트 추가</button></div>} />
+    <PageHeading icon="fas fa-plug" title="API 명세서" copy={<span className="flex flex-wrap items-center gap-2">AI 설계서에서 생성된 API 명세입니다. <button onClick={() => go('/squad-blueprint', '#api')} type="button"><AiChip>원본 보기</AiChip></button></span>} action={<div className="flex flex-wrap items-center gap-3"><div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2"><div className="text-right"><p className="text-[10px] font-bold text-gray-400">구현 진행률</p><p className="text-[10px] font-bold text-gray-400">완료 {doneCount} · 진행 {activeCount} / {apis.length}</p></div><div className="h-2 w-24 overflow-hidden rounded-full bg-gray-200"><div className="h-2 rounded-full bg-brand transition-all" style={{ width: `${progress}%` }} /></div></div><button disabled={saving} onClick={openGroup} className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50" type="button"><i className="fas fa-folder-plus" />리소스 그룹 추가</button><button disabled={saving} onClick={() => { setDraft({ method: 'GET', path: '', desc: '', group: groups[0] ?? '', feature: '' }); setResponseDraft({ status: '', body: '' }); setResponseError(''); setAddOpen(true) }} className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:bg-black" type="button"><i className="fas fa-plus" />엔드포인트 추가</button></div>} />
 
     <div className="flex flex-1 overflow-hidden">
       <aside className="flex w-[420px] max-w-[45%] shrink-0 flex-col border-r border-gray-200 bg-white">
         <div className="shrink-0 space-y-3 border-b border-gray-100 p-4"><div className="relative"><i className="fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-xs text-gray-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-3 pl-8 text-xs outline-none transition focus:border-brand focus:bg-white" placeholder="경로 또는 설명 검색..." /></div><div className="flex flex-wrap gap-1">{(['all', 'todo', 'progress', 'review', 'done'] as const).map((key) => <button key={key} onClick={() => setFilter(key)} className={`rounded-lg border px-2.5 py-1 text-[11px] font-bold transition ${filter === key ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-400'}`} type="button">{key === 'all' ? '전체' : statusMeta[key].label} {key === 'all' ? apis.length : apis.filter((api) => api.status === key).length}</button>)}</div></div>
         <div className="custom-scrollbar flex-1 space-y-4 overflow-y-auto p-3">{groups.map((group) => {
           const items = filtered.filter((api) => api.group === group)
-          if (!items.length) return null
-          return <section key={group}><p className="mb-1.5 px-2 text-[10px] font-extrabold tracking-wider text-gray-400 uppercase">{group}</p><div className="space-y-1">{items.map((api) => <button key={api.id} onClick={() => selectApi(api.id)} className={`w-full rounded-xl border px-3 py-2.5 text-left transition duration-150 ${selected.id === api.id ? 'border-green-200 bg-green-50' : 'border-transparent hover:bg-gray-50'}`} type="button"><div className="flex items-center gap-2"><MethodBadge method={api.method} compact /><span className="flex-1 truncate font-mono text-xs font-bold text-gray-800">{api.path}</span><span aria-label={statusMeta[api.status].label} className={`h-2 w-2 shrink-0 rounded-full ${api.status === 'done' ? 'bg-brand' : api.status === 'review' ? 'bg-yellow-400' : api.status === 'progress' ? 'bg-blue-500' : 'bg-gray-300'}`} /></div><div className="mt-1 flex items-center gap-1.5 pl-14"><span className="flex-1 truncate text-[11px] text-gray-500">{api.desc}</span>{api.source === 'ai' ? <i aria-label="AI 설계서 원본" className="fas fa-magic text-[9px] text-teal-500" /> : null}</div></button>)}</div></section>
+          if (!items.length && apis.some((api) => api.group === group)) return null
+          return <section key={group}><p className="mb-1.5 px-2 text-[10px] font-extrabold tracking-wider text-gray-400 uppercase">{formatApiGroupLabel(group)}</p><div className="space-y-1">{items.length === 0 ? <p className="px-2 py-3 text-[11px] text-gray-400">이 그룹에 엔드포인트가 없습니다.</p> : null}{items.map((api) => <button key={api.id} onClick={() => selectApi(api.id)} className={`w-full rounded-xl border px-3 py-2.5 text-left transition duration-150 ${selected?.id === api.id ? 'border-green-200 bg-green-50' : 'border-transparent hover:bg-gray-50'}`} type="button"><div className="flex items-center gap-2"><MethodBadge method={api.method} compact /><span className="flex-1 truncate font-mono text-xs font-bold text-gray-800">{api.path}</span><span aria-label={statusMeta[api.status].label} className={`h-2 w-2 shrink-0 rounded-full ${api.status === 'done' ? 'bg-brand' : api.status === 'review' ? 'bg-yellow-400' : api.status === 'progress' ? 'bg-blue-500' : 'bg-gray-300'}`} /></div><div className="mt-1 flex items-center gap-1.5 pl-14"><span className="flex-1 truncate text-[11px] text-gray-500">{api.desc}</span>{api.source === 'ai' ? <i aria-label="AI 설계서 원본" className="fas fa-magic text-[9px] text-teal-500" /> : null}</div></button>)}</div></section>
         })}{filtered.length === 0 ? <p className="py-10 text-center text-xs font-bold text-gray-400">조건에 맞는 엔드포인트가 없습니다.</p> : null}</div>
       </aside>
 
       <section className="custom-scrollbar flex-1 overflow-y-auto bg-[#F3F4F6] p-8">
-        <div key={selected.id} className="ai-api-detail-panel mx-auto max-w-3xl space-y-5">
-          <Card className="p-6"><div className="mb-3 flex flex-wrap items-center gap-2">{selected.source === 'ai' ? <BlueprintAiChip>AI 설계서 원본</BlueprintAiChip> : <TeamChip>팀 보강 · MVP 커버용</TeamChip>}<span className="text-[10px] font-bold text-gray-400">{selected.id} · {selected.group}</span></div><div className="mb-2 flex items-center gap-3"><MethodBadge method={selected.method} /><h2 className="break-all font-mono text-lg font-bold text-gray-900">{selected.path.split(/(\{\w+\})/g).map((part, index) => /^\{\w+\}$/.test(part) ? <span key={`${part}-${index}`} className="text-orange-500">{part}</span> : part)}</h2></div><p className="text-sm font-medium text-gray-600">{selected.desc}</p><div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4"><div className="rounded-xl border border-gray-100 bg-gray-50 p-3"><label htmlFor="api-status" className="mb-1 block text-[10px] font-bold text-gray-400">구현 상태</label><select id="api-status" aria-label={`${selected.id} 구현 상태`} value={selected.status} onChange={(event) => updateStatus(event.target.value as AiTaskStatus)} className="w-full cursor-pointer rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-bold outline-none focus:border-brand">{(['todo', 'progress', 'review', 'done'] as AiTaskStatus[]).map((status) => <option key={status} value={status}>{statusMeta[status].label}</option>)}</select></div><div className="rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="mb-1 text-[10px] font-bold text-gray-400">권한</p><p className="text-xs font-bold text-gray-800"><i className="fas fa-lock mr-1 text-[10px] text-gray-400" />{selected.auth}</p></div><div className="rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="mb-1 text-[10px] font-bold text-gray-400">담당자</p>{task ? <p className="flex items-center gap-1.5 text-xs font-bold text-gray-800"><AiMemberAvatar name={task.assignee} className="h-4 w-4" />{task.assignee}</p> : <p className="text-xs text-gray-400">미배정</p>}</div><div className="rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="mb-1 text-[10px] font-bold text-gray-400">작업 카드</p>{task ? <button onClick={() => go('/squad-workspace')} className="text-xs font-bold text-brand hover:underline" type="button">#{task.id} ·{task.due} 마감</button> : <p className="text-xs text-gray-400">-</p>}</div></div></Card>
+        {selected ? <div key={selected.id} className="ai-api-detail-panel mx-auto max-w-3xl space-y-5">
+          <Card className="p-6"><div className="mb-3 flex flex-wrap items-center gap-2">{selected.source === 'ai' ? <BlueprintAiChip>AI 설계서 원본</BlueprintAiChip> : <TeamChip>팀 보강 · MVP 커버용</TeamChip>}<span className="text-[10px] font-bold text-gray-400">{selected.id} · {formatApiGroupLabel(selected.group)}</span><button disabled={saving} onClick={() => void deleteEndpoint()} className="ml-auto flex items-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-50" type="button"><i aria-hidden="true" className="fas fa-trash-alt" />엔드포인트 삭제</button></div><div className="mb-2 flex items-center gap-3"><MethodBadge method={selected.method} /><h2 className="break-all font-mono text-lg font-bold text-gray-900">{selected.path.split(/(\{\w+\})/g).map((part, index) => /^\{\w+\}$/.test(part) ? <span key={`${part}-${index}`} className="text-orange-500">{part}</span> : part)}</h2></div><p className="text-sm font-medium text-gray-600">{selected.desc}</p><div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4"><div className="rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="mb-1 text-[10px] font-bold text-gray-400">구현 상태</p><div className="relative" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setStatusMenuOpen(false) }}><button aria-controls={`${selected.id}-status-options`} aria-expanded={statusMenuOpen} aria-haspopup="listbox" aria-label={`${selected.id} 구현 상태`} disabled={saving} onClick={() => setStatusMenuOpen((open) => !open)} role="combobox" className="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1 text-left text-xs font-bold outline-none focus:border-brand" type="button"><span aria-label={`${selected.id} 구현 상태 색상`} className={`h-2 w-2 shrink-0 rounded-full ${statusMeta[selected.status].dot}`} /><span className="flex-1">{statusMeta[selected.status].label}</span><i className={`fas fa-chevron-down text-[9px] text-gray-400 transition-transform ${statusMenuOpen ? 'rotate-180' : ''}`} /></button>{statusMenuOpen ? <div id={`${selected.id}-status-options`} role="listbox" aria-label={`${selected.id} 구현 상태 선택`} className="absolute top-full right-0 left-0 z-30 mt-1 overflow-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-lg">{(['todo', 'progress', 'review', 'done'] as AiTaskStatus[]).map((status) => <button key={status} role="option" aria-selected={selected.status === status} onClick={() => { updateStatus(status); setStatusMenuOpen(false) }} className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-bold transition ${selected.status === status ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`} type="button"><span aria-label={`${statusMeta[status].label} 상태 색상`} className={`h-2 w-2 shrink-0 rounded-full ${statusMeta[status].dot}`} /><span>{statusMeta[status].label}</span></button>)}</div> : null}</div></div><div className="rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="mb-1 text-[10px] font-bold text-gray-400">권한</p><p className="text-xs font-bold text-gray-800"><i className="fas fa-lock mr-1 text-[10px] text-gray-400" />{auth}</p></div><div className="rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="mb-1 text-[10px] font-bold text-gray-400">담당자</p>{task && task.assignee !== '미지정' ? <p className="flex items-center gap-1.5 text-xs font-bold text-gray-800"><AiMemberAvatar name={task.assignee} imageUrl={assignee?.profileImage} className="h-4 w-4" />{task.assignee}</p> : <p className="text-xs text-gray-400">미지정</p>}</div><div className="rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="mb-1 text-[10px] font-bold text-gray-400">작업 카드</p>{task ? <a href={aiHref('/squad-workspace', `#${task.id}`)} className="text-xs font-bold text-brand hover:underline">#{task.id} ·{task.due === '미정' ? '마감 없음' : `${task.due} 마감`}</a> : <p className="text-xs text-gray-400">-</p>}</div></div></Card>
 
-          {feature || task || interviewQuestions.length ? <section className="space-y-2 rounded-2xl border border-green-200 bg-[linear-gradient(135deg,#F0FDF4_0%,#F0FDFA_100%)] p-5"><p className="flex items-center gap-1.5 text-[11px] font-extrabold text-teal-700"><i className="fas fa-magic" />AI 설계서 연결</p>{feature ? <p className="text-xs text-gray-700"><b>MVP 기능</b> · {feature.id}. {feature.title}</p> : null}{phase ? <p className="text-xs text-gray-700"><b>로드맵</b> · Phase {phase.phase}. {phase.title}</p> : null}{interviewQuestions.map((question) => <p key={question.id} className="text-xs text-gray-700"><b>면접 대비</b> · <button onClick={() => go('/squad-interview', `#${question.id}`)} className="font-bold text-brand hover:underline" type="button">{question.id}. {question.question}</button></p>)}</section> : null}
 
           {pathParameters.length || queryParameters.length ? <Card className="overflow-hidden"><div className="border-b border-gray-100 bg-gray-50 px-5 py-3"><h3 className="text-xs font-extrabold text-gray-700">Parameters</h3></div><table className="w-full text-xs"><tbody className="divide-y divide-gray-50">{pathParameters.map((parameter) => <tr key={`path-${parameter}`}><td className="w-40 px-5 py-2.5 font-mono font-bold text-gray-800">{parameter}</td><td className="px-5 py-2.5 text-gray-400">path</td><td className="px-5 py-2.5 text-gray-600">Long · 필수</td></tr>)}{queryParameters.map((parameter) => <tr key={`query-${parameter.name}`}><td className="w-40 px-5 py-2.5 font-mono font-bold text-gray-800">{parameter.name}</td><td className="px-5 py-2.5 text-gray-400">query</td><td className="px-5 py-2.5 text-gray-600">예: {parameter.example}</td></tr>)}</tbody></table></Card> : null}
 
-          <div className={`grid grid-cols-1 gap-5 ${selected.request ? 'lg:grid-cols-2' : ''}`}>{selected.request ? <ApiJsonPanel title="Request Body" value={selected.request} /> : null}<ApiJsonPanel title="Response" value={selected.response.body} status={selected.response.status} headers={selected.response.headers} /></div>
+          <div className={`grid grid-cols-1 gap-5 ${hasRequestBody ? 'lg:grid-cols-2' : ''}`}>{hasRequestBody ? <ApiJsonPanel title="Request Body" value={selected.request} /> : null}<ApiJsonPanel title="Response" value={selected.response?.body} status={selected.response?.status} headers={selected.response?.headers} pending={!selected.response} action={<button disabled={saving} onClick={editResponse} className="rounded-lg border border-gray-700 px-2.5 py-1 text-[11px] font-bold text-gray-300 hover:bg-gray-800 disabled:opacity-50" type="button"><i aria-hidden="true" className="fas fa-pen mr-1" />응답 예시 수정</button>} /></div>
 
           <Card className="overflow-hidden"><div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-5 py-3"><h3 className="text-xs font-extrabold text-gray-700">cURL 예시</h3><button onClick={copyCurl} className="text-[11px] font-bold text-gray-500 hover:text-brand" type="button"><i className="far fa-copy mr-1" />복사</button></div><pre className="overflow-x-auto p-5 font-mono text-xs text-gray-700">{curl}</pre></Card>
-        </div>
+        </div> : <div className="mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white p-12 text-center"><i aria-hidden="true" className="fas fa-plug mb-4 text-3xl text-gray-300" /><h2 className="text-base font-bold text-gray-800">등록된 엔드포인트가 없습니다.</h2><p className="mt-2 text-sm text-gray-500">상단의 엔드포인트 추가 버튼으로 새 API를 등록해 주세요.</p></div>}
       </section>
     </div>
 
-    {addOpen ? <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm"><form onSubmit={(event) => { event.preventDefault(); addEndpoint() }} role="dialog" aria-modal="true" aria-labelledby="add-api-title" className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6"><h3 id="add-api-title" className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-plus-circle text-brand" />엔드포인트 추가</h3><button onClick={() => setAddOpen(false)} aria-label="닫기" className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition hover:text-gray-900" type="button"><i className="fas fa-times" /></button></div><div className="space-y-4 p-6"><div className="grid grid-cols-4 gap-3"><div><label htmlFor="new-api-method" className="mb-1.5 block text-xs font-bold text-gray-700">Method</label><select id="new-api-method" value={draft.method} onChange={(event) => setDraft((current) => ({ ...current, method: event.target.value as AiApi['method'] }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-brand">{apiMethods.map((method) => <option key={method}>{method}</option>)}</select></div><div className="col-span-3"><label htmlFor="new-api-path" className="mb-1.5 block text-xs font-bold text-gray-700">경로 <span className="text-red-500">*</span></label><input id="new-api-path" required value={draft.path} onChange={(event) => setDraft((current) => ({ ...current, path: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 font-mono text-sm outline-none focus:border-brand" placeholder="/api/series/{seriesId}/articles/{articleId}" /></div></div><div><label htmlFor="new-api-desc" className="mb-1.5 block text-xs font-bold text-gray-700">설명 <span className="text-red-500">*</span></label><input id="new-api-desc" required value={draft.desc} onChange={(event) => setDraft((current) => ({ ...current, desc: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand" placeholder="예: 글 삭제 시 뒤 순번 당기기" /></div><div className="grid grid-cols-2 gap-3"><div><label htmlFor="new-api-group" className="mb-1.5 block text-xs font-bold text-gray-700">리소스 그룹</label><select id="new-api-group" value={draft.group} onChange={(event) => setDraft((current) => ({ ...current, group: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand">{groups.map((group) => <option key={group}>{group}</option>)}</select></div><div><label htmlFor="new-api-feature" className="mb-1.5 block text-xs font-bold text-gray-700">연결 MVP 기능</label><select id="new-api-feature" value={draft.feature} onChange={(event) => setDraft((current) => ({ ...current, feature: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"><option value="">없음</option>{aiFeatures.map((item) => <option key={item.id} value={item.id}>{item.id}. {item.title}</option>)}</select></div></div></div><div className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 p-5"><button onClick={() => setAddOpen(false)} className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-50" type="button">취소</button><button className="rounded-xl bg-gray-900 px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-black" type="submit">추가하기</button></div></form></div> : null}
+    {addOpen ? <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm"><form onSubmit={(event) => { event.preventDefault(); void addEndpoint() }} role="dialog" aria-modal="true" aria-labelledby="add-api-title" className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6"><h3 id="add-api-title" className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-plus-circle text-brand" />엔드포인트 추가</h3><button disabled={saving || generatingResponse} onClick={() => setAddOpen(false)} aria-label="닫기" className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 transition hover:text-gray-900" type="button"><i className="fas fa-times" /></button></div><div className="space-y-4 overflow-y-auto p-6"><div className="grid grid-cols-4 gap-3"><div><label htmlFor="new-api-method" className="mb-1.5 block text-xs font-bold text-gray-700">Method</label><select id="new-api-method" value={draft.method} onChange={(event) => setDraft((current) => ({ ...current, method: event.target.value as AiApi['method'] }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-brand">{apiMethods.map((method) => <option key={method}>{method}</option>)}</select></div><div className="col-span-3"><label htmlFor="new-api-path" className="mb-1.5 block text-xs font-bold text-gray-700">경로 <span className="text-red-500">*</span></label><input id="new-api-path" required value={draft.path} onChange={(event) => setDraft((current) => ({ ...current, path: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 font-mono text-sm outline-none focus:border-brand" placeholder="/api/series/{seriesId}/articles/{articleId}" /></div></div><div><label htmlFor="new-api-desc" className="mb-1.5 block text-xs font-bold text-gray-700">설명 <span className="text-red-500">*</span></label><input id="new-api-desc" required value={draft.desc} onChange={(event) => setDraft((current) => ({ ...current, desc: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand" placeholder="예: 글 삭제 시 뒤 순번 당기기" /></div><div className="grid grid-cols-2 gap-3"><div><label htmlFor="new-api-group" className="mb-1.5 block text-xs font-bold text-gray-700">리소스 그룹</label><select id="new-api-group" required value={draft.group} onChange={(event) => setDraft((current) => ({ ...current, group: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand">{groups.length === 0 ? <option value="">그룹을 먼저 만들어 주세요</option> : null}{groups.map((group) => <option key={group} value={group}>{formatApiGroupLabel(group)}</option>)}</select><button disabled={saving} onClick={openGroup} className="mt-2 text-xs font-bold text-brand hover:underline" type="button"><i aria-hidden="true" className="fas fa-plus mr-1" />새 그룹 만들기</button></div><div><label htmlFor="new-api-feature" className="mb-1.5 block text-xs font-bold text-gray-700">연결 MVP 기능</label><select id="new-api-feature" value={draft.feature} onChange={(event) => setDraft((current) => ({ ...current, feature: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"><option value="">없음</option>{aiFeatures.map((item) => <option key={item.id} value={item.id}>{item.id}. {item.title}</option>)}</select></div></div>{responseFields}</div><div className="flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-gray-50 p-5"><button disabled={saving || generatingResponse} onClick={() => setAddOpen(false)} className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-600 transition hover:bg-gray-50" type="button">취소</button><button disabled={saving || generatingResponse} className="rounded-xl bg-gray-900 px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-black disabled:opacity-50" type="submit">{saving ? '저장 중...' : '추가하기'}</button></div></form></div> : null}
+    {responseEditingId ? <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm"><form onSubmit={(event) => { event.preventDefault(); void saveResponse() }} role="dialog" aria-modal="true" aria-labelledby="edit-api-response-title" className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-gray-50 p-5"><h3 id="edit-api-response-title" className="text-base font-extrabold text-gray-900">응답 예시 수정</h3><button disabled={saving || generatingResponse} onClick={() => setResponseEditingId(null)} aria-label="응답 수정 닫기" className="text-gray-400 hover:text-gray-900" type="button"><i aria-hidden="true" className="fas fa-times" /></button></div><div className="space-y-4 overflow-y-auto p-5"><p className="break-all font-mono text-xs font-bold text-gray-600">{selected?.method} {selected?.path}</p>{responseFields}</div><div className="flex shrink-0 justify-end gap-2 border-t border-gray-100 bg-gray-50 p-5"><button disabled={saving || generatingResponse} onClick={() => setResponseEditingId(null)} className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-gray-600" type="button">취소</button><button disabled={saving || generatingResponse} className="rounded-xl bg-gray-900 px-5 py-2 text-xs font-bold text-white disabled:opacity-50" type="submit">{saving ? '저장 중...' : '응답 예시 저장'}</button></div></form></div> : null}
+    {groupOpen ? <div className="fixed inset-0 z-[1110] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm"><form onSubmit={(event) => { event.preventDefault(); void addGroup() }} role="dialog" aria-modal="true" aria-labelledby="add-api-group-title" className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-5"><h3 id="add-api-group-title" className="flex items-center gap-2 text-base font-extrabold text-gray-900"><i aria-hidden="true" className="fas fa-folder-plus text-brand" />리소스 그룹 추가</h3><button disabled={saving} onClick={() => setGroupOpen(false)} aria-label="그룹 추가 닫기" className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 hover:text-gray-900" type="button"><i aria-hidden="true" className="fas fa-times" /></button></div><div className="space-y-3 p-5"><label htmlFor="new-api-group-name" className="block text-xs font-bold text-gray-700">그룹 이름</label><input id="new-api-group-name" value={groupName} onChange={(event) => { setGroupName(event.target.value); setGroupError('') }} aria-invalid={Boolean(groupError)} aria-describedby={groupError ? 'new-api-group-error' : undefined} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand" placeholder="예: PAYMENTS (결제) 또는 알림" /><p className="text-xs leading-relaxed text-gray-500">엔드포인트를 추가할 때 이 그룹을 선택할 수 있습니다.</p>{groupError ? <p id="new-api-group-error" role="alert" className="text-xs font-bold text-red-600">{groupError}</p> : null}</div><div className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 p-5"><button disabled={saving} onClick={() => setGroupOpen(false)} className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-gray-600" type="button">취소</button><button disabled={saving} className="rounded-xl bg-gray-900 px-5 py-2 text-xs font-bold text-white hover:bg-black disabled:opacity-50" type="submit">{saving ? '저장 중...' : '그룹 만들기'}</button></div></form></div> : null}
   </main>
 }
 

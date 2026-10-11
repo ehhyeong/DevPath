@@ -230,6 +230,8 @@ public enum ErrorCode {
 
   BUILDER_AI_ASSIST_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 로드맵 제안을 생성하지 못했습니다."),
   WORKSPACE_AI_ASSIST_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 답변을 생성하지 못했습니다."),
+  WORKSPACE_AI_RESPONSE_DRAFT_FAILED(
+      HttpStatus.SERVICE_UNAVAILABLE, "AI 응답 초안을 생성하지 못했습니다. 직접 입력하거나 다시 시도해 주세요."),
   WORKSPACE_AI_DESIGN_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI 프로젝트 설계를 생성하지 못했습니다."),
   WORKSPACE_AI_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "AI 요청이 몰리고 있습니다. 잠시 후 다시 시도해 주세요."),
   WORKSPACE_AI_DESIGN_JOB_NOT_FOUND(HttpStatus.NOT_FOUND, "AI 설계 작업을 찾을 수 없습니다."),

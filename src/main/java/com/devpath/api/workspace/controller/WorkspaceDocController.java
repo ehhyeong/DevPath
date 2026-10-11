@@ -5,6 +5,7 @@ import static com.devpath.common.security.AuthenticationUtils.requireUserId;
 import com.devpath.api.workspace.dto.CreateMeetingNoteRequest;
 import com.devpath.api.workspace.dto.MeetingNoteResponse;
 import com.devpath.api.workspace.dto.UpdateWorkspaceDocRequest;
+import com.devpath.api.workspace.dto.WorkspaceApiResponseDraft;
 import com.devpath.api.workspace.dto.WorkspaceDocResponse;
 import com.devpath.api.workspace.service.WorkspaceDocService;
 import com.devpath.common.response.ApiResponse;
@@ -110,6 +111,15 @@ public class WorkspaceDocController {
       @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
     return ApiResponse.ok(
         workspaceDocService.getDoc(workspaceId, requireUserId(userId), WorkspaceDocType.API_SPEC));
+  }
+
+  @PostMapping("/workspaces/{workspaceId}/api-spec/response-draft")
+  public ApiResponse<WorkspaceApiResponseDraft.Response> generateApiResponseDraft(
+      @PathVariable Long workspaceId,
+      @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody WorkspaceApiResponseDraft.Request request) {
+    return ApiResponse.ok(
+        workspaceDocService.generateApiResponseDraft(workspaceId, requireUserId(userId), request));
   }
 
   @PutMapping("/workspaces/{workspaceId}/docs/infra")
