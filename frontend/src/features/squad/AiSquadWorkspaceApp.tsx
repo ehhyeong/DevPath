@@ -1,25 +1,28 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode, createContext, useContext, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode, createContext, lazy, Suspense, useContext, type Dispatch, type SetStateAction } from 'react'
 import SquadWorkspaceAside, { type SquadWorkspaceAsidePage } from '../../components/SquadWorkspaceAside'
 import { showAuthToast } from '../../lib/auth-toast'
 import { navigateTo } from '../../lib/spa-navigation'
-import { aiApis, aiErdTables, aiFeatures, aiInterviewQuestions, aiRoadmap, aiSquadProject, aiTasks, aiUserFlow, type AiApi, type AiTask, type AiTaskStatus, aiWorkspaceHref, mapWorkspaceApis, formatApiGroupLabel, aiArchitecture } from './ai-squad-data'
+import { aiApis, aiErdTables, aiFeatures, aiInterviewQuestions, aiRoadmap, aiSquadProject, aiTasks, aiUserFlow, type AiApi, type AiTask, type AiTaskStatus, aiWorkspaceHref, applyWorkspaceAiDesign, configureAiWorkspaceNavigation, mapWorkspaceApis, formatApiGroupLabel, aiArchitecture } from './ai-squad-data'
 import { loadMermaid, parseMermaidCode } from './erd-support'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession } from '../../lib/auth-session'
-import { projectApiRequest, type WorkspaceAiDesign, type WorkspaceAiDesignEdit } from '../project/api'
+import { getWorkspaceAiDesign, projectApiRequest, type WorkspaceAiDesign, type WorkspaceAiDesignEdit, type WorkspaceAiDesignWorkspace } from '../project/api'
 import { type ActivityLog, type CalendarEvent, type Notice, type VoiceChannel, type WorkspaceDashboard, type WorkspaceMember, type WorkspaceTask } from './dashboard-types'
 import WorkspaceInviteModal from './WorkspaceInviteModal'
+import { type CodeReviewBoard } from './review-types'
 import { type ExternalIntegration } from './settings-types'
+import AiWorkspaceCreatedModal from './AiWorkspaceCreatedModal'
 import AiSquadIntegrationsPanel from './AiSquadIntegrationsPanel'
 import AiInterviewGenerationModal from './AiInterviewGenerationModal'
 import AiInterviewQuestionBank from './AiInterviewQuestionBank'
 import AiInterviewReport from './AiInterviewReport'
+import SquadDashboardApp from './SquadDashboardApp'
 import { emptyInterviewAnswer, matchedInterviewKeywords, useInterviewAnswers } from './interview-practice'
 import { type InterviewEvidenceLinks } from './interview-evidence'
 import { apiAuthLabel, findApiTask, readWorkspaceApiDocument } from './api-workspace-links'
 import ApiResponseExampleFields from './ApiResponseExampleFields'
-import { WORKSPACE_DATA_CHANGED_EVENT } from '../../lib/workspace-events'
+import { WORKSPACE_DATA_CHANGED_EVENT, useWorkspaceDataVersion } from '../../lib/workspace-events'
 import { parseApiResponseExample, type ApiResponseExampleDraft } from './api-response-example'
 
 type AiRoute =
@@ -497,14 +500,51 @@ function TaskCard({ task }: { task: AiTask }) {
 }
 
 function ReviewPage() {
-  const [selected, setSelected] = useState(0)
-  const reviews = [
-    { title: 'feat: Spring Security 세션 로그인 및 Role 기반 접근 제어', author: '김개발', branch: 'feature/DP-04-security', status: '리뷰 필요' },
-    { title: 'feat: 회원가입 API 역할 분리', author: '김개발', branch: 'feature/DP-05-signup', status: '초안' },
-    { title: 'style: 작가·독자 헤더 화면 분기', author: '박디자인', branch: 'design/DP-07-role-ui', status: '승인' },
-  ]
-  const review=reviews[selected]
-  return <main className="flex flex-1 overflow-hidden"><aside className="flex w-[390px] shrink-0 flex-col border-r border-gray-200 bg-white"><div className="border-b border-gray-100 p-5"><h2 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-code-branch text-brand" /> 코드 피드백</h2><p className="mt-1 text-xs text-gray-500">GitHub PR과 AI 설계 항목을 함께 검토합니다.</p><div className="relative mt-4"><i className="fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-xs text-gray-400" /><input className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-3 pl-8 text-xs outline-none" placeholder="PR 검색..." /></div></div><div className="custom-scrollbar flex-1 space-y-2 overflow-y-auto p-3">{reviews.map((item,index)=><button key={item.title} onClick={()=>setSelected(index)} className={`w-full rounded-xl border p-4 text-left ${selected===index?'border-brand bg-green-50/50':'border-transparent hover:bg-gray-50'}`} type="button"><div className="mb-2 flex items-center justify-between"><span className="text-[10px] font-black text-gray-400">PR #{12-index}</span><span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${index===0?'bg-amber-50 text-amber-600':index===2?'bg-green-50 text-green-600':'bg-gray-100 text-gray-500'}`}>{item.status}</span></div><p className="text-sm leading-relaxed font-bold text-gray-900">{item.title}</p><p className="mt-2 text-[10px] font-bold text-gray-400">{item.author} · {item.branch}</p></button>)}</div></aside><section className="custom-scrollbar flex-1 overflow-y-auto bg-[#F8F9FA] p-8"><div className="mx-auto max-w-4xl space-y-5"><div><div className="mb-3 flex flex-wrap gap-2"><AiChip>Phase 2 · 인증/인가 구현</AiChip><span className="rounded border border-orange-100 bg-orange-50 px-2 py-1 font-mono text-[10px] font-bold text-orange-600">POST /api/members/login</span><span className="rounded border border-purple-100 bg-purple-50 px-2 py-1 text-[10px] font-bold text-purple-600">면접 Q3</span></div><h1 className="text-xl font-extrabold text-gray-900">{review.title}</h1><p className="mt-2 text-xs text-gray-500">{review.author} · {review.branch} → main</p></div><Card className="overflow-hidden border-gray-200"><div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-3"><span className="font-mono text-xs font-bold text-gray-700">SecurityConfig.java</span><span className="text-[10px] font-bold text-gray-400">+24 −8</span></div><pre className="overflow-x-auto bg-[#111827] p-6 text-xs leading-6 text-gray-300"><code><span className="text-green-400">+ requestMatchers(&quot;/api/series/**&quot;).hasAnyRole(&quot;AUTHOR&quot;, &quot;READER&quot;)</span>{'\n'}<span className="text-green-400">+ requestMatchers(&quot;/api/authors/**&quot;).hasRole(&quot;AUTHOR&quot;)</span>{'\n'}  anyRequest().authenticated();</code></pre></Card><div className="grid grid-cols-1 gap-4 md:grid-cols-2"><Card className="border-purple-100 p-5"><h3 className="text-sm font-extrabold text-gray-900"><i className="fas fa-robot mr-2 text-purple-500" />AI 리뷰 요약</h3><p className="mt-3 text-xs leading-relaxed text-gray-600">hasRole은 내부적으로 ROLE_ 접두사를 붙입니다. 권한 변환 로직과 통합 테스트를 함께 확인하세요.</p></Card><Card className="border-gray-200 p-5"><h3 className="text-sm font-extrabold text-gray-900"><i className="fas fa-comments mr-2 text-blue-500" />팀 피드백</h3><p className="mt-3 text-xs leading-relaxed text-gray-600">인가 실패 케이스까지 테스트에 추가하면 승인할게요.</p></Card></div><div className="flex justify-end gap-2"><button className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-700" type="button">변경 요청</button><button className="rounded-xl bg-brand px-6 py-2.5 text-sm font-bold text-white" type="button">승인하기</button></div></div></section></main>
+  const { workspaceId } = useAiWorkspace()
+  const [board, setBoard] = useState<CodeReviewBoard | null>(null)
+  const [loading, setLoading] = useState(Boolean(workspaceId))
+
+  useEffect(() => {
+    if (!workspaceId) return
+    const controller = new AbortController()
+    projectApiRequest<CodeReviewBoard>(
+      `/api/workspaces/${workspaceId}/code-reviews`,
+      { signal: controller.signal },
+      'required',
+    )
+      .then((response) => {
+        if (!controller.signal.aborted) setBoard(response)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setBoard(null)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [workspaceId])
+
+  const reviews = [...(board?.openReviews ?? []), ...(board?.closedReviews ?? [])]
+
+  return (
+    <main className="flex flex-1 flex-col overflow-hidden">
+      <PageHeading icon="fas fa-code-branch" title="코드 피드백" copy="GitHub 저장소의 실제 Pull Request와 코드 리뷰를 표시합니다." />
+      <section className="custom-scrollbar flex-1 overflow-y-auto p-8">
+        <div className="mx-auto max-w-5xl">
+          {loading ? <Card className="p-10 text-center text-sm font-bold text-gray-400">코드 리뷰를 불러오는 중입니다...</Card> : reviews.length ? (
+            <div className="space-y-3">{reviews.map((review) => (
+              <Card key={review.reviewId} className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div><p className="text-[10px] font-black text-gray-400">{review.issueKey}</p><h2 className="mt-1 text-sm font-extrabold text-gray-900">{review.title}</h2><p className="mt-2 text-xs text-gray-500">{review.authorName || '작성자 미상'} · {review.sourceBranch} → {review.targetBranch}</p></div>
+                  <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-bold text-gray-600">{review.status}</span>
+                </div>
+              </Card>
+            ))}</div>
+          ) : <Card className="p-12 text-center"><i className="fas fa-code-branch text-3xl text-gray-300" /><p className="mt-4 text-sm font-extrabold text-gray-700">등록된 코드 리뷰가 없습니다.</p><p className="mt-2 text-xs text-gray-400">연결된 GitHub 저장소에 Pull Request가 생기면 이곳에 표시됩니다.</p></Card>}
+        </div>
+      </section>
+    </main>
+  )
 }
 
 type LocalErdColumn = {
@@ -943,9 +983,11 @@ function ApiPage() {
 }
 
 function SchedulePage() {
-  const days=Array.from({length:35},(_,index)=>index-3)
-  const events:Record<number,string>={2:'DP-05 회원가입 API',3:'DP-06 로그인 화면',4:'DP-07 권한 UI',8:'Phase 2 마감',12:'DP-09 orderIndex',13:'DP-10 조회 쿼리'}
-  return <main className="flex flex-1 flex-col overflow-hidden"><PageHeading icon="fas fa-calendar-alt" title="일정 관리" copy={<span>AI 로드맵과 팀 일정을 한눈에 관리합니다. <button onClick={()=>go('/squad-blueprint','#roadmap')} className="ml-2 text-[11px] font-bold text-gray-400 hover:text-brand" type="button">설계서 보기 →</button></span>} action={<button className="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white" type="button"><i className="fas fa-plus mr-2" />일정 추가</button>} /><div className="flex flex-1 overflow-hidden p-6"><Card className="flex flex-1 flex-col overflow-hidden"><div className="flex items-center justify-between border-b border-gray-100 px-6 py-4"><div className="flex gap-2"><button className="h-8 w-8 rounded-lg border border-gray-200 bg-white" type="button"><i className="fas fa-chevron-left text-xs" /></button><button className="h-8 w-8 rounded-lg border border-gray-200 bg-white" type="button"><i className="fas fa-chevron-right text-xs" /></button></div><h2 className="text-xl font-extrabold text-gray-900">2026년 2월</h2><button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600" type="button">오늘</button></div><div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50">{['일','월','화','수','목','금','토'].map((day)=><div key={day} className="py-2 text-center text-[11px] font-bold text-gray-400">{day}</div>)}</div><div className="grid flex-1 grid-cols-7 grid-rows-5">{days.map((day,index)=>{const date=day<1?28+day:day;const muted=day<1||day>28;const label=events[day];return <div key={index} className="min-h-[96px] border-r border-b border-gray-100 p-2"><span className={`text-xs font-bold ${muted?'text-gray-300':day===21?'flex h-6 w-6 items-center justify-center rounded-full bg-brand text-white':'text-gray-600'}`}>{date}</span>{label?<div className={`mt-2 truncate rounded px-2 py-1 text-[10px] font-bold ${day===8?'bg-purple-100 text-purple-700':'bg-blue-50 text-blue-600'}`}>{label}</div>:null}</div>})}</div></Card><aside className="ml-5 w-[300px] shrink-0 space-y-5"><Card className="p-5"><h3 className="mb-4 text-sm font-extrabold text-gray-900"><i className="fas fa-route mr-2 text-purple-500" />현재 마일스톤</h3><p className="text-xs font-bold text-purple-600">Phase 2</p><p className="mt-1 text-sm font-extrabold text-gray-900">인증/인가 구현</p><div className="mt-4 h-2 rounded-full bg-gray-100"><div className="h-2 w-[55%] rounded-full bg-purple-500" /></div><p className="mt-2 text-[10px] text-gray-400">02.16 ~ 02.24 · 55%</p></Card><Card className="p-5"><h3 className="mb-4 text-sm font-extrabold text-gray-900"><i className="fas fa-list-check mr-2 text-brand" />다가오는 일정</h3>{aiTasks.filter((task)=>task.status==='progress'||task.status==='review').map((task)=><div key={task.id} className="mb-3 rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="text-[10px] font-black text-gray-400">{task.due} · {task.id}</p><p className="mt-1 text-xs font-bold text-gray-800">{task.title}</p></div>)}</Card></aside></div></main>
+  const { events } = useAiWorkspace()
+  const tasks = useDisplayedTasks()
+  const upcomingTasks = tasks.filter((task) => task.due !== '미정' && task.status !== 'done')
+
+  return <main className="flex flex-1 flex-col overflow-hidden"><PageHeading icon="fas fa-calendar-alt" title="일정 관리" copy={<span>AI 로드맵과 실제 등록 일정을 함께 확인합니다. <button onClick={()=>go('/squad-blueprint','#roadmap')} className="ml-2 text-[11px] font-bold text-gray-400 hover:text-brand" type="button">설계서 보기 →</button></span>} /><div className="custom-scrollbar flex-1 overflow-y-auto p-6"><div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-2"><Card className="p-6"><h2 className="mb-5 text-lg font-extrabold text-gray-900"><i className="fas fa-route mr-2 text-purple-500" />AI 개발 로드맵</h2><div className="space-y-3">{aiRoadmap.map((phase)=><div key={phase.phase} className="rounded-xl border border-gray-100 bg-gray-50 p-4"><div className="flex items-center justify-between gap-3"><p className="text-sm font-extrabold text-gray-900">Phase {phase.phase}. {phase.title}</p><span className="text-[10px] font-bold text-gray-400">{phase.period}</span></div><p className="mt-2 text-xs leading-relaxed text-gray-500">{phase.desc}</p></div>)}</div></Card><div className="space-y-6"><Card className="p-6"><h2 className="mb-5 text-lg font-extrabold text-gray-900"><i className="fas fa-calendar-check mr-2 text-brand" />등록된 일정</h2>{events.length ? <div className="space-y-3">{events.map((event)=><div key={event.eventId} className="rounded-xl border border-gray-100 bg-gray-50 p-4"><p className="text-sm font-extrabold text-gray-900">{event.title}</p><p className="mt-1 text-xs text-gray-500">{new Date(event.startAt).toLocaleString('ko-KR')}</p>{event.description ? <p className="mt-2 text-xs text-gray-500">{event.description}</p> : null}</div>)}</div> : <p className="py-8 text-center text-xs font-bold text-gray-400">등록된 일정이 없습니다.</p>}</Card><Card className="p-6"><h2 className="mb-5 text-lg font-extrabold text-gray-900"><i className="fas fa-list-check mr-2 text-orange-500" />다가오는 작업</h2>{upcomingTasks.length ? upcomingTasks.slice(0, 6).map((task)=><div key={task.id} className="mb-3 rounded-xl border border-gray-100 bg-gray-50 p-3"><p className="text-[10px] font-black text-gray-400">{task.due} · {task.id}</p><p className="mt-1 text-xs font-bold text-gray-800">{task.title}</p></div>) : <p className="py-5 text-center text-xs font-bold text-gray-400">마감일이 지정된 작업이 없습니다.</p>}</Card></div></div></div></main>
 }
 
 function MeetingPage() {
@@ -1309,13 +1351,102 @@ function CurrentPage({ route }: { route: AiRoute }) {
 export default function AiSquadWorkspaceApp() {
   const pathname=window.location.pathname.replace(/\/+$/,'') || '/squad-dashboard'
   const route=pathname in routePage ? pathname as AiRoute : '/squad-dashboard'
+  const workspaceId = Number(new URLSearchParams(window.location.search).get('workspaceId')) || null
+  const [loadedWorkspaceId, setLoadedWorkspaceId] = useState<number | null>(null)
+  const [workspaceDesign, setWorkspaceDesign] = useState<WorkspaceAiDesign | null>(null)
+  const dataVersion = useWorkspaceDataVersion()
+  const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
+  const [tasks, setTasks] = useState<WorkspaceTask[]>([])
+  const [activities, setActivities] = useState<ActivityLog[]>([])
+  const [notices, setNotices] = useState<Notice[]>([])
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [voiceChannels, setVoiceChannels] = useState<VoiceChannel[]>([])
+  const [integrations, setIntegrations] = useState<ExternalIntegration[]>([])
+  const [createdModalOpen, setCreatedModalOpen] = useState(() => new URLSearchParams(window.location.search).get('created') === 'ai')
+  const [loadError, setLoadError] = useState<{ workspaceId: number; message: string } | null>(null)
 
   useEffect(() => {
     document.title=`DevPath - ${routeTitle[route]}`
   }, [route])
 
-  if(route==='/squad-meeting') return <MeetingPage />
-  return <AiShell activePage={routePage[route]} showHeader={route !== '/squad-erd'}><CurrentPage route={route} /></AiShell>
+  useEffect(() => {
+    configureAiWorkspaceNavigation(workspaceId)
+    if (!workspaceId || route === '/squad-files') return
+    const controller = new AbortController()
+    Promise.all([
+      getWorkspaceAiDesign(workspaceId, controller.signal),
+      projectApiRequest<WorkspaceDashboard>(`/api/workspaces/${workspaceId}/dashboard`, { signal: controller.signal }, 'required'),
+      projectApiRequest<WorkspaceTask[]>(`/api/workspaces/${workspaceId}/tasks`, { signal: controller.signal }, 'required'),
+      projectApiRequest<ActivityLog[]>(`/api/workspaces/${workspaceId}/activities/recent`, { signal: controller.signal }, 'required').catch(() => []),
+      projectApiRequest<Notice[]>(`/api/workspaces/${workspaceId}/notices`, { signal: controller.signal }, 'required').catch(() => []),
+      projectApiRequest<CalendarEvent[]>(`/api/workspaces/${workspaceId}/calendar-events`, { signal: controller.signal }, 'required').catch(() => []),
+      projectApiRequest<VoiceChannel[]>(`/api/workspaces/${workspaceId}/voice-channels`, { signal: controller.signal }, 'required').catch(() => []),
+      projectApiRequest<ExternalIntegration[]>(`/api/workspaces/${workspaceId}/integrations`, { signal: controller.signal }, 'required').catch(() => []),
+    ])
+      .then(async ([response, dashboardData, taskData, activityData, noticeData, eventData, voiceChannelData, integrationData]) => {
+        await projectApiRequest(`/api/workspaces/hub/projects/${workspaceId}/ai-design/initialize`, { method: 'POST', signal: controller.signal }, 'required')
+        if (controller.signal.aborted) return
+        applyWorkspaceAiDesign(response.design)
+        aiTasks.splice(0, aiTasks.length, ...(taskData ?? []).map((task) => toAiTask(task, dashboardData.members ?? [])))
+        setWorkspaceDesign(response.design)
+        setDashboard(dashboardData)
+        setTasks(taskData ?? [])
+        setActivities(activityData ?? [])
+        setNotices(noticeData ?? [])
+        setEvents(eventData ?? [])
+        setVoiceChannels(voiceChannelData ?? [])
+        setIntegrations(integrationData ?? [])
+        setLoadedWorkspaceId(workspaceId)
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return
+        setLoadError({ workspaceId, message: error instanceof Error ? error.message : 'AI 설계를 불러오지 못했습니다.' })
+      })
+    return () => controller.abort()
+  }, [workspaceId, route, dataVersion])
+
+  async function saveDesign(request: WorkspaceAiDesignEdit) {
+    if (!workspaceId) throw new Error('워크스페이스를 먼저 만들어 주세요.')
+    const response = await projectApiRequest<WorkspaceAiDesignWorkspace>(`/api/workspaces/hub/projects/${workspaceId}/ai-design`, { method: 'PATCH', body: JSON.stringify(request) }, 'required')
+    applyWorkspaceAiDesign(response.design)
+    aiTasks.splice(0, aiTasks.length, ...tasks.map((task) => toAiTask(task, dashboard?.members ?? [])))
+    setWorkspaceDesign(response.design)
+    setDashboard((current) => current ? { ...current, name: response.design.title, description: response.design.summary } : current)
+    window.dispatchEvent(new Event(WORKSPACE_DATA_CHANGED_EVENT))
+    showAuthToast({ message: '설계 변경사항을 저장했습니다.', durationMs: 2200 })
+  }
+
+  if (route === '/squad-files') return <Suspense fallback={<div className="flex h-screen items-center justify-center text-sm text-gray-500">자료실을 불러오는 중입니다...</div>}><SquadFilesApp aiWorkspace /></Suspense>
+
+  if (loadError?.workspaceId === workspaceId) return <div className="flex h-screen items-center justify-center bg-gray-50 text-sm font-bold text-red-500">{loadError?.message}</div>
+  if (workspaceId && loadedWorkspaceId !== workspaceId) return <div className="flex h-screen items-center justify-center bg-gray-50 text-sm font-bold text-gray-500">AI 설계를 불러오는 중입니다...</div>
+
+  const PersistedPage = workspaceId && route in persistedPages ? persistedPages[route as keyof typeof persistedPages] : null
+
+  const reviewLocked = workspaceId && route === '/squad-review' && !integrations.some((integration) => integration.provider === 'GITHUB' && (integration.active ?? integration.isActive) && integration.repositoryUrl)
+
+  return (
+    <AiWorkspaceContext.Provider value={{ workspaceId, design: workspaceDesign, saveDesign, dashboard, tasks, setTasks, activities, notices, events, voiceChannels, integrations }}>
+      {reviewLocked ? <AiShell activePage="review" workspaceId={workspaceId}><main className="flex flex-1 items-center justify-center p-8"><Card className="max-w-lg p-10 text-center"><i className="fab fa-github text-4xl text-gray-400" /><h1 className="mt-4 text-xl font-extrabold text-gray-900">GitHub 연결이 필요합니다</h1><p className="mt-3 text-sm text-gray-500">스쿼드 설정에서 저장소와 토큰을 연결하면 코드 피드백을 사용할 수 있습니다.</p><a href={aiHref('/squad-settings')} className="mt-6 inline-block rounded-xl bg-gray-900 px-5 py-3 text-sm font-bold text-white">외부 연동 설정하기</a></Card></main></AiShell> : PersistedPage ? <Suspense fallback={<div className="flex h-screen items-center justify-center text-sm text-gray-500">워크스페이스를 불러오는 중입니다...</div>}><PersistedPage key={workspaceId} aiWorkspace design={workspaceDesign} /></Suspense> : route === '/squad-meeting' ? <MeetingPage /> : (
+        <>
+          <AiShell activePage={routePage[route]} showHeader={route !== '/squad-erd'} workspaceId={workspaceId}><CurrentPage key={workspaceId} route={route} /></AiShell>
+
+        </>
+      )}
+          {route === '/squad-dashboard' && createdModalOpen && workspaceId && workspaceDesign ? (
+            <AiWorkspaceCreatedModal
+              design={workspaceDesign}
+              onClose={() => {
+                setCreatedModalOpen(false)
+                const url = new URL(window.location.href)
+                url.searchParams.delete('created')
+                window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+              }}
+              workspaceId={workspaceId}
+            />
+          ) : null}
+    </AiWorkspaceContext.Provider>
+  )
 }
 
 type AiWorkspaceRuntime = {
@@ -1397,3 +1528,15 @@ function relationshipsFromMermaid(value: string): LocalErdRelationship[] {
     return match ? [{ from: match[1], type: match[2], to: match[3], label: match[4].trim() }] : []
   })
 }
+
+const persistedPages = {
+  '/squad-dashboard': SquadDashboardApp,
+  '/squad-workspace': lazy(() => import('./SquadWorkspaceApp')),
+  '/squad-review': lazy(() => import('./SquadReviewApp')),
+  '/squad-schedule': lazy(() => import('./SquadScheduleApp')),
+  '/squad-meeting': lazy(() => import('./SquadMeetingApp')),
+  '/squad-settings': lazy(() => import('./SquadSettingsApp')),
+  '/squad-erd': lazy(() => import('./SquadErdApp')),
+}
+
+const SquadFilesApp = lazy(() => import('./SquadFilesApp'))

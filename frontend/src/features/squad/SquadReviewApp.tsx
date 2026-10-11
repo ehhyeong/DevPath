@@ -2,7 +2,6 @@
 
 
 import AuthModal from '../../components/AuthModal'
-import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
@@ -71,8 +70,9 @@ function statusLabel(status: CodeReviewSummary['status']) {
 
 
 import { useSquadReviewController } from './useSquadReviewController'
+import type { AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
 
-export default function SquadReviewApp() {
+export default function SquadReviewApp({ aiWorkspace = false }: AiWorkspacePageProps = {}) {
   const { workspaceId, session, authView, setAuthView, board, detail, activeTab, setActiveTab, loading, detailLoading, saving, statusLoading, modalOpen, form, setForm, commentDraft, setCommentDraft, commentSaving, toast, error, commentInputRef, handleLogout, handleAuthenticated, openCreateModal, closeCreateModal, submitCreate, updateReviewStatus, insertCommentFormat, submitComment, members, projectName, openReviews, closedReviews, visibleReviews, hasAnyReviews, currentUserName, currentProfileImage, currentReviewFiles, selectedReviewFile, renderReviewCard, renderFileSelector, renderAiReviewCard, renderDiff, renderEmptyDetail, renderDetailLoading } = useSquadReviewController()
 
 
@@ -104,6 +104,7 @@ export default function SquadReviewApp() {
   return (
     <div className="squad-dashboard-page squad-review-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
       <SquadWorkspaceAside
+        aiWorkspace={aiWorkspace}
         activePage="review"
         workspaceId={workspaceId}
         projectName={projectName}
@@ -112,6 +113,7 @@ export default function SquadReviewApp() {
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <SquadWorkspaceHeader
+          aiWorkspace={aiWorkspace}
           workspaceId={workspaceId}
           projectName={projectName}
           members={members}
@@ -404,7 +406,6 @@ export default function SquadReviewApp() {
         </div>
       ) : null}
 
-      <SquadWorkspaceAiPanel />
 
       {authView ? (
         <AuthModal view={authView} onClose={() => setAuthView(null)} onViewChange={setAuthView} onAuthenticated={handleAuthenticated} />
