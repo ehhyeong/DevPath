@@ -87,7 +87,8 @@ public class WorkspaceHubProjectResponse {
       CalendarEvent nextSchedule,
       String roleLabel,
       int progressPercent,
-      boolean canDelete) {
+      boolean canDelete,
+      boolean aiWorkspace) {
     String type = typeOf(workspace.getType());
     String status = statusOf(workspace.getStatus());
     String mentoringModeLabel = mentoringModeLabel(workspace);
@@ -103,7 +104,7 @@ public class WorkspaceHubProjectResponse {
         .menuId("workspace-menu-" + workspace.getId())
         .type(type)
         .status(status)
-        .dashboardUrl(dashboardUrl(workspace))
+        .dashboardUrl(dashboardUrl(workspace, aiWorkspace))
         .title(workspace.getName())
         .description(workspace.getDescription() == null ? "" : workspace.getDescription())
         .progressPercent(progressPercent)
@@ -151,8 +152,12 @@ public class WorkspaceHubProjectResponse {
   }
 
   public static String dashboardUrl(Workspace workspace) {
+    return dashboardUrl(workspace, false);
+  }
+
+  private static String dashboardUrl(Workspace workspace, boolean aiWorkspace) {
     if (workspace.getType() == WorkspaceType.SQUAD) {
-      return "/squad-dashboard?workspaceId=" + workspace.getId();
+      return "/squad-dashboard?workspaceId=" + workspace.getId() + (aiWorkspace ? "&ai=1" : "");
     }
 
     if (isTeamMentoringWorkspace(workspace)) {

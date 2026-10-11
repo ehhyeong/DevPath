@@ -3,6 +3,7 @@ package com.devpath.api.workspace.service;
 import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteAcceptResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteLinkResponse;
+import com.devpath.api.workspace.dto.WorkspaceInviteRequest;
 import com.devpath.domain.mentoring.entity.Mentoring;
 import com.devpath.domain.mentoring.repository.MentoringRepository;
 import com.devpath.domain.user.entity.User;
@@ -17,6 +18,7 @@ import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.CalendarEventRepository;
 import com.devpath.domain.workspace.repository.MilestoneRepository;
+import com.devpath.domain.workspace.repository.WorkspaceAiDesignRepository;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkspaceHubProjectService {
 
   private final WorkspaceMemberRepository workspaceMemberRepository;
+  private final WorkspaceAiDesignRepository workspaceAiDesignRepository;
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceTaskRepository workspaceTaskRepository;
   private final MilestoneRepository milestoneRepository;
@@ -62,8 +66,20 @@ public class WorkspaceHubProjectService {
   }
 
   @Transactional
+  public void sendInvite(Long workspaceId, Long userId, WorkspaceInviteRequest request) {
+    membershipService.sendInvite(workspaceId, userId, request);
+  }
+
+  @Transactional
   public WorkspaceInviteAcceptResponse acceptInvite(String token, Long userId) {
-    return membershipService.acceptInvite(token, userId);
+    WorkspaceInviteAcceptResponse response = membershipService.acceptInvite(token, userId);
+    if (workspaceAiDesignRepository.findByWorkspaceId(response.workspaceId()).isPresent()) {
+      return new WorkspaceInviteAcceptResponse(
+          response.workspaceId(),
+          "/squad-dashboard?workspaceId=" + response.workspaceId() + "&ai=1",
+          response.alreadyMember());
+    }
+    return response;
   }
 
   @Transactional
@@ -152,6 +168,10 @@ public class WorkspaceHubProjectService {
                 Collectors.toMap(
                     Workspace::getId,
                     workspace -> membershipService.canDeleteWorkspace(workspace, userId)));
+    Set<Long> aiWorkspaceIds =
+        workspaceAiDesignRepository.findAllByWorkspaceIdIn(workspaceIds).stream()
+            .map(design -> design.getWorkspaceId())
+            .collect(Collectors.toSet());
 
     return workspaces.stream()
         .map(
@@ -168,6 +188,7 @@ public class WorkspaceHubProjectService {
                     memberProfilesByUserId,
                     nextScheduleByWorkspaceId,
                     canDeleteByWorkspaceId,
+                    aiWorkspaceIds,
                     userId))
         .toList();
   }
@@ -184,6 +205,7 @@ public class WorkspaceHubProjectService {
       Map<Long, UserProfile> memberProfilesByUserId,
       Map<Long, CalendarEvent> nextScheduleByWorkspaceId,
       Map<Long, Boolean> canDeleteByWorkspaceId,
+      Set<Long> aiWorkspaceIds,
       Long userId) {
     List<WorkspaceTask> assignedTasks =
         assignedTasksByWorkspaceId.getOrDefault(workspace.getId(), List.of());
@@ -202,7 +224,8 @@ public class WorkspaceHubProjectService {
         nextScheduleByWorkspaceId.get(workspace.getId()),
         roleResolver.resolve(workspace, members, userId, assignedTasks),
         progressCalculator.calculate(workspace, allTasks, milestones, mentoring),
-        Boolean.TRUE.equals(canDeleteByWorkspaceId.get(workspace.getId())));
+        Boolean.TRUE.equals(canDeleteByWorkspaceId.get(workspace.getId())),
+        aiWorkspaceIds.contains(workspace.getId()));
   }
 
   private Map<Long, Mentoring> findMentoringByWorkspaceId(List<Workspace> workspaces, Long userId) {

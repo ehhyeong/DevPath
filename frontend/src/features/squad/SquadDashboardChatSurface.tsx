@@ -297,6 +297,8 @@ export default function SquadDashboardChatSurface(props: Props) {
   return (
     <>
       <button
+        type="button"
+        aria-label="팀채팅"
         onClick={() => void openChatSurface()}
         className="fixed bottom-[5.75rem] right-8 w-14 h-14 bg-gray-900 text-white rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.3)] flex items-center justify-center hover:bg-black transition-transform hover:scale-105 z-40 group"
         title={window.documentPictureInPicture ? 'PiP 채팅 열기' : '채팅 열기'}
@@ -312,7 +314,7 @@ export default function SquadDashboardChatSurface(props: Props) {
           <h2 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
             <i className="fas fa-comments text-brand"></i> 스쿼드 소통방
           </h2>
-          <button onClick={closeChatSurface} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 transition"><i className="fas fa-times"></i></button>
+          <button aria-label="팀채팅 닫기" onClick={closeChatSurface} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 transition"><i className="fas fa-times"></i></button>
         </div>
 
         <div className="flex border-b border-gray-100 bg-gray-50/50 shrink-0 px-2">

@@ -1,7 +1,7 @@
 import type { SquadMeetingViewModel } from './useSquadMeetingController'
 import { showAuthToast } from '../../../lib/auth-toast'
 
-type Props = { model: SquadMeetingViewModel }
+type Props = { model: SquadMeetingViewModel & { aiWorkspace?: boolean } }
 
 function AudioProcessingBadge({ label, enabled }: { label: string; enabled: boolean | null }) {
   return (
@@ -19,14 +19,15 @@ export default function MeetingAudioSettings({ model }: Props) {
       {audioSettingsOpen ? (
         <div className="squad-meeting-audio-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
           <div className="squad-meeting-audio-panel w-[min(448px,calc(100vw-32px))]! max-w-[448px]! animate-[modalScaleIn_0.2s_ease-out_forwards] overflow-hidden rounded-[16px]! bg-white shadow-2xl">
-            <div className="squad-meeting-audio-header flex h-[69px]! items-center justify-between border-b border-gray-100 bg-gray-50 p-[20px]!">
+            <div className={`squad-meeting-audio-header flex items-center justify-between border-b border-gray-100 bg-gray-50 ${model.aiWorkspace ? 'p-6' : 'h-[69px]! p-[20px]!'}`}>
               <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
                 <i className="fas fa-sliders-h text-brand"></i> 오디오 설정
               </h3>
               <button
                 type="button"
                 onClick={() => setAudioSettingsOpen(false)}
-                className="squad-meeting-audio-close h-[28px]! w-[20px]! flex-[0_0_20px] p-0! leading-[28px]! text-gray-400 hover:text-gray-600"
+                aria-label="오디오 설정 닫기"
+                className={`squad-meeting-audio-close p-0! text-gray-400 hover:text-gray-600 ${model.aiWorkspace ? 'flex h-8 w-8 items-center justify-center rounded-full border border-gray-100 bg-white shadow-sm hover:text-gray-900' : 'h-[28px]! w-[20px]! flex-[0_0_20px] leading-[28px]!'}`}
               >
                 <i className="fas fa-times text-xl"></i>
               </button>

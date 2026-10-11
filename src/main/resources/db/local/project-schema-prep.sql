@@ -3909,3 +3909,28 @@ BEGIN
 END
 $$;
 ^^^ END OF SCRIPT ^^^
+
+-- 기존 로컬 DB도 AI 워크스페이스 초기화와 공유 면접 질문을 저장할 수 있도록 확장한다.
+DO $$
+DECLARE
+    constraint_name text;
+BEGIN
+    IF to_regclass('public.workspace_ai_design') IS NOT NULL THEN
+        ALTER TABLE public.workspace_ai_design ADD COLUMN IF NOT EXISTS assets_initialized BOOLEAN NOT NULL DEFAULT FALSE;
+    END IF;
+    IF to_regclass('public.workspace_interview_practice') IS NOT NULL THEN
+        ALTER TABLE public.workspace_interview_practice ADD COLUMN IF NOT EXISTS shared_answers TEXT;
+    END IF;
+    IF to_regclass('public.workspace_doc') IS NOT NULL THEN
+        FOR constraint_name IN
+            SELECT conname FROM pg_constraint
+             WHERE conrelid = 'public.workspace_doc'::regclass AND contype = 'c'
+               AND pg_get_constraintdef(oid) LIKE '%doc_type%'
+        LOOP
+            EXECUTE format('ALTER TABLE public.workspace_doc DROP CONSTRAINT %I', constraint_name);
+        END LOOP;
+        ALTER TABLE public.workspace_doc ADD CONSTRAINT workspace_doc_doc_type_check
+            CHECK (doc_type IN ('ERD', 'API_SPEC', 'INFRA', 'MEETING_SETTINGS', 'INTERVIEW_QUESTIONS'));
+    END IF;
+END $$;
+^^^ END OF SCRIPT ^^^

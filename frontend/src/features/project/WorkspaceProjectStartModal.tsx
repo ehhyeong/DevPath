@@ -1,16 +1,29 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
+import {
+  createWorkspaceFromAiDesign,
+  getWorkspaceAiDesignJob,
+  startWorkspaceAiDesignJob,
+  type WorkspaceAiDesign,
+  type WorkspaceAiDesignDifficulty,
+  type WorkspaceAiDesignJob,
+  type WorkspaceAiDesignStackMode,
+} from './api'
 
 type ModalView = 'start' | 'manual' | 'ai'
-type AiView = 'input' | 'loading' | 'result'
-type Difficulty = 'toy' | 'mvp' | 'enterprise'
-type StackMode = 'auto' | 'manual'
+type AiView = 'input' | 'loading' | 'result' | 'error'
+type Difficulty = WorkspaceAiDesignDifficulty
+type StackMode = WorkspaceAiDesignStackMode
 type ResultTab = 'scenario' | 'arch' | 'api' | 'roadmap'
 
 type Props = {
   open: boolean
   onClose: () => void
+  onOpen: () => void
 }
+
+const AI_JOB_STORAGE_KEY = 'devpath.workspace-hub.ai-design-job-id'
+const AI_JOB_POLL_INTERVAL_MS = 1500
 
 const difficulties = [
   { id: 'toy' as const, emoji: '🐣', title: '토이 프로젝트', copy: '단순 CRUD 및 기본 스택 위주의 빠른 개발에 적합합니다.' },
@@ -25,81 +38,283 @@ const resultTabs = [
   { id: 'roadmap' as const, label: '개발 로드맵 & 면접' },
 ]
 
-export default function WorkspaceProjectStartModal({ open, onClose }: Props) {
+export default function WorkspaceProjectStartModal({ open, onClose, onOpen }: Props) {
   const [modalView, setModalView] = useState<ModalView>('start')
   const [aiView, setAiView] = useState<AiView>('input')
   const [difficulty, setDifficulty] = useState<Difficulty>('mvp')
   const [stackMode, setStackMode] = useState<StackMode>('auto')
   const [resultTab, setResultTab] = useState<ResultTab>('scenario')
   const [loadingDetail, setLoadingDetail] = useState(false)
+  const [frontend, setFrontend] = useState('상관없음 (추천)')
+  const [backend, setBackend] = useState('상관없음 (추천)')
+  const [database, setDatabase] = useState('상관없음 (추천)')
+  const [idea, setIdea] = useState('')
+  const [aiDesign, setAiDesign] = useState<WorkspaceAiDesign | null>(null)
+  const [aiError, setAiError] = useState('')
+  const [aiJob, setAiJob] = useState<WorkspaceAiDesignJob | null>(null)
+  const [activeJobId, setActiveJobId] = useState<string | null>(null)
+  const [jobPollError, setJobPollError] = useState('')
+  const [workspaceCreating, setWorkspaceCreating] = useState(false)
+  const [statusCardVisible, setStatusCardVisible] = useState(false)
+  const preserveAiStateOnOpen = useRef(false)
+  const jobStartInFlight = useRef(false)
+
+  useEffect(() => {
+    const storedJobId = window.localStorage.getItem(AI_JOB_STORAGE_KEY)
+    if (storedJobId) {
+      setAiJob({
+        jobId: storedJobId,
+        status: 'PENDING',
+        result: null,
+        errorMessage: null,
+        createdAt: new Date().toISOString(),
+        completedAt: null,
+      })
+      setActiveJobId(storedJobId)
+      setStatusCardVisible(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (!open) return
+    if (preserveAiStateOnOpen.current) {
+      preserveAiStateOnOpen.current = false
+      return
+    }
     setModalView('start')
     setAiView('input')
     setDifficulty('mvp')
     setStackMode('auto')
     setResultTab('scenario')
     setLoadingDetail(false)
+    setFrontend('상관없음 (추천)')
+    setBackend('상관없음 (추천)')
+    setDatabase('상관없음 (추천)')
+    setIdea('')
+    setAiDesign(null)
+    setAiError('')
   }, [open])
+
+  useEffect(() => {
+    if (!activeJobId) return
+
+    let stopped = false
+    let pollTimer: number | undefined
+    let controller: AbortController | undefined
+
+    const poll = async () => {
+      controller = new AbortController()
+      try {
+        const job = await getWorkspaceAiDesignJob(activeJobId, controller.signal)
+        if (stopped) return
+
+        setAiJob(job)
+        setJobPollError('')
+
+        if (job.status === 'COMPLETED' && job.result) {
+          setAiDesign(job.result)
+          setAiError('')
+          setResultTab('scenario')
+          setAiView('result')
+          return
+        }
+
+        if (job.status === 'FAILED') {
+          setAiError(job.errorMessage ?? 'AI 프로젝트 설계를 생성하지 못했습니다.')
+          setAiView('error')
+          return
+        }
+
+        setAiView('loading')
+        pollTimer = window.setTimeout(poll, AI_JOB_POLL_INTERVAL_MS)
+      } catch (error) {
+        if (stopped || (error instanceof DOMException && error.name === 'AbortError')) return
+        setJobPollError('작업 상태를 확인하지 못해 다시 연결하고 있습니다.')
+        pollTimer = window.setTimeout(poll, AI_JOB_POLL_INTERVAL_MS * 2)
+      }
+    }
+
+    void poll()
+
+    return () => {
+      stopped = true
+      controller?.abort()
+      if (pollTimer) window.clearTimeout(pollTimer)
+    }
+  }, [activeJobId])
 
   useEffect(() => {
     if (!open || aiView !== 'loading') return
     const detailTimer = window.setTimeout(() => setLoadingDetail(true), 1500)
-    const resultTimer = window.setTimeout(() => {
-      setResultTab('scenario')
-      setAiView('result')
-    }, 3500)
-    return () => {
-      window.clearTimeout(detailTimer)
-      window.clearTimeout(resultTimer)
-    }
+    return () => window.clearTimeout(detailTimer)
   }, [aiView, open])
 
   useEffect(() => {
     if (!open) return
-    const closeOnEscape = (event: KeyboardEvent) => event.key === 'Escape' && onClose()
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (modalView === 'ai' && aiView !== 'input') setStatusCardVisible(true)
+      onClose()
+    }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [onClose, open])
+  }, [aiView, modalView, onClose, open])
 
-  if (!open) return null
-  if (modalView === 'manual') return <ManualCreateModal onBack={() => setModalView('start')} onClose={onClose} />
+  const resetAiInput = () => {
+    window.localStorage.removeItem(AI_JOB_STORAGE_KEY)
+    setActiveJobId(null)
+    setAiJob(null)
+    setJobPollError('')
+    setAiDesign(null)
+    setAiError('')
+    setLoadingDetail(false)
+    setAiView('input')
+    setStatusCardVisible(false)
+  }
+
+  const generateAiDesign = async () => {
+    if (jobStartInFlight.current) return
+    jobStartInFlight.current = true
+    window.localStorage.removeItem(AI_JOB_STORAGE_KEY)
+    setActiveJobId(null)
+    setAiJob(null)
+    setJobPollError('')
+    setAiDesign(null)
+    setAiError('')
+    setLoadingDetail(false)
+    setAiView('loading')
+    setStatusCardVisible(false)
+
+    try {
+      const job = await startWorkspaceAiDesignJob({
+        difficulty,
+        stackMode,
+        frontend: stackMode === 'manual' ? frontend : null,
+        backend: stackMode === 'manual' ? backend : null,
+        database: stackMode === 'manual' ? database : null,
+        idea: idea.trim() || null,
+      })
+      window.localStorage.setItem(AI_JOB_STORAGE_KEY, job.jobId)
+      setAiJob(job)
+      setActiveJobId(job.jobId)
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : 'AI 프로젝트 설계를 생성하지 못했습니다.')
+      setAiView('error')
+    } finally {
+      jobStartInFlight.current = false
+    }
+  }
+
+  const openJobDetails = () => {
+    preserveAiStateOnOpen.current = true
+    setStatusCardVisible(false)
+    setModalView('ai')
+
+    if (aiJob?.status === 'COMPLETED' && aiJob.result) {
+      setAiDesign(aiJob.result)
+      setAiView('result')
+    } else if (aiJob?.status === 'FAILED') {
+      setAiError(aiJob.errorMessage ?? 'AI 프로젝트 설계를 생성하지 못했습니다.')
+      setAiView('error')
+    } else {
+      setAiView('loading')
+    }
+
+    onOpen()
+  }
+
+  const sendAiToBackground = () => {
+    if (aiView !== 'input') setStatusCardVisible(true)
+    onClose()
+  }
+
+  const createWorkspace = async () => {
+    if (!aiJob || workspaceCreating) return
+    setWorkspaceCreating(true)
+    setAiError('')
+    try {
+      const workspace = await createWorkspaceFromAiDesign(aiJob.jobId)
+      resetAiInput()
+      onClose()
+      const dashboardUrl = new URL(workspace.dashboardUrl, window.location.origin)
+      dashboardUrl.searchParams.set('ai', '1')
+      dashboardUrl.searchParams.set('created', 'ai')
+      navigateTo(`${dashboardUrl.pathname}${dashboardUrl.search}${dashboardUrl.hash}`)
+    } catch (error) {
+      setAiError(error instanceof Error ? error.message : '워크스페이스를 생성하지 못했습니다.')
+    } finally {
+      setWorkspaceCreating(false)
+    }
+  }
+
+  const statusCard = statusCardVisible && aiJob && !open ? (
+    <AiJobStatusCard
+      job={aiJob}
+      pollError={jobPollError}
+      onDismiss={resetAiInput}
+      onOpen={openJobDetails}
+    />
+  ) : null
+
+  if (!open) return statusCard
+  if (modalView === 'manual') return <><ManualCreateModal onBack={() => setModalView('start')} onClose={onClose} />{statusCard}</>
   if (modalView === 'ai') {
     return (
-      <AiBuilderModal
-        aiView={aiView}
-        difficulty={difficulty}
-        loadingDetail={loadingDetail}
-        resultTab={resultTab}
-        stackMode={stackMode}
-        onAiViewChange={setAiView}
-        onBack={() => setModalView('start')}
-        onClose={onClose}
-        onDifficultyChange={setDifficulty}
-        onResultTabChange={setResultTab}
-        onStackModeChange={setStackMode}
-        resetLoading={() => setLoadingDetail(false)}
-      />
+      <>
+        <AiBuilderModal
+          aiView={aiView}
+          aiDesign={aiDesign}
+          aiError={aiError}
+          backend={backend}
+          database={database}
+          difficulty={difficulty}
+          frontend={frontend}
+          idea={idea}
+          loadingDetail={loadingDetail}
+          resultTab={resultTab}
+          stackMode={stackMode}
+          onBack={() => {
+            resetAiInput()
+            setModalView('start')
+          }}
+          onBackendChange={setBackend}
+          onBackground={sendAiToBackground}
+          onCreateWorkspace={createWorkspace}
+          onClose={sendAiToBackground}
+          onDatabaseChange={setDatabase}
+          onDifficultyChange={setDifficulty}
+          onFrontendChange={setFrontend}
+          onIdeaChange={setIdea}
+          onResultTabChange={setResultTab}
+          onStackModeChange={setStackMode}
+          onStart={generateAiDesign}
+          onReset={resetAiInput}
+          workspaceCreating={workspaceCreating}
+        />
+        {statusCard}
+      </>
     )
   }
 
   return (
-    <ModalOverlay onClose={onClose} tone="light">
-      <div aria-label="프로젝트 시작하기" aria-modal="true" className="workspace-project-start-modal workspace-project-modal-enter w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl" role="dialog">
-        <div className="flex items-center justify-between border-b border-gray-100 p-6 pb-4">
-          <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-rocket text-brand" /> 프로젝트 시작하기</h3>
-          <button aria-label="닫기" className="p-1 text-gray-400 transition hover:text-gray-600 focus:outline-none" onClick={onClose} type="button"><i className="fas fa-times text-xl" /></button>
-        </div>
-        <div className="p-6">
-          <p className="mb-5 text-center text-sm font-bold text-gray-600">어떤 방식으로 워크스페이스를 구성할까요?</p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ChoiceButton color="green" copy="어떤 프로젝트를 할지 막막하다면? AI가 트렌드에 맞는 주제와 기술 스택을 설계해 줍니다." icon="fa-magic" onClick={() => setModalView('ai')} title="AI에게 주제 추천받기" />
-            <ChoiceButton color="blue" copy="이미 생각해둔 명확한 아이디어가 있다면 프로젝트 세부 정보를 직접 입력해 시작하세요." icon="fa-pen-nib" onClick={() => setModalView('manual')} title="내가 직접 설정하기" />
+    <>
+      <ModalOverlay onClose={onClose} tone="light">
+        <div aria-label="프로젝트 시작하기" aria-modal="true" className="workspace-project-start-modal workspace-project-modal-enter w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl" role="dialog">
+          <div className="flex items-center justify-between border-b border-gray-100 p-6 pb-4">
+            <h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-rocket text-brand" /> 프로젝트 시작하기</h3>
+            <button aria-label="닫기" className="p-1 text-gray-400 transition hover:text-gray-600 focus:outline-none" onClick={onClose} type="button"><i className="fas fa-times text-xl" /></button>
+          </div>
+          <div className="p-6">
+            <p className="mb-5 text-center text-sm font-bold text-gray-600">어떤 방식으로 워크스페이스를 구성할까요?</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <ChoiceButton color="green" copy="어떤 프로젝트를 할지 막막하다면? AI가 트렌드에 맞는 주제와 기술 스택을 설계해 줍니다." icon="fa-magic" onClick={() => setModalView('ai')} title="AI에게 주제 추천받기" />
+              <ChoiceButton color="blue" copy="이미 생각해둔 명확한 아이디어가 있다면 프로젝트 세부 정보를 직접 입력해 시작하세요." icon="fa-pen-nib" onClick={() => setModalView('manual')} title="내가 직접 설정하기" />
+            </div>
           </div>
         </div>
-      </div>
-    </ModalOverlay>
+      </ModalOverlay>
+      {statusCard}
+    </>
   )
 }
 
@@ -119,6 +334,39 @@ function ChoiceButton({ color, copy, icon, onClick, title }: { color: 'green' | 
       <h4 className="mb-2 font-extrabold text-gray-900">{title}</h4>
       <p className="word-keep text-xs leading-relaxed text-gray-500">{copy}</p>
     </button>
+  )
+}
+
+function AiJobStatusCard({ job, pollError, onDismiss, onOpen }: { job: WorkspaceAiDesignJob; pollError: string; onDismiss: () => void; onOpen: () => void }) {
+  const working = job.status === 'PENDING' || job.status === 'PROCESSING'
+  const completed = job.status === 'COMPLETED'
+
+  return (
+    <aside aria-live="polite" className="fixed right-4 bottom-4 z-[1200] w-max min-w-0 max-w-[calc(100vw-2rem)] overflow-x-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl sm:right-6 sm:bottom-6 sm:min-w-[22rem]">
+      <div className="flex items-start gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${working ? 'bg-green-50 text-brand' : completed ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'}`}>
+          <i className={`fas ${working ? 'fa-circle-notch animate-spin' : completed ? 'fa-check' : 'fa-exclamation-triangle'}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="whitespace-nowrap text-sm font-extrabold text-gray-900">{working ? 'AI 설계 작업 중' : completed ? 'AI 설계가 완료됐어요' : 'AI 설계를 완료하지 못했어요'}</p>
+              <p className="mt-1 whitespace-nowrap text-xs leading-relaxed text-gray-500">
+                {working
+                  ? pollError || '창을 닫거나 다른 작업을 하셔도 됩니다. 완료되면 여기에서 알려드릴게요.'
+                  : completed
+                    ? job.result?.title ?? '완성된 프로젝트 설계를 확인해 보세요.'
+                    : job.errorMessage ?? '설정 내용을 확인한 뒤 다시 시도해 주세요.'}
+              </p>
+            </div>
+            {!working || pollError ? <button aria-label="AI 설계 알림 닫기" className="text-gray-400 transition hover:text-gray-700" onClick={onDismiss} type="button"><i className="fas fa-times" /></button> : null}
+          </div>
+          <button className={`mt-2.5 rounded-md px-2.5 py-1.5 text-[11px] font-extrabold transition ${completed ? 'bg-brand text-white hover:bg-green-600' : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`} onClick={onOpen} type="button">
+            {working ? '진행 화면 보기' : completed ? '결과 보기' : '설정 수정'}
+          </button>
+        </div>
+      </div>
+    </aside>
   )
 }
 
@@ -164,20 +412,33 @@ function ModalField({ icon, label, placeholder }: { icon: string; label: string;
 
 type AiProps = {
   aiView: AiView
+  aiDesign: WorkspaceAiDesign | null
+  aiError: string
+  backend: string
+  database: string
   difficulty: Difficulty
+  frontend: string
+  idea: string
   loadingDetail: boolean
   resultTab: ResultTab
   stackMode: StackMode
-  onAiViewChange: (view: AiView) => void
   onBack: () => void
+  onBackendChange: (value: string) => void
+  onBackground: () => void
+  onCreateWorkspace: () => void
   onClose: () => void
+  onDatabaseChange: (value: string) => void
   onDifficultyChange: (difficulty: Difficulty) => void
+  onFrontendChange: (value: string) => void
+  onIdeaChange: (value: string) => void
+  onReset: () => void
   onResultTabChange: (tab: ResultTab) => void
+  onStart: () => void
   onStackModeChange: (mode: StackMode) => void
-  resetLoading: () => void
+  workspaceCreating: boolean
 }
 
-function AiBuilderModal({ aiView, difficulty, loadingDetail, resultTab, stackMode, onAiViewChange, onBack, onClose, onDifficultyChange, onResultTabChange, onStackModeChange, resetLoading }: AiProps) {
+function AiBuilderModal({ aiView, aiDesign, aiError, backend, database, difficulty, frontend, idea, loadingDetail, resultTab, stackMode, onBack, onBackendChange, onBackground, onClose, onCreateWorkspace, onDatabaseChange, onDifficultyChange, onFrontendChange, onIdeaChange, onReset, onResultTabChange, onStart, onStackModeChange, workspaceCreating }: AiProps) {
   return (
     <ModalOverlay onClose={onClose} tone="dark">
       <div aria-label="DevPath AI Builder" aria-modal="true" className="workspace-project-ai-modal workspace-project-modal-enter relative flex w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-[#F4F5F7] shadow-2xl" role="dialog">
@@ -186,23 +447,40 @@ function AiBuilderModal({ aiView, difficulty, loadingDetail, resultTab, stackMod
           <button className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm! leading-5! font-bold text-gray-400 transition hover:bg-gray-100 hover:text-gray-600" onClick={onClose} type="button"><i className="fas fa-times text-lg" /> <span className="hidden sm:inline">닫기</span></button>
         </div>
         <div className={`workspace-project-modal-scroll relative flex-1 overflow-y-auto ${aiView === 'input' ? 'p-2' : 'p-6 sm:p-10'}`}>
-          {aiView === 'input' ? <AiInput difficulty={difficulty} stackMode={stackMode} onDifficultyChange={onDifficultyChange} onStackModeChange={onStackModeChange} onStart={() => { resetLoading(); onAiViewChange('loading') }} /> : null}
-          {aiView === 'loading' ? <AiLoading detailed={loadingDetail} /> : null}
-          {aiView === 'result' ? <AiResult resultTab={resultTab} onReset={() => { resetLoading(); onAiViewChange('input') }} onResultTabChange={onResultTabChange} /> : null}
+          {aiView === 'input' ? <AiInput backend={backend} database={database} difficulty={difficulty} frontend={frontend} idea={idea} stackMode={stackMode} onBackendChange={onBackendChange} onDatabaseChange={onDatabaseChange} onDifficultyChange={onDifficultyChange} onFrontendChange={onFrontendChange} onIdeaChange={onIdeaChange} onStackModeChange={onStackModeChange} onStart={onStart} /> : null}
+          {aiView === 'loading' ? <AiLoading detailed={loadingDetail} onBackground={onBackground} /> : null}
+          {aiView === 'error' ? <AiError message={aiError} onReset={onReset} onRetry={onStart} /> : null}
+          {aiView === 'result' && aiDesign ? <AiResult createError={aiError} creating={workspaceCreating} design={aiDesign} resultTab={resultTab} onCreate={onCreateWorkspace} onReset={onReset} onResultTabChange={onResultTabChange} /> : null}
         </div>
       </div>
     </ModalOverlay>
   )
 }
 
-function AiInput({ difficulty, stackMode, onDifficultyChange, onStackModeChange, onStart }: { difficulty: Difficulty; stackMode: StackMode; onDifficultyChange: (value: Difficulty) => void; onStackModeChange: (value: StackMode) => void; onStart: () => void }) {
+type AiInputProps = {
+  backend: string
+  database: string
+  difficulty: Difficulty
+  frontend: string
+  idea: string
+  stackMode: StackMode
+  onBackendChange: (value: string) => void
+  onDatabaseChange: (value: string) => void
+  onDifficultyChange: (value: Difficulty) => void
+  onFrontendChange: (value: string) => void
+  onIdeaChange: (value: string) => void
+  onStackModeChange: (value: StackMode) => void
+  onStart: () => void
+}
+
+function AiInput({ backend, database, difficulty, frontend, idea, stackMode, onBackendChange, onDatabaseChange, onDifficultyChange, onFrontendChange, onIdeaChange, onStackModeChange, onStart }: AiInputProps) {
   return (
     <div className={`workspace-project-ai-input workspace-project-modal-view mx-auto grid max-w-3xl grid-cols-1 gap-4 ${stackMode === 'manual' ? 'workspace-project-ai-input--manual' : ''}`}>
       <div className="workspace-project-ai-input-intro text-center"><span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-black text-brand shadow-sm"><i className="fas fa-sliders-h" /> STEP 1. 프로젝트 구체화</span><h1 className="mb-2 text-2xl leading-tight font-black tracking-tight text-gray-900 sm:text-3xl">어떤 규모와 기술로 구성할까요?</h1><p className="text-sm font-medium text-gray-500">원하는 옵션을 선택하면 AI가 상황에 맞는 아키텍처를 그려냅니다.</p></div>
       <div><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-layer-group text-blue-500" /> 프로젝트 규모 (설계 난이도)</h3><div className="grid grid-cols-1 gap-3 md:grid-cols-3">{difficulties.map((item) => { const selected = difficulty === item.id; return <button aria-pressed={selected} className={`workspace-project-ai-difficulty rounded-2xl border-2 p-4 text-left shadow-sm transition ${selected ? 'border-brand bg-green-50' : 'border-transparent bg-white'}`} key={item.id} onClick={() => onDifficultyChange(item.id)} type="button"><div className="mb-2 flex items-start justify-between"><span className="text-xl">{item.emoji}</span><span className={`h-4 w-4 rounded-full bg-white ${selected ? 'border-4 border-brand' : 'border-2 border-gray-300'}`} /></div><h4 className="mb-1 text-sm font-extrabold text-gray-900">{item.title}</h4><p className="text-xs leading-relaxed text-gray-500">{item.copy}</p></button> })}</div></div>
       <div className={`workspace-project-ai-options grid grid-cols-1 ${stackMode === 'manual' ? 'gap-3' : 'gap-5'}`}>
-        <div><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-cogs text-orange-500" /> 프레임워크 및 라이브러리</h3><div className="workspace-project-ai-stack-toggle mb-4 flex gap-1 rounded-xl border border-gray-200 bg-gray-100/50 p-1.5"><StackButton active={stackMode === 'auto'} label="✨ AI 자동 추천" onClick={() => onStackModeChange('auto')} /><StackButton active={stackMode === 'manual'} label="⚙️ 사용자가 직접 설정" onClick={() => onStackModeChange('manual')} /></div>{stackMode === 'manual' ? <ManualStackFields /> : null}</div>
-        <div className="workspace-project-ai-idea-section"><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-lightbulb text-yellow-500" /> 만들고 싶은 서비스 아이디어 <span className="text-xs font-medium text-gray-400">(선택사항)</span></h3><div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20"><textarea className="workspace-project-ai-idea w-full resize-none border-none bg-transparent p-4 text-sm! leading-5! font-medium text-gray-800 outline-none placeholder:text-gray-400" placeholder="예: 우리 동네 남는 식재료를 이웃과 나누는 플랫폼을 만들고 싶어. (빈칸으로 두셔도 AI가 트렌디한 주제를 추천합니다.)" rows={4} /></div></div>
+        <div><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-cogs text-orange-500" /> 프레임워크 및 라이브러리</h3><div className="workspace-project-ai-stack-toggle mb-4 flex gap-1 rounded-xl border border-gray-200 bg-gray-100/50 p-1.5"><StackButton active={stackMode === 'auto'} label="✨ AI 자동 추천" onClick={() => onStackModeChange('auto')} /><StackButton active={stackMode === 'manual'} label="⚙️ 사용자가 직접 설정" onClick={() => onStackModeChange('manual')} /></div>{stackMode === 'manual' ? <ManualStackFields backend={backend} database={database} frontend={frontend} onBackendChange={onBackendChange} onDatabaseChange={onDatabaseChange} onFrontendChange={onFrontendChange} /> : null}</div>
+        <div className="workspace-project-ai-idea-section"><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-lightbulb text-yellow-500" /> 만들고 싶은 서비스 아이디어 <span className="text-xs font-medium text-gray-400">(선택사항)</span></h3><div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20"><textarea aria-label="만들고 싶은 서비스 아이디어" className="workspace-project-ai-idea w-full resize-none border-none bg-transparent p-4 text-sm! leading-5! font-medium text-gray-800 outline-none placeholder:text-gray-400" maxLength={1000} onChange={(event) => onIdeaChange(event.target.value)} placeholder="예: 우리 동네 남는 식재료를 이웃과 나누는 플랫폼을 만들고 싶어. (빈칸으로 두셔도 AI가 트렌디한 주제를 추천합니다.)" rows={4} value={idea} /></div></div>
       </div>
       <div className="workspace-project-ai-footer sticky bottom-0 bg-[#F4F5F7] pt-4 pb-2 text-center"><button className="workspace-project-ai-submit mx-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-brand px-6 py-4 text-base font-extrabold text-white shadow-[0_10px_20px_-10px_rgba(0,196,113,0.5)] transition hover:bg-green-600 sm:w-2/3" onClick={onStart} type="button"><i className="fas fa-bolt" /> 이 설정으로 AI 설계 시작하기</button></div>
     </div>
@@ -213,83 +491,61 @@ function StackButton({ active, label, onClick }: { active: boolean; label: strin
   return <button aria-pressed={active} className={`flex-1 rounded-lg border-2 py-2.5 text-sm! leading-5! transition ${active ? 'border-gray-900 bg-white font-extrabold text-gray-900 shadow-sm' : 'border-transparent font-bold text-gray-500 hover:text-gray-800'}`} onClick={onClick} type="button">{label}</button>
 }
 
-function ManualStackFields() {
-  return <div className="workspace-project-ai-manual-fields grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:grid-cols-3"><StackSelect label="Frontend" options={['상관없음 (추천)', 'React', 'Vue.js', 'Next.js', 'Angular', 'Svelte / SvelteKit', 'Nuxt.js', 'Remix', 'Vanilla JavaScript']} /><StackSelect label="Backend" options={['상관없음 (추천)', 'Java / Spring Boot', 'Node.js / Express', 'Node.js / NestJS', 'Python / Django', 'Python / FastAPI', 'Kotlin / Spring Boot', 'PHP / Laravel', 'Go / Gin', 'Ruby on Rails', 'ASP.NET Core']} /><StackSelect label="Database" options={['상관없음 (추천)', 'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'MariaDB', 'SQLite', 'Oracle Database', 'Microsoft SQL Server', 'Amazon DynamoDB']} /></div>
+function ManualStackFields({ backend, database, frontend, onBackendChange, onDatabaseChange, onFrontendChange }: { backend: string; database: string; frontend: string; onBackendChange: (value: string) => void; onDatabaseChange: (value: string) => void; onFrontendChange: (value: string) => void }) {
+  return <div className="workspace-project-ai-manual-fields grid grid-cols-1 gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:grid-cols-3"><StackSelect label="Frontend" onChange={onFrontendChange} options={['상관없음 (추천)', 'React', 'Vue.js', 'Next.js', 'Angular', 'Svelte / SvelteKit', 'Nuxt.js', 'Remix', 'Vanilla JavaScript']} value={frontend} /><StackSelect label="Backend" onChange={onBackendChange} options={['상관없음 (추천)', 'Java / Spring Boot', 'Node.js / Express', 'Node.js / NestJS', 'Python / Django', 'Python / FastAPI', 'Kotlin / Spring Boot', 'PHP / Laravel', 'Go / Gin', 'Ruby on Rails', 'ASP.NET Core']} value={backend} /><StackSelect label="Database" onChange={onDatabaseChange} options={['상관없음 (추천)', 'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'MariaDB', 'SQLite', 'Oracle Database', 'Microsoft SQL Server', 'Amazon DynamoDB']} value={database} /></div>
 }
 
-function StackSelect({ label, options }: { label: string; options: string[] }) {
-  return <div><label className="mb-1.5 block text-xs font-bold text-gray-500">{label}</label><select className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm! leading-5! font-medium outline-none focus:border-brand">{options.map((option) => <option key={option}>{option}</option>)}</select></div>
+function StackSelect({ label, onChange, options, value }: { label: string; onChange: (value: string) => void; options: string[]; value: string }) {
+  return <div><label className="mb-1.5 block text-xs font-bold text-gray-500" htmlFor={`workspace-ai-${label.toLowerCase()}`}>{label}</label><select className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm! leading-5! font-medium outline-none focus:border-brand" id={`workspace-ai-${label.toLowerCase()}`} onChange={(event) => onChange(event.target.value)} value={value}>{options.map((option) => <option key={option}>{option}</option>)}</select></div>
 }
 
-function AiLoading({ detailed }: { detailed: boolean }) {
-  return <div className="workspace-project-modal-view flex flex-col items-center justify-center py-32"><div className="relative mb-8 flex h-24 w-24 items-center justify-center"><div className="workspace-project-modal-ai-pulse absolute inset-0 rounded-full bg-brand/20" /><div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-brand text-3xl text-white shadow-lg shadow-green-500/40"><i className="fas fa-brain animate-bounce" /></div></div><h2 className="mb-3 text-2xl font-black text-gray-900">{detailed ? 'DB 모델링 및 API 설계 중입니다...' : '요구사항을 분석 중입니다...'}</h2><p className="text-sm font-medium text-gray-500">{detailed ? '실무 면접에 대비할 수 있는 기술적 난제와 로드맵을 구성합니다.' : '입력하신 규모와 스택을 바탕으로 최적의 아키텍처를 탐색합니다.'}</p><div className="relative mt-8 h-1.5 w-64 overflow-hidden rounded-full bg-gray-200"><div className="workspace-project-modal-progress absolute top-0 left-0 h-1.5 rounded-full bg-brand" /></div></div>
+function AiLoading({ detailed, onBackground }: { detailed: boolean; onBackground: () => void }) {
+  return <div className="workspace-project-modal-view flex flex-col items-center justify-center py-32 text-center"><div className="relative mb-8 flex h-24 w-24 items-center justify-center"><div className="workspace-project-modal-ai-pulse absolute inset-0 rounded-full bg-brand/20" /><div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-brand text-3xl text-white shadow-lg shadow-green-500/40"><i className="fas fa-brain animate-bounce" /></div></div><h2 className="mb-3 text-2xl font-black text-gray-900">{detailed ? 'DB 모델링 및 API 설계 중입니다...' : '요구사항을 분석 중입니다...'}</h2><p className="text-sm font-medium text-gray-500">{detailed ? '실무 면접에 대비할 수 있는 기술적 난제와 로드맵을 구성합니다.' : '입력하신 규모와 스택을 바탕으로 최적의 아키텍처를 탐색합니다.'}</p><div className="relative mt-8 h-1.5 w-64 overflow-hidden rounded-full bg-gray-200"><div className="workspace-project-modal-progress absolute top-0 left-0 h-1.5 rounded-full bg-brand" /></div><button className="mt-6 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50" onClick={onBackground} type="button"><i className="fas fa-window-minimize mr-2 text-brand" />백그라운드에서 계속</button></div>
 }
 
-function AiResult({ resultTab, onReset, onResultTabChange }: { resultTab: ResultTab; onReset: () => void; onResultTabChange: (tab: ResultTab) => void }) {
-  return <div className="workspace-project-modal-view space-y-6 pb-10"><div className="mb-2 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"><div><span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-white shadow-sm"><i className="fas fa-check" /> 완벽한 포트폴리오 설계 완료</span><h1 className="text-2xl leading-tight font-black text-gray-900 sm:text-3xl"><span className="workspace-project-modal-gradient">독립 출판 콘텐츠 구독 플랫폼</span></h1><p className="mt-1 text-sm font-medium text-gray-500">단순한 토이 프로젝트가 아닌, 실무 면접에서 어필할 수 있는 구조입니다.</p></div><div className="flex w-full shrink-0 gap-2 sm:w-auto"><button className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm! leading-5! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 sm:flex-none" onClick={onReset} type="button"><i className="fas fa-redo-alt mr-1" /> 다시하기</button><button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm! leading-5! font-bold text-white shadow-md transition hover:bg-black sm:flex-none" onClick={() => navigateTo('/squad-dashboard?ai=1')} type="button">워크스페이스 생성 <i className="fas fa-arrow-right" /></button></div></div><div className="workspace-project-modal-hide-scroll flex items-center gap-1 overflow-x-auto border-b border-gray-200 pb-px">{resultTabs.map((tab) => <button className={`shrink-0 px-4 py-3 text-sm! leading-5! ${resultTab === tab.id ? 'border-b-2 border-brand font-extrabold text-brand' : 'font-bold text-gray-500 transition hover:text-gray-900'}`} key={tab.id} onClick={() => onResultTabChange(tab.id)} type="button">{tab.label}</button>)}</div><ResultContent tab={resultTab} /></div>
+function AiError({ message, onReset, onRetry }: { message: string; onReset: () => void; onRetry: () => void }) {
+  return <div className="workspace-project-modal-view flex flex-col items-center justify-center py-28 text-center"><div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-2xl text-red-500"><i className="fas fa-exclamation-triangle" /></div><h2 className="mb-2 text-xl font-black text-gray-900">AI 설계를 생성하지 못했습니다.</h2><p className="max-w-md text-sm leading-relaxed font-medium text-gray-500">{message}</p><div className="mt-7 flex gap-3"><button className="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50" onClick={onReset} type="button">설정 수정</button><button className="rounded-xl bg-brand px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-green-600" onClick={onRetry} type="button"><i className="fas fa-redo-alt mr-1" /> 다시 시도</button></div></div>
 }
 
-function ResultContent({ tab }: { tab: ResultTab }) {
-  if (tab === 'scenario') return <ScenarioResult />
-  if (tab === 'arch') return <ArchitectureResult />
-  if (tab === 'api') return <ApiResult />
-  return <RoadmapResult />
+function AiResult({ createError, creating, design, resultTab, onCreate, onReset, onResultTabChange }: { createError: string; creating: boolean; design: WorkspaceAiDesign; resultTab: ResultTab; onCreate: () => void; onReset: () => void; onResultTabChange: (tab: ResultTab) => void }) {
+  return <div className="workspace-project-modal-view space-y-6 pb-10"><div className="mb-2 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"><div><span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-white shadow-sm"><i className="fas fa-check" /> AI 포트폴리오 설계 완료</span><h1 className="text-2xl leading-tight font-black text-gray-900 sm:text-3xl"><span className="workspace-project-modal-gradient">{design.title}</span></h1><p className="mt-1 text-sm font-medium text-gray-500">{design.summary}</p>{createError ? <p className="mt-2 text-xs font-bold text-red-500">{createError}</p> : null}</div><div className="flex w-full shrink-0 gap-2 sm:w-auto"><button className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm! leading-5! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 sm:flex-none" onClick={onReset} type="button"><i className="fas fa-redo-alt mr-1" /> 다시하기</button><button className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm! leading-5! font-bold text-white shadow-md transition hover:bg-black disabled:opacity-60 sm:flex-none" disabled={creating} onClick={onCreate} type="button">{creating ? '생성 중...' : '워크스페이스 생성'} <i className="fas fa-arrow-right" /></button></div></div><div className="workspace-project-modal-hide-scroll flex items-center gap-1 overflow-x-auto border-b border-gray-200 pb-px">{resultTabs.map((tab) => <button className={`shrink-0 px-4 py-3 text-sm! leading-5! ${resultTab === tab.id ? 'border-b-2 border-brand font-extrabold text-brand' : 'font-bold text-gray-500 transition hover:text-gray-900'}`} key={tab.id} onClick={() => onResultTabChange(tab.id)} type="button">{tab.label}</button>)}</div><ResultContent design={design} tab={resultTab} /></div>
+}
+
+function ResultContent({ design, tab }: { design: WorkspaceAiDesign; tab: ResultTab }) {
+  if (tab === 'scenario') return <ScenarioResult design={design} />
+  if (tab === 'arch') return <ArchitectureResult design={design} />
+  if (tab === 'api') return <ApiResult apis={design.apis} />
+  return <RoadmapResult design={design} />
 }
 
 function ResultCard({ children, icon, title }: { children: ReactNode; icon: string; title: string }) {
   return <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"><h3 className="mb-4 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className={`fas ${icon}`} /> {title}</h3>{children}</div>
 }
 
-function ScenarioResult() {
-  const flows = [['작가', '는 이메일/비밀번호로 회원가입 및 로그인하여 대시보드로 이동합니다.'], ['작가', '는 새 시리즈를 생성(제목, 태그 입력)하고, 글 작성 후 발행 상태로 전환합니다.'], ['독자', '는 로그인 후 발행된 시리즈 목록을 태그로 필터링하여 탐색하고 관심 시리즈를 구독합니다.'], ['독자', '는 구독한 시리즈의 글을 순서대로 읽고 이전·다음 글로 이동합니다.']]
-  const features = ['이메일·비밀번호 기반 회원가입 및 로그인 (역할 분리)', '시리즈 생성 및 발행 상태(초안/발행) 관리 로직', '글 순서 관리(orderIndex) 및 이전/다음 글 이동', '태그 필터링을 통한 탐색 및 시리즈 구독 기능', '구독자 수 집계 및 대시보드 통계 조회']
-  return <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><ResultCard title="핵심 사용자 흐름 (User Flow)" icon="fa-route text-blue-500"><div className="space-y-4">{flows.map(([role, copy], index) => <div className="flex gap-3" key={copy}><div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${index < 2 ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-brand'}`}>{index + 1}</div><p className="text-sm leading-relaxed text-gray-600"><strong className="text-gray-900">{role}</strong>{copy}</p></div>)}</div></ResultCard><ResultCard title="MVP 검증 기능" icon="fa-star text-yellow-500"><ul className="space-y-2.5">{features.map((feature) => <li className="flex items-start gap-2 text-sm text-gray-600" key={feature}><i className="fas fa-check-circle mt-1 text-brand" /><span>{feature}</span></li>)}</ul></ResultCard></div>
+function ScenarioResult({ design }: { design: WorkspaceAiDesign }) {
+  return <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><ResultCard title="핵심 사용자 흐름 (User Flow)" icon="fa-route text-blue-500"><div className="space-y-4">{design.scenario.userFlows.map((flow, index) => <div className="flex gap-3" key={`${flow.actor}-${index}`}><div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${index % 2 === 0 ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-brand'}`}>{index + 1}</div><p className="text-sm leading-relaxed text-gray-600"><strong className="mr-1 text-gray-900">{flow.actor}</strong>{flow.action}</p></div>)}</div></ResultCard><ResultCard title="핵심 검증 기능" icon="fa-star text-yellow-500"><ul className="space-y-2.5">{design.scenario.coreFeatures.map((feature) => <li className="flex items-start gap-2 text-sm text-gray-600" key={feature}><i className="fas fa-check-circle mt-1 text-brand" /><span>{feature}</span></li>)}</ul></ResultCard></div>
 }
 
-function ArchitectureResult() {
-  const schema = `erDiagram
-    MEMBER {
-        bigint memberId PK
-        string email UK
-        string encodedPassword
-        string role "AUTHOR, READER"
-    }
-    SERIES {
-        bigint seriesId PK
-        bigint memberId FK
-        string title
-        string publishStatus "DRAFT, PUBLISHED"
-    }
-    ARTICLE {
-        bigint articleId PK
-        bigint seriesId FK
-        int orderIndex
-        string publishStatus
-    }
-    SUBSCRIPTION {
-        bigint subscriptionId PK
-        bigint memberId FK
-        bigint seriesId FK
-    }
-
-    MEMBER ||--o{ SERIES : "creates"
-    SERIES ||--o{ ARTICLE : "contains"
-    MEMBER ||--o{ SUBSCRIPTION : "subscribes"
-    SERIES ||--o{ SUBSCRIPTION : "is subscribed by"`
-  return <div className="space-y-6"><div className="flex items-start gap-4 rounded-2xl border border-red-100 bg-red-50 p-5"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-lg text-red-500"><i className="fas fa-fire" /></div><div><h3 className="mb-1 text-sm font-extrabold text-red-900">핵심 기술적 난제 (포트폴리오 어필 포인트)</h3><p className="text-xs leading-relaxed text-red-700"><strong>Article 엔티티의 순서 관리.</strong> <code>orderIndex</code>를 정수 순번으로 관리할 경우 중간 삽입 시 전체 재정렬이 필요합니다. 특정 글 기준으로 이전·다음 글을 조회하는 쿼리를 <code>seriesId</code>와 <code>orderIndex</code> 조건으로 정확하게 설계해야 하며, 초급 수준에서는 명시적 재정렬 로직으로 구현하여 유지보수 명확성을 확보합니다.</p></div></div><div className="grid grid-cols-1 gap-4 md:grid-cols-2"><div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-laptop-code text-blue-500" /> Frontend</h3><TagList tags={['Thymeleaf', 'HTML/CSS/JS']} /></div><div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"><h3 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-server text-green-500" /> Backend & DB</h3><div className="flex flex-wrap gap-2"><span className="rounded-lg border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700">Spring Boot</span><span className="rounded-lg border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700">Spring Security</span><span className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">MySQL</span><span className="rounded-lg border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700">Spring Data JPA</span></div></div></div><div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-4"><h3 className="text-sm font-extrabold text-gray-900">Database Schema (ERD)</h3></div><pre className="overflow-x-auto bg-[#111827] p-4 text-xs leading-relaxed text-gray-300">{schema}</pre></div></div>
+function ArchitectureResult({ design }: { design: WorkspaceAiDesign }) {
+  const architecture = design.architecture
+  return <div className="space-y-6"><ResultCard title="핵심 기술적 난제" icon="fa-fire text-red-500"><ul className="space-y-2">{architecture.technicalChallenges.map((challenge) => <li className="flex items-start gap-2 text-sm leading-relaxed text-gray-600" key={challenge}><i className="fas fa-bolt mt-1 text-red-400" /><span>{challenge}</span></li>)}</ul></ResultCard><div className="grid grid-cols-1 gap-4 md:grid-cols-2"><ResultCard title="추천 기술 스택" icon="fa-layer-group text-blue-500"><TagList tags={[design.stack.frontend, design.stack.backend, design.stack.database, ...design.stack.libraries]} /><p className="mt-3 text-xs leading-relaxed text-gray-500">{design.stack.selectionReason}</p></ResultCard><ResultCard title={architecture.style} icon="fa-sitemap text-green-500"><p className="mb-3 text-sm leading-relaxed text-gray-600">{architecture.description}</p><div className="space-y-2">{architecture.components.map((component) => <div className="rounded-lg bg-gray-50 p-3" key={component.name}><strong className="text-xs text-gray-900">{component.name}</strong><p className="mt-1 text-xs text-gray-500">{component.responsibility}</p></div>)}</div></ResultCard></div><div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"><div className="border-b border-gray-200 bg-gray-50 p-4"><h3 className="text-sm font-extrabold text-gray-900">Database Schema (Mermaid ERD)</h3></div><pre className="overflow-x-auto bg-[#111827] p-4 text-xs leading-relaxed text-gray-300">{architecture.erdMermaid}</pre></div><div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{architecture.entities.map((entity) => <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm" key={entity.name}><div className="border-b border-gray-100 bg-gray-50 p-4"><h4 className="font-mono text-sm font-extrabold text-gray-900">{entity.name}</h4><p className="mt-1 text-xs text-gray-500">{entity.purpose}</p></div><div className="divide-y divide-gray-100">{entity.columns.map((column) => <div className="grid grid-cols-[1fr_auto] gap-3 p-3 text-xs" key={`${entity.name}-${column.name}`}><div><span className="font-mono font-bold text-gray-800">{column.name}</span><p className="mt-1 text-gray-500">{column.description}</p></div><div className="text-right"><span className="font-mono text-gray-600">{column.type}</span><p className="mt-1 font-bold text-blue-500">{column.constraints}</p></div></div>)}</div></div>)}</div></div>
 }
 
 function TagList({ tags }: { tags: string[] }) {
-  return <div className="flex flex-wrap gap-2">{tags.map((tag) => <span className="rounded-lg border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700" key={tag}>{tag}</span>)}</div>
+  return <div className="flex flex-wrap gap-2">{tags.map((tag, index) => <span className="rounded-lg border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700" key={`${tag}-${index}`}>{tag}</span>)}</div>
 }
 
-function ApiResult() {
-  const groups = [[['POST', '/api/members/signup', '이메일, 비밀번호, 역할을 받아 회원 생성'], ['POST', '/api/members/login', '인증 및 세션 생성']], [['GET', '/api/series', '발행 상태인 시리즈 목록 조회 (태그 필터링)'], ['POST', '/api/series', '작가가 새 시리즈 초안 생성']], [['GET', '/api/series/{seriesId}/articles/{articleId}', '특정 글 본문 및 이전/다음 글 정보 조회'], ['POST', '/api/subscriptions', '독자가 특정 시리즈 구독']]]
-  return <div className="space-y-4">{groups.map((group, groupIndex) => <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm" key={groupIndex}>{group.map(([method, path, copy], index) => <div className={`flex flex-col gap-3 p-4 sm:flex-row sm:items-center ${index === 0 ? 'border-b border-gray-100 bg-gray-50/50' : ''}`} key={`${method}-${path}`}><span className={`w-fit rounded px-2.5 py-1 text-xs font-extrabold ${method === 'GET' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>{method}</span><span className="font-mono text-sm font-bold text-gray-900">{path}</span><span className="text-xs font-medium text-gray-500 sm:ml-auto">{copy}</span></div>)}</div>)}</div>
+function ApiResult({ apis }: { apis: WorkspaceAiDesign['apis'] }) {
+  return <div className="space-y-4">{apis.map((api) => <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm" key={`${api.method}-${api.path}`}><div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50 p-4 sm:flex-row sm:items-center"><span className={`w-fit rounded px-2.5 py-1 text-xs font-extrabold ${methodBadgeClass(api.method)}`}>{api.method}</span><span className="font-mono text-sm font-bold text-gray-900">{api.path}</span><span className="text-xs font-medium text-gray-500 sm:ml-auto">{api.auth}</span></div><div className="p-4"><p className="mb-4 text-sm text-gray-600">{api.description}</p><div className="grid grid-cols-1 gap-3 lg:grid-cols-2"><div><p className="mb-1 text-[10px] font-extrabold tracking-wide text-gray-400">REQUEST</p><pre className="overflow-x-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-200">{api.requestExample}</pre></div><div><p className="mb-1 text-[10px] font-extrabold tracking-wide text-gray-400">RESPONSE</p><pre className="overflow-x-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-200">{api.responseExample}</pre></div></div></div></div>)}</div>
 }
 
-function RoadmapResult() {
-  const roadmap = [['1. 환경 설정 및 엔티티 구성', 'Spring Boot 초기화 및 Member, Series 등 JPA 매핑'], ['2. 인증/인가 구현', 'Spring Security 세션 로그인 및 역할(Role) 분기 적용'], ['3. 시리즈 및 글 관리 핵심 로직', 'orderIndex 재정렬 로직 구현 및 발행 상태 API 구성'], ['4. 통계 및 배포', '대시보드 구독자 수 N+1 문제 해결 후 Railway/Render 배포']]
-  const questions = [['Q. Article의 orderIndex 중간 삽입 시 재정렬은 어떻게 했나요?', 'A. "명시적 업데이트 쿼리를 통해 타겟 인덱스 이상의 글들을 +1 처리하는 방식으로 정합성을 우선하여 구현했습니다."'], ['Q. N+1 문제는 어디서 발생했으며 어떻게 해결했나요?', 'A. "작가 대시보드에서 시리즈 목록과 구독자 수를 동시에 가져올 때 발생하여, Fetch Join(또는 Batch Size)을 활용해 최적화했습니다."'], ['Q. Security에서 작가와 독자 분기는 어떻게 처리했나요?', 'A. "회원가입 시 부여된 Role 기반으로 URL 접근 제어를 설정하고, @AuthenticationPrincipal을 활용했습니다."']]
-  return <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><ResultCard title="개발 구현 로드맵" icon="fa-tasks text-purple-500"><div className="ml-3 space-y-6 border-l-2 border-gray-100">{roadmap.map(([title, copy], index) => <div className="relative pl-6" key={title}><div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-4 border-white ${index === 0 ? 'bg-purple-500' : 'bg-gray-300'}`} /><h4 className="text-sm font-bold text-gray-900">{title}</h4><p className="mt-1 text-xs text-gray-500">{copy}</p></div>)}</div></ResultCard><ResultCard title="실무 면접 예상 질문" icon="fa-user-tie text-blue-500"><div className="space-y-4">{questions.map(([question, answer]) => <div className="rounded-xl border border-gray-100 bg-gray-50 p-4" key={question}><p className="mb-1 text-sm font-bold text-gray-900">{question}</p><p className="text-xs text-gray-600">{answer}</p></div>)}</div></ResultCard></div>
+function methodBadgeClass(method: string) {
+  if (method === 'GET') return 'bg-green-100 text-green-600'
+  if (method === 'DELETE') return 'bg-red-100 text-red-600'
+  if (method === 'PATCH' || method === 'PUT') return 'bg-orange-100 text-orange-600'
+  return 'bg-blue-100 text-blue-600'
+}
+
+function RoadmapResult({ design }: { design: WorkspaceAiDesign }) {
+  return <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><ResultCard title="개발 구현 로드맵" icon="fa-tasks text-purple-500"><div className="ml-3 space-y-6 border-l-2 border-gray-100">{design.roadmap.map((phase, index) => <div className="relative pl-6" key={`${phase.phase}-${phase.title}`}><div className={`absolute -left-[9px] top-0 h-4 w-4 rounded-full border-4 border-white ${index === 0 ? 'bg-purple-500' : 'bg-gray-300'}`} /><div className="flex items-center justify-between gap-3"><h4 className="text-sm font-bold text-gray-900">{phase.phase}. {phase.title}</h4><span className="shrink-0 text-[10px] font-bold text-purple-500">약 {phase.estimatedWeeks}주</span></div><p className="mt-1 text-xs text-gray-500">{phase.goal}</p><ul className="mt-2 space-y-1">{phase.tasks.map((task) => <li className="text-xs text-gray-600" key={task}>• {task}</li>)}</ul></div>)}</div></ResultCard><ResultCard title="실무 면접 예상 질문" icon="fa-user-tie text-blue-500"><div className="space-y-4">{design.interviewQuestions.map((item) => <div className="rounded-xl border border-gray-100 bg-gray-50 p-4" key={item.question}><span className="mb-2 inline-flex rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">{item.category}</span><p className="mb-2 text-sm font-bold text-gray-900">Q. {item.question}</p><p className="text-xs leading-relaxed text-gray-600">A. {item.answer}</p><div className="mt-3"><TagList tags={item.keywords} /></div></div>)}</div></ResultCard></div>
 }

@@ -1,7 +1,7 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import { showAuthToast } from '../../../lib/auth-toast'
 import { createSquadNotification, squadActorName } from '../notifications'
-import { getUserMediaWithTimeout } from './meeting-support'
+import { getUserMediaWithTimeout, useLatest } from './meeting-support'
 import { getCameraConstraints } from './meeting-media'
 import type { VoiceChannel } from './meeting-types'
 import type { VoicePeerTransceivers } from './meeting-support'
@@ -23,6 +23,8 @@ type Props = {
 
 export function useMeetingMediaTracks(props: Props) {
   const { workspaceId, activeChannel, isJoined, currentUserName, localCameraStreamRef, localScreenShareStreamRef, peerTransceiversRef, setLocalCameraStream, setLocalScreenShareStream, ensurePeerConnections, broadcastCameraState, broadcastScreenShareState } = props
+  // 대기실에서 등록한 track.onended도 입장 후의 참가 상태를 기준으로 전송을 종료한다.
+  const isJoinedRef = useLatest(isJoined)
 
   function clearLocalCameraStream() {
     localCameraStreamRef.current?.getTracks().forEach((track) => {
@@ -64,18 +66,14 @@ export function useMeetingMediaTracks(props: Props) {
 
   async function stopLocalCamera({ notify = true, renegotiate = true }: { notify?: boolean; renegotiate?: boolean } = {}) {
     if (!localCameraStreamRef.current) return
-    if (notify) broadcastCameraState('camera-stop')
-    if (renegotiate) await replaceVideoTrack('camera', null)
+    if (isJoinedRef.current && notify) broadcastCameraState('camera-stop')
+    if (isJoinedRef.current && renegotiate) await replaceVideoTrack('camera', null)
     clearLocalCameraStream()
   }
 
   async function startLocalCamera() {
-    if (!activeChannel || !isJoined) {
-      showAuthToast({ message: 'Join the meeting before turning on camera.', durationMs: 1800 })
-      return
-    }
     if (!navigator.mediaDevices?.getUserMedia) {
-      showAuthToast({ message: 'Camera is not available in this browser.', durationMs: 2200 })
+      showAuthToast({ message: '이 환경에서는 카메라에 접근할 수 없습니다. HTTPS 또는 localhost에서 지원 브라우저로 접속해 주세요.', durationMs: 4000 })
       return
     }
     try {
@@ -83,30 +81,38 @@ export function useMeetingMediaTracks(props: Props) {
       const [videoTrack] = stream.getVideoTracks()
       if (!videoTrack) {
         stream.getTracks().forEach((track) => track.stop())
-        showAuthToast({ message: 'No camera video track was found.', durationMs: 2200 })
+        showAuthToast({ message: '카메라 영상을 찾지 못했습니다. 장치 연결을 확인해 주세요.', durationMs: 3000 })
         return
       }
       await stopLocalCamera({ notify: false })
       localCameraStreamRef.current = stream
       setLocalCameraStream(stream)
       videoTrack.onended = () => void stopLocalCamera()
-      broadcastCameraState('camera-start')
-      await replaceVideoTrack('camera', stream)
-      showAuthToast({ message: 'Camera turned on.', durationMs: 1600 })
+      // 대기실에서는 미리보기만 제공하고 영상 전송은 입장 시 피어 연결에서 시작한다.
+      if (isJoinedRef.current) {
+        broadcastCameraState('camera-start')
+        await replaceVideoTrack('camera', stream)
+      }
+      showAuthToast({ message: '카메라를 켰습니다.', durationMs: 1600 })
     } catch (error) {
       clearLocalCameraStream()
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        showAuthToast({ message: 'Camera permission was denied.', durationMs: 1800 })
+        showAuthToast({ message: '카메라 권한이 차단되었습니다. 브라우저의 사이트 설정에서 카메라 접근을 허용해 주세요.', durationMs: 4000 })
         return
       }
-      showAuthToast({ message: 'Could not turn on camera.', durationMs: 2200 })
+      const message = error instanceof DOMException && error.name === 'NotFoundError'
+        ? '연결된 카메라를 찾지 못했습니다. 장치 연결을 확인해 주세요.'
+        : error instanceof DOMException && error.name === 'NotReadableError'
+          ? '카메라를 사용할 수 없습니다. 다른 앱의 카메라 사용을 종료한 뒤 다시 시도해 주세요.'
+          : error instanceof Error ? `카메라를 켜지 못했습니다. ${error.message}` : '카메라를 켜지 못했습니다. 장치와 브라우저 권한을 확인해 주세요.'
+      showAuthToast({ message, durationMs: 4000 })
     }
   }
 
   async function toggleCamera() {
     if (localCameraStreamRef.current) {
       await stopLocalCamera()
-      showAuthToast({ message: 'Camera turned off.', durationMs: 1600 })
+      showAuthToast({ message: '카메라를 껐습니다.', durationMs: 1600 })
       return
     }
     await startLocalCamera()

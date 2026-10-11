@@ -27,7 +27,11 @@ export type WorkspaceMember = {
   learnerId: number
   learnerName?: string | null
   profileImage?: string | null
+  position?: string | null
+  roleLabel?: string | null
   joinedAt?: string | null
+  lastActiveAt?: string | null
+  online?: boolean
 }
 
 export type WorkspaceDashboard = {
@@ -36,6 +40,8 @@ export type WorkspaceDashboard = {
   type: WorkspaceType
   status: WorkspaceStatus
   ownerId: number
+  ownerName?: string | null
+  ownerProfileImage?: string | null
   members: WorkspaceMember[]
   unresolvedTaskCount: number
   activeMilestoneCount: number
@@ -47,6 +53,7 @@ export type WorkspaceTask = {
   workspaceId: number
   title: string
   description?: string | null
+  featureIds?: string[]
   status: TaskStatus
   priority?: TaskPriority | null
   assigneeId?: number | null

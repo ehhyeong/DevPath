@@ -22,6 +22,7 @@ type SquadWorkspaceHeaderProps = {
   statusActive?: boolean
   currentUserName?: string | null
   onLogout: () => void
+  aiWorkspace?: boolean
 }
 
 function navHref(path: string, workspaceId: number | null) {
@@ -39,6 +40,7 @@ export default function SquadWorkspaceHeader({
   statusLabel = '진행 중',
   statusActive = true,
   onLogout,
+  aiWorkspace = false,
 }: SquadWorkspaceHeaderProps) {
   const [notificationOpen, setNotificationOpen] = useState(false)
   const [notifications, setNotifications] = useState<SquadHeaderNotification[]>([])
@@ -82,7 +84,8 @@ export default function SquadWorkspaceHeader({
 
   function openNotification(notification: SquadHeaderNotification) {
     if (notification.targetPath) {
-      navigateTo(navHref(notification.targetPath, workspaceId))
+      const href = navHref(notification.targetPath, workspaceId)
+      navigateTo(aiWorkspace ? `${href}${href.includes('?') ? '&' : '?'}ai=1` : href)
     }
   }
 

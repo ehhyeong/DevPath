@@ -1,9 +1,8 @@
 
 
-import { type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 
 
-import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 
@@ -134,10 +133,17 @@ function presentationElementStyle(
 }
 
 import { useSquadFilesController } from './useSquadFilesController'
+import WorkspaceAiDesignFiles from './WorkspaceAiDesignFiles'
 
-export default function SquadFilesApp() {
+export default function SquadFilesApp({ aiWorkspace = false }: { aiWorkspace?: boolean }) {
+  const [aiDesignOpen, setAiDesignOpen] = useState(false)
+  const [aiDesignAvailable, setAiDesignAvailable] = useState(false)
   const { workspaceId, session, folderStack, searchText, setSearchText, filter, setFilter, sortMode, setSortMode, loading, error, folderModalOpen, setFolderModalOpen, folderName, setFolderName, uploadModalOpen, setUploadModalOpen, selectedFile, dragOver, setDragOver, submitting, actionMenu, previewItem, setPreviewItem, previewUrl, previewText, previewArchive, previewDocument, previewUnsupportedMessage, previewLoading, previewError, members, projectName, usedBytes, quotaBytes, storagePercent, actionMenuItem, visibleFiles, handleLogout, renderAuthModal, goToRoot, goToCrumb, goToParentFolder, createFolder, uploadFile, selectUploadFile, handleDrop, downloadItem, renameItem, renderFileRow } = useSquadFilesController()
 
+
+  const showAiFolder = aiWorkspace && !folderStack.length && (filter === 'all' || filter === 'folder')
+  const aiFolderMatchesSearch = '00_ai_설계서 (자동 생성)'.includes(searchText.trim().toLowerCase())
+  const showEmptyFolder = !visibleFiles.length && !(showAiFolder && aiDesignAvailable && aiFolderMatchesSearch)
 
   if (loading) {
     return (
@@ -165,10 +171,11 @@ export default function SquadFilesApp() {
 
   return (
     <div className="squad-dashboard-page squad-files-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[16px] text-gray-800 [&_.squad-files-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
-      <SquadWorkspaceAside activePage="files" workspaceId={workspaceId} projectName={projectName} />
+      <SquadWorkspaceAside activePage="files" workspaceId={workspaceId} projectName={projectName} aiWorkspace={aiWorkspace} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <SquadWorkspaceHeader
+          aiWorkspace={aiWorkspace}
           workspaceId={workspaceId}
           projectName={projectName}
           members={members}
@@ -178,7 +185,7 @@ export default function SquadFilesApp() {
         />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
-          <div className="squad-files-toolbar z-10 flex min-h-[129px] shrink-0 flex-col justify-between gap-[16px]! border-b border-gray-100 bg-white px-[32px]! py-[24px]! shadow-sm md:flex-row md:items-center [@media(max-width:768px)]:px-[20px]!">
+          <div className={`squad-files-toolbar z-10 flex ${aiWorkspace ? '' : 'min-h-[129px]'} shrink-0 flex-col justify-between gap-[16px]! border-b border-gray-100 bg-white px-[32px]! py-[24px]! shadow-sm md:flex-row md:items-center [@media(max-width:768px)]:px-[20px]!`}>
             <div>
               <h1 className="mb-[8px]! flex items-center gap-[8px]! text-[24px]! leading-[32px]! font-extrabold text-gray-900">
                 <i className="fas fa-folder-open text-[24px]! leading-[32px]! text-brand"></i> 팀 자료실
@@ -188,7 +195,7 @@ export default function SquadFilesApp() {
                   <div className="bg-brand h-2 rounded-full transition-all duration-500" style={{ width: `${storagePercent}%` }}></div>
                 </div>
                 <span className="text-[10px] font-bold text-gray-500 tracking-wide">
-                  {formatBytes(usedBytes)} / {quotaBytes ? formatBytes(quotaBytes) : '-'} 사용 중
+                  {aiWorkspace ? formatArchiveBytes(usedBytes) : formatBytes(usedBytes)} / {quotaBytes ? formatBytes(quotaBytes) : '-'} 사용 중
                 </span>
               </div>
             </div>
@@ -199,7 +206,7 @@ export default function SquadFilesApp() {
                 <input
                   type="text"
                   className="squad-files-search-input h-[38px]! w-[256px]! rounded-[12px]! border border-gray-200 bg-gray-50 py-0! pr-[16px]! pl-[32px]! text-[12px]! leading-[16px]! outline-none transition focus:border-brand focus:bg-white [@media(max-width:768px)]:w-[min(256px,calc(100vw-72px))]!"
-                  placeholder="파일 및 폴더 이름 검색"
+                  placeholder={aiWorkspace ? '파일 및 폴더 이름 검색...' : '파일 및 폴더 이름 검색'}
                   value={searchText}
                   onChange={(event) => setSearchText(event.target.value)}
                 />
@@ -208,6 +215,8 @@ export default function SquadFilesApp() {
               <button
                 type="button"
                 onClick={() => setFolderModalOpen(true)}
+                disabled={aiDesignOpen}
+                title={aiDesignOpen ? '자동 생성된 AI 설계서 폴더는 읽기 전용입니다.' : undefined}
                 className="squad-files-new-folder-button flex h-[42px]! items-center gap-2 rounded-[12px]! border border-gray-200 bg-white px-[16px]! py-0! text-[14px]! leading-[20px]! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50"
               >
                 <i className="fas fa-folder-plus text-yellow-500"></i> 새 폴더
@@ -215,6 +224,8 @@ export default function SquadFilesApp() {
               <button
                 type="button"
                 onClick={() => setUploadModalOpen(true)}
+                disabled={aiDesignOpen}
+                title={aiDesignOpen ? '자동 생성된 AI 설계서 폴더는 읽기 전용입니다.' : undefined}
                 className="squad-files-upload-button flex h-[42px]! items-center gap-2 rounded-[12px]! bg-gray-900 px-[20px]! py-0! text-[14px]! leading-[20px]! font-bold text-white shadow-lg transition hover:bg-black"
               >
                 <i className="fas fa-cloud-upload-alt"></i> 업로드
@@ -226,10 +237,10 @@ export default function SquadFilesApp() {
             <div className="squad-files-inner mx-auto max-w-[1152px]!">
               <div className="flex justify-between items-center mb-4 px-2 gap-4">
                 <div className="flex items-center gap-3 min-w-0">
-                  {folderStack.length ? (
+                  {folderStack.length || aiDesignOpen ? (
                     <button
                       type="button"
-                      onClick={goToParentFolder}
+                      onClick={() => { if (aiDesignOpen) setAiDesignOpen(false); else goToParentFolder() }}
                       className="squad-files-parent-button inline-flex h-[32px]! shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-extrabold text-gray-700 shadow-sm transition hover:border-brand hover:text-brand"
                     >
                       <i className="fas fa-arrow-left text-[10px]"></i>
@@ -237,11 +248,11 @@ export default function SquadFilesApp() {
                     </button>
                   ) : null}
                   <div className="flex items-center gap-2 text-sm font-bold text-gray-600 min-w-0">
-                  <button type="button" onClick={goToRoot} className="hover:text-brand cursor-pointer transition truncate">
+                  <button type="button" onClick={() => { setAiDesignOpen(false); goToRoot() }} className="hover:text-brand cursor-pointer transition truncate">
                     {projectName}
                   </button>
                   <i className="fas fa-chevron-right text-[10px] text-gray-400"></i>
-                  <button type="button" onClick={goToRoot} className={folderStack.length ? 'text-gray-500 hover:text-brand transition' : 'text-gray-900'}>
+                  <button type="button" onClick={() => { setAiDesignOpen(false); goToRoot() }} className={folderStack.length || aiDesignOpen ? 'text-gray-500 hover:text-brand transition' : 'text-gray-900'}>
                     최상위 폴더
                   </button>
                   {folderStack.map((crumb, index) => (
@@ -256,6 +267,7 @@ export default function SquadFilesApp() {
                       </button>
                     </span>
                   ))}
+                  {aiDesignOpen ? <><i className="fas fa-chevron-right text-[10px] text-gray-400" /><span className="truncate text-gray-900">00_AI_설계서 (자동 생성)</span></> : null}
                   </div>
                 </div>
 
@@ -271,15 +283,20 @@ export default function SquadFilesApp() {
                       <button
                         key={value}
                         type="button"
-                        onClick={() => setFilter(value)}
+                        onClick={() => { setAiDesignOpen(false); setFilter(value) }}
                         className={`filter-btn h-[24px]! rounded-[6px]! px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold transition ${
-                          filter === value ? 'active bg-gray-900 text-white border-gray-900' : 'text-gray-600 hover:bg-gray-50'
+                          !aiDesignOpen && filter === value ? 'active bg-gray-900 text-white border-gray-900' : 'text-gray-600 hover:bg-gray-50'
                         }`}
                       >
-                        <i className={`${icon} mr-1`}></i>
+                        {aiWorkspace && value === 'all' ? null : <i className={`${icon} mr-1`}></i>}
                         {label}
                       </button>
                     ))}
+                    {aiWorkspace && workspaceId ? (
+                      <button type="button" onClick={() => { goToRoot(); setAiDesignOpen(true); setSearchText('') }} className={`filter-btn h-[24px]! rounded-[6px]! px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold transition ${aiDesignOpen ? 'active bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <i className="fas fa-magic mr-1" /> AI 설계서
+                      </button>
+                    ) : null}
                   </div>
 
                   <div className="relative">
@@ -288,10 +305,10 @@ export default function SquadFilesApp() {
                       onChange={(event) => setSortMode(event.target.value as SortMode)}
                       className="squad-files-sort-select h-[30px]! cursor-pointer appearance-none rounded-[8px]! border border-gray-200 bg-white py-0! pr-[32px]! pl-[12px]! text-[12px]! leading-[16px]! font-bold text-gray-700 shadow-sm outline-none focus:border-brand"
                     >
-                      <option value="date-desc">최신 등록순</option>
-                      <option value="date-asc">오래된 등록순</option>
-                      <option value="name-asc">이름 오름차순</option>
-                      <option value="name-desc">이름 내림차순</option>
+                      <option value="date-desc">{aiWorkspace ? '🕒 최신 등록순' : '최신 등록순'}</option>
+                      <option value="date-asc">{aiWorkspace ? '⏳ 오래된 순' : '오래된 등록순'}</option>
+                      <option value="name-asc">{aiWorkspace ? '🔤 이름 오름차순 (A-Z)' : '이름 오름차순'}</option>
+                      <option value="name-desc">{aiWorkspace ? '🔠 이름 내림차순 (Z-A)' : '이름 내림차순'}</option>
                     </select>
                     <i className="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none"></i>
                   </div>
@@ -300,21 +317,22 @@ export default function SquadFilesApp() {
 
               <div className="squad-files-table overflow-hidden rounded-[16px]! border border-gray-100 bg-white shadow-sm">
                 <div className="squad-files-table-header grid min-h-[49px] grid-cols-12 gap-[16px]! border-b border-gray-100 bg-gray-50/50 p-[16px]! text-[11px]! leading-[16px]! font-extrabold tracking-wider text-gray-500 uppercase">
-                  <div className="col-span-6 pl-2">이름</div>
-                  <div className="col-span-2 text-center">크기</div>
-                  <div className="col-span-2 text-center">업로드</div>
-                  <div className="col-span-2 text-right pr-4">수정일</div>
+                  <div className="col-span-6 pl-2">{aiWorkspace ? '이름 (Name)' : '이름'}</div>
+                  <div className="col-span-2 text-center">{aiWorkspace ? '크기 (Size)' : '크기'}</div>
+                  <div className="col-span-2 text-center">{aiWorkspace ? '업로더 (Owner)' : '업로드'}</div>
+                  <div className="col-span-2 text-right pr-4">{aiWorkspace ? '수정일 (Modified)' : '수정일'}</div>
                 </div>
 
                 <div className="flex flex-col min-h-[300px]">
-                  {visibleFiles.length > 0 ? (
+                  {aiWorkspace && workspaceId && (aiDesignOpen || showAiFolder) ? <WorkspaceAiDesignFiles workspaceId={workspaceId} open={aiDesignOpen} onOpen={() => setAiDesignOpen(true)} onReady={setAiDesignAvailable} searchText={searchText} sortMode={sortMode} ownerName="AI 설계" /> : null}
+                  {!aiDesignOpen && (visibleFiles.length > 0 ? (
                     visibleFiles.map((item) => renderFileRow(item))
-                  ) : (
+                  ) : showEmptyFolder ? (
                     <div className="squad-files-fade-in flex h-48 flex-col items-center justify-center text-gray-400">
                       <i className="fas fa-folder-open text-4xl mb-3 opacity-50"></i>
                       <p className="text-sm font-bold">이 폴더가 비어있거나 조건에 맞는 파일이 없습니다.</p>
                     </div>
-                  )}
+                  ) : null)}
                 </div>
               </div>
             </div>
@@ -600,7 +618,6 @@ export default function SquadFilesApp() {
         </div>
       ) : null}
 
-      <SquadWorkspaceAiPanel />
 
       {renderAuthModal()}
     </div>

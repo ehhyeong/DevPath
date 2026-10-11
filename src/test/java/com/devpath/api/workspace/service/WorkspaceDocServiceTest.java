@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.devpath.api.workspace.dto.UpdateWorkspaceDocRequest;
+import com.devpath.common.provider.GeminiProvider;
 import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.ActivityLog;
@@ -19,6 +20,7 @@ import com.devpath.domain.workspace.repository.MeetingNoteRepository;
 import com.devpath.domain.workspace.repository.WorkspaceDocRepository;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,8 @@ class WorkspaceDocServiceTest {
   @Mock private ActivityLogRepository activityLogRepository;
   @Mock private UserRepository userRepository;
   @Mock private TeamWorkspaceHeaderNotificationService headerNotificationService;
+  @Mock private WorkspaceAiDesignWorkspaceService aiDesignWorkspaceService;
+  @Mock private GeminiProvider geminiProvider;
 
   private WorkspaceDocService workspaceDocService;
 
@@ -51,7 +55,10 @@ class WorkspaceDocServiceTest {
             workspaceMemberRepository,
             activityLogRepository,
             userRepository,
-            headerNotificationService);
+            headerNotificationService,
+            aiDesignWorkspaceService,
+            geminiProvider,
+            new ObjectMapper());
   }
 
   @Test

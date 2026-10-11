@@ -7,18 +7,22 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.devpath.api.notification.service.NotificationEventService;
 import com.devpath.api.workspace.dto.WorkspaceHubProjectResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteAcceptResponse;
 import com.devpath.api.workspace.dto.WorkspaceInviteLinkResponse;
+import com.devpath.api.workspace.dto.WorkspaceInviteRequest;
 import com.devpath.common.exception.CustomException;
 import com.devpath.domain.mentoring.repository.MentoringRepository;
 import com.devpath.domain.project.entity.ProjectType;
 import com.devpath.domain.project.repository.ProjectMemberRepository;
 import com.devpath.domain.project.repository.ProjectRepository;
+import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.repository.UserProfileRepository;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.ActivityLog;
 import com.devpath.domain.workspace.entity.Workspace;
+import com.devpath.domain.workspace.entity.WorkspaceAiDesign;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
 import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
@@ -26,11 +30,14 @@ import com.devpath.domain.workspace.entity.WorkspaceType;
 import com.devpath.domain.workspace.repository.ActivityLogRepository;
 import com.devpath.domain.workspace.repository.CalendarEventRepository;
 import com.devpath.domain.workspace.repository.MilestoneRepository;
+import com.devpath.domain.workspace.repository.WorkspaceAiDesignRepository;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +50,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 class WorkspaceHubProjectServiceTest {
 
   @Mock private WorkspaceMemberRepository workspaceMemberRepository;
+  @Mock private WorkspaceAiDesignRepository workspaceAiDesignRepository;
   @Mock private WorkspaceRepository workspaceRepository;
   @Mock private WorkspaceTaskRepository workspaceTaskRepository;
   @Mock private MilestoneRepository milestoneRepository;
@@ -53,6 +61,7 @@ class WorkspaceHubProjectServiceTest {
   @Mock private UserRepository userRepository;
   @Mock private UserProfileRepository userProfileRepository;
   @Mock private ActivityLogRepository activityLogRepository;
+  @Mock private NotificationEventService notificationEventService;
 
   private WorkspaceHubProjectService service;
 
@@ -65,10 +74,13 @@ class WorkspaceHubProjectServiceTest {
             projectRepository,
             projectMemberRepository,
             activityLogRepository,
-            new WorkspaceInviteTokenCodec());
+            new WorkspaceInviteTokenCodec("workspace-invite-test-secret"),
+            userRepository,
+            notificationEventService);
     service =
         new WorkspaceHubProjectService(
             workspaceMemberRepository,
+            workspaceAiDesignRepository,
             workspaceRepository,
             workspaceTaskRepository,
             milestoneRepository,
@@ -120,6 +132,107 @@ class WorkspaceHubProjectServiceTest {
   }
 
   @Test
+  void emailInviteNotifiesRegisteredAccountWithoutAddingMember() {
+    Workspace workspace = workspace(10L, 1L);
+    User invitee = User.builder().email("invitee@example.com").name("초대받을 팀원").build();
+    ReflectionTestUtils.setField(invitee, "id", 2L);
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L)).thenReturn(Optional.of(workspace));
+    when(userRepository.findByEmail("invitee@example.com")).thenReturn(Optional.of(invitee));
+
+    service.sendInvite(10L, 1L, new WorkspaceInviteRequest(" Invitee@Example.com "));
+
+    ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
+    verify(notificationEventService)
+        .notifyWorkspaceInvited(
+            org.mockito.ArgumentMatchers.eq(2L),
+            org.mockito.ArgumentMatchers.eq(workspace.getName()),
+            pathCaptor.capture());
+    String token = pathCaptor.getValue().substring("/workspace-hub?inviteToken=".length());
+    assertThat(
+            new WorkspaceInviteTokenCodec("workspace-invite-test-secret")
+                .decode(token)
+                .workspaceId())
+        .isEqualTo(10L);
+    verify(workspaceMemberRepository, never()).save(any(WorkspaceMember.class));
+  }
+
+  @Test
+  void nonMemberCannotSendInviteOrLookUpRecipient() {
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L))
+        .thenReturn(Optional.of(workspace(10L, 1L)));
+
+    assertThatThrownBy(
+            () -> service.sendInvite(10L, 3L, new WorkspaceInviteRequest("invitee@example.com")))
+        .isInstanceOf(CustomException.class)
+        .hasMessage("워크스페이스에 접근할 권한이 없습니다.");
+    verify(userRepository, never()).findByEmail(any());
+    verify(notificationEventService, never()).notifyWorkspaceInvited(any(), any(), any());
+  }
+
+  @Test
+  void emailInviteRejectsUnknownAccountAndDoesNotSendNotification() {
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L))
+        .thenReturn(Optional.of(workspace(10L, 1L)));
+    when(userRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(
+            () -> service.sendInvite(10L, 1L, new WorkspaceInviteRequest("missing@example.com")))
+        .isInstanceOf(CustomException.class)
+        .hasMessageContaining("초대 링크를 공유");
+    verify(notificationEventService, never()).notifyWorkspaceInvited(any(), any(), any());
+  }
+
+  @Test
+  void emailInviteRejectsExistingMember() {
+    User invitee = User.builder().email("invitee@example.com").name("참여 중인 팀원").build();
+    ReflectionTestUtils.setField(invitee, "id", 2L);
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L))
+        .thenReturn(Optional.of(workspace(10L, 1L)));
+    when(userRepository.findByEmail("invitee@example.com")).thenReturn(Optional.of(invitee));
+    when(workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(10L, 2L)).thenReturn(true);
+
+    assertThatThrownBy(
+            () -> service.sendInvite(10L, 1L, new WorkspaceInviteRequest("invitee@example.com")))
+        .isInstanceOf(CustomException.class)
+        .hasMessage("이미 참여 중인 팀원입니다.");
+    verify(notificationEventService, never()).notifyWorkspaceInvited(any(), any(), any());
+  }
+
+  @Test
+  void expiredInviteCannotAddMember() {
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L))
+        .thenReturn(Optional.of(workspace(10L, 1L)));
+    String token =
+        new WorkspaceInviteTokenCodec("workspace-invite-test-secret")
+            .encode(10L, LocalDateTime.now().minusDays(1));
+
+    assertThatThrownBy(() -> service.acceptInvite(token, 2L)).isInstanceOf(CustomException.class);
+    verify(workspaceMemberRepository, never()).save(any(WorkspaceMember.class));
+  }
+
+  @Test
+  void acceptingAiWorkspaceInvitePreservesAiDashboardRoute() {
+    when(workspaceRepository.findByIdAndIsDeletedFalse(10L))
+        .thenReturn(Optional.of(workspace(10L, 1L)));
+    when(workspaceAiDesignRepository.findByWorkspaceId(10L))
+        .thenReturn(Optional.of(new WorkspaceAiDesign(10L, UUID.randomUUID(), "{}")));
+    WorkspaceInviteLinkResponse link = service.createInviteLink(10L, 1L);
+
+    assertThat(service.acceptInvite(link.token(), 2L).dashboardUrl())
+        .isEqualTo("/squad-dashboard?workspaceId=10&ai=1");
+  }
+
+  @Test
+  void inviteSignedWithDifferentSecretIsRejected() {
+    String token =
+        new WorkspaceInviteTokenCodec("different-server-secret")
+            .encode(10L, LocalDateTime.now().plusDays(1));
+
+    assertThatThrownBy(() -> service.acceptInvite(token, 2L)).isInstanceOf(CustomException.class);
+    verify(workspaceMemberRepository, never()).save(any(WorkspaceMember.class));
+  }
+
+  @Test
   void memberLeavesProjectAndActivityIsRecorded() {
     long workspaceId = 10L;
     long learnerId = 2L;
@@ -144,7 +257,7 @@ class WorkspaceHubProjectServiceTest {
   void getProjectsCalculatesTaskProgressAndUsesMemberPosition() {
     long workspaceId = 10L;
     long learnerId = 2L;
-    Workspace workspace = workspace(workspaceId, 1L, WorkspaceType.SOLO);
+    Workspace workspace = workspace(workspaceId, 1L, WorkspaceType.SQUAD);
     WorkspaceMember member =
         WorkspaceMember.builder()
             .workspaceId(workspaceId)
@@ -179,12 +292,16 @@ class WorkspaceHubProjectServiceTest {
             .findAllByWorkspaceIdInAndStartAtGreaterThanEqualAndIsDeletedFalseOrderByStartAtAsc(
                 any(), any()))
         .thenReturn(List.of());
+    when(workspaceAiDesignRepository.findAllByWorkspaceIdIn(List.of(workspaceId)))
+        .thenReturn(List.of(new WorkspaceAiDesign(workspaceId, UUID.randomUUID(), "{}")));
 
     List<WorkspaceHubProjectResponse> result = service.getProjects(learnerId);
 
     assertThat(result).hasSize(1);
     assertThat(result.getFirst().getProgressPercent()).isEqualTo(50);
     assertThat(result.getFirst().getRoleLabel()).isEqualTo("BE");
+    assertThat(result.getFirst().getDashboardUrl())
+        .isEqualTo("/squad-dashboard?workspaceId=10&ai=1");
   }
 
   private Workspace workspace(Long workspaceId, Long ownerId) {

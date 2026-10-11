@@ -1,7 +1,6 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
-import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
@@ -10,6 +9,7 @@ import { projectApiRequest } from '../project/api'
 import { createSquadNotification, squadActorName } from './notifications'
 import { useWorkspaceDataVersion } from '../../lib/workspace-events'
 import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
+import { AiRoadmapStrip, type AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
 
 type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
@@ -311,7 +311,7 @@ function sortEvents(events: CalendarEvent[]) {
   return [...events].sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime())
 }
 
-export default function SquadScheduleApp() {
+export default function SquadScheduleApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const dataVersion = useWorkspaceDataVersion()
   const [session,setSession] = useAuthSession()
@@ -643,10 +643,11 @@ export default function SquadScheduleApp() {
 
   return (
     <div className="squad-dashboard-page squad-schedule-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
-      <SquadWorkspaceAside activePage="schedule" workspaceId={workspaceId} projectName={projectName} />
+      <SquadWorkspaceAside activePage="schedule" workspaceId={workspaceId} projectName={projectName} aiWorkspace={aiWorkspace} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <SquadWorkspaceHeader
+          aiWorkspace={aiWorkspace}
           workspaceId={workspaceId}
           projectName={projectName}
           members={members}
@@ -692,6 +693,7 @@ export default function SquadScheduleApp() {
 
           <div className="schedule-content-wrap flex flex-1 gap-[24px]! overflow-hidden bg-[#F3F4F6] p-[24px]!">
               <section className="schedule-calendar-panel flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-w-0">
+                {aiWorkspace && design ? <AiRoadmapStrip design={design} workspaceId={workspaceId} events={events.filter((event) => parseCategory(event) === 'milestone')} todayKey={todayKey} onSelectDate={setCurrentDate} /> : null}
                 <div className="schedule-calendar-header flex min-h-[69px] shrink-0 items-center justify-between border-b border-gray-100 bg-white p-[20px]!">
                   <h2 className="schedule-current-date m-0 flex items-center gap-2 text-[20px]! leading-[28px]! font-extrabold text-gray-900">
                     <span>{displayLabel}</span>
@@ -962,7 +964,6 @@ export default function SquadScheduleApp() {
         </div>
       ) : null}
 
-      <SquadWorkspaceAiPanel />
 
       {renderAuthModal()}
     </div>

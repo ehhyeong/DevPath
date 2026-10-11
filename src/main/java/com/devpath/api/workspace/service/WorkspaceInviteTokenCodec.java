@@ -11,12 +11,18 @@ import java.time.ZoneOffset;
 import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 class WorkspaceInviteTokenCodec {
 
-  private static final String SIGNATURE_SECRET = "DevPathWorkspaceInviteV1";
+  private final String signatureSecret;
+
+  // 공개된 상수로 초대 토큰을 위조할 수 없도록 서버 비밀 값을 재사용한다.
+  WorkspaceInviteTokenCodec(@Value("${jwt.secret}") String signatureSecret) {
+    this.signatureSecret = signatureSecret;
+  }
 
   String encode(Long workspaceId, LocalDateTime expiresAt) {
     long expiresAtEpochSeconds = expiresAt.toEpochSecond(ZoneOffset.UTC);
@@ -55,7 +61,7 @@ class WorkspaceInviteTokenCodec {
   private String sign(String payload) {
     try {
       Mac mac = Mac.getInstance("HmacSHA256");
-      mac.init(new SecretKeySpec(SIGNATURE_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+      mac.init(new SecretKeySpec(signatureSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
       return Base64.getUrlEncoder()
           .withoutPadding()
           .encodeToString(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));

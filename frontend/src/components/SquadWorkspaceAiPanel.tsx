@@ -13,7 +13,7 @@ type WorkspaceAiAction = {
   [field: string]: unknown
 }
 
-/** 스쿼드 워크스페이스 공용 AI 패널. 대시보드·현황판·일정·자료실·ERD·코드 피드백이 같은 문구를 쓴다. */
+/** 스쿼드 워크스페이스 전체 페이지의 공용 AI 패널. */
 export default function SquadWorkspaceAiPanel() {
   async function executeActions(workspaceId: number, actions: WorkspaceAiAction[]): Promise<string> {
     // ERD 화면은 편집기를 schemaJson으로, 다이어그램을 mermaid로 그리므로 둘을 함께 저장해 어긋나지 않게 한다.

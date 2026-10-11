@@ -26,6 +26,7 @@ export type WorkspaceTask = {
   workspaceId: number
   title: string
   description?: string | null
+  featureIds?: string[]
   status: TaskStatus
   priority?: TaskPriority | null
   assigneeId?: number | null
@@ -33,8 +34,10 @@ export type WorkspaceTask = {
 }
 
 export type TaskFormState = {
+  tag: string
   title: string
   description: string
+  featureIds: string[]
   status: TaskStatus
   priority: TaskPriority
   assigneeId: string

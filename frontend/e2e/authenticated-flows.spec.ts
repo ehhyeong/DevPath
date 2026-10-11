@@ -217,6 +217,53 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
+test('워크스페이스 허브는 AI 설계 스쿼드를 구분하고 기존 카드 동작을 유지한다', async ({ page }) => {
+  const squad = {
+    projectId: 11, domId: 'workspace-11', menuId: 'menu-11', type: 'squad', status: 'progress',
+    dashboardUrl: '/squad-dashboard?workspaceId=11', title: '직접 설정한 스쿼드', description: '팀이 직접 정한 프로젝트',
+    progressPercent: 25, roleLabel: 'BE', footerKind: 'avatars', footerDateLabel: '2026-10-11',
+    memberAvatarSeeds: ['workspace-member-101'],
+  }
+  await page.route('**/api/workspaces/hub/projects', (route) => route.fulfill({ json: { success: true, data: [
+    { ...squad, projectId: 12, domId: 'workspace-12', menuId: 'menu-12', dashboardUrl: '/squad-dashboard?ai=1&workspaceId=12', title: 'AI로 설계한 스쿼드', categoryLabel: 'AI 설계', roleLabel: 'FE', progressPercent: 50 },
+    squad,
+    { ...squad, projectId: 13, domId: 'workspace-13', menuId: 'menu-13', type: 'mentoring', dashboardUrl: '/mentoring-dashboard?workspaceId=13', title: '멘토링 프로젝트' },
+  ] } }))
+
+  await login(page, '/workspace-hub')
+  await page.goto('/workspace-hub')
+  const aiCard = page.locator('#workspace-12')
+  const manualCard = page.locator('#workspace-11')
+  const mentoringCard = page.locator('#workspace-13')
+  await expect(aiCard.getByText('AI 설계 스쿼드', { exact: true })).toBeVisible()
+  await expect(aiCard).toHaveCSS('background-image', /linear-gradient/)
+  await expect(manualCard.getByText('SQUAD', { exact: true })).toBeVisible()
+  await expect(manualCard).toHaveCSS('background-image', 'none')
+  await expect(mentoringCard.getByText('MENTORING', { exact: true })).toBeVisible()
+  await expect(mentoringCard).toHaveCSS('background-image', 'none')
+  await expect(aiCard.getByText('FE', { exact: true })).toBeVisible()
+  await expect(manualCard.getByText('BE', { exact: true })).toBeVisible()
+  await expect(aiCard.locator('[style*="width"]')).toHaveAttribute('style', 'width: 50%;')
+
+  await page.getByRole('button', { name: '팀 (Squad)', exact: true }).click()
+  await expect(aiCard).toBeVisible()
+  await expect(manualCard).toBeVisible()
+  await expect(mentoringCard).toHaveCount(0)
+  await aiCard.getByRole('button').click()
+  await expect(aiCard.getByRole('link', { name: '멤버 관리' })).toBeVisible()
+  await aiCard.getByRole('link', { name: /설정$/ }).click()
+  await expect(page.locator('#settingsModal input').first()).toHaveValue('AI로 설계한 스쿼드')
+  await expect(page).toHaveURL(/\/workspace-hub$/)
+  await page.locator('#settingsModal button').first().click()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(aiCard.getByText('AI 설계 스쿼드', { exact: true })).toBeVisible()
+  const cardBox = await aiCard.boundingBox()
+  const menuBox = await aiCard.getByRole('button').boundingBox()
+  expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width)
+  await aiCard.getByRole('heading').click()
+  await expect(page).toHaveURL(/\/squad-dashboard\?ai=1&workspaceId=12$/)
+})
+
 test('워크스페이스 허브 새 프로젝트 모달은 제공 시안의 화면 전환만 수행한다', async ({ page }) => {
   const projectMutationRequests: string[] = []
   page.on('request', (request) => {

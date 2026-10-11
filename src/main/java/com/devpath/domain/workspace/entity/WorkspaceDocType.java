@@ -4,5 +4,6 @@ public enum WorkspaceDocType {
   ERD,
   API_SPEC,
   INFRA,
-  MEETING_SETTINGS
+  MEETING_SETTINGS,
+  INTERVIEW_QUESTIONS
 }

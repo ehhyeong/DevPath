@@ -5,6 +5,7 @@ import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class WorkspaceTaskResponse {
   private Long workspaceId;
   private String title;
   private String description;
+  private List<String> featureIds;
   private WorkspaceTaskStatus status;
   private WorkspaceTaskPriority priority;
   private Long assigneeId;
@@ -35,6 +37,7 @@ public class WorkspaceTaskResponse {
         .workspaceId(task.getWorkspaceId())
         .title(task.getTitle())
         .description(task.getDescription())
+        .featureIds(task.getFeatureIds())
         .status(task.getStatus())
         .priority(task.getPriority())
         .assigneeId(task.getAssigneeId())

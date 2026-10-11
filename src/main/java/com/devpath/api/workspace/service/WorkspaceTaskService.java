@@ -12,9 +12,12 @@ import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
+import com.devpath.domain.workspace.repository.WorkspaceAiDesignRepository;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,8 @@ public class WorkspaceTaskService {
   private final WorkspaceRepository workspaceRepository;
   private final WorkspaceMemberRepository workspaceMemberRepository;
   private final NotificationEventService notificationEventService;
+  private final WorkspaceAiDesignRepository workspaceAiDesignRepository;
+  private final ObjectMapper objectMapper;
 
   @Transactional
   public WorkspaceTaskResponse createTask(
@@ -50,6 +55,8 @@ public class WorkspaceTaskService {
             .dueDate(request.getDueDate())
             .createdById(userId)
             .build();
+
+    task.changeFeatureIds(validateFeatureIds(workspaceId, request.getFeatureIds()));
 
     return WorkspaceTaskResponse.from(workspaceTaskRepository.save(task));
   }
@@ -126,6 +133,9 @@ public class WorkspaceTaskService {
         request.getPriority() != null ? request.getPriority() : task.getPriority();
 
     task.update(request.getTitle(), request.getDescription(), priority, request.getDueDate());
+    if (request.getFeatureIds() != null) {
+      task.changeFeatureIds(validateFeatureIds(workspaceId, request.getFeatureIds()));
+    }
     return WorkspaceTaskResponse.from(task);
   }
 
@@ -140,6 +150,9 @@ public class WorkspaceTaskService {
         request.getPriority() != null ? request.getPriority() : task.getPriority();
 
     task.update(request.getTitle(), request.getDescription(), priority, request.getDueDate());
+    if (request.getFeatureIds() != null) {
+      task.changeFeatureIds(validateFeatureIds(workspaceId, request.getFeatureIds()));
+    }
     return WorkspaceTaskResponse.from(task);
   }
 
@@ -249,6 +262,36 @@ public class WorkspaceTaskService {
   }
 
   // --- 내부 헬퍼 ---
+
+  private List<String> validateFeatureIds(Long workspaceId, List<String> featureIds) {
+    if (featureIds == null || featureIds.isEmpty()) {
+      return List.of();
+    }
+    // 기능 연결 저장과 설계의 기능 삭제가 동시에 진행되지 않도록 같은 설계 행을 잠근다.
+    var design =
+        workspaceAiDesignRepository
+            .findForUpdateByWorkspaceId(workspaceId)
+            .orElseThrow(() -> new CustomException(ErrorCode.INVALID_INPUT_VALUE));
+    try {
+      var scenario = objectMapper.readTree(design.getDesignJson()).path("scenario");
+      var features = scenario.path("coreFeatures");
+      var validIds =
+          scenario.path("featureIds").isArray()
+              ? objectMapper.convertValue(
+                  scenario.path("featureIds"),
+                  new com.fasterxml.jackson.core.type.TypeReference<List<String>>() {})
+              : java.util.stream.IntStream.rangeClosed(1, features.size())
+                  .mapToObj(index -> "F" + index)
+                  .toList();
+      if (!features.isArray() || featureIds.stream().anyMatch(id -> !validIds.contains(id))) {
+        throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+      }
+      return featureIds.stream().distinct().toList();
+    } catch (JsonProcessingException exception) {
+      // 손상된 설계에는 기능 ID를 검증할 수 없으므로 연결을 저장하지 않는다.
+      throw new CustomException(ErrorCode.WORKSPACE_AI_DESIGN_FAILED);
+    }
+  }
 
   private void validateWorkspaceExists(Long workspaceId) {
     workspaceRepository

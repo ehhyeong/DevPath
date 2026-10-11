@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { RouteErrorBoundary } from '../../components/AppRouteStates'
 import AiSquadWorkspaceApp from './AiSquadWorkspaceApp'
 import { squadDashboardPage, squadPageLoaders } from './pages'
+import { readWorkspaceIdFromLocation } from '../../lib/location-state'
+import SquadWorkspaceTools from './SquadWorkspaceTools'
 
 type SquadPagePath = keyof typeof squadPageLoaders
 
@@ -41,6 +43,7 @@ function getCurrentSquadPagePath(): SquadPagePath {
 export default function SquadHubApp() {
   const currentPath = getCurrentSquadPagePath()
   const aiWorkspace = new URLSearchParams(window.location.search).get('ai') === '1'
+  const workspaceId = readWorkspaceIdFromLocation()
   const [visitedPaths, setVisitedPaths] = useState<Set<SquadPagePath>>(() => new Set([currentPath]))
   const renderedPaths = visitedPaths.has(currentPath)
     ? visitedPaths
@@ -53,21 +56,20 @@ export default function SquadHubApp() {
       : pageTitles[currentPath]
   }, [aiWorkspace, currentPath])
 
-  if (aiWorkspace) {
-    return <AiSquadWorkspaceApp />
-  }
+  return <>
+    {aiWorkspace ? <AiSquadWorkspaceApp /> : Array.from(renderedPaths).map((path) => {
+      const Page = squadPages[path]
 
-  return Array.from(renderedPaths).map((path) => {
-    const Page = squadPages[path]
-
-    return (
-      <div key={path} className={path === currentPath ? 'contents' : 'hidden'} aria-hidden={path !== currentPath}>
-        <RouteErrorBoundary resetKey={path}>
-          <Suspense fallback={null}>
-            <Page />
-          </Suspense>
-        </RouteErrorBoundary>
-      </div>
-    )
-  })
+      return (
+        <div key={path} className={path === currentPath ? 'contents' : 'hidden'} aria-hidden={path !== currentPath}>
+          <RouteErrorBoundary resetKey={path}>
+            <Suspense fallback={null}>
+              <Page />
+            </Suspense>
+          </RouteErrorBoundary>
+        </div>
+      )
+    })}
+    {workspaceId ? <SquadWorkspaceTools key={workspaceId} workspaceId={workspaceId} /> : null}
+  </>
 }

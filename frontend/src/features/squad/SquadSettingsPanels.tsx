@@ -52,6 +52,23 @@ function memberName(member: WorkspaceMember) {
   return member.learnerName?.trim() || '팀원'
 }
 
+const memberPositions = [
+  ['', '직군 미지정'], ['FE', '프론트엔드'], ['BE', '백엔드'], ['FS', '풀스택'],
+  ['DES', '디자이너'], ['OPS', '인프라 / DevOps'], ['PM', '기획 / PM'],
+] as const
+
+function memberPosition(member: WorkspaceMember) {
+  if (memberPositions.some(([key]) => key === member.roleLabel)) return member.roleLabel!
+  const value = (member.position ?? '').toLowerCase()
+  if (/front|프론트/.test(value)) return 'FE'
+  if (/back|백엔드/.test(value)) return 'BE'
+  if (/full|풀스택/.test(value)) return 'FS'
+  if (/design|디자/.test(value)) return 'DES'
+  if (/devops|infra|인프라/.test(value)) return 'OPS'
+  if (/기획|pm/.test(value)) return 'PM'
+  return ''
+}
+
 function formatDate(value?: string | null) {
   if (!value) {
     return '-'
@@ -181,23 +198,30 @@ export function InfoTile({ label, value }: { label: string; value: string }) {
 export function MembersPanel({
   settings,
   currentUserId,
+  onInvite,
+  busyMemberId,
+  onPositionChange,
 }: {
   settings: WorkspaceSettings
   currentUserId: number | null
+  onInvite: () => void
+  busyMemberId: number | null
+  onPositionChange: (memberId: number, position: string) => void
 }) {
   return (
     <section className="squad-settings-fade-in space-y-8">
       <div className="flex justify-between items-end">
         <div>
           <h3 className="text-xl font-black text-gray-900 mb-1">팀원 관리</h3>
-          <p className="text-sm text-gray-500 font-medium">참여 중인 팀원을 관리하고 권한을 부여합니다.</p>
+          <p className="text-sm text-gray-500 font-medium">방장은 자신과 팀원의 담당 직군을 변경할 수 있습니다. 방장 권한과 직군은 별개입니다.</p>
         </div>
+        <button type="button" onClick={onInvite} className="flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md"><i className="fas fa-user-plus" /> 팀원 초대</button>
       </div>
 
       <div className="squad-settings-card overflow-hidden rounded-[1rem] border border-[#F3F4F6] bg-white [box-shadow:0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 bg-gray-50/50 text-xs font-extrabold text-gray-500 uppercase tracking-wider items-center">
           <div className="col-span-5 pl-4">이름</div>
-          <div className="col-span-3">역할</div>
+          <div className="col-span-3">담당 직군</div>
           <div className="col-span-2 text-center">상태</div>
           <div className="col-span-2 text-right pr-4">관리</div>
         </div>
@@ -220,10 +244,7 @@ export function MembersPanel({
                 </div>
 
                 <div className="col-span-3">
-                  <span className={`px-3 py-1 rounded-lg text-xs font-bold flex w-fit items-center gap-1.5 ${owner ? 'bg-yellow-50 text-yellow-600 border border-yellow-200' : 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
-                    <i className={owner ? 'fas fa-crown' : 'fas fa-user'} />
-                    {owner ? '방장' : '팀원'}
-                  </span>
+                  {settings.canManage ? <select aria-label={`${memberName(member)} 직군`} value={memberPosition(member)} disabled={busyMemberId !== null} onChange={(event) => onPositionChange(member.memberId, event.target.value)} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 outline-none focus:border-brand disabled:opacity-50">{memberPositions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <span className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600">{memberPositions.find(([value]) => value === memberPosition(member))?.[1]}</span>}
                 </div>
 
                 <div className="col-span-2 text-center">
@@ -233,7 +254,7 @@ export function MembersPanel({
                   </span>
                 </div>
 
-                <div className="col-span-2 text-right pr-4 text-xs font-medium text-gray-400">-</div>
+                <div className="col-span-2 text-right pr-4 text-xs font-medium text-gray-400">{busyMemberId === member.memberId ? '저장 중...' : '-'}</div>
               </div>
             )
           })
@@ -256,6 +277,7 @@ export function IntegrationsPanel({
   onGithubTokenChange,
   onToggle,
   onSyncGithub,
+  aiWorkspace = false,
 }: {
   integrations: ExternalIntegration[]
   canManage: boolean
@@ -267,23 +289,24 @@ export function IntegrationsPanel({
   onGithubTokenChange: (value: string) => void
   onToggle: (provider: IntegrationProvider, forcedActive?: boolean) => void
   onSyncGithub: () => void
+  aiWorkspace?: boolean
 }) {
   return (
     <section className="squad-settings-fade-in space-y-8">
       <div>
         <h3 className="text-xl font-black text-gray-900 mb-1">외부 서비스 연동</h3>
-        <p className="text-sm text-gray-500 font-medium">스쿼드에서 사용할 외부 서비스 연동 상태를 관리합니다.</p>
+        <p className="text-sm text-gray-500 font-medium">{aiWorkspace ? 'GitHub 저장소, Discord/Slack 웹훅을 연결하여 알림을 자동화하세요.' : '스쿼드에서 사용할 외부 서비스 연동 상태를 관리합니다.'}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {(Object.keys(integrationMeta) as IntegrationProvider[]).map((provider) => {
+        {(aiWorkspace ? ['GITHUB', 'DISCORD'] as IntegrationProvider[] : Object.keys(integrationMeta) as IntegrationProvider[]).map((provider) => {
           const meta = integrationMeta[provider]
           const integration = integrations.find((item) => item.provider === provider)
           const active = isIntegrationActive(integration)
           const busy = busyIntegration === provider
           const github = provider === 'GITHUB'
           const githubRepositoryChanged =
-            github && githubRepositoryUrl.trim() !== (integration?.repositoryUrl ?? '')
+            github && (githubRepositoryUrl.trim() !== (integration?.repositoryUrl ?? '') || Boolean(githubToken.trim()))
 
           return (
             <div key={provider} className="squad-settings-card group relative overflow-hidden rounded-[1rem] border border-[#F3F4F6] bg-white p-6 [box-shadow:0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-gray-300">
@@ -292,8 +315,8 @@ export function IntegrationsPanel({
                 <div className="flex items-center gap-3">
                   <i className={`${meta.icon} text-3xl ${meta.iconColor}`} />
                   <div>
-                    <h4 className="font-bold text-gray-900">{meta.title}</h4>
-                    <p className="text-[10px] text-gray-500 font-medium">{meta.description}</p>
+                    <h4 className="font-bold text-gray-900">{aiWorkspace ? (provider === 'GITHUB' ? 'GitHub Repository' : 'Discord Webhook') : meta.title}</h4>
+                    <p className="text-[10px] text-gray-500 font-medium">{aiWorkspace ? (provider === 'GITHUB' ? 'PR 및 커밋 내역 자동 연동' : '칸반 변동사항 채널 알림 발송') : meta.description}</p>
                   </div>
                 </div>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${active ? 'bg-green-50 text-green-600 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
@@ -313,6 +336,7 @@ export function IntegrationsPanel({
                     <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-gray-400">Repository URL</span>
                     <input
                       value={githubRepositoryUrl}
+                      aria-label="Repository URL"
                       onChange={(event) => onGithubRepositoryUrlChange(event.target.value)}
                       disabled={!canManage || busy || syncingGithub}
                       className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-800 outline-none transition focus:border-gray-900 disabled:bg-gray-50 disabled:text-gray-400"
@@ -331,6 +355,7 @@ export function IntegrationsPanel({
                     </span>
                     <input
                       type="password"
+                      aria-label="GitHub Access Token"
                       value={githubToken}
                       onChange={(event) => onGithubTokenChange(event.target.value)}
                       disabled={!canManage || busy || syncingGithub}

@@ -1,15 +1,21 @@
+import { useEffect, useRef, useState } from 'react'
+import { aiWorkspacePageHref } from './ai-workspace-navigation'
 import type { SquadErdReadyModel } from './useSquadErdController'
 import AuthModal from '../../components/AuthModal'
-import SquadWorkspaceAiPanel from '../../components/SquadWorkspaceAiPanel'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
-import { ON_DELETE_OPTIONS,RELATIONSHIP_TYPE_OPTIONS,SQL_TYPE_OPTIONS,exportSql,formatRelativeTime,safeSchemaFromJson,schemaStats } from './erd-support'
+import { ON_DELETE_OPTIONS,RELATIONSHIP_TYPE_OPTIONS,SQL_TYPE_OPTIONS,exportSql,formatRelativeTime,getErdViewportScale,safeSchemaFromJson,schemaStats } from './erd-support'
 import type { ErdRelationship } from './erd-types'
+import { type AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
 
-type SquadErdViewProps = {
+type SquadErdViewProps = AiWorkspacePageProps & {
   model: SquadErdReadyModel
 }
 
-export default function SquadErdView({ model }: SquadErdViewProps) {
+export default function SquadErdView({ model, aiWorkspace = false, design }: SquadErdViewProps) {
+  const [aiBannerOpen, setAiBannerOpen] = useState(false)
+  const [diagramViewport, setDiagramViewport] = useState({ width: 0, height: 0, scale: 1 })
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const diagramRef = useRef<HTMLDivElement>(null)
   const {
     workspaceId,
     projectName,
@@ -85,22 +91,57 @@ export default function SquadErdView({ model }: SquadErdViewProps) {
     handleAuthenticated,
   } = model
 
+  useEffect(() => {
+    if (!aiWorkspace || !diagramSvg) return
+    const canvas = canvasRef.current
+    const svg = diagramRef.current?.querySelector('svg')
+    if (!canvas || !svg) return
+    const { width, height } = svg.viewBox.baseVal
+    if (width <= 0 || height <= 0) return
+
+    // Mermaid의 width="100%"는 폭 없는 flex 자식에서 SVG 기본 폭 300px로 축소된다.
+    const updateScale = () => setDiagramViewport({ width, height, scale: getErdViewportScale(width, height, canvas.clientWidth, canvas.clientHeight) })
+    updateScale()
+    const observer = new ResizeObserver(updateScale)
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [aiWorkspace, diagramSvg])
+
   return (
     (
     <div className="squad-dashboard-page squad-erd-page flex h-screen w-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[#374151] [&_.squad-erd-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards] [&_.squad-erd-modal-enter]:[animation:modalScaleIn_0.2s_ease-out_forwards]">
-      <SquadWorkspaceAside activePage="erd" workspaceId={workspaceId} projectName={projectName} />
+      <SquadWorkspaceAside activePage="erd" workspaceId={workspaceId} projectName={projectName} aiWorkspace={aiWorkspace} />
 
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
-        <div className="erd-topbar h-[64px]! bg-white border-b border-gray-200 flex justify-between items-center px-[24px]! shrink-0 z-20">
-          <div className="flex items-center gap-3">
-            <h2 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+        <div className={`erd-topbar bg-white border-b border-gray-200 flex justify-between items-center px-[24px]! shrink-0 ${aiWorkspace ? 'min-h-[64px] flex-wrap gap-3 py-3 z-30' : 'h-[64px]! z-20'}`}>
+          <div className={`flex items-center gap-3 ${aiWorkspace ? 'flex-wrap' : ''}`}>
+            <h2 className={`font-bold text-gray-800 text-lg flex items-center gap-2 ${aiWorkspace ? 'shrink-0 whitespace-nowrap' : ''}`}>
               <i className="fas fa-project-diagram text-brand"></i> ERD Architect Pro
             </h2>
             <span className="hidden md:inline-flex text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-200 rounded-full px-2 py-1">
               v{schema.tables.length + schema.relationships.length}
             </span>
+            {aiWorkspace && design ? <section aria-label="AI 추천 스키마" className="relative shrink-0">
+              <button type="button" aria-label="AI 추천 스키마 안내" aria-expanded={aiBannerOpen} aria-controls="erd-ai-banner-body" onClick={() => setAiBannerOpen((current) => !current)} className="flex items-center justify-between gap-3 rounded-lg border border-teal-100 bg-teal-50 px-[10px]! py-[6px]! hover:bg-teal-100">
+                <span className="flex items-center gap-2.5 text-left">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand text-white"><i aria-hidden="true" className="fas fa-magic text-xs" /></span>
+                  <span><span className="block whitespace-nowrap text-xs font-extrabold text-teal-800">AI 추천 스키마를 불러왔습니다</span><span className="block text-[10px] font-medium text-gray-500">AI 설계서 · 아키텍처 &amp; DB</span></span>
+                </span>
+                <i aria-hidden="true" className={`fas fa-chevron-down text-xs text-gray-400 transition ${aiBannerOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <div id="erd-ai-banner-body" hidden={!aiBannerOpen} className="absolute left-0 top-[calc(100%_+_8px)] z-40 w-[360px] space-y-3 rounded-2xl border border-teal-100 bg-white p-4 shadow-lg">
+                <div className="rounded-xl border border-red-100 bg-red-50 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-[11px] font-extrabold text-red-700"><i aria-hidden="true" className="fas fa-fire" />핵심 기술적 난제</p>
+                  <p className="text-[11px] leading-relaxed text-red-700/90">{design.architecture.technicalChallenges[0] ?? '등록된 기술적 난제가 없습니다.'}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" disabled={saving} onClick={() => { if (window.confirm('현재 ERD를 AI 설계서 원본으로 되돌리고 저장할까요?')) void saveDocument(design.architecture.erdMermaid) }} className="flex-1 rounded-lg border border-teal-100 bg-teal-50 px-0! py-[8px]! text-[11px]! leading-[16.5px]! font-bold text-teal-700 transition hover:bg-teal-100 disabled:opacity-50"><i aria-hidden="true" className="fas fa-undo mr-1" />AI 원본으로 되돌리기</button>
+                  <a href={`${aiWorkspacePageHref('/squad-blueprint', workspaceId)}#arch`} className="flex-1 rounded-lg border border-gray-200 bg-gray-50 py-2 text-center text-[11px] leading-[16.5px] font-bold text-gray-700 transition hover:bg-gray-100"><i aria-hidden="true" className="fas fa-book-open mr-1" />설계서 보기</a>
+                </div>
+              </div>
+            </section> : null}
           </div>
-          <div className="erd-toolbar flex items-center gap-[8px]!">
+          <div className={`erd-toolbar flex items-center gap-[8px]! ${aiWorkspace ? 'flex-wrap' : ''}`}>
             <button onClick={() => setHelpOpen(true)} className="erd-toolbar-help flex h-[32px]! w-[32px]! items-center justify-center rounded-[9999px]! p-0! text-gray-400 transition hover:bg-green-50 hover:text-brand" title="도움말">
               <i className="fas fa-question-circle text-[18px]! leading-[28px]!"></i>
             </button>
@@ -367,6 +408,7 @@ export default function SquadErdView({ model }: SquadErdViewProps) {
           </div>
 
           <div
+            ref={canvasRef}
             className="erd-diagram-wrapper relative flex-1 cursor-grab overflow-hidden bg-white bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] bg-[size:20px_20px] active:cursor-grabbing"
             onMouseDown={(event) => {
               if (event.button !== 0) {
@@ -391,10 +433,10 @@ export default function SquadErdView({ model }: SquadErdViewProps) {
           >
             <div
               className="erd-pan-zoom-container flex h-full w-full items-center justify-center origin-center [transition:transform_0.1s_ease-out]"
-              style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})` }}
+              style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel * (aiWorkspace ? diagramViewport.scale : 1)})` }}
             >
               {diagramSvg ? (
-                <div className="drop-shadow-xl" dangerouslySetInnerHTML={{ __html: diagramSvg }} />
+                <div ref={diagramRef} className={`drop-shadow-xl ${aiWorkspace ? 'shrink-0 [&_svg]:w-full! [&_svg]:h-full! [&_svg]:max-w-none!' : ''}`} style={aiWorkspace && diagramViewport.width > 0 ? { width: diagramViewport.width, height: diagramViewport.height } : undefined} dangerouslySetInnerHTML={{ __html: diagramSvg }} />
               ) : (
                 <pre className="max-w-3xl whitespace-pre-wrap rounded-2xl border border-gray-200 bg-white p-6 text-xs font-mono text-gray-600 shadow-xl">
                   {diagramError ? `${diagramError}\n\n` : null}
@@ -404,13 +446,14 @@ export default function SquadErdView({ model }: SquadErdViewProps) {
             </div>
 
             <div className="absolute bottom-6 left-6 flex flex-col gap-2 bg-white p-2 rounded-xl border border-gray-200 shadow-lg z-20">
-              <button onClick={() => setZoomLevel((current) => Math.min(3, current + 0.1))} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-brand hover:bg-green-50 rounded-lg transition">
+              <button aria-label="ERD 확대" onClick={() => setZoomLevel((current) => Math.min(3, current + 0.1))} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-brand hover:bg-green-50 rounded-lg transition">
                 <i className="fas fa-plus"></i>
               </button>
-              <button onClick={() => setZoomLevel((current) => Math.max(0.5, current - 0.1))} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-brand hover:bg-green-50 rounded-lg transition">
+              <button aria-label="ERD 축소" onClick={() => setZoomLevel((current) => Math.max(0.5, current - 0.1))} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-brand hover:bg-green-50 rounded-lg transition">
                 <i className="fas fa-minus"></i>
               </button>
               <button
+                aria-label="ERD 기본 보기"
                 onClick={() => {
                   setZoomLevel(1)
                   setPanOffset({ x: 0, y: 0 })
@@ -467,7 +510,6 @@ export default function SquadErdView({ model }: SquadErdViewProps) {
       </main>
 
       {/* ERD 모달들이 z-50이라 AI 패널을 모달보다 앞에 두어 모달이 위에 오게 한다. */}
-      <SquadWorkspaceAiPanel />
 
       {versionOpen ? (
         <div className="erd-version-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
