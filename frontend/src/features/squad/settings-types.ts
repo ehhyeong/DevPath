@@ -1,6 +1,6 @@
 export type WorkspaceStatus = 'ACTIVE' | 'ARCHIVED'
 export type WorkspaceType = 'SOLO' | 'SQUAD' | 'MENTORING'
-export type SettingsTab = 'general' | 'members' | 'integrations' | 'danger'
+export type SettingsTab = 'general' | 'members' | 'integrations' | 'ai' | 'danger'
 export type IntegrationProvider = 'GITHUB' | 'SLACK' | 'DISCORD' | 'JIRA'
 
 export type WorkspaceMember = {
@@ -8,6 +8,8 @@ export type WorkspaceMember = {
   learnerId: number
   learnerName?: string | null
   profileImage?: string | null
+  position?: string | null
+  roleLabel?: string | null
   joinedAt?: string | null
   lastActiveAt?: string | null
   online?: boolean

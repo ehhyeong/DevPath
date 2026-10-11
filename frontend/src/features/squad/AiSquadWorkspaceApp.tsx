@@ -2,14 +2,16 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode, createCont
 import SquadWorkspaceAside, { type SquadWorkspaceAsidePage } from '../../components/SquadWorkspaceAside'
 import { showAuthToast } from '../../lib/auth-toast'
 import { navigateTo } from '../../lib/spa-navigation'
-import { aiApis, aiErdTables, aiFeatures, aiFiles, aiInterviewQuestions, aiRoadmap, aiSquadMembers, aiSquadProject, aiTasks, aiUserFlow, type AiApi, type AiTask, type AiTaskStatus, aiWorkspaceHref, mapWorkspaceApis, formatApiGroupLabel, aiArchitecture } from './ai-squad-data'
+import { aiApis, aiErdTables, aiFeatures, aiFiles, aiInterviewQuestions, aiRoadmap, aiSquadProject, aiTasks, aiUserFlow, type AiApi, type AiTask, type AiTaskStatus, aiWorkspaceHref, mapWorkspaceApis, formatApiGroupLabel, aiArchitecture } from './ai-squad-data'
 import { loadMermaid, parseMermaidCode } from './erd-support'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession } from '../../lib/auth-session'
 import { projectApiRequest, type WorkspaceAiDesign, type WorkspaceAiDesignEdit } from '../project/api'
 import { type ActivityLog, type CalendarEvent, type Notice, type VoiceChannel, type WorkspaceDashboard, type WorkspaceMember, type WorkspaceTask } from './dashboard-types'
+import WorkspaceInviteModal from './WorkspaceInviteModal'
 import { type ExternalIntegration } from './settings-types'
+import AiSquadIntegrationsPanel from './AiSquadIntegrationsPanel'
 import AiInterviewGenerationModal from './AiInterviewGenerationModal'
 import AiInterviewQuestionBank from './AiInterviewQuestionBank'
 import AiInterviewReport from './AiInterviewReport'
@@ -1186,11 +1188,10 @@ function InterviewPage() {
 type SettingsTab = 'general' | 'members' | 'integrations' | 'ai' | 'danger'
 
 function SettingsPage() {
+  const { workspaceId, dashboard, integrations } = useAiWorkspace()
   const [tab, setTab] = useState<SettingsTab>('general')
-  const [isPublic, setIsPublic] = useState(true)
-  const [githubLinked, setGithubLinked] = useState(true)
-  const [discordLinked, setDiscordLinked] = useState(false)
-  const [memberRoles, setMemberRoles] = useState<Record<number, string>>({ 2: 'Backend', 3: 'Designer' })
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const members = dashboard?.members ?? []
   const tabs = [
     ['general', '일반 설정', 'fa-sliders-h'],
     ['members', '팀원 관리', 'fa-users'],
@@ -1230,7 +1231,7 @@ function SettingsPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <SettingField label="프로젝트 명" value={aiSquadProject.title} required ai />
-                  <SettingField label="스쿼드 이름" value={aiSquadProject.squadName} required />
+                  <SettingField label="스쿼드 이름" value={dashboard?.name ?? aiSquadProject.title} required />
                 </div>
                 <SettingField label="프로젝트 목표 (한 줄 설명)" value={aiSquadProject.oneLiner} ai />
                 <SettingField label="상세 설명" value={aiSquadProject.summary} multiline ai />
@@ -1242,40 +1243,32 @@ function SettingsPage() {
                     )))}
                   </div>
                 </div>
-                <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-                  <div><h4 className="mb-1 text-sm font-bold text-gray-900">스쿼드 공개 설정</h4><p className="text-xs text-gray-500">포트폴리오 탭에서 이 스쿼드를 외부인에게 공개할지 결정합니다.</p></div>
-                  <SettingsToggle checked={isPublic} onChange={setIsPublic} label="스쿼드 공개 설정" />
-                </div>
               </Card>
-              <div className="flex justify-end"><button className="flex items-center gap-2 rounded-xl bg-gray-900 px-8 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black" type="button"><i className="fas fa-save" /> 변경사항 저장</button></div>
             </div>
           ) : tab === 'members' ? (
             <div className="space-y-8">
-              <div className="flex items-end justify-between"><SettingsTitle title="팀원 관리" copy="참여 중인 팀원을 관리하고 권한을 부여합니다." /><button className="flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md" type="button"><i className="fas fa-user-plus" /> 팀원 초대</button></div>
+              <div className="flex items-end justify-between"><SettingsTitle title="팀원 관리" copy="참여 중인 팀원을 관리하고 권한을 부여합니다." /><button onClick={() => setInviteOpen(true)} disabled={!workspaceId} className="flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md disabled:opacity-50" type="button"><i className="fas fa-user-plus" /> 팀원 초대</button></div>
               <Card className="overflow-hidden">
                 <div className="grid grid-cols-12 items-center gap-4 border-b border-gray-100 bg-gray-50/50 p-4 text-xs font-extrabold tracking-wider text-gray-500 uppercase"><div className="col-span-5 pl-4">이름 / 이메일</div><div className="col-span-3">역할 (Role)</div><div className="col-span-2 text-center">상태</div><div className="col-span-2 pr-4 text-right">관리</div></div>
-                {aiSquadMembers.map((member, index) => (
+                {members.map((member) => (
                   <div key={member.memberId} className="grid grid-cols-12 items-center gap-4 border-b border-gray-50 p-4 last:border-0">
-                    <div className="col-span-5 flex items-center gap-4 pl-4"><AiMemberAvatar name={member.learnerName} className="h-10 w-10 border border-gray-200 bg-white" /><div><p className="flex items-center gap-1.5 text-sm font-bold text-gray-900">{member.learnerName}{index === 0 ? <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[9px] text-gray-600 uppercase">나</span> : null}</p><p className="text-xs text-gray-500">{['taehyung@devpath.com', 'dev.kim@gmail.com', 'sarah.park@gmail.com'][index]}</p></div></div>
-                    <div className="col-span-3">{index === 0 ? <span className="flex w-fit items-center gap-1.5 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-1 text-xs font-bold text-yellow-600"><i className="fas fa-crown" /> 방장 (Owner)</span> : <select value={memberRoles[member.memberId]} onChange={(event) => { setMemberRoles((current) => ({ ...current, [member.memberId]: event.target.value })); showAuthToast({ message: '권한이 변경되었습니다.', durationMs: 1800 }) }} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 shadow-sm outline-none focus:border-brand"><option>Frontend</option><option>Backend</option><option>Fullstack</option><option>Designer</option><option>Guest</option></select>}</div>
-                    <div className="col-span-2 text-center"><span className={`flex items-center justify-center gap-1 text-xs font-bold ${index < 2 ? 'text-green-500' : 'text-gray-400'}`}><span className={`h-1.5 w-1.5 rounded-full ${index < 2 ? 'bg-green-500' : 'border-2 border-gray-400'}`} />{index < 2 ? '온라인' : '오프라인'}</span></div>
-                    <div className="col-span-2 flex justify-end pr-4">{index === 0 ? <span className="text-xs font-medium text-gray-400">-</span> : <button title="추방하기" className="h-8 w-8 rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-500" type="button"><i className="fas fa-sign-out-alt" /></button>}</div>
+                    <div className="col-span-5 flex items-center gap-4 pl-4"><AiMemberAvatar name={member.learnerName?.trim() || `멤버 ${member.memberId}`} imageUrl={member.profileImage} className="h-10 w-10 border border-gray-200 bg-white" /><p className="flex items-center gap-1.5 text-sm font-bold text-gray-900">{member.learnerName?.trim() || `멤버 ${member.memberId}`}{member.learnerId === dashboard?.ownerId ? <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[9px] text-gray-600 uppercase">Owner</span> : null}</p></div>
+                    <div className="col-span-3"><span className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600">{member.learnerId === dashboard?.ownerId ? '방장 (Owner)' : member.roleLabel || member.position || '역할 미지정'}</span></div>
+                    <div className="col-span-2 text-center"><span className={`flex items-center justify-center gap-1 text-xs font-bold ${member.online ? 'text-green-500' : 'text-gray-400'}`}><span className={`h-1.5 w-1.5 rounded-full ${member.online ? 'bg-green-500' : 'border-2 border-gray-400'}`} />{member.online ? '온라인' : '오프라인'}</span></div>
+                    <div className="col-span-2 pr-4 text-right text-xs text-gray-400">-</div>
                   </div>
                 ))}
+                {members.length === 0 ? <p className="p-10 text-center text-xs font-bold text-gray-400">참여 중인 팀원이 없습니다.</p> : null}
               </Card>
             </div>
           ) : tab === 'integrations' ? (
             <div className="space-y-8">
-              <SettingsTitle title="외부 서비스 연동" copy="GitHub 저장소, Discord/Slack 웹훅을 연결하여 알림을 자동화하세요." />
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <IntegrationCard icon="fab fa-github" title="GitHub Repository" copy="PR 및 커밋 내역 자동 연동" color="bg-gray-900" linked={githubLinked} value="https://github.com/taehyung/indie-publishing-platform" onToggle={() => setGithubLinked((current) => !current)} />
-                <IntegrationCard icon="fab fa-discord" title="Discord Webhook" copy="칸반 변동사항 채널 알림 발송" color="bg-[#5865F2]" linked={discordLinked} value="" onToggle={() => setDiscordLinked((current) => !current)} />
-              </div>
+              <AiSquadIntegrationsPanel workspaceId={workspaceId} initialIntegrations={integrations} />
             </div>
           ) : tab === 'ai' ? (
             <div className="space-y-8">
               <div className="flex items-end justify-between gap-4"><SettingsTitle title="AI 설계" copy="이 워크스페이스를 만든 AI 설계서의 생성 조건과 반영 범위를 관리합니다." /><button onClick={() => go('/squad-blueprint')} className="flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-md" type="button"><i className="fas fa-book-open" /> 설계서 보기</button></div>
-              <Card className="space-y-6 p-8"><h4 className="text-sm font-extrabold text-gray-900">생성 조건</h4><div className="grid grid-cols-1 gap-4 md:grid-cols-3">{[['프로젝트 분야', '콘텐츠 플랫폼'], ['난이도', aiSquadProject.difficulty], ['개발 기간', '5주']].map(([label, value]) => <div key={label} className="rounded-xl border border-gray-100 bg-gray-50 p-4"><p className="mb-1 text-[11px] font-bold text-gray-400">{label}</p><p className="break-words text-sm font-extrabold text-gray-900">{value}</p></div>)}</div><p className="text-[11px] font-medium text-gray-400"><i className="far fa-clock mr-1" />2026-02-09 생성 · DevPath AI Builder</p></Card>
+              <Card className="space-y-6 p-8"><h4 className="text-sm font-extrabold text-gray-900">생성 정보</h4><div className="grid grid-cols-1 gap-4 md:grid-cols-3">{[['프로젝트', aiSquadProject.title], ['난이도', aiSquadProject.difficulty], ['개발 기간', `${aiRoadmap.reduce((sum, phase) => sum + Number.parseInt(phase.period, 10), 0)}주`]].map(([label, value]) => <div key={label} className="rounded-xl border border-gray-100 bg-gray-50 p-4"><p className="mb-1 text-[11px] font-bold text-gray-400">{label}</p><p className="break-words text-sm font-extrabold text-gray-900">{value}</p></div>)}</div><p className="text-[11px] font-medium text-gray-400"><i className="far fa-clock mr-1" />{dashboard?.createdAt ? `${new Date(dashboard.createdAt).toLocaleDateString('ko-KR')} 생성` : '생성일 정보 없음'} · DevPath AI Builder</p></Card>
               <Card className="p-8"><h4 className="mb-1 text-sm font-extrabold text-gray-900">워크스페이스 반영 항목</h4><p className="mb-5 text-xs text-gray-500">설계서를 다시 생성할 때 어떤 메뉴에 자동 반영할지 선택합니다. 이미 반영된 내용은 유지됩니다.</p><div className="divide-y divide-gray-100">{[['fa-tasks', '작업 현황판', '로드맵과 MVP 기능을 작업으로 반영'], ['fa-project-diagram', 'ERD 설계', '엔티티와 관계를 다이어그램에 반영'], ['fa-plug', 'API 명세서', '엔드포인트와 요청·응답 예시 반영'], ['fa-user-tie', '면접 준비', '핵심 난제 기반 질문 반영']].map(([icon, label, copy]) => <div key={label} className="flex items-center justify-between py-3.5"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-gray-500"><i className={`fas ${icon} text-sm`} /></span><div><p className="text-sm font-bold text-gray-900">{label}</p><p className="text-[11px] text-gray-500">{copy}</p></div></div><SettingsToggle checked onChange={() => undefined} label={`${label} 자동 반영`} /></div>)}</div></Card>
               <div className="flex flex-col justify-between gap-4 rounded-2xl border border-orange-200 bg-orange-50/40 p-6 md:flex-row md:items-center"><div><h4 className="mb-1 font-bold text-gray-900">설계서 다시 생성하기</h4><p className="text-xs leading-relaxed text-gray-500">난이도나 스택을 바꿔 새 설계서를 받습니다. 새 설계서는 비교 후 선택한 항목만 반영됩니다.</p></div><button className="shrink-0 rounded-xl border border-orange-300 bg-white px-5 py-2.5 text-sm font-bold text-orange-600 shadow-sm" type="button"><i className="fas fa-redo-alt mr-1" /> AI 빌더 열기</button></div>
             </div>
@@ -1287,6 +1280,7 @@ function SettingsPage() {
           )}
         </div>
       </section>
+      {inviteOpen && workspaceId ? <WorkspaceInviteModal workspaceId={workspaceId} onClose={() => setInviteOpen(false)} /> : null}
     </main>
   )
 }
@@ -1302,10 +1296,6 @@ function SettingField({ label, value, multiline = false, required = false, ai = 
 
 function SettingsToggle({ checked, onChange, label }: { checked: boolean; onChange: (checked: boolean) => void; label: string }) {
   return <button role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className={`relative h-6 w-12 shrink-0 rounded-full transition ${checked ? 'bg-brand' : 'bg-gray-300'}`} type="button"><span className={`absolute top-0 h-6 w-6 rounded-full border-4 bg-white transition-all ${checked ? 'right-0 border-brand' : 'left-0 border-gray-200'}`} /></button>
-}
-
-function IntegrationCard({ icon, title, copy, color, linked, value, onToggle }: { icon: string; title: string; copy: string; color: string; linked: boolean; value: string; onToggle: () => void }) {
-  return <Card className="group relative overflow-hidden p-6 transition hover:border-gray-300"><div className={`absolute top-0 left-0 h-full w-1 ${color}`} /><div className="mb-4 flex items-start justify-between pl-2"><div className="flex items-center gap-3"><i className={`${icon} text-3xl ${title.startsWith('Discord') ? 'text-[#5865F2]' : 'text-gray-900'}`} /><div><h4 className="font-bold text-gray-900">{title}</h4><p className="text-[10px] font-medium text-gray-500">{copy}</p></div></div><span className={`rounded border px-2 py-0.5 text-[10px] font-bold ${linked ? 'border-green-200 bg-green-50 text-green-600' : 'border-gray-200 bg-gray-100 text-gray-500'}`}>{linked ? '연결됨' : '미연결'}</span></div><input value={value} readOnly={linked} placeholder="Webhook URL 입력" className="mb-4 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500 outline-none" /><button onClick={onToggle} className={`w-full rounded-lg py-2 text-xs font-bold transition ${linked ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : title.startsWith('Discord') ? 'bg-[#5865F2] text-white hover:bg-[#4752C4]' : 'bg-gray-900 text-white'}`} type="button">{linked ? '연결 해제' : '연결하기'}</button></Card>
 }
 
 function CurrentPage({ route }: { route: AiRoute }) {

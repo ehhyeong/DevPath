@@ -10,6 +10,10 @@ import { projectApiRequest } from '../project/api'
 import { createSquadNotification, squadActorName } from './notifications'
 import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
 import { DangerPanel, DeleteModal, GeneralPanel, IntegrationsPanel, MembersPanel, StateCard } from './SquadSettingsPanels'
+import WorkspaceInviteModal from './WorkspaceInviteModal'
+import { openWorkspaceProjectStart } from '../project/workspace-project-start-event'
+import { AiDesignSummary, type AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
+import { WORKSPACE_DATA_CHANGED_EVENT } from '../../lib/workspace-events'
 
 import type {
   ExternalIntegration,
@@ -47,7 +51,7 @@ function isIntegrationActive(integration?: ExternalIntegration) {
   return Boolean(integration?.active ?? integration?.isActive)
 }
 
-export default function SquadSettingsApp() {
+export default function SquadSettingsApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
@@ -58,12 +62,14 @@ export default function SquadSettingsApp() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [busyMemberId, setBusyMemberId] = useState<number | null>(null)
   const [busyIntegration, setBusyIntegration] = useState<IntegrationProvider | null>(null)
   const [syncingGithub, setSyncingGithub] = useState(false)
   const [githubRepositoryUrl, setGithubRepositoryUrl] = useState('')
   const [githubToken, setGithubToken] = useState('')
   const [dangerSaving, setDangerSaving] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState('')
 
   useEffect(() => {
@@ -207,6 +213,23 @@ export default function SquadSettingsApp() {
     })
   }
 
+  async function saveMemberPosition(memberId: number, position: string) {
+    if (!workspaceId || !settings?.canManage || busyMemberId !== null) return
+    setBusyMemberId(memberId)
+    try {
+      const updated = await projectApiRequest<WorkspaceSettings>(
+        `/api/workspaces/${workspaceId}/settings/members/${memberId}/position`,
+        { method: 'PATCH', body: JSON.stringify({ position }) },
+        'required',
+      )
+      setSettings(updated)
+      window.dispatchEvent(new Event(WORKSPACE_DATA_CHANGED_EVENT))
+      showAuthToast('담당 직군이 변경되었습니다.')
+    } catch (saveError) {
+      showAuthToast({ message: saveError instanceof Error ? saveError.message : '직군을 변경하지 못했습니다.', variant: 'error' })
+    } finally { setBusyMemberId(null) }
+  }
+
   async function saveGeneral(event: FormEvent) {
     event.preventDefault()
 
@@ -293,6 +316,7 @@ export default function SquadSettingsApp() {
         setGithubToken('')
       }
       notifySettingsChange(`${provider} 연동을 ${nextActive ? '켰습니다.' : '껐습니다.'}`)
+      window.dispatchEvent(new Event(WORKSPACE_DATA_CHANGED_EVENT))
       showAuthToast(
         provider === 'GITHUB' && nextActive
           ? updated.lastSyncMessage ?? 'GitHub 저장소를 연결했습니다.'
@@ -324,6 +348,7 @@ export default function SquadSettingsApp() {
         items.map((item) => (item.provider === 'GITHUB' ? updated : item)),
       )
       setGithubRepositoryUrl(updated.repositoryUrl ?? githubRepositoryUrl)
+      window.dispatchEvent(new Event(WORKSPACE_DATA_CHANGED_EVENT))
       notifySettingsChange('GitHub Pull Request를 코드 피드백 보드로 동기화했습니다.')
       showAuthToast(updated.lastSyncMessage ?? 'GitHub Pull Request를 동기화했습니다.')
     } catch (syncError) {
@@ -393,7 +418,7 @@ export default function SquadSettingsApp() {
 
   return (
     <div className="squad-dashboard-page squad-settings-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800 [&_.squad-settings-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
-      <SquadWorkspaceAside activePage="settings" workspaceId={workspaceId} projectName={projectName} />
+      <SquadWorkspaceAside activePage="settings" aiWorkspace={aiWorkspace} workspaceId={workspaceId} projectName={projectName} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <header className="h-16 bg-white border-b border-gray-100 flex items-center px-8 shrink-0 relative z-30 shadow-sm">
@@ -445,7 +470,7 @@ export default function SquadSettingsApp() {
               </h2>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
-              {settingsTabs.map((tab) => {
+              {[...settingsTabs.slice(0, 3), ...(aiWorkspace ? [{ id: 'ai' as const, label: 'AI 프로젝트 설계', icon: 'fas fa-magic' }] : []), ...settingsTabs.slice(3)].map((tab) => {
                 const danger = tab.id === 'danger'
                 const active = activeTab === tab.id
                 const className = [
@@ -473,6 +498,8 @@ export default function SquadSettingsApp() {
               ) : settings ? (
                 <>
                   {activeTab === 'general' ? (
+                    <div className="space-y-6">
+                      {aiWorkspace && design ? <section className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm"><div className="mb-5 flex items-center justify-between"><h2 className="text-sm font-extrabold text-gray-900"><i className="fas fa-magic mr-2 text-brand" />AI 프로젝트 정보</h2><button type="button" onClick={() => setActiveTab('ai')} className="text-xs font-bold text-teal-700">AI 설계 설정 →</button></div><dl className="space-y-4"><div><dt className="text-xs font-bold text-gray-500">프로젝트 주제</dt><dd className="mt-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800">{design.title}</dd></div><div><dt className="text-xs font-bold text-gray-500">한 줄 소개</dt><dd className="mt-2 text-sm text-gray-600">{design.summary}</dd></div><div><dt className="text-xs font-bold text-gray-500">설계 난이도</dt><dd className="mt-2 text-sm text-gray-600">{design.difficulty === 'toy' ? '🐣 토이 프로젝트' : design.difficulty === 'enterprise' ? '🏢 엔터프라이즈' : '🚀 실전 MVP'}</dd></div></dl></section> : null}
                     <GeneralPanel
                       settings={settings}
                       form={form}
@@ -481,12 +508,15 @@ export default function SquadSettingsApp() {
                       onFormChange={setForm}
                       onSave={saveGeneral}
                     />
+                      {aiWorkspace && design ? <section className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm"><h2 className="text-sm font-extrabold text-gray-900">기술 스택</h2><div className="mt-4 flex flex-wrap gap-2">{[...new Set([design.stack.frontend, design.stack.backend, design.stack.database, ...design.stack.libraries])].map((stack) => <span key={stack} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-600">{stack}</span>)}</div><p className="mt-4 text-xs text-gray-500">{design.stack.selectionReason}</p></section> : null}
+                    </div>
                   ) : null}
                   {activeTab === 'members' ? (
-                    <MembersPanel settings={settings} currentUserId={session?.userId ?? null} />
+                    <MembersPanel settings={settings} currentUserId={session?.userId ?? null} onInvite={() => setInviteOpen(true)} busyMemberId={busyMemberId} onPositionChange={(memberId, position) => void saveMemberPosition(memberId, position)} />
                   ) : null}
                   {activeTab === 'integrations' ? (
                     <IntegrationsPanel
+                      aiWorkspace={aiWorkspace}
                       integrations={integrations}
                       canManage={canManage}
                       busyIntegration={busyIntegration}
@@ -508,12 +538,15 @@ export default function SquadSettingsApp() {
                       onDeleteOpen={() => setDeleteModalOpen(true)}
                     />
                   ) : null}
+                  {activeTab === 'ai' && design ? <div className="space-y-6"><AiDesignSummary design={design} workspaceId={workspaceId} /><section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><h2 className="text-lg font-extrabold text-gray-900">AI 설계 관리</h2><p className="mt-2 text-sm text-gray-500">현재 설계는 팀 자료실과 각 작업 메뉴에서 확인하고 수정할 수 있어요. 새 아이디어는 AI 빌더에서 시작하세요.</p><button type="button" onClick={openWorkspaceProjectStart} className="mt-5 rounded-xl bg-gray-900 px-5 py-3 text-sm font-bold text-white"><i className="fas fa-magic mr-2" />AI 빌더 열기</button></section></div> : null}
                 </>
               ) : null}
             </div>
           </div>
         </main>
       </div>
+
+      {inviteOpen && workspaceId ? <WorkspaceInviteModal workspaceId={workspaceId} onClose={() => setInviteOpen(false)} /> : null}
 
       {deleteModalOpen && settings ? (
         <DeleteModal
