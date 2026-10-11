@@ -643,3 +643,13 @@ body:has(.ai-squad-workspace) {
   50% { width: 40%; left: 30%; }
   100% { width: 0; left: 100%; }
 }
+
+.ai-interview-page {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', '맑은 고딕', sans-serif;
+  font-size: 14px;
+}
+
+/* 공통 입력 요소 스타일에 덮인 원본 HTML의 leading-relaxed 줄 간격을 복원한다. */
+.ai-interview-page :is(button, textarea).text-sm.leading-relaxed {
+  line-height: 1.625;
+}
