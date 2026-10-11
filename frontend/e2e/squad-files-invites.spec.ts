@@ -1463,6 +1463,50 @@ test('회의 대기실의 장치·채널 UI와 코드 피드백의 GitHub 잠금
   await expect(page.getByRole('heading', { name: 'GitHub 연결이 필요합니다' })).toBeVisible()
 })
 
+for (const aiWorkspace of [true, false]) {
+  test(`${aiWorkspace ? 'AI' : '일반'} 회의실 입장 중 공통 아이콘을 숨기고 퇴장·다른 메뉴에서 복원한다`, async ({ page }) => {
+    let joined = false
+    const participant = { participantId: 1, channelId: 301, userId: 77, userName: '실제 사용자', active: true, muted: false, speaking: false }
+    await page.route('**/api/voice-channels/301/participants', (route) => route.fulfill({ json: { success: true, data: joined ? [participant] : [] } }))
+    await page.route('**/api/voice-channels/301/join', (route) => {
+      joined = true
+      return route.fulfill({ json: { success: true, data: participant } })
+    })
+    await page.route('**/api/voice-channels/301/leave', (route) => {
+      joined = false
+      return route.fulfill({ json: { success: true, data: { ...participant, active: false } } })
+    })
+    const suffix = `?workspaceId=42${aiWorkspace ? '&ai=1' : ''}`
+    const chat = page.getByRole('button', { name: '팀채팅', exact: true })
+    const agent = page.getByRole('button', { name: 'AI 에이전트', exact: true })
+    await page.goto('/squad-dashboard' + suffix)
+    await expect(chat).toBeVisible()
+    await expect(agent).toBeVisible()
+    const aside = page.getByRole('complementary').filter({ has: page.getByRole('navigation') })
+    await aside.hover()
+    await aside.locator(`a[href="/squad-meeting${suffix}"]`).click()
+    await expect(chat).toBeVisible()
+    await expect(agent).toBeVisible()
+    await page.getByRole('button', { name: aiWorkspace ? '회의 참여하기' : /입장$/, exact: aiWorkspace }).click()
+    await expect(page.locator('.squad-meeting-room-bottom-bar')).toHaveCount(1)
+    await expect(chat).toBeHidden()
+    await expect(agent).toBeHidden()
+    await page.goBack()
+    await expect(page).toHaveURL('/squad-dashboard' + suffix)
+    await expect(chat).toBeVisible()
+    await expect(agent).toBeVisible()
+    await page.goForward()
+    await expect(page).toHaveURL('/squad-meeting' + suffix)
+    await expect(chat).toBeHidden()
+    await expect(agent).toBeHidden()
+    await page.locator('.squad-meeting-room-stage-shell').hover()
+    await page.getByRole('button', { name: /종료$/ }).click()
+    await expect(page.locator('.squad-meeting-room-bottom-bar')).toHaveCount(0)
+    await expect(chat).toBeVisible()
+    await expect(agent).toBeVisible()
+  })
+}
+
 test('AI 회의실은 입장 순서의 중앙 카드와 개인 확대·상시 조작 바를 표시한다', async ({ page }, testInfo) => {
   await page.route('**/api/voice-channels/301/participants', (route) => route.fulfill({ json: { success: true, data: [
     { participantId: 1, channelId: 301, userId: 77, userName: '실제 사용자', active: true, muted: false, speaking: false },
@@ -1493,11 +1537,8 @@ test('AI 회의실은 입장 순서의 중앙 카드와 개인 확대·상시 �
   expect((await mute).postDataJSON().type).toBe('MUTE')
   await page.getByTitle('패널 열기/닫기', { exact: true }).click()
   await expect(page.getByRole('button', { name: 'AI 회의록', exact: false })).toHaveCount(0)
-  const settingsBounds = (await page.getByTitle('상세 설정', { exact: true }).boundingBox())!
-  const agentBounds = (await page.getByRole('button', { name: 'AI 에이전트', exact: true }).boundingBox())!
-  const chatBounds = (await page.getByRole('button', { name: '팀채팅', exact: true }).boundingBox())!
-  expect(agentBounds.y + agentBounds.height).toBeLessThanOrEqual(settingsBounds.y)
-  expect(chatBounds.y + chatBounds.height).toBeLessThanOrEqual(agentBounds.y)
+  await expect(page.getByRole('button', { name: 'AI 에이전트', exact: true })).toBeHidden()
+  await expect(page.getByRole('button', { name: '팀채팅', exact: true })).toBeHidden()
   await page.getByTitle('상세 설정', { exact: true }).click()
   await expect(page.getByRole('heading', { name: '오디오 설정', exact: false })).toBeVisible()
   await page.goto('/squad-meeting?workspaceId=42')

@@ -679,6 +679,5 @@ body:has(.ai-squad-workspace) {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', '맑은 고딕', sans-serif;
 }
 
-/* 회의 조작 바의 80px 높이와 하단 여백을 피하도록 공통 도구를 위로 올린다. */
-body:has(.squad-meeting-room-bottom-bar) .ai-fab { bottom: 112px; }
-body:has(.squad-meeting-room-bottom-bar) button[aria-label="팀채팅"] { bottom: 180px; }
+/* 캐시된 숨김 회의 페이지를 제외하고 실제 회의실에 입장한 화면에서만 공통 버튼을 숨긴다. */
+body:has(.squad-meeting-room-bottom-bar:not(.hidden *)) :is(.ai-fab, button[aria-label="팀채팅"]) { display: none; }
