@@ -1493,6 +1493,11 @@ test('AI 회의실은 입장 순서의 중앙 카드와 개인 확대·상시 �
   expect((await mute).postDataJSON().type).toBe('MUTE')
   await page.getByTitle('패널 열기/닫기', { exact: true }).click()
   await expect(page.getByRole('button', { name: 'AI 회의록', exact: false })).toHaveCount(0)
+  const settingsBounds = (await page.getByTitle('상세 설정', { exact: true }).boundingBox())!
+  const agentBounds = (await page.getByRole('button', { name: 'AI 에이전트', exact: true }).boundingBox())!
+  const chatBounds = (await page.getByRole('button', { name: '팀채팅', exact: true }).boundingBox())!
+  expect(agentBounds.y + agentBounds.height).toBeLessThanOrEqual(settingsBounds.y)
+  expect(chatBounds.y + chatBounds.height).toBeLessThanOrEqual(agentBounds.y)
   await page.getByTitle('상세 설정', { exact: true }).click()
   await expect(page.getByRole('heading', { name: '오디오 설정', exact: false })).toBeVisible()
   await page.goto('/squad-meeting?workspaceId=42')
@@ -1557,9 +1562,9 @@ test.describe('회의 카메라 장치', () => {
     await expect(page.locator('.meeting-focused-card video')).toBeVisible()
     await page.getByRole('button', { name: /전체 참가자 보기$/ }).click()
     await page.getByRole('button', { name: '실제 사용자 (나) 화면 공유 전체화면으로 보기', exact: true }).click()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page.getByRole('dialog', { name: '화면 공유 확대 보기', exact: true })).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.getByRole('dialog', { name: '화면 공유 확대 보기', exact: true })).toHaveCount(0)
     await expect.poll(() => page.evaluate(() => document.fullscreenElement?.tagName ?? null)).toBeNull()
     await page.getByTitle('화면 공유 중지', { exact: true }).click()
     await expect(page.locator('.meeting-participant-card')).toHaveCount(1)

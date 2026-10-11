@@ -249,7 +249,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
       .join(' ')
 
     return (
-      <div className="squad-meeting-screen-share-player fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-[#020617] text-white" role="dialog" aria-modal="true">
+      <div className="squad-meeting-screen-share-player fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-[#020617] text-white" role="dialog" aria-modal="true" aria-label="화면 공유 확대 보기">
         <div className="squad-meeting-screen-share-player-toolbar pointer-events-none absolute top-[16px] right-[16px] left-[16px] z-[2] flex min-h-[44px] items-center justify-between gap-[16px]">
           <div className="squad-meeting-screen-share-player-title pointer-events-auto inline-flex min-h-[38px] min-w-0 max-w-[min(50vw,420px)] items-center gap-[9px] rounded-[10px] border border-[rgba(75,85,99,0.88)] bg-[rgba(17,24,39,0.82)] px-[14px] text-[12px] font-extrabold text-[#e5e7eb] [box-shadow:0_14px_32px_rgba(0,0,0,0.3)] backdrop-blur-[10px]">
             <i className="fas fa-desktop text-[#00c471]"></i>
