@@ -833,15 +833,11 @@ export function useSquadMeetingController() {
   }
 
   function toggleWaitingMic() {
-    setWaitingMicMuted((current) => {
-      const next = !current
-
-      showAuthToast({
-        message: next ? '마이크가 꺼졌습니다.' : '마이크가 켜졌습니다.',
-        durationMs: 1400,
-      })
-
-      return next
+    const next = !waitingMicMuted
+    setWaitingMicMuted(next)
+    showAuthToast({
+      message: next ? '마이크가 꺼졌습니다.' : '마이크가 켜졌습니다.',
+      durationMs: 1400,
     })
   }
 

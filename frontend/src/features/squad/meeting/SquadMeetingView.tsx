@@ -1,6 +1,7 @@
 import { type CSSProperties } from 'react'
 import AuthModal from '../../../components/AuthModal'
 import MeetingAudioSettings from './MeetingAudioSettings'
+import MeetingParticipantStage from './MeetingParticipantStage'
 import SquadWorkspaceAside from '../../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../../components/UserAvatar'
@@ -9,7 +10,8 @@ import { MediaStreamVideo } from './meeting-media-stream-video'
 import { SCREEN_SHARE_BUTTON_ZOOM_STEP,SCREEN_SHARE_MIN_ZOOM,VOICE_REACTIONS,formatMeetingTime,navHref } from './meeting-support'
 import type { CameraView,ScreenShareView,VoiceParticipant,WorkspaceMember } from './meeting-types'
 import type { SquadMeetingViewModel } from './useSquadMeetingController'
-export default function SquadMeetingView(model: SquadMeetingViewModel) {
+import type { AiWorkspacePageProps } from '../AiWorkspaceDesignPanels'
+export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorkspacePageProps) {
   const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
   function renderMemberAvatar(member: WorkspaceMember, className = 'w-8 h-8') {
     return (
@@ -581,9 +583,9 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
         </header>
 
         <main className="flex-1 flex overflow-hidden relative">
-          <section className="squad-meeting-room-stage-shell group/room-stage relative flex min-w-0 flex-1 flex-col overflow-hidden p-4 pb-[112px]!">
-            <div className="squad-meeting-participant-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 p-4 box-border shadow-inner">
-              {activeScreenShares.length > 0 ? (
+          <section className={`squad-meeting-room-stage-shell group/room-stage relative flex min-w-0 flex-1 flex-col overflow-hidden p-4 ${model.aiWorkspace ? '' : 'pb-[112px]!'}`}>
+            <div className={`squad-meeting-participant-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 box-border shadow-inner ${model.aiWorkspace ? '' : 'p-4'}`}>
+              {model.aiWorkspace ? <MeetingParticipantStage participants={gridParticipants} members={members} currentUserId={session?.userId} getCamera={getParticipantCameraView} screenShares={activeScreenShares} onFullscreenShare={openScreenSharePlayer} /> : activeScreenShares.length > 0 ? (
                 <div className={`grid h-full min-h-0 w-full gap-3 ${screenShareGridClass}`}>
                   {activeScreenShares.map((screenShare) => (
                     <div key={screenShare.userId} className="min-h-0 min-w-0 overflow-hidden rounded-[12px]">
@@ -604,7 +606,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
               )}
             </div>
 
-            <div className="squad-meeting-room-bottom-bar invisible pointer-events-none absolute right-[16px] bottom-[16px] left-[16px] z-40 flex h-20 items-center justify-between rounded-2xl border border-gray-700 bg-gray-800 px-6 opacity-0 [transform:translateY(18px)] shadow-xl [transition:opacity_180ms_ease,transform_180ms_ease,visibility_0s_linear_180ms] group-hover/room-stage:visible group-hover/room-stage:pointer-events-auto group-hover/room-stage:opacity-100 group-hover/room-stage:[transform:translateY(0)] group-hover/room-stage:delay-0 group-focus-within/room-stage:visible group-focus-within/room-stage:pointer-events-auto group-focus-within/room-stage:opacity-100 group-focus-within/room-stage:[transform:translateY(0)] group-focus-within/room-stage:delay-0 [@media(hover:none)]:visible [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:[transform:translateY(0)] [@media(hover:none)]:delay-0">
+            <div className={`squad-meeting-room-bottom-bar z-40 flex h-20 items-center justify-between rounded-2xl border border-gray-700 bg-gray-800 px-6 shadow-xl ${model.aiWorkspace ? 'relative mt-4 shrink-0 gap-4' : 'invisible pointer-events-none absolute right-[16px] bottom-[16px] left-[16px] opacity-0 [transform:translateY(18px)] [transition:opacity_180ms_ease,transform_180ms_ease,visibility_0s_linear_180ms] group-hover/room-stage:visible group-hover/room-stage:pointer-events-auto group-hover/room-stage:opacity-100 group-hover/room-stage:[transform:translateY(0)] group-hover/room-stage:delay-0 group-focus-within/room-stage:visible group-focus-within/room-stage:pointer-events-auto group-focus-within/room-stage:opacity-100 group-focus-within/room-stage:[transform:translateY(0)] group-focus-within/room-stage:delay-0 [@media(hover:none)]:visible [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:[transform:translateY(0)] [@media(hover:none)]:delay-0'}`}>
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -615,7 +617,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
                 </button>
               </div>
 
-              <div ref={controlBoxRef} className="flex items-center gap-4 relative">
+              <div ref={controlBoxRef} className={`flex items-center gap-4 relative ${model.aiWorkspace ? 'shrink-0' : ''}`}>
                 <button
                   type="button"
                   onClick={() => void sendVoiceEvent(isMuted ? 'UNMUTE' : 'MUTE', isMuted ? '마이크 음소거 해제' : '마이크 음소거')}
@@ -773,9 +775,10 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
   }
 
   return (
-    <div className="squad-dashboard-page squad-meeting-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
+    <div className={`squad-dashboard-page squad-meeting-page ${model.aiWorkspace ? 'ai-squad-meeting' : ''} flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800`}>
       <SquadWorkspaceAside
         activePage="meeting"
+        aiWorkspace={model.aiWorkspace}
         workspaceId={workspaceId}
         projectName={projectName}
         onNavigate={(event, href) => {
@@ -791,6 +794,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
       {isJoined ? renderVoiceRoom() : (
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <SquadWorkspaceHeader
+          aiWorkspace={model.aiWorkspace}
           workspaceId={workspaceId}
           projectName={projectName}
           members={members}
@@ -799,11 +803,12 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
           onLogout={handleLogout}
         />
 
-        <main className="flex-1 overflow-y-auto custom-scrollbar bg-[#F3F4F6]">
+        <main className={`flex-1 overflow-y-auto custom-scrollbar ${model.aiWorkspace ? 'flex flex-col items-center justify-center bg-[#F8F9FA] p-4 md:p-8' : 'bg-[#F3F4F6]'}`}>
+          {!model.aiWorkspace ? (
           <div className="px-8 py-4 bg-white border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm">
             <div>
               <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                <i className="fas fa-headset text-brand"></i> 음성 회의
+                <i className="fas fa-headset text-brand"></i> {model.aiWorkspace ? '화상 회의' : '음성 회의'}
               </h1>
               <p className="text-sm text-gray-500 mt-0.5">카메라, 마이크와 화면 공유를 함께 사용하는 스쿼드 회의 공간입니다.</p>
             </div>
@@ -824,8 +829,63 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
               </span>
             </div>
           </div>
+          ) : null}
 
-          <div className="px-8 pt-5 pb-8">
+          {model.aiWorkspace ? (
+            <div className="ai-meeting-lobby my-auto w-full max-w-5xl shrink-0">
+              <div className="mb-6 flex items-center gap-2">
+                <button type="button" onClick={() => showAuthToast({ message: securityStatus.detail, durationMs: 2600 })} title={securityStatus.detail} className="flex items-center gap-1.5 rounded-lg bg-gray-800 px-3 py-1.5 text-xs! font-bold text-gray-200 shadow-sm transition hover:bg-gray-700">
+                  <i className={securityIconClass + ' text-green-400'} />{securityStatus.label}
+                </button>
+                <button type="button" onClick={() => showAuthToast({ message: networkStatus.detail, durationMs: 2400 })} className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs! font-bold text-gray-600 shadow-sm transition hover:bg-gray-50">
+                  <i className={networkIconClass} />{networkStatus.label}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                <section className="flex flex-col items-center justify-center lg:col-span-2">
+                  <div className="ai-meeting-preview relative flex w-full flex-col items-center justify-center overflow-hidden rounded-3xl border border-gray-200 bg-white px-6 py-8 shadow-sm">
+                    {localCameraStream ? <MediaStreamVideo stream={localCameraStream} muted className="absolute inset-0 h-full w-full -scale-x-100 object-cover" /> : <div className={`absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--tw-gradient-stops))] ${micMuted ? 'from-gray-100' : 'from-green-50'} to-white`} />}
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className="relative mb-4 mt-2">
+                        {!micMuted && micLevel > 0 ? <div className="absolute inset-0 scale-125 animate-ping rounded-full bg-brand opacity-30" aria-hidden="true" /> : null}
+                        <UserAvatar name={session?.name ?? '나'} imageUrl={members.find((member) => member.learnerId === session?.userId)?.profileImage} className="relative z-10 h-24 w-24 border-4 border-white bg-gray-100 shadow-md" iconClassName="text-4xl" />
+                        <div className="absolute -right-1 bottom-0 z-20 flex gap-1">
+                          <span title={localCameraStream ? '카메라 켜짐' : '카메라 꺼짐'} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-white shadow-sm ${localCameraStream ? 'bg-brand' : 'bg-red-500'}`}><i className={`fas ${localCameraStream ? 'fa-video' : 'fa-video-slash'} text-[10px]`} /></span>
+                          <span title={micMuted ? '마이크 음소거' : '마이크 사용'} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-white shadow-sm ${micMuted ? 'bg-red-500' : 'bg-brand'}`}><i className={`fas ${micMuted ? 'fa-microphone-slash' : 'fa-microphone'} text-[10px]`} /></span>
+                        </div>
+                      </div>
+                      <h2 className={`mb-2 text-lg font-extrabold text-gray-900 ${localCameraStream ? 'rounded-lg bg-white/90 px-3 py-1' : ''}`}>{session?.name ?? '나'}</h2>
+                      <p className="rounded-full border border-gray-200 bg-white/90 px-3 py-1 text-xs font-bold text-gray-600 shadow-sm">{micMuted ? '마이크 꺼짐' : '마이크 사용 예정'} · {localCameraStream ? '카메라 켜짐' : '카메라 꺼짐'}</p>
+                    </div>
+                  </div>
+                  <div className="ai-meeting-device-controls mx-auto mt-4 flex w-full max-w-sm items-center gap-3">
+                    <button type="button" onClick={toggleWaitingMic} aria-pressed={!micMuted} className={`flex flex-1 flex-col items-center justify-center rounded-xl border py-2.5 text-xs! font-bold shadow-sm transition ${micMuted ? 'border-red-200 bg-red-50 text-red-500 hover:bg-red-100' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}><i className={`fas ${micMuted ? 'fa-microphone-slash' : 'fa-microphone'} mb-1 text-lg`} /><span>마이크 {micMuted ? '켜기' : '끄기'}</span></button>
+                    <button type="button" onClick={() => void toggleCamera()} aria-pressed={Boolean(localCameraStream)} className="flex flex-1 flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-2.5 text-xs! font-bold text-gray-700 shadow-sm transition hover:bg-gray-50"><i className={`fas ${localCameraStream ? 'fa-video' : 'fa-video-slash'} mb-1 text-lg`} /><span>카메라 {localCameraStream ? '끄기' : '켜기'}</span></button>
+                    <button type="button" onClick={() => setAudioSettingsOpen(true)} className="flex flex-1 flex-col items-center justify-center rounded-xl border border-gray-900 bg-gray-900 py-2.5 text-xs! font-bold text-white shadow-sm transition hover:bg-black"><i className="fas fa-cog mb-1 text-lg" /><span>상세 설정</span></button>
+                  </div>
+                  {voiceConnectionError ? <p role="alert" className="mt-3 text-center text-xs text-red-500">{voiceConnectionError}</p> : null}
+                </section>
+                <section className="ai-meeting-channel-card flex flex-col justify-center rounded-3xl border border-gray-100 bg-white p-6 shadow-xl lg:p-7">
+                  <span className="mb-3 w-fit rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-blue-600">{participants.length > 0 ? '진행 중인 회의' : '회의 대기실'}</span>
+                  <h1 className="mb-2 text-xl font-black text-gray-900">{activeChannel?.name ?? '회의 준비'}</h1>
+                  <p className="mb-5 text-xs font-medium leading-relaxed text-gray-500">{activeChannel?.description ?? '입장 전 장치 상태를 점검해 주세요.'}</p>
+                  {channels.length > 1 ? <div className="mb-5"><label className="mb-2 block text-xs font-bold text-gray-500" htmlFor="ai-meeting-channel">회의 채널</label><select id="ai-meeting-channel" className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm!" value={activeChannel?.channelId ?? ''} onChange={(event) => { const channel = channels.find((item) => item.channelId === Number(event.target.value)); if (channel) void selectChannel(channel) }}>{channels.map((channel) => <option key={channel.channelId} value={channel.channelId}>{channel.name}</option>)}</select></div> : null}
+                  <div className="mb-6 rounded-2xl border border-[#A7F3D0] bg-linear-to-br from-[#F0FDF4] to-[#F0FDFA] p-4">
+                    <div className="mb-2.5 flex items-center justify-between gap-2"><h3 className="text-[11px] font-extrabold uppercase tracking-wider text-gray-700">오늘의 안건</h3><span className="whitespace-nowrap rounded border border-green-200 bg-green-100/60 px-1.5 py-0.5 text-[9px] font-extrabold text-green-700"><i className="fas fa-magic mr-1" />AI 로드맵 기반</span></div>
+                    <ol className="space-y-2 text-xs text-gray-600">{model.design?.roadmap.slice(0, 3).map((phase) => <li key={phase.phase}><span className="mr-2 font-extrabold text-brand">{phase.phase}.</span>{phase.title}</li>)}</ol>
+                  </div>
+                  <div className="mb-6">
+                    <h3 className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-gray-400">참가 중인 팀원 ({participants.length}명)</h3>
+                    <div className="space-y-2">{participants.map((participant) => {
+                      const member = members.find((item) => item.learnerId === participant.userId)
+                      return <div key={participant.participantId} className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-gray-50"><UserAvatar name={participant.userName} imageUrl={member?.profileImage} className="h-9 w-9 bg-gray-50" /><p className="flex-1 text-xs font-bold text-gray-800">{participant.userName}</p><i className={`fas ${participant.muted ? 'fa-microphone-slash text-red-400' : 'fa-microphone text-brand'} text-[10px]`} /></div>
+                    })}{!participants.length ? <p className="text-xs text-gray-400">먼저 입장해 팀원을 기다려 보세요.</p> : null}</div>
+                  </div>
+                  <button type="button" disabled={joining || !activeChannel || loading} onPointerDown={handleJoinPointerDown} onClick={() => void joinChannel()} className="w-full rounded-xl bg-brand py-3.5 text-base! font-extrabold text-white shadow-[0_8px_15px_rgba(0,196,113,0.25)] transition hover:-translate-y-1 hover:bg-green-600 disabled:opacity-50">{joining ? '연결 중...' : '회의 참여하기'}</button>
+                </section>
+              </div>
+            </div>
+          ) : <div className="px-8 pt-5 pb-8">
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 max-w-6xl mx-auto">
               <section className="xl:col-span-7 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="p-8 text-center border-b border-gray-100 bg-gradient-to-b from-white to-gray-50">
@@ -982,7 +1042,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel) {
                 </section>
               </aside>
             </div>
-          </div>
+          </div>}
         </main>
       </div>
       )}
