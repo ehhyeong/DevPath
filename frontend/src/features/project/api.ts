@@ -7,8 +7,111 @@ export type ApiEnvelope<T> = {
   data: T
 }
 
+export type WorkspaceAiDesignDifficulty = 'toy' | 'mvp' | 'enterprise'
+export type WorkspaceAiDesignStackMode = 'auto' | 'manual'
+
+export type WorkspaceAiDesignRequest = {
+  difficulty: WorkspaceAiDesignDifficulty
+  stackMode: WorkspaceAiDesignStackMode
+  frontend: string | null
+  backend: string | null
+  database: string | null
+  idea: string | null
+}
+
+export type WorkspaceAiDesign = {
+  title: string
+  summary: string
+  difficulty: WorkspaceAiDesignDifficulty
+  stack: {
+    frontend: string
+    backend: string
+    database: string
+    libraries: string[]
+    selectionReason: string
+  }
+  scenario: {
+    userFlows: Array<{ actor: string; action: string }>
+    coreFeatures: string[]
+    featureIds?: string[]
+    nextFeatureNumber?: number
+  }
+  architecture: {
+    style: string
+    description: string
+    components: Array<{ name: string; responsibility: string }>
+    erdMermaid: string
+    entities: Array<{
+      name: string
+      purpose: string
+      columns: Array<{
+        name: string
+        type: string
+        constraints: string
+        description: string
+      }>
+    }>
+    technicalChallenges: string[]
+  }
+  apis: Array<{
+    group?: string
+    method: string
+    path: string
+    description: string
+    auth: string
+    requestExample: string
+    responseExample: string
+  }>
+  roadmap: Array<{
+    phase: number
+    title: string
+    goal: string
+    estimatedWeeks: number
+    tasks: string[]
+  }>
+  interviewQuestions: Array<{
+    category: string
+    question: string
+    answer: string
+    keywords: string[]
+    tasks?: string[]
+    apis?: string[]
+    erd?: string
+  }>
+}
+
+export function workspaceFeatureId(scenario: WorkspaceAiDesign['scenario'], index: number) {
+  return scenario.featureIds?.[index] ?? `F${index + 1}`
+}
+
+export type WorkspaceAiDesignEdit = {
+  expectedDesign: WorkspaceAiDesign
+  planning?: { title: string; summary: string; userFlows: WorkspaceAiDesign['scenario']['userFlows']; features: Array<{ id: string | null; title: string }> }
+  architecture?: WorkspaceAiDesign['stack'] & Pick<WorkspaceAiDesign['architecture'], 'style' | 'description' | 'components' | 'technicalChallenges'>
+  roadmap?: Array<Pick<WorkspaceAiDesign['roadmap'][number], 'phase' | 'title' | 'goal' | 'tasks'>>
+}
+
+export type WorkspaceAiDesignJobStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
+
+export type WorkspaceAiDesignJob = {
+  jobId: string
+  status: WorkspaceAiDesignJobStatus
+  result: WorkspaceAiDesign | null
+  errorMessage: string | null
+  createdAt: string
+  completedAt: string | null
+}
+
+export type WorkspaceAiDesignWorkspace = {
+  workspaceId: number
+  dashboardUrl: string
+  createdAt: string
+  design: WorkspaceAiDesign
+}
+
 type AuthMode = 'none' | 'optional' | 'required'
 type ProjectRequestOptions = {
+  cache?: boolean
   invalidateCache?: boolean
 }
 
@@ -17,6 +120,59 @@ const PROJECT_QUERY_TTL_MS = 5 * 60_000
 
 export function invalidateProjectApiCache() {
   invalidateCachedQueries((key) => key.includes('|project:'))
+}
+
+export function generateWorkspaceAiDesign(
+  request: WorkspaceAiDesignRequest,
+  signal?: AbortSignal,
+) {
+  return projectApiRequest<WorkspaceAiDesign>(
+    '/api/workspaces/hub/ai-design',
+    {
+      method: 'POST',
+      body: JSON.stringify(request),
+      signal,
+    },
+    'required',
+    { invalidateCache: false },
+  )
+}
+
+export function startWorkspaceAiDesignJob(request: WorkspaceAiDesignRequest) {
+  return projectApiRequest<WorkspaceAiDesignJob>(
+    '/api/workspaces/hub/ai-design-jobs',
+    {
+      method: 'POST',
+      body: JSON.stringify(request),
+    },
+    'required',
+    { invalidateCache: false },
+  )
+}
+
+export function getWorkspaceAiDesignJob(jobId: string, signal?: AbortSignal) {
+  return projectApiRequest<WorkspaceAiDesignJob>(
+    `/api/workspaces/hub/ai-design-jobs/${encodeURIComponent(jobId)}`,
+    { signal },
+    'required',
+    { cache: false },
+  )
+}
+
+export function createWorkspaceFromAiDesign(jobId: string) {
+  return projectApiRequest<WorkspaceAiDesignWorkspace>(
+    `/api/workspaces/hub/ai-design-jobs/${encodeURIComponent(jobId)}/workspace`,
+    { method: 'POST' },
+    'required',
+  )
+}
+
+export function getWorkspaceAiDesign(workspaceId: number, signal?: AbortSignal) {
+  return projectApiRequest<WorkspaceAiDesignWorkspace>(
+    `/api/workspaces/hub/projects/${workspaceId}/ai-design`,
+    { signal },
+    'required',
+  )
 }
 
 export async function projectApiRequest<T>(
@@ -69,7 +225,7 @@ export async function projectApiRequest<T>(
 
   const method = (init.method ?? 'GET').toUpperCase()
 
-  if (method === 'GET') {
+  if (method === 'GET' && options.cache !== false) {
     const { signal, ...sharedInit } = init
     const cacheIdentity = session?.userId ? `user-${session.userId}` : 'anonymous'
 

@@ -201,6 +201,7 @@ public class WorkspaceDocService {
       case ERD -> "ERD";
       case INFRA -> "인프라 구조도";
       case MEETING_SETTINGS -> "밋업 설정";
+      case INTERVIEW_QUESTIONS -> "면접 질문";
     };
   }
 }

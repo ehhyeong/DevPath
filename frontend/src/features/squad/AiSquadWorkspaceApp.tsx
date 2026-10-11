@@ -1,23 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode, createContext, useContext, type Dispatch, type SetStateAction } from 'react'
 import SquadWorkspaceAside, { type SquadWorkspaceAsidePage } from '../../components/SquadWorkspaceAside'
 import { showAuthToast } from '../../lib/auth-toast'
 import { navigateTo } from '../../lib/spa-navigation'
-import {
-  aiApis,
-  aiErdTables,
-  aiFeatures,
-  aiFiles,
-  aiInterviewQuestions,
-  aiRoadmap,
-  aiSquadMembers,
-  aiSquadProject,
-  aiTasks,
-  aiUserFlow,
-  type AiApi,
-  type AiTask,
-  type AiTaskStatus,
-} from './ai-squad-data'
+import { aiApis, aiErdTables, aiFeatures, aiFiles, aiInterviewQuestions, aiRoadmap, aiSquadMembers, aiSquadProject, aiTasks, aiUserFlow, type AiApi, type AiTask, type AiTaskStatus, aiWorkspaceHref } from './ai-squad-data'
 import { loadMermaid } from './erd-support'
+import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
+import UserAvatar from '../../components/UserAvatar'
+import { clearStoredAuthSession } from '../../lib/auth-session'
+import { type WorkspaceAiDesign, type WorkspaceAiDesignEdit } from '../project/api'
+import { type ActivityLog, type CalendarEvent, type Notice, type VoiceChannel, type WorkspaceDashboard, type WorkspaceMember, type WorkspaceTask } from './dashboard-types'
+import { type ExternalIntegration } from './settings-types'
 
 type AiRoute =
   | '/squad-dashboard'
@@ -77,6 +69,7 @@ const tagMeta = {
 type BlueprintTab = 'scenario' | 'arch' | 'api' | 'roadmap'
 
 const blueprintTabs: BlueprintTab[] = ['scenario', 'arch', 'api', 'roadmap']
+
 const blueprintInterviewQuestions = aiInterviewQuestions.filter((question) => question.id.startsWith('Q'))
 
 function blueprintTabFromHash(): BlueprintTab {
@@ -85,53 +78,43 @@ function blueprintTabFromHash(): BlueprintTab {
 }
 
 function aiHref(path: AiRoute, hash = '') {
-  return `${path}?ai=1${hash}`
+  return aiWorkspaceHref(path, hash)
 }
 
 function go(path: AiRoute, hash = '') {
   navigateTo(aiHref(path, hash))
 }
 
-function AiHeader() {
-  const avatarSeeds = ['Felix', 'John', 'Sarah']
+function AiShell({ activePage, children, dark = false, showHeader = true, workspaceId = null }: { activePage: SquadWorkspaceAsidePage; children: ReactNode; dark?: boolean; showHeader?: boolean; workspaceId?: number | null }) {
+  const { dashboard } = useAiWorkspace()
+  const projectName = dashboard?.name ?? aiSquadProject.title
+  const members = dashboard?.members ?? []
 
-  return (
-    <header className="relative z-30 flex h-16 shrink-0 items-center border-b border-gray-100 bg-white px-8 shadow-sm">
-      <div className="flex min-w-0 flex-1 items-center gap-3 font-bold text-gray-800">
-        <span className="flex shrink-0 items-center gap-1.5 rounded-md border border-green-100 bg-green-50 px-2.5 py-1 text-xs text-brand">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" /> 진행 중
-        </span>
-        <span className="truncate tracking-tight">{aiSquadProject.title}</span>
-      </div>
-      <div className="relative flex items-center gap-5">
-        <div className="mr-4 hidden -space-x-2.5 border-r border-gray-200 pr-5 transition-all duration-300 hover:-space-x-1 md:flex">
-          {aiSquadMembers.map((member, index) => (
-            <img
-              key={member.memberId}
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeeds[index]}`}
-              alt={member.learnerName}
-              className="h-8 w-8 rounded-full border-2 border-white bg-gray-100 shadow-sm transition-transform hover:z-10 hover:scale-110"
-            />
-          ))}
-        </div>
-        <button aria-label="스쿼드 알림" className="relative cursor-pointer p-1 text-gray-400 transition hover:text-brand" type="button"><i className="far fa-bell text-xl" /></button>
-      </div>
-    </header>
-  )
-}
+  function handleLogout() {
+    clearStoredAuthSession()
+    navigateTo('/')
+  }
 
-function AiShell({ activePage, children, dark = false, showHeader = true }: { activePage: SquadWorkspaceAsidePage; children: ReactNode; dark?: boolean; showHeader?: boolean }) {
   return (
     <div className={`squad-dashboard-page ai-squad-workspace flex h-screen overflow-hidden font-['Pretendard',sans-serif] ${dark ? 'bg-[#111827] text-white' : 'bg-[#F8F9FA] text-gray-800'}`}>
       <SquadWorkspaceAside
         activePage={activePage}
         aiWorkspace
-        workspaceId={null}
-        projectName={aiSquadProject.squadName}
-        reviewBadgeCount={1}
+        workspaceId={workspaceId}
+        projectName={projectName}
       />
       <div className={`flex h-screen min-w-0 flex-1 flex-col overflow-hidden ${dark ? 'bg-[#111827]' : 'bg-[#F8F9FA]'}`}>
-        {dark || !showHeader ? null : <AiHeader />}
+        {dark || !showHeader ? null : (
+          <SquadWorkspaceHeader
+            aiWorkspace
+            workspaceId={workspaceId}
+            projectName={projectName}
+            members={members}
+            statusLabel={dashboard?.status === 'ARCHIVED' ? '보관됨' : '진행 중'}
+            statusActive={dashboard?.status !== 'ARCHIVED'}
+            onLogout={handleLogout}
+          />
+        )}
         {children}
       </div>
     </div>
@@ -151,9 +134,8 @@ function AiChip({ children }: { children: ReactNode }) {
   return <span className="inline-flex items-center gap-1 rounded-full border border-purple-100 bg-purple-50 px-2 py-1 text-[10px] font-black text-purple-600"><i className="fas fa-magic" />{children}</span>
 }
 
-function AiMemberAvatar({ name, className = '' }: { name: string; className?: string }) {
-  const seed = name === '이태형' ? 'Felix' : name === '김개발' ? 'John' : 'Sarah'
-  return <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`} alt={name} className={`rounded-full ${className}`} />
+function AiMemberAvatar({ name, imageUrl, className = '' }: { name: string; imageUrl?: string | null; className?: string }) {
+  return <UserAvatar name={name} imageUrl={imageUrl} className={className} />
 }
 
 function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -952,6 +934,7 @@ function InterviewPage() {
     {modal === 'mock' && mockSession ? <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-gray-900/85 p-4 backdrop-blur-sm"><section role="dialog" aria-labelledby="mock-title" className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"><header className="flex shrink-0 items-center justify-between border-b border-gray-100 px-7 py-4"><div className="flex items-center gap-3"><h2 id="mock-title" className="flex items-center gap-2 text-sm font-extrabold text-gray-900"><i className="fas fa-user-tie text-brand" />모의 면접</h2><div className="flex gap-1">{mockSession.questions.map((question, index) => <span key={question.id} className={`h-1.5 w-6 rounded-full ${index < mockSession.index ? 'bg-brand' : index === mockSession.index ? 'bg-gray-900' : 'bg-gray-200'}`} />)}</div></div><button onClick={() => { setModal(null); setMockSession(null) }} className="text-xs font-bold text-gray-400 hover:text-red-500" type="button">그만하기 <i className="fas fa-times ml-1" /></button></header><div className="custom-scrollbar flex-1 overflow-y-auto p-7">{mockSession.stage === 'answer' ? <div><div className="mb-6 flex items-start gap-5"><div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[6px] border-brand text-lg font-black text-gray-900">{mockSession.remaining}</div><div className="min-w-0 flex-1"><p className="text-xs font-bold text-gray-400">면접관 · {mockSession.questions[mockSession.index].id} {mockSession.questions[mockSession.index].category}</p><h3 className="mt-2 text-xl font-black text-gray-900">{mockSession.questions[mockSession.index].question}</h3><p className="mt-2 text-xs text-gray-400">{mockOptions.time}초 안에 답해 주세요. 말로 답하면 자동으로 받아 적습니다.</p></div></div><div className="overflow-hidden rounded-xl border border-gray-200"><textarea aria-label="모의 면접 답변" value={mockAnswer} onChange={(event) => setMockAnswer(event.target.value)} className="h-36 w-full resize-none p-4 text-sm outline-none" placeholder="답변을 입력하거나 [말로 답하기]를 누르세요." /><div className="flex items-center justify-between border-t border-gray-100 bg-gray-50 p-3"><button onClick={() => showAuthToast({ message: '브라우저 음성 입력을 준비했습니다.', durationMs: 1800 })} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-600" type="button"><i className="fas fa-microphone mr-1" />말로 답하기</button><button onClick={submitMockAnswer} className="rounded-lg bg-gray-900 px-5 py-2 text-xs font-bold text-white" type="button">답변 제출 <i className="fas fa-arrow-right ml-1" /></button></div></div></div> : mockSession.stage === 'feedback' ? <div><div className="mb-5 flex items-center gap-4"><div className="flex h-16 w-16 flex-col items-center justify-center rounded-2xl bg-brand text-white"><span className="text-2xl font-black leading-none">{mockSession.score}</span><span className="text-[9px] font-bold">점수</span></div><div><p className="text-xs font-bold text-gray-400">{mockSession.questions[mockSession.index].id} 답변 피드백</p><h3 className="mt-1 text-base font-black text-gray-900">{mockSession.questions[mockSession.index].question}</h3></div></div><div className="rounded-xl border border-green-100 bg-green-50 p-5"><p className="text-xs font-extrabold text-green-700">모범 답안</p><p className="mt-2 text-sm leading-relaxed text-gray-700">{mockSession.questions[mockSession.index].answer}</p><div className="mt-3 flex flex-wrap gap-1.5">{mockSession.questions[mockSession.index].keywords.map((keyword) => <span key={keyword} className="rounded border border-green-200 bg-white px-2 py-1 text-[10px] font-bold text-green-700">{keyword}</span>)}</div></div><div className="mt-6 text-center"><p className="mb-3 text-xs font-bold text-gray-500">답변할 때 얼마나 자신 있었나요?</p><div className="flex justify-center gap-2">{[['😵','막혔어요'],['🤔','애매해요'],['😎','자신 있어요']].map(([emoji,label]) => <button key={label} onClick={continueMockInterview} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-700 hover:border-brand hover:bg-green-50" type="button"><span className="mr-1">{emoji}</span>{label}</button>)}</div></div></div> : <div className="py-6 text-center"><div className="mx-auto mb-4 flex h-20 w-20 flex-col items-center justify-center rounded-3xl bg-brand text-white shadow-lg"><span className="text-3xl font-black leading-none">{Math.round(mockSession.scores.reduce((sum, score) => sum + score, 0) / Math.max(1, mockSession.scores.length))}</span><span className="text-[10px] font-bold">평균</span></div><h3 className="text-xl font-black text-gray-900">모의 면접 완료!</h3><p className="mt-2 text-sm text-gray-500">답변 기록을 질문 은행의 연습 리포트에 반영했습니다.</p><button onClick={() => { setModal(null); setMockSession(null); setTab('history') }} className="mt-6 rounded-xl bg-gray-900 px-6 py-3 text-sm font-bold text-white" type="button">기록 확인하기</button></div>}</div></section></div> : null}
   </div></main>
 }
+
 type SettingsTab = 'general' | 'members' | 'integrations' | 'ai' | 'danger'
 
 function SettingsPage() {
@@ -1101,4 +1084,77 @@ export default function AiSquadWorkspaceApp() {
 
   if(route==='/squad-meeting') return <MeetingPage />
   return <AiShell activePage={routePage[route]} showHeader={route !== '/squad-erd'}><CurrentPage route={route} /></AiShell>
+}
+
+type AiWorkspaceRuntime = {
+  design: WorkspaceAiDesign | null
+  saveDesign: (request: WorkspaceAiDesignEdit) => Promise<void>
+  workspaceId: number | null
+  dashboard: WorkspaceDashboard | null
+  tasks: WorkspaceTask[]
+  setTasks: Dispatch<SetStateAction<WorkspaceTask[]>>
+  activities: ActivityLog[]
+  notices: Notice[]
+  events: CalendarEvent[]
+  voiceChannels: VoiceChannel[]
+  integrations: ExternalIntegration[]
+}
+
+const AiWorkspaceContext = createContext<AiWorkspaceRuntime>({
+  design: null,
+  saveDesign: async () => { throw new Error('워크스페이스를 먼저 만들어 주세요.') },
+  workspaceId: null,
+  dashboard: null,
+  tasks: [],
+  setTasks: () => undefined,
+  activities: [],
+  notices: [],
+  events: [],
+  voiceChannels: [],
+  integrations: [],
+})
+
+function useAiWorkspace() {
+  return useContext(AiWorkspaceContext)
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return '미정'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
+}
+
+function taskStatus(status: WorkspaceTask['status']): AiTaskStatus {
+  if (status === 'IN_PROGRESS') return 'progress'
+  if (status === 'IN_REVIEW') return 'review'
+  if (status === 'DONE') return 'done'
+  return 'todo'
+}
+
+function taskTag(task: WorkspaceTask): AiTask['tag'] {
+  const tag = task.description?.match(/^\[task-tag:(FE|BE|UX\/UI|DevOps)\]/)?.[1]
+  if (tag) return tag as AiTask['tag']
+  const value = `${task.title} ${task.description ?? ''}`
+  if (/화면|UI|UX|디자인|프론트/i.test(value)) return 'FE'
+  if (/배포|CI|CD|인프라|모니터링/i.test(value)) return 'DevOps'
+  return 'BE'
+}
+
+function toAiTask(task: WorkspaceTask, members: WorkspaceMember[]): AiTask {
+  const assignee = members.find((member) => member.learnerId === task.assigneeId)
+  return {
+    id: `DP-${String(task.taskId).padStart(2, '0')}`,
+    title: task.title,
+    tag: taskTag(task),
+    assignee: assignee?.learnerName?.trim() || '미지정',
+    status: taskStatus(task.status),
+    due: formatDate(task.dueDate),
+    urgent: task.priority === 'HIGH',
+  }
+}
+
+function useDisplayedTasks() {
+  const { workspaceId, dashboard, tasks } = useAiWorkspace()
+  return workspaceId ? tasks.map((task) => toAiTask(task, dashboard?.members ?? [])) : aiTasks
 }
