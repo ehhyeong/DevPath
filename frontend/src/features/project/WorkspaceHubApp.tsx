@@ -605,11 +605,7 @@ function WorkspaceProjectCard({
       <div>
         <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
           <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap">
-            {isAiSquad ? (
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-blue-600 to-sky-500 px-2.5 py-1 text-[10px] font-bold text-white">
-                <i className="fas fa-wand-magic-sparkles" aria-hidden="true"></i> AI 설계 스쿼드
-              </span>
-            ) : <span className={getTypeBadgeClass(project.type)}>{getTypeLabel(project.type)}</span>}
+            <span className={getTypeBadgeClass(project.type)}>{getTypeLabel(project.type)}</span>
             <span className={getStatusBadgeClass(project.status)}>{getStatusLabel(project.status)}</span>
           </div>
 
