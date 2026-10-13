@@ -45,11 +45,11 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 | --- | --- | --- |
 | 🧭 | 학습 로드맵 | 맞춤 로드맵, 강의 탐색, 학습 플레이어, 퀴즈와 과제 |
 | 🧑‍🏫 | 강사 운영 | 강의 관리, 콘텐츠 편집, 수강생 분석, Q&A, 수익 관리 |
-| 🧩 | 팀 프로젝트 | 워크스페이스, 칸반, 일정, 파일, 회의, ERD, 코드 리뷰 |
+| 🧩 | 팀 프로젝트 | AI 주제 추천과 프로젝트 설계서, 워크스페이스, 칸반, 일정, 파일, 화상 회의, ERD, API 명세서, 면접 준비 |
 | 💼 | 커리어 | 채용 분석, 이력서, 포트폴리오, Proof Card, 쇼케이스 |
 | 💬 | 커뮤니티 | 라운지, 게시글, 댓글, 좋아요, 멘토링 허브 |
 | 🛡️ | 관리자 | 계정 관리, 로드맵 거버넌스, 강의 검수, 신고 처리 |
-| 🤖 | AI/OCR | AI 코드 리뷰, AI 디자인 리뷰, 영상 학습 OCR, EasyOCR 연동 |
+| 🤖 | AI/OCR | Gemini 프로젝트 설계·면접 질문 생성, 워크스페이스 AI 에이전트, AI 코드·디자인 리뷰, 영상 학습 OCR |
 
 ## 자세히 보기
 
@@ -73,6 +73,28 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 - 팀 워크스페이스에서 칸반, 일정, 파일, 회의, ERD를 관리합니다.
 - 스쿼드 워크스페이스와 멘토링 워크스페이스를 제공합니다.
 - 코드 리뷰와 실시간 협업 흐름을 지원합니다.
+
+### AI 스쿼드 워크스페이스
+
+1. `/workspace-hub`의 **새 프로젝트 시작**에서 **AI에게 주제 추천받기** 또는 **내가 직접 설정하기**를 선택합니다.
+2. AI 추천에서는 토이 프로젝트·실전 MVP·엔터프라이즈 난이도와 기술 스택 자동 추천·직접 설정을 선택합니다. 서비스 아이디어를 입력하면 이를 구체화하고, 입력하지 않으면 난이도에 맞는 주제를 추천합니다.
+3. Gemini가 **기획 & 시나리오**, **아키텍처 & DB**, **API 명세서**, **개발 로드맵 & 면접**을 생성합니다. 모달을 닫거나 백그라운드 실행을 선택하면 다른 페이지에서도 작업 상태와 완료 알림을 확인할 수 있습니다.
+4. 결과를 확인하고 워크스페이스를 만들면 설계 내용이 작업 카드, ERD, API 명세서, Phase 일정, 면접 질문과 자료실 문서로 연결됩니다. 팀원은 초대를 통해 참여합니다.
+
+| 메뉴 | 역할 |
+| --- | --- |
+| 대시보드 | 기능별 연결 작업 진행률, 내 작업, 현재 날짜에 해당하는 개발 로드맵 Phase와 팀 활동 |
+| 프로젝트 설계서 | 기획·시나리오, 아키텍처, API와 로드맵·면접 내용 확인 및 설계 편집 |
+| 작업 현황판 | 작업 생성·배정·상태 변경, MVP 기능과 API 엔드포인트 연결 |
+| ERD 설계 / API 명세서 | 추천 모델 편집, API 그룹·엔드포인트·응답 예시 관리, 연결 작업과 구현 상태 확인 |
+| 일정 관리 / 팀 자료실 | Phase 마일스톤과 작업 마감일, 자동 생성 설계 문서와 팀 파일 관리 |
+| 면접 준비 | 질문·모범 답안, 개인 답변과 팀원 답변, 질문 추가, 모의 면접과 연습 리포트 |
+| 화상 회의 | 실제 참가자 기준 회의 화면, 카메라·마이크·화면 공유 |
+| 스쿼드 설정 / 코드 피드백 | 팀원 초대·담당 직군·외부 연동 설정, GitHub 연동 후 코드 피드백 이용 |
+
+설계 생성 작업은 DB에 저장하고 Redis를 조회 캐시로 사용합니다. 미완료 작업은 서버 시작과 주기적인 복구 처리에서 다시 실행하며, Redis 장애 시 DB 조회를 사용할 수 있습니다. 브라우저에는 작업 ID를 보관하므로 같은 브라우저에서 다시 접속해 진행 상태를 확인할 수 있습니다.
+
+페이지를 이동할 때는 목적지에 필요한 데이터만 사전 조회하고 방문한 화면의 입력 상태를 보존합니다. 면접 질문과 모범 답안은 개인 기록·근거 자료 조회와 분리해 먼저 표시하며, 개인 기록을 읽기 전에는 편집과 저장을 잠가 기존 답변을 보호합니다.
 
 ### 커리어와 커뮤니티
 
@@ -100,9 +122,10 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 | --- | --- |
 | React SPA | 학습자·강사·관리자 화면, 라우팅, Axios API 호출, hls.js 보호 재생, Tesseract.js OCR 폴백 |
 | Nginx | Vite 정적 빌드 제공과 `/api`, `/uploads`, `/ws`, OAuth 요청의 Spring Boot 프록시 |
-| Spring Boot API | JWT·OAuth2 인증, 도메인 API, 관리자 기능, Q&A·음성 시그널링 WebSocket |
+| Spring Boot API | JWT·OAuth2 인증, 도메인 API, AI 설계 작업·복구, 관리자 기능, Q&A·회의 시그널링 WebSocket |
 | PostgreSQL / Oracle | 로컬 PostgreSQL과 운영 프로필 기반 관계형 데이터 저장 |
-| Redis | 캐시와 실시간 상태 데이터 처리 |
+| Redis | 캐시와 실시간 상태 데이터 처리, DB에 저장한 AI 설계 작업의 조회 캐시 |
+| Flyway | PostgreSQL·Oracle별 DB 변경 이력, 기존 스키마 도입과 후속 마이그레이션 검증 |
 | Local Upload Storage | 업로드 파일과 FFmpeg 변환 HLS·AES 자산 저장 |
 | Python OCR Server | Flask, EasyOCR와 OpenCV 기반 학습 영상·이미지 OCR 처리 |
 | External Integrations | Gemini·Claude Vision, GitHub·Google OAuth, 잡코리아, GitHub Pull Request, DEV.to 연동 |
@@ -138,7 +161,7 @@ com.devpath
 
 | 구분 | 기술 |
 | --- | --- |
-| Backend | Java 21, Spring Boot 4, Spring Web MVC, Spring Security, OAuth2 Client, JWT, JPA |
+| Backend | Java 21, Spring Boot 4, Spring Web MVC, Spring Security, OAuth2 Client, JWT, JPA, Flyway |
 | Frontend | React 19, TypeScript 6.0, Vite 8, Tailwind CSS 4, Axios, Chart.js |
 | Database | PostgreSQL 15 로컬 환경, Oracle 운영 프로필, Redis 7 |
 | AI/OCR | Gemini API 연동, Flask, EasyOCR, OpenCV, Tesseract.js |
@@ -154,14 +177,14 @@ com.devpath
 ### 사전 준비
 
 - JDK 21
-- Node.js 22 이상, Node.js 24 권장
-- FFmpeg 9 이상 권장. 강의 영상 업로드 시 HLS 변환과 AES-128 암호화에 사용하며, 없어도 원본 영상 폴백으로 업로드는 계속됩니다.
+- Node.js 22.12 이상. Docker 개발 환경은 Node.js 24를 사용합니다.
+- FFmpeg. 강의 영상 업로드 시 HLS 변환과 AES-128 암호화에 사용하며, 없어도 원본 영상 폴백으로 업로드는 계속됩니다.
 - Docker Desktop 또는 Docker Compose
 - PostgreSQL과 Redis를 직접 띄우거나 Docker Compose 사용
 
 ### 환경 변수
 
-실제 `.env` 값은 공개 저장소에 올리면 안 됩니다.
+프로젝트 루트에 `.env`를 준비합니다. Spring Boot와 Docker Compose가 이 설정을 읽으며, 실제 값은 공개 저장소에 올리면 안 됩니다.
 README에는 필요한 키를 알려주는 예시만 둡니다.
 팀에서 공유하는 실제 값은 비공개 채널, 시크릿 관리 도구, 배포 환경 변수로 관리합니다.
 
@@ -209,6 +232,8 @@ JOBKOREA_API_KEY=<jobkorea-api-key>
 
 위 예시는 기본 로컬 프로필의 PostgreSQL 설정입니다. 운영 프로필은 `DB_URL`을 사용하고 `DB_DRIVER`를 지정하지 않으면 Oracle JDBC 드라이버를 기본값으로 사용합니다.
 
+AI 프로젝트 설계에는 유효한 `GEMINI_API_KEY`와 사용 가능한 모델의 할당량이 필요합니다. 사용할 모델과 대체 모델 목록은 `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS`로 설정할 수 있습니다. HTTP 429 사용량 제한이나 생성 실패는 오류로 안내하며 고정 목업 설계로 성공을 대신하지 않습니다.
+
 ### 인프라 실행
 
 ```bash
@@ -240,6 +265,27 @@ Windows PowerShell에서는 아래 명령을 사용할 수 있습니다.
 
 기능별 Java 초기화기는 `local`, `dev` 프로필에서만 동작합니다. Hibernate 시작 전 `project-schema-prep.sql` 실행은 기본 `local` 설정에 포함됩니다. 각 SQL 묶음은 실행 시점과 복원 조건이 다르고 서버 재시작 시 필요한 데이터를 안전하게 보정하도록 작성되어 있으므로 임의로 합치거나 삭제하지 않습니다.
 
+### DB 마이그레이션
+
+Flyway는 기본 활성화이며 기존 스키마의 변경 이력 관리부터 도입한 상태입니다. 기존 `db/legacy`, `db/local` SQL과 Java 초기화기, 로컬 Hibernate `update` 설정은 유지합니다. 로컬의 `baseline-on-migrate` 기본값은 `true`이므로 비어 있지 않은 기존 DB를 버전 1로 등록합니다. 빈 DB에는 V1 도입 표시 SQL이 적용되며 테이블 생성은 기존 SQL·Hibernate 초기화 흐름이 담당합니다.
+
+운영에서는 자동 baseline을 기본으로 사용하지 않습니다. 스키마와 데이터가 준비된 운영 DB를 확인한 뒤, 처음 도입하는 실행에만 다음 환경 변수를 설정합니다.
+
+```properties
+SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
+```
+
+이 실행은 기존 스키마를 버전 1로 등록하고 `flyway_schema_history`에 이후 변경 이력을 저장합니다. Flyway는 기존 SQL을 마이그레이션으로 재실행하거나 데이터를 초기화하지 않습니다. 기존 SQL·Java 초기화기는 원래 조건과 순서대로 계속 동작합니다. 운영의 최초 등록이 끝나면 `SPRING_FLYWAY_BASELINE_ON_MIGRATE`를 제거하거나 `false`로 바꿉니다. 로컬에서도 등록 후 `false`로 고정할 수 있습니다.
+
+마이그레이션은 JDBC 연결의 DB 종류에 따라 다음 경로에서 읽습니다.
+
+- PostgreSQL. `src/main/resources/db/migration/postgresql`
+- Oracle. `src/main/resources/db/migration/oracle`
+
+각 경로의 `V1__adopt_existing_schema.sql`은 도입 시점 표시이며 전체 초기 스키마를 생성하지 않습니다. 앞으로의 변경은 `V2__변경설명.sql`, `V3__변경설명.sql`처럼 새 버전으로 추가합니다. 두 DB에서 지원할 변경은 각각의 SQL 문법으로 작성하고 검증합니다. 적용한 파일은 수정하거나 이름을 바꾸지 않습니다. 기존 시드 SQL은 전용 경로에 복사하지 않고 현재 초기화기가 계속 실행합니다.
+
+Flyway는 Hibernate보다 먼저 실행합니다. 아직 전체 초기 DDL을 migration으로 옮긴 상태가 아니므로, 기존 테이블을 수정하는 후속 migration을 추가할 때는 빈 DB 초기화도 함께 검증해야 합니다. `clean`은 비활성화하며, 앞으로 작성하는 마이그레이션의 데이터 삭제·컬럼 삭제 여부는 별도로 검토해야 합니다. 전체 초기 DDL 작성과 Hibernate `validate` 전환은 별도 전환 작업입니다. 기존 H2 테스트 프로필에서는 Flyway를 비활성화합니다.
+
 ### 프론트엔드 실행
 
 ```bash
@@ -259,8 +305,11 @@ docker compose up -d --build
 정적 Nginx 프론트엔드 이미지를 확인하려면 `frontend-static` 프로필을 사용합니다.
 
 ```bash
+docker compose stop frontend-dev
 docker compose --profile frontend-static up -d --build frontend
 ```
+
+`frontend-dev`와 정적 `frontend`는 모두 호스트의 8084 포트를 사용하므로 동시에 실행하지 않습니다.
 
 </details>
 
@@ -285,11 +334,21 @@ docker compose --profile frontend-static up -d --build frontend
 | `/lecture-list` | 강의 목록 |
 | `/learning` | 학습 플레이어 |
 | `/workspace-hub` | 워크스페이스 허브 |
+| `/squad-dashboard` | 스쿼드 대시보드 |
+| `/squad-blueprint` | 프로젝트 설계서 |
+| `/squad-workspace` | 스쿼드 작업 현황판 |
+| `/squad-erd` / `/squad-api` | ERD 설계 / API 명세서 |
+| `/squad-review` | GitHub 코드 피드백 |
+| `/squad-schedule` / `/squad-files` | 일정 관리 / 팀 자료실 |
+| `/squad-meeting` / `/squad-interview` | 화상 회의 / 면접 준비 |
+| `/squad-settings` | 스쿼드 설정 |
 | `/team-ws-dashboard` | 팀 워크스페이스 |
 | `/mentoring-hub` | 멘토링 허브 |
 | `/job-matching` | 채용 분석 |
 | `/community-list` | 커뮤니티 |
 | `/admin-dashboard` | 관리자 대시보드 |
+
+저장된 스쿼드는 `?workspaceId=<워크스페이스 ID>`로 구분합니다. AI 추천으로 만든 스쿼드에는 `&ai=1`이 함께 붙으며, 허브 카드와 ASIDE 메뉴가 해당 워크스페이스 경로를 유지합니다.
 
 ### API Docs
 
@@ -303,7 +362,7 @@ Vite 개발 서버에서는 프록시가 설정되어 있어 `/api`, `/ws`, `/sw
 
 강사가 `lesson-video` 유형으로 영상을 올리고 HLS 정책이 활성화되어 있으면 백엔드는 원본 파일을 보존한 채 6초 세그먼트의 AES-128 HLS 재생 목록을 생성합니다. HLS 재생 목록, TS 세그먼트와 AES 키는 강의 상세 권한 검사 후 발급되는 짧은 만료형 서명 URL로만 제공합니다. 변환 도구가 없거나 변환에 실패하면 원본 영상 URL로 폴백하며 관리자 상태 화면에 `FALLBACK_ONLY`로 표시합니다. 원본 폴백에는 HLS 암호화와 만료형 서명이 적용되지 않으므로 배포 환경에서는 FFmpeg를 준비해야 합니다. Chrome을 포함한 MSE 기반 브라우저에서는 프론트엔드의 `hls.js` 재생 경로를 사용합니다.
 
-Gemini 키가 없거나 호출에 실패하면 지원 기능은 결정론적 폴백만 사용하며 관리자 상태 화면에 이를 명시합니다. 잡코리아 수집 URL이 없으면 수집 API는 가짜 완료 응답을 반환하지 않고 설정 누락 오류를 반환합니다.
+AI 호출 실패 처리 방식은 기능마다 다릅니다. 프로젝트 설계 생성과 면접 질문 추가는 호출 실패·사용량 제한·잘못된 응답을 오류로 안내합니다. 잡코리아 수집 URL이 없으면 수집 API는 가짜 완료 응답을 반환하지 않고 설정 누락 오류를 반환합니다.
 
 </details>
 
@@ -322,7 +381,8 @@ DevPath
 │  ├─ application*.yaml          # 공통 설정과 프로필별 환경 변수 매핑
 │  └─ db
 │     ├─ legacy                  # 기본 레거시 시드와 보정 SQL
-│     └─ local                   # 로컬 스키마 보정과 기능별 데모 시드 SQL
+│     ├─ local                   # 로컬 스키마 보정과 기능별 데모 시드 SQL
+│     └─ migration              # PostgreSQL·Oracle별 Flyway 마이그레이션
 ├─ frontend
 │  ├─ src              # React 페이지, 컴포넌트, API 클라이언트
 │  ├─ public           # 정적 리소스
@@ -342,11 +402,14 @@ DevPath
 | 백엔드 테스트 | `.\gradlew.bat test` |
 | 백엔드 포맷 | `.\gradlew.bat spotlessApply` |
 | 백엔드 전체 검증 | `.\gradlew.bat test spotlessCheck --no-daemon` |
+| Flyway 도입 검증 | `.\gradlew.bat test --tests com.devpath.common.config.FlywayMigrationIntegrationTest --no-daemon` |
 | 프론트엔드 개발 서버 | `cd frontend && npm run dev` |
 | 프론트엔드 빌드 | `cd frontend && npm run build` |
 | 프론트엔드 린트 | `cd frontend && npm run lint` |
 | 프론트엔드 단위 테스트 | `cd frontend && npm test` |
 | 프론트엔드 E2E 테스트 | `cd frontend && npm run test:e2e` |
+
+Playwright E2E를 처음 실행할 때는 `frontend`에서 `npx playwright install chromium`으로 테스트용 브라우저를 준비합니다. 테스트 설정은 별도 Vite 서버를 `http://127.0.0.1:4174`에 실행합니다.
 
 </details>
 
