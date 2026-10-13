@@ -1,4 +1,8 @@
 spring:
+  flyway:
+    # 기존 H2 테스트는 Hibernate와 레거시 시드로 스키마를 준비한다.
+    enabled: false
+
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:devpath-${random.uuid};MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
