@@ -3,6 +3,7 @@ import AuthModal from '../../../components/AuthModal'
 import MeetingAudioSettings from './MeetingAudioSettings'
 import MeetingParticipantStage from './MeetingParticipantStage'
 import SquadWorkspaceAside from '../../../components/SquadWorkspaceAside'
+import SquadWorkspaceLoadingView from '../../../components/SquadWorkspaceLoadingView'
 import SquadWorkspaceHeader from '../../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../../components/UserAvatar'
 import { showAuthToast } from '../../../lib/auth-toast'
@@ -751,6 +752,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
   }
 
   if (loading) {
+    if (model.aiWorkspace) return <SquadWorkspaceLoadingView activePage="meeting" workspaceId={workspaceId} projectName={model.design?.title ?? projectName}>{renderAuthModal()}</SquadWorkspaceLoadingView>
     return (
       <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>

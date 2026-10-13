@@ -868,7 +868,82 @@ test('팀 자료실 첫 조회 중에도 AI 사이드바의 펼침 상태와 메
   }
 })
 
+for (const [pageName, moduleName] of [
+  ['workspace', 'SquadWorkspaceApp'],
+  ['schedule', 'SquadScheduleApp'],
+  ['erd', 'SquadErdApp'],
+  ['meeting', 'SquadMeetingApp'],
+  ['files', 'SquadFilesApp'],
+  ['settings', 'SquadSettingsApp'],
+  ['review', 'SquadReviewApp'],
+] as const) {
+  test(`AI 사이드바가 ${pageName} 첫 코드 로딩 중에도 같은 메뉴 위치를 유지한다`, async ({ page }) => {
+    if (pageName === 'review') await page.route('**/api/workspaces/42/integrations', (route) => route.fulfill({ json: { success: true, data: [{ provider: 'GITHUB', isActive: true, repositoryUrl: 'https://github.com/example/test', githubTokenConfigured: true }] } }))
+    let releaseModule!: () => void
+    const pending = new Promise<void>((resolve) => { releaseModule = resolve })
+    await page.route(`**/src/features/squad/${moduleName}.tsx*`, async (route) => {
+      await pending
+      await route.continue()
+    })
+    await page.goto('/squad-api?workspaceId=42&ai=1')
+    await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+    const aside = page.locator('.squad-workspace-aside:visible')
+    await aside.hover()
+    await expect(aside).toHaveCSS('width', '256px')
+    const position = () => aside.locator('a.workspace-nav-item').evaluateAll((links) => links.map((link) => ({ top: link.getBoundingClientRect().top, height: link.getBoundingClientRect().height })))
+    const baseline = await position()
+    try {
+      await aside.locator(`a[href="/squad-${pageName}?workspaceId=42&ai=1"]`).click()
+      await expect(page).toHaveURL(`/squad-${pageName}?workspaceId=42&ai=1`)
+      await expect(aside).toBeVisible()
+      await expect(aside).toHaveCSS('width', '256px')
+      await expect(aside.locator(`a[href="/squad-${pageName}?workspaceId=42&ai=1"]`)).toHaveClass(/active/)
+      await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+      releaseModule()
+      await expect(page.getByRole('status')).toHaveCount(0)
+      await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+      await page.locator('main:visible').last().hover()
+      await expect(aside).toHaveCSS('width', '80px')
+      await aside.hover()
+      await expect(aside).toHaveCSS('width', '256px')
+    } finally {
+      releaseModule()
+    }
+  })
+}
+
+for (const [pageName, endpoint] of [['schedule', 'calendar-events'], ['meeting', 'voice-channels'], ['review', 'code-reviews']] as const) {
+  test(`AI 사이드바가 ${pageName} 첫 데이터 로딩 중에도 같은 메뉴 위치를 유지한다`, async ({ page }) => {
+    if (pageName === 'review') await page.route('**/api/workspaces/42/integrations', (route) => route.fulfill({ json: { success: true, data: [{ provider: 'GITHUB', isActive: true, repositoryUrl: 'https://github.com/example/test', githubTokenConfigured: true }] } }))
+    let releaseData!: () => void
+    const pending = new Promise<void>((resolve) => { releaseData = resolve })
+    await page.route(`**/api/workspaces/42/${endpoint}`, async (route) => { await pending; await route.fallback() })
+    await page.goto('/squad-api?workspaceId=42&ai=1')
+    await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+    const aside = page.locator('.squad-workspace-aside:visible')
+    await aside.hover()
+    await expect(aside).toHaveCSS('width', '256px')
+    const position = () => aside.locator('a.workspace-nav-item').evaluateAll((links) => links.map((link) => ({ top: link.getBoundingClientRect().top, height: link.getBoundingClientRect().height })))
+    const baseline = await position()
+    try {
+      await aside.locator(`a[href="/squad-${pageName}?workspaceId=42&ai=1"]`).click()
+      await expect(page).toHaveURL(`/squad-${pageName}?workspaceId=42&ai=1`)
+      await expect(page.getByRole('status')).toBeVisible()
+      await expect(aside).toHaveCSS('width', '256px')
+      await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+      await page.locator('main:visible').last().hover()
+      await expect(aside).toHaveCSS('width', '80px')
+      await aside.hover()
+      await expect(aside).toHaveCSS('width', '256px')
+      releaseData()
+      await expect(page.getByRole('status')).toHaveCount(0)
+      await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+    } finally { releaseData() }
+  })
+}
+
 test('AI 사이드바가 페이지 왕복 중 펼침 상태와 메뉴 위치를 유지한다', async ({ page }, testInfo) => {
+  await page.route('**/api/workspaces/42/integrations', (route) => route.fulfill({ json: { success: true, data: [{ provider: 'GITHUB', isActive: true, repositoryUrl: 'https://github.com/example/test', githubTokenConfigured: true }] } }))
   await page.goto('/squad-api?workspaceId=42&ai=1')
   await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
   const aside = page.locator('.squad-workspace-aside:visible')
@@ -879,13 +954,19 @@ test('AI 사이드바가 페이지 왕복 중 펼침 상태와 메뉴 위치를 
     await aside.hover()
     await expect(aside).toHaveCSS('width', '256px')
     const baseline = await position()
-    for (const pageName of ['dashboard', 'workspace', 'schedule', 'api', 'workspace', 'blueprint', 'dashboard', 'schedule', 'workspace', 'api']) {
+    for (const pageName of ['dashboard', 'blueprint', 'workspace', 'schedule', 'erd', 'api', 'review', 'meeting', 'files', 'interview', 'settings', 'dashboard', 'erd', 'api']) {
       await aside.locator(`a[href="/squad-${pageName}?workspaceId=42&ai=1"]`).click()
       await expect(page).toHaveURL(`/squad-${pageName}?workspaceId=42&ai=1`)
       await expect(aside.locator(`a[href="/squad-${pageName}?workspaceId=42&ai=1"]`)).toHaveClass(/active/)
       await expect(aside).toHaveClass(/is-expanded/)
       await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1), { message: `${height}px에서 ${pageName} 전환 후 메뉴 위치 유지` }).toBe(true)
       for (let index = 0; index < 11; index += 1) await expect(menus.nth(index)).toBeInViewport({ ratio: 1 })
+      await page.locator('main:visible').last().hover()
+      await expect(aside).toHaveCSS('width', '80px')
+      await expect(aside).not.toHaveClass(/is-expanded/)
+      await aside.hover()
+      await expect(aside).toHaveCSS('width', '256px')
+      await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
     }
     await page.screenshot({ path: testInfo.outputPath(`squad-aside-navigation-${height}.png`) })
     await page.locator('main:visible').last().hover()

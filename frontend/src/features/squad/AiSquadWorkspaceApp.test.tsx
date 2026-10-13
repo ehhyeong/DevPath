@@ -411,7 +411,7 @@ describe('저장된 AI 워크스페이스 대시보드', () => {
 
     expect(await screen.findByTitle('실제 사용자')).toBeInTheDocument()
     expect(screen.queryByText('김개발')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /작업 추가/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /작업 추가/ }))
     const assignee = screen.getByLabelText('담당자 배정')
     expect(assignee).toHaveTextContent('실제 사용자')
     expect(assignee).not.toHaveTextContent('김개발')
@@ -432,8 +432,27 @@ describe('저장된 AI 워크스페이스 대시보드', () => {
 
     render(<AiSquadWorkspaceApp />)
 
-    const reviewLink = await screen.findByRole('link', { name: /코드 피드백/ })
-    await waitFor(() => expect(reviewLink).toHaveAttribute('aria-disabled', 'false'))
+    await waitFor(() => expect(screen.getByRole('link', { name: /코드 피드백/ })).toHaveAttribute('aria-disabled', 'false'))
+  })
+
+  it('최초 설계 조회 중에도 현재 메뉴와 펼침 상태를 제공하고 목업 제목을 노출하지 않는다', async () => {
+    window.history.replaceState({}, '', '/squad-blueprint?workspaceId=42&ai=1')
+    const response = { workspaceId: 42, dashboardUrl: '/squad-dashboard?workspaceId=42&ai=1', createdAt: '2026-10-05T00:00:00Z', design: persistedDesign() }
+    let releaseDesign!: (value: typeof response) => void
+    vi.mocked(getWorkspaceAiDesign).mockReturnValue(new Promise((resolve) => { releaseDesign = resolve }))
+    render(<AiSquadWorkspaceApp />)
+    const aside = screen.getByRole('complementary')
+    expect(aside).toHaveClass('ai-squad-aside')
+    expect(screen.getByRole('link', { name: /프로젝트 설계서/ })).toHaveClass('active')
+    expect(screen.getByRole('status')).toHaveTextContent('AI 설계를 불러오는 중입니다...')
+    expect(screen.getByRole('link', { name: /목록으로 돌아가기/ })).toHaveTextContent('스쿼드 프로젝트')
+    expect(screen.queryByText('독립 출판 콘텐츠 구독 플랫폼')).not.toBeInTheDocument()
+    fireEvent.mouseEnter(aside)
+    expect(aside).toHaveClass('is-expanded')
+    releaseDesign(response)
+    expect(await screen.findByRole('heading', { name: response.design.title })).toBeInTheDocument()
+    expect(screen.getByRole('complementary')).toHaveClass('is-expanded')
+    fireEvent.mouseLeave(screen.getByRole('complementary'))
   })
 })
 

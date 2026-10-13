@@ -3,14 +3,16 @@
 aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-bottom: 0.5rem; margin-top: 1.5rem; }
 
 .ai-squad-aside .workspace-nav-item { min-height: 48px; margin-bottom: 4px; padding-block: 14px; }
-.ai-squad-aside:is(.is-expanded, .pinned) .workspace-nav-item { min-height: 44px; padding-block: 6px; }
+/* 정지한 포인터 아래에서 페이지가 교체되면 React 진입 이벤트보다 CSS hover가 먼저 적용될 수 있다. */
+.ai-squad-aside:is(:hover, .is-expanded, .pinned) .workspace-nav-item { min-height: 44px; padding-block: 6px; }
+.ai-squad-aside:is(:hover, .is-expanded, .pinned) .workspace-sidebar-section-title { opacity: 1; height: auto; margin-top: 8px; margin-bottom: 4px; }
 /* 접힘 상태에서도 숨긴 AI 배지가 줄을 만들어 메뉴 높이를 늘리지 않도록 한다. */
 .ai-squad-aside .workspace-nav-item .sidebar-text { display: flex; align-items: center; }
 
 /* 낮은 화면에서도 모든 메뉴가 보여야 하므로 부가 정보부터 줄인다. */
 @media (max-height: 800px) {
-  .ai-squad-aside:is(.is-expanded, .pinned) > div:first-child { height: 64px; }
-  .ai-squad-aside:is(.is-expanded, .pinned) .workspace-nav-item { min-height: 40px; margin-bottom: 2px; }
+  .ai-squad-aside:is(:hover, .is-expanded, .pinned) > div:first-child { height: 64px; }
+  .ai-squad-aside:is(:hover, .is-expanded, .pinned) .workspace-nav-item { min-height: 40px; margin-bottom: 2px; }
   .ai-squad-aside .ai-squad-menu-description { display: none; }
   .ai-squad-aside .ai-squad-menu-list { padding-block: 4px; }
 }
@@ -18,7 +20,7 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
 @media (max-height: 700px) {
   .ai-squad-aside .workspace-sidebar-section-title { display: none; }
   /* 헤더·아이콘·설정·간격에 480px을 남기고 11개 메뉴의 양쪽 여백을 조정한다. */
-  .ai-squad-aside:not(.is-expanded):not(.pinned) .workspace-nav-item { min-height: 0; padding-block: clamp(4px, calc((100dvh - 480px) / 22), 14px); }
+  .ai-squad-aside:not(:hover):not(.is-expanded):not(.pinned) .workspace-nav-item { min-height: 0; padding-block: clamp(4px, calc((100dvh - 480px) / 22), 14px); }
 }
 
 .project-aside.is-expanded { width: 16rem !important; }

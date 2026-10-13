@@ -2,6 +2,7 @@ import { useAuthSession } from '../../lib/useAuthSession'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
+import SquadWorkspaceLoadingView from '../../components/SquadWorkspaceLoadingView'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import { showAuthToast } from '../../lib/auth-toast'
@@ -618,6 +619,7 @@ export default function SquadScheduleApp({ aiWorkspace = false, design }: AiWork
   }
 
   if (loading) {
+    if (aiWorkspace) return <SquadWorkspaceLoadingView activePage="schedule" workspaceId={workspaceId} projectName={design?.title ?? projectName}>{renderAuthModal()}</SquadWorkspaceLoadingView>
     return (
       <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
