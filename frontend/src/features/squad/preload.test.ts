@@ -40,5 +40,11 @@ describe('스쿼드 목적지 사전 조회', () => {
     expect(getWorkspaceAiDesign).toHaveBeenCalledWith(42)
   })
 
-
+  it('면접 사전 조회는 질문과 개인 기록을 우선하고 작업·API·ERD 조회는 뒤로 미룬다', async () => {
+    await preloadSquadWorkspace(42, '/squad-interview', true)
+    expect(vi.mocked(projectApiRequest).mock.calls.map(([path]) => path)).toEqual([
+      '/api/workspaces/hub/projects/42/ai-design/initialize', '/api/workspaces/42/dashboard',
+      '/api/workspaces/42/interview/questions', '/api/workspaces/42/interview/practice',
+    ])
+  })
 })

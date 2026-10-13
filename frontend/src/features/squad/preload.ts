@@ -12,7 +12,7 @@ const pageDataPaths: Record<string, string[]> = {
   '/squad-schedule': ['calendar-events'],
   '/squad-files': ['files', 'files/storage'],
   '/squad-meeting': ['voice-channels'],
-  '/squad-interview': ['tasks', 'interview/questions', 'interview/practice', 'api-spec', 'erd'],
+  '/squad-interview': ['interview/questions', 'interview/practice'],
   '/squad-settings': ['settings', 'integrations'],
 }
 

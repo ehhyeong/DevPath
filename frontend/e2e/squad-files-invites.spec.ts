@@ -147,7 +147,64 @@ for (const entry of ['마우스', '키보드'] as const) {
   })
 }
 
+test('면접 첫 화면은 느린 개인 기록과 근거 조회를 기다리지 않고 기존 답변을 안전하게 복원한다', async ({ page }) => {
+  let releaseRecord!: () => void
+  let releaseEvidence!: () => void
+  const record = new Promise<void>((resolve) => { releaseRecord = resolve })
+  const evidence = new Promise<void>((resolve) => { releaseEvidence = resolve })
+  let practiceWrites = 0
+  let sharedReads = 0
+  page.on('request', (request) => { if (request.url().endsWith('/interview/shared-answers')) sharedReads++ })
+  await page.route('**/api/workspaces/42/interview/practice', async (route) => {
+    if (route.request().method() === 'PUT') { practiceWrites++; await route.fallback(); return }
+    await record
+    await route.fulfill({ json: { success: true, data: { content: JSON.stringify({ answers: { Q1: { text: '이전에 저장한 내 답변', favorite: true, rating: 2, versions: [] } }, sessions: [] }) } } })
+  })
+  for (const path of ['tasks', 'api-spec', 'erd']) await page.route(`**/api/workspaces/42/${path}`, async (route) => { await evidence; await route.fallback() })
+  await page.goto('/squad-interview?workspaceId=42&ai=1#Q1')
+  try {
+    await expect(page.getByRole('heading', { name: 'Q. 중복 신고를 어떻게 막나요?', exact: true })).toBeVisible({ timeout: 3000 })
+    const answer = page.getByLabel('Q1 내 답변', { exact: true })
+    await expect(answer).toBeDisabled()
+    await expect(page.getByRole('button', { name: /모의 면접 시작/ })).toBeDisabled()
+    await page.getByRole('tab', { name: /모범 답안/ }).first().click()
+    await page.getByRole('button', { name: 'Q1 모범 답안 보기', exact: true }).click()
+    await expect(page.getByText('요청 검증', { exact: true })).toBeVisible()
+    expect(practiceWrites).toBe(0)
+    expect(sharedReads).toBe(0)
+    await expect(page.getByRole('button', { name: 'Q1 근거 연결', exact: true })).toHaveCount(0)
+    releaseRecord()
+    await page.getByRole('tab', { name: /내 답변/ }).first().click()
+    await expect(answer).toBeEnabled()
+    await expect(answer).toHaveValue('이전에 저장한 내 답변')
+    await expect(page.getByRole('button', { name: 'Q1 즐겨찾기', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    expect(practiceWrites).toBe(0)
+    await answer.fill('원본을 확인하고 보강한 내 답변')
+    const saved = await page.waitForRequest((request) => request.method() === 'PUT' && request.url().endsWith('/interview/practice'))
+    expect(JSON.parse(saved.postDataJSON().content).answers.Q1.text).toBe('원본을 확인하고 보강한 내 답변')
+    releaseEvidence()
+    await expect(page.getByRole('button', { name: 'Q1 근거 연결', exact: true })).toBeVisible()
+    await page.getByRole('tab', { name: /팀원 답변/ }).first().click()
+    await expect.poll(() => sharedReads).toBe(1)
+  } finally { releaseRecord(); releaseEvidence() }
+})
 
+test('면접 개인 기록 조회 실패는 질문 읽기를 막지 않고 기존 기록 저장을 차단한다', async ({ page }) => {
+  let writes = 0
+  await page.route('**/api/workspaces/42/interview/practice', async (route) => {
+    if (route.request().method() === 'PUT') { writes++; await route.fallback(); return }
+    await route.fulfill({ status: 503, json: { success: false, message: '개인 기록을 조회하지 못했습니다.' } })
+  })
+  await page.goto('/squad-interview?workspaceId=42&ai=1#Q1')
+  await expect(page.getByRole('heading', { name: 'Q. 중복 신고를 어떻게 막나요?', exact: true })).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('개인 기록을 조회하지 못했습니다.')
+  await expect(page.getByLabel('Q1 내 답변', { exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Q1 즐겨찾기', exact: true })).toBeDisabled()
+  await page.getByRole('tab', { name: /모범 답안/ }).first().click()
+  await page.getByRole('button', { name: 'Q1 모범 답안 보기', exact: true }).click()
+  await expect(page.getByText('요청 검증', { exact: true })).toBeVisible()
+  expect(writes).toBe(0)
+})
 
 test('AI 메뉴 왕복에서 초기화와 전체 데이터 조회를 반복하지 않고 API 화면을 보존한다', async ({ page }) => {
   const requests: string[] = []
