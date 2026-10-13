@@ -241,6 +241,7 @@ public enum ErrorCode {
   WORKSPACE_AI_FEATURE_IN_USE(
       HttpStatus.CONFLICT, "작업이 연결된 MVP 기능은 삭제할 수 없습니다. 작업 현황판에서 연결을 먼저 해제해 주세요."),
   WORKSPACE_AI_ACTION_INVALID(HttpStatus.BAD_REQUEST, "AI 변경 제안을 실행할 수 없습니다."),
+  WORKSPACE_AI_CHAT_ACTION_UNAVAILABLE(HttpStatus.CONFLICT, "이미 실행했거나 찾을 수 없는 제안입니다."),
 
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "C002", "서버 내부 오류가 발생했습니다.");
 

@@ -31,6 +31,9 @@ type AiAssistantPanelProps = {
   // 미지정이면 AI를 호출하지 않고 대체 응답만 보여준다.
   // history는 후속 질문을 위한 직전 대화이며 오래된 것부터 정렬된다.
   onAsk?: (question: string, history: AiHistoryMessage[]) => Promise<AiAnswer>
+  // 지정하면 패널을 열 때마다 저장된 대화를 불러오고, 대화 비우기도 저장소에 반영한다.
+  loadMessages?: () => Promise<AiStoredMessage[]>
+  onReset?: () => Promise<void>
 }
 
 export type AiHistoryMessage = {
@@ -38,10 +41,20 @@ export type AiHistoryMessage = {
   text: string
 }
 
+/** 저장소에서 불러온 대화 한 건. author는 다른 사람이 보낸 질문일 때만 채운다. */
+export type AiStoredMessage = {
+  role: 'user' | 'bot'
+  text: string
+  author?: string
+  action?: AiAnswer['action']
+  actionDone?: boolean
+}
+
 type ChatMessage = {
   id: number
   role: 'user' | 'bot' | 'error'
   text: string
+  author?: string
   action?: AiAnswer['action']
   actionDone?: boolean
   actionRunning?: boolean
@@ -62,6 +75,8 @@ export default function AiAssistantPanel({
   thinkingLabel,
   suggestions,
   onAsk,
+  loadMessages,
+  onReset,
 }: AiAssistantPanelProps) {
   const [open, setOpen] = useState(false)
   const [greetingText, setGreetingText] = useState(greeting)
@@ -173,6 +188,41 @@ export default function AiAssistantPanel({
     }
 
     setOpen(true)
+
+    // 실행 중인 변경이 있으면 결과 표시가 끊기지 않게 다시 불러오지 않는다.
+    if (loadMessages && !busy && !messages.some((message) => message.actionRunning)) {
+      void refreshMessages(loadMessages)
+    }
+  }
+
+  async function refreshMessages(load: () => Promise<AiStoredMessage[]>) {
+    setBusy(true)
+
+    try {
+      const loaded = await load()
+
+      if (!mountedRef.current) {
+        return
+      }
+
+      setMessages(loaded.map((message) => {
+        messageSeq.current += 1
+        return { ...message, id: messageSeq.current }
+      }))
+
+      if (loaded.length > 0) {
+        setExpanded(true)
+        setChipsHidden(true)
+      }
+    } catch {
+      if (mountedRef.current) {
+        appendMessage('error', '저장된 대화를 불러오지 못했습니다.')
+      }
+    } finally {
+      if (mountedRef.current) {
+        setBusy(false)
+      }
+    }
   }
 
   function appendMessage(role: ChatMessage['role'], text: string, action?: AiAnswer['action']) {
@@ -270,7 +320,16 @@ export default function AiAssistantPanel({
     }
   }
 
-  function handleReset() {
+  async function handleReset() {
+    if (onReset) {
+      try {
+        await onReset()
+      } catch (error) {
+        appendMessage('error', error instanceof Error && error.message ? error.message : FALLBACK_MESSAGE)
+        return
+      }
+    }
+
     if (timerRef.current) {
       clearTimeout(timerRef.current)
       timerRef.current = null
@@ -318,7 +377,7 @@ export default function AiAssistantPanel({
               <span id="aiPanelTitle" className="ai-idbar__name">{panelTitle}</span>
             </div>
             <div className="flex items-center gap-0.5">
-              <button type="button" onClick={handleReset} aria-label="대화 비우기" title="대화 비우기" className="ai-ghost-btn">
+              <button type="button" onClick={() => void handleReset()} aria-label="대화 비우기" title="대화 비우기" className="ai-ghost-btn">
                 <i aria-hidden="true" className="fas fa-trash-alt" />
               </button>
               <button type="button" onClick={closePanel} aria-label="AI 패널 닫기" title="닫기" className="ai-ghost-btn">
@@ -338,7 +397,12 @@ export default function AiAssistantPanel({
             <div className="ai-msg-bot">{greetingText}</div>
             {messages.map((message) => {
               if (message.role === 'user') {
-                return <div key={message.id} className="ai-msg-user ai-bubble-in">{message.text}</div>
+                return (
+                  <div key={message.id} className="ai-msg-user ai-bubble-in">
+                    {message.author && <span className="block text-[11px] opacity-70">{message.author}</span>}
+                    {message.text}
+                  </div>
+                )
               }
 
               if (message.role === 'error') {
