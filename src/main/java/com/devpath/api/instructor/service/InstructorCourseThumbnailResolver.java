@@ -39,7 +39,8 @@ class InstructorCourseThumbnailResolver {
 
       if (normalizedThumbnailUrl.startsWith("http://")
           || normalizedThumbnailUrl.startsWith("https://")
-          || normalizedThumbnailUrl.startsWith("data:")) {
+          || normalizedThumbnailUrl.startsWith("data:")
+          || normalizedThumbnailUrl.startsWith("/")) {
         return thumbnailUrl;
       }
     }

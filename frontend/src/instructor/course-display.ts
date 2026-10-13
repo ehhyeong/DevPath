@@ -181,7 +181,7 @@ export function resolveInstructorCourseThumbnailUrl(
 ) {
   const trimmed = rawUrl?.trim()
 
-  if (trimmed && /^https?:\/\//i.test(trimmed)) {
+  if (trimmed && (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('/'))) {
     return trimmed
   }
 
