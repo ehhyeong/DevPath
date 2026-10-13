@@ -41,7 +41,7 @@ aside:hover .workspace-sidebar-section-title { opacity: 1; height: auto; margin-
 
 .project-card { transition: all 0.2s; border: 1px solid #E5E7EB; }
 .project-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); border-color: #00C471; }
-.project-card.workspace-ai-card { background: linear-gradient(145deg, #EFF6FF, #FFFFFF 65%); border-color: #BFDBFE; }
+.project-card.workspace-ai-card { background: #FFFFFF; border-color: #BFDBFE; }
 .project-card.workspace-ai-card:hover { border-color: #60A5FA; box-shadow: 0 10px 20px rgba(37,99,235,0.08); }
 
 @keyframes workspaceHubFadeIn {
