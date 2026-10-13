@@ -1,5 +1,5 @@
 import { useAuthSession } from '../../lib/useAuthSession'
-import { useEffect, useMemo, useState, type DragEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react'
 import { navigateTo } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 
@@ -8,6 +8,7 @@ import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import { showAuthToast } from '../../lib/auth-toast'
 import { projectApiRequest } from '../project/api'
+import { useWorkspaceDataVersion } from '../../lib/workspace-events'
 import { createSquadNotification, squadActorName } from './notifications'
 
 import type { ActionMenuState, ApiResponse, ArchivePreview, DocumentPreview, FileFilter, FolderCrumb, SortMode, StorageSummary, WorkspaceDashboard, WorkspaceFileItem } from './files-types'
@@ -189,6 +190,8 @@ async function authenticatedFetch(path: string, init: RequestInit = {}) {
   return requestRaw(path, init, { auth: true })
 }export function useSquadFilesController() {
   const workspaceId = getWorkspaceIdFromUrl()
+  const dataVersion = useWorkspaceDataVersion()
+  const loadedFolderRef = useRef<number | null | undefined>(undefined)
   const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
@@ -256,7 +259,7 @@ async function authenticatedFetch(path: string, init: RequestInit = {}) {
     let ignore = false
 
     async function load() {
-      setLoading(true)
+      if (loadedFolderRef.current !== currentFolderId) setLoading(true)
       setError(null)
 
       try {
@@ -272,6 +275,7 @@ async function authenticatedFetch(path: string, init: RequestInit = {}) {
         }
 
         setDashboard(dashboardData)
+        loadedFolderRef.current = currentFolderId
         setFiles(fileData)
         setStorage(storageData)
       } catch (loadError) {
@@ -290,7 +294,7 @@ async function authenticatedFetch(path: string, init: RequestInit = {}) {
     return () => {
       ignore = true
     }
-  }, [workspaceId, currentFolderId, refreshKey])
+  }, [workspaceId, currentFolderId, refreshKey, dataVersion])
 
   useEffect(() => {
     if (!actionMenu) {

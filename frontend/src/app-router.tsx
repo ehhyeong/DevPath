@@ -289,7 +289,7 @@ function preloadRoute(href: string) {
 
   return Promise.all([
     routePreload,
-    import('./features/squad/preload').then((module) => module.preloadSquadWorkspace(workspaceId)),
+    import('./features/squad/preload').then((module) => module.preloadSquadWorkspace(workspaceId, pathname, url.searchParams.get('ai') === '1')),
   ])
 }
 
@@ -323,12 +323,13 @@ export default function AppRouter() {
       return
     }
 
-    const workspaceId = Number(new URL(locationKey, window.location.origin).searchParams.get('workspaceId'))
+    const url = new URL(locationKey, window.location.origin)
+    const workspaceId = Number(url.searchParams.get('workspaceId'))
     if (!Number.isInteger(workspaceId) || workspaceId <= 0) {
       return
     }
 
-    void import('./features/squad/preload').then((module) => module.preloadSquadWorkspace(workspaceId))
+    void import('./features/squad/preload').then((module) => module.preloadSquadWorkspace(workspaceId, pathname, url.searchParams.get('ai') === '1'))
   }, [locationKey, pathname])
 
   const page = ACCOUNT_PAGE_ROUTES.has(pathname)

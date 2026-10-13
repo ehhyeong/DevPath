@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { projectApiRequest } from '../project/api'
 import AiInterviewQuestionBank from './AiInterviewQuestionBank'
-import { useInterviewAnswers, type InterviewQuestion } from './interview-practice'
+import { emptyInterviewAnswer, useInterviewAnswers, type InterviewQuestion } from './interview-practice'
 import type { InterviewEvidence } from './interview-evidence'
 
 vi.mock('../project/api', () => ({ projectApiRequest: vi.fn() }))
@@ -57,7 +57,7 @@ describe('원본 면접 질문 카드', () => {
     expect(screen.getByRole('button', { name: 'Q1 모범 답안 보기' })).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('질문별로 독립적으로 펼치고 접으며 실제 모범 답안과 빈 팀원·꼬리 질문을 표시한다', () => {
+  it('질문별로 독립적으로 펼치고 접으며 실제 모범 답안과 빈 팀원·꼬리 질문을 표시한다', async () => {
     render(<Bank />)
     const first = screen.getByRole('button', { name: 'Q1 중복 신고는 어떻게 막나요?' })
     const second = screen.getByRole('button', { name: 'Q2 신고 조회를 어떻게 최적화하나요?' })
@@ -70,12 +70,44 @@ describe('원본 면접 질문 카드', () => {
     fireEvent.click(tabs.getByRole('tab', { name: /모범 답안/ }))
     expect(screen.getByText(questions[0].answer)).toBeInTheDocument()
     fireEvent.click(tabs.getByRole('tab', { name: /팀원 답변/ }))
-    expect(screen.getByText('아직 공유된 팀원 답변이 없습니다.')).toBeInTheDocument()
+    expect(await screen.findByText('아직 공유된 팀원 답변이 없습니다.')).toBeInTheDocument()
     fireEvent.click(tabs.getByRole('tab', { name: /꼬리 질문/ }))
     expect(screen.getByText('이 설계서에 등록된 꼬리 질문이 없습니다.')).toBeInTheDocument()
     fireEvent.click(first)
     expect(first).toHaveAttribute('aria-expanded', 'false')
     expect(second).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('개인 기록 도착 전에는 답변 변경을 막고 모범 답안은 읽을 수 있다', () => {
+    const setAnswers = vi.fn()
+    const view = render(<AiInterviewQuestionBank questions={[questions[0]]} workspaceId={42} answers={{}} setAnswers={setAnswers} answersReady={false} evidenceReady={false} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Q1 중복 신고는 어떻게 막나요?' }))
+    expect(screen.getByLabelText('Q1 내 답변')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Q1 즐겨찾기' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Q1 자신 있어요' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Q1 내 답변'), { target: { value: '조회 전에 입력한 값' } })
+    expect(setAnswers).not.toHaveBeenCalled()
+    expect(screen.getByText('근거 자료 조회 중...')).toBeInTheDocument()
+    const tabs = within(screen.getByRole('tablist', { name: 'Q1 답변 탭' }))
+    fireEvent.click(tabs.getByRole('tab', { name: /모범 답안/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Q1 모범 답안 보기' }))
+    expect(screen.getByText(questions[0].answer)).toHaveAttribute('aria-hidden', 'false')
+    view.rerender(<AiInterviewQuestionBank questions={[questions[0]]} workspaceId={42} answers={{ Q1: { ...emptyInterviewAnswer, text: '서버에 저장한 답변' } }} setAnswers={setAnswers} />)
+    fireEvent.click(tabs.getByRole('tab', { name: /내 답변/ }))
+    expect(screen.getByLabelText('Q1 내 답변')).toBeEnabled()
+    expect(screen.getByLabelText('Q1 내 답변')).toHaveValue('서버에 저장한 답변')
+  })
+
+  it('팀원 답변은 해당 탭을 처음 열 때만 조회한다', async () => {
+    vi.mocked(projectApiRequest).mockResolvedValue([{ questionId: 'Q1', userId: 88, name: '팀원', text: '동시 요청을 검증했습니다.' }] as never)
+    render(<AiInterviewQuestionBank questions={[questions[0]]} workspaceId={42} answers={{}} setAnswers={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Q1 중복 신고는 어떻게 막나요?' }))
+    const tabs = within(screen.getByRole('tablist', { name: 'Q1 답변 탭' }))
+    fireEvent.click(tabs.getByRole('tab', { name: /모범 답안/ }))
+    expect(projectApiRequest).not.toHaveBeenCalled()
+    fireEvent.click(tabs.getByRole('tab', { name: /팀원 답변/ }))
+    expect(projectApiRequest).toHaveBeenCalledWith('/api/workspaces/42/interview/shared-answers', {}, 'required')
+    expect(await screen.findByText('동시 요청을 검증했습니다.')).toBeInTheDocument()
   })
 
   it('답변·버전·즐겨찾기를 저장하고 재방문해도 복원하며 다른 프로젝트와 분리한다', () => {

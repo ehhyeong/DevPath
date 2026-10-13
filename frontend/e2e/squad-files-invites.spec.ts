@@ -119,6 +119,137 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
+for (const entry of ['마우스', '키보드'] as const) {
+  test(`허브 AI 카드의 ${entry} 준비와 첫 진입이 초기화를 공유하고 느린 위젯을 기다리지 않는다`, async ({ page }) => {
+    await page.route('**/api/workspaces/hub/projects', (route) => route.fulfill({ json: { success: true, data: [{ projectId: 42, domId: 'workspace-42', menuId: 'menu-42', type: 'squad', status: 'progress', dashboardUrl: '/squad-dashboard?workspaceId=42&ai=1', title: design.title, description: design.summary, progressPercent: 0, footerKind: 'avatars', memberAvatarSeeds: [], extraMemberCount: 0 }] } }))
+    let releaseInitialization!: () => void
+    let releaseWidgets!: () => void
+    const initialization = new Promise<void>((resolve) => { releaseInitialization = resolve })
+    const widgets = new Promise<void>((resolve) => { releaseWidgets = resolve })
+    let initializationCount = 0
+    await page.route('**/api/workspaces/hub/projects/42/ai-design/initialize', async (route) => { initializationCount++; await initialization; await route.fallback() })
+    await page.route('**/api/workspaces/42/activities/recent', async (route) => { await widgets; await route.fallback() })
+    await page.goto('/workspace-hub')
+    const card = page.locator('#workspace-42')
+    try {
+      if (entry === '마우스') await card.hover()
+      else await card.focus()
+      await expect.poll(() => initializationCount).toBe(1)
+      if (entry === '마우스') await card.click()
+      else await card.press('Enter')
+      await expect(page).toHaveURL('/squad-dashboard?workspaceId=42&ai=1')
+      releaseInitialization()
+      await expect(page.getByRole('heading', { name: design.title, exact: true })).toBeVisible()
+      await expect(page.getByText('내 작업 완료율 0% · 완료 0개 / 전체 1개', { exact: true })).toBeVisible()
+      expect(initializationCount).toBe(1)
+      await expect(page.getByText('AI 설계를 불러오는 중입니다...', { exact: true })).toHaveCount(0)
+    } finally { releaseInitialization(); releaseWidgets() }
+  })
+}
+
+test('면접 첫 화면은 느린 개인 기록과 근거 조회를 기다리지 않고 기존 답변을 안전하게 복원한다', async ({ page }) => {
+  let releaseRecord!: () => void
+  let releaseEvidence!: () => void
+  const record = new Promise<void>((resolve) => { releaseRecord = resolve })
+  const evidence = new Promise<void>((resolve) => { releaseEvidence = resolve })
+  let practiceWrites = 0
+  let sharedReads = 0
+  page.on('request', (request) => { if (request.url().endsWith('/interview/shared-answers')) sharedReads++ })
+  await page.route('**/api/workspaces/42/interview/practice', async (route) => {
+    if (route.request().method() === 'PUT') { practiceWrites++; await route.fallback(); return }
+    await record
+    await route.fulfill({ json: { success: true, data: { content: JSON.stringify({ answers: { Q1: { text: '이전에 저장한 내 답변', favorite: true, rating: 2, versions: [] } }, sessions: [] }) } } })
+  })
+  for (const path of ['tasks', 'api-spec', 'erd']) await page.route(`**/api/workspaces/42/${path}`, async (route) => { await evidence; await route.fallback() })
+  await page.goto('/squad-interview?workspaceId=42&ai=1#Q1')
+  try {
+    await expect(page.getByRole('heading', { name: 'Q. 중복 신고를 어떻게 막나요?', exact: true })).toBeVisible({ timeout: 3000 })
+    const answer = page.getByLabel('Q1 내 답변', { exact: true })
+    await expect(answer).toBeDisabled()
+    await expect(page.getByRole('button', { name: /모의 면접 시작/ })).toBeDisabled()
+    await page.getByRole('tab', { name: /모범 답안/ }).first().click()
+    await page.getByRole('button', { name: 'Q1 모범 답안 보기', exact: true }).click()
+    await expect(page.getByText('요청 검증', { exact: true })).toBeVisible()
+    expect(practiceWrites).toBe(0)
+    expect(sharedReads).toBe(0)
+    await expect(page.getByRole('button', { name: 'Q1 근거 연결', exact: true })).toHaveCount(0)
+    releaseRecord()
+    await page.getByRole('tab', { name: /내 답변/ }).first().click()
+    await expect(answer).toBeEnabled()
+    await expect(answer).toHaveValue('이전에 저장한 내 답변')
+    await expect(page.getByRole('button', { name: 'Q1 즐겨찾기', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    expect(practiceWrites).toBe(0)
+    await answer.fill('원본을 확인하고 보강한 내 답변')
+    const saved = await page.waitForRequest((request) => request.method() === 'PUT' && request.url().endsWith('/interview/practice'))
+    expect(JSON.parse(saved.postDataJSON().content).answers.Q1.text).toBe('원본을 확인하고 보강한 내 답변')
+    releaseEvidence()
+    await expect(page.getByRole('button', { name: 'Q1 근거 연결', exact: true })).toBeVisible()
+    await page.getByRole('tab', { name: /팀원 답변/ }).first().click()
+    await expect.poll(() => sharedReads).toBe(1)
+  } finally { releaseRecord(); releaseEvidence() }
+})
+
+test('면접 개인 기록 조회 실패는 질문 읽기를 막지 않고 기존 기록 저장을 차단한다', async ({ page }) => {
+  let writes = 0
+  await page.route('**/api/workspaces/42/interview/practice', async (route) => {
+    if (route.request().method() === 'PUT') { writes++; await route.fallback(); return }
+    await route.fulfill({ status: 503, json: { success: false, message: '개인 기록을 조회하지 못했습니다.' } })
+  })
+  await page.goto('/squad-interview?workspaceId=42&ai=1#Q1')
+  await expect(page.getByRole('heading', { name: 'Q. 중복 신고를 어떻게 막나요?', exact: true })).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('개인 기록을 조회하지 못했습니다.')
+  await expect(page.getByLabel('Q1 내 답변', { exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Q1 즐겨찾기', exact: true })).toBeDisabled()
+  await page.getByRole('tab', { name: /모범 답안/ }).first().click()
+  await page.getByRole('button', { name: 'Q1 모범 답안 보기', exact: true }).click()
+  await expect(page.getByText('요청 검증', { exact: true })).toBeVisible()
+  expect(writes).toBe(0)
+})
+
+test('AI 메뉴 왕복에서 초기화와 전체 데이터 조회를 반복하지 않고 API 화면을 보존한다', async ({ page }) => {
+  const requests: string[] = []
+  page.on('request', (request) => { if (request.url().includes('/api/')) requests.push(new URL(request.url()).pathname) })
+  await page.goto('/squad-api?workspaceId=42&ai=1')
+  await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+  const search = page.getByPlaceholder('경로 또는 설명 검색...')
+  await search.fill('reports')
+  await search.evaluate((input) => input.setAttribute('data-loading-probe', 'retained'))
+  await expect.poll(() => requests.filter((path) => path === '/api/lounge/chats/messages').length).toBeGreaterThanOrEqual(2)
+  const taskCount = requests.filter((path) => path === '/api/workspaces/42/tasks').length
+  const apiCount = requests.filter((path) => path === '/api/workspaces/42/api-spec').length
+  await page.locator('aside:visible').getByRole('link', { name: /프로젝트 설계서/ }).click()
+  await expect(page.getByRole('button', { name: '기획·시나리오 수정' })).toBeVisible()
+  await page.locator('aside:visible').getByRole('link', { name: /API 명세서/ }).click()
+  await expect(search).toHaveValue('reports')
+  await expect(search).toHaveAttribute('data-loading-probe', 'retained')
+  expect(requests.filter((path) => path.endsWith('/initialize'))).toHaveLength(1)
+  expect(requests.filter((path) => path === '/api/workspaces/42/tasks')).toHaveLength(taskCount)
+  expect(requests.filter((path) => path === '/api/workspaces/42/api-spec')).toHaveLength(apiCount)
+  expect(requests.some((path) => /\/files|\/erd\/versions|\/code-reviews/.test(path))).toBe(false)
+})
+
+test('캐시 만료 후 느린 DB 재조회 중에도 방문한 API 화면을 바로 표시한다', async ({ page }) => {
+  await page.goto('/squad-api?workspaceId=42&ai=1')
+  await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+  const search = page.getByPlaceholder('경로 또는 설명 검색...')
+  await search.fill('reports')
+  await page.locator('aside:visible').getByRole('link', { name: /프로젝트 설계서/ }).click()
+  await expect(page.getByRole('button', { name: '기획·시나리오 수정' })).toBeVisible()
+  let release!: () => void
+  const gate = new Promise<void>((resolve) => { release = resolve })
+  await page.route('**/api/workspaces/42/api-spec', async (route) => { await gate; await route.fallback() })
+  await page.clock.setFixedTime(new Date(Date.now() + 31_000))
+  const refresh = page.waitForRequest((request) => request.url().endsWith('/api/workspaces/42/api-spec'))
+  try {
+    await page.locator('aside:visible').getByRole('link', { name: /API 명세서/ }).click()
+    await refresh
+    await expect(search).toBeVisible()
+    await expect(search).toHaveValue('reports')
+    await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+    await expect(page.getByText('워크스페이스를 불러오는 중입니다...', { exact: true })).toHaveCount(0)
+  } finally { release() }
+})
+
 test('AI 설계서에서 기획·아키텍처·로드맵을 저장하고 기능 연결을 유지한다', async ({ page }) => {
   let current: WorkspaceAiDesign = { ...design, difficulty: 'mvp', scenario: { ...design.scenario, coreFeatures: ['로그인', '신고'], featureIds: ['F1', 'F2'], nextFeatureNumber: 3 } }
   const requests: WorkspaceAiDesignEdit[] = []
@@ -628,7 +759,7 @@ test('대시보드가 원본 AI 설계 요약·로드맵·공지와 실제 팀�
   expect((await notice).postDataJSON().content).toBe('ERD를 함께 검토해 주세요.')
   await expect(page.getByText('설계 검토 안내', { exact: true })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('squad-dashboard-notice.png') })
-  await page.getByRole('link', { name: /AI 설계서 전체 보기/ }).click()
+  await page.getByRole('link', { name: /프로젝트 설계서 전체 보기/ }).click()
   await expect(page.getByRole('heading', { name: /핵심 사용자 흐름/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: '워크스페이스 반영 맵', exact: true })).toHaveCount(0)
   const aside = page.getByRole('complementary')
@@ -648,7 +779,7 @@ test('대시보드가 원본 AI 설계 요약·로드맵·공지와 실제 팀�
 test('AI 사이드바가 접힘 크기를 복원하고 바로가기 없이 여러 높이에서 모든 메뉴·설정 이동을 제공한다', async ({ page }, testInfo) => {
   await page.goto('/squad-api?workspaceId=42&ai=1')
   await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
-  const aside = page.locator('.squad-workspace-aside')
+  const aside = page.locator('.squad-workspace-aside:visible')
   const menus = aside.locator('a.workspace-nav-item')
   const menuList = aside.locator('.ai-squad-menu-list')
   expect(await menus.evaluateAll((links) => links.map((link) => link.getAttribute('href')))).toEqual(['dashboard', 'blueprint', 'workspace', 'schedule', 'erd', 'api', 'review', 'meeting', 'files', 'interview', 'settings'].map((name) => `/squad-${name}?workspaceId=42&ai=1`))
@@ -667,7 +798,7 @@ test('AI 사이드바가 접힘 크기를 복원하고 바로가기 없이 여�
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)))))
     expect(await menuList.evaluate((element) => element.scrollTop)).toBe(0)
     await page.screenshot({ path: testInfo.outputPath('squad-aside-restored-expanded-' + height + '.png') })
-    await page.locator('main').last().hover()
+    await page.locator('main:visible').last().hover()
     await expect(aside).toHaveCSS('width', '80px')
     await expect(menuList).toHaveJSProperty('scrollTop', 0)
     await expect.poll(() => menuList.evaluate((element) => Math.max(0, element.scrollHeight - element.clientHeight)), { message: `화면 높이 ${height}px의 접힘 메뉴 넘침 높이` }).toBe(0)
@@ -683,13 +814,64 @@ test('AI 사이드바가 접힘 크기를 복원하고 바로가기 없이 여�
   await aside.hover()
   await menus.last().click()
   await expect(page.getByRole('heading', { name: /환경 설정$/ })).toBeVisible()
-  await expect(page.locator('.squad-workspace-aside').locator('a.workspace-nav-item').last()).toHaveClass(/active/)
+  await expect(page.locator('.squad-workspace-aside:visible').locator('a.workspace-nav-item').last()).toHaveClass(/active/)
+})
+
+test('팀 자료실 첫 조회 중에도 AI 사이드바의 펼침 상태와 메뉴 위치를 유지한다', async ({ page }, testInfo) => {
+  let releaseModule!: () => void
+  const modulePending = new Promise<void>((resolve) => { releaseModule = resolve })
+  await page.route('**/src/features/squad/SquadFilesApp.tsx*', async (route) => {
+    await modulePending
+    await route.continue()
+  })
+  let releaseFiles!: () => void
+  const filesPending = new Promise<void>((resolve) => { releaseFiles = resolve })
+  await page.route('**/api/workspaces/42/files', async (route) => {
+    await filesPending
+    await route.fallback()
+  })
+  await page.goto('/squad-api?workspaceId=42&ai=1')
+  await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+  const aside = page.locator('.squad-workspace-aside:visible')
+  await aside.hover()
+  await expect(aside).toHaveCSS('width', '256px')
+  const position = () => aside.locator('a.workspace-nav-item').evaluateAll((links) => links.map((link) => ({ top: link.getBoundingClientRect().top, height: link.getBoundingClientRect().height })))
+  const baseline = await position()
+  try {
+    await aside.getByRole('link', { name: /팀 자료실/ }).click()
+    await expect(page).toHaveURL('/squad-files?workspaceId=42&ai=1')
+    await expect(aside).toHaveClass(/ai-squad-aside.*is-expanded|is-expanded.*ai-squad-aside/)
+    await expect(page.getByRole('status')).toHaveText('팀 자료실을 불러오는 중입니다...')
+    await expect(aside).toHaveCSS('width', '256px')
+    await expect(aside.getByRole('link', { name: /팀 자료실/ })).toHaveClass(/active/)
+    await expect(aside.getByRole('link', { name: /목록으로 돌아가기/ })).toContainText(design.title)
+    await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath('files-aside-loading.png') })
+    // 정지한 포인터로 로딩 사이드바를 넘겨받아도 실제 자료실의 메뉴 위치가 바뀌면 안 된다.
+    await aside.hover()
+    releaseModule()
+    await expect(page.locator('.squad-files-page')).toBeVisible()
+    await expect(aside).toHaveClass(/is-expanded/)
+    await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+    releaseFiles()
+    await expect(page.getByRole('heading', { name: /팀 자료실/ })).toBeVisible()
+    await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+    await page.locator('main:visible').hover()
+    await expect(aside).toHaveCSS('width', '80px')
+    await aside.hover()
+    await expect(aside).toHaveCSS('width', '256px')
+    await aside.getByRole('link', { name: /API 명세서/ }).click()
+    await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+  } finally {
+    releaseModule()
+    releaseFiles()
+  }
 })
 
 test('AI 사이드바가 페이지 왕복 중 펼침 상태와 메뉴 위치를 유지한다', async ({ page }, testInfo) => {
   await page.goto('/squad-api?workspaceId=42&ai=1')
   await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
-  const aside = page.locator('.squad-workspace-aside')
+  const aside = page.locator('.squad-workspace-aside:visible')
   const menus = aside.locator('a.workspace-nav-item')
   const position = () => menus.evaluateAll((links) => links.map((link) => ({ top: link.getBoundingClientRect().top, height: link.getBoundingClientRect().height })))
   for (const height of [900, 768]) {
@@ -706,7 +888,7 @@ test('AI 사이드바가 페이지 왕복 중 펼침 상태와 메뉴 위치를 
       for (let index = 0; index < 11; index += 1) await expect(menus.nth(index)).toBeInViewport({ ratio: 1 })
     }
     await page.screenshot({ path: testInfo.outputPath(`squad-aside-navigation-${height}.png`) })
-    await page.locator('main').last().hover()
+    await page.locator('main:visible').last().hover()
     await expect(aside).toHaveCSS('width', '80px')
     await expect(aside).not.toHaveClass(/is-expanded/)
   }
@@ -752,29 +934,39 @@ test('캘린더가 원본 Phase 타임라인·월간·주간과 일정 추가를
 })
 
 test('대시보드 로드맵은 생성 첫 주를 강조하고 페이지를 열어 둬도 다음 주로 전환한다', async ({ page }, testInfo) => {
+  // 날짜 전환 검증과 화면 캡처가 외부 폰트 CDN의 응답에 종속되지 않도록 한다.
+  await page.route('https://cdn.jsdelivr.net/**', (route) => route.abort())
+  await page.route('https://fonts.googleapis.com/**', (route) => route.abort())
   await page.clock.setFixedTime(new Date('2026-10-06T12:00:00'))
   const roadmap = [1, 2, 3, 4].map((phase) => ({ phase, title: `단계 ${phase}`, goal: '개발', estimatedWeeks: phase === 2 ? 2 : 1, tasks: ['구현'] }))
   await page.route('**/api/workspaces/hub/projects/42/ai-design', (route) => route.fulfill({ json: { success: true, data: { workspaceId: 42, design: { ...design, roadmap } } } }))
   await page.route('**/api/workspaces/42/calendar-events', (route) => route.fulfill({ json: { success: true, data: [] } }))
-  await page.goto('/squad-dashboard?workspaceId=42&ai=1')
+  await page.route('**/api/workspaces/42/tasks', (route) => route.fulfill({ json: { success: true, data: [] } }))
+  // 외부 폰트 다운로드 종료 대신 실제 로드맵 단계가 표시될 때까지 기다린다.
+  await page.goto('/squad-dashboard?workspaceId=42&ai=1', { waitUntil: 'domcontentloaded' })
   const first = page.getByRole('link', { name: 'Phase 1. 단계 1', exact: true })
   const second = page.getByRole('link', { name: 'Phase 2. 단계 2', exact: true })
   await expect(first).toHaveAttribute('aria-current', 'step')
   await expect(first.locator('[aria-hidden]')).toHaveClass(/bg-purple-500/)
   await expect(first).toContainText('10.06 ~ 10.12')
   await expect(second).not.toHaveAttribute('aria-current')
+  await expect(page.getByText('개발 로드맵 · Phase 1. 단계 1', { exact: true })).toBeVisible()
   await page.clock.setFixedTime(new Date('2026-10-13T00:00:00'))
   await expect(second).toHaveAttribute('aria-current', 'step', { timeout: 12_000 })
+  await expect(page.getByText('개발 로드맵 · Phase 2. 단계 2', { exact: true })).toBeVisible()
   await expect(second).toContainText('10.13 ~ 10.26')
   await expect(second).not.toContainText(/\d+주/)
   await expect(first.locator('[aria-hidden]')).toHaveClass(/bg-brand/)
   await expect(first).toContainText('기간 종료')
   await page.clock.setFixedTime(new Date('2026-10-20T12:00:00'))
   await expect(second).toHaveAttribute('aria-current', 'step')
+  await expect(page.getByText('개발 로드맵 · Phase 2. 단계 2', { exact: true })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('dashboard-roadmap-next-week.png'), animations: 'disabled' })
 })
 
 test('대시보드 로드맵은 모든 저장 Phase 일정을 반영하고 같은 번호의 회의를 제외한다', async ({ page }) => {
+  await page.route('https://cdn.jsdelivr.net/**', (route) => route.abort())
+  await page.route('https://fonts.googleapis.com/**', (route) => route.abort())
   await page.clock.setFixedTime(new Date('2026-11-06T12:00:00'))
   const roadmap = [1, 2, 3, 4].map((phase) => ({ phase, title: `단계 ${phase}`, goal: '개발', estimatedWeeks: 1, tasks: ['구현'] }))
   await page.route('**/api/workspaces/hub/projects/42/ai-design', (route) => route.fulfill({ json: { success: true, data: { workspaceId: 42, design: { ...design, roadmap } } } }))
@@ -783,11 +975,12 @@ test('대시보드 로드맵은 모든 저장 Phase 일정을 반영하고 같�
     { eventId: 299, workspaceId: 42, title: 'Phase 4. 팀 회의', description: '[schedule-category:meeting]', startAt: '2026-09-01T00:00:00', endAt: '2026-09-01T23:59:00' },
     ...roadmap.map((phase, index) => ({ eventId: 201 + index, workspaceId: 42, title: `Phase ${phase.phase}. ${phase.title}`, description: '[schedule-category:milestone]', startAt: `${dates[index][0]}T00:00:00`, endAt: `${dates[index][1]}T23:59:00` })),
   ] } }))
-  await page.goto('/squad-dashboard?workspaceId=42&ai=1')
+  await page.goto('/squad-dashboard?workspaceId=42&ai=1', { waitUntil: 'domcontentloaded' })
   const current = page.getByRole('link', { name: 'Phase 4. 단계 4', exact: true })
   await expect(current).toHaveAttribute('aria-current', 'step')
   await expect(current).toContainText('11.01 ~ 11.07')
   await expect(current.locator('[aria-hidden]')).toHaveClass(/bg-purple-500/)
+  await expect(page.getByText('개발 로드맵 · Phase 4. 단계 4', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Phase 1. 단계 1', exact: true })).toContainText('기간 종료')
 })
 

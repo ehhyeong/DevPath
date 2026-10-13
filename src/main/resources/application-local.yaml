@@ -5,6 +5,10 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
 
+  flyway:
+    # 기존 로컬 DB와 Hibernate 초기화를 보존하면서 최초 실행에 변경 이력만 등록한다.
+    baseline-on-migrate: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:true}
+
   sql:
     init:
       mode: ${SPRING_SQL_INIT_MODE:always}

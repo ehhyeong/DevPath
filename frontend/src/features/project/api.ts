@@ -117,6 +117,8 @@ type ProjectRequestOptions = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? ''
 const PROJECT_QUERY_TTL_MS = 5 * 60_000
+// 협업 데이터는 장시간 고정하지 않고, 짧은 시간의 페이지 왕복에서만 조회 결과를 재사용한다.
+const WORKSPACE_QUERY_TTL_MS = 30_000
 
 export function invalidateProjectApiCache() {
   invalidateCachedQueries((key) => key.includes('|project:'))
@@ -232,12 +234,13 @@ export async function projectApiRequest<T>(
     return getCachedQuery(
       `${cacheIdentity}|project:${path}`,
       () => execute(sharedInit),
-      { signal: signal ?? undefined, ttlMs: PROJECT_QUERY_TTL_MS },
+      { signal: signal ?? undefined, ttlMs: path.startsWith('/api/workspaces/') ? WORKSPACE_QUERY_TTL_MS : PROJECT_QUERY_TTL_MS },
     )
   }
 
   const result = await execute(init)
-  if (options.invalidateCache !== false) {
+  // 채팅·회의 폴링의 GET 캐시 우회는 저장이 아니므로 다른 화면의 조회 결과를 지우지 않는다.
+  if (method !== 'GET' && options.invalidateCache !== false) {
     invalidateProjectApiCache()
   }
   return result

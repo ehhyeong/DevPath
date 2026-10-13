@@ -4,7 +4,8 @@ import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession } from '../../lib/auth-session'
 import { showAuthToast } from '../../lib/auth-toast'
-import { navigateTo } from '../../lib/spa-navigation'
+import { navigateTo, SPA_NAVIGATION_EVENT } from '../../lib/spa-navigation'
+import { initializeWorkspaceAi } from './ai-workspace-bootstrap'
 import { getWorkspaceAiDesign, projectApiRequest, type WorkspaceAiDesign, type WorkspaceAiDesignEdit, type WorkspaceAiDesignWorkspace } from '../project/api'
 import {
   aiWorkspaceHref,
@@ -53,6 +54,7 @@ const persistedPages = {
   '/squad-meeting': lazy(() => import('./SquadMeetingApp')),
   '/squad-settings': lazy(() => import('./SquadSettingsApp')),
   '/squad-erd': lazy(() => import('./SquadErdApp')),
+  '/squad-files': SquadFilesApp,
 }
 
 type AiRoute =
@@ -118,6 +120,7 @@ type AiWorkspaceRuntime = {
   workspaceId: number | null
   dashboard: WorkspaceDashboard | null
   tasks: WorkspaceTask[]
+  tasksReady: boolean
   setTasks: Dispatch<SetStateAction<WorkspaceTask[]>>
   activities: ActivityLog[]
   notices: Notice[]
@@ -132,6 +135,7 @@ const AiWorkspaceContext = createContext<AiWorkspaceRuntime>({
   workspaceId: null,
   dashboard: null,
   tasks: [],
+  tasksReady: true,
   setTasks: () => undefined,
   activities: [],
   notices: [],
@@ -287,7 +291,7 @@ function DashboardPage() {
           <i className="fas fa-magic pointer-events-none absolute -right-6 -bottom-8 text-[140px] text-brand/5" />
           <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
             <div><div className="mb-2 flex items-center gap-2"><AiChip>AI 포트폴리오 설계서</AiChip><span className="rounded-full border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold text-gray-500">{aiSquadProject.difficulty}</span></div><h3 className="text-xl font-black leading-snug tracking-tight text-[#00C471]">{aiSquadProject.title}</h3><p className="mt-1 text-sm font-medium text-gray-600">{aiSquadProject.oneLiner}</p><div className="mt-3 flex flex-wrap gap-1.5">{[...aiSquadProject.stack.frontend, ...aiSquadProject.stack.backend, ...aiSquadProject.stack.database].map((stack) => <span key={stack} className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-[10px] font-bold text-gray-600">{stack}</span>)}</div></div>
-            <button onClick={() => go('/squad-blueprint')} className="flex w-fit shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-md" type="button"><i className="fas fa-book-open" /> AI 설계서 전체 보기</button>
+            <button onClick={() => go('/squad-blueprint')} className="flex w-fit shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-md" type="button"><i className="fas fa-book-open" /> 프로젝트 설계서 전체 보기</button>
           </div>
           <div className="relative mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">{summaryCards.map(([icon,color,title,copy]) => <div key={title} className="rounded-xl border border-white bg-white/80 p-3"><p className="text-xs font-extrabold text-gray-900"><i className={`fas ${icon} mr-1.5 ${color}`} />{title}</p><p className="mt-1 text-[10px] font-bold text-gray-400">{copy}</p></div>)}</div>
         </Card>
@@ -317,12 +321,21 @@ function BlueprintPage() {
 
   useEffect(() => {
     const selectFromHash = () => setTab(blueprintTabFromHash())
+    const selectOnReturn = () => {
+      if (window.location.pathname === '/squad-blueprint' && window.location.hash) selectFromHash()
+    }
     selectFromHash()
     window.addEventListener('hashchange', selectFromHash)
+    window.addEventListener(SPA_NAVIGATION_EVENT, selectOnReturn)
+    window.addEventListener('popstate', selectOnReturn)
     if (window.location.hash) {
       tabBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
-    return () => window.removeEventListener('hashchange', selectFromHash)
+    return () => {
+      window.removeEventListener('hashchange', selectFromHash)
+      window.removeEventListener(SPA_NAVIGATION_EVENT, selectOnReturn)
+      window.removeEventListener('popstate', selectOnReturn)
+    }
   }, [])
 
   const selectTab = (nextTab: BlueprintTab) => {
@@ -853,6 +866,7 @@ function ApiJsonPanel({ title, value, status, headers, action, pending = false }
 
 function ApiPage() {
   const { workspaceId, tasks: workspaceTasks, dashboard } = useAiWorkspace()
+  const dataVersion = useWorkspaceDataVersion()
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(!workspaceId)
   const [apiError, setApiError] = useState('')
@@ -870,7 +884,7 @@ function ApiPage() {
       setLoaded(true)
     }).catch((error) => { if (!controller.signal.aborted) setApiError(error instanceof Error ? error.message : 'API 명세를 불러오지 못했습니다.') })
     return () => controller.abort()
-  }, [workspaceId])
+  }, [workspaceId, dataVersion])
 
   async function saveApis(next: AiApi[], nextGroups = groups) {
     if (!loaded || saving) return false
@@ -1085,7 +1099,8 @@ type MockSession = {
 
 function InterviewPage() {
   const [tab,setTab]=useState<'bank'|'report'|'history'>('bank')
-  const { workspaceId } = useAiWorkspace()
+  const { workspaceId, tasksReady } = useAiWorkspace()
+  const dataVersion = useWorkspaceDataVersion()
   const displayedTasks = useDisplayedTasks()
   const [evidenceApis, setEvidenceApis] = useState<AiApi[]>(() => workspaceId ? [] : aiApis)
   const [evidenceTables, setEvidenceTables] = useState<string[]>(() => workspaceId ? [] : aiErdTables.map((table) => table.name))
@@ -1128,10 +1143,10 @@ function InterviewPage() {
       if (!ignore) { setQuestionList(response.questions); setQuestionsLoaded(true) }
     }).catch((error) => { if (!ignore) setGenerationError(error instanceof Error ? error.message : '질문을 불러오지 못했습니다.') })
     return () => { ignore = true }
-  }, [workspaceId])
+  }, [workspaceId, dataVersion])
 
   useEffect(() => {
-    if (!workspaceId) return
+    if (!workspaceId || !questionsLoaded) return
     let ignore = false
     Promise.all([
       projectApiRequest<{ content: string } | null>(`/api/workspaces/${workspaceId}/api-spec`, {}, 'required'),
@@ -1148,7 +1163,7 @@ function InterviewPage() {
       setEvidenceReady(true)
     }).catch((error) => { if (!ignore) { setEvidenceError(error instanceof Error ? error.message : '근거 정보를 불러오지 못했습니다.'); setEvidenceReady(true) } })
     return () => { ignore = true }
-  }, [workspaceId])
+  }, [workspaceId, questionsLoaded, dataVersion])
 
   useEffect(() => {
     if (modal !== 'generate') return
@@ -1269,16 +1284,18 @@ function InterviewPage() {
     setMockAnswer('')
     setMockSession({ ...mockSession, scores, index: mockSession.index + 1, remaining: mockOptions.time, stage: 'answer', score: 0 })
   }
-  if (!practiceReady || !questionsLoaded || !evidenceReady) return <main className="p-8 text-sm text-gray-500">{practiceError || generationError || '면접 기록을 불러오는 중입니다...'}</main>
+  if (!questionsLoaded) return <main className="p-8 text-sm text-gray-500">{generationError || '면접 질문을 불러오는 중입니다...'}</main>
+  const evidenceLoaded = evidenceReady && tasksReady
   const evidence = { tasks: displayedTasks, apis: evidenceApis, tables: evidenceTables }
   const saveEvidence = (id: string, links: InterviewEvidenceLinks) => saveQuestions(questionList.map((question) => question.id === id ? { ...question, ...links } : question))
 
   return <main className="ai-interview-page custom-scrollbar min-w-0 flex-1 overflow-y-auto p-6 lg:p-8"><div className="mx-auto max-w-6xl space-y-6 pb-16">
-    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900"><i className="fas fa-user-tie text-brand" />면접 준비</h1><p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">AI가 우리 설계서에서 뽑은 질문에, 우리 코드로 답하는 연습 공간입니다. <button onClick={()=>go('/squad-blueprint','#roadmap')} type="button"><AiChip>AI 설계서 원본</AiChip></button></p></div><div className="flex flex-wrap gap-2"><><button onClick={() => setModal('generate')} className="rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-sm font-bold text-teal-700 shadow-sm" type="button"><i className="fas fa-magic mr-1" />AI에게 질문 더 받기</button><button onClick={() => setModal('add')} className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm" type="button"><i className="fas fa-plus mr-1" />직접 추가</button></><button onClick={() => setModal('setup')} className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-lg" type="button"><i className="fas fa-play" />모의 면접 시작</button></div></div>
-    <section className="grid grid-cols-1 gap-4 lg:grid-cols-12"><Card className="flex items-center gap-5 p-6 lg:col-span-4"><div className="relative flex h-24 w-24 shrink-0 items-center justify-center"><svg className="absolute inset-0 h-24 w-24 -rotate-90" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="40" fill="none" stroke="#f3f4f6" strokeWidth="9" /><circle cx="48" cy="48" r="40" fill="none" stroke="#00C471" strokeWidth="9" strokeLinecap="round" strokeDasharray={2 * Math.PI * 40} strokeDashoffset={2 * Math.PI * 40 * (1 - readiness / 100)} /></svg><div className="text-center"><p className="text-2xl font-black text-gray-900">{readiness}</p><p className="-mt-1 text-[9px] font-bold text-gray-500">/ 100</p></div></div><div className="min-w-0"><p className="text-xs font-bold text-gray-500">면접 준비도</p><p className="text-lg font-black text-gray-900">{readiness === 0 ? '시작 전' : readiness >= 70 ? '준비가 되어 가요' : '차근차근 연습해요'}</p><p className="mt-1 text-[11px] leading-relaxed text-gray-500">키워드 포함률 70% + 자가 평가 30%로 계산합니다.</p></div></Card><div className="grid grid-cols-3 gap-4 lg:col-span-5">{overviewCards.map(([label,value,unit,copy])=><Card key={label} className="p-5"><p className="text-[11px] font-bold text-gray-500">{label}</p><p className="mt-1 text-2xl font-black text-gray-900">{value}<span className="ml-0.5 text-sm font-semibold text-gray-500">{unit}</span></p><p className="mt-0.5 text-[10px] font-medium text-gray-500">{copy}</p></Card>)}</div><section className="flex flex-col rounded-2xl border border-green-200 bg-[linear-gradient(135deg,#F0FDF4_0%,#F0FDFA_100%)] p-5 lg:col-span-3"><p className="mb-2 text-[11px] font-extrabold text-teal-700"><i className="fas fa-magic mr-1" />오늘의 추천 연습</p><p className="flex-1 text-sm leading-snug font-bold text-gray-900">{recommendedQuestion?.question ?? '생성된 면접 질문이 없습니다.'}</p><p className="mt-2 text-[10px] text-gray-500">{recommendedQuestion && answers[recommendedQuestion.id]?.text.trim() ? '작성한 답변을 한 번 더 연습해 보세요.' : '아직 답변하지 않은 질문이에요.'}</p><button onClick={() => { if (recommendedQuestion) { setTab('bank'); setFocusedQuestion(recommendedQuestion.id) } }} className="mt-3 w-full rounded-lg border border-teal-200 bg-white py-2 text-xs font-bold text-teal-700" type="button">지금 연습하기 →</button></section></section>
-    <div className="flex w-fit items-center gap-1 rounded-xl border border-gray-200 bg-gray-100 p-1">{([['bank','fa-layer-group','질문 은행'],['report','fa-chart-line','연습 리포트'],['history','fa-history','모의 면접 기록']] as const).map(([key,icon,label])=><button key={key} onClick={()=>setTab(key)} className={`rounded-lg border px-4 py-2 text-sm font-bold ${tab===key?'border-gray-200 bg-white text-gray-900 shadow-sm':'border-transparent text-gray-500'}`} type="button"><i className={`fas ${icon} mr-1.5`} />{label}</button>)}</div>
+    {!practiceReady ? <p role={practiceError ? 'alert' : 'status'} className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-xs text-gray-600">{practiceError || '개인 답변을 불러오는 중입니다. 질문과 모범 답안은 먼저 확인할 수 있어요.'}</p> : null}
+    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900"><i className="fas fa-user-tie text-brand" />면접 준비</h1><p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">AI가 우리 설계서에서 뽑은 질문에, 우리 코드로 답하는 연습 공간입니다. <button onClick={()=>go('/squad-blueprint','#roadmap')} type="button"><AiChip>AI 설계서 원본</AiChip></button></p></div><div className="flex flex-wrap gap-2"><><button onClick={() => setModal('generate')} className="rounded-xl border border-teal-200 bg-white px-4 py-2.5 text-sm font-bold text-teal-700 shadow-sm" type="button"><i className="fas fa-magic mr-1" />AI에게 질문 더 받기</button><button onClick={() => setModal('add')} className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm" type="button"><i className="fas fa-plus mr-1" />직접 추가</button></><button disabled={!practiceReady} onClick={() => setModal('setup')} className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white shadow-lg" type="button"><i className="fas fa-play" />모의 면접 시작</button></div></div>
+    <section className="grid grid-cols-1 gap-4 lg:grid-cols-12"><Card className="flex items-center gap-5 p-6 lg:col-span-4"><div className="relative flex h-24 w-24 shrink-0 items-center justify-center"><svg className="absolute inset-0 h-24 w-24 -rotate-90" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="40" fill="none" stroke="#f3f4f6" strokeWidth="9" /><circle cx="48" cy="48" r="40" fill="none" stroke="#00C471" strokeWidth="9" strokeLinecap="round" strokeDasharray={2 * Math.PI * 40} strokeDashoffset={2 * Math.PI * 40 * (1 - readiness / 100)} /></svg><div className="text-center"><p className="text-2xl font-black text-gray-900">{practiceReady ? readiness : '—'}</p><p className="-mt-1 text-[9px] font-bold text-gray-500">/ 100</p></div></div><div className="min-w-0"><p className="text-xs font-bold text-gray-500">면접 준비도</p><p className="text-lg font-black text-gray-900">{!practiceReady ? '기록 확인 중' : readiness === 0 ? '시작 전' : readiness >= 70 ? '준비가 되어 가요' : '차근차근 연습해요'}</p><p className="mt-1 text-[11px] leading-relaxed text-gray-500">키워드 포함률 70% + 자가 평가 30%로 계산합니다.</p></div></Card><div className="grid grid-cols-3 gap-4 lg:col-span-5">{overviewCards.map(([label,value,unit,copy])=><Card key={label} className="p-5"><p className="text-[11px] font-bold text-gray-500">{label}</p><p className="mt-1 text-2xl font-black text-gray-900">{practiceReady ? value : '—'}<span className="ml-0.5 text-sm font-semibold text-gray-500">{unit}</span></p><p className="mt-0.5 text-[10px] font-medium text-gray-500">{copy}</p></Card>)}</div><section className="flex flex-col rounded-2xl border border-green-200 bg-[linear-gradient(135deg,#F0FDF4_0%,#F0FDFA_100%)] p-5 lg:col-span-3"><p className="mb-2 text-[11px] font-extrabold text-teal-700"><i className="fas fa-magic mr-1" />오늘의 추천 연습</p><p className="flex-1 text-sm leading-snug font-bold text-gray-900">{recommendedQuestion?.question ?? '생성된 면접 질문이 없습니다.'}</p><p className="mt-2 text-[10px] text-gray-500">{!practiceReady ? '개인 기록을 확인하고 있어요.' : recommendedQuestion && answers[recommendedQuestion.id]?.text.trim() ? '작성한 답변을 한 번 더 연습해 보세요.' : '아직 답변하지 않은 질문이에요.'}</p><button onClick={() => { if (recommendedQuestion) { setTab('bank'); setFocusedQuestion(recommendedQuestion.id) } }} className="mt-3 w-full rounded-lg border border-teal-200 bg-white py-2 text-xs font-bold text-teal-700" type="button">지금 연습하기 →</button></section></section>
+    <div className="flex w-fit items-center gap-1 rounded-xl border border-gray-200 bg-gray-100 p-1">{([['bank','fa-layer-group','질문 은행'],['report','fa-chart-line','연습 리포트'],['history','fa-history','모의 면접 기록']] as const).map(([key,icon,label])=><button key={key} disabled={(key !== 'bank' && !practiceReady) || (key === 'report' && !evidenceLoaded)} onClick={()=>setTab(key)} className={`rounded-lg border px-4 py-2 text-sm font-bold ${tab===key?'border-gray-200 bg-white text-gray-900 shadow-sm':'border-transparent text-gray-500'}`} type="button"><i className={`fas ${icon} mr-1.5`} />{label}</button>)}</div>
     {evidenceError ? <p role="alert" className="rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 text-xs text-orange-700">{evidenceError} 새로고침 후 다시 확인해 주세요.</p> : null}
-    {tab === 'bank' ? <AiInterviewQuestionBank key={focusedQuestion} questions={questionList} workspaceId={workspaceId} answers={answers} setAnswers={setAnswers} focusedId={focusedQuestion} evidence={evidence} onSaveEvidence={evidenceError ? undefined : saveEvidence} onSaveQuestion={questionsLoaded ? (question) => saveQuestions(questionList.map((item) => item.id === question.id ? question : item)) : undefined} /> : tab === 'report' ? <AiInterviewReport questions={questionList} answers={answers} sessions={sessions} evidence={evidence} /> : <div className="space-y-3">{sessions.length ? sessions.slice().reverse().map((session) => <Card key={session.id} className="p-6"><p className="text-sm font-bold text-gray-900">{new Date(session.at).toLocaleString('ko-KR')} · 평균 {session.average}점</p><ul className="mt-3 space-y-2 text-xs text-gray-600">{session.questions.map((question, index) => <li key={index}>{question} · {session.scores[index]}점</li>)}</ul></Card>) : <Card className="p-8 text-center"><p className="text-sm font-bold text-gray-700">아직 저장된 모의 면접 기록이 없습니다.</p></Card>}</div>}
+    {tab === 'bank' ? <AiInterviewQuestionBank key={focusedQuestion} answersReady={practiceReady} evidenceReady={evidenceLoaded} questions={questionList} workspaceId={workspaceId} answers={answers} setAnswers={setAnswers} focusedId={focusedQuestion} evidence={evidence} onSaveEvidence={!evidenceLoaded || evidenceError ? undefined : saveEvidence} onSaveQuestion={questionsLoaded ? (question) => saveQuestions(questionList.map((item) => item.id === question.id ? question : item)) : undefined} /> : tab === 'report' ? <AiInterviewReport questions={questionList} answers={answers} sessions={sessions} evidence={evidence} /> : <div className="space-y-3">{sessions.length ? sessions.slice().reverse().map((session) => <Card key={session.id} className="p-6"><p className="text-sm font-bold text-gray-900">{new Date(session.at).toLocaleString('ko-KR')} · 평균 {session.average}점</p><ul className="mt-3 space-y-2 text-xs text-gray-600">{session.questions.map((question, index) => <li key={index}>{question} · {session.scores[index]}점</li>)}</ul></Card>) : <Card className="p-8 text-center"><p className="text-sm font-bold text-gray-700">아직 저장된 모의 면접 기록이 없습니다.</p></Card>}</div>}
     {modal === 'generate' ? <AiInterviewGenerationModal ready={generationReady} error={generationError} questions={availableGenerated} selected={generatedSelection} saving={questionSaving} taskCount={displayedTasks.length} apiCount={evidenceApis.length} tableCount={evidenceTables.length} onToggle={(id, checked) => setGeneratedSelection((current) => checked ? [...current, id] : current.filter((selectedId) => selectedId !== id))} onRetry={() => setGenerationAttempt((current) => current + 1)} onClose={() => setModal(null)} onAdd={() => void addGeneratedQuestions()} /> : null}
 
     {modal === 'add' ? <div className="fixed inset-0 z-[1150] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm"><form role="dialog" aria-labelledby="add-question-title" onSubmit={addCustomQuestion} className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"><header className="flex items-center justify-between border-b border-gray-100 bg-gray-50 p-6"><h2 id="add-question-title" className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-plus-circle text-brand" />팀 질문 추가</h2><button aria-label="팀 질문 추가 닫기" onClick={() => setModal(null)} className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500" type="button"><i className="fas fa-times" /></button></header><div className="space-y-4 p-6"><label className="block"><span className="mb-1.5 block text-xs font-bold text-gray-700">질문 <span className="text-red-500">*</span></span><input aria-label="질문" value={customQuestion.question} onChange={(event) => setCustomQuestion((current) => ({ ...current, question: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand" placeholder="예: 시리즈 삭제 시 글과 구독은 어떻게 처리했나요?" /></label><label className="block"><span className="mb-1.5 block text-xs font-bold text-gray-700">모범 답안</span><textarea aria-label="모범 답안" value={customQuestion.answer} onChange={(event) => setCustomQuestion((current) => ({ ...current, answer: event.target.value }))} className="h-20 w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand" /></label><label className="block"><span className="mb-1.5 block text-xs font-bold text-gray-700">핵심 키워드 <span className="font-normal text-gray-500">(쉼표로 구분 · AI 피드백 채점에 사용)</span></span><input aria-label="핵심 키워드" value={customQuestion.keywords} onChange={(event) => setCustomQuestion((current) => ({ ...current, keywords: event.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-brand" placeholder="예: cascade, 소프트 삭제, 고아 객체" /></label><div className="grid grid-cols-2 gap-3"><label><span className="mb-1.5 block text-xs font-bold text-gray-700">분류</span><select aria-label="질문 분류" value={customQuestion.category} onChange={(event) => setCustomQuestion((current) => ({ ...current, category: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"><option>핵심 난제</option><option>성능</option><option>보안</option><option>설계</option><option>인프라</option><option>협업</option></select></label><label><span className="mb-1.5 block text-xs font-bold text-gray-700">관련 작업</span><select aria-label="관련 작업" value={customQuestion.task} onChange={(event) => setCustomQuestion((current) => ({ ...current, task: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-brand"><option value="">없음</option>{displayedTasks.map((task) => <option key={task.id} value={task.id}>#{task.id} {task.title}</option>)}</select></label></div></div><footer className="flex justify-end gap-2 border-t border-gray-100 bg-gray-50 p-5"><button onClick={() => setModal(null)} className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-50" type="button">취소</button><button disabled={!customQuestion.question.trim()} className="rounded-xl bg-gray-900 px-6 py-2.5 text-sm font-bold text-white shadow-md disabled:opacity-40" type="submit">추가하기</button></footer></form></div> : null}
@@ -1419,54 +1436,81 @@ export default function AiSquadWorkspaceApp() {
   const route=pathname in routePage ? pathname as AiRoute : '/squad-dashboard'
   const workspaceId = Number(new URLSearchParams(window.location.search).get('workspaceId')) || null
   const [loadedWorkspaceId, setLoadedWorkspaceId] = useState<number | null>(null)
+  const initializationRef = useRef<{ workspaceId: number; promise: Promise<unknown> } | null>(null)
+  const [visitedRoutes, setVisitedRoutes] = useState<Set<AiRoute>>(() => new Set([route]))
+  const renderedRoutes = visitedRoutes.has(route) ? visitedRoutes : new Set([...visitedRoutes, route])
   const [workspaceDesign, setWorkspaceDesign] = useState<WorkspaceAiDesign | null>(null)
   const dataVersion = useWorkspaceDataVersion()
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [tasks, setTasks] = useState<WorkspaceTask[]>([])
-  const [activities, setActivities] = useState<ActivityLog[]>([])
-  const [notices, setNotices] = useState<Notice[]>([])
-  const [events, setEvents] = useState<CalendarEvent[]>([])
-  const [voiceChannels, setVoiceChannels] = useState<VoiceChannel[]>([])
+  const [loadedTasksWorkspaceId, setLoadedTasksWorkspaceId] = useState<number | null>(null)
   const [integrations, setIntegrations] = useState<ExternalIntegration[]>([])
   const [createdModalOpen, setCreatedModalOpen] = useState(() => new URLSearchParams(window.location.search).get('created') === 'ai')
   const [loadError, setLoadError] = useState<{ workspaceId: number; message: string } | null>(null)
 
   useEffect(() => {
     document.title=`DevPath - ${routeTitle[route]}`
+    setVisitedRoutes((current) => current.has(route) ? current : new Set([...current, route]))
   }, [route])
 
   useEffect(() => {
     configureAiWorkspaceNavigation(workspaceId)
     if (!workspaceId || route === '/squad-files') return
     const controller = new AbortController()
-    Promise.all([
-      getWorkspaceAiDesign(workspaceId, controller.signal),
-      projectApiRequest<WorkspaceDashboard>(`/api/workspaces/${workspaceId}/dashboard`, { signal: controller.signal }, 'required'),
-      projectApiRequest<WorkspaceTask[]>(`/api/workspaces/${workspaceId}/tasks`, { signal: controller.signal }, 'required'),
-      projectApiRequest<ActivityLog[]>(`/api/workspaces/${workspaceId}/activities/recent`, { signal: controller.signal }, 'required').catch(() => []),
-      projectApiRequest<Notice[]>(`/api/workspaces/${workspaceId}/notices`, { signal: controller.signal }, 'required').catch(() => []),
-      projectApiRequest<CalendarEvent[]>(`/api/workspaces/${workspaceId}/calendar-events`, { signal: controller.signal }, 'required').catch(() => []),
-      projectApiRequest<VoiceChannel[]>(`/api/workspaces/${workspaceId}/voice-channels`, { signal: controller.signal }, 'required').catch(() => []),
-      projectApiRequest<ExternalIntegration[]>(`/api/workspaces/${workspaceId}/integrations`, { signal: controller.signal }, 'required').catch(() => []),
-    ])
-      .then(async ([response, dashboardData, taskData, activityData, noticeData, eventData, voiceChannelData, integrationData]) => {
-        await projectApiRequest(`/api/workspaces/hub/projects/${workspaceId}/ai-design/initialize`, { method: 'POST', signal: controller.signal }, 'required')
+    // 메뉴 전환마다 초기화 POST로 조회 캐시를 지우지 않는다. StrictMode의 재실행도 같은 작업을 기다린다.
+    if (initializationRef.current?.workspaceId !== workspaceId) {
+      const promise = initializeWorkspaceAi(workspaceId)
+      initializationRef.current = { workspaceId, promise }
+      void promise.catch(() => {
+        if (initializationRef.current?.promise === promise) initializationRef.current = null
+      })
+    }
+    initializationRef.current.promise.then(() => {
+      if (controller.signal.aborted) return
+      // 실제 대시보드·일정·회의 페이지는 자체 조회하므로 설계와 연결 작업만 공통으로 불러온다.
+      return Promise.all([
+        getWorkspaceAiDesign(workspaceId, controller.signal),
+        projectApiRequest<WorkspaceDashboard>(`/api/workspaces/${workspaceId}/dashboard`, { signal: controller.signal }, 'required'),
+        route === '/squad-interview' ? Promise.resolve(undefined) : projectApiRequest<WorkspaceTask[]>(`/api/workspaces/${workspaceId}/tasks`, { signal: controller.signal }, 'required'),
+      ])
+    })
+      .then((responseData) => {
+        if (!responseData) return
+        const [response, dashboardData, taskData] = responseData
         if (controller.signal.aborted) return
         applyWorkspaceAiDesign(response.design)
-        aiTasks.splice(0, aiTasks.length, ...(taskData ?? []).map((task) => toAiTask(task, dashboardData.members ?? [])))
+        const applyTasks = (data: WorkspaceTask[]) => {
+          aiTasks.splice(0, aiTasks.length, ...(data ?? []).map((task) => toAiTask(task, dashboardData.members ?? [])))
+          setTasks(data ?? [])
+          setLoadedTasksWorkspaceId(workspaceId)
+        }
+        if (taskData !== undefined) applyTasks(taskData)
+        else {
+          // 면접 질문 읽기는 작업 현황 조회를 기다리지 않되, 근거 편집은 실제 작업이 도착한 뒤 허용한다.
+          void projectApiRequest<WorkspaceTask[]>(`/api/workspaces/${workspaceId}/tasks`, { signal: controller.signal }, 'required')
+            .then((data) => { if (!controller.signal.aborted) applyTasks(data) })
+            .catch((error) => { if (!controller.signal.aborted) setLoadError({ workspaceId, message: error instanceof Error ? error.message : '연결된 작업을 불러오지 못했습니다.' }) })
+        }
         setWorkspaceDesign(response.design)
         setDashboard(dashboardData)
-        setTasks(taskData ?? [])
-        setActivities(activityData ?? [])
-        setNotices(noticeData ?? [])
-        setEvents(eventData ?? [])
-        setVoiceChannels(voiceChannelData ?? [])
-        setIntegrations(integrationData ?? [])
         setLoadedWorkspaceId(workspaceId)
+        setLoadError(null)
       })
       .catch((error) => {
         if (controller.signal.aborted) return
         setLoadError({ workspaceId, message: error instanceof Error ? error.message : 'AI 설계를 불러오지 못했습니다.' })
+      })
+    return () => controller.abort()
+  }, [workspaceId, route, dataVersion])
+
+  useEffect(() => {
+    if (!workspaceId || route === '/squad-files') return
+    const controller = new AbortController()
+    projectApiRequest<ExternalIntegration[]>(`/api/workspaces/${workspaceId}/integrations`, { signal: controller.signal }, 'required')
+      .then((data) => { if (!controller.signal.aborted) setIntegrations(data ?? []) })
+      .catch(() => {
+        // 연동 상태를 확인할 수 없으면 캐시된 허용 상태로 코드 피드백을 열지 않는다.
+        if (!controller.signal.aborted) setIntegrations([])
       })
     return () => controller.abort()
   }, [workspaceId, route, dataVersion])
@@ -1482,23 +1526,18 @@ export default function AiSquadWorkspaceApp() {
     showAuthToast({ message: '설계 변경사항을 저장했습니다.', durationMs: 2200 })
   }
 
-  if (route === '/squad-files') return <Suspense fallback={<div className="flex h-screen items-center justify-center text-sm text-gray-500">자료실을 불러오는 중입니다...</div>}><SquadFilesApp aiWorkspace /></Suspense>
-
-  if (loadError?.workspaceId === workspaceId) return <div className="flex h-screen items-center justify-center bg-gray-50 text-sm font-bold text-red-500">{loadError?.message}</div>
-  if (workspaceId && loadedWorkspaceId !== workspaceId) return <div className="flex h-screen items-center justify-center bg-gray-50 text-sm font-bold text-gray-500">AI 설계를 불러오는 중입니다...</div>
-
-  const PersistedPage = workspaceId && route in persistedPages ? persistedPages[route as keyof typeof persistedPages] : null
-
-  const reviewLocked = workspaceId && route === '/squad-review' && !integrations.some((integration) => integration.provider === 'GITHUB' && (integration.active ?? integration.isActive) && integration.repositoryUrl)
+  const designPending = Boolean(workspaceId && loadedWorkspaceId !== workspaceId)
 
   return (
-    <AiWorkspaceContext.Provider value={{ workspaceId, design: workspaceDesign, saveDesign, dashboard, tasks, setTasks, activities, notices, events, voiceChannels, integrations }}>
-      {reviewLocked ? <AiShell activePage="review" workspaceId={workspaceId}><main className="flex flex-1 items-center justify-center p-8"><Card className="max-w-lg p-10 text-center"><i className="fab fa-github text-4xl text-gray-400" /><h1 className="mt-4 text-xl font-extrabold text-gray-900">GitHub 연결이 필요합니다</h1><p className="mt-3 text-sm text-gray-500">스쿼드 설정에서 저장소와 토큰을 연결하면 코드 피드백을 사용할 수 있습니다.</p><a href={aiHref('/squad-settings')} className="mt-6 inline-block rounded-xl bg-gray-900 px-5 py-3 text-sm font-bold text-white">외부 연동 설정하기</a></Card></main></AiShell> : PersistedPage ? <Suspense fallback={<div className="flex h-screen items-center justify-center text-sm text-gray-500">워크스페이스를 불러오는 중입니다...</div>}><PersistedPage key={workspaceId} aiWorkspace design={workspaceDesign} /></Suspense> : route === '/squad-meeting' ? <MeetingPage /> : (
-        <>
-          <AiShell activePage={routePage[route]} showHeader={route !== '/squad-erd'} workspaceId={workspaceId}><CurrentPage key={workspaceId} route={route} /></AiShell>
-
-        </>
-      )}
+    <AiWorkspaceContext.Provider value={{ workspaceId, design: workspaceDesign, saveDesign, dashboard, tasks, tasksReady: !workspaceId || loadedTasksWorkspaceId === workspaceId, setTasks, activities: [], notices: [], events: [], voiceChannels: [], integrations }}>
+      {!designPending && loadError?.workspaceId === workspaceId ? <div role="alert" className="fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-red-200 bg-white px-4 py-3 text-xs font-bold text-red-600 shadow-sm">{loadError.message}</div> : null}
+      {Array.from(renderedRoutes).map((pageRoute) => {
+        const PersistedPage = workspaceId && pageRoute in persistedPages ? persistedPages[pageRoute as keyof typeof persistedPages] : null
+        const reviewLocked = workspaceId && pageRoute === '/squad-review' && !integrations.some((integration) => integration.provider === 'GITHUB' && (integration.active ?? integration.isActive) && integration.repositoryUrl)
+        return <div key={pageRoute} className={pageRoute === route ? 'contents' : 'hidden'} aria-hidden={pageRoute !== route}>
+          {designPending && pageRoute !== '/squad-files' ? <div className="flex h-screen items-center justify-center bg-gray-50 text-sm font-bold text-gray-500">{loadError?.workspaceId === workspaceId ? loadError.message : 'AI 설계를 불러오는 중입니다...'}</div> : reviewLocked ? <AiShell activePage="review" workspaceId={workspaceId}><main className="flex flex-1 items-center justify-center p-8"><Card className="max-w-lg p-10 text-center"><i className="fab fa-github text-4xl text-gray-400" /><h1 className="mt-4 text-xl font-extrabold text-gray-900">GitHub 연결이 필요합니다</h1><p className="mt-3 text-sm text-gray-500">스쿼드 설정에서 저장소와 토큰을 연결하면 코드 피드백을 사용할 수 있습니다.</p><a href={aiHref('/squad-settings')} className="mt-6 inline-block rounded-xl bg-gray-900 px-5 py-3 text-sm font-bold text-white">외부 연동 설정하기</a></Card></main></AiShell> : PersistedPage ? <Suspense fallback={pageRoute === '/squad-files' ? <AiShell activePage="files" workspaceId={workspaceId}><main role="status" className="flex flex-1 items-center justify-center text-sm font-bold text-gray-500">팀 자료실을 불러오는 중입니다...</main></AiShell> : <div className="flex h-screen items-center justify-center text-sm text-gray-500">워크스페이스를 불러오는 중입니다...</div>}><PersistedPage key={workspaceId} aiWorkspace design={workspaceDesign} /></Suspense> : pageRoute === '/squad-meeting' ? <MeetingPage /> : <AiShell activePage={routePage[pageRoute]} showHeader={pageRoute !== '/squad-erd'} workspaceId={workspaceId}><CurrentPage key={workspaceId} route={pageRoute} /></AiShell>}
+        </div>
+      })}
           {route === '/squad-dashboard' && createdModalOpen && workspaceId && workspaceDesign ? (
             <AiWorkspaceCreatedModal
               design={workspaceDesign}

@@ -2,6 +2,7 @@ import { aiWorkspacePageHref } from './ai-workspace-navigation'
 import { activityFallback, activityIcon, formatChatTime, formatEventDay, formatEventMonth, formatShortDate, getDday, isImportantNotice, navHref as standardNavHref, percent, stripNoticePrefix, stripScheduleCategoryDescription } from './squad-dashboard-support'
 import type { WorkspaceAiDesign } from '../project/api'
 import { AiDesignSummary, AiRoadmapCard } from './AiWorkspaceDesignPanels'
+import { getAiRoadmapPhases } from './ai-roadmap'
 import MvpFeatureProgress from './MvpFeatureProgress'
 import type { ActivityLog, CalendarEvent, Notice, VoiceChannel, WorkspaceErdChange, WorkspaceMember } from './dashboard-types'
 import type { WorkspaceTask } from './dashboard-types'
@@ -33,6 +34,8 @@ export default function SquadDashboardContent(props: Props) {
   const { workspaceId, notices, activities, erdChanges, memberById, currentUserName, doingCount, doneCount, goalRemainingPercent, hasDashboardBodyData, liveVoiceChannel, taskTotal, todoCount, upcomingEvents, onOpenNotice, design } = props
   const navHref = (path: string, id: number | null) => design ? aiWorkspacePageHref(path, id) : standardNavHref(path, id)
   const taskPercent = (count: number) => design ? taskTotal > 0 ? Math.round(count / taskTotal * 100) : 0 : percent(count, taskTotal)
+  const roadmapEvents = props.calendarEvents.filter((event) => event.description?.startsWith('[schedule-category:milestone]'))
+  const currentPhase = design ? getAiRoadmapPhases(design, roadmapEvents, props.workspaceCreatedAt, props.roadmapToday).find((item) => item.state === 'current')?.phase : null
 
   function renderActivity(activity: ActivityLog) {
     const actor = activity.actorId ? memberById.get(activity.actorId) : null
@@ -89,9 +92,9 @@ export default function SquadDashboardContent(props: Props) {
               <div className="absolute right-0 top-0 w-64 h-64 bg-brand opacity-[0.03] rounded-full blur-3xl translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
 
               <div>
-                {hasDashboardBodyData ? (
+                {hasDashboardBodyData || design ? (
                   <>
-                    <p className="text-sm font-bold text-gray-500 mb-1">{design ? `AI 로드맵 · ${design.roadmap.length}단계` : '스프린트 2주차 진행 중'}</p>
+                    <p className="text-sm font-bold text-gray-500 mb-1">{design ? currentPhase ? `개발 로드맵 · Phase ${currentPhase.phase}. ${currentPhase.title}` : '개발 로드맵 · 진행 중인 단계 없음' : '스프린트 2주차 진행 중'}</p>
                     <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">반갑습니다, {currentUserName}님! 👋</h2>
                     <p className="text-sm text-gray-600 mt-2 font-medium">
                       {design ? <>내 작업 완료율 <span className="text-brand font-bold">{100 - goalRemainingPercent}%</span> · 완료 {doneCount}개 / 전체 {taskTotal}개</> : <>이번 주 팀 목표 달성까지 <span className="text-brand font-bold">{goalRemainingPercent}%</span> 남았습니다. 화이팅!</>}
@@ -222,7 +225,7 @@ export default function SquadDashboardContent(props: Props) {
               </div>
 
               <div className="lg:col-span-4 space-y-6">
-                {design ? <AiRoadmapCard design={design} workspaceId={workspaceId} events={props.calendarEvents.filter((event) => event.description?.startsWith('[schedule-category:milestone]'))} createdAt={props.workspaceCreatedAt} today={props.roadmapToday} /> : null}
+                {design ? <AiRoadmapCard design={design} workspaceId={workspaceId} events={roadmapEvents} createdAt={props.workspaceCreatedAt} today={props.roadmapToday} /> : null}
                 <div className="squad-dashboard-side-card squad-dashboard-compact-side-card squad-dashboard-schedule-card box-border rounded-[16px]! border border-gray-100 bg-white p-[20px]! shadow-sm">
                   <h3 className="squad-dashboard-side-title mb-[12px]! box-border flex items-center gap-2 border-b border-gray-100 pb-[9px]! text-lg font-extrabold text-gray-900">
                     <i className={`fas fa-clock ${upcomingEvents.length > 0 ? 'text-orange-500' : 'text-gray-400'}`}></i> 마감 임박 일정

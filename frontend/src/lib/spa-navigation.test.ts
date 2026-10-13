@@ -45,6 +45,25 @@ describe('SPA navigation', () => {
     expect(isSpaNavigationTarget('/uploads/archive.zip')).toBe(false)
   })
 
+  it('스쿼드 초기 화면에서는 전체 메뉴를 예열하지 않고 사용자가 가리킨 목적지만 예열한다', () => {
+    vi.useFakeTimers()
+    window.history.replaceState({}, '', '/squad-dashboard?workspaceId=42')
+    document.body.innerHTML = '<aside><a href="/squad-files?workspaceId=42">자료실</a><a href="/squad-erd?workspaceId=42">ERD</a></aside>'
+    const preloadRoute = vi.fn()
+    const uninstall = installSpaNavigation({ preloadRoute })
+    try {
+      vi.advanceTimersByTime(1600)
+      expect(preloadRoute).not.toHaveBeenCalled()
+      const anchor = document.querySelector('a')!
+      anchor.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }))
+      expect(preloadRoute).toHaveBeenCalledTimes(1)
+      expect(preloadRoute).toHaveBeenCalledWith(anchor.href)
+    } finally {
+      uninstall()
+      vi.useRealTimers()
+    }
+  })
+
   it('같은 페이지의 hash 링크는 브라우저 기본 동작을 유지한다', () => {
     const uninstall = installSpaNavigation({ preloadRoute: vi.fn() })
     const anchor = document.createElement('a')

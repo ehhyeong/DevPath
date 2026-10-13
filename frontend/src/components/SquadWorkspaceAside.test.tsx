@@ -42,7 +42,7 @@ describe('AI 설계서 사이드바 반영 맵', () => {
     render(<SquadWorkspaceAside activePage="blueprint" workspaceId={42} aiWorkspace onNavigate={(event, href) => { event.preventDefault(); navigate(href) }} />)
     fireEvent.mouseEnter(screen.getByRole('complementary'))
     expect(screen.queryByRole('link', { name: /설계서 열기/ })).not.toBeInTheDocument()
-    const blueprint = screen.getByRole('link', { name: /AI 설계서AI/ })
+    const blueprint = screen.getByRole('link', { name: /프로젝트 설계서/ })
     expect(blueprint).toHaveAttribute('href', '/squad-blueprint?workspaceId=42&ai=1')
     expect(blueprint).toHaveClass('active')
     fireEvent.click(blueprint)
@@ -53,6 +53,19 @@ describe('AI 설계서 사이드바 반영 맵', () => {
     fireEvent.mouseLeave(screen.getByRole('complementary'))
     expect(screen.queryByText('로드맵 기반 작업 카드')).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /설계서 열기/ })).not.toBeInTheDocument()
+  })
+
+  it('로딩 사이드바가 제거되어도 이미 표시된 자료실 사이드바의 펼침 상태를 초기화하지 않는다', () => {
+    const loading = render(<SquadWorkspaceAside activePage="files" workspaceId={42} aiWorkspace />)
+    fireEvent.mouseEnter(loading.getByRole('complementary'))
+    const files = render(<SquadWorkspaceAside activePage="files" workspaceId={42} aiWorkspace />)
+    const aside = files.container.querySelector('aside')!
+    fireEvent.pointerMove(aside)
+    loading.unmount()
+    expect(aside).toHaveClass('is-expanded')
+    expect(aside).toHaveTextContent('AI 설계 문서 · 팀 파일')
+    fireEvent.mouseLeave(aside)
+    expect(aside).not.toHaveClass('is-expanded')
   })
 
   it('대시보드부터 설정까지 기능 흐름대로 배치하고 관련 기능을 같은 그룹에 둔다', () => {

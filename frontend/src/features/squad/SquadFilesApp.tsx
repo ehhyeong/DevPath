@@ -134,50 +134,30 @@ function presentationElementStyle(
 
 import { useSquadFilesController } from './useSquadFilesController'
 import WorkspaceAiDesignFiles from './WorkspaceAiDesignFiles'
+import type { WorkspaceAiDesign } from '../project/api'
 
-export default function SquadFilesApp({ aiWorkspace = false }: { aiWorkspace?: boolean }) {
+export default function SquadFilesApp({ aiWorkspace = false, design }: { aiWorkspace?: boolean; design?: WorkspaceAiDesign | null }) {
   const [aiDesignOpen, setAiDesignOpen] = useState(false)
   const [aiDesignAvailable, setAiDesignAvailable] = useState(false)
-  const { workspaceId, session, folderStack, searchText, setSearchText, filter, setFilter, sortMode, setSortMode, loading, error, folderModalOpen, setFolderModalOpen, folderName, setFolderName, uploadModalOpen, setUploadModalOpen, selectedFile, dragOver, setDragOver, submitting, actionMenu, previewItem, setPreviewItem, previewUrl, previewText, previewArchive, previewDocument, previewUnsupportedMessage, previewLoading, previewError, members, projectName, usedBytes, quotaBytes, storagePercent, actionMenuItem, visibleFiles, handleLogout, renderAuthModal, goToRoot, goToCrumb, goToParentFolder, createFolder, uploadFile, selectUploadFile, handleDrop, downloadItem, renameItem, renderFileRow } = useSquadFilesController()
+  const { workspaceId, session, dashboard, folderStack, searchText, setSearchText, filter, setFilter, sortMode, setSortMode, loading, error, folderModalOpen, setFolderModalOpen, folderName, setFolderName, uploadModalOpen, setUploadModalOpen, selectedFile, dragOver, setDragOver, submitting, actionMenu, previewItem, setPreviewItem, previewUrl, previewText, previewArchive, previewDocument, previewUnsupportedMessage, previewLoading, previewError, members, projectName, usedBytes, quotaBytes, storagePercent, actionMenuItem, visibleFiles, handleLogout, renderAuthModal, goToRoot, goToCrumb, goToParentFolder, createFolder, uploadFile, selectUploadFile, handleDrop, downloadItem, renameItem, renderFileRow } = useSquadFilesController()
 
 
   const showAiFolder = aiWorkspace && !folderStack.length && (filter === 'all' || filter === 'folder')
   const aiFolderMatchesSearch = '00_ai_설계서 (자동 생성)'.includes(searchText.trim().toLowerCase())
   const showEmptyFolder = !visibleFiles.length && !(showAiFolder && aiDesignAvailable && aiFolderMatchesSearch)
 
-  if (loading) {
-    return (
-      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
-        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
-        {renderAuthModal()}
-      </div>
-    )
-  }
+  const workspaceName = dashboard?.name ?? design?.title ?? projectName
 
-  if (error) {
-    return (
-      <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-          <i className="fas fa-circle-exclamation text-3xl text-red-400 mb-3"></i>
-          <p className="font-extrabold text-gray-900">{error}</p>
-          <a href="/workspace-hub" className="inline-flex mt-5 px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold">
-            워크스페이스로 돌아가기
-          </a>
-        </div>
-        {renderAuthModal()}
-      </div>
-    )
-  }
-
+  // 조회 중에도 같은 사이드바를 유지하여 재마운트로 메뉴 펼침 상태와 위치가 바뀌지 않게 한다.
   return (
     <div className="squad-dashboard-page squad-files-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-[16px] text-gray-800 [&_.squad-files-fade-in]:[animation:squadDashboardFadeIn_0.4s_ease-in-out_forwards]">
-      <SquadWorkspaceAside activePage="files" workspaceId={workspaceId} projectName={projectName} aiWorkspace={aiWorkspace} />
+      <SquadWorkspaceAside activePage="files" workspaceId={workspaceId} projectName={workspaceName} aiWorkspace={aiWorkspace} />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
         <SquadWorkspaceHeader
           aiWorkspace={aiWorkspace}
           workspaceId={workspaceId}
-          projectName={projectName}
+          projectName={workspaceName}
           members={members}
           statusLabel="진행 중"
           currentUserName={session?.name}
@@ -185,6 +165,7 @@ export default function SquadFilesApp({ aiWorkspace = false }: { aiWorkspace?: b
         />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
+          {loading ? <div role="status" className="flex flex-1 items-center justify-center gap-3 text-sm font-bold text-gray-500"><div aria-hidden="true" className="h-8 w-8 animate-spin rounded-full border-4 border-green-100 border-t-brand" />팀 자료실을 불러오는 중입니다...</div> : error ? <div className="flex flex-1 items-center justify-center"><div role="alert" className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm"><i className="fas fa-circle-exclamation mb-3 text-3xl text-red-400" /><p className="font-extrabold text-gray-900">{error}</p><a href="/workspace-hub" className="mt-5 inline-flex rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-bold text-white">워크스페이스로 돌아가기</a></div></div> : <>
           <div className={`squad-files-toolbar z-10 flex ${aiWorkspace ? '' : 'min-h-[129px]'} shrink-0 flex-col justify-between gap-[16px]! border-b border-gray-100 bg-white px-[32px]! py-[24px]! shadow-sm md:flex-row md:items-center [@media(max-width:768px)]:px-[20px]!`}>
             <div>
               <h1 className="mb-[8px]! flex items-center gap-[8px]! text-[24px]! leading-[32px]! font-extrabold text-gray-900">
@@ -337,6 +318,7 @@ export default function SquadFilesApp({ aiWorkspace = false }: { aiWorkspace?: b
               </div>
             </div>
           </div>
+          </>}
         </main>
       </div>
 

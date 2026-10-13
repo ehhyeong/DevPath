@@ -2,6 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getWorkspaceAiDesign, projectApiRequest, type WorkspaceAiDesign } from '../project/api'
 import AiSquadWorkspaceApp from './AiSquadWorkspaceApp'
+import { navigateTo } from '../../lib/spa-navigation'
+import { invalidateCachedQueries } from '../../lib/memory-query-cache'
 
 vi.mock('../project/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../project/api')>()
@@ -9,6 +11,7 @@ vi.mock('../project/api', async (importOriginal) => {
 })
 
 beforeEach(() => {
+  invalidateCachedQueries()
   localStorage.clear()
   vi.mocked(projectApiRequest).mockReset()
   mockWorkspaceRequests()
@@ -69,7 +72,7 @@ describe('AI 설계서 탭', () => {
     expect(screen.queryByRole('heading', { name: /워크스페이스 반영 맵/ })).not.toBeInTheDocument()
     fireEvent.mouseEnter(screen.getByRole('complementary'))
     expect(screen.queryByRole('link', { name: /설계서 열기/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /AI 설계서AI/ })).toHaveAttribute('href', '/squad-blueprint?ai=1')
+    expect(screen.getByRole('link', { name: /프로젝트 설계서/ })).toHaveAttribute('href', '/squad-blueprint?ai=1')
     expect(screen.getByText('설계서 기반 면접 질문')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /핵심 사용자 흐름/ })).not.toBeInTheDocument()
     const roadmapPanel = screen.getByRole('heading', { name: /개발 구현 로드맵/ }).closest('.ai-blueprint-tab-panel')
@@ -373,7 +376,7 @@ describe('저장된 AI 워크스페이스 대시보드', () => {
     expect(screen.getAllByText('실제 사용자').length).toBeGreaterThan(0)
     expect(screen.queryByText('김개발')).not.toBeInTheDocument()
     expect(screen.getByText('AI 추천 스키마 1개 테이블')).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: /AI 설계서/ })[0]).toHaveAttribute('href', '/squad-blueprint?workspaceId=42&ai=1')
+    expect(screen.getByRole('link', { name: /^프로젝트 설계서$/ })).toHaveAttribute('href', '/squad-blueprint?workspaceId=42&ai=1')
 
     fireEvent.click(screen.getByRole('button', { name: '대시보드 보기' }))
     await waitFor(() => expect(window.location.search).toBe('?workspaceId=42&ai=1'))
@@ -431,5 +434,59 @@ describe('저장된 AI 워크스페이스 대시보드', () => {
 
     const reviewLink = await screen.findByRole('link', { name: /코드 피드백/ })
     await waitFor(() => expect(reviewLink).toHaveAttribute('aria-disabled', 'false'))
+  })
+})
+
+describe('AI 스쿼드 페이지 전환 조회', () => {
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/squad-blueprint?workspaceId=42&ai=1')
+    vi.mocked(getWorkspaceAiDesign).mockResolvedValue({ workspaceId: 42, dashboardUrl: '/squad-dashboard?workspaceId=42&ai=1', createdAt: '2026-10-05T00:00:00Z', design: persistedDesign() })
+  })
+
+  it('관련 없는 메뉴 조회를 기다리지 않고 메뉴 왕복에도 초기화를 한 번만 실행한다', async () => {
+    const original = vi.mocked(projectApiRequest).getMockImplementation()!
+    vi.mocked(projectApiRequest).mockImplementation((...args) => {
+      if (/activities|notices|calendar-events|voice-channels/.test(args[0])) return new Promise(() => {})
+      return original(...args)
+    })
+    const { rerender } = render(<AiSquadWorkspaceApp />)
+    await screen.findByRole('button', { name: '기획·시나리오 수정' })
+    window.history.pushState({}, '', '/squad-api?workspaceId=42&ai=1')
+    rerender(<AiSquadWorkspaceApp />)
+    await screen.findByRole('heading', { name: '/api/reports' })
+    window.history.pushState({}, '', '/squad-blueprint?workspaceId=42&ai=1')
+    rerender(<AiSquadWorkspaceApp />)
+    expect(screen.getByRole('button', { name: '기획·시나리오 수정' })).toBeInTheDocument()
+    expect(vi.mocked(projectApiRequest).mock.calls.filter(([path]) => path.endsWith('/initialize'))).toHaveLength(1)
+    expect(vi.mocked(projectApiRequest).mock.calls.some(([path]) => /activities|notices|calendar-events|voice-channels/.test(path))).toBe(false)
+  })
+
+  it('이미 방문한 API 화면의 검색 입력과 DOM을 재방문 때 보존한다', async () => {
+    window.history.replaceState({}, '', '/squad-api?workspaceId=42&ai=1')
+    const { rerender } = render(<AiSquadWorkspaceApp />)
+    await screen.findByRole('heading', { name: '/api/reports' })
+    const search = screen.getByPlaceholderText('경로 또는 설명 검색...')
+    fireEvent.change(search, { target: { value: 'reports' } })
+    window.history.pushState({}, '', '/squad-blueprint?workspaceId=42&ai=1')
+    rerender(<AiSquadWorkspaceApp />)
+    await screen.findByRole('button', { name: '기획·시나리오 수정' })
+    window.history.pushState({}, '', '/squad-api?workspaceId=42&ai=1')
+    rerender(<AiSquadWorkspaceApp />)
+    expect(screen.getByPlaceholderText('경로 또는 설명 검색...')).toBe(search)
+    expect(search).toHaveValue('reports')
+    expect(screen.queryByText('워크스페이스를 불러오는 중입니다...')).not.toBeInTheDocument()
+  })
+
+  it('보존된 설계서에 아키텍처 링크로 돌아오면 연결된 탭을 표시한다', async () => {
+    const { rerender } = render(<AiSquadWorkspaceApp />)
+    await screen.findByRole('button', { name: '기획·시나리오 수정' })
+    navigateTo('/squad-api?workspaceId=42&ai=1')
+    rerender(<AiSquadWorkspaceApp />)
+    await screen.findByRole('heading', { name: '/api/reports' })
+    window.history.pushState({}, '', '/squad-blueprint?workspaceId=42&ai=1#arch')
+    fireEvent(window, new Event('devpath:spa-navigation'))
+    rerender(<AiSquadWorkspaceApp />)
+    expect(screen.getByRole('button', { name: 'ERD 편집하기' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '기획·시나리오 수정' })).not.toBeInTheDocument()
   })
 })
