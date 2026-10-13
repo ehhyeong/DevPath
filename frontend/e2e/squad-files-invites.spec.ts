@@ -934,29 +934,39 @@ test('캘린더가 원본 Phase 타임라인·월간·주간과 일정 추가를
 })
 
 test('대시보드 로드맵은 생성 첫 주를 강조하고 페이지를 열어 둬도 다음 주로 전환한다', async ({ page }, testInfo) => {
+  // 날짜 전환 검증과 화면 캡처가 외부 폰트 CDN의 응답에 종속되지 않도록 한다.
+  await page.route('https://cdn.jsdelivr.net/**', (route) => route.abort())
+  await page.route('https://fonts.googleapis.com/**', (route) => route.abort())
   await page.clock.setFixedTime(new Date('2026-10-06T12:00:00'))
   const roadmap = [1, 2, 3, 4].map((phase) => ({ phase, title: `단계 ${phase}`, goal: '개발', estimatedWeeks: phase === 2 ? 2 : 1, tasks: ['구현'] }))
   await page.route('**/api/workspaces/hub/projects/42/ai-design', (route) => route.fulfill({ json: { success: true, data: { workspaceId: 42, design: { ...design, roadmap } } } }))
   await page.route('**/api/workspaces/42/calendar-events', (route) => route.fulfill({ json: { success: true, data: [] } }))
-  await page.goto('/squad-dashboard?workspaceId=42&ai=1')
+  await page.route('**/api/workspaces/42/tasks', (route) => route.fulfill({ json: { success: true, data: [] } }))
+  // 외부 폰트 다운로드 종료 대신 실제 로드맵 단계가 표시될 때까지 기다린다.
+  await page.goto('/squad-dashboard?workspaceId=42&ai=1', { waitUntil: 'domcontentloaded' })
   const first = page.getByRole('link', { name: 'Phase 1. 단계 1', exact: true })
   const second = page.getByRole('link', { name: 'Phase 2. 단계 2', exact: true })
   await expect(first).toHaveAttribute('aria-current', 'step')
   await expect(first.locator('[aria-hidden]')).toHaveClass(/bg-purple-500/)
   await expect(first).toContainText('10.06 ~ 10.12')
   await expect(second).not.toHaveAttribute('aria-current')
+  await expect(page.getByText('개발 로드맵 · Phase 1. 단계 1', { exact: true })).toBeVisible()
   await page.clock.setFixedTime(new Date('2026-10-13T00:00:00'))
   await expect(second).toHaveAttribute('aria-current', 'step', { timeout: 12_000 })
+  await expect(page.getByText('개발 로드맵 · Phase 2. 단계 2', { exact: true })).toBeVisible()
   await expect(second).toContainText('10.13 ~ 10.26')
   await expect(second).not.toContainText(/\d+주/)
   await expect(first.locator('[aria-hidden]')).toHaveClass(/bg-brand/)
   await expect(first).toContainText('기간 종료')
   await page.clock.setFixedTime(new Date('2026-10-20T12:00:00'))
   await expect(second).toHaveAttribute('aria-current', 'step')
+  await expect(page.getByText('개발 로드맵 · Phase 2. 단계 2', { exact: true })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('dashboard-roadmap-next-week.png'), animations: 'disabled' })
 })
 
 test('대시보드 로드맵은 모든 저장 Phase 일정을 반영하고 같은 번호의 회의를 제외한다', async ({ page }) => {
+  await page.route('https://cdn.jsdelivr.net/**', (route) => route.abort())
+  await page.route('https://fonts.googleapis.com/**', (route) => route.abort())
   await page.clock.setFixedTime(new Date('2026-11-06T12:00:00'))
   const roadmap = [1, 2, 3, 4].map((phase) => ({ phase, title: `단계 ${phase}`, goal: '개발', estimatedWeeks: 1, tasks: ['구현'] }))
   await page.route('**/api/workspaces/hub/projects/42/ai-design', (route) => route.fulfill({ json: { success: true, data: { workspaceId: 42, design: { ...design, roadmap } } } }))
@@ -965,11 +975,12 @@ test('대시보드 로드맵은 모든 저장 Phase 일정을 반영하고 같�
     { eventId: 299, workspaceId: 42, title: 'Phase 4. 팀 회의', description: '[schedule-category:meeting]', startAt: '2026-09-01T00:00:00', endAt: '2026-09-01T23:59:00' },
     ...roadmap.map((phase, index) => ({ eventId: 201 + index, workspaceId: 42, title: `Phase ${phase.phase}. ${phase.title}`, description: '[schedule-category:milestone]', startAt: `${dates[index][0]}T00:00:00`, endAt: `${dates[index][1]}T23:59:00` })),
   ] } }))
-  await page.goto('/squad-dashboard?workspaceId=42&ai=1')
+  await page.goto('/squad-dashboard?workspaceId=42&ai=1', { waitUntil: 'domcontentloaded' })
   const current = page.getByRole('link', { name: 'Phase 4. 단계 4', exact: true })
   await expect(current).toHaveAttribute('aria-current', 'step')
   await expect(current).toContainText('11.01 ~ 11.07')
   await expect(current.locator('[aria-hidden]')).toHaveClass(/bg-purple-500/)
+  await expect(page.getByText('개발 로드맵 · Phase 4. 단계 4', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Phase 1. 단계 1', exact: true })).toContainText('기간 종료')
 })
 

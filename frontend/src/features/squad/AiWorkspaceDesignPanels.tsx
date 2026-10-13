@@ -1,5 +1,6 @@
 import { aiWorkspacePageHref } from './ai-workspace-navigation'
 import type { WorkspaceAiDesign } from '../project/api'
+import { getAiRoadmapPhases } from './ai-roadmap'
 
 export type AiWorkspacePageProps = { aiWorkspace?: boolean; design?: WorkspaceAiDesign | null }
 
@@ -17,23 +18,8 @@ export function AiRoadmapCard({ design, workspaceId, events, createdAt, today = 
   createdAt?: string | null
   today?: string
 }) {
-  const now = new Date(today).getTime()
   const formatDate = (date: Date) => `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
-  let nextStart = createdAt ? new Date(createdAt) : null
-  const phases = []
-  for (const phase of design.roadmap) {
-    // 팀이 변경한 일정이 우선이며, 일정이 없으면 생성일부터 Phase 예상 주수를 누적한다.
-    const event = events.find((item) => item.title.startsWith(`Phase ${phase.phase}. `))
-    const start = event ? new Date(event.startAt) : nextStart ? new Date(nextStart) : null
-    const end = event?.endAt ? new Date(event.endAt) : start ? new Date(start) : null
-    if (end && !event?.endAt) end.setDate(end.getDate() + Math.max(1, phase.estimatedWeeks) * 7 - 1)
-    start?.setHours(0, 0, 0, 0)
-    end?.setHours(23, 59, 59, 999)
-    nextStart = end ? new Date(end) : null
-    nextStart?.setDate(nextStart.getDate() + 1)
-    const state = start && end ? now > end.getTime() ? 'done' : now >= start.getTime() ? 'current' : 'upcoming' : 'upcoming'
-    phases.push({ phase, start, end, state })
-  }
+  const phases = getAiRoadmapPhases(design, events, createdAt, today)
   return <section className="rounded-2xl border border-gray-100 bg-white p-7 shadow-sm"><div className="mb-5 flex items-center justify-between border-b border-gray-100 pb-3"><h3 className="flex items-center gap-2 text-lg font-extrabold text-gray-900"><i className="fas fa-route text-purple-500" />개발 로드맵</h3><a href={`${aiWorkspacePageHref('/squad-blueprint', workspaceId)}#roadmap`} className="text-[10px] font-bold text-teal-700">프로젝트 설계서 →</a></div><div className="ml-2 space-y-5 border-l-2 border-gray-100">{phases.map(({ phase, start, end, state }) => {
     const dot = state === 'done' ? 'bg-brand' : state === 'current' ? 'bg-purple-500 ring-4 ring-purple-100' : 'bg-gray-300'
     return <a key={phase.phase} href={aiWorkspacePageHref('/squad-schedule', workspaceId)} aria-label={`Phase ${phase.phase}. ${phase.title}`} aria-current={state === 'current' ? 'step' : undefined} className="relative block pl-5">
