@@ -55,6 +55,19 @@ describe('AI 설계서 사이드바 반영 맵', () => {
     expect(screen.queryByRole('link', { name: /설계서 열기/ })).not.toBeInTheDocument()
   })
 
+  it('로딩 사이드바가 제거되어도 이미 표시된 자료실 사이드바의 펼침 상태를 초기화하지 않는다', () => {
+    const loading = render(<SquadWorkspaceAside activePage="files" workspaceId={42} aiWorkspace />)
+    fireEvent.mouseEnter(loading.getByRole('complementary'))
+    const files = render(<SquadWorkspaceAside activePage="files" workspaceId={42} aiWorkspace />)
+    const aside = files.container.querySelector('aside')!
+    fireEvent.pointerMove(aside)
+    loading.unmount()
+    expect(aside).toHaveClass('is-expanded')
+    expect(aside).toHaveTextContent('AI 설계 문서 · 팀 파일')
+    fireEvent.mouseLeave(aside)
+    expect(aside).not.toHaveClass('is-expanded')
+  })
+
   it('대시보드부터 설정까지 기능 흐름대로 배치하고 관련 기능을 같은 그룹에 둔다', () => {
     render(<SquadWorkspaceAside activePage="api" workspaceId={42} aiWorkspace />)
     fireEvent.mouseEnter(screen.getByRole('complementary'))

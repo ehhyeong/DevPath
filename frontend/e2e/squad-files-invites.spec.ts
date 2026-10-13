@@ -817,6 +817,56 @@ test('AI 사이드바가 접힘 크기를 복원하고 바로가기 없이 여�
   await expect(page.locator('.squad-workspace-aside:visible').locator('a.workspace-nav-item').last()).toHaveClass(/active/)
 })
 
+test('팀 자료실 첫 조회 중에도 AI 사이드바의 펼침 상태와 메뉴 위치를 유지한다', async ({ page }, testInfo) => {
+  let releaseModule!: () => void
+  const modulePending = new Promise<void>((resolve) => { releaseModule = resolve })
+  await page.route('**/src/features/squad/SquadFilesApp.tsx*', async (route) => {
+    await modulePending
+    await route.continue()
+  })
+  let releaseFiles!: () => void
+  const filesPending = new Promise<void>((resolve) => { releaseFiles = resolve })
+  await page.route('**/api/workspaces/42/files', async (route) => {
+    await filesPending
+    await route.fallback()
+  })
+  await page.goto('/squad-api?workspaceId=42&ai=1')
+  await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+  const aside = page.locator('.squad-workspace-aside:visible')
+  await aside.hover()
+  await expect(aside).toHaveCSS('width', '256px')
+  const position = () => aside.locator('a.workspace-nav-item').evaluateAll((links) => links.map((link) => ({ top: link.getBoundingClientRect().top, height: link.getBoundingClientRect().height })))
+  const baseline = await position()
+  try {
+    await aside.getByRole('link', { name: /팀 자료실/ }).click()
+    await expect(page).toHaveURL('/squad-files?workspaceId=42&ai=1')
+    await expect(aside).toHaveClass(/ai-squad-aside.*is-expanded|is-expanded.*ai-squad-aside/)
+    await expect(page.getByRole('status')).toHaveText('팀 자료실을 불러오는 중입니다...')
+    await expect(aside).toHaveCSS('width', '256px')
+    await expect(aside.getByRole('link', { name: /팀 자료실/ })).toHaveClass(/active/)
+    await expect(aside.getByRole('link', { name: /목록으로 돌아가기/ })).toContainText(design.title)
+    await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath('files-aside-loading.png') })
+    // 정지한 포인터로 로딩 사이드바를 넘겨받아도 실제 자료실의 메뉴 위치가 바뀌면 안 된다.
+    await aside.hover()
+    releaseModule()
+    await expect(page.locator('.squad-files-page')).toBeVisible()
+    await expect(aside).toHaveClass(/is-expanded/)
+    await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+    releaseFiles()
+    await expect(page.getByRole('heading', { name: /팀 자료실/ })).toBeVisible()
+    await expect.poll(async () => (await position()).every((row, index) => Math.abs(row.top - baseline[index].top) < 1 && Math.abs(row.height - baseline[index].height) < 1)).toBe(true)
+    await page.locator('main:visible').hover()
+    await expect(aside).toHaveCSS('width', '80px')
+    await aside.hover()
+    await expect(aside).toHaveCSS('width', '256px')
+    await aside.getByRole('link', { name: /API 명세서/ }).click()
+    await expect(page.getByRole('heading', { name: '/reports', exact: true })).toBeVisible()
+  } finally {
+    releaseModule()
+    releaseFiles()
+  }
+})
 
 test('AI 사이드바가 페이지 왕복 중 펼침 상태와 메뉴 위치를 유지한다', async ({ page }, testInfo) => {
   await page.goto('/squad-api?workspaceId=42&ai=1')

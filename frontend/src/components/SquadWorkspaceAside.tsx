@@ -254,8 +254,8 @@ export default function SquadWorkspaceAside({
   }, [workspaceId, dataVersion])
 
   useEffect(() => () => {
-    // 메뉴 전환 중 재마운트되면 포인터가 그대로여서 mouseenter가 다시 발생하지 않는다.
-    if (!squadWorkspaceAsideNavigationPending) {
+    // 로딩 화면의 사이드바가 교체될 때 새 사이드바의 펼침 상태까지 초기화하지 않는다.
+    if (!squadWorkspaceAsideNavigationPending && !document.querySelector('.squad-workspace-aside')) {
       resetSquadWorkspaceAsideState()
     }
   }, [])
