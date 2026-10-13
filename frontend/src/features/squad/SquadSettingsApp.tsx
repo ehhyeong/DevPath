@@ -1,5 +1,5 @@
 import { useAuthSession } from '../../lib/useAuthSession'
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import UserAvatar from '../../components/UserAvatar'
@@ -13,7 +13,7 @@ import { DangerPanel, DeleteModal, GeneralPanel, IntegrationsPanel, MembersPanel
 import WorkspaceInviteModal from './WorkspaceInviteModal'
 import { openWorkspaceProjectStart } from '../project/workspace-project-start-event'
 import { AiDesignSummary, type AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
-import { WORKSPACE_DATA_CHANGED_EVENT } from '../../lib/workspace-events'
+import { WORKSPACE_DATA_CHANGED_EVENT, useWorkspaceDataVersion } from '../../lib/workspace-events'
 
 import type {
   ExternalIntegration,
@@ -60,6 +60,8 @@ export default function SquadSettingsApp({ aiWorkspace = false, design }: AiWork
   const [integrations, setIntegrations] = useState<ExternalIntegration[]>([])
   const [form, setForm] = useState<SettingsForm>(() => createForm(null))
   const [loading, setLoading] = useState(true)
+  const dataVersion = useWorkspaceDataVersion()
+  const settingsLoadedRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [busyMemberId, setBusyMemberId] = useState<number | null>(null)
@@ -108,15 +110,17 @@ export default function SquadSettingsApp({ aiWorkspace = false, design }: AiWork
     let ignore = false
 
     async function loadSettings() {
-      setLoading(true)
+      if (!settingsLoadedRef.current) setLoading(true)
       setError(null)
 
       try {
-        await projectApiRequest<void>(
+        // 온라인 상태 알림은 페이지 데이터 조회를 막지 않으며 다른 메뉴의 캐시를 지우지 않는다.
+        void projectApiRequest<void>(
           `/api/workspaces/${workspaceId}/presence`,
           { method: 'POST' },
           'required',
-        )
+          { invalidateCache: false },
+        ).catch(() => undefined)
 
         const [nextSettings, nextIntegrations] = await Promise.all([
           projectApiRequest<WorkspaceSettings>(`/api/workspaces/${workspaceId}/settings`, {}, 'required'),
@@ -132,9 +136,13 @@ export default function SquadSettingsApp({ aiWorkspace = false, design }: AiWork
         }
 
         setSettings(nextSettings)
-        setForm(createForm(nextSettings))
         setIntegrations(nextIntegrations)
-        setGithubRepositoryUrl(nextIntegrations.find((integration) => integration.provider === 'GITHUB')?.repositoryUrl ?? '')
+        // 재방문 갱신으로 아직 저장하지 않은 설정과 GitHub 입력을 덮어쓰지 않는다.
+        if (!settingsLoadedRef.current) {
+          setForm(createForm(nextSettings))
+          setGithubRepositoryUrl(nextIntegrations.find((integration) => integration.provider === 'GITHUB')?.repositoryUrl ?? '')
+          settingsLoadedRef.current = true
+        }
       } catch (loadError) {
         if (ignore) {
           return
@@ -155,7 +163,7 @@ export default function SquadSettingsApp({ aiWorkspace = false, design }: AiWork
     return () => {
       ignore = true
     }
-  }, [session?.accessToken, workspaceId])
+  }, [dataVersion, session?.accessToken, workspaceId])
 
   useEffect(() => {
     if (activeTab !== 'members' || !workspaceId || !session?.accessToken) {

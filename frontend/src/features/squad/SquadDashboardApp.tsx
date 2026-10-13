@@ -6,6 +6,7 @@ import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import { showAuthToast } from '../../lib/auth-toast'
 import { projectApiRequest } from '../project/api'
+import { useWorkspaceDataVersion } from '../../lib/workspace-events'
 import { createSquadNotification, squadActorName } from './notifications'
 import SquadDashboardContent from './SquadDashboardContent'
 import type { AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
@@ -25,6 +26,7 @@ import type {
 
 export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
+  const dataVersion = useWorkspaceDataVersion()
   const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
@@ -44,6 +46,7 @@ export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWor
   const [noticeContent, setNoticeContent] = useState('')
   const [sidebarPinned, setSidebarPinned] = useState(readSidebarPinned)
   const dashboardRefreshRef = useRef(false)
+  const dashboardLoadedRef = useRef(false)
 
   const loadDashboardData = useCallback(async (options?: { signal?: AbortSignal; blocking?: boolean; silent?: boolean }) => {
     if (!workspaceId) {
@@ -58,7 +61,7 @@ export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWor
     }
 
     try {
-      const [dashboardData, taskData, eventData, noticeData, activityData, erdChangeData, voiceChannelData, messageData] =
+      const [dashboardData, taskData, eventData] =
         await Promise.all([
           projectApiRequest<WorkspaceDashboard>(
             `/api/workspaces/${workspaceId}/dashboard`,
@@ -75,31 +78,6 @@ export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWor
             { signal: options?.signal },
             'required',
           ),
-          projectApiRequest<Notice[]>(
-            `/api/workspaces/${workspaceId}/notices`,
-            { signal: options?.signal },
-            'required',
-          ).catch(() => []),
-          projectApiRequest<ActivityLog[]>(
-            `/api/workspaces/${workspaceId}/activities/recent`,
-            { signal: options?.signal },
-            'required',
-          ).catch(() => []),
-          projectApiRequest<WorkspaceErdChange[]>(
-            `/api/workspaces/${workspaceId}/erd/recent-changes`,
-            { signal: options?.signal },
-            'required',
-          ).catch(() => []),
-          projectApiRequest<VoiceChannel[]>(
-            `/api/workspaces/${workspaceId}/voice-channels`,
-            { signal: options?.signal },
-            'required',
-          ).catch(() => []),
-          projectApiRequest<TeamMessage[]>(
-            `/api/lounge/chats/messages?loungeId=${workspaceId}`,
-            { signal: options?.signal },
-            'required',
-          ).catch(() => []),
         ])
 
       if (options?.signal?.aborted) {
@@ -107,8 +85,19 @@ export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWor
       }
 
       setDashboard(dashboardData)
+      dashboardLoadedRef.current = true
       setTasks(taskData ?? [])
       setEvents((eventData ?? []).sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime()))
+      if (options?.blocking) setLoading(false)
+      // 핵심 조회가 브라우저 연결과 DB 커넥션을 먼저 사용하고, 부가 위젯은 화면 표시 뒤에 조회한다.
+      const [noticeData, activityData, erdChangeData, voiceChannelData, messageData] = await Promise.all([
+        projectApiRequest<Notice[]>(`/api/workspaces/${workspaceId}/notices`, { signal: options?.signal }, 'required').catch(() => []),
+        projectApiRequest<ActivityLog[]>(`/api/workspaces/${workspaceId}/activities/recent`, { signal: options?.signal }, 'required').catch(() => []),
+        projectApiRequest<WorkspaceErdChange[]>(`/api/workspaces/${workspaceId}/erd/recent-changes`, { signal: options?.signal }, 'required').catch(() => []),
+        projectApiRequest<VoiceChannel[]>(`/api/workspaces/${workspaceId}/voice-channels`, { signal: options?.signal }, 'required').catch(() => []),
+        projectApiRequest<TeamMessage[]>(`/api/lounge/chats/messages?loungeId=${workspaceId}`, { signal: options?.signal }, 'required').catch(() => []),
+      ])
+      if (options?.signal?.aborted) return
       setNotices(noticeData ?? [])
       setActivities(activityData ?? [])
       setErdChanges(erdChangeData ?? [])
@@ -163,10 +152,10 @@ export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWor
     }
 
     const controller = new AbortController()
-    void loadDashboardData({ signal: controller.signal, blocking: true })
+    void loadDashboardData({ signal: controller.signal, blocking: !dashboardLoadedRef.current })
 
     return () => controller.abort()
-  }, [loadDashboardData, setSession, workspaceId])
+  }, [dataVersion, loadDashboardData, setSession, workspaceId])
 
   useEffect(() => {
     if (!workspaceId || !session?.accessToken || loading) {

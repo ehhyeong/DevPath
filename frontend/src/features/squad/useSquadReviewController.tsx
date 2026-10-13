@@ -6,6 +6,7 @@ import { type AuthView } from '../../components/AuthModal'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import { projectApiRequest } from '../project/api'
+import { useWorkspaceDataVersion } from '../../lib/workspace-events'
 import { createSquadNotification, squadActorName } from './notifications'
 import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
 
@@ -131,6 +132,8 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
   return reviewFiles[0]?.filePath ?? detail.summary.filePath
 }export function useSquadReviewController() {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
+  const dataVersion = useWorkspaceDataVersion()
+  const boardLoadedRef = useRef(false)
   const [session,setSession] = useAuthSession()
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [board, setBoard] = useState<CodeReviewBoard | null>(null)
@@ -244,7 +247,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
     let ignore = false
 
     async function load() {
-      setLoading(true)
+      if (!boardLoadedRef.current) setLoading(true)
       setError(null)
 
       try {
@@ -259,6 +262,9 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
         }
 
         setBoard(boardData)
+        // 목록만 갱신하여 재방문 시 사용자가 선택한 PR과 작성 중인 피드백을 보존한다.
+        if (boardLoadedRef.current) return
+        boardLoadedRef.current = true
 
         const firstReview = boardData.openReviews[0] ?? boardData.closedReviews[0] ?? null
         setActiveTab(boardData.openReviews.length > 0 ? 'open' : 'closed')
@@ -290,7 +296,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
     return () => {
       ignore = true
     }
-  }, [loadDetail, workspaceId])
+  }, [dataVersion, loadDetail, workspaceId])
 
   async function reloadBoard(preferredReviewId?: number | null) {
     if (!workspaceId) {

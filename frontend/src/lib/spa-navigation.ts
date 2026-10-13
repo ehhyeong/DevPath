@@ -122,6 +122,8 @@ export function installSpaNavigation({ preloadRoute }: InstallSpaNavigationOptio
   document.addEventListener('focusin', handlePreload, true)
 
   const idleCallback = () => {
+    // 스쿼드는 각 메뉴의 DB 조회가 많으므로 초기 화면을 그릴 때 여러 메뉴를 동시에 예열하지 않는다.
+    if (window.location.pathname.startsWith('/squad-')) return
     const hrefs = new Set<string>()
 
     document.querySelectorAll<HTMLAnchorElement>('header a[href], nav a[href], aside a[href]').forEach((anchor) => {

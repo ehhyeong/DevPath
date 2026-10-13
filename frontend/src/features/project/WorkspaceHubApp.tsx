@@ -516,8 +516,17 @@ function WorkspaceProjectCard({
   function goToProject(event: MouseEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement
     if (!target.closest('button') && !target.closest('.dropdown-menu') && !target.closest('a')) {
+      prepareProjectEntry()
       navigateTo(project.dashboardUrl)
     }
+  }
+
+  function prepareProjectEntry() {
+    if (project.type !== 'squad') return
+    const url = new URL(project.dashboardUrl, window.location.origin)
+    void import('../squad/preload')
+      .then((module) => module.preloadSquadWorkspace(project.projectId, url.pathname, isAiSquad))
+      .catch(() => { /* 사전 조회 실패는 실제 진입 화면에서 오류와 재시도를 처리한다. */ })
   }
 
   if (project.type === 'mentoring') {
@@ -592,7 +601,7 @@ function WorkspaceProjectCard({
   }
 
   return (
-    <div id={project.domId} className={`project-card ${isAiSquad ? 'workspace-ai-card' : 'bg-white'} rounded-xl p-5 cursor-pointer relative group flex flex-col`} data-type={project.type} data-status={project.status} onClick={goToProject}>
+    <div id={project.domId} className={`project-card ${isAiSquad ? 'workspace-ai-card' : 'bg-white'} rounded-xl p-5 cursor-pointer relative group flex flex-col`} data-type={project.type} data-status={project.status} onClick={goToProject} onPointerEnter={prepareProjectEntry} onFocus={prepareProjectEntry} role="link" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { prepareProjectEntry(); navigateTo(project.dashboardUrl) } }}>
       <div>
         <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
           <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap">
