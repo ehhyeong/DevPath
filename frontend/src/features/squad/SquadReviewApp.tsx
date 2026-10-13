@@ -3,6 +3,7 @@
 
 import AuthModal from '../../components/AuthModal'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
+import SquadWorkspaceLoadingView from '../../components/SquadWorkspaceLoadingView'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../components/UserAvatar'
 
@@ -72,11 +73,12 @@ function statusLabel(status: CodeReviewSummary['status']) {
 import { useSquadReviewController } from './useSquadReviewController'
 import type { AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
 
-export default function SquadReviewApp({ aiWorkspace = false }: AiWorkspacePageProps = {}) {
+export default function SquadReviewApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const { workspaceId, session, authView, setAuthView, board, detail, activeTab, setActiveTab, loading, detailLoading, saving, statusLoading, modalOpen, form, setForm, commentDraft, setCommentDraft, commentSaving, toast, error, commentInputRef, handleLogout, handleAuthenticated, openCreateModal, closeCreateModal, submitCreate, updateReviewStatus, insertCommentFormat, submitComment, members, projectName, openReviews, closedReviews, visibleReviews, hasAnyReviews, currentUserName, currentProfileImage, currentReviewFiles, selectedReviewFile, renderReviewCard, renderFileSelector, renderAiReviewCard, renderDiff, renderEmptyDetail, renderDetailLoading } = useSquadReviewController()
 
 
   if (loading) {
+    if (aiWorkspace) return <SquadWorkspaceLoadingView activePage="review" workspaceId={workspaceId} projectName={design?.title ?? projectName} />
     return (
       <div className="squad-dashboard-page flex h-screen items-center justify-center overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-green-100 border-t-brand"></div>
