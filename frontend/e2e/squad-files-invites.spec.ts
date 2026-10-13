@@ -628,7 +628,7 @@ test('대시보드가 원본 AI 설계 요약·로드맵·공지와 실제 팀�
   expect((await notice).postDataJSON().content).toBe('ERD를 함께 검토해 주세요.')
   await expect(page.getByText('설계 검토 안내', { exact: true })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('squad-dashboard-notice.png') })
-  await page.getByRole('link', { name: /AI 설계서 전체 보기/ }).click()
+  await page.getByRole('link', { name: /프로젝트 설계서 전체 보기/ }).click()
   await expect(page.getByRole('heading', { name: /핵심 사용자 흐름/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: '워크스페이스 반영 맵', exact: true })).toHaveCount(0)
   const aside = page.getByRole('complementary')

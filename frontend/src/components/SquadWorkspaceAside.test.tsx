@@ -42,7 +42,7 @@ describe('AI 설계서 사이드바 반영 맵', () => {
     render(<SquadWorkspaceAside activePage="blueprint" workspaceId={42} aiWorkspace onNavigate={(event, href) => { event.preventDefault(); navigate(href) }} />)
     fireEvent.mouseEnter(screen.getByRole('complementary'))
     expect(screen.queryByRole('link', { name: /설계서 열기/ })).not.toBeInTheDocument()
-    const blueprint = screen.getByRole('link', { name: /AI 설계서AI/ })
+    const blueprint = screen.getByRole('link', { name: /프로젝트 설계서/ })
     expect(blueprint).toHaveAttribute('href', '/squad-blueprint?workspaceId=42&ai=1')
     expect(blueprint).toHaveClass('active')
     fireEvent.click(blueprint)

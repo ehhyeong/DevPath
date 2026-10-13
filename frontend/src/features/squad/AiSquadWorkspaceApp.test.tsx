@@ -69,7 +69,7 @@ describe('AI 설계서 탭', () => {
     expect(screen.queryByRole('heading', { name: /워크스페이스 반영 맵/ })).not.toBeInTheDocument()
     fireEvent.mouseEnter(screen.getByRole('complementary'))
     expect(screen.queryByRole('link', { name: /설계서 열기/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /AI 설계서AI/ })).toHaveAttribute('href', '/squad-blueprint?ai=1')
+    expect(screen.getByRole('link', { name: /프로젝트 설계서/ })).toHaveAttribute('href', '/squad-blueprint?ai=1')
     expect(screen.getByText('설계서 기반 면접 질문')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /핵심 사용자 흐름/ })).not.toBeInTheDocument()
     const roadmapPanel = screen.getByRole('heading', { name: /개발 구현 로드맵/ }).closest('.ai-blueprint-tab-panel')
@@ -373,7 +373,7 @@ describe('저장된 AI 워크스페이스 대시보드', () => {
     expect(screen.getAllByText('실제 사용자').length).toBeGreaterThan(0)
     expect(screen.queryByText('김개발')).not.toBeInTheDocument()
     expect(screen.getByText('AI 추천 스키마 1개 테이블')).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: /AI 설계서/ })[0]).toHaveAttribute('href', '/squad-blueprint?workspaceId=42&ai=1')
+    expect(screen.getByRole('link', { name: /^프로젝트 설계서$/ })).toHaveAttribute('href', '/squad-blueprint?workspaceId=42&ai=1')
 
     fireEvent.click(screen.getByRole('button', { name: '대시보드 보기' }))
     await waitFor(() => expect(window.location.search).toBe('?workspaceId=42&ai=1'))

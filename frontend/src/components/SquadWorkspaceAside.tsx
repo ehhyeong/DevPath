@@ -33,7 +33,6 @@ type NavItem = {
   icon: string
   path: string
   badgeCount?: number | null
-  ai?: boolean
   description?: string
 }
 
@@ -185,7 +184,7 @@ export default function SquadWorkspaceAside({
       title: '개요',
       items: [
         { key: 'dashboard', label: '대시보드', icon: 'fas fa-chart-pie', path: '/squad-dashboard', description: 'MVP 기능 · 작업 진행률' },
-        { key: 'blueprint', label: 'AI 설계서', icon: 'fas fa-magic', path: '/squad-blueprint', ai: true },
+        { key: 'blueprint', label: '프로젝트 설계서', icon: 'fas fa-file-alt', path: '/squad-blueprint' },
       ],
     },
     {
@@ -199,7 +198,7 @@ export default function SquadWorkspaceAside({
       title: '설계/리뷰',
       items: [
         { key: 'erd', label: 'ERD 설계', icon: 'fas fa-project-diagram', path: '/squad-erd', description: 'AI 추천 스키마 · 관계 편집' },
-        { key: 'api', label: 'API 명세서', icon: 'fas fa-plug', path: '/squad-api', ai: true, description: '엔드포인트 · 구현 상태' },
+        { key: 'api', label: 'API 명세서', icon: 'fas fa-plug', path: '/squad-api', description: '엔드포인트 · 구현 상태' },
         { key: 'review', label: '코드 피드백', icon: 'fas fa-code-branch', path: '/squad-review', badgeCount: reviewBadgeCount, description: 'GitHub PR · 코드 리뷰' },
       ],
     },
@@ -212,7 +211,7 @@ export default function SquadWorkspaceAside({
     },
     {
       title: '면접 대비',
-      items: [{ key: 'interview', label: '면접 준비', icon: 'fas fa-user-tie', path: '/squad-interview', ai: true, description: '설계서 기반 면접 질문' }],
+      items: [{ key: 'interview', label: '면접 준비', icon: 'fas fa-user-tie', path: '/squad-interview', description: '설계서 기반 면접 질문' }],
     },
     {
       title: '관리',
@@ -361,8 +360,6 @@ export default function SquadWorkspaceAside({
                         <span className="squad-dashboard-review-badge inline-flex h-[16px] w-[16px] shrink-0 basis-[16px] items-center justify-center rounded-full bg-red-500 p-0! text-[9px] leading-[16px]! font-black text-white">
                           {badgeCount}
                         </span>
-                      ) : item.ai ? (
-                        <span className="rounded-full bg-brand px-1.5 py-0.5 text-[9px] font-black text-white">AI</span>
                       ) : null}
                     </span>
                   </a>
