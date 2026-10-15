@@ -22,6 +22,8 @@
     <img src="https://img.shields.io/badge/PostgreSQL-15-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL 15" />
     <img src="https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis 7" />
     <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker Compose" />
+    <img src="https://img.shields.io/badge/Oracle%20Cloud-OCI-F80000?style=flat-square" alt="Oracle Cloud Infrastructure" />
+    <img src="https://img.shields.io/badge/GitHub%20Actions-Deploy-2088FF?style=flat-square&logo=githubactions&logoColor=white" alt="GitHub Actions 배포" />
   </p>
 </div>
 
@@ -49,7 +51,7 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 | 💼 | 커리어 | 채용 분석, 이력서, 포트폴리오, Proof Card, 쇼케이스 |
 | 💬 | 커뮤니티 | 라운지, 게시글, 댓글, 좋아요, 멘토링 허브 |
 | 🛡️ | 관리자 | 계정 관리, 로드맵 거버넌스, 강의 검수, 신고 처리 |
-| 🤖 | AI/OCR | Gemini 프로젝트 설계·면접 질문 생성, 워크스페이스 AI 에이전트, AI 코드·디자인 리뷰, 영상 학습 OCR |
+| 🤖 | AI/OCR | Gemini 프로젝트 설계·면접 질문·피드백 생성, 워크스페이스 AI 에이전트, PR 기반 AI 코드 리뷰, 영상 학습 OCR |
 
 ## 자세히 보기
 
@@ -115,21 +117,31 @@ DevPath는 개발자의 성장 과정을 학습, 실습, 협업, 커리어까지
 <summary><strong>🏗️ 아키텍처 자세히 보기</strong></summary>
 
 <p align="center">
-  <img src="docs/assets/devpath-architecture.svg" width="100%" alt="DevPath 시스템 아키텍처. 학습자, 강사, 관리자가 React 애플리케이션을 이용하고 Nginx를 거쳐 Spring Boot API, 데이터 저장소, 미디어 처리 서비스와 외부 API에 연결됩니다." />
+  <img src="docs/assets/devpath-architecture.svg" width="100%" alt="DevPath 시스템 아키텍처. 브라우저의 React SPA가 Oracle Cloud VM의 Nginx를 거쳐 단일 Spring Boot JAR, 데이터 저장소, Python OCR 및 외부 API와 통신합니다. 개발 보조 AI는 서비스 요청 경로와 분리됩니다." />
 </p>
+
+서버 호스팅은 **Oracle Cloud Infrastructure(OCI)**를 사용합니다. 백엔드는 기능별 패키지를 하나의 Spring Boot JAR로 실행하는 모놀리식 구조이며, 그림의 도메인 구분은 별도 서버나 마이크로서비스를 뜻하지 않습니다.
 
 | 구성 | 역할 |
 | --- | --- |
 | React SPA | 학습자·강사·관리자 화면, 라우팅, Axios API 호출, hls.js 보호 재생, Tesseract.js OCR 폴백 |
-| Nginx | Vite 정적 빌드 제공과 `/api`, `/uploads`, `/ws`, OAuth 요청의 Spring Boot 프록시 |
-| Spring Boot API | JWT·OAuth2 인증, 도메인 API, AI 설계 작업·복구, 관리자 기능, Q&A·회의 시그널링 WebSocket |
-| PostgreSQL / Oracle | 로컬 PostgreSQL과 운영 프로필 기반 관계형 데이터 저장 |
+| Nginx | 호스트 Nginx의 서비스 진입점과 WebSocket 프록시, 프론트 컨테이너 Nginx의 Vite 빌드 제공 및 API 프록시 |
+| Spring Boot API | Java 21·Spring Boot 4의 단일 JAR를 systemd로 실행. JWT·OAuth2 인증, 도메인 API, AI 설계 작업·복구, Q&A·회의 시그널링 WebSocket |
+| 관계형 DB | `local` 프로필은 PostgreSQL, `prod` 프로필의 기본 드라이버는 Oracle. 운영 DB는 활성 프로필과 `DB_DRIVER`·접속 설정에 따름 |
 | Redis | 캐시와 실시간 상태 데이터 처리, DB에 저장한 AI 설계 작업의 조회 캐시 |
 | Flyway | PostgreSQL·Oracle별 DB 변경 이력, 기존 스키마 도입과 후속 마이그레이션 검증 |
 | Local Upload Storage | 업로드 파일과 FFmpeg 변환 HLS·AES 자산 저장 |
-| Python OCR Server | Flask, EasyOCR와 OpenCV 기반 학습 영상·이미지 OCR 처리 |
-| External Integrations | Gemini·Claude Vision, GitHub·Google OAuth, 잡코리아, GitHub Pull Request, DEV.to 연동 |
-| Deployment | GitHub Actions로 Oracle Cloud 서버에 배포하며 Spring Boot는 systemd, 프론트엔드·PostgreSQL·Redis·OCR은 Docker Compose로 실행 |
+| Python OCR Server | Python 3.11·Flask API가 EasyOCR·OpenCV로 영상 캡처 이미지의 글자를 추출. 결과가 없으면 브라우저의 Tesseract.js로 폴백 |
+| 서비스 AI·외부 API | Gemini, GitHub·Google OAuth, 잡코리아, GitHub Pull Request, DEV.to 연동 |
+| 선택 AI 연동 코드 | Claude Vision OCR Provider. 현재 기본 OCR 요청 경로는 Python OCR이며 Claude Provider는 해당 경로에 연결되지 않음 |
+| 개발 보조 AI | OpenAI 기반 개발 보조 도구. 사용자 요청을 처리하는 서비스 API와 분리 |
+| Deployment | GitHub Actions로 OCI 서버에 SSH 접속해 변경된 백엔드·프론트엔드를 배포. Compose는 프론트엔드·PostgreSQL·Redis·OCR 서비스 구성을 정의 |
+
+OCI 호스팅과 데이터베이스 제품은 독립적으로 구성합니다. DB 종류는 활성 Spring 프로필과 `DB_DRIVER`·접속 설정으로 결정합니다. 개발 환경은 Windows 11, 자동 배포 실행 환경은 GitHub Actions의 Ubuntu이며, 운영 VM의 OS는 서버 이미지 설정을 따릅니다.
+
+OCR의 기본 요청 흐름은 `브라우저 영상 캡처 → Spring Boot → Flask OCR API → EasyOCR·OpenCV → 결과 반환`입니다. Claude Vision 연동 코드는 선택 구성으로 구분하고, OpenAI 개발 보조 도구는 이 서비스 호출 흐름에 포함하지 않습니다.
+
+자동 배포 설정은 [deploy.yml](.github/workflows/deploy.yml), 컨테이너 구성은 [docker-compose.yml](docker-compose.yml)에서 확인할 수 있습니다. 현재 워크플로는 변경된 백엔드·프론트엔드를 대상으로 하며, 데이터 저장소와 OCR 컨테이너를 매 배포마다 재생성하는 구조는 아닙니다.
 
 </details>
 
@@ -161,12 +173,15 @@ com.devpath
 
 | 구분 | 기술 |
 | --- | --- |
+| Development OS | Windows 11. 배포 서버 OS 및 GitHub Actions 실행 환경과 구분 |
 | Backend | Java 21, Spring Boot 4, Spring Web MVC, Spring Security, OAuth2 Client, JWT, JPA, Flyway |
 | Frontend | React 19, TypeScript 6.0, Vite 8, Tailwind CSS 4, Axios, Chart.js |
-| Database | PostgreSQL 15 로컬 환경, Oracle 운영 프로필, Redis 7 |
-| AI/OCR | Gemini API 연동, Flask, EasyOCR, OpenCV, Tesseract.js |
+| Database / Cache | PostgreSQL 15 Compose 구성·로컬 기본값, Oracle 운영 프로필 기본 드라이버, Redis 7 |
+| Service AI | Gemini API, Claude Vision Provider 코드(선택 연동) |
+| OCR | Python 3.11, Flask, EasyOCR, OpenCV, Tesseract.js 폴백 |
+| Development AI | OpenAI 기반 개발 보조 도구. 서비스 API와 분리 |
 | Docs | Springdoc OpenAPI, Swagger UI |
-| Infra | Docker, Docker Compose, Nginx |
+| Infra / Deploy | Oracle Cloud Infrastructure(OCI), Docker·Docker Compose, Nginx, systemd, GitHub Actions |
 | Quality | JUnit Platform, H2 테스트 런타임, Spotless, ESLint, Vitest, React Testing Library, Playwright |
 
 </details>
