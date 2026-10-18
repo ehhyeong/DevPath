@@ -32,12 +32,10 @@ export default function InstructorHeader({
     transform: `translateX(${siteHeaderTuning.brandSlotOffsetXPx}px)`,
   }
   const navStyle: CSSProperties = {
-    gap: `${siteHeaderTuning.navGapPx}px`,
+    columnGap: `${siteHeaderTuning.navGapPx}px`,
     transform: `translate(${siteHeaderTuning.navBaseXPx + siteHeaderTuning.navGroup.x + 58}px, ${siteHeaderTuning.navGroup.y}px)`,
   }
   const userStyle = getMoveStyle(siteHeaderTuning.userGroup)
-  const defaultNavLinkClassName = 'site-header-nav-link'
-  const activeNavLinkClassName = 'site-header-nav-link site-header-nav-link--active'
 
   return (
     <>
@@ -66,39 +64,11 @@ export default function InstructorHeader({
           </div>
 
           <div className="hidden flex-1 items-center justify-center text-sm font-bold text-gray-500 md:flex">
-            <div className="relative inline-flex items-center" style={navStyle}>
-              {siteHeaderLinks.map((item) => {
-                const children = item.children ?? []
-                const hasChildren = children.length > 0
-
-                return (
-                  <div key={item.href} className="site-header-nav-item">
-                    <a
-                      href={item.href}
-                      className={defaultNavLinkClassName}
-                      aria-haspopup={hasChildren ? 'menu' : undefined}
-                    >
-                      {item.label}
-                      {hasChildren ? <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" /> : null}
-                    </a>
-
-                    {hasChildren ? <SiteHeaderMegaMenu label={item.label} items={children} /> : null}
-                  </div>
-                )
-              })}
-              <div className="site-header-nav-item">
-                <a
-                  href="/instructor-dashboard"
-                  className={activeNavLinkClassName}
-                  aria-haspopup="menu"
-                >
-                  {'\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC'}
-                  <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" />
-                </a>
-
-                <SiteHeaderMegaMenu label={'\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC'} items={instructorDashboardLinks} />
-              </div>
-            </div>
+            <SiteHeaderMegaMenu
+              links={[...siteHeaderLinks, { href: '/instructor-dashboard', label: '강사 대시보드', children: instructorDashboardLinks }]}
+              activeHref="/instructor-dashboard"
+              style={navStyle}
+            />
           </div>
 
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2 md:ml-0 md:w-60 md:flex-none">

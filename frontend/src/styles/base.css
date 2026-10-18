@@ -431,32 +431,39 @@ pre {
   transform: translateY(1px);
 }
 
-.site-header-nav-item:hover .site-header-nav-chevron,
-.site-header-nav-item:focus-within .site-header-nav-chevron {
+.site-header-nav-link:hover .site-header-nav-chevron,
+.site-header-nav-link:focus-visible .site-header-nav-chevron {
   color: #4b5563;
 }
 
-.site-header-nav-item {
+.site-header-navigation {
   position: relative;
-  display: inline-flex;
+  display: inline-grid;
+  /* 상단 링크와 하위 목록이 같은 열 너비를 사용하고 펼침이 고정 헤더 높이를 바꾸지 않도록 한다. */
+  grid-template-rows: auto 0;
   align-items: center;
+  column-gap: 40px;
 }
 
 .site-header-mega-menu {
-  position: absolute;
-  top: 100%;
-  left: 50%;
+  position: relative;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  grid-template-columns: subgrid;
+  column-gap: inherit;
+  align-self: start;
+  /* 테두리 1px과 안쪽 여백 16px만 바깥으로 빼서 하위 글자의 시작선을 상단 링크에 맞춘다. */
+  margin-inline: -17px;
   z-index: 1001;
-  width: min(312px, calc(100vw - 32px));
   padding-top: 12px;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-50%);
 }
 
-.site-header-nav-item:hover .site-header-mega-menu,
-.site-header-nav-item:focus-within .site-header-mega-menu {
+.site-header-navigation:hover .site-header-mega-menu,
+.site-header-navigation:focus-within .site-header-mega-menu {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -464,103 +471,49 @@ pre {
 
 .site-header-mega-panel {
   position: relative;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: start;
+  column-gap: inherit;
   max-height: calc(100dvh - var(--app-header-height) - 24px);
   overflow-x: hidden;
   overflow-y: auto;
-  border: 1px solid rgba(213, 226, 220, 0.9);
+  border: 1px solid #e5e7eb;
   border-radius: 20px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(247, 252, 250, 0.98));
+  background: #fff;
   box-shadow:
     0 28px 70px rgba(15, 23, 42, 0.16),
     0 8px 24px rgba(15, 23, 42, 0.08),
     0 1px 0 rgba(255, 255, 255, 0.95) inset;
-  padding: 10px;
+  padding: 16px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 196, 113, 0.24) transparent;
+  scrollbar-color: #d1d5db transparent;
   backdrop-filter: blur(20px);
+}
+
+.site-header-mega-panel > [role='menu'] {
+  /* 하위 글자 길이가 상단 메뉴의 열 너비와 간격을 늘리지 않도록 한다. */
+  contain: inline-size;
 }
 
 .site-header-mega-links {
   display: grid;
-  gap: 4px;
+  width: max-content;
+  gap: 2px;
 }
 
 .site-header-mega-link {
-  display: grid;
-  min-height: 46px;
-  grid-template-columns: 34px minmax(0, 1fr) 18px;
+  display: flex;
+  min-height: 32px;
   align-items: center;
-  gap: 10px;
-  border: 1px solid transparent;
-  border-radius: 13px;
-  padding: 6px 9px;
-  color: #374151;
+  padding: 6px 0;
+  color: #6b7280;
   font-size: 13px;
   font-weight: 800;
   line-height: 1.35;
   text-align: left;
   text-decoration: none;
-}
-
-.site-header-mega-link-icon {
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e9edf2;
-  border-radius: 10px;
-  background: #f4f6f8;
-  color: #4b5563;
-  font-size: 13px;
-}
-
-.site-header-mega-link-icon--slate {
-  border-color: #e2e8f0;
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.site-header-mega-link-icon--blue {
-  border-color: #dbeafe;
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.site-header-mega-link-icon--cyan {
-  border-color: #cffafe;
-  background: #ecfeff;
-  color: #0e7490;
-}
-
-.site-header-mega-link-icon--teal {
-  border-color: #ccfbf1;
-  background: #f0fdfa;
-  color: #0f766e;
-}
-
-.site-header-mega-link-icon--indigo {
-  border-color: #e0e7ff;
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.site-header-mega-link-icon--violet {
-  border-color: #ede9fe;
-  background: #f5f3ff;
-  color: #7c3aed;
-}
-
-.site-header-mega-link-icon--amber {
-  border-color: #fef3c7;
-  background: #fffbeb;
-  color: #b45309;
-}
-
-.site-header-mega-link-icon--rose {
-  border-color: #ffe4e6;
-  background: #fff1f2;
-  color: #be123c;
 }
 
 .site-header-mega-link-label {
@@ -570,24 +523,10 @@ pre {
   white-space: nowrap;
 }
 
-.site-header-mega-link-arrow {
-  color: #9ca3af;
-  font-size: 9px;
-  opacity: 0.5;
-}
-
 .site-header-mega-link:hover,
 .site-header-mega-link:focus-visible {
-  border-color: #e7eaf0;
-  background: #f8fafc;
-  color: #111827;
+  color: #000;
   outline: none;
-}
-
-.site-header-mega-link:hover .site-header-mega-link-arrow,
-.site-header-mega-link:focus-visible .site-header-mega-link-arrow {
-  color: #4b5563;
-  opacity: 0.72;
 }
 
 @media (max-width: 1023px) {

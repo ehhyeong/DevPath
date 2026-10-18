@@ -1,10 +1,67 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import SquadWorkspaceAside from './SquadWorkspaceAside'
 
 vi.mock('../features/project/api', () => ({ projectApiRequest: vi.fn(async () => []) }))
 
 describe('AI 설계서 사이드바 반영 맵', () => {
+  afterEach(() => {
+    localStorage.removeItem('sidebarPinned')
+    localStorage.removeItem('aiSidebarPinned')
+  })
+
+  it.each([false, true])('AI 여부 %s에서 다른 유형의 고정값을 상속하지 않고 독립적으로 고정·해제한다', (aiWorkspace) => {
+    const ownKey = aiWorkspace ? 'aiSidebarPinned' : 'sidebarPinned'
+    const otherKey = aiWorkspace ? 'sidebarPinned' : 'aiSidebarPinned'
+    localStorage.setItem(otherKey, 'true')
+    render(<SquadWorkspaceAside activePage="dashboard" workspaceId={42} aiWorkspace={aiWorkspace} />)
+    const aside = screen.getByRole('complementary')
+    expect(aside).not.toHaveClass('pinned')
+    fireEvent.mouseEnter(aside)
+    expect(aside).toHaveClass('is-expanded')
+    fireEvent.click(screen.getByTitle('사이드바 고정'))
+    fireEvent.mouseLeave(aside)
+    expect(aside).not.toHaveClass('is-expanded')
+    expect(aside).toHaveClass('pinned')
+    expect(localStorage.getItem(ownKey)).toBe('true')
+    fireEvent.click(screen.getByTitle('사이드바 고정 해제'))
+    expect(aside).not.toHaveClass('pinned')
+    expect(localStorage.getItem(ownKey)).toBe('false')
+    expect(localStorage.getItem(otherKey)).toBe('true')
+  })
+
+  it.each([false, true])('AI 여부 %s에서 저장된 고정값을 다른 페이지에 재진입해도 유지한다', (aiWorkspace) => {
+    const ownKey = aiWorkspace ? 'aiSidebarPinned' : 'sidebarPinned'
+    const otherKey = aiWorkspace ? 'sidebarPinned' : 'aiSidebarPinned'
+    localStorage.setItem(ownKey, 'true')
+    localStorage.setItem(otherKey, 'false')
+    const previous = render(<SquadWorkspaceAside activePage="dashboard" workspaceId={42} aiWorkspace={aiWorkspace} />)
+    expect(screen.getByRole('complementary')).toHaveClass('pinned')
+    previous.unmount()
+    render(<SquadWorkspaceAside activePage="files" workspaceId={42} aiWorkspace={aiWorkspace} />)
+    const aside = screen.getByRole('complementary')
+    expect(aside).toHaveClass('pinned')
+    fireEvent.click(screen.getByTitle('사이드바 고정 해제'))
+    expect(aside).not.toHaveClass('pinned')
+    expect(localStorage.getItem(ownKey)).toBe('false')
+    expect(localStorage.getItem(otherKey)).toBe('false')
+  })
+
+  it('같은 사이드바 인스턴스에서 일반·AI 유형이 바뀌어도 각각의 고정 상태를 사용한다', () => {
+    localStorage.setItem('sidebarPinned', 'true')
+    const view = render(<SquadWorkspaceAside activePage="dashboard" workspaceId={42} />)
+    expect(screen.getByRole('complementary')).toHaveClass('pinned')
+    view.rerender(<SquadWorkspaceAside activePage="dashboard" workspaceId={43} aiWorkspace />)
+    expect(screen.getByRole('complementary')).not.toHaveClass('pinned')
+    fireEvent.click(screen.getByTitle('사이드바 고정'))
+    view.rerender(<SquadWorkspaceAside activePage="dashboard" workspaceId={42} />)
+    fireEvent.click(screen.getByTitle('사이드바 고정 해제'))
+    view.rerender(<SquadWorkspaceAside activePage="dashboard" workspaceId={43} aiWorkspace />)
+    expect(screen.getByRole('complementary')).toHaveClass('pinned')
+    expect(localStorage.getItem('sidebarPinned')).toBe('false')
+    expect(localStorage.getItem('aiSidebarPinned')).toBe('true')
+  })
+
   it.each([false, true])('AI 여부 %s에서 스쿼드 설정을 마지막 메뉴로 표시하고 선택·이동을 유지한다', (aiWorkspace) => {
     const navigate = vi.fn()
     render(<SquadWorkspaceAside activePage="settings" workspaceId={42} aiWorkspace={aiWorkspace} onNavigate={(event, href) => { event.preventDefault(); navigate(href) }} />)

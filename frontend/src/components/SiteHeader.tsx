@@ -54,12 +54,8 @@ export default function SiteHeader({
     transform: `translateX(${siteHeaderTuning.brandSlotOffsetXPx}px)`,
   }
   const navStyle: CSSProperties = {
-    gap: `${siteHeaderTuning.navGapPx}px`,
+    columnGap: `${siteHeaderTuning.navGapPx}px`,
     transform: `translate(${siteHeaderTuning.navBaseXPx + siteHeaderTuning.navGroup.x}px, ${siteHeaderTuning.navGroup.y}px)`,
-  }
-  const instructorStyle: CSSProperties = {
-    marginLeft: `${siteHeaderTuning.instructorGapPx}px`,
-    gap: `${siteHeaderTuning.instructorLinkGapPx}px`,
   }
   const userStyle = getMoveStyle(userGroupOffsetOverride ?? siteHeaderTuning.userGroup)
   const railStyle: CSSProperties = { top: `${offsetTopPx}px` }
@@ -68,8 +64,6 @@ export default function SiteHeader({
     top: `calc(var(--app-header-height) + ${offsetTopPx}px)`,
     maxHeight: `calc(100dvh - var(--app-header-height) - ${offsetTopPx}px)`,
   }
-  const defaultNavLinkClassName = 'site-header-nav-link'
-  const activeNavLinkClassName = 'site-header-nav-link site-header-nav-link--active'
   const showHeaderAlerts = Boolean(session && activeNavHref !== '/roadmap-hub')
   const brandLabel = (
     <span className="site-header-brand-label inline-flex items-baseline gap-2 whitespace-nowrap">
@@ -119,59 +113,7 @@ export default function SiteHeader({
           </div>
 
           <div className="hidden flex-1 items-center justify-center text-sm font-bold text-gray-500 lg:flex">
-            <div className="relative inline-flex items-center" style={navStyle}>
-              {siteHeaderLinks.map((item) => {
-                const children = item.children ?? []
-                const hasChildren = children.length > 0
-                const isActive =
-                  activeNavHref === item.href ||
-                  children.some((child) => activeNavHref === child.href.split('?')[0])
-
-                return (
-                  <div key={item.href} className="site-header-nav-item">
-                    <a
-                      href={item.href}
-                      className={isActive ? activeNavLinkClassName : defaultNavLinkClassName}
-                      aria-haspopup={hasChildren ? 'menu' : undefined}
-                    >
-                      {item.label}
-                      {hasChildren ? <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" /> : null}
-                    </a>
-
-                    {hasChildren ? <SiteHeaderMegaMenu label={item.label} items={children} /> : null}
-                  </div>
-                )
-              })}
-
-              {showInstructorDashboard ? (
-                <div
-                  className="absolute top-1/2 left-full inline-flex -translate-y-1/2 whitespace-nowrap"
-                  style={instructorStyle}
-                >
-                  {instructorHeaderLinks.map((item) => {
-                    const children = item.children ?? []
-                    const isActive =
-                      activeNavHref === item.href ||
-                      children.some((child) => activeNavHref === child.href)
-
-                    return (
-                      <div key={item.href} className="site-header-nav-item">
-                        <a
-                          href={item.href}
-                          className={isActive ? activeNavLinkClassName : defaultNavLinkClassName}
-                          aria-haspopup="menu"
-                        >
-                          {item.label}
-                          <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" />
-                        </a>
-
-                        <SiteHeaderMegaMenu label={item.label} items={children} />
-                      </div>
-                    )
-                  })}
-                </div>
-              ) : null}
-            </div>
+            <SiteHeaderMegaMenu links={mobileMenuLinks} activeHref={activeNavHref} style={navStyle} />
           </div>
 
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2 lg:ml-0 lg:w-60 lg:flex-none">

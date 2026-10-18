@@ -360,9 +360,9 @@
   }
 
   .site-header-mobile-sub-link:active,
+  .site-header-mobile-sub-link:focus-visible,
   .site-header-mobile-sub-link:hover {
-    background: #f7fffb;
-    color: #047857;
+    color: #000;
   }
 
   .app-main {
