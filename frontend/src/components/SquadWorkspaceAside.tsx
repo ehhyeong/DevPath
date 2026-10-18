@@ -49,6 +49,7 @@ type NavSection = {
 }
 
 const SIDEBAR_PINNED_STORAGE_KEY = 'sidebarPinned'
+const AI_SIDEBAR_PINNED_STORAGE_KEY = 'aiSidebarPinned'
 let squadWorkspaceAsideExpanded = false
 let squadWorkspaceAsideNavigationPending = false
 let squadWorkspaceAsidePointerMoveListener: ((event: PointerEvent) => void) | null = null
@@ -96,20 +97,20 @@ function resetSquadWorkspaceAsideState() {
   setSquadWorkspaceAsideExpanded(false)
 }
 
-function readSidebarPinned() {
+function readSidebarPinned(storageKey: string) {
   if (typeof window === 'undefined') {
     return false
   }
 
-  return window.localStorage.getItem(SIDEBAR_PINNED_STORAGE_KEY) === 'true'
+  return window.localStorage.getItem(storageKey) === 'true'
 }
 
-function storeSidebarPinned(value: boolean) {
+function storeSidebarPinned(storageKey: string, value: boolean) {
   if (typeof window === 'undefined') {
     return
   }
 
-  window.localStorage.setItem(SIDEBAR_PINNED_STORAGE_KEY, value ? 'true' : 'false')
+  window.localStorage.setItem(storageKey, value ? 'true' : 'false')
 }
 
 function navHref(path: string, workspaceId: number | null, aiWorkspace = false) {
@@ -133,13 +134,18 @@ export default function SquadWorkspaceAside({
   onNavigate,
 }: SquadWorkspaceAsideProps) {
   const [githubLinked, setGithubLinked] = useState<boolean | null>(null)
-  const [localPinned, setLocalPinned] = useState(readSidebarPinned)
+  // 일반 스쿼드의 기존 고정값을 보존하고 AI 워크스페이스는 별도 설정을 사용한다.
+  const [localPinned, setLocalPinned] = useState(() => ({
+    standard: readSidebarPinned(SIDEBAR_PINNED_STORAGE_KEY),
+    ai: readSidebarPinned(AI_SIDEBAR_PINNED_STORAGE_KEY),
+  }))
+  const pinMode = aiWorkspace ? 'ai' : 'standard'
   const expanded = useSyncExternalStore(
     subscribeSquadWorkspaceAside,
     () => squadWorkspaceAsideExpanded,
     () => false,
   )
-  const sidebarPinned = pinned ?? localPinned
+  const sidebarPinned = pinned ?? localPinned[pinMode]
   const sidebarOpen = sidebarPinned || expanded
   const activeGithubLinked = workspaceId ? githubLinked : false
   const dataVersion = useWorkspaceDataVersion()
@@ -291,9 +297,9 @@ export default function SquadWorkspaceAside({
     }
 
     setLocalPinned((current) => {
-      const next = !current
-      storeSidebarPinned(next)
-      return next
+      const next = !current[pinMode]
+      storeSidebarPinned(aiWorkspace ? AI_SIDEBAR_PINNED_STORAGE_KEY : SIDEBAR_PINNED_STORAGE_KEY, next)
+      return { ...current, [pinMode]: next }
     })
   }
 
@@ -318,19 +324,17 @@ export default function SquadWorkspaceAside({
           </div>
           <div className={`sidebar-text flex min-w-0 w-0 flex-col justify-center overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-[ease] group-hover:ml-[12px] group-hover:w-auto group-hover:opacity-100 ${sidebarOpen ? 'ml-[12px]! w-auto! opacity-100!' : ''}`}>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">목록으로 돌아가기</p>
-            <p className={`truncate font-extrabold leading-tight text-gray-900 ${aiWorkspace ? 'w-36' : 'w-28'}`}>{projectLabel}</p>
+            <p className="w-28 truncate font-extrabold leading-tight text-gray-900">{projectLabel}</p>
           </div>
         </a>
-        {aiWorkspace ? null : (
-          <button
-            type="button"
-            onClick={handleTogglePinned}
-            className={`sidebar-text squad-dashboard-pin-button ml-2 flex h-[28px]! w-[28px]! shrink-0 basis-[28px] items-center justify-center overflow-hidden whitespace-nowrap rounded-[6px]! text-[14px]! leading-[20px]! text-gray-400 opacity-0 transition-all duration-300 ease-[ease] hover:bg-gray-100 hover:text-brand focus:outline-none group-hover:ml-[12px] group-hover:w-[28px] group-hover:opacity-100 ${sidebarOpen ? 'ml-[12px]! w-[28px]! opacity-100!' : ''}`}
-            title={sidebarPinned ? '사이드바 고정 해제' : '사이드바 고정'}
-          >
-            <i className={`${sidebarPinned ? 'fas fa-thumbtack' : 'fas fa-thumbtack rotate-45'} text-xs`}></i>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleTogglePinned}
+          className={`sidebar-text squad-dashboard-pin-button ml-2 flex h-[28px]! w-[28px]! shrink-0 basis-[28px] items-center justify-center overflow-hidden whitespace-nowrap rounded-[6px]! text-[14px]! leading-[20px]! text-gray-400 opacity-0 transition-all duration-300 ease-[ease] hover:bg-gray-100 hover:text-brand focus:outline-none group-hover:ml-[12px] group-hover:w-[28px] group-hover:opacity-100 ${sidebarOpen ? 'ml-[12px]! w-[28px]! opacity-100!' : ''}`}
+          title={sidebarPinned ? '사이드바 고정 해제' : '사이드바 고정'}
+        >
+          <i className={`${sidebarPinned ? 'fas fa-thumbtack' : 'fas fa-thumbtack rotate-45'} text-xs`}></i>
+        </button>
       </div>
 
       <nav className={`flex-1 px-3 ${aiWorkspace ? 'flex min-h-0 flex-col overflow-hidden' : 'py-6 overflow-y-auto custom-scrollbar'}`}>
