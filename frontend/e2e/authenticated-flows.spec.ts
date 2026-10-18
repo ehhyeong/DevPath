@@ -578,7 +578,7 @@ test('강사 대시보드 헤더는 홈과 같은 상단 메뉴와 hover 하위 
 
   const dropdowns = [
     { label: '로드맵', items: ['로드맵 추천', '로드맵 탐색', '내 로드맵'] },
-    { label: '프로젝트', items: ['프로젝트 대시보드', '라운지 (팀 찾기)', '멘토링 찾기', '워크스페이스', '런칭 쇼케이스'] },
+    { label: '프로젝트', items: ['라운지 대시보드', '라운지 (팀 찾기)', '멘토링 찾기', '워크스페이스', '런칭 쇼케이스'] },
     { label: '커뮤니티', items: ['전체글', 'Q&A', '기술 공유', '커리어/이직', '자유게시판'] },
     { label: '강사 대시보드', items: ['대시보드', '강의 관리', '멘토링 관리', '수강생 분석', '질문 게시판', '수강평 관리', '정산 관리', '마케팅 관리'] },
   ]
@@ -590,8 +590,15 @@ test('강사 대시보드 헤더는 홈과 같은 상단 메뉴와 hover 하위 
 
     const menu = header.getByRole('menu', { name: `${dropdown.label} 세부 메뉴` })
     await expect(menu).toBeVisible()
+    const topBounds = await topLevelLink.boundingBox()
+    const submenuBounds = await menu.locator('.site-header-mega-link-label').first().boundingBox()
+    expect(Math.abs(topBounds!.x - submenuBounds!.x)).toBeLessThanOrEqual(1)
     await expect(menu.getByRole('menuitem')).toHaveCount(dropdown.items.length)
-    await expect(menu.locator('.site-header-mega-link-icon')).toHaveCount(dropdown.items.length)
+    await expect(menu.locator('i')).toHaveCount(0)
+    await expect(header.getByRole('menu')).toHaveCount(dropdowns.length)
+    for (const other of dropdowns) {
+      await expect(header.getByRole('menu', { name: `${other.label} 세부 메뉴` })).toBeVisible()
+    }
 
     for (const item of dropdown.items) {
       await expect(menu.getByRole('menuitem', { name: item, exact: true })).toBeVisible()

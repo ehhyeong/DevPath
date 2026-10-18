@@ -42,7 +42,7 @@ export default function ProjectHeader({
     transform: `translateX(${siteHeaderTuning.brandSlotOffsetXPx}px)`,
   }
   const navStyle: CSSProperties = {
-    gap: `${siteHeaderTuning.navGapPx}px`,
+    columnGap: `${siteHeaderTuning.navGapPx}px`,
     transform: `translate(${siteHeaderTuning.navBaseXPx + siteHeaderTuning.navGroup.x + PROJECT_HEADER_NAV_OFFSET_X}px, ${siteHeaderTuning.navGroup.y}px)`,
   }
   const userStyle: CSSProperties = {
@@ -57,30 +57,7 @@ export default function ProjectHeader({
         <div className="flex items-center lg:hidden"></div>
 
         <nav className="hidden flex-1 items-center justify-center text-sm font-bold text-gray-500 md:flex">
-          <div className="relative inline-flex items-center" style={navStyle}>
-            {siteHeaderLinks.map((item) => {
-              const children = item.children ?? []
-              const hasChildren = children.length > 0
-              const isActive =
-                item.href === activeHref ||
-                children.some((child) => child.href.split('?')[0] === activeHref)
-
-              return (
-                <div key={item.href} className="site-header-nav-item">
-                  <a
-                    href={item.href}
-                    className={isActive ? 'site-header-nav-link site-header-nav-link--active' : 'site-header-nav-link'}
-                    aria-haspopup={hasChildren ? 'menu' : undefined}
-                  >
-                    {item.label}
-                    {hasChildren ? <i className="fas fa-chevron-down site-header-nav-chevron" aria-hidden="true" /> : null}
-                  </a>
-
-                  {hasChildren ? <SiteHeaderMegaMenu label={item.label} items={children} /> : null}
-                </div>
-              )
-            })}
-          </div>
+          <SiteHeaderMegaMenu links={siteHeaderLinks} activeHref={activeHref} style={navStyle} />
         </nav>
 
         <div className="ml-auto flex min-w-0 items-center justify-end gap-2 md:ml-0 md:w-60 md:flex-none">

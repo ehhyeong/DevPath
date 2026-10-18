@@ -22,7 +22,7 @@ export const siteHeaderLinks: HeaderLink[] = [
     href: '/lounge-dashboard',
     label: '\uD504\uB85C\uC81D\uD2B8',
     children: [
-      { href: '/lounge-dashboard', label: '\uD504\uB85C\uC81D\uD2B8 \uB300\uC2DC\uBCF4\uB4DC' },
+      { href: '/lounge-dashboard', label: '\uB77C\uC6B4\uC9C0 \uB300\uC2DC\uBCF4\uB4DC' },
       { href: '/community-lounge', label: '\uB77C\uC6B4\uC9C0 (\uD300 \uCC3E\uAE30)' },
       { href: '/mentoring-hub', label: '\uBA58\uD1A0\uB9C1 \uCC3E\uAE30' },
       { href: '/workspace-hub', label: '\uC6CC\uD06C\uC2A4\uD398\uC774\uC2A4' },
