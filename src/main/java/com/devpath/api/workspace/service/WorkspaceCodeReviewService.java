@@ -83,6 +83,8 @@ public class WorkspaceCodeReviewService {
     codeReviewStore.ensureSchema();
     WorkspaceDashboardResponse dashboard =
         workspaceService.getWorkspaceDashboard(workspaceId, userId);
+    // 같은 PR의 리뷰 요청을 직렬화해 시연 결과가 중복 저장되지 않도록 한다.
+    codeReviewStore.lockReview(workspaceId, reviewId);
     WorkspaceCodeReviewStore.DetailRow row = codeReviewStore.findDetailRow(workspaceId, reviewId);
     aiReviewer.createReview(workspaceId, reviewId, userId, request, row);
 

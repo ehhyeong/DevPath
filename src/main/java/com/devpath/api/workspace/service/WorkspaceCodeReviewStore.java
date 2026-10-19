@@ -98,27 +98,64 @@ class WorkspaceCodeReviewStore {
         workspaceId);
   }
 
-  Long createDemoAiReview(Long userId, String title, String diffText, String summary) {
-    Long aiReviewId =
+  boolean hasDemoReview(Long workspaceId, String key) {
+    return Boolean.TRUE.equals(
         jdbcTemplate.queryForObject(
-            """
+            "SELECT EXISTS (SELECT 1 FROM workspace_code_reviews WHERE workspace_id = ? AND external_provider = 'DEMO' AND external_id = ?)",
+            Boolean.class,
+            workspaceId,
+            key));
+  }
+
+  void markDemoReview(Long workspaceId, Long reviewId, String key) {
+    jdbcTemplate.update(
+        "UPDATE workspace_code_reviews SET external_provider = 'DEMO', external_id = ? WHERE workspace_id = ? AND id = ?",
+        key,
+        workspaceId,
+        reviewId);
+  }
+
+  void lockReview(Long workspaceId, Long reviewId) {
+    jdbcTemplate.queryForList(
+        "SELECT id FROM workspace_code_reviews WHERE workspace_id = ? AND id = ? AND is_deleted = FALSE FOR UPDATE",
+        Long.class,
+        workspaceId,
+        reviewId);
+  }
+
+  Long createDemoAiReview(Long userId, String title, String diffText, String summary) {
+    return createDemoAiReview(userId, title, diffText, summary, "GEMINI_FALLBACK");
+  }
+
+  Long createDemoAiReview(
+      Long userId, String title, String diffText, String summary, String provider) {
+    KeyHolder keyHolder = new GeneratedKeyHolder();
+    jdbcTemplate.update(
+        connection -> {
+          PreparedStatement statement =
+              connection.prepareStatement(
+                  """
             INSERT INTO ai_code_reviews (
                 requester_id, pull_request_submission_id, title, diff_text, summary,
                 comment_count, provider_name, is_deleted, created_at, updated_at
             )
-            VALUES (?, NULL, ?, ?, ?, 3, 'GEMINI_FALLBACK', FALSE, now(), now())
-            RETURNING ai_code_review_id
+            VALUES (?, NULL, ?, ?, ?, 3, ?, FALSE, now(), now())
             """,
-            Long.class,
-            userId,
-            title,
-            diffText,
-            summary);
+                  new String[] {"ai_code_review_id"});
+          statement.setLong(1, userId);
+          statement.setString(2, title);
+          statement.setString(3, diffText);
+          statement.setString(4, summary);
+          statement.setString(5, provider);
+          return statement;
+        },
+        keyHolder);
 
-    if (aiReviewId == null) {
+    Number key = keyHolder.getKey();
+    if (key == null) {
       throw new CustomException(ErrorCode.INVALID_INPUT);
     }
-    return aiReviewId;
+    return key.longValue();
   }
 
   void insertDemoAiReviewComment(
@@ -410,7 +447,8 @@ class WorkspaceCodeReviewStore {
   }
 
   private String toIssueKey(Long id, String externalProvider, String externalId) {
-    if ("GITHUB".equals(externalProvider) && StringUtils.hasText(externalId)) {
+    if (("GITHUB".equals(externalProvider) || "DEMO".equals(externalProvider))
+        && StringUtils.hasText(externalId)) {
       int markerIndex = externalId.lastIndexOf('#');
       if (markerIndex >= 0 && markerIndex < externalId.length() - 1) {
         return "#PR-" + externalId.substring(markerIndex + 1);

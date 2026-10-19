@@ -57,8 +57,7 @@ public class WorkspaceHubProjectController {
   @PostMapping("/ai-design")
   public ApiResponse<WorkspaceAiDesignResponse> generateAiDesign(
       @AuthenticationPrincipal Long userId, @Valid @RequestBody WorkspaceAiDesignRequest request) {
-    requireUserId(userId);
-    return ApiResponse.ok(workspaceAiDesignService.generate(request));
+    return ApiResponse.ok(workspaceAiDesignService.generate(requireUserId(userId), request));
   }
 
   @PostMapping("/ai-design-jobs")

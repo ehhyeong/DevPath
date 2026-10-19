@@ -10,6 +10,8 @@ vi.mock('../project/api', async (importOriginal) => {
   return { ...actual, getWorkspaceAiDesign: vi.fn(), projectApiRequest: vi.fn() }
 })
 
+vi.mock('./SquadReviewApp', () => ({ default: () => <div>시연 코드 피드백 페이지</div> }))
+
 beforeEach(() => {
   invalidateCachedQueries()
   localStorage.clear()
@@ -396,6 +398,25 @@ describe('저장된 AI 워크스페이스 대시보드', () => {
     await waitFor(() => expect(reviewLink).toHaveAttribute('aria-disabled', 'true'))
     fireEvent.click(reviewLink)
     expect(window.location.pathname).toBe('/squad-dashboard')
+  })
+
+  it.each([false, true])('시연 워크스페이스 여부 %s에 따라 미연동 코드 피드백 직접 진입을 구분한다', async (demoWorkspace) => {
+    window.history.replaceState({}, '', '/squad-review?workspaceId=42&ai=1')
+    vi.mocked(getWorkspaceAiDesign).mockResolvedValue({
+      workspaceId: 42,
+      dashboardUrl: '/squad-dashboard?workspaceId=42&ai=1',
+      createdAt: '2026-10-05T00:00:00Z',
+      design: persistedDesign(),
+      demoWorkspace,
+    })
+    render(<AiSquadWorkspaceApp />)
+    if (demoWorkspace) {
+      expect(await screen.findByText('시연 코드 피드백 페이지')).toBeInTheDocument()
+      expect(screen.queryByText('GitHub 연결이 필요합니다')).not.toBeInTheDocument()
+    } else {
+      expect(await screen.findByText('GitHub 연결이 필요합니다')).toBeInTheDocument()
+      expect(screen.queryByText('시연 코드 피드백 페이지')).not.toBeInTheDocument()
+    }
   })
 
   it('작업 담당자와 헤더에 실제 워크스페이스 멤버만 표시한다', async () => {

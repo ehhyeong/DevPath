@@ -46,7 +46,10 @@ class WorkspaceCodeReviewServiceTest {
         new WorkspaceCodeReviewService(
             codeReviewStore,
             workspaceService,
-            new WorkspaceCodeReviewAiReviewer(codeReviewStore, codeReviewAssistant));
+            new WorkspaceCodeReviewAiReviewer(
+                codeReviewStore,
+                codeReviewAssistant,
+                org.mockito.Mockito.mock(WorkspaceDemoScenario.class)));
   }
 
   @AfterEach

@@ -13,6 +13,13 @@ import org.springframework.stereotype.Service;
 public class WorkspaceAiDesignService {
 
   private final WorkspaceAiDesignClient workspaceAiDesignClient;
+  private final WorkspaceDemoScenario demoScenario;
+
+  public WorkspaceAiDesignResponse generate(Long userId, WorkspaceAiDesignRequest request) {
+    return demoScenario.supports(userId, request)
+        ? demoScenario.design(request)
+        : generate(request);
+  }
 
   public WorkspaceAiDesignResponse generate(WorkspaceAiDesignRequest request) {
     WorkspaceAiDesignResponse response;

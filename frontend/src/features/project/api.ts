@@ -107,6 +107,7 @@ export type WorkspaceAiDesignWorkspace = {
   dashboardUrl: string
   createdAt: string
   design: WorkspaceAiDesign
+  demoWorkspace?: boolean
 }
 
 type AuthMode = 'none' | 'optional' | 'required'

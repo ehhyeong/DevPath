@@ -6,7 +6,9 @@ import static org.mockito.Mockito.when;
 
 import com.devpath.api.workspace.dto.WorkspaceAiDesignRequest;
 import com.devpath.api.workspace.dto.WorkspaceAiDesignResponse;
+import com.devpath.domain.workspace.entity.WorkspaceAiDesignJob;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +22,8 @@ class WorkspaceAiDesignJobRunnerTest {
     WorkspaceAiDesignRequest request = request();
     WorkspaceAiDesignResponse result = response();
     when(store.markProcessing(jobId)).thenReturn(true);
-    when(designService.generate(request)).thenReturn(result);
+    when(store.find(jobId)).thenReturn(Optional.of(new WorkspaceAiDesignJob(7L, "{}")));
+    when(designService.generate(7L, request)).thenReturn(result);
 
     new WorkspaceAiDesignJobRunner(designService, store).run(jobId, request);
 
@@ -34,7 +37,8 @@ class WorkspaceAiDesignJobRunnerTest {
     UUID jobId = UUID.randomUUID();
     WorkspaceAiDesignRequest request = request();
     when(store.markProcessing(jobId)).thenReturn(true);
-    when(designService.generate(request)).thenThrow(new IllegalStateException("Gemini 응답 없음"));
+    when(store.find(jobId)).thenReturn(Optional.of(new WorkspaceAiDesignJob(7L, "{}")));
+    when(designService.generate(7L, request)).thenThrow(new IllegalStateException("Gemini 응답 없음"));
 
     new WorkspaceAiDesignJobRunner(designService, store).run(jobId, request);
 

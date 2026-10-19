@@ -133,7 +133,7 @@ export default function SquadWorkspaceAside({
   aiWorkspace = false,
   onNavigate,
 }: SquadWorkspaceAsideProps) {
-  const [githubLinked, setGithubLinked] = useState<boolean | null>(null)
+  const [reviewAccess, setReviewAccess] = useState<{ workspaceId: number; aiWorkspace: boolean; allowed: boolean } | null>(null)
   // 일반 스쿼드의 기존 고정값을 보존하고 AI 워크스페이스는 별도 설정을 사용한다.
   const [localPinned, setLocalPinned] = useState(() => ({
     standard: readSidebarPinned(SIDEBAR_PINNED_STORAGE_KEY),
@@ -147,7 +147,7 @@ export default function SquadWorkspaceAside({
   )
   const sidebarPinned = pinned ?? localPinned[pinMode]
   const sidebarOpen = sidebarPinned || expanded
-  const activeGithubLinked = workspaceId ? githubLinked : false
+  const activeGithubLinked = reviewAccess?.workspaceId === workspaceId && reviewAccess?.aiWorkspace === aiWorkspace && reviewAccess?.allowed
   const dataVersion = useWorkspaceDataVersion()
   const projectLabel = projectName?.trim() || '스쿼드 프로젝트'
   const standardSections: NavSection[] = [
@@ -233,31 +233,34 @@ export default function SquadWorkspaceAside({
     }
 
     let ignore = false
+    const targetWorkspaceId = workspaceId
 
-    async function loadGithubIntegration() {
+    async function loadReviewAccess() {
       try {
-        const integrations = await projectApiRequest<ExternalIntegration[]>(
-          `/api/workspaces/${workspaceId}/integrations`,
-          {},
-          'required',
-        )
+        // 연동 조회 실패 시 일반 워크스페이스는 잠그고 서버가 확인한 시연 워크스페이스만 예외로 연다.
+        const [integrations, design] = await Promise.all([
+          projectApiRequest<ExternalIntegration[]>(`/api/workspaces/${targetWorkspaceId}/integrations`, {}, 'required').catch(() => []),
+          aiWorkspace
+            ? projectApiRequest<{ demoWorkspace?: boolean }>(`/api/workspaces/hub/projects/${targetWorkspaceId}/ai-design`, {}, 'required').catch(() => null)
+            : Promise.resolve(null),
+        ])
 
         if (!ignore) {
-          setGithubLinked(isGithubLinked(integrations))
+          setReviewAccess({ workspaceId: targetWorkspaceId, aiWorkspace, allowed: isGithubLinked(integrations) || design?.demoWorkspace === true })
         }
       } catch {
         if (!ignore) {
-          setGithubLinked(false)
+          setReviewAccess({ workspaceId: targetWorkspaceId, aiWorkspace, allowed: false })
         }
       }
     }
 
-    void loadGithubIntegration()
+    void loadReviewAccess()
 
     return () => {
       ignore = true
     }
-  }, [workspaceId, dataVersion])
+  }, [workspaceId, aiWorkspace, dataVersion])
 
   useEffect(() => () => {
     // 로딩 화면의 사이드바가 교체될 때 새 사이드바의 펼침 상태까지 초기화하지 않는다.
