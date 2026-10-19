@@ -1,12 +1,19 @@
-import { fireEvent, render, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, render, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AdminCourseReviewDetail } from '../../types/admin'
 import {
   installCourseReviewModalBindings,
   openCourseReviewModal,
   previewCourseReviewLesson,
+  closeCourseReviewModal,
 } from './admin-course-review'
 import AdminCourseReviewModal from './shell/AdminCourseReviewModal'
+import { DEMO_COURSE_TITLE, DEMO_TEXT } from '../../lib/demo-typing'
+import { userApi } from '../../lib/api/auth'
+import { readStoredAuthSession } from '../../lib/auth-session'
+
+vi.mock('../../lib/auth-session', async (original) => ({ ...await original<typeof import('../../lib/auth-session')>(), readStoredAuthSession: vi.fn(() => null) }))
+afterEach(() => vi.useRealTimers())
 
 const reviewDetail: AdminCourseReviewDetail = {
   courseId: 17,
@@ -71,6 +78,40 @@ const reviewDetail: AdminCourseReviewDetail = {
 }
 
 describe('강의 검수 상세 모달', () => {
+  it('계정 전환이나 화면 제거 후 검수 메모 타이핑을 계속하지 않는다', async () => {
+    vi.mocked(readStoredAuthSession).mockReturnValue({ userId: 1, role: 'ROLE_ADMIN' } as never)
+    vi.spyOn(userApi, 'getMyProfile').mockResolvedValue({ userId: 1, email: 'admin@devpath.com' } as never)
+    const { container, unmount } = render(<AdminCourseReviewModal />)
+    installCourseReviewModalBindings(vi.fn())
+    await act(async () => openCourseReviewModal({ ...reviewDetail, title: DEMO_COURSE_TITLE, instructorEmail: 'frontend@devpath.com' }))
+    vi.useFakeTimers()
+    const reason = container.querySelector<HTMLTextAreaElement>('#courseReviewReason')!
+    fireEvent.click(reason)
+    vi.mocked(readStoredAuthSession).mockReturnValue({ userId: 2, role: 'ROLE_ADMIN' } as never)
+    act(() => vi.advanceTimersByTime(10000))
+    expect(reason).toHaveValue('ㄱ')
+    unmount()
+    act(() => vi.advanceTimersByTime(10000))
+    expect(vi.getTimerCount()).toBe(0)
+  })
+  it.each(['admin@devpath.com', 'other-admin@devpath.com'])('%s 계정의 지정 강의 메모만 클릭으로 입력하고 승인까지 자동 실행하지 않는다', async (email) => {
+    vi.mocked(readStoredAuthSession).mockReturnValue({ userId: 1, role: 'ROLE_ADMIN' } as never)
+    vi.spyOn(userApi, 'getMyProfile').mockResolvedValue({ userId: 1, email } as never)
+    const onDecision = vi.fn(async () => undefined)
+    const { container } = render(<AdminCourseReviewModal />)
+    installCourseReviewModalBindings(onDecision)
+    await act(async () => openCourseReviewModal({ ...reviewDetail, title: DEMO_COURSE_TITLE, instructorEmail: 'frontend@devpath.com' }))
+    vi.useFakeTimers()
+    const reason = container.querySelector<HTMLTextAreaElement>('#courseReviewReason')!
+    fireEvent.focus(reason)
+    expect(reason).toHaveValue('')
+    fireEvent.click(reason)
+    act(() => vi.advanceTimersByTime(10000))
+    expect(reason).toHaveValue(email === 'admin@devpath.com' ? DEMO_TEXT.approval : '')
+    expect(onDecision).not.toHaveBeenCalled()
+    closeCourseReviewModal()
+    expect(vi.getTimerCount()).toBe(0)
+  })
   it('상세 확인과 메모 입력을 거친 뒤에만 승인 결정을 전달한다', async () => {
     const onDecision = vi.fn(async () => undefined)
     vi.spyOn(window, 'confirm').mockReturnValue(true)

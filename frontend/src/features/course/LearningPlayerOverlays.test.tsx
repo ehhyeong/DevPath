@@ -1,7 +1,48 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, render, screen } from '@testing-library/react'
+import { useState } from 'react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import LearningPlayerOverlays from './LearningPlayerOverlays'
 import type { LearningPlayerReadyModel } from './useLearningPlayerController'
+import { DEMO_COURSE_TITLE, DEMO_TEXT } from '../../lib/demo-typing'
+import { userApi } from '../../lib/api/auth'
+import { readStoredAuthSession } from '../../lib/auth-session'
+
+vi.mock('../../lib/auth-session', async (original) => ({ ...await original<typeof import('../../lib/auth-session')>(), readStoredAuthSession: vi.fn(() => null) }))
+afterEach(() => vi.useRealTimers())
+
+function Questions({ title = DEMO_COURSE_TITLE, onSubmit = vi.fn() }) {
+  const [questionForm, setQuestionForm] = useState({ title: '', content: '', attachTimestamp: false })
+  return <LearningPlayerOverlays model={{ course: { courseId: 127, title }, lesson: { title: '렌더링' },
+    questionComposerOpen: true, questionForm, setQuestionForm, currentTime: 0, templateOptions: [{ templateType: 'CONCEPT', name: '개념' }],
+    setQuestionComposerOpen: vi.fn(), handleSubmitQuestion: () => onSubmit(questionForm),
+  } as unknown as LearningPlayerReadyModel} />
+}
+
+describe('시연 강의 Q&A 입력', () => {
+  it.each(['title', 'content'])('%s 칸을 클릭하면 그 칸만 타이핑하고 다른 칸은 비워 둔다', async (field) => {
+    vi.mocked(readStoredAuthSession).mockReturnValue({ userId: 7 } as never)
+    vi.spyOn(userApi, 'getMyProfile').mockResolvedValue({ userId: 7, email: 'kim.hakseup@devpath.com' } as never)
+    await act(async () => render(<Questions />))
+    vi.useFakeTimers()
+    const title = screen.getByPlaceholderText('질문 제목을 입력하세요')
+    const body = screen.getByPlaceholderText(/어떤 부분이 이해가/)
+    fireEvent.click(field === 'title' ? title : body)
+    expect(screen.getByRole('button', { name: '등록하기' })).toBeDisabled()
+    act(() => vi.advanceTimersByTime(10000))
+    expect(title).toHaveValue(field === 'title' ? DEMO_TEXT.questionTitle : '')
+    expect(body).toHaveValue(field === 'content' ? DEMO_TEXT.questionContent : '')
+  })
+
+  it('다른 강의에서는 해당 계정이어도 자동 입력을 적용하지 않는다', async () => {
+    vi.mocked(readStoredAuthSession).mockReturnValue({ userId: 7 } as never)
+    vi.spyOn(userApi, 'getMyProfile').mockResolvedValue({ userId: 7, email: 'kim.hakseup@devpath.com' } as never)
+    await act(async () => render(<Questions title="다른 강의" />))
+    vi.useFakeTimers()
+    fireEvent.click(screen.getByPlaceholderText('질문 제목을 입력하세요'))
+    act(() => vi.advanceTimersByTime(10000))
+    expect(screen.getByPlaceholderText('질문 제목을 입력하세요')).toHaveValue('')
+  })
+})
 
 describe('LearningPlayerOverlays 퀴즈 응시', () => {
   it('정답을 노출하지 않고 실제 선택지 선택을 제출 흐름에 전달한다', () => {

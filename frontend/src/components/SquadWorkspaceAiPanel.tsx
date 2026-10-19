@@ -4,6 +4,8 @@ import { parseMermaidCode } from '../features/squad/erd-support'
 import { readStoredAuthSession } from '../lib/auth-session'
 import { readWorkspaceIdFromLocation } from '../lib/location-state'
 import { WORKSPACE_DATA_CHANGED_EVENT } from '../lib/workspace-events'
+import { DEMO_TEXT } from '../lib/demo-typing'
+import { useDemoWorkspace } from '../features/squad/useDemoWorkspace'
 
 /** 서버가 검증해 돌려준 변경 제안. 실행할 때 그대로 돌려보내고, 서버가 다시 검증한다. */
 type WorkspaceAiAction = {
@@ -27,6 +29,9 @@ type WorkspaceAiChatMessage = {
 
 /** 스쿼드 워크스페이스 전체 페이지의 공용 AI 패널. */
 export default function SquadWorkspaceAiPanel() {
+  const workspaceId = readWorkspaceIdFromLocation()
+  const erdPage = window.location.pathname.replace(/\/+$/, '') === '/squad-erd'
+  const demoWorkspace = useDemoWorkspace(workspaceId, erdPage)
   async function executeActions(workspaceId: number, messageId: number, actions: WorkspaceAiAction[]): Promise<string> {
     // ERD 화면은 편집기를 schemaJson으로, 다이어그램을 mermaid로 그리므로 둘을 함께 저장해 어긋나지 않게 한다.
     const payload = actions.map((action) =>
@@ -114,6 +119,8 @@ export default function SquadWorkspaceAiPanel() {
   return (
     <AiAssistantPanel
       fabLabel="AI 에이전트"
+      demoPrompt={{ email: 'kim.hakseup@devpath.com', text: DEMO_TEXT.erd, enabled: demoWorkspace, instant: true,
+        scopeKey: `erd-${workspaceId}` }}
       panelTitle="DevPath AI · 워크스페이스"
       greeting="스쿼드 진행 상황, 일정, 자료, 리뷰에 대해 물어보거나 작업·일정·회의록 등록을 맡겨 보세요."
       resetGreeting="새 세션입니다. 필요한 스쿼드 작업이나 일정 문의를 입력해 주세요."

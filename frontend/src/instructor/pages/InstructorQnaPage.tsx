@@ -2,6 +2,8 @@
 
 
 import MarkdownContent from '../../components/MarkdownContent'
+import { DEMO_COURSE_TITLE, DEMO_TEXT } from '../../lib/demo-typing'
+import { useDemoAccount, useDemoTyping } from '../../lib/useDemoTyping'
 import UserAvatar from '../../components/UserAvatar'
 
 
@@ -161,6 +163,14 @@ import { useInstructorQnaController } from './useInstructorQnaController'
 export default function InstructorQnaPage({ session }: { session: AuthSession }) {
   const { statusFilter, search, sortFilter, setSortFilter, draftText, setDraftText, quickReplies, quickOpen, setQuickOpen, templateOpen, setTemplateOpen, quickTitle, setQuickTitle, quickBody, setQuickBody, toast, loading, setEditingAnswerId, editorRef, courseOptions, activeCourseFilter, visibleQuestions, activeSelectedId, activeTimeline, timelineLoading, current, instructorDisplayName, instructorProfileImage, showAnswerForm, openCourseScreen, changeStatusFilter, changeCourseFilter, changeSearch, selectQuestion, appendReply, applyMarkdown, saveDraft, submitAnswer, openQuickModal, saveQuickReply, deleteQuickReply } = useInstructorQnaController({ session })
 
+
+  const demoAccount = useDemoAccount('frontend@devpath.com', current?.courseTitle === DEMO_COURSE_TITLE && current?.title === DEMO_TEXT.questionTitle)
+  const demoAnswer = useDemoTyping({ text: DEMO_TEXT.answerContent, value: draftText, onValue: setDraftText,
+    enabled: demoAccount, active: Boolean(showAnswerForm && !timelineLoading), scopeKey: current?.questionId })
+  const demoQuickTitle = useDemoTyping({ text: DEMO_TEXT.answerTitle, value: quickTitle, onValue: setQuickTitle,
+    enabled: demoAccount, active: quickOpen, scopeKey: current?.questionId })
+  const demoQuickBody = useDemoTyping({ text: DEMO_TEXT.answerContent, value: quickBody, onValue: setQuickBody,
+    enabled: demoAccount, active: quickOpen, scopeKey: current?.questionId })
 
   return (
     <div className={`instructor-qna-page min-h-[calc(100vh-64px)] bg-[#f3f4f6] ${INSTRUCTOR_QNA_UI_LOCK_CLASSES}`}>
@@ -443,7 +453,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                       <textarea
                         ref={editorRef}
                         value={draftText}
-                        onChange={(event) => setDraftText(event.target.value)}
+                        {...demoAnswer.bindings}
                         maxLength={1000}
                         className="h-56 w-full resize-none bg-white px-6 py-6 text-sm leading-relaxed text-gray-800 outline-none"
                         placeholder={
@@ -460,6 +470,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                           <button
                             type="button"
                             onClick={saveDraft}
+                            disabled={demoAnswer.typing}
                             className="h-11 rounded-xl bg-gray-100 px-5 text-xs font-bold text-gray-600 transition hover:bg-gray-200"
                           >
                             임시저장
@@ -467,6 +478,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
                           <button
                             type="button"
                             onClick={submitAnswer}
+                            disabled={demoAnswer.typing}
                             className="flex h-11 items-center gap-2 rounded-xl bg-[#00c471] px-7 text-xs font-bold text-white shadow-md transition hover:bg-[#00b366]"
                           >
                             <i className="fas fa-paper-plane" />
@@ -667,7 +679,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
               <label className="mb-2 block text-xs font-semibold text-gray-600">제목</label>
               <input
                 value={quickTitle}
-                onChange={(event) => setQuickTitle(event.target.value)}
+                {...demoQuickTitle.bindings}
                 maxLength={30}
                 className="h-11 w-full rounded-xl border border-gray-200 px-4 text-sm font-medium outline-none focus:border-[#00c471]"
                 placeholder="예: JPA 순환 참조 답변"
@@ -680,7 +692,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
               </div>
               <textarea
                 value={quickBody}
-                onChange={(event) => setQuickBody(event.target.value)}
+                {...demoQuickBody.bindings}
                 maxLength={1000}
                 className="h-48 w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm leading-relaxed outline-none focus:border-[#00c471]"
                 placeholder="버튼 클릭 시 에디터에 그대로 삽입될 답변을 작성해주세요."
@@ -707,6 +719,7 @@ export default function InstructorQnaPage({ session }: { session: AuthSession })
               <button
                 type="button"
                 onClick={saveQuickReply}
+                disabled={demoQuickTitle.typing || demoQuickBody.typing}
                 className="rounded-xl bg-gray-900 px-6 py-2.5 text-xs font-bold text-white shadow-md"
               >
                 저장하기

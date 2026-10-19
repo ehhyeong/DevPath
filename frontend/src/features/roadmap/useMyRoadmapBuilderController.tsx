@@ -13,6 +13,15 @@ import { getRoadmapNodeVisual } from '../../lib/roadmap-icons'
 import type { SkillModule, RoadmapTemplate, BuilderNode, TimelineRow, ActiveDrag } from './roadmap-builder-model'
 import { makeInstanceId, getModuleUsageKey, mapDetailToModules, mapOfficialNodeToModule, buildRoadmapTemplates, filterRoadmapTemplates } from './roadmap-builder-model'
 
+// 시연 제목의 실제 한글 조합 순서이며 프레임당 45ms로 약 1.3초 안에 입력을 끝낸다.
+const DEMO_TITLE_FRAMES = [
+  'ㅍ', '프', '프ㄹ', '프로', '프론', '프론ㅌ', '프론트',
+  '프론트ㅇ', '프론트에', '프론트엔', '프론트엔ㄷ', '프론트엔드', '프론트엔드 ',
+  '프론트엔드 ㄱ', '프론트엔드 개', '프론트엔드 개ㅂ', '프론트엔드 개바', '프론트엔드 개발',
+  '프론트엔드 개발ㅈ', '프론트엔드 개발자', '프론트엔드 개발자 ',
+  '프론트엔드 개발자 ㄹ', '프론트엔드 개발자 로', '프론트엔드 개발자 로ㄷ', '프론트엔드 개발자 로드',
+  '프론트엔드 개발자 로드ㅁ', '프론트엔드 개발자 로드매', '프론트엔드 개발자 로드맵',
+]
 
 // ────────────────────────────────────────────
 // 메인 컴포넌트
@@ -26,6 +35,7 @@ function readEditIdFromLocation(): number | null {
 }export function useMyRoadmapBuilderController() {
   const [session,setSession] = useAuthSession()
   const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [profileIdentity, setProfileIdentity] = useState<{ userId: number; email: string } | null>(null)
   const [authView, setAuthView] = useState<AuthView | null>(null)
   const [templates, setTemplates] = useState<RoadmapTemplate[]>([])
   const [selectedRoadmapId, setSelectedRoadmapId] = useState<number | null>(null)
@@ -41,6 +51,9 @@ function readEditIdFromLocation(): number | null {
   const [branchTarget, setBranchTarget] = useState<number | null>(null)
   const [saveModalOpen, setSaveModalOpen] = useState(false)
   const [roadmapTitle, setRoadmapTitle] = useState('')
+  const [demoTitleTyping, setDemoTitleTyping] = useState(false)
+  const demoTitleTimerRef = useRef<number | null>(null)
+  const demoTitleStartedRef = useRef(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedCustomRoadmapId, setSavedCustomRoadmapId] = useState<number | null>(null)
@@ -52,6 +65,39 @@ function readEditIdFromLocation(): number | null {
   const [editLoadError, setEditLoadError] = useState<string | null>(null)
   const mainRef = useRef<HTMLDivElement>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const demoTitleEnabled = Boolean(session?.userId && profileIdentity?.userId === session.userId
+    && profileIdentity.email === 'kim.hakseup@devpath.com' && !editMyRoadmapId)
+
+  const stopDemoTitleTyping = useCallback(() => {
+    if (demoTitleTimerRef.current !== null) {
+      window.clearInterval(demoTitleTimerRef.current)
+      demoTitleTimerRef.current = null
+    }
+    setDemoTitleTyping(false)
+  }, [])
+
+  useEffect(() => {
+    if (!saveModalOpen || !demoTitleEnabled) stopDemoTitleTyping()
+    return stopDemoTitleTyping
+  }, [saveModalOpen, demoTitleEnabled, stopDemoTitleTyping])
+
+  function startDemoTitleTyping() {
+    if (!demoTitleEnabled || !saveModalOpen || saving || roadmapTitle || demoTitleStartedRef.current) return
+    demoTitleStartedRef.current = true
+    setDemoTitleTyping(true)
+    setRoadmapTitle(DEMO_TITLE_FRAMES[0])
+    let index = 1
+    demoTitleTimerRef.current = window.setInterval(() => {
+      setRoadmapTitle(DEMO_TITLE_FRAMES[index++])
+      if (index === DEMO_TITLE_FRAMES.length) stopDemoTitleTyping()
+    }, 45)
+  }
+
+  function handleRoadmapTitleChange(value: string) {
+    stopDemoTitleTyping()
+    demoTitleStartedRef.current = true
+    setRoadmapTitle(value)
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -71,16 +117,27 @@ function readEditIdFromLocation(): number | null {
   }, [setSession])
 
   useEffect(() => {
-    if (!session) {
+    const userId = session?.userId
+    if (!userId) {
       setProfileImage(null)
+      setProfileIdentity(null)
       return
     }
 
     const controller = new AbortController()
     userApi
       .getMyProfile(controller.signal)
-      .then((profile) => setProfileImage(profile.profileImage))
-      .catch(() => setProfileImage(null))
+      .then((profile) => {
+        if (controller.signal.aborted) return
+        setProfileImage(profile.profileImage)
+        setProfileIdentity({ userId, email: profile.email })
+      })
+      .catch(() => {
+        // 실패하거나 이전 계정의 요청이 취소되면 시연 계정으로 추정하지 않는다.
+        if (controller.signal.aborted) return
+        setProfileImage(null)
+        setProfileIdentity(null)
+      })
 
     return () => controller.abort()
   }, [session])
@@ -609,14 +666,17 @@ function readEditIdFromLocation(): number | null {
 
   // 저장 모달 열기
   const openSaveModal = useCallback(() => {
+    stopDemoTitleTyping()
+    demoTitleStartedRef.current = false
     setSaveError(null)
     // 편집 모드가 아닐 때만 제목 초기화 (편집 시 기존 제목 유지)
     if (!editMyRoadmapId) setRoadmapTitle('')
     setSaveModalOpen(true)
-  }, [editMyRoadmapId])
+  }, [editMyRoadmapId, stopDemoTitleTyping])
 
   // 로드맵 저장
   const handleSave = useCallback(async () => {
+    if (demoTitleTimerRef.current !== null) return
     if (!session?.userId) return
     if (!roadmapTitle.trim()) {
       setSaveError('로드맵 이름을 입력해주세요.')
@@ -757,5 +817,5 @@ function readEditIdFromLocation(): number | null {
       // NODE → on-spine, 분기 NODE → gap: 무시
     }
   }
-  return { session, setSession, profileImage, setProfileImage, authView, setAuthView, templates, setTemplates, selectedRoadmapId, setSelectedRoadmapId, templateSearch, setTemplateSearch, templateSection, setTemplateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, items, setItems, previewModuleKey, setPreviewModuleKey, loading, setLoading, fetchError, setFetchError, nodes, setNodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, setRoadmapTitle, saving, setSaving, saveError, setSaveError, savedCustomRoadmapId, setSavedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, setActiveDrag, editMyRoadmapId, editLoading, setEditLoading, editLoadError, setEditLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, filteredTemplates, templateOptions, loadSelectedRoadmap, loadRoadmapCatalog, handleTemplateChange, resetTemplateSelection, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleAiAsk, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, openSaveModal, handleSave, handleDragStart, handleDragEnd }
+  return { startDemoTitleTyping, stopDemoTitleTyping, handleRoadmapTitleChange, demoTitleTyping, session, setSession, profileImage, setProfileImage, authView, setAuthView, templates, setTemplates, selectedRoadmapId, setSelectedRoadmapId, templateSearch, setTemplateSearch, templateSection, setTemplateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, items, setItems, previewModuleKey, setPreviewModuleKey, loading, setLoading, fetchError, setFetchError, nodes, setNodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, setRoadmapTitle, saving, setSaving, saveError, setSaveError, savedCustomRoadmapId, setSavedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, setActiveDrag, editMyRoadmapId, editLoading, setEditLoading, editLoadError, setEditLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, filteredTemplates, templateOptions, loadSelectedRoadmap, loadRoadmapCatalog, handleTemplateChange, resetTemplateSelection, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleAiAsk, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, openSaveModal, handleSave, handleDragStart, handleDragEnd }
 }
