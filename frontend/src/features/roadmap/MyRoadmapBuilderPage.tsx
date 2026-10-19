@@ -2,6 +2,7 @@
 
 
 import { navigateTo } from '../../lib/spa-navigation'
+import { DEMO_TEXT } from '../../lib/demo-typing'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import AiAssistantPanel from '../../components/AiAssistantPanel'
 import AuthModal from '../../components/AuthModal'
@@ -15,7 +16,7 @@ import { TrashZone, TerminalDropZone, DroppableGap, MiniDragPreview, ModulePrevi
 import { useMyRoadmapBuilderController } from './useMyRoadmapBuilderController'
 
 function MyRoadmapBuilderPage() {
-  const { session, profileImage, authView, setAuthView, templates, selectedRoadmapId, templateSearch, templateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, setPreviewModuleKey, loading, fetchError, nodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, setRoadmapTitle, saving, saveError, savedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, editMyRoadmapId, editLoading, editLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, templateOptions, handleTemplateChange, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, handleAiAsk, openSaveModal, handleSave, handleDragStart, handleDragEnd } = useMyRoadmapBuilderController()
+  const { session, profileImage, authView, setAuthView, templates, selectedRoadmapId, templateSearch, templateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, setPreviewModuleKey, loading, fetchError, nodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, handleRoadmapTitleChange, startDemoTitleTyping, stopDemoTitleTyping, demoTitleTyping, saving, saveError, savedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, editMyRoadmapId, editLoading, editLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, templateOptions, handleTemplateChange, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, handleAiAsk, openSaveModal, handleSave, handleDragStart, handleDragEnd } = useMyRoadmapBuilderController()
 
 
   // ────────────────────────────────────────────
@@ -109,8 +110,17 @@ function MyRoadmapBuilderPage() {
               ref={titleInputRef}
               type="text"
               value={roadmapTitle}
-              onChange={(e) => setRoadmapTitle(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSave() }}
+              onClick={startDemoTitleTyping}
+              onChange={(e) => handleRoadmapTitleChange(e.target.value)}
+              onCompositionStart={stopDemoTitleTyping}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (!demoTitleTyping) void handleSave()
+                } else {
+                  stopDemoTitleTyping()
+                }
+              }}
               placeholder="예: 내 백엔드 개발자 로드맵"
               maxLength={200}
               className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm font-medium focus:border-[#00C471] focus:outline-none focus:ring-2 focus:ring-[#00C471]/20"
@@ -132,7 +142,7 @@ function MyRoadmapBuilderPage() {
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={saving || !roadmapTitle.trim()}
+                disabled={saving || demoTitleTyping || !roadmapTitle.trim()}
                 className="flex items-center gap-2 rounded-lg bg-[#00C471] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-green-600 disabled:opacity-50"
               >
                 {saving ? <><i className="fas fa-spinner fa-spin" /> 저장 중...</> : <><i className="fas fa-save" /> 저장</>}
@@ -548,6 +558,7 @@ function MyRoadmapBuilderPage() {
         placeholder="예: 3개월 안에 백엔드 기초부터 배포까지"
         thinkingLabel="로드맵 분석 중"
         onAsk={handleAiAsk}
+        demoPrompt={{ email: 'kim.hakseup@devpath.com', text: DEMO_TEXT.roadmap, scopeKey: 'roadmap-builder' }}
         suggestions={[
           { label: 'React 프론트엔드', prompt: '초보자를 위한 프론트엔드 React 필수 마스터 코스' },
           { label: 'DevOps 집중', prompt: '실무형 DevOps 클라우드 배포 집중 트랙' },

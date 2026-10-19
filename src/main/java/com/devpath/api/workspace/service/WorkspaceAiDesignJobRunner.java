@@ -21,7 +21,8 @@ class WorkspaceAiDesignJobRunner {
       return;
     }
     try {
-      WorkspaceAiDesignResponse result = workspaceAiDesignService.generate(request);
+      Long userId = jobStore.find(jobId).orElseThrow().getUserId();
+      WorkspaceAiDesignResponse result = workspaceAiDesignService.generate(userId, request);
       jobStore.complete(jobId, result);
     } catch (Exception exception) {
       // 외부 AI 호출 실패를 비동기 스레드 밖으로 유실하지 않고 조회 가능한 작업 실패 상태로 변환한다.

@@ -12,8 +12,16 @@ import { SCREEN_SHARE_BUTTON_ZOOM_STEP,SCREEN_SHARE_MIN_ZOOM,VOICE_REACTIONS,for
 import type { CameraView,ScreenShareView,VoiceParticipant,WorkspaceMember } from './meeting-types'
 import type { SquadMeetingViewModel } from './useSquadMeetingController'
 import type { AiWorkspacePageProps } from '../AiWorkspaceDesignPanels'
+import { DEMO_TEXT } from '../../../lib/demo-typing'
+import { useDemoAccount, useDemoTyping } from '../../../lib/useDemoTyping'
+import { useDemoWorkspace } from '../useDemoWorkspace'
 export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorkspacePageProps) {
   const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
+  const demoWorkspace = useDemoWorkspace(workspaceId, Boolean(model.aiWorkspace && isJoined))
+  const demoAccount = useDemoAccount('kim.hakseup@devpath.com', demoWorkspace)
+  const demoChat = useDemoTyping({ text: DEMO_TEXT.meeting, value: voiceChatInput, onValue: setVoiceChatInput,
+    enabled: demoAccount, active: Boolean(isJoined && roomPanelTab === 'chat' && !chatSending),
+    scopeKey: activeChannel?.channelId, instant: true })
   function renderMemberAvatar(member: WorkspaceMember, className = 'w-8 h-8') {
     return (
       <UserAvatar
@@ -104,22 +112,24 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
         </div>
         <div className="p-4 border-t border-gray-800 bg-gray-800 shrink-0">
           <div className="flex gap-2 bg-gray-900 rounded-xl px-3 py-2 border border-gray-700 focus-within:border-blue-500 transition shadow-inner">
-            <input
+            <textarea
               value={voiceChatInput}
-              onChange={(event) => setVoiceChatInput(event.target.value)}
+              {...demoChat.bindings}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
+                demoChat.keyDown(event)
+                if (event.key === 'Enter' && !event.shiftKey && !event.defaultPrevented) {
                   event.preventDefault()
                   void sendVoiceChatMessage()
                 }
               }}
-              className="min-w-0 flex-1 bg-transparent px-2 text-sm outline-none text-white placeholder-gray-500"
+              rows={2}
+              className="min-w-0 flex-1 resize-none bg-transparent px-2 text-sm outline-none text-white placeholder-gray-500"
               placeholder="메시지 입력..."
             />
             <button
               type="button"
               onClick={() => void sendVoiceChatMessage()}
-              disabled={chatSending || !voiceChatInput.trim()}
+              disabled={chatSending || demoChat.typing || !voiceChatInput.trim()}
               className="squad-meeting-room-chat-send-button h-[32px]! w-[38px]! min-w-[38px]! rounded-[8px]! bg-blue-500/10 p-0! text-[14px]! leading-[16px]! font-bold text-blue-500 box-border transition hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-50"
               title="보내기"
             >

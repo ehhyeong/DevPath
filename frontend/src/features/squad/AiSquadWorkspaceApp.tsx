@@ -1440,6 +1440,7 @@ export default function AiSquadWorkspaceApp() {
   const [visitedRoutes, setVisitedRoutes] = useState<Set<AiRoute>>(() => new Set([route]))
   const renderedRoutes = visitedRoutes.has(route) ? visitedRoutes : new Set([...visitedRoutes, route])
   const [workspaceDesign, setWorkspaceDesign] = useState<WorkspaceAiDesign | null>(null)
+  const [demoWorkspaceId, setDemoWorkspaceId] = useState<number | null>(null)
   const dataVersion = useWorkspaceDataVersion()
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null)
   const [tasks, setTasks] = useState<WorkspaceTask[]>([])
@@ -1492,6 +1493,7 @@ export default function AiSquadWorkspaceApp() {
             .catch((error) => { if (!controller.signal.aborted) setLoadError({ workspaceId, message: error instanceof Error ? error.message : '연결된 작업을 불러오지 못했습니다.' }) })
         }
         setWorkspaceDesign(response.design)
+        setDemoWorkspaceId(response.demoWorkspace ? workspaceId : null)
         setDashboard(dashboardData)
         setLoadedWorkspaceId(workspaceId)
         setLoadError(null)
@@ -1533,7 +1535,7 @@ export default function AiSquadWorkspaceApp() {
       {!designPending && loadError?.workspaceId === workspaceId ? <div role="alert" className="fixed top-4 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-red-200 bg-white px-4 py-3 text-xs font-bold text-red-600 shadow-sm">{loadError.message}</div> : null}
       {Array.from(renderedRoutes).map((pageRoute) => {
         const PersistedPage = workspaceId && pageRoute in persistedPages ? persistedPages[pageRoute as keyof typeof persistedPages] : null
-        const reviewLocked = workspaceId && pageRoute === '/squad-review' && !integrations.some((integration) => integration.provider === 'GITHUB' && (integration.active ?? integration.isActive) && integration.repositoryUrl)
+        const reviewLocked = workspaceId && pageRoute === '/squad-review' && demoWorkspaceId !== workspaceId && !integrations.some((integration) => integration.provider === 'GITHUB' && (integration.active ?? integration.isActive) && integration.repositoryUrl)
         return <div key={pageRoute} className={pageRoute === route ? 'contents' : 'hidden'} aria-hidden={pageRoute !== route}>
           {designPending && pageRoute !== '/squad-files' ? <AiShell activePage={routePage[pageRoute]} workspaceId={workspaceId}><main role="status" className="flex flex-1 items-center justify-center text-sm font-bold text-gray-500">{loadError?.workspaceId === workspaceId ? loadError.message : 'AI 설계를 불러오는 중입니다...'}</main></AiShell> : reviewLocked ? <AiShell activePage="review" workspaceId={workspaceId}><main className="flex flex-1 items-center justify-center p-8"><Card className="max-w-lg p-10 text-center"><i className="fab fa-github text-4xl text-gray-400" /><h1 className="mt-4 text-xl font-extrabold text-gray-900">GitHub 연결이 필요합니다</h1><p className="mt-3 text-sm text-gray-500">스쿼드 설정에서 저장소와 토큰을 연결하면 코드 피드백을 사용할 수 있습니다.</p><a href={aiHref('/squad-settings')} className="mt-6 inline-block rounded-xl bg-gray-900 px-5 py-3 text-sm font-bold text-white">외부 연동 설정하기</a></Card></main></AiShell> : PersistedPage ? <Suspense fallback={<AiShell activePage={routePage[pageRoute]} workspaceId={workspaceId}><main role="status" className="flex flex-1 items-center justify-center text-sm font-bold text-gray-500">{pageRoute === '/squad-files' ? '팀 자료실을 불러오는 중입니다...' : '워크스페이스를 불러오는 중입니다...'}</main></AiShell>}><PersistedPage key={workspaceId} aiWorkspace design={workspaceDesign} /></Suspense> : pageRoute === '/squad-meeting' ? <MeetingPage /> : <AiShell activePage={routePage[pageRoute]} showHeader={pageRoute !== '/squad-erd'} workspaceId={workspaceId}><CurrentPage key={workspaceId} route={pageRoute} /></AiShell>}
         </div>

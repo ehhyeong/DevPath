@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useDemoAccount, useDemoTyping } from '../lib/useDemoTyping'
 
 export type AiSuggestion = {
   label: string
@@ -34,6 +35,7 @@ type AiAssistantPanelProps = {
   // 지정하면 패널을 열 때마다 저장된 대화를 불러오고, 대화 비우기도 저장소에 반영한다.
   loadMessages?: () => Promise<AiStoredMessage[]>
   onReset?: () => Promise<void>
+  demoPrompt?: { email: string; text: string; enabled?: boolean; scopeKey?: string | number | null; instant?: boolean }
 }
 
 export type AiHistoryMessage = {
@@ -77,6 +79,7 @@ export default function AiAssistantPanel({
   onAsk,
   loadMessages,
   onReset,
+  demoPrompt,
 }: AiAssistantPanelProps) {
   const [open, setOpen] = useState(false)
   const [greetingText, setGreetingText] = useState(greeting)
@@ -85,6 +88,9 @@ export default function AiAssistantPanel({
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [chipsHidden, setChipsHidden] = useState(false)
+  const demoAccount = useDemoAccount(demoPrompt?.email ?? '', open && Boolean(demoPrompt) && demoPrompt?.enabled !== false)
+  const demoInput = useDemoTyping({ text: demoPrompt?.text ?? '', value: input, onValue: setInput,
+    enabled: demoAccount, active: open && !busy, scopeKey: demoPrompt?.scopeKey, instant: demoPrompt?.instant })
 
   const panelRef = useRef<HTMLDivElement>(null)
   const fabRef = useRef<HTMLButtonElement>(null)
@@ -234,7 +240,7 @@ export default function AiAssistantPanel({
   async function handleSubmit() {
     const text = input.trim()
 
-    if (!text || busy) {
+    if (!text || busy || demoInput.typing) {
       return
     }
 
@@ -321,6 +327,7 @@ export default function AiAssistantPanel({
   }
 
   async function handleReset() {
+    demoInput.stop()
     if (onReset) {
       try {
         await onReset()
@@ -342,7 +349,7 @@ export default function AiAssistantPanel({
   }
 
   function handleSuggestion(prompt: string) {
-    setInput(prompt)
+    demoInput.change(prompt)
     inputRef.current?.focus()
   }
 
@@ -457,9 +464,10 @@ export default function AiAssistantPanel({
               ref={inputRef}
               type="text"
               value={input}
-              onChange={(event) => setInput(event.target.value)}
+              {...demoInput.bindings}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') {
+                demoInput.keyDown(event)
+                if (event.key === 'Enter' && !event.defaultPrevented) {
                   handleSubmit()
                 }
               }}
@@ -471,7 +479,7 @@ export default function AiAssistantPanel({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={busy}
+              disabled={busy || demoInput.typing}
               aria-label="전송"
               className={busy ? 'ai-send opacity-60 cursor-not-allowed' : 'ai-send'}
             >

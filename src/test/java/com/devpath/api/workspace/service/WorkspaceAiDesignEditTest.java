@@ -34,7 +34,8 @@ class WorkspaceAiDesignEditTest {
           milestones,
           tasks,
           mapper,
-          calendar);
+          calendar,
+          mock(WorkspaceDemoScenario.class));
   private WorkspaceAiDesign saved;
   private WorkspaceAiDesignResponse original;
   private final Workspace workspace =

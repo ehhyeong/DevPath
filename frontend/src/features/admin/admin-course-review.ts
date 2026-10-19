@@ -2,6 +2,9 @@ import Hls from 'hls.js'
 import type { AdminCourseReviewDetail, AdminCourseReviewLesson } from '../../types/admin'
 import { renderAdminMarkup } from './admin-react-renderer'
 import { escapeHtml, formatDateTime } from './admin-dashboard-support'
+import { DEMO_COURSE_TITLE, DEMO_TEXT, startDemoTyping } from '../../lib/demo-typing'
+import { userApi } from '../../lib/api/auth'
+import { readStoredAuthSession } from '../../lib/auth-session'
 
 type ReviewDecision = 'APPROVE' | 'REJECT'
 type DecisionHandler = (courseId: number, decision: ReviewDecision, reason: string) => Promise<void>
@@ -9,6 +12,8 @@ type DecisionHandler = (courseId: number, decision: ReviewDecision, reason: stri
 let activeReview: AdminCourseReviewDetail | null = null
 let reviewHls: Hls | null = null
 let decisionProcessing = false
+let demoReasonTyping = false
+let disposeDemoReason: (() => void) | null = null
 const REVIEW_SEEK_SECONDS = 10
 
 function getElement<T extends HTMLElement>(id: string) {
@@ -291,11 +296,73 @@ export function previewCourseReviewLesson(lessonId: number) {
 function syncDecisionButtons() {
   const reason = (document.getElementById('courseReviewReason') as HTMLTextAreaElement | null)?.value.trim() ?? ''
   const checks = [...document.querySelectorAll<HTMLInputElement>('.course-review-check')]
-  getElement<HTMLButtonElement>('courseReviewReject').disabled = decisionProcessing || reason.length < 5
-  getElement<HTMLButtonElement>('courseReviewApprove').disabled = decisionProcessing || reason.length < 5 || checks.some((check) => !check.checked)
+  getElement<HTMLButtonElement>('courseReviewReject').disabled = decisionProcessing || demoReasonTyping || reason.length < 5
+  getElement<HTMLButtonElement>('courseReviewApprove').disabled = decisionProcessing || demoReasonTyping || reason.length < 5 || checks.some((check) => !check.checked)
+}
+
+function bindDemoReason(detail: AdminCourseReviewDetail) {
+  const session = readStoredAuthSession()
+  if (detail.title !== DEMO_COURSE_TITLE || detail.instructorEmail !== 'frontend@devpath.com' || session?.role !== 'ROLE_ADMIN') return
+  const input = getElement<HTMLTextAreaElement>('courseReviewReason')
+  let disposed = false
+  let verified = false
+  let used = false
+  let cancel: (() => void) | null = null
+  userApi.getMyProfile().then((profile) => {
+    verified = !disposed && profile.userId === session.userId && profile.email === 'admin@devpath.com'
+  }).catch(() => {
+    // 계정을 확인하지 못하면 일반 검수 입력을 유지한다.
+    verified = false
+  })
+  function stop() {
+    used = true
+    cancel?.()
+    cancel = null
+    demoReasonTyping = false
+    syncDecisionButtons()
+  }
+  function click() {
+    if (!verified || used || input.value || disposed || readStoredAuthSession()?.userId !== session?.userId) return
+    used = true
+    demoReasonTyping = true
+    cancel = startDemoTyping(DEMO_TEXT.approval, (value) => {
+      // 관리자 화면 이탈이나 계정 전환 후에는 분리된 모달에 값을 쓰거나 버튼을 조회하지 않는다.
+      if (!input.isConnected || readStoredAuthSession()?.userId !== session?.userId) {
+        cancel?.()
+        demoReasonTyping = false
+        if (input.isConnected) syncDecisionButtons()
+        return
+      }
+      input.value = value
+      syncDecisionButtons()
+    }, () => {
+      cancel = null
+      demoReasonTyping = false
+      if (input.isConnected) syncDecisionButtons()
+    })
+  }
+  function keydown(event: KeyboardEvent) {
+    if (cancel && event.key === 'Enter') event.preventDefault()
+    else stop()
+  }
+  input.addEventListener('click', click)
+  input.addEventListener('input', stop)
+  input.addEventListener('compositionstart', stop)
+  input.addEventListener('keydown', keydown)
+  disposeDemoReason = () => {
+    disposed = true
+    cancel?.()
+    demoReasonTyping = false
+    input.removeEventListener('click', click)
+    input.removeEventListener('input', stop)
+    input.removeEventListener('compositionstart', stop)
+    input.removeEventListener('keydown', keydown)
+  }
 }
 
 export function openCourseReviewModal(detail: AdminCourseReviewDetail) {
+  disposeDemoReason?.()
+  disposeDemoReason = null
   activeReview = detail
   decisionProcessing = false
   getElement('courseReviewModalTitle').textContent = `${detail.title} 검수`
@@ -308,10 +375,13 @@ export function openCourseReviewModal(detail: AdminCourseReviewDetail) {
   modal.setAttribute('aria-hidden', 'false')
   document.body.classList.add('devpath-modal-open')
   syncDecisionButtons()
+  bindDemoReason(detail)
 }
 
 export function closeCourseReviewModal() {
   if (decisionProcessing) return
+  disposeDemoReason?.()
+  disposeDemoReason = null
   stopPreview()
   activeReview = null
   const modal = getElement('courseReviewModal')

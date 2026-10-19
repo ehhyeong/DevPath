@@ -1,8 +1,28 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import SquadWorkspaceAside from './SquadWorkspaceAside'
+import { projectApiRequest } from '../features/project/api'
 
 vi.mock('../features/project/api', () => ({ projectApiRequest: vi.fn(async () => []) }))
+
+describe('시연 워크스페이스 코드 피드백 접근', () => {
+  afterEach(() => vi.mocked(projectApiRequest).mockImplementation(async () => [] as never))
+
+  it('서버가 확인한 시연 AI 워크스페이스만 열고 일반 모드와 다른 워크스페이스로 권한을 넘기지 않는다', async () => {
+    vi.mocked(projectApiRequest).mockImplementation(async (path) => (
+      path === '/api/workspaces/hub/projects/42/ai-design' ? { demoWorkspace: true } : []
+    ) as never)
+    const view = render(<SquadWorkspaceAside activePage="dashboard" workspaceId={42} aiWorkspace />)
+    await waitFor(() => expect(screen.getByRole('link', { name: /코드 피드백/ })).toHaveAttribute('aria-disabled', 'false'))
+
+    view.rerender(<SquadWorkspaceAside activePage="dashboard" workspaceId={42} />)
+    expect(screen.getByRole('link', { name: /코드 피드백/ })).toHaveAttribute('aria-disabled', 'true')
+    view.rerender(<SquadWorkspaceAside activePage="dashboard" workspaceId={43} aiWorkspace />)
+    expect(screen.getByRole('link', { name: /코드 피드백/ })).toHaveAttribute('aria-disabled', 'true')
+    await waitFor(() => expect(projectApiRequest).toHaveBeenCalledWith('/api/workspaces/hub/projects/43/ai-design', {}, 'required'))
+    expect(screen.getByRole('link', { name: /코드 피드백/ })).toHaveAttribute('aria-disabled', 'true')
+  })
+})
 
 describe('AI 설계서 사이드바 반영 맵', () => {
   afterEach(() => {

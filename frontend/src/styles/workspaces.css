@@ -683,3 +683,12 @@ body:has(.ai-squad-workspace) {
 
 /* 캐시된 숨김 회의 페이지를 제외하고 실제 회의실에 입장한 화면에서만 공통 버튼을 숨긴다. */
 body:has(.squad-meeting-room-bottom-bar:not(.hidden *)) :is(.ai-fab, button[aria-label="팀채팅"]) { display: none; }
+
+body:has(.squad-review-page:not(.hidden):not(.hidden *)) .ai-fab {
+  bottom: max(2rem, var(--squad-review-tools-bottom, 2rem));
+}
+
+body:has(.squad-review-page:not(.hidden):not(.hidden *)) button[aria-label="팀채팅"] {
+  /* 기존 5.75rem·2rem 배치의 상대 간격을 유지해 AI 버튼 위에 채팅을 배치한다. */
+  bottom: calc(max(2rem, var(--squad-review-tools-bottom, 2rem)) + 3.75rem);
+}

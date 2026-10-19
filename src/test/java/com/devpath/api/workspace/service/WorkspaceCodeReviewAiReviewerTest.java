@@ -24,12 +24,14 @@ class WorkspaceCodeReviewAiReviewerTest {
 
   @Mock private WorkspaceCodeReviewStore codeReviewStore;
   @Mock private CodeReviewAssistant codeReviewAssistant;
+  @Mock private WorkspaceDemoScenario demoScenario;
 
   private WorkspaceCodeReviewAiReviewer reviewer;
 
   @BeforeEach
   void setUp() {
-    reviewer = new WorkspaceCodeReviewAiReviewer(codeReviewStore, codeReviewAssistant);
+    reviewer =
+        new WorkspaceCodeReviewAiReviewer(codeReviewStore, codeReviewAssistant, demoScenario);
   }
 
   @Test
@@ -60,6 +62,25 @@ class WorkspaceCodeReviewAiReviewerTest {
         .isLessThan(diffText.indexOf("### FILE: src/AuthService.java"));
     assertThat(diffText).contains("+checkout", "+auth");
     verify(codeReviewStore).attachAiReview(workspaceId, reviewId, 55L, "src/Checkout.tsx");
+  }
+
+  @Test
+  void sameDemoMarkerInOrdinaryWorkspaceStillUsesRealAi() {
+    var original = detailRow(7L, 11L);
+    var row =
+        new WorkspaceCodeReviewStore.DetailRow(
+            original.summary(),
+            "DEMO",
+            WorkspaceDemoScenario.REVIEW_KEY,
+            original.description(),
+            null,
+            original.diffText(),
+            original.files());
+    var result =
+        new CodeReviewAssistant.Review(55L, 3L, null, null, null, null, 0, null, List.of(), null);
+    when(codeReviewAssistant.createReview(eq(3L), any())).thenReturn(result);
+    reviewer.createReview(7L, 11L, 3L, null, row);
+    verify(codeReviewAssistant).createReview(eq(3L), any());
   }
 
   @Test

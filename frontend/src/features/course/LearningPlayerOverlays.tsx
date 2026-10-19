@@ -3,6 +3,8 @@ import { navigateTo } from '../../lib/spa-navigation'
 import type { QnaDifficulty } from '../../types/qna'
 import { formatRelativeTime, formatShortDate, isQuestionAnswered } from './learning-player-model'
 import { formatDateLabel, formatTime } from './learning-player-support'
+import { DEMO_COURSE_TITLE, DEMO_TEXT } from '../../lib/demo-typing'
+import { useDemoAccount, useDemoTyping } from '../../lib/useDemoTyping'
 
 type Props = { model: LearningPlayerReadyModel }
 
@@ -82,6 +84,13 @@ export default function LearningPlayerOverlays({ model }: Props) {
     editingNoteContent,
     handleUpdateNote,
   } = model
+  const demoAccount = useDemoAccount('kim.hakseup@devpath.com', Boolean(questionComposerOpen && model.course?.title === DEMO_COURSE_TITLE))
+  const demoTitle = useDemoTyping({ text: DEMO_TEXT.questionTitle, value: questionForm?.title ?? '',
+    onValue: (title) => setQuestionForm((current) => ({ ...current, title })), enabled: demoAccount,
+    active: Boolean(questionComposerOpen && !questionBusy), scopeKey: model.course?.courseId })
+  const demoContent = useDemoTyping({ text: DEMO_TEXT.questionContent, value: questionForm?.content ?? '',
+    onValue: (content) => setQuestionForm((current) => ({ ...current, content })), enabled: demoAccount,
+    active: Boolean(questionComposerOpen && !questionBusy), scopeKey: model.course?.courseId })
 
   return (
     <>
@@ -106,7 +115,7 @@ export default function LearningPlayerOverlays({ model }: Props) {
                     <input
                       type="text"
                       value={questionForm.title}
-                      onChange={(event) => setQuestionForm((current) => ({ ...current, title: event.target.value }))}
+                      {...demoTitle.bindings}
                       className="learning-question-modal-input h-[42px] w-full rounded-[8px] border border-[#D1D5DB] bg-white p-[10px] text-[14px]! leading-[20px]! text-[#111827] outline-none transition placeholder:text-[14px]! placeholder:leading-[20px]! placeholder:font-normal placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471] [box-sizing:border-box]"
                       placeholder="질문 제목을 입력하세요"
                     />
@@ -140,7 +149,7 @@ export default function LearningPlayerOverlays({ model }: Props) {
                     <label className="learning-question-modal-label mb-[4px] block text-[14px] leading-[20px] font-medium text-[#374151]">내용</label>
                     <textarea
                       value={questionForm.content}
-                      onChange={(event) => setQuestionForm((current) => ({ ...current, content: event.target.value }))}
+                      {...demoContent.bindings}
                       className="learning-question-modal-textarea h-[128px] w-full resize-none rounded-[8px] border border-[#D1D5DB] bg-white p-[10px] text-[14px]! leading-[20px]! text-[#111827] outline-none transition placeholder:text-[14px]! placeholder:leading-[20px]! placeholder:font-normal placeholder:text-[#9CA3AF] placeholder:opacity-100 focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471] [box-sizing:border-box]"
                       placeholder="어떤 부분이 이해가 안 되시나요? 구체적으로 적어주시면 더 좋은 답변을 받을 수 있습니다."
                     />
@@ -172,7 +181,7 @@ export default function LearningPlayerOverlays({ model }: Props) {
                     <button
                       type="button"
                       onClick={() => void handleSubmitQuestion()}
-                      disabled={questionBusy || !templateOptions.length}
+                      disabled={questionBusy || demoTitle.typing || demoContent.typing || !templateOptions.length}
                       className="learning-question-modal-submit h-[40px] rounded-[8px] bg-[#00C471] px-[20px] py-0 text-[14px]! leading-[20px]! font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-emerald-300 [box-sizing:border-box]"
                     >
                       {questionBusy ? '등록 중...' : '등록하기'}

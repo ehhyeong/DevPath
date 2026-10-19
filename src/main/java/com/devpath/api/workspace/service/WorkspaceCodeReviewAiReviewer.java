@@ -17,6 +17,7 @@ class WorkspaceCodeReviewAiReviewer {
 
   private final WorkspaceCodeReviewStore codeReviewStore;
   private final CodeReviewAssistant codeReviewAssistant;
+  private final WorkspaceDemoScenario demoScenario;
 
   void createReview(
       Long workspaceId,
@@ -27,6 +28,14 @@ class WorkspaceCodeReviewAiReviewer {
     String selectedFilePath =
         resolveSelectedFilePath(row, request == null ? null : request.filePath());
     String reviewDiff = buildReviewDiff(row, selectedFilePath);
+
+    if (demoScenario.isDemoReview(workspaceId, row)) {
+      // 같은 시연 PR을 다시 열거나 재요청해도 이미 저장한 리뷰를 재사용한다.
+      if (row.summary().aiCodeReviewId() == null) {
+        demoScenario.review(workspaceId, reviewId, userId, selectedFilePath, reviewDiff);
+      }
+      return;
+    }
 
     if (isDemoFrontendCommerceReview(workspaceId, row)) {
       createDemoReview(workspaceId, reviewId, userId, row, selectedFilePath, reviewDiff);

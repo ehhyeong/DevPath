@@ -57,6 +57,8 @@ class WorkspaceAiDesignWorkspaceServiceTest {
             });
     when(designRepository.save(any(WorkspaceAiDesign.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+    WorkspaceDemoScenario demoScenario = mock(WorkspaceDemoScenario.class);
+    when(demoScenario.isDemoWorkspace(42L)).thenReturn(true);
     WorkspaceAiDesignWorkspaceService service =
         new WorkspaceAiDesignWorkspaceService(
             jobStore,
@@ -66,11 +68,14 @@ class WorkspaceAiDesignWorkspaceServiceTest {
             milestoneRepository,
             taskRepository,
             objectMapper,
-            mock(com.devpath.domain.workspace.repository.CalendarEventRepository.class));
+            mock(com.devpath.domain.workspace.repository.CalendarEventRepository.class),
+            demoScenario);
 
     WorkspaceAiDesignWorkspaceResponse response = service.create(7L, job.getId().toString());
 
     assertThat(response.workspaceId()).isEqualTo(42L);
+    assertThat(response.demoWorkspace()).isTrue();
+    verify(demoScenario).initialize(any(Workspace.class), org.mockito.ArgumentMatchers.eq(design));
     assertThat(response.dashboardUrl()).isEqualTo("/squad-dashboard?workspaceId=42&ai=1");
     assertThat(response.design().title()).isEqualTo("예약 플랫폼");
     var memberCaptor = ArgumentCaptor.forClass(WorkspaceMember.class);

@@ -1,6 +1,7 @@
 
 
 
+import { useCallback } from 'react'
 import AuthModal from '../../components/AuthModal'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceLoadingView from '../../components/SquadWorkspaceLoadingView'
@@ -76,6 +77,23 @@ import type { AiWorkspacePageProps } from './AiWorkspaceDesignPanels'
 export default function SquadReviewApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const { workspaceId, session, authView, setAuthView, board, detail, activeTab, setActiveTab, loading, detailLoading, saving, statusLoading, modalOpen, form, setForm, commentDraft, setCommentDraft, commentSaving, toast, error, commentInputRef, handleLogout, handleAuthenticated, openCreateModal, closeCreateModal, submitCreate, updateReviewStatus, insertCommentFormat, submitComment, members, projectName, openReviews, closedReviews, visibleReviews, hasAnyReviews, currentUserName, currentProfileImage, currentReviewFiles, selectedReviewFile, renderReviewCard, renderFileSelector, renderAiReviewCard, renderDiff, renderEmptyDetail, renderDetailLoading } = useSquadReviewController()
 
+  const reviewActionsRef = useCallback((element: HTMLDivElement | null) => {
+    if (!element) return
+
+    // 하단 안내·버튼이 줄바꿈되거나 화면 크기가 바뀌어도 플로팅 도구와 16px 간격을 유지한다.
+    const updateClearance = () => {
+      const height = element.getBoundingClientRect().height
+      document.body.style.setProperty('--squad-review-tools-bottom', `${height > 0 ? Math.ceil(height) + 16 : 0}px`)
+    }
+    const observer = new ResizeObserver(updateClearance)
+    observer.observe(element, { box: 'border-box' })
+    updateClearance()
+
+    return () => {
+      observer.disconnect()
+      document.body.style.removeProperty('--squad-review-tools-bottom')
+    }
+  }, [])
 
   if (loading) {
     if (aiWorkspace) return <SquadWorkspaceLoadingView activePage="review" workspaceId={workspaceId} projectName={design?.title ?? projectName} />
@@ -314,7 +332,7 @@ export default function SquadReviewApp({ aiWorkspace = false, design }: AiWorksp
                   </div>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 px-6 flex justify-between items-center shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-20">
+                <div ref={reviewActionsRef} className="squad-review-actions absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 px-6 flex justify-between items-center shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-20">
                   <div className="text-xs font-bold text-gray-500" id="statusMessage">
                     <i className={`${detail.aiReview ? 'fas fa-check-circle text-green-500' : 'fas fa-robot text-indigo-500'} mr-1`}></i>
                     {detail.aiReview ? 'AI 리뷰 검토가 완료되었습니다' : '머지 전에 AI 리뷰가 필요합니다'}

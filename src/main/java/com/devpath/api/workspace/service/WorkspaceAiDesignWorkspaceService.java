@@ -46,6 +46,7 @@ public class WorkspaceAiDesignWorkspaceService {
   private final WorkspaceTaskRepository taskRepository;
   private final ObjectMapper objectMapper;
   private final CalendarEventRepository calendarRepository;
+  private final WorkspaceDemoScenario demoScenario;
 
   @Transactional
   public synchronized WorkspaceAiDesignWorkspaceResponse create(Long userId, String jobId) {
@@ -80,6 +81,7 @@ public class WorkspaceAiDesignWorkspaceService {
     WorkspaceAiDesign savedDesign =
         designRepository.save(
             new WorkspaceAiDesign(workspace.getId(), parsedJobId, job.getResultJson()));
+    demoScenario.initialize(workspace, design);
     return toResponse(savedDesign, design);
   }
 
@@ -303,7 +305,8 @@ public class WorkspaceAiDesignWorkspaceService {
         workspaceId,
         "/squad-dashboard?workspaceId=" + workspaceId + "&ai=1",
         savedDesign.getCreatedAt(),
-        design);
+        design,
+        demoScenario.isDemoWorkspace(workspaceId));
   }
 
   private void validateWorkspaceMember(Long workspaceId, Long userId) {
