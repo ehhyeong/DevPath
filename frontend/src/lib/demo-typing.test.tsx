@@ -85,6 +85,25 @@ describe('한글 시연 입력', () => {
     expect(screen.getByLabelText('제목')).toHaveValue('')
   })
 
+  it('화면이 이전 타이핑 프레임을 늦게 반영해도 계속 입력하고 외부 변경에는 중단한다', () => {
+    vi.useFakeTimers()
+    const onValue = vi.fn()
+    const { result, rerender } = renderHook(({ value }) => useDemoTyping({
+      text: '프론', value, onValue, enabled: true, active: true,
+    }), { initialProps: { value: '' } })
+    act(() => { result.current.bindings.onClick() })
+    expect(onValue).toHaveBeenLastCalledWith('ㅍ')
+    act(() => vi.advanceTimersByTime(600))
+    expect(onValue).not.toHaveBeenLastCalledWith('ㅍ')
+    rerender({ value: 'ㅍ' })
+    expect(result.current.typing).toBe(true)
+    rerender({ value: '외부에서 바꾼 제목' })
+    expect(result.current.typing).toBe(false)
+    onValue.mockClear()
+    act(() => vi.advanceTimersByTime(2000))
+    expect(onValue).not.toHaveBeenCalled()
+  })
+
   it('수동 키와 한글 조합 시작 시 중단하고 진행 중 Enter 제출을 막는다', () => {
     vi.useFakeTimers()
     const { rerender } = render(<Fields />)

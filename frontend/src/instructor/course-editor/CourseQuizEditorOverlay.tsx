@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { instructorLessonEvaluationApi } from '../../lib/api/instructor'
+import { DEMO_TEXT } from '../../lib/demo-typing'
+import { useDemoAccount, useDemoTyping } from '../../lib/useDemoTyping'
 import type {
   GenerateInstructorQuizRequest,
   InstructorQuizEditor,
@@ -20,6 +22,7 @@ type Props = {
   lessonId: number
   lessonTitle: string
   courseTags?: string[]
+  demoCourse?: boolean
   onClose: () => void
   standalone?: boolean
   standaloneClassName?: string
@@ -118,6 +121,7 @@ export default function CourseQuizEditorOverlay({
   lessonId,
   lessonTitle,
   courseTags = [],
+  demoCourse = false,
   onClose,
   standalone = false,
   standaloneClassName = '',
@@ -139,6 +143,20 @@ export default function CourseQuizEditorOverlay({
   const [videoMimeType, setVideoMimeType] = useState<string | null>(null)
   const [videoBase64Content, setVideoBase64Content] = useState<string | null>(null)
   const [readingVideo, setReadingVideo] = useState(false)
+  const demoAccount = useDemoAccount('frontend@devpath.com', demoCourse)
+  const demoQuestion = draft?.questions[2]
+  const demoActive = !loading && !generating && demoQuestion?.questionType === 'TRUE_FALSE'
+  const demoQuestionText = useDemoTyping({
+    text: DEMO_TEXT.quizQuestion, value: demoQuestion?.questionText ?? '',
+    onValue: (value) => { if (demoQuestion) updateQuestion(demoQuestion.localId, 'questionText', value) },
+    enabled: demoAccount, active: demoActive, scopeKey: demoQuestion?.localId, replaceExisting: true,
+  })
+  const demoExplanation = useDemoTyping({
+    text: DEMO_TEXT.quizExplanation, value: demoQuestion?.explanation ?? '',
+    onValue: (value) => { if (demoQuestion) updateQuestion(demoQuestion.localId, 'explanation', value) },
+    enabled: demoAccount, active: demoActive, scopeKey: demoQuestion?.localId, replaceExisting: true,
+  })
+  const demoTyping = demoQuestionText.typing || demoExplanation.typing
 
   useEffect(() => {
     const controller = new AbortController()
@@ -631,7 +649,7 @@ export default function CourseQuizEditorOverlay({
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={generating || readingVideo}
+              disabled={generating || readingVideo || demoTyping}
               className="course-quiz-editor-generate-button flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
             >
               <i className="fas fa-magic text-yellow-400" />
@@ -705,7 +723,7 @@ export default function CourseQuizEditorOverlay({
               <button
                 type="button"
                 onClick={handleApplySettings}
-                disabled={settingsSaving || saving}
+                disabled={settingsSaving || saving || demoTyping}
                 className="course-quiz-editor-secondary-button rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-600 transition hover:bg-gray-50"
               >
                 {settingsSaving ? '반영 중...' : '설정 변경'}
@@ -714,7 +732,7 @@ export default function CourseQuizEditorOverlay({
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || demoTyping}
                 className="course-quiz-editor-primary-button rounded-lg bg-[#00C471] px-5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? '저장 중...' : '저장 완료'}
@@ -775,8 +793,13 @@ export default function CourseQuizEditorOverlay({
                   </div>
 
                   <input
+                    {...(questionIndex === 2 ? demoQuestionText.bindings : {})}
                     value={question.questionText}
-                    onChange={(event) => updateQuestion(question.localId, 'questionText', event.target.value)}
+                    aria-busy={questionIndex === 2 && demoQuestionText.typing}
+                    onClick={(event) => {
+                      if (questionIndex === 2 && demoQuestionText.bindings.onClick(event) && question.options[1]) selectCorrectOption(question.localId, question.options[1].localId)
+                    }}
+                    onChange={(event) => questionIndex === 2 ? demoQuestionText.change(event.target.value) : updateQuestion(question.localId, 'questionText', event.target.value)}
                     type="text"
                     placeholder="질문을 입력하세요"
                     className="course-quiz-editor-question-input mb-4 w-full border-b border-transparent bg-transparent text-lg font-bold text-gray-900 outline-none transition focus:border-emerald-500"
@@ -789,6 +812,7 @@ export default function CourseQuizEditorOverlay({
                           key={option.localId}
                           type="button"
                           onClick={() => selectCorrectOption(question.localId, option.localId)}
+                          aria-pressed={option.isCorrect}
                           className={`flex-1 rounded-lg border-2 py-3 text-sm font-bold transition ${
                             option.isCorrect
                               ? optionIndex === 0
@@ -868,8 +892,13 @@ export default function CourseQuizEditorOverlay({
                       </span>
                     </div>
                     <textarea
+                      {...(questionIndex === 2 ? demoExplanation.bindings : {})}
                       value={question.explanation ?? ''}
-                      onChange={(event) => updateQuestion(question.localId, 'explanation', event.target.value)}
+                      aria-busy={questionIndex === 2 && demoExplanation.typing}
+                      onClick={(event) => {
+                        if (questionIndex === 2 && demoExplanation.bindings.onClick(event) && question.options[1]) selectCorrectOption(question.localId, question.options[1].localId)
+                      }}
+                      onChange={(event) => questionIndex === 2 ? demoExplanation.change(event.target.value) : updateQuestion(question.localId, 'explanation', event.target.value)}
                       maxLength={QUESTION_EXPLANATION_MAX_LENGTH}
                       rows={2}
                       placeholder="정답 근거를 한두 문장으로 간결하게 입력하세요."
