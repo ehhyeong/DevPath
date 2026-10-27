@@ -642,25 +642,39 @@ export function areSlotRectsEqual(left: Record<string, SlotRect>, right: Record<
   })
 }
 
-// 갈라짐·합류선의 가로 구간 높이: 노드 사이 빈 공간의 가운데. 같은 갈림길(출발)·합류점(도착)끼리 같은 높이를 쓴다.
-export function getEdgeBusY(edges: LayoutEdge[], rects: Record<string, SlotRect>) {
-  const splitTargetTop = new Map<string, number>()
-  const mergeSourceBottom = new Map<string, number>()
+// 갈라짐·합류선의 가로 구간 높이: 도착 줄 바로 위 빈 공간의 가운데(사이에 낀 곁가지 줄을 가로지르지 않게).
+// 같은 갈림길(출발)·합류점(도착)끼리 같은 높이를 쓴다.
+export function getEdgeBusY(edges: LayoutEdge[], rects: Record<string, SlotRect>, slots: LayoutSlot[]) {
+  const rowOf = new Map(slots.map((slot) => [slot.id, slot.row]))
+  const bottomByRow = new Map<number, number>()
+  slots.forEach((slot) => {
+    const rect = rects[slot.id]
+    if (rect) bottomByRow.set(slot.row, Math.max(bottomByRow.get(slot.row) ?? -Infinity, rect.bottom))
+  })
+  function bottomAbove(row: number) {
+    for (let r = row - 1; r >= 1; r -= 1) {
+      const bottom = bottomByRow.get(r)
+      if (bottom != null) return bottom
+    }
+    return undefined
+  }
+  const groupKey = (edge: LayoutEdge) => (edge.kind === 'split' ? `split:${edge.from}` : `merge:${edge.to}`)
+
+  const targetByGroup = new Map<string, { top: number; row: number }>()
   edges.forEach((edge) => {
-    const from = rects[edge.from]
+    if (edge.kind !== 'split' && edge.kind !== 'merge') return
     const to = rects[edge.to]
-    if (!from || !to) return
-    if (edge.kind === 'split') splitTargetTop.set(edge.from, Math.min(splitTargetTop.get(edge.from) ?? Infinity, to.top))
-    if (edge.kind === 'merge') mergeSourceBottom.set(edge.to, Math.max(mergeSourceBottom.get(edge.to) ?? -Infinity, from.bottom))
+    const row = rowOf.get(edge.to)
+    if (!to || row == null) return
+    const current = targetByGroup.get(groupKey(edge))
+    if (!current || to.top < current.top) targetByGroup.set(groupKey(edge), { top: to.top, row })
   })
   const busY: Record<string, number> = {}
   edges.forEach((edge) => {
-    if (edge.kind === 'split' && rects[edge.from]) {
-      busY[edge.id] = Math.round((rects[edge.from].bottom + (splitTargetTop.get(edge.from) as number)) / 2)
-    }
-    if (edge.kind === 'merge' && rects[edge.to]) {
-      busY[edge.id] = Math.round(((mergeSourceBottom.get(edge.to) as number) + rects[edge.to].top) / 2)
-    }
+    if (edge.kind !== 'split' && edge.kind !== 'merge') return
+    const target = targetByGroup.get(groupKey(edge))
+    const above = target ? bottomAbove(target.row) : undefined
+    if (target && above != null) busY[edge.id] = Math.round((above + target.top) / 2)
   })
   return busY
 }

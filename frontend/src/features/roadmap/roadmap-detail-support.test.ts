@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RecommendationChange, RoadmapNodeItem } from '../../types/roadmap'
-import { buildRoadmapLayout, getLaneGridColumn } from './roadmap-detail-support'
+import { buildRoadmapLayout, getEdgeBusY, getLaneGridColumn, type SlotRect } from './roadmap-detail-support'
 
 function node(customNodeId: number, lane: Partial<RoadmapNodeItem> = {}): RoadmapNodeItem {
   return {
@@ -122,5 +122,44 @@ describe('buildRoadmapLayout 곁가지 배치', () => {
     )
 
     expect(slotOf(layout, 'node-9')).toEqual({ lane: 'side-left', row: 3, column: '1' })
+  })
+})
+
+describe('getEdgeBusY 갈라짐·합류선 높이', () => {
+  // 행 번호마다 위아래 위치를 정한 가짜 측정값(행 높이 100, 행 간격 40)
+  function rectsFor(layout: ReturnType<typeof buildRoadmapLayout>) {
+    return Object.fromEntries(
+      layout.slots.map((slot) => {
+        const top = (slot.row - 1) * 140
+        const rect: SlotRect = { x: 0, y: top + 50, top, right: 0, bottom: top + 100, left: 0, width: 0, height: 100 }
+        return [slot.id, rect]
+      }),
+    )
+  }
+
+  it('갈림길 척추 아래에 곁가지가 쌓여도 갈라지는 선은 첫 갈래 줄 바로 위 빈 공간 가운데에 그린다', () => {
+    const layout = buildRoadmapLayout(
+      [
+        ...forkNodes,
+        node(8, { branchKind: 'ADVANCED', anchorNodeId: 1, laneKey: 1, orderInLane: 0 }),
+        node(9, { branchKind: 'ADVANCED', anchorNodeId: 1, laneKey: 2, orderInLane: 0 }),
+      ],
+      [],
+    )
+    expect(slotOf(layout, 'node-9').row).toBe(2)
+    expect(slotOf(layout, 'node-2').row).toBe(3)
+
+    const busY = getEdgeBusY(layout.edges, rectsFor(layout), layout.slots)
+    const splitBus = layout.edges.filter((e) => e.kind === 'split').map((e) => busY[e.id])
+    // 2행(곁가지) 아래 끝 240과 3행(갈래) 위 끝 280의 가운데
+    expect(splitBus).toEqual([260, 260])
+  })
+
+  it('합류선은 길이가 다른 갈래끼리도 합류 노드 바로 위 빈 공간 가운데의 같은 높이를 쓴다', () => {
+    const layout = buildRoadmapLayout(forkNodes, [])
+    const busY = getEdgeBusY(layout.edges, rectsFor(layout), layout.slots)
+    const mergeBus = layout.edges.filter((e) => e.kind === 'merge').map((e) => busY[e.id])
+    // 3행 아래 끝 380과 4행(합류 척추) 위 끝 420의 가운데
+    expect(mergeBus).toEqual([400, 400])
   })
 })

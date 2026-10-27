@@ -310,7 +310,7 @@ export function RoadmapGraph({
     return null
   }
 
-  const edgeBusY = getEdgeBusY(layout.edges, slotRects)
+  const edgeBusY = getEdgeBusY(layout.edges, slotRects, layout.slots)
 
   return (
     <div ref={canvasRef} className={roadmapCanvasScrollClassName}>
