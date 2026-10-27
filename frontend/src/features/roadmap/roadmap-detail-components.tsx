@@ -1,5 +1,5 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
-import { type ChangeLabelProps, type GhostAddCardProps, type LayoutSlot, type ProofCardBadgeProps, type RoadmapGraphProps, type RoadmapNodeCardProps, type SlotRect, areSlotRectsEqual, changeBadgeStyle, changeTypeIcon, changeTypeLabel, getBranchBadgeMeta, getNodeBoxClass, getNodeLessonProgressPercent, isNodeReadyToClear, isPendingNodeStatus, makeEdgePath, ROADMAP_LANE_COLUMN, roadmapCanvasScrollClassName, roadmapEdgeBaseClassName, roadmapEdgeLayerClassName, roadmapEdgeStrokeClassName, roadmapGraphClassName, roadmapNodeBoxClassName, roadmapNodeDescriptionClassName, roadmapNodeHeaderClassName, roadmapNodeMetaClassName, roadmapNodeMetaTagClassName, roadmapNodeTitleGroupClassName, roadmapNodeTitleTextClassName, roadmapProofCardBadgeClassName, roadmapRuleBadgeClassName, roadmapSlotBaseClassName, roadmapSuggestionEdgeClassName } from './roadmap-detail-support'
+import { type ChangeLabelProps, type GhostAddCardProps, type LayoutSlot, type ProofCardBadgeProps, type RoadmapGraphProps, type RoadmapNodeCardProps, type SlotRect, areSlotRectsEqual, changeBadgeStyle, changeTypeIcon, changeTypeLabel, getBranchBadgeMeta, getNodeBoxClass, getNodeLessonProgressPercent, isNodeReadyToClear, isPendingNodeStatus, getEdgeBusY, getLaneGridColumn, makeEdgePath, roadmapCanvasScrollClassName, roadmapEdgeBaseClassName, roadmapEdgeLayerClassName, roadmapEdgeStrokeClassName, roadmapGraphClassName, roadmapNodeBoxClassName, roadmapNodeDescriptionClassName, roadmapNodeHeaderClassName, roadmapNodeMetaClassName, roadmapNodeMetaTagClassName, roadmapNodeTitleGroupClassName, roadmapNodeTitleTextClassName, roadmapProofCardBadgeClassName, roadmapRuleBadgeClassName, roadmapSlotBaseClassName, roadmapSuggestionEdgeClassName } from './roadmap-detail-support'
 
 // Proof 카드를 노드 내부 왼쪽 위(필수 배지와 동일 높이)에 출력해 옆 브랜치 노드와의 겹침을 방지한다.
 export function ProofCardBadge({ card }: ProofCardBadgeProps) {
@@ -196,15 +196,42 @@ export function RoadmapGraph({
   onApply,
   onIgnore,
 }: RoadmapGraphProps) {
+  const canvasRef = useRef<HTMLDivElement | null>(null)
   const graphRef = useRef<HTMLDivElement | null>(null)
   const slotRefs = useRef(new Map<string, HTMLDivElement>())
   const [slotRects, setSlotRects] = useState<Record<string, SlotRect>>({})
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 })
 
+  // 4칸 배치가 화면보다 넓으면 척추가 가운데 오도록 가로 스크롤을 맞춘다.
   useEffect(() => {
+    const canvas = canvasRef.current
+    if (!layout.hasOuterLanes || !canvas || canvas.scrollWidth <= canvas.clientWidth) return
+    canvas.scrollLeft = (canvas.scrollWidth - canvas.clientWidth) / 2
+  }, [layout.hasOuterLanes])
+
+  useEffect(() => {
+    // 같은 줄의 갈래 카드끼리만 높이를 맞춘다(그 줄의 곁가지 카드 높이에는 끌려가지 않게).
+    function equalizeBranchHeights() {
+      const boxesByRow = new Map<number, HTMLElement[]>()
+      layout.slots.forEach((slot) => {
+        if (slot.kind !== 'official-branch') return
+        const box = slotRefs.current.get(slot.id)?.querySelector<HTMLElement>('.node-box')
+        if (!box) return
+        box.style.minHeight = ''
+        boxesByRow.set(slot.row, [...(boxesByRow.get(slot.row) ?? []), box])
+      })
+      boxesByRow.forEach((boxes) => {
+        const height = Math.max(...boxes.map((box) => box.getBoundingClientRect().height))
+        boxes.forEach((box) => {
+          box.style.minHeight = `${height}px`
+        })
+      })
+    }
+
     function measure() {
       const graph = graphRef.current
       if (!graph) return
+      equalizeBranchHeights()
       const graphRect = graph.getBoundingClientRect()
       const nextRects: Record<string, SlotRect> = {}
 
@@ -283,14 +310,26 @@ export function RoadmapGraph({
     return null
   }
 
+  const edgeBusY = getEdgeBusY(layout.edges, slotRects)
+
   return (
-    <div className={roadmapCanvasScrollClassName}>
+    <div ref={canvasRef} className={roadmapCanvasScrollClassName}>
       <div
         ref={graphRef}
         className={roadmapGraphClassName}
         style={{
           gridTemplateRows: `repeat(${Math.max(layout.rowCount, 1)}, minmax(var(--roadmap-row-min-height), auto))`,
-        }}
+          // 바깥 칸이 생기면 곁 카드와 간격을 줄여 화면 안에 들어오게 한다(척추는 가운데에 걸쳐 원래 폭 유지).
+          // 가운데 폭 0인 칸은 갈래 1·2 사이에만 간격을 한 번 더 넣기 위한 것이다.
+          ...(layout.hasOuterLanes
+            ? {
+                '--roadmap-side-node-width': '300px',
+                '--roadmap-lane-gap': '40px',
+                gridTemplateColumns:
+                  'repeat(2, var(--roadmap-side-node-width)) 0px repeat(2, var(--roadmap-side-node-width))',
+              }
+            : {}),
+        } as CSSProperties}
       >
         <svg
           className={roadmapEdgeLayerClassName}
@@ -300,7 +339,7 @@ export function RoadmapGraph({
           aria-hidden="true"
         >
           {layout.edges.map((edge) => {
-            const path = makeEdgePath(edge, slotRects)
+            const path = makeEdgePath(edge, slotRects, edgeBusY[edge.id])
             if (!path) return null
             return (
               <path
@@ -320,9 +359,8 @@ export function RoadmapGraph({
           <div
             key={slot.id}
             ref={registerSlot(slot.id)}
+            data-slot-id={slot.id}
             className={`${roadmapSlotBaseClassName} roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
-              slot.kind === 'official-branch' ? '[align-self:stretch]' : ''
-            } ${
               slot.kind === 'official-branch' ||
               slot.kind === 'applied-branch' ||
               slot.kind === 'suggested-branch' ||
@@ -345,8 +383,10 @@ export function RoadmapGraph({
                 : ''
             }`}
             style={{
-              gridColumn: ROADMAP_LANE_COLUMN[slot.lane],
+              gridColumn: getLaneGridColumn(slot.lane, layout.hasOuterLanes),
               gridRow: slot.row,
+              // 두 칸에 걸친 척추는 칸을 카드 폭에 맞춰야 곁가지 연결선이 카드 가장자리에서 나간다.
+              width: layout.hasOuterLanes && slot.lane === 'center' ? 'max-content' : undefined,
               '--slot-offset-y': `${slot.stackOffset ?? 0}px`,
             } as CSSProperties}
           >

@@ -10,7 +10,7 @@
   --roadmap-node-width: clamp(280px, 34vw, 380px);
   --roadmap-side-node-width: clamp(250px, 30vw, 330px);
   --roadmap-row-min-height: 146px;
-  --roadmap-row-gap: clamp(24px, 4vw, 34px);
+  --roadmap-row-gap: clamp(32px, 5vw, 56px);
   --roadmap-lane-gap: clamp(24px, 5vw, 48px);
   --roadmap-line-color: #cbd5e1;
 }

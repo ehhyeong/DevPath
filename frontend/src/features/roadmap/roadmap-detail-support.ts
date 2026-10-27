@@ -210,6 +210,22 @@ export const ROADMAP_LANE_COLUMN: Record<RoadmapLane, number> = {
   'side-right': 3,
 }
 
+// 갈래에 곁가지가 매달린 로드맵용 배치. 갈래 1·2가 가운데로 붙고 바깥 칸에 곁가지를 두며, 척추는 가운데에 걸친다.
+// 3번은 폭 0인 칸으로, 갈래 1·2 사이에만 간격을 한 번 더 넣는다.
+const OUTER_LANE_COLUMNS: Record<RoadmapLane, number[]> = {
+  'side-left': [1],
+  left: [2],
+  center: [2, 3, 4],
+  right: [4],
+  'side-right': [5],
+}
+
+export function getLaneGridColumn(lane: RoadmapLane, hasOuterLanes: boolean) {
+  if (!hasOuterLanes) return String(ROADMAP_LANE_COLUMN[lane])
+  const columns = OUTER_LANE_COLUMNS[lane]
+  return columns.length > 1 ? `${columns[0]} / span ${columns.length}` : String(columns[0])
+}
+
 export type LayoutSpineItem =
   | { kind: 'node'; node: RoadmapNodeItem }
   | { kind: 'add'; change: RecommendationChange }
@@ -245,6 +261,7 @@ export interface RoadmapLayout {
   slots: LayoutSlot[]
   edges: LayoutEdge[]
   rowCount: number
+  hasOuterLanes: boolean
 }
 
 export interface SlotRect {
@@ -341,6 +358,7 @@ export const POST_BRANCH_SPINE_OFFSET_Y = 88
 // 레인 트리 레이아웃: anchorNodeId(부모 커스텀노드)로 트리를 만든다. 척추=center, 구조 분기(갈림길)는 앵커
 // 다음 행에서 left/right(중첩은 side-left/side-right)로 갈라져 다음 척추에서 합류한다. 곁가지(복습/심화)와
 // 아직 수락하지 않은 생성 제안은 합류 없는 위성이라 앵커와 같은 행의 측면 칸에 매단다. 레인 모델 로드맵 전용.
+// 갈래에 매달린 위성이 있으면 4칸 배치(hasOuterLanes)로 바꿔 앵커 바깥 칸에 둔다(반대편 갈래를 가로지르지 않게).
 export function buildRoadmapLayout(
   nodes: RoadmapNodeItem[],
   changes: RecommendationChange[],
@@ -374,10 +392,27 @@ export function buildRoadmapLayout(
   })
   const placedChangeIds = new Set<number>()
 
+  const isBranchNode = (node?: RoadmapNodeItem) => node?.branchKind === 'BRANCH'
+  const nodeById = new Map(nodes.map((n) => [n.customNodeId, n]))
+  const hasOuterLanes =
+    nodes.some(
+      (n) =>
+        (n.branchKind === 'REVIEW' || n.branchKind === 'ADVANCED') &&
+        n.anchorNodeId != null &&
+        isBranchNode(nodeById.get(n.anchorNodeId)),
+    ) ||
+    addChanges.some((c) =>
+      c.anchorCustomNodeId != null
+        ? isBranchNode(nodeById.get(c.anchorCustomNodeId))
+        : nodes.some((n) => n.originalNodeId === c.branchFromNodeId && isBranchNode(n)),
+    )
+  // 점유는 실제로 그릴 칸 기준으로 센다(3열이면 기존과 같고, 4칸이면 척추가 가운데 두 칸을 차지).
+  const occupiedColumns = (lane: RoadmapLane) => (hasOuterLanes ? OUTER_LANE_COLUMNS[lane] : [ROADMAP_LANE_COLUMN[lane]])
+
   function pushSlot(slot: LayoutSlot) {
     slots.push(slot)
     rowCount = Math.max(rowCount, slot.row)
-    occupied.add(`${slot.row}:${ROADMAP_LANE_COLUMN[slot.lane]}`)
+    occupiedColumns(slot.lane).forEach((column) => occupied.add(`${slot.row}:${column}`))
     return slot
   }
   function pushEdge(from: string | null, to: string, kind: LayoutEdgeKind, theme: EdgeTheme = 'default') {
@@ -386,24 +421,29 @@ export function buildRoadmapLayout(
   }
   // 앵커 행부터 그 열의 첫 빈 칸을 잡고, 뒤따르는 척추가 넘겨쓰지 않도록 그 행을 예약한다.
   function claimAside(anchorRow: number, lane: RoadmapLane) {
-    const column = ROADMAP_LANE_COLUMN[lane]
+    const [column] = occupiedColumns(lane)
     let row = anchorRow
     while (occupied.has(`${row}:${column}`)) row += 1
     nextRow = Math.max(nextRow, row + 1)
     return row
   }
-  function sideColumn(branchKind?: string | null): RoadmapLane {
-    return branchKind === 'REVIEW' ? 'side-left' : 'side-right'
+  // 척추의 위성은 종류대로(복습=왼쪽, 심화=오른쪽), 갈래·위성의 위성은 앵커 바깥쪽에 매단다.
+  function asideLane(parentLane: RoadmapLane, isReview: boolean): RoadmapLane {
+    if (parentLane === 'center') return isReview ? 'side-left' : 'side-right'
+    return parentLane === 'left' || parentLane === 'side-left' ? 'side-left' : 'side-right'
+  }
+  function sideColumn(branchKind: string | null | undefined, parentLane: RoadmapLane): RoadmapLane {
+    return asideLane(parentLane, branchKind === 'REVIEW')
   }
   function structuralColumn(depth: number, laneKey?: number | null): RoadmapLane {
     if (depth === 1) return laneKey === 1 ? 'left' : 'right'
     return laneKey === 1 ? 'side-left' : 'side-right'
   }
   // 제안 카드는 수락 후 곁가지가 놓일 열과 같은 열을 쓴다(수락 전후 위치 일치).
-  function suggestionColumn(change: RecommendationChange, badge: BranchBadgeMeta): RoadmapLane {
-    if (change.branchType === 'REVIEW') return 'side-left'
-    if (change.branchType === 'ADVANCED') return 'side-right'
-    return badge.theme === 'review' ? 'side-left' : 'side-right'
+  function suggestionColumn(change: RecommendationChange, badge: BranchBadgeMeta, parentLane: RoadmapLane): RoadmapLane {
+    const isReview =
+      change.branchType === 'REVIEW' || (change.branchType !== 'ADVANCED' && badge.theme === 'review')
+    return asideLane(parentLane, isReview)
   }
   function sortByOrderInLane(list: RoadmapNodeItem[]) {
     return list
@@ -412,7 +452,7 @@ export function buildRoadmapLayout(
   }
 
   // 아직 수락하지 않은 생성 제안을 앵커 측면에 매단다. 이미 놓인 곁가지가 있으면 그 아래 칸으로 내려간다.
-  function layoutSuggestionsOf(parent: RoadmapNodeItem, parentSlotId: string, parentRow: number) {
+  function layoutSuggestionsOf(parent: RoadmapNodeItem, parentSlotId: string, parentRow: number, parentLane: RoadmapLane) {
     const pending = [
       ...(pendingByAnchor.get(parent.customNodeId) ?? []),
       ...(parent.originalNodeId == null ? [] : (pendingByOrigin.get(parent.originalNodeId) ?? [])),
@@ -421,7 +461,7 @@ export function buildRoadmapLayout(
       if (placedChangeIds.has(change.changeId)) return
       placedChangeIds.add(change.changeId)
       const badge = getSuggestionBadgeMeta(change)
-      const lane = suggestionColumn(change, badge)
+      const lane = suggestionColumn(change, badge, parentLane)
       const slot = pushSlot({
         id: `suggested-add-${change.changeId}`,
         kind: 'suggested-branch',
@@ -440,16 +480,17 @@ export function buildRoadmapLayout(
     parentSlotId: string,
     parentRow: number,
     depth: number,
+    parentLane: RoadmapLane,
   ): string[] {
     const children = byAnchor.get(parent.customNodeId) ?? []
 
     // ① 곁가지(복습/심화): 앵커와 같은 행의 측면 칸. 같은 레인 체인은 이어서 아래 칸으로 내려간다.
     const sidePrevByLane = new Map<number, string>()
-    const sideSlots: { node: RoadmapNodeItem; slotId: string; row: number }[] = []
+    const sideSlots: { node: RoadmapNodeItem; slotId: string; row: number; column: RoadmapLane }[] = []
     sortByOrderInLane(
       children.filter((c) => c.branchKind === 'REVIEW' || c.branchKind === 'ADVANCED'),
     ).forEach((child) => {
-      const column = sideColumn(child.branchKind)
+      const column = sideColumn(child.branchKind, parentLane)
       const row = claimAside(parentRow, column)
       const slot = pushSlot({
         id: `node-${child.customNodeId}`,
@@ -465,11 +506,11 @@ export function buildRoadmapLayout(
       pushEdge(prevId ?? parentSlotId, slot.id, prevId ? 'branch' : 'applied-branch', theme)
       sidePrevByLane.set(laneId, slot.id)
       placed.push({ node: child, slotId: slot.id, column, row })
-      sideSlots.push({ node: child, slotId: slot.id, row })
+      sideSlots.push({ node: child, slotId: slot.id, row, column })
     })
 
     // ② 생성 제안: 곁가지 다음 칸에 이어 붙여 수락 후와 같은 자리에 보이게 한다.
-    layoutSuggestionsOf(parent, parentSlotId, parentRow)
+    layoutSuggestionsOf(parent, parentSlotId, parentRow, parentLane)
 
     // ③ 구조 분기(갈림길): 앵커 다음 행에서 갈라져 내려가고, 다음 척추에서 합류한다.
     const layers = new Map<number, RoadmapNodeItem[]>()
@@ -483,7 +524,7 @@ export function buildRoadmapLayout(
       })
     const prevByLane = new Map<number, string>()
     const structuralEndByLane = new Map<number, string>()
-    const structuralSlots: { node: RoadmapNodeItem; slotId: string; row: number }[] = []
+    const structuralSlots: { node: RoadmapNodeItem; slotId: string; row: number; column: RoadmapLane }[] = []
     Array.from(layers.keys())
       .sort((a, b) => a - b)
       .forEach((layerKey) => {
@@ -507,12 +548,12 @@ export function buildRoadmapLayout(
             prevByLane.set(laneId, slot.id)
             structuralEndByLane.set(laneId, slot.id)
             placed.push({ node: child, slotId: slot.id, column, row: layerRow })
-            structuralSlots.push({ node: child, slotId: slot.id, row: layerRow })
+            structuralSlots.push({ node: child, slotId: slot.id, row: layerRow, column })
           })
       })
 
-    sideSlots.forEach(({ node, slotId, row }) => layoutChildrenOf(node, slotId, row, depth + 1))
-    structuralSlots.forEach(({ node, slotId, row }) => layoutChildrenOf(node, slotId, row, depth + 1))
+    sideSlots.forEach(({ node, slotId, row, column }) => layoutChildrenOf(node, slotId, row, depth + 1, column))
+    structuralSlots.forEach(({ node, slotId, row, column }) => layoutChildrenOf(node, slotId, row, depth + 1, column))
     return Array.from(structuralEndByLane.values())
   }
 
@@ -536,7 +577,7 @@ export function buildRoadmapLayout(
     }
     prevSpineId = slot.id
     placed.push({ node: sp, slotId: slot.id, column: 'center', row })
-    pendingMergeEnds = layoutChildrenOf(sp, slot.id, row, 1)
+    pendingMergeEnds = layoutChildrenOf(sp, slot.id, row, 1, 'center')
   })
 
   // 앵커 노드를 이 로드맵에서 찾지 못한 제안은 누락되지 않도록 그래프 말미에 표시한다.
@@ -545,7 +586,7 @@ export function buildRoadmapLayout(
     if (change.anchorCustomNodeId == null && change.branchFromNodeId == null) return
     placedChangeIds.add(change.changeId)
     const badge = getSuggestionBadgeMeta(change)
-    const lane = suggestionColumn(change, badge)
+    const lane = suggestionColumn(change, badge, 'center')
     const slot = pushSlot({
       id: `suggested-add-${change.changeId}`,
       kind: 'suggested-branch',
@@ -561,7 +602,7 @@ export function buildRoadmapLayout(
     pushEdge(source?.slotId ?? null, slot.id, 'suggestion', 'suggestion')
   })
 
-  return { slots, edges, rowCount }
+  return { slots, edges, rowCount, hasOuterLanes }
 }
 
 export const roadmapRuleBadgeClassName =
@@ -601,7 +642,30 @@ export function areSlotRectsEqual(left: Record<string, SlotRect>, right: Record<
   })
 }
 
-export function makeEdgePath(edge: LayoutEdge, rects: Record<string, SlotRect>) {
+// 갈라짐·합류선의 가로 구간 높이: 노드 사이 빈 공간의 가운데. 같은 갈림길(출발)·합류점(도착)끼리 같은 높이를 쓴다.
+export function getEdgeBusY(edges: LayoutEdge[], rects: Record<string, SlotRect>) {
+  const splitTargetTop = new Map<string, number>()
+  const mergeSourceBottom = new Map<string, number>()
+  edges.forEach((edge) => {
+    const from = rects[edge.from]
+    const to = rects[edge.to]
+    if (!from || !to) return
+    if (edge.kind === 'split') splitTargetTop.set(edge.from, Math.min(splitTargetTop.get(edge.from) ?? Infinity, to.top))
+    if (edge.kind === 'merge') mergeSourceBottom.set(edge.to, Math.max(mergeSourceBottom.get(edge.to) ?? -Infinity, from.bottom))
+  })
+  const busY: Record<string, number> = {}
+  edges.forEach((edge) => {
+    if (edge.kind === 'split' && rects[edge.from]) {
+      busY[edge.id] = Math.round((rects[edge.from].bottom + (splitTargetTop.get(edge.from) as number)) / 2)
+    }
+    if (edge.kind === 'merge' && rects[edge.to]) {
+      busY[edge.id] = Math.round(((mergeSourceBottom.get(edge.to) as number) + rects[edge.to].top) / 2)
+    }
+  })
+  return busY
+}
+
+export function makeEdgePath(edge: LayoutEdge, rects: Record<string, SlotRect>, busY?: number) {
   const from = rects[edge.from]
   const to = rects[edge.to]
   if (!from || !to) return null
@@ -632,13 +696,13 @@ export function makeEdgePath(edge: LayoutEdge, rects: Record<string, SlotRect>) 
 
   if (edge.kind === 'split') {
     const splitBusY = startY + 46
-    const midY = splitBusY < endY ? splitBusY : endY - 24
+    const midY = busY ?? (splitBusY < endY ? splitBusY : endY - 24)
     return `M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}`
   }
 
   if (edge.kind === 'merge') {
     const mergeBusY = endY - 46
-    const midY = mergeBusY > startY ? mergeBusY : startY + 24
+    const midY = busY ?? (mergeBusY > startY ? mergeBusY : startY + 24)
     return `M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}`
   }
 
