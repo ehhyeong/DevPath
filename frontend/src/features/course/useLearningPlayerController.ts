@@ -758,7 +758,8 @@ const initialCourseId = useMemo(() => readNumberSearchParam('courseId'), [])
 
   useEffect(() => {
     const syncFullscreenState = () => {
-      setIsFrameFullscreen(document.fullscreenElement === frameRef.current)
+      // 로딩 중에는 두 값이 모두 null이므로 실제 영상 프레임이 존재할 때만 전체화면으로 판단한다.
+      setIsFrameFullscreen(Boolean(frameRef.current && document.fullscreenElement === frameRef.current))
     }
 
     syncFullscreenState()
