@@ -114,6 +114,7 @@ public class InstructorLessonEvaluationDto {
     private Boolean allowTextSubmission;
     private Boolean allowFileSubmission;
     private Boolean allowUrlSubmission;
+    private List<String> allowedFileFormats;
     private List<AssignmentRubricItem> rubrics;
     private List<AssignmentReferenceFileItem> referenceFiles;
   }
@@ -149,6 +150,7 @@ public class InstructorLessonEvaluationDto {
     private Boolean allowTextSubmission;
     private Boolean allowFileSubmission;
     private Boolean allowUrlSubmission;
+    private List<String> allowedFileFormats;
 
     @Valid private List<AssignmentRubricInput> rubrics = new ArrayList<>();
     @Valid private List<AssignmentReferenceFileInput> referenceFiles = new ArrayList<>();

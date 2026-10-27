@@ -66,7 +66,7 @@ export default function InstructorSidebar({
 
   return (
     <>
-      <aside className="instructor-sidebar box-border hidden h-[calc(100dvh-var(--app-header-height))] min-h-[calc(100dvh-var(--app-header-height))] w-20 shrink-0 self-stretch flex-col overflow-x-hidden border-r border-[#e2e8f0] bg-white px-4 py-6 font-['Pretendard',-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,Helvetica,Arial,sans-serif] transition-[width] duration-300 ease-in-out hover:w-[250px] lg:flex">
+      <aside className="instructor-sidebar box-border hidden h-[calc(100dvh-var(--app-header-height))] min-h-[calc(100dvh-var(--app-header-height))] shrink-0 self-stretch flex-col overflow-x-hidden border-r border-[#e2e8f0] bg-white px-4 py-6 font-['Pretendard',-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,Helvetica,Arial,sans-serif] transition-[width] duration-300 ease-in-out lg:flex">
         <div className="sidebar-sticky-content">
           <nav className="sidebar-nav hide-scroll">
             {sections.map((section) => (

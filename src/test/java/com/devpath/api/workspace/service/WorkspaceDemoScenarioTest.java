@@ -46,6 +46,7 @@ class WorkspaceDemoScenarioTest {
             .build();
     jdbc = new JdbcTemplate(database);
     jdbc.execute("CREATE TABLE users (user_id bigint PRIMARY KEY, name varchar(120))");
+    jdbc.execute("INSERT INTO users VALUES (7, '김학습'), (8, '박주승'), (9, '김태형')");
     jdbc.execute(
         "CREATE TABLE user_profiles (user_id bigint PRIMARY KEY, profile_image varchar(1000))");
     jdbc.execute(
@@ -133,6 +134,18 @@ class WorkspaceDemoScenarioTest {
               assertThat(row.aiCodeReviewId()).isNull();
             });
     assertThat(demo.isDemoWorkspace(42L)).isTrue();
+    long reviewId = store.findSummaries(42L).getFirst().reviewId();
+    assertThat(store.findComments(42L, reviewId))
+        .hasSize(2)
+        .extracting(comment -> comment.authorName())
+        .containsExactly("박주승", "김태형");
+    assertThat(store.findComments(42L, reviewId))
+        .extracting(comment -> comment.body())
+        .containsExactly(
+            WorkspaceDemoScenario.JUSEUNG_COMMENT, WorkspaceDemoScenario.TAEHYUNG_COMMENT);
+    assertThat(store.findComments(42L, reviewId))
+        .allSatisfy(
+            comment -> assertThat(comment.filePath()).isEqualTo(WorkspaceDemoScenario.FILE_PATH));
     assertThat(demo.isDemoWorkspace(43L)).isFalse();
     when(users.findById(7L)).thenReturn(Optional.of(user(7L, "other@devpath.com")));
     assertThat(demo.isDemoWorkspace(42L)).isFalse();

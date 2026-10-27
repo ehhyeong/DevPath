@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react'
 import { userApi } from './api/auth'
 import { AUTH_SESSION_SYNC_EVENT, readStoredAuthSession } from './auth-session'
 import { useAuthSession } from './useAuthSession'
@@ -39,16 +39,18 @@ type Options = {
   active: boolean
   scopeKey?: string | number | null
   instant?: boolean
+  replaceExisting?: boolean
 }
 
-export function useDemoTyping({ text, value, onValue, enabled, active, scopeKey, instant = false }: Options) {
+export function useDemoTyping({ text, value, onValue, enabled, active, scopeKey, instant = false, replaceExisting = false }: Options) {
   const [typing, setTyping] = useState(false)
   const cancelRef = useRef<(() => void) | null>(null)
   const usedRef = useRef(false)
-  const producedRef = useRef('')
+  const pendingValuesRef = useRef<string[]>([])
   const stop = useCallback(() => {
     cancelRef.current?.()
     cancelRef.current = null
+    pendingValuesRef.current = []
     setTyping(false)
   }, [])
   useEffect(() => {
@@ -56,8 +58,13 @@ export function useDemoTyping({ text, value, onValue, enabled, active, scopeKey,
     return stop
   }, [enabled, active, scopeKey, stop])
   useEffect(() => {
-    // 템플릿 적용 등 다른 버튼이 값을 바꿨을 때도 진행 중인 타이핑이 새 값을 덮어쓰지 않는다.
-    if (cancelRef.current && value !== producedRef.current) stop()
+    if (cancelRef.current) {
+      // React 반영이 다음 타이머보다 늦어질 수 있어 아직 반영되지 않은 프레임도 내부 입력으로 인정한다.
+      const index = pendingValuesRef.current.indexOf(value)
+      if (index >= 0) pendingValuesRef.current.splice(0, index + 1)
+      // 템플릿 등 외부 변경은 타이핑이 덮어쓰지 않도록 중단한다.
+      else stop()
+    }
   }, [value, stop])
   function interrupt() {
     usedRef.current = true
@@ -71,21 +78,39 @@ export function useDemoTyping({ text, value, onValue, enabled, active, scopeKey,
     if (cancelRef.current && event.key === 'Enter') event.preventDefault()
     else interrupt()
   }
-  function start() {
-    if (!enabled || !active || value || usedRef.current) return
+  function start(event?: MouseEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    if (!enabled || !active || (!replaceExisting && value) || usedRef.current || (event && event.button !== 0)) return false
     usedRef.current = true
     if (instant) {
       onValue(text)
-      return
+      return true
     }
     setTyping(true)
-    cancelRef.current = startDemoTyping(text, (next) => {
-      producedRef.current = next
+    pendingValuesRef.current = [value]
+    const emitValue = (next: string) => {
+      pendingValuesRef.current.push(next)
       onValue(next)
-    }, () => {
-      cancelRef.current = null
-      setTyping(false)
-    })
+    }
+    const beginTyping = () => {
+      cancelRef.current = startDemoTyping(text, emitValue, () => {
+        cancelRef.current = null
+        pendingValuesRef.current = []
+        setTyping(false)
+      })
+    }
+    if (replaceExisting && value && event) {
+      event.currentTarget.select()
+      // 전체 선택과 빈 칸이 각각 눈에 보인 뒤 입력을 시작해 사용자의 선택·삭제 순서를 재현한다.
+      const selectionTimer = window.setTimeout(() => {
+        emitValue('')
+        const clearedTimer = window.setTimeout(beginTyping, 100)
+        cancelRef.current = () => window.clearTimeout(clearedTimer)
+      }, 350)
+      cancelRef.current = () => window.clearTimeout(selectionTimer)
+    } else {
+      beginTyping()
+    }
+    return true
   }
   return {
     typing, stop, change, keyDown,

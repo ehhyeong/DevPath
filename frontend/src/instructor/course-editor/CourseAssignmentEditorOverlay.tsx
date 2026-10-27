@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { instructorLessonEvaluationApi } from '../../lib/api/instructor'
+import { ASSIGNMENT_FILE_FORMAT_OPTIONS, parseAssignmentFileFormats, validateAssignmentFileFormats } from './assignment-file-formats'
 import type {
   InstructorAssignmentEditor,
   InstructorAssignmentReferenceFile,
@@ -44,6 +45,7 @@ function normalizeEditor(editor: InstructorAssignmentEditor): AssignmentEditorDr
   return {
     ...editor,
     aiReviewEnabled: true,
+    allowedFileFormats: editor.allowedFileFormats ?? [],
     rubrics: editor.rubrics.map((rubric) => ({
       ...rubric,
       criteriaKeywords: rubric.criteriaKeywords ?? '',
@@ -84,6 +86,8 @@ export default function CourseAssignmentEditorOverlay({
   const [dragging, setDragging] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [fileFormatsText, setFileFormatsText] = useState('')
+  const [restrictFileFormats, setRestrictFileFormats] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
@@ -96,6 +100,8 @@ export default function CourseAssignmentEditorOverlay({
       .getAssignmentEditor(lessonId, controller.signal)
       .then((response) => {
         const normalized = normalizeEditor(response)
+        setFileFormatsText(normalized.allowedFileFormats.join(', '))
+        setRestrictFileFormats(normalized.allowedFileFormats.length > 0)
         setDraft({
           ...normalized,
           rubrics: normalized.rubrics.length > 0 ? normalized.rubrics : [createRubric()],
@@ -232,6 +238,14 @@ export default function CourseAssignmentEditorOverlay({
       return
     }
 
+    const allowedFileFormats = restrictFileFormats ? parseAssignmentFileFormats(fileFormatsText) : []
+    const formatError = restrictFileFormats && draft.allowFileSubmission ? validateAssignmentFileFormats(allowedFileFormats) : null
+    if (formatError) {
+      setError(formatError)
+      pushToast(formatError)
+      return
+    }
+
     setSaving(true)
     setError(null)
 
@@ -245,6 +259,7 @@ export default function CourseAssignmentEditorOverlay({
         allowTextSubmission: draft.allowTextSubmission,
         allowFileSubmission: draft.allowFileSubmission,
         allowUrlSubmission: draft.allowUrlSubmission,
+        allowedFileFormats,
         rubrics: draft.rubrics.map((rubric, index) => ({
           rubricId: rubric.rubricId,
           criteriaName: rubric.criteriaName,
@@ -266,6 +281,8 @@ export default function CourseAssignmentEditorOverlay({
         ...normalizeEditor(saved),
         rubrics: saved.rubrics.length > 0 ? normalizeEditor(saved).rubrics : [createRubric()],
       })
+      setFileFormatsText((saved.allowedFileFormats ?? []).join(', '))
+      setRestrictFileFormats((saved.allowedFileFormats ?? []).length > 0)
       setSuccessOpen(true)
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : '과제 저장에 실패했습니다.')
@@ -350,24 +367,24 @@ export default function CourseAssignmentEditorOverlay({
               />
 
               <label className="mb-2 block text-sm font-extrabold text-gray-800">
-                과제 가이드 <span className="text-red-500">*</span>
+                과제 가이드 (설명) <span className="text-red-500">*</span>
               </label>
               <div className="content-assignment-editor-markdown mb-8 overflow-hidden rounded-xl border border-gray-200 shadow-sm transition focus-within:border-[#00C471] focus-within:ring-1 focus-within:ring-[#00C471]">
                 <div className="content-assignment-editor-toolbar flex gap-1 border-b border-gray-200 bg-gray-50 p-2 text-gray-600">
-                  <button type="button" onClick={() => insertFormat('**', '**')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="굵게" onClick={() => insertFormat('**', '**')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-bold" />
                   </button>
-                  <button type="button" onClick={() => insertFormat('*', '*')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="기울임" onClick={() => insertFormat('*', '*')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-italic" />
                   </button>
                   <div className="mx-1 my-auto h-5 w-px bg-gray-300" />
-                  <button type="button" onClick={() => insertFormat('- ', '')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="목록" onClick={() => insertFormat('- ', '')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-list-ul" />
                   </button>
-                  <button type="button" onClick={() => insertFormat('`', '`')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="인라인 코드" onClick={() => insertFormat('`', '`')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-code" />
                   </button>
-                  <button type="button" onClick={() => insertFormat('```\n', '\n```')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="코드 블록" onClick={() => insertFormat('```\n', '\n```')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-file-code" />
                   </button>
                 </div>
@@ -383,7 +400,7 @@ export default function CourseAssignmentEditorOverlay({
 
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-xs font-extrabold text-gray-600">참고 파일 첨부</label>
+                  <label className="mb-2 block text-xs font-extrabold text-gray-600">참조 파일 첨부 <span className="font-normal text-gray-400">(선택)</span></label>
                   <label
                     onDragOver={(event) => {
                       event.preventDefault()
@@ -404,7 +421,7 @@ export default function CourseAssignmentEditorOverlay({
                   >
                     <i className="fas fa-cloud-upload-alt mb-2 text-2xl text-gray-400 transition group-hover:text-[#00C471]" />
                     <span className="block text-sm font-bold text-gray-600 group-hover:text-[#00C471]">
-                      클릭하거나 파일을 드래그해서 첨부
+                      클릭하거나 파일 드래그 앤 드롭
                     </span>
                     <span className="mt-1 block text-[10px] text-gray-400">PDF, ZIP, 이미지</span>
                     <input type="file" multiple className="hidden" onChange={(event) => void handleFileSelection(event.target.files)} />
@@ -440,7 +457,7 @@ export default function CourseAssignmentEditorOverlay({
                         type="checkbox"
                         className="h-4 w-4 accent-blue-600"
                       />
-                      텍스트 코드 직접 입력
+                      텍스트/코드 직접 입력
                     </label>
                     <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-gray-700">
                       <input
@@ -449,7 +466,7 @@ export default function CourseAssignmentEditorOverlay({
                         type="checkbox"
                         className="h-4 w-4 accent-blue-600"
                       />
-                      파일 업로드
+                      파일 업로드 (이미지, ZIP 등)
                     </label>
                     <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-gray-700">
                       <input
@@ -458,11 +475,35 @@ export default function CourseAssignmentEditorOverlay({
                         type="checkbox"
                         className="h-4 w-4 accent-blue-600"
                       />
-                      외부 링크 제출
+                      외부 링크 (Github, Notion 등)
                     </label>
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="content-assignment-editor-card rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+              <fieldset disabled={!draft.allowFileSubmission} className="min-w-0 space-y-4 disabled:opacity-50">
+                <legend className="mb-2 text-sm font-extrabold text-gray-800">과제 제출 파일 확장자</legend>
+                <p className="text-xs leading-relaxed text-gray-500">학습자가 제출할 파일의 확장자를 설정합니다. 위의 참조 파일 첨부와는 별도 설정입니다.</p>
+                <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-700">
+                  <label className="flex items-center gap-2"><input type="radio" name="assignment-file-format-mode" checked={restrictFileFormats} onChange={() => setRestrictFileFormats(true)} className="accent-[#00c471]" />선택한 확장자만 허용</label>
+                  <label className="flex items-center gap-2"><input type="radio" name="assignment-file-format-mode" checked={!restrictFileFormats} onChange={() => setRestrictFileFormats(false)} className="accent-[#00c471]" />제한 없음</label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ASSIGNMENT_FILE_FORMAT_OPTIONS.map((format) => {
+                    const selected = restrictFileFormats && parseAssignmentFileFormats(fileFormatsText).includes(format)
+                    return <button key={format} type="button" aria-pressed={selected} onClick={() => {
+                      const formats = restrictFileFormats ? parseAssignmentFileFormats(fileFormatsText) : []
+                      setFileFormatsText((selected ? formats.filter((item) => item !== format) : [...formats, format]).join(', '))
+                      setRestrictFileFormats(true)
+                      setError(null)
+                    }} className={`rounded-lg border px-3 py-2 text-xs! leading-4! font-bold ${selected ? 'border-[#00c471] bg-emerald-50 text-[#008b50]' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>.{format}</button>
+                  })}
+                </div>
+                <p role="status" className="text-xs font-bold text-[#008b50]">{restrictFileFormats ? `허용 확장자: ${parseAssignmentFileFormats(fileFormatsText).map((format) => `.${format}`).join(', ') || '선택 필요'}` : '모든 파일 확장자를 허용합니다.'}</p>
+              </fieldset>
+              {!draft.allowFileSubmission ? <p className="mt-3 text-xs text-gray-500">학생 제출 허용 형식에서 파일 업로드를 켜면 설정할 수 있습니다.</p> : null}
             </div>
 
             <div className="content-assignment-editor-card content-assignment-editor-rubric-panel relative overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -486,7 +527,7 @@ export default function CourseAssignmentEditorOverlay({
                       </div>
                       <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-12">
                         <div className="lg:col-span-5">
-                          <label className="mb-1 block text-[10px] font-extrabold text-gray-500">평가 항목</label>
+                          <label className="mb-1 block text-[10px] font-extrabold text-gray-500">평가 항목 내용</label>
                           <input
                             value={rubric.criteriaName}
                             onChange={(event) => updateRubric(rubric.localId, 'criteriaName', event.target.value)}
@@ -495,7 +536,7 @@ export default function CourseAssignmentEditorOverlay({
                           />
                         </div>
                         <div className="lg:col-span-5">
-                          <label className="mb-1 block text-[10px] font-extrabold text-gray-500">자동 검색 키워드</label>
+                          <label className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-gray-500">자동 검사 키워드 <i className="fas fa-info-circle text-gray-400" title="쉼표(,)로 구분하여 입력하세요" /></label>
                           <input
                             value={rubric.criteriaKeywords ?? ''}
                             onChange={(event) => updateRubric(rubric.localId, 'criteriaKeywords', event.target.value)}
@@ -516,7 +557,7 @@ export default function CourseAssignmentEditorOverlay({
                           </div>
                         </div>
                       </div>
-                      <button type="button" onClick={() => removeRubric(rubric.localId)} className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition hover:bg-red-50 hover:text-red-500">
+                      <button type="button" title="항목 삭제" onClick={() => removeRubric(rubric.localId)} className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition hover:bg-red-50 hover:text-red-500">
                         <i className="fas fa-trash-alt" />
                       </button>
                     </div>
@@ -536,7 +577,7 @@ export default function CourseAssignmentEditorOverlay({
 
             <div className="content-assignment-editor-card content-assignment-editor-score-card grid grid-cols-1 gap-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm md:grid-cols-2">
               <div>
-                <div className="mb-2 flex items-end justify-between">
+                <div className="mb-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
                   <label className="block text-sm font-extrabold text-gray-800">총 배점 합계</label>
                   <span className="text-[10px] font-bold text-gray-400">
                     루브릭 점수가 자동 합산됩니다.
@@ -555,8 +596,8 @@ export default function CourseAssignmentEditorOverlay({
               </div>
 
               <div>
-                <div className="mb-2 flex items-end justify-between">
-                  <label className="block text-sm font-extrabold text-gray-800">과제 패스 기준</label>
+                <div className="mb-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
+                  <label className="block text-sm font-extrabold text-gray-800">과제 이수 기준 (Pass 점수)</label>
                   <span className="text-[10px] font-bold text-gray-400">총점 이하 점수만 입력 가능합니다.</span>
                 </div>
                 <div className="relative">

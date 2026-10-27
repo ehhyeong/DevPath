@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useDemoAccount, useDemoTyping } from '../lib/useDemoTyping'
 
 export type AiSuggestion = {
@@ -94,11 +94,31 @@ export default function AiAssistantPanel({
 
   const panelRef = useRef<HTMLDivElement>(null)
   const fabRef = useRef<HTMLButtonElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const wasDemoTypingRef = useRef(false)
   const listRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const messageSeq = useRef(0)
   const mountedRef = useRef(true)
+
+  useLayoutEffect(() => {
+    const field = inputRef.current
+    if (!open || !field) return
+
+    const resizeInput = () => {
+      field.style.height = 'auto'
+      field.style.height = `${field.scrollHeight}px`
+      // 프로그램으로 값을 쓰는 시연 입력은 브라우저가 커서를 따라 스크롤하지 않아 마지막 프레임까지 직접 맞춘다.
+      const followDemo = demoInput.typing || wasDemoTypingRef.current
+      if (followDemo) field.setSelectionRange(input.length, input.length)
+      if (followDemo || field.selectionEnd === input.length) field.scrollTop = field.scrollHeight
+      wasDemoTypingRef.current = demoInput.typing
+    }
+
+    resizeInput()
+    window.addEventListener('resize', resizeInput)
+    return () => window.removeEventListener('resize', resizeInput)
+  }, [input, open, demoInput.typing])
 
   // 패널을 열면 입력창으로 포커스 이동 (열림 애니메이션 이후)
   useEffect(() => {
@@ -460,15 +480,22 @@ export default function AiAssistantPanel({
           </div>
 
           <div className="ai-input-row">
-            <input
+            <textarea
               ref={inputRef}
-              type="text"
+              rows={1}
+              wrap="soft"
               value={input}
               {...demoInput.bindings}
               onKeyDown={(event) => {
+                if (event.nativeEvent.isComposing || event.keyCode === 229) return
+                if (event.key === 'Enter' && event.shiftKey) {
+                  demoInput.stop()
+                  return
+                }
                 demoInput.keyDown(event)
                 if (event.key === 'Enter' && !event.defaultPrevented) {
-                  handleSubmit()
+                  event.preventDefault()
+                  void handleSubmit()
                 }
               }}
               disabled={busy}

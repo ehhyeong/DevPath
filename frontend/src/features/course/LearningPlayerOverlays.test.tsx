@@ -87,3 +87,26 @@ describe('LearningPlayerOverlays 퀴즈 응시', () => {
     expect(screen.getByRole('button', { name: '답안 제출' })).toBeInTheDocument()
   })
 })
+
+describe('과제 채점 피드백', () => {
+  it('총평과 항목별 점수·의견을 나누고 기존 결과 확인 동작을 유지한다', () => {
+    const handleAssignmentResultPrimaryAction = vi.fn()
+    render(<LearningPlayerOverlays model={{
+      assignmentGradingResult: { lessonTitle: '렌더링 실습', assignment: { totalScore: 100 } },
+      assignmentGradingBadge: { label: '통과', className: '', iconClassName: 'fas fa-check' },
+      assignmentGradingPassed: true,
+      assignmentGradingScore: 85,
+      assignmentGradingReportRows: [],
+      assignmentGradingFeedback: '요구사항 대부분을 충족했습니다. 접근성을 보강하면 더 좋습니다.\n- 시맨틱 구조: 23/25점 - header와 main을 사용했습니다. 입력 요소의 설명을 추가하세요.',
+      handleAssignmentResultPrimaryAction,
+      assignmentResultPrimaryActionLabel: '학습 이어가기',
+    } as unknown as LearningPlayerReadyModel} />)
+
+    expect(screen.getByRole('heading', { name: '종합 의견' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '시맨틱 구조' })).toBeInTheDocument()
+    expect(screen.getByText('23/25점')).toBeInTheDocument()
+    expect(screen.getByText('입력 요소의 설명을 추가하세요.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '학습 이어가기' }))
+    expect(handleAssignmentResultPrimaryAction).toHaveBeenCalledOnce()
+  })
+})

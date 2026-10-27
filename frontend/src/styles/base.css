@@ -1006,6 +1006,7 @@ aside:hover .sidebar-text {
 .ai-msg-bot--error { background: #FFF1F2; border-color: #FECDD3; color: #BE123C; }
 .ai-msg-user {
   align-self: flex-end; max-width: 85%;
+  white-space: pre-wrap; overflow-wrap: anywhere;
   background: #1F2937; color: #FFFFFF;
   border-radius: .75rem;
   padding: .5rem .8125rem; font-size: .8125rem; line-height: 1.6; font-weight: 500;
@@ -1017,8 +1018,8 @@ aside:hover .sidebar-text {
 @keyframes aiDot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
 
 /* --- 입력 --- */
-.ai-input-row { display: flex; align-items: center; gap: .5rem; padding: .5rem .625rem .625rem 1rem; }
-.ai-input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; padding: .5rem .25rem; font-size: .875rem; font-weight: 500; color: #111827; }
+.ai-input-row { display: flex; align-items: flex-end; gap: .5rem; padding: .5rem .625rem .625rem 1rem; }
+.ai-input { flex: 1; min-width: 0; max-height: 8rem; resize: none; overflow-x: hidden; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: transparent; border: 0; outline: 0; padding: .5rem .25rem; font-size: .875rem; line-height: 1.5; font-weight: 500; color: #111827; }
 .ai-input::placeholder { color: #6B7280; font-weight: 400; }
 .ai-input:focus-visible { outline: 0; }
 .ai-input-row:focus-within { box-shadow: inset 0 1px 0 0 rgba(0, 196, 113, .35); }

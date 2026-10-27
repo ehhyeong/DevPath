@@ -3,6 +3,7 @@ import CourseQuizEditorOverlay from '../course-editor/CourseQuizEditorOverlay'
 import { buildCourseEditorHref, readLessonEditorContextFromUrl } from '../course-editor/editor-routing'
 import { instructorCourseApi } from '../../lib/api/instructor'
 import { navigateTo } from '../../lib/spa-navigation'
+import { DEMO_COURSE_TITLE } from '../../lib/demo-typing'
 
 const QUIZ_CREATOR_UI_LOCK_CLASSES = [
   "h-[calc(100dvh-var(--app-header-height))]! min-h-0! w-full! overflow-hidden! bg-[#f0f2f5]! text-[#1f2937]! font-['Pretendard',Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]!",
@@ -93,7 +94,7 @@ function InvalidLessonView({ courseId }: { courseId: number | null }) {
 
 export default function QuizCreatorPage() {
   const { lessonId, lessonTitle, courseId } = readLessonEditorContextFromUrl()
-  const [courseTagsResult, setCourseTagsResult] = useState<{ courseId: number; tags: string[] } | null>(null)
+  const [courseTagsResult, setCourseTagsResult] = useState<{ courseId: number; title: string; tags: string[] } | null>(null)
   const courseTags = courseTagsResult?.courseId === courseId ? courseTagsResult.tags : []
 
   useEffect(() => {
@@ -106,11 +107,11 @@ export default function QuizCreatorPage() {
     instructorCourseApi
       .getCourseDetail(courseId, controller.signal)
       .then((course) => {
-        setCourseTagsResult({ courseId, tags: course.tags.map((tag) => tag.tagName) })
+        setCourseTagsResult({ courseId, title: course.title, tags: course.tags.map((tag) => tag.tagName) })
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setCourseTagsResult({ courseId, tags: [] })
+          setCourseTagsResult({ courseId, title: '', tags: [] })
         }
       })
 
@@ -126,6 +127,7 @@ export default function QuizCreatorPage() {
       lessonId={lessonId}
       lessonTitle={lessonTitle || '새 퀴즈'}
       courseTags={courseTags}
+      demoCourse={courseTagsResult?.courseId === courseId && courseTagsResult?.title === DEMO_COURSE_TITLE}
       onClose={() => navigateTo(buildCourseEditorHref(courseId))}
       standalone
       standaloneClassName={QUIZ_CREATOR_UI_LOCK_CLASSES}

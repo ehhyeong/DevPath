@@ -70,7 +70,7 @@ export default function LearningVideoPanel({ model }: Props) {
           <main className="flex-1 bg-black flex flex-col min-w-0">
 
             {/* 영상 프레임 */}
-            <div ref={frameRef} className="flex-1 relative flex flex-col justify-center items-center w-full overflow-hidden group">
+            <div ref={frameRef} className="learning-player-video-frame flex-1 relative flex flex-col justify-center items-center w-full overflow-hidden group">
 
               {/* 우측 상단 오버레이 버튼 */}
               <div className="absolute right-6 top-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -314,9 +314,9 @@ export default function LearningVideoPanel({ model }: Props) {
               ) : null}
               */}
 
-              {/* 재생 컨트롤 바 */}
+              {/* 터치 지원 PC에서도 실제 마우스 호버가 동작하도록 hover 미디어 조건 없이 프레임을 검사한다. */}
               {hasVideoSource ? (
-              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent flex items-end px-6 pb-4 gap-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent flex items-end px-6 pb-4 gap-4 pointer-events-none opacity-0 [.learning-player-video-frame:hover_&]:pointer-events-auto [.learning-player-video-frame:hover_&]:opacity-100 transition-opacity duration-300 z-20">
                   <button type="button" onClick={() => void handleTogglePlaySafe()} className="text-white hover:text-[#00C471] transition">
                     <i className={`fas ${isPlaying ? 'fa-pause' : 'fa-play'}`} />
                   </button>

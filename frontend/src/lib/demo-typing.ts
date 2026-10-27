@@ -7,6 +7,8 @@ export const DEMO_TEXT = {
   questionContent: 'JavaScript로 요소의 class를 바꾸면 DOM, CSSOM, 렌더 트리, layout, paint 중 어느 단계부터 다시 실행되나요?',
   answerTitle: 'class 변경 시 렌더링 흐름',
   answerContent: 'JavaScript로 class를 바꾸면 DOM 구조 자체보다는 요소에 적용되는 스타일이 바뀝니다. 그래서 브라우저는 CSSOM과 렌더 트리를 다시 계산하고, 크기나 위치가 달라지면 layout과 paint까지 다시 실행합니다. 색상처럼 시각 효과만 바뀌면 layout 없이 paint 단계부터 처리될 수 있습니다.',
+  quizQuestion: 'JavaScript로 요소의 글자 색상만 바꾸면 항상 레이아웃(layout) 단계부터 다시 실행된다.',
+  quizExplanation: '글자 색상만 바뀌면 스타일 재계산과 페인트로 처리될 수 있습니다. 요소의 크기나 위치가 바뀌지 않으면 레이아웃을 다시 계산할 필요가 없습니다.',
   erd: '현재 ERD에 변경 이력을 저장할 AUDIT_LOGS 테이블을 추가하고, 사용자 테이블과 1:N 관계로 연결해줘. id, user_id, action, created_at 컬럼을 포함해줘.',
   meeting: '회의 주제는 스쿼드 프로젝트 발표 전 마무리 작업 정리입니다.\n김태형 2026년 10월 26일 20시까지 PR #24 수정 커밋을 올리고 코드 리뷰를 다시 요청해주고\n박주승 2026년 10월 25일 12시까지 ERD에서 user, course, progress 테이블 관계를 다시 확인해\n다음 회의에서는 코드 리뷰 반영 여부와 ERD 수정 내용을 먼저 확인하겠습니다.',
 }

@@ -342,7 +342,9 @@ export function useLearningAssessmentActions(props: Props) {
           precheck.fileFormatPassed ? null : '파일 형식',
         ].filter((item): item is string => Boolean(item))
         setAssignmentMessage(
-          failedLabels.length
+          !precheck.fileFormatPassed && precheck.message
+            ? precheck.message
+            : failedLabels.length
             ? `제출 조건을 충족하지 않았습니다. ${failedLabels.join(', ')}`
             : (precheck.message ?? '제출 파일을 다시 확인해 주세요.'),
         )

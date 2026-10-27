@@ -1,6 +1,8 @@
 package com.devpath.api.instructor.service;
 
 import com.devpath.api.instructor.dto.InstructorLessonEvaluationDto;
+import com.devpath.common.exception.CustomException;
+import com.devpath.common.exception.ErrorCode;
 import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.learning.entity.Assignment;
 import com.devpath.domain.learning.entity.AssignmentReferenceFile;
@@ -8,10 +10,12 @@ import com.devpath.domain.learning.entity.Rubric;
 import com.devpath.domain.learning.entity.SubmissionType;
 import com.devpath.domain.learning.repository.AssignmentRepository;
 import com.devpath.domain.roadmap.entity.RoadmapNode;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
@@ -19,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Component
 class InstructorAssignmentEditor {
 
-  private static final String DEFAULT_FILE_FORMATS = "pdf,zip,png,jpg,jpeg";
+  private static final String DEFAULT_FILE_FORMATS = "html,pdf,md,txt,zip,png,jpg,jpeg";
 
   private final AssignmentRepository assignmentRepository;
 
@@ -51,6 +55,8 @@ class InstructorAssignmentEditor {
     boolean allowFileSubmission = resolveFlag(request.getAllowFileSubmission(), true);
     boolean allowUrlSubmission = resolveFlag(request.getAllowUrlSubmission(), false);
     boolean aiReviewEnabled = resolveFlag(request.getAiReviewEnabled(), true);
+    String allowedFileFormats =
+        resolveAllowedFileFormats(request.getAllowedFileFormats(), assignment);
 
     List<InstructorLessonEvaluationDto.AssignmentRubricInput> rubricInputs =
         request.getRubrics() == null
@@ -72,7 +78,7 @@ class InstructorAssignmentEditor {
                   resolveSubmissionType(
                       allowTextSubmission, allowFileSubmission, allowUrlSubmission))
               .dueAt(null)
-              .allowedFileFormats(allowFileSubmission ? DEFAULT_FILE_FORMATS : null)
+              .allowedFileFormats(allowedFileFormats)
               .readmeRequired(false)
               .testRequired(false)
               .lintRequired(false)
@@ -101,12 +107,7 @@ class InstructorAssignmentEditor {
         assignment.getDueAt(),
         totalScore);
     assignment.updateSubmissionRule(
-        allowFileSubmission ? DEFAULT_FILE_FORMATS : null,
-        false,
-        false,
-        false,
-        assignment.getSubmissionRuleDescription(),
-        false);
+        allowedFileFormats, false, false, false, assignment.getSubmissionRuleDescription(), false);
     assignment.updateEditorSettings(
         passScore, aiReviewEnabled, allowTextSubmission, allowFileSubmission, allowUrlSubmission);
 
@@ -173,6 +174,7 @@ class InstructorAssignmentEditor {
           .allowTextSubmission(true)
           .allowFileSubmission(true)
           .allowUrlSubmission(false)
+          .allowedFileFormats(parseFileFormats(DEFAULT_FILE_FORMATS))
           .rubrics(List.of())
           .referenceFiles(List.of())
           .build();
@@ -202,6 +204,7 @@ class InstructorAssignmentEditor {
         .allowTextSubmission(submissionFlags.allowTextSubmission())
         .allowFileSubmission(submissionFlags.allowFileSubmission())
         .allowUrlSubmission(submissionFlags.allowUrlSubmission())
+        .allowedFileFormats(parseFileFormats(assignment.getAllowedFileFormats()))
         .rubrics(
             activeRubrics.stream()
                 .map(
@@ -229,6 +232,43 @@ class InstructorAssignmentEditor {
                             .build())
                 .toList())
         .build();
+  }
+
+  private String resolveAllowedFileFormats(List<String> requested, Assignment assignment) {
+    // 이전 프론트엔드는 이 필드를 보내지 않는다. 누락 시 기존 시드나 강사의 설정을 보존한다.
+    if (requested == null) {
+      return assignment == null ? DEFAULT_FILE_FORMATS : assignment.getAllowedFileFormats();
+    }
+    List<String> formats =
+        requested.stream()
+            .map(value -> value == null ? "" : normalizeFileFormat(value))
+            .distinct()
+            .toList();
+    if (formats.stream().anyMatch(value -> !value.matches("[a-z0-9][a-z0-9_-]{0,19}"))) {
+      throw new CustomException(
+          ErrorCode.INVALID_INPUT,
+          "허용 확장자는 html, pdf, md처럼 입력해 주세요. MIME 유형이나 복합 확장자는 사용할 수 없습니다.");
+    }
+    String stored = String.join(",", formats);
+    if (stored.length() > 300) {
+      throw new CustomException(ErrorCode.INVALID_INPUT, "허용 확장자는 쉼표를 포함해 300자 이내로 입력해 주세요.");
+    }
+    // 빈 목록은 학습자 제출 검증에서 확장자 제한 없음과 같은 의미다.
+    return stored.isEmpty() ? null : stored;
+  }
+
+  private List<String> parseFileFormats(String stored) {
+    return stored == null
+        ? List.of()
+        : Arrays.stream(stored.split(","))
+            .map(this::normalizeFileFormat)
+            .filter(value -> !value.isBlank())
+            .distinct()
+            .toList();
+  }
+
+  private String normalizeFileFormat(String value) {
+    return value.trim().toLowerCase(Locale.ROOT).replaceFirst("^\\.", "");
   }
 
   private boolean hasRubricContent(InstructorLessonEvaluationDto.AssignmentRubricInput input) {
