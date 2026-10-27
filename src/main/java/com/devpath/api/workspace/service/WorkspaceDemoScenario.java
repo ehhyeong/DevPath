@@ -12,6 +12,7 @@ import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
@@ -26,6 +27,10 @@ class WorkspaceDemoScenario {
   static final String FILE_PATH = "src/main/java/com/routinecare/record/DailyRecordService.java";
   static final long DESIGN_DELAY_MILLIS = 7500L;
   static final long REVIEW_DELAY_MILLIS = 5500L;
+  static final String TAEHYUNG_COMMENT =
+      "memberId는 요청 본문 대신 인증된 사용자 정보에서 가져오면 좋겠습니다. 같은 사용자가 같은 날짜에 동시에 저장해도 기록이 중복되지 않도록 member_id·record_date 유니크 제약도 확인해 주세요.";
+  static final String JUSEUNG_COMMENT =
+      "프론트에서는 저장 응답의 날짜·식단·복약 여부로 오늘 기록 카드를 갱신하겠습니다. 식단은 그대로 두고 복약 여부만 바꾸는 경우에도 값이 유지되는지 테스트해 보면 좋겠습니다.";
 
   private final UserRepository users;
   private final WorkspaceRepository workspaces;
@@ -72,6 +77,7 @@ class WorkspaceDemoScenario {
   void initialize(Workspace workspace, WorkspaceAiDesignResponse design) {
     if (!"식단 및 복약 순응도 추적 플랫폼 (RoutineCare)".equals(design.title())
         || !isDemoUser(workspace.getOwnerId())) return;
+    List<User> invitedMembers = new ArrayList<>();
     for (String email : List.of("park.juseung@devpath.com", "kim.taehyung@devpath.com")) {
       User user =
           users
@@ -80,6 +86,7 @@ class WorkspaceDemoScenario {
                   candidate ->
                       candidate.canAuthenticate() && candidate.getRole() == UserRole.ROLE_LEARNER)
               .orElseThrow(() -> new IllegalStateException("시연 팀원 계정을 확인해 주세요. " + email));
+      invitedMembers.add(user);
       if (!members.existsByWorkspaceIdAndLearnerId(workspace.getId(), user.getId())) {
         members.save(
             WorkspaceMember.builder()
@@ -128,6 +135,16 @@ class WorkspaceDemoScenario {
             (int) additions,
             0);
     reviews.markDemoReview(workspace.getId(), reviewId, REVIEW_KEY);
+    for (User member : invitedMembers) {
+      reviews.insertMemberComment(
+          workspace.getId(),
+          reviewId,
+          member.getId(),
+          FILE_PATH,
+          "kim.taehyung@devpath.com".equals(member.getEmail())
+              ? TAEHYUNG_COMMENT
+              : JUSEUNG_COMMENT);
+    }
   }
 
   boolean isDemoReview(Long workspaceId, WorkspaceCodeReviewStore.DetailRow row) {

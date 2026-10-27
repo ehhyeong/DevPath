@@ -14,8 +14,14 @@ test('미연동 시연 워크스페이스에서 열린 PR과 지연 리뷰를 �
     authorId: 7, authorName: '김학습', filePath: 'src/main/java/com/routinecare/record/DailyRecordService.java',
     sourceBranch: 'feature/daily-records', targetBranch: 'main', additions: 10, deletions: 0, aiCommentCount: 0, aiCodeReviewId: null as number | null,
   }
+  const comments = [
+    { commentId: 1, reviewId: 1, authorId: 8, authorName: '박주승', filePath: summary.filePath, statusLabel: 'Commented',
+      body: '프론트에서는 저장 응답의 날짜·식단·복약 여부로 오늘 기록 카드를 갱신하겠습니다. 식단은 그대로 두고 복약 여부만 바꾸는 경우에도 값이 유지되는지 테스트해 보면 좋겠습니다.' },
+    { commentId: 2, reviewId: 1, authorId: 9, authorName: '김태형', filePath: summary.filePath, statusLabel: 'Commented',
+      body: 'memberId는 요청 본문 대신 인증된 사용자 정보에서 가져오면 좋겠습니다. 같은 사용자가 같은 날짜에 동시에 저장해도 기록이 중복되지 않도록 member_id·record_date 유니크 제약도 확인해 주세요.' },
+  ]
   let aiReview: unknown = null
-  const detail = () => ({ summary, description: '일별 기록 저장 API 검토', diffText: '+ public DailyRecord record() {}', members, comments: [], aiReview })
+  const detail = () => ({ summary, description: '일별 기록 저장 API 검토', diffText: '+ public DailyRecord record() {}', members, comments, aiReview })
   await page.addInitScript(() => {
     const claims = btoa(JSON.stringify({ sub: '7', role: 'ROLE_LEARNER', exp: Math.floor(Date.now() / 1000) + 3600 }))
     localStorage.setItem('devpath.auth.session', JSON.stringify({
@@ -55,11 +61,17 @@ test('미연동 시연 워크스페이스에서 열린 PR과 지연 리뷰를 �
   await expect(page.getByText('GitHub 연결이 필요합니다')).toHaveCount(0)
   await expect(page.getByRole('link', { name: /코드 피드백/ })).toHaveAttribute('aria-disabled', 'false')
   await expect(page.getByText('아직 AI 리뷰가 실행되지 않았습니다')).toBeVisible()
+  for (const comment of comments) {
+    await expect(page.locator('#commentThread').getByText(comment.body, { exact: true })).toBeVisible()
+  }
   await runReview.click()
   await expect(page.getByRole('button', { name: '분석 중', exact: true })).toBeDisabled()
   await expect(page.getByText('사용자 ID는 인증 정보에서 확인')).toBeVisible({ timeout: 15_000 })
   await page.reload()
   await expect(page.getByText('사용자 ID는 인증 정보에서 확인')).toBeVisible({ timeout: 30_000 })
   await expect(page.getByText('GitHub 연결이 필요합니다')).toHaveCount(0)
+  for (const comment of comments) {
+    await expect(page.locator('#commentThread').getByText(comment.body, { exact: true })).toBeVisible()
+  }
   await page.screenshot({ path: testInfo.outputPath('routinecare-demo-review.png'), fullPage: true })
 })
