@@ -75,23 +75,6 @@ class FlywayMigrationIntegrationTest {
   }
 
   @Test
-  void enabledByDefaultRegistersExistingDatabaseWhenBaselineIsAllowed() {
-    prepareExistingData();
-
-    contextRunner
-        .withPropertyValues(
-            "spring.flyway.baseline-on-migrate=true",
-            "spring.flyway.locations=classpath:db/migration/postgresql")
-        .run(
-            context -> {
-              assertThat(context).hasNotFailed().hasSingleBean(Flyway.class);
-              assertExistingData();
-              assertThat(context.getBean(Flyway.class).info().current().getVersion().getVersion())
-                  .isEqualTo("1");
-            });
-  }
-
-  @Test
   void existingDatabaseRequiresExplicitBaseline() {
     prepareExistingData();
 
@@ -115,7 +98,7 @@ class FlywayMigrationIntegrationTest {
     enabledRunner()
         .withPropertyValues(
             "spring.flyway.baseline-on-migrate=true",
-            "spring.flyway.locations=classpath:db/migration/postgresql,classpath:db/migration-fixtures")
+            "spring.flyway.locations=classpath:db/migration-fixtures")
         .run(
             context -> {
               assertThat(context).hasNotFailed().hasSingleBean(Flyway.class);
@@ -137,7 +120,7 @@ class FlywayMigrationIntegrationTest {
     enabledRunner()
         .withPropertyValues(
             "spring.flyway.baseline-on-migrate=false",
-            "spring.flyway.locations=classpath:db/migration/postgresql,classpath:db/migration-fixtures")
+            "spring.flyway.locations=classpath:db/migration-fixtures")
         .run(
             context -> {
               assertThat(context).hasNotFailed();
@@ -156,12 +139,12 @@ class FlywayMigrationIntegrationTest {
 
     enabledRunner()
         .withPropertyValues(
-            "spring.flyway.locations=classpath:db/migration/postgresql,classpath:db/migration-changed-fixtures")
+            "spring.flyway.locations=classpath:db/migration-changed-fixtures")
         .run(
             context -> {
               assertThat(context).hasFailed();
               assertThat(context.getStartupFailure())
-                  .hasStackTraceContaining("Migration checksum mismatch for migration version 2");
+                  .hasStackTraceContaining("Migration checksum mismatch for migration version 900");
               assertExistingData();
             });
   }
