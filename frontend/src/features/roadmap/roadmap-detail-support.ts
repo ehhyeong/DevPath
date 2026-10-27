@@ -336,7 +336,6 @@ export function getOfficialBranchLane(groupIndex: number): RoadmapLane {
   return groupIndex % 2 === 0 ? 'left' : 'right'
 }
 
-export const OFFICIAL_BRANCH_OFFSET_Y = 40
 export const POST_BRANCH_SPINE_OFFSET_Y = 88
 
 // 레인 트리 레이아웃: anchorNodeId(부모 커스텀노드)로 트리를 만든다. 척추=center, 구조 분기(갈림길)는 앵커
@@ -499,7 +498,6 @@ export function buildRoadmapLayout(
               kind: 'official-branch',
               lane: column,
               row: layerRow,
-              stackOffset: OFFICIAL_BRANCH_OFFSET_Y,
               node: child,
               badge: getOfficialBranchBadgeMeta(child.laneKey ?? 1),
             })

@@ -306,12 +306,13 @@ export default function LearningVideoPanel({ model }: Props) {
                 )}
               </div>
 
-              {/* 알림 토스트 */}
+              {/* 알림 토스트 (사용 안 함)
               {notice ? (
                 <div className="absolute bottom-20 left-6 z-30 rounded-lg border border-amber-400/20 bg-amber-400/10 px-4 py-2 text-xs text-amber-100">
                   {notice}
                 </div>
               ) : null}
+              */}
 
               {/* 재생 컨트롤 바 */}
               {hasVideoSource ? (
