@@ -31,6 +31,11 @@ public class GeminiJobAnalysisService {
   private static final int STRETCH_FALLBACK_SCORE = 50;
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
+  // 추천 이유에 들어가면 안 되는 감점 사유·채점 기준 용어 (소문자 비교)
+  private static final List<String> REASON_BLOCKED_TERMS =
+      List.of(
+          "미매칭", "불일치", "미흡", "낮음", "부족", "없음", "미반영", "무관", "proof", "카드", "점수");
+
   // 성장공고 보완 스킬(missingSkills)에서 비개발 태그(바이오/화학/회계/마케팅 등)를 걸러내기 위한 개발 스킬 화이트리스트.
   // 공고 키워드를 소문자화한 값이 아래 토큰 중 하나라도 포함하면 개발 스킬로 인정한다. (목록은 필요 시 보강)
   private static final Set<String> DEV_SKILL_KEYWORDS =
@@ -293,7 +298,12 @@ public class GeminiJobAnalysisService {
     sb.append("- 순수 JSON 배열만 반환하세요. 설명, 마크다운 코드블록 없이.\n");
     sb.append("- 형식: [{\"index\": 0, \"matchScore\": 87, \"reason\": \"추천 이유\"}]\n");
     sb.append("- matchScore: 위 채점 기준 3개 항목 합산 0~100 정수\n");
-    sb.append("- reason: 30자 이내 한국어 (예: \"Spring·JPA 일치, 프로젝트 경험 풍부\")\n");
+    sb.append("- reason: 이 공고에 추천하는 이유. 30자 이내 한국어\n");
+    sb.append("  - 공고와 맞는 점(일치하는 기술명, 관련 직무·프로젝트 경험)만 쓴다\n");
+    sb.append("  - 부족한 점·감점 사유·부정 표현(미매칭, 불일치, 미흡, 낮음, 부족, 없음 등)은 쓰지 않는다\n");
+    sb.append("  - 채점 기준 용어(Proof Card, 카드, 점수, 키워드 매칭, 반영 등)는 쓰지 않는다\n");
+    sb.append("  - 맞는 점이 없으면 지어내지 말고 빈 문자열 \"\"을 반환한다\n");
+    sb.append("  - 좋은 예: \"Spring·JPA 일치, 프로젝트 경험 풍부\" / 나쁜 예: \"기술 키워드 미흡, 카드 점수 반영\"\n");
     sb.append("- 모든 공고(").append(postings.size()).append("건)에 대해 응답 필수\n");
 
     return sb.toString();
@@ -390,13 +400,22 @@ public class GeminiJobAnalysisService {
           continue;
         }
         int matchScore = Math.max(0, Math.min(100, node.path("matchScore").asInt(50)));
-        String reason = node.path("reason").asText("");
+        String reason = sanitizeReason(node.path("reason").asText(""));
         result.add(new GeminiScore(index, matchScore, reason));
       }
       return result;
     } catch (Exception e) {
       throw new RuntimeException("Gemini 응답 파싱 실패: " + e.getMessage(), e);
     }
+  }
+
+  // 예비 모델은 프롬프트 규칙을 놓치기 쉬우므로, 감점 사유·채점 용어가 섞인 이유는 버리고 화면 기본 문구를 쓰게 한다.
+  private String sanitizeReason(String reason) {
+    if (reason == null || reason.isBlank()) {
+      return null;
+    }
+    String normalized = reason.toLowerCase(Locale.ROOT);
+    return REASON_BLOCKED_TERMS.stream().anyMatch(normalized::contains) ? null : reason.trim();
   }
 
   // 공고 키워드 중 '개발 스킬'이면서 사용자가 보유하지 않은 기술 최대 3개 추출
