@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rendering Flow Mini Page</title>
+    <!--
+      DevPath frontend rendering demo submission.
+      DOM: the browser parses this HTML and creates a tree of document nodes.
+      CSSOM: the browser parses the style rules below into a style rule tree.
+      render tree: visible DOM nodes and CSSOM rules are combined before drawing.
+      layout: the browser calculates each visible box size and position.
+      paint: the browser fills pixels such as text, borders, colors, and shadows.
+      Vite: this file can be previewed inside a Vite project or opened directly.
+      DevTools: Elements confirms class changes; Console logs the click state.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1b1f24;
+        --muted: #5d6773;
+        --surface: #ffffff;
+        --panel: #f2f6f8;
+        --line: #cfd8df;
+        --accent: #147c72;
+        --accent-strong: #0f5f58;
+        --warn: #b25522;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          Inter, Pretendard, "Segoe UI", Arial, sans-serif;
+        color: var(--ink);
+        background: #e9eef2;
+      }
+
+      .page {
+        width: min(960px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0;
+      }
+
+      header,
+      main,
+      section {
+        display: block;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 20px;
+        align-items: stretch;
+        padding: 24px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: 32px;
+        line-height: 1.15;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .status-panel {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .status-panel.active {
+        border-color: var(--accent);
+        background: #e4f4ef;
+      }
+
+      .status-label {
+        color: var(--accent-strong);
+        font-weight: 700;
+      }
+
+      button {
+        width: fit-content;
+        min-height: 42px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 6px;
+        color: #fff;
+        background: var(--accent);
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: var(--accent-strong);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .card {
+        min-height: 130px;
+        padding: 16px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .card.active {
+        border-color: var(--warn);
+        box-shadow: 0 10px 22px rgba(178, 85, 34, 0.16);
+      }
+
+      .notes {
+        margin-top: 18px;
+        padding: 18px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .notes ul {
+        margin: 10px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      @media (max-width: 720px) {
+        .hero,
+        .cards {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div>
+          <h1>HTML, CSS, JavaScript Rendering Flow</h1>
+          <p id="summary">
+            The browser turns HTML into the DOM, CSS into the CSSOM, combines
+            them into the render tree, calculates layout, and paints pixels.
+          </p>
+        </div>
+        <section class="status-panel" id="statusPanel" aria-live="polite">
+          <span class="status-label">Current state</span>
+          <p id="statusText">Waiting for a DOM update.</p>
+          <button type="button" id="renderButton">Run DOM update</button>
+        </section>
+      </header>
+
+      <main>
+        <section class="cards" aria-label="Rendering steps">
+          <article class="card">
+            <h2>DOM</h2>
+            <p>HTML creates semantic structure for the page.</p>
+          </article>
+          <article class="card" id="styleCard">
+            <h2>CSSOM</h2>
+            <p>CSS rules describe layout, spacing, hover, and active states.</p>
+          </article>
+          <article class="card" id="scriptCard">
+            <h2>JavaScript</h2>
+            <p>Events can change text, classes, and list content in the DOM.</p>
+          </article>
+        </section>
+
+        <section class="notes">
+          <h2>DevTools notes</h2>
+          <ul id="notesList">
+            <li>Elements shows the semantic header, main, section, and button.</li>
+            <li>Console should log a message after the button click.</li>
+          </ul>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const renderButton = document.querySelector("#renderButton");
+      const statusPanel = document.querySelector("#statusPanel");
+      const statusText = document.querySelector("#statusText");
+      const styleCard = document.querySelector("#styleCard");
+      const scriptCard = document.querySelector("#scriptCard");
+      const notesList = document.querySelector("#notesList");
+
+      renderButton.addEventListener("click", () => {
+        statusPanel.classList.toggle("active");
+        styleCard.classList.toggle("active");
+        scriptCard.classList.toggle("active");
+        statusText.textContent =
+          "Text, classes, and list items changed through JavaScript.";
+
+        notesList.innerHTML = `
+          <li>DOM changed because JavaScript replaced this list content.</li>
+          <li>CSSOM rules still control the active card and panel styles.</li>
+          <li>DevTools Console logged the update for quick debugging.</li>
+        `;
+
+        console.log(
+          "DevTools check: DOM text, class names, and list items were updated."
+        );
+      });
+    </script>
+  </body>
+</html>

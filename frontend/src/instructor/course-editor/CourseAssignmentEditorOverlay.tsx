@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { instructorLessonEvaluationApi } from '../../lib/api/instructor'
+import { ASSIGNMENT_FILE_FORMAT_OPTIONS, parseAssignmentFileFormats, validateAssignmentFileFormats } from './assignment-file-formats'
 import type {
   InstructorAssignmentEditor,
   InstructorAssignmentReferenceFile,
@@ -44,6 +45,7 @@ function normalizeEditor(editor: InstructorAssignmentEditor): AssignmentEditorDr
   return {
     ...editor,
     aiReviewEnabled: true,
+    allowedFileFormats: editor.allowedFileFormats ?? [],
     rubrics: editor.rubrics.map((rubric) => ({
       ...rubric,
       criteriaKeywords: rubric.criteriaKeywords ?? '',
@@ -84,6 +86,8 @@ export default function CourseAssignmentEditorOverlay({
   const [dragging, setDragging] = useState(false)
   const [successOpen, setSuccessOpen] = useState(false)
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [fileFormatsText, setFileFormatsText] = useState('')
+  const [restrictFileFormats, setRestrictFileFormats] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
@@ -96,6 +100,8 @@ export default function CourseAssignmentEditorOverlay({
       .getAssignmentEditor(lessonId, controller.signal)
       .then((response) => {
         const normalized = normalizeEditor(response)
+        setFileFormatsText(normalized.allowedFileFormats.join(', '))
+        setRestrictFileFormats(normalized.allowedFileFormats.length > 0)
         setDraft({
           ...normalized,
           rubrics: normalized.rubrics.length > 0 ? normalized.rubrics : [createRubric()],
@@ -232,6 +238,14 @@ export default function CourseAssignmentEditorOverlay({
       return
     }
 
+    const allowedFileFormats = restrictFileFormats ? parseAssignmentFileFormats(fileFormatsText) : []
+    const formatError = restrictFileFormats && draft.allowFileSubmission ? validateAssignmentFileFormats(allowedFileFormats) : null
+    if (formatError) {
+      setError(formatError)
+      pushToast(formatError)
+      return
+    }
+
     setSaving(true)
     setError(null)
 
@@ -245,6 +259,7 @@ export default function CourseAssignmentEditorOverlay({
         allowTextSubmission: draft.allowTextSubmission,
         allowFileSubmission: draft.allowFileSubmission,
         allowUrlSubmission: draft.allowUrlSubmission,
+        allowedFileFormats,
         rubrics: draft.rubrics.map((rubric, index) => ({
           rubricId: rubric.rubricId,
           criteriaName: rubric.criteriaName,
@@ -266,6 +281,8 @@ export default function CourseAssignmentEditorOverlay({
         ...normalizeEditor(saved),
         rubrics: saved.rubrics.length > 0 ? normalizeEditor(saved).rubrics : [createRubric()],
       })
+      setFileFormatsText((saved.allowedFileFormats ?? []).join(', '))
+      setRestrictFileFormats((saved.allowedFileFormats ?? []).length > 0)
       setSuccessOpen(true)
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : '과제 저장에 실패했습니다.')
@@ -463,6 +480,30 @@ export default function CourseAssignmentEditorOverlay({
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="content-assignment-editor-card rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+              <fieldset disabled={!draft.allowFileSubmission} className="min-w-0 space-y-4 disabled:opacity-50">
+                <legend className="mb-2 text-sm font-extrabold text-gray-800">과제 제출 파일 확장자</legend>
+                <p className="text-xs leading-relaxed text-gray-500">학습자가 제출할 파일의 확장자를 설정합니다. 위의 참조 파일 첨부와는 별도 설정입니다.</p>
+                <div className="flex flex-wrap gap-4 text-sm font-bold text-gray-700">
+                  <label className="flex items-center gap-2"><input type="radio" name="assignment-file-format-mode" checked={restrictFileFormats} onChange={() => setRestrictFileFormats(true)} className="accent-[#00c471]" />선택한 확장자만 허용</label>
+                  <label className="flex items-center gap-2"><input type="radio" name="assignment-file-format-mode" checked={!restrictFileFormats} onChange={() => setRestrictFileFormats(false)} className="accent-[#00c471]" />제한 없음</label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {ASSIGNMENT_FILE_FORMAT_OPTIONS.map((format) => {
+                    const selected = restrictFileFormats && parseAssignmentFileFormats(fileFormatsText).includes(format)
+                    return <button key={format} type="button" aria-pressed={selected} onClick={() => {
+                      const formats = restrictFileFormats ? parseAssignmentFileFormats(fileFormatsText) : []
+                      setFileFormatsText((selected ? formats.filter((item) => item !== format) : [...formats, format]).join(', '))
+                      setRestrictFileFormats(true)
+                      setError(null)
+                    }} className={`rounded-lg border px-3 py-2 text-xs! leading-4! font-bold ${selected ? 'border-[#00c471] bg-emerald-50 text-[#008b50]' : 'border-gray-200 bg-gray-50 text-gray-600'}`}>.{format}</button>
+                  })}
+                </div>
+                <p role="status" className="text-xs font-bold text-[#008b50]">{restrictFileFormats ? `허용 확장자: ${parseAssignmentFileFormats(fileFormatsText).map((format) => `.${format}`).join(', ') || '선택 필요'}` : '모든 파일 확장자를 허용합니다.'}</p>
+              </fieldset>
+              {!draft.allowFileSubmission ? <p className="mt-3 text-xs text-gray-500">학생 제출 허용 형식에서 파일 업로드를 켜면 설정할 수 있습니다.</p> : null}
             </div>
 
             <div className="content-assignment-editor-card content-assignment-editor-rubric-panel relative overflow-visible rounded-2xl border border-gray-200 bg-white shadow-sm">

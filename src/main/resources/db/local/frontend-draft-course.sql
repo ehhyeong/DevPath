@@ -865,7 +865,11 @@ index.html 파일 하나만 업로드하세요. 외부 링크나 텍스트 직�
 index.html 파일 하나만 업로드하세요. 외부 링크나 텍스트 직접 입력은 사용하지 않습니다. HTML 파일 안에 구조, 스타일, 스크립트, 렌더링 흐름 설명, DevTools 확인 기록을 모두 포함하세요.',
            submission_type = 'FILE',
            due_at = NULL,
-           allowed_file_formats = 'html',
+           -- 이전 편집기가 덮어쓴 기본값만 복구하고 강사가 저장한 확장자는 유지한다.
+           allowed_file_formats = CASE
+             WHEN allowed_file_formats = 'pdf,zip,png,jpg,jpeg' THEN 'html'
+             ELSE allowed_file_formats
+           END,
            readme_required = FALSE,
            test_required = FALSE,
            lint_required = FALSE,

@@ -382,6 +382,7 @@ export default function LearningPlayerOverlays({ model }: Props) {
                       <input
                         type="file"
                         multiple
+                        accept={assignmentModal.allowedFileFormats.length ? assignmentModal.allowedFileFormats.map((format) => `.${format.replace(/^\./, '')}`).join(',') : undefined}
                         className="hidden"
                         onChange={(event) => handleAssignmentFilesSelected(event.target.files)}
                       />

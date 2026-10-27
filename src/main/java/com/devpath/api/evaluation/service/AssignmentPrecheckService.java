@@ -5,7 +5,6 @@ import com.devpath.api.evaluation.dto.request.CreateSubmissionFileRequest;
 import com.devpath.api.evaluation.dto.response.AssignmentPrecheckResponse;
 import com.devpath.common.exception.CustomException;
 import com.devpath.common.exception.ErrorCode;
-import com.devpath.domain.course.repository.CourseNodeMappingRepository;
 import com.devpath.domain.learning.entity.Assignment;
 import com.devpath.domain.learning.entity.SubmissionType;
 import com.devpath.domain.learning.repository.AssignmentRepository;
@@ -26,11 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AssignmentPrecheckService {
 
-  private static final Long FRONTEND_DEMO_COURSE_ID = 127L;
-
   private final UserRepository userRepository;
   private final AssignmentRepository assignmentRepository;
-  private final CourseNodeMappingRepository courseNodeMappingRepository;
 
   // 과제 제출 전 README, 테스트, 린트, 파일 형식 기준으로 precheck를 수행한다.
   public AssignmentPrecheckResponse precheck(
@@ -62,7 +58,16 @@ public class AssignmentPrecheckService {
         .lintPassed(lintPassed)
         .fileFormatPassed(fileFormatPassed)
         .qualityScore(qualityScore)
-        .message(passed ? "precheck를 통과했습니다." : "precheck에서 실패한 항목이 있습니다.")
+        .message(
+            passed
+                ? "precheck를 통과했습니다."
+                : !fileFormatPassed
+                    ? "허용되지 않은 파일 형식입니다. 허용 확장자: "
+                        + Arrays.stream(assignment.getAllowedFileFormats().split(","))
+                            .map(this::normalizeFileFormat)
+                            .map(value -> "." + value)
+                            .collect(Collectors.joining(", "))
+                    : "precheck에서 실패한 항목이 있습니다.")
         .build();
   }
 
@@ -98,10 +103,6 @@ public class AssignmentPrecheckService {
   // 허용 파일 형식 규칙을 검증한다.
   private boolean validateFileFormats(
       Assignment assignment, List<CreateSubmissionFileRequest> files) {
-    if (isFrontendDemoCourseAssignment(assignment)) {
-      return true;
-    }
-
     SubmissionType submissionType = assignment.getSubmissionType();
 
     // TEXT나 URL 전용 과제는 파일이 없어도 통과 처리한다.
@@ -109,7 +110,7 @@ public class AssignmentPrecheckService {
       return true;
     }
 
-    // FILE 또는 MULTIPLE 제출 과제는 최소 한 개 이상의 파일이 있어야 한다.
+    // 파일을 첨부하지 않은 텍스트/링크 제출에는 확장자 제한을 적용하지 않는다.
     if (files == null || files.isEmpty()) {
       return true;
     }
@@ -157,10 +158,6 @@ public class AssignmentPrecheckService {
 
   // README, 테스트, 린트, 파일 형식 각각 25점씩 부여하는 단순 품질 점수 계산식이다.
   private SubmissionMethods resolveSubmissionMethods(Assignment assignment) {
-    if (isFrontendDemoCourseAssignment(assignment)) {
-      return new SubmissionMethods(false, true, false);
-    }
-
     SubmissionType submissionType = assignment.getSubmissionType();
     boolean allowText =
         assignment.getAllowTextSubmission() == null
@@ -212,18 +209,6 @@ public class AssignmentPrecheckService {
 
   private boolean hasText(String value) {
     return value != null && !value.isBlank();
-  }
-
-  private boolean isFrontendDemoCourseAssignment(Assignment assignment) {
-    if (assignment == null
-        || assignment.getRoadmapNode() == null
-        || assignment.getRoadmapNode().getNodeId() == null) {
-      return false;
-    }
-
-    return courseNodeMappingRepository
-        .findCourseIdsByNodeId(assignment.getRoadmapNode().getNodeId())
-        .contains(FRONTEND_DEMO_COURSE_ID);
   }
 
   private static class SubmissionMethods {

@@ -88,6 +88,7 @@ export interface InstructorAssignmentEditor {
   allowTextSubmission: boolean
   allowFileSubmission: boolean
   allowUrlSubmission: boolean
+  allowedFileFormats: string[]
   rubrics: InstructorAssignmentRubric[]
   referenceFiles: InstructorAssignmentReferenceFile[]
 }
@@ -110,6 +111,7 @@ export interface SaveInstructorAssignmentEditorRequest {
   allowTextSubmission: boolean
   allowFileSubmission: boolean
   allowUrlSubmission: boolean
+  allowedFileFormats: string[]
   rubrics: InstructorAssignmentRubric[]
   referenceFiles: SaveInstructorAssignmentReferenceFileRequest[]
 }
