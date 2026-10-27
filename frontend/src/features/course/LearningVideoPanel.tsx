@@ -72,8 +72,8 @@ export default function LearningVideoPanel({ model }: Props) {
             {/* 영상 프레임 */}
             <div ref={frameRef} className="learning-player-video-frame flex-1 relative flex flex-col justify-center items-center w-full overflow-hidden group">
 
-              {/* 우측 상단 오버레이 버튼 */}
-              <div className="absolute right-6 top-4 z-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {/* 터치 지원 PC의 실제 마우스 호버를 따르고, 영역 선택 화면 위에서도 취소 버튼을 누를 수 있도록 한다. */}
+              <div className="absolute right-6 top-4 z-40 pointer-events-none opacity-0 [.learning-player-video-frame:hover_&]:pointer-events-auto [.learning-player-video-frame:hover_&]:opacity-100 transition-opacity duration-300">
                 <button
                   type="button"
                   onClick={() => { setIsSelectMode(prev => !prev); setSelectDrag(null) }}
