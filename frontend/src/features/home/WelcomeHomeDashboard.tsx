@@ -139,7 +139,7 @@ export default function WelcomeHomeDashboard({ dashboard, error, greetingName, l
   return (
     <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-[1.25rem]! border border-[#e5e7eb] bg-white p-7 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all duration-250 ease-[ease] before:absolute before:-top-1/2 before:-left-1/2 before:size-[200%] before:bg-[radial-gradient(circle,rgba(0,196,113,0.08)_0%,rgba(255,255,255,0)_70%)] before:opacity-0 before:transition-opacity before:duration-500 before:content-[''] hover:-translate-y-0.5 hover:border-[#d1d5db] hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.06)] hover:before:opacity-100">
+        <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-[1.25rem]! border border-[#e5e7eb] bg-white p-7 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all duration-250 ease-[ease] before:pointer-events-none before:absolute before:-top-1/2 before:-left-1/2 before:size-[200%] before:bg-[radial-gradient(circle,rgba(0,196,113,0.08)_0%,rgba(255,255,255,0)_70%)] before:opacity-0 before:transition-opacity before:duration-500 before:content-[''] hover:-translate-y-0.5 hover:border-[#d1d5db] hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.06)] hover:before:opacity-100">
           <div>
             <div className="mb-3 flex items-center gap-1.5">
               <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4ade80] opacity-75"></span><span className="relative inline-flex h-2 w-2 rounded-full bg-[#00c471]"></span></span>
@@ -161,7 +161,7 @@ export default function WelcomeHomeDashboard({ dashboard, error, greetingName, l
             ) : error ? (
               <button className="w-full cursor-pointer rounded-xl border border-[#d1d5db] py-3 text-xs! font-bold text-[#4b5563]" onClick={onRetry} type="button">다시 불러오기</button>
             ) : (
-              <button className="w-full cursor-pointer rounded-xl bg-[#111827] py-3 text-sm! leading-5! font-bold text-white" onClick={() => navigateTo('/lecture-list')} type="button">강의 둘러보기</button>
+              <button className="w-full cursor-pointer rounded-xl bg-[#111827] py-3 text-sm! leading-5! font-bold text-white" onClick={() => navigateTo('/roadmap-hub')} type="button">로드맵 둘러보기</button>
             )}
           </div>
         </div>
