@@ -46,6 +46,7 @@ class FlywayMigrationIntegrationTest {
     contextRunner =
         new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(FlywayAutoConfiguration.class))
+            .withUserConfiguration(FlywayConfig.class)
             .withBean(DataSource.class, () -> dataSource)
             .withInitializer(
                 context -> {
@@ -166,13 +167,16 @@ class FlywayMigrationIntegrationTest {
   }
 
   @Test
-  void adoptionMarkerOnEmptyDatabaseDoesNotReplaceLegacySchemaCreation() {
+  void emptyDatabaseRecordsLatestVersionAsBaselineWithoutRunningMigrations() {
     enabledRunner()
         .run(
             context -> {
               assertThat(context).hasNotFailed();
-              assertThat(context.getBean(Flyway.class).info().current().getVersion().getVersion())
-                  .isEqualTo("1");
+              Flyway flyway = context.getBean(Flyway.class);
+              assertThat(flyway.info().current().getType().name()).isEqualTo("BASELINE");
+              assertThat(flyway.info().current().getVersion())
+                  .isEqualTo(flyway.info().all()[flyway.info().all().length - 1].getVersion());
+              assertThat(flyway.info().pending()).isEmpty();
               assertThat(tableCount("legacy_record")).isZero();
             });
   }
