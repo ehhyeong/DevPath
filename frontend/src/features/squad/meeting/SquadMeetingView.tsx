@@ -1,4 +1,4 @@
-import { type CSSProperties } from 'react'
+import { useLayoutEffect, useRef, type CSSProperties } from 'react'
 import AuthModal from '../../../components/AuthModal'
 import MeetingAudioSettings from './MeetingAudioSettings'
 import MeetingParticipantStage from './MeetingParticipantStage'
@@ -22,6 +22,12 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
   const demoChat = useDemoTyping({ text: DEMO_TEXT.meeting, value: voiceChatInput, onValue: setVoiceChatInput,
     enabled: demoAccount, active: Boolean(isJoined && roomPanelTab === 'chat' && !chatSending),
     scopeKey: activeChannel?.channelId, instant: true })
+  const chatInputRef = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const field = chatInputRef.current
+    // 시연처럼 상태로 문구를 채우면 브라우저가 끝 커서를 따라 스크롤하지 않는다. 중간 편집 위치는 유지한다.
+    if (field && field.selectionEnd === voiceChatInput.length) field.scrollTop = field.scrollHeight
+  }, [voiceChatInput, isJoined, roomPanelTab, roomSidePanelOpen])
   function renderMemberAvatar(member: WorkspaceMember, className = 'w-8 h-8') {
     return (
       <UserAvatar
@@ -113,6 +119,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
         <div className="p-4 border-t border-gray-800 bg-gray-800 shrink-0">
           <div className="flex gap-2 bg-gray-900 rounded-xl px-3 py-2 border border-gray-700 focus-within:border-blue-500 transition shadow-inner">
             <textarea
+              ref={chatInputRef}
               value={voiceChatInput}
               {...demoChat.bindings}
               onKeyDown={(event) => {
@@ -122,7 +129,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
                   void sendVoiceChatMessage()
                 }
               }}
-              rows={2}
+              rows={3}
               className="min-w-0 flex-1 resize-none bg-transparent px-2 text-sm outline-none text-white placeholder-gray-500"
               placeholder="메시지 입력..."
             />
