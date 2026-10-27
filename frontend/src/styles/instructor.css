@@ -1,5 +1,14 @@
 /* Consolidated from InstructorSidebar.css. */
 
+/* 터치 지원 환경에서도 내부 메뉴와 너비가 동일한 :hover 조건으로 펼쳐져야 한다. */
+.instructor-sidebar {
+  width: 80px;
+}
+
+.instructor-sidebar:hover {
+  width: 250px;
+}
+
 .instructor-sidebar .sidebar-sticky-content {
   position: relative;
   top: auto;
