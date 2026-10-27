@@ -362,13 +362,18 @@ export default function JobMatchingApp() {
 
     setSkillApplying(true)
     try {
-      await projectApiRequest(
+      const applied = await projectApiRequest<{ nodeId?: number | null }>(
         `/api/me/recommendation-changes/${skillSuggestion.changeId}/apply`,
         { method: 'POST' },
         'required',
       )
       showAuthToast({ message: '로드맵에 학습 노드를 추가했어요.', durationMs: 1500 })
-      navigateTo(skillSuggestion.redirectUrl)
+      // 추가된 노드로 스크롤하고 상세를 열도록 원본 노드 ID를 넘긴다.
+      navigateTo(
+        applied?.nodeId
+          ? `${skillSuggestion.redirectUrl}&focusOriginalNodeId=${applied.nodeId}`
+          : skillSuggestion.redirectUrl,
+      )
     } catch (error) {
       showAuthToast({
         message: error instanceof Error ? error.message : '노드 추가에 실패했습니다.',

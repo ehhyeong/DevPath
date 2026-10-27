@@ -320,6 +320,7 @@ export function RoadmapGraph({
           <div
             key={slot.id}
             ref={registerSlot(slot.id)}
+            data-slot-id={slot.id}
             className={`${roadmapSlotBaseClassName} roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
               slot.kind === 'official-branch' ? '[align-self:stretch]' : ''
             } ${

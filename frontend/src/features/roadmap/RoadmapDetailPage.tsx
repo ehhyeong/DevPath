@@ -20,6 +20,7 @@ export default function RoadmapDetailPage() {
   const customRoadmapId = readPositiveNumberParam(params, 'id')
   const originalRoadmapId = readPositiveNumberParam(params, 'original')
   const initialNodeId = readPositiveNumberParam(params, 'nodeId')
+  const focusOriginalNodeId = readPositiveNumberParam(params, 'focusOriginalNodeId')
 
   const [session, setSession]       = useState(() => readStoredAuthSession())
   const [profileImage, setProfileImage] = useState<string | null>(null)
@@ -34,6 +35,7 @@ export default function RoadmapDetailPage() {
   const [infoOpen, setInfoOpen]     = useState(false)
   const [processing, setProcessing] = useState(false)
   const [drawerNode, setDrawerNode] = useState<RoadmapNodeItem | null>(null)
+  const [focusTarget, setFocusTarget] = useState<{ node: RoadmapNodeItem; openDrawer: boolean } | null>(null)
   const [myRoadmaps, setMyRoadmaps] = useState<MyRoadmapSummary[]>([])
   const [editMode, setEditMode] = useState(false)
   const [recommendPolling, setRecommendPolling] = useState(false)
@@ -253,11 +255,14 @@ export default function RoadmapDetailPage() {
         setHistories(historiesData)
         setProofCards(proofCardsData)
         setMyRoadmaps(roadmapsData.roadmaps)
-        setDrawerNode(
-          initialNodeId
-            ? roadmapData.nodes.find((node) => node.customNodeId === initialNodeId && node.status !== 'LOCKED') ?? null
-            : null,
-        )
+        setDrawerNode(null)
+        // nodeId(커스텀 노드)는 잠긴 노드를 열지 않고, focusOriginalNodeId(방금 추가한 노드)는 클릭처럼 항상 연다.
+        const urlNode = initialNodeId
+          ? roadmapData.nodes.find((node) => node.customNodeId === initialNodeId)
+          : focusOriginalNodeId
+            ? roadmapData.nodes.find((node) => node.originalNodeId === focusOriginalNodeId)
+            : undefined
+        setFocusTarget(urlNode ? { node: urlNode, openDrawer: !initialNodeId || urlNode.status !== 'LOCKED' } : null)
 
         if (changesData.length > 0) {
           setTimeout(() => setPanelOpen(true), 800)
@@ -271,7 +276,20 @@ export default function RoadmapDetailPage() {
       })
 
     return () => abortRef.current?.abort()
-  }, [customRoadmapId, initialNodeId, originalRoadmapId, resetRoadmapPageState, session?.userId])
+  }, [customRoadmapId, focusOriginalNodeId, initialNodeId, originalRoadmapId, resetRoadmapPageState, session?.userId])
+
+  // URL로 지정된 노드로 먼저 스크롤해 위치를 보여 준 뒤 상세를 연다(먼저 열면 배경이 흐려져 위치가 안 보인다).
+  useEffect(() => {
+    if (!focusTarget || loading) return
+    document
+      .querySelector(`[data-slot-id="node-${focusTarget.node.customNodeId}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+    const timer = window.setTimeout(() => {
+      if (focusTarget.openDrawer) setDrawerNode(focusTarget.node)
+      setFocusTarget(null)
+    }, 600)
+    return () => window.clearTimeout(timer)
+  }, [focusTarget, loading])
 
   // ── 이벤트 핸들러 ────────────────────────────────────────────────────────────
 
