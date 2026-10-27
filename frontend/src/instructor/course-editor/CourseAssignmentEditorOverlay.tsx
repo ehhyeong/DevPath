@@ -350,24 +350,24 @@ export default function CourseAssignmentEditorOverlay({
               />
 
               <label className="mb-2 block text-sm font-extrabold text-gray-800">
-                과제 가이드 <span className="text-red-500">*</span>
+                과제 가이드 (설명) <span className="text-red-500">*</span>
               </label>
               <div className="content-assignment-editor-markdown mb-8 overflow-hidden rounded-xl border border-gray-200 shadow-sm transition focus-within:border-[#00C471] focus-within:ring-1 focus-within:ring-[#00C471]">
                 <div className="content-assignment-editor-toolbar flex gap-1 border-b border-gray-200 bg-gray-50 p-2 text-gray-600">
-                  <button type="button" onClick={() => insertFormat('**', '**')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="굵게" onClick={() => insertFormat('**', '**')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-bold" />
                   </button>
-                  <button type="button" onClick={() => insertFormat('*', '*')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="기울임" onClick={() => insertFormat('*', '*')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-italic" />
                   </button>
                   <div className="mx-1 my-auto h-5 w-px bg-gray-300" />
-                  <button type="button" onClick={() => insertFormat('- ', '')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="목록" onClick={() => insertFormat('- ', '')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-list-ul" />
                   </button>
-                  <button type="button" onClick={() => insertFormat('`', '`')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="인라인 코드" onClick={() => insertFormat('`', '`')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-code" />
                   </button>
-                  <button type="button" onClick={() => insertFormat('```\n', '\n```')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
+                  <button type="button" title="코드 블록" onClick={() => insertFormat('```\n', '\n```')} className="flex h-8 w-8 items-center justify-center rounded transition hover:bg-gray-200">
                     <i className="fas fa-file-code" />
                   </button>
                 </div>
@@ -383,7 +383,7 @@ export default function CourseAssignmentEditorOverlay({
 
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-xs font-extrabold text-gray-600">참고 파일 첨부</label>
+                  <label className="mb-2 block text-xs font-extrabold text-gray-600">참조 파일 첨부 <span className="font-normal text-gray-400">(선택)</span></label>
                   <label
                     onDragOver={(event) => {
                       event.preventDefault()
@@ -404,7 +404,7 @@ export default function CourseAssignmentEditorOverlay({
                   >
                     <i className="fas fa-cloud-upload-alt mb-2 text-2xl text-gray-400 transition group-hover:text-[#00C471]" />
                     <span className="block text-sm font-bold text-gray-600 group-hover:text-[#00C471]">
-                      클릭하거나 파일을 드래그해서 첨부
+                      클릭하거나 파일 드래그 앤 드롭
                     </span>
                     <span className="mt-1 block text-[10px] text-gray-400">PDF, ZIP, 이미지</span>
                     <input type="file" multiple className="hidden" onChange={(event) => void handleFileSelection(event.target.files)} />
@@ -440,7 +440,7 @@ export default function CourseAssignmentEditorOverlay({
                         type="checkbox"
                         className="h-4 w-4 accent-blue-600"
                       />
-                      텍스트 코드 직접 입력
+                      텍스트/코드 직접 입력
                     </label>
                     <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-gray-700">
                       <input
@@ -449,7 +449,7 @@ export default function CourseAssignmentEditorOverlay({
                         type="checkbox"
                         className="h-4 w-4 accent-blue-600"
                       />
-                      파일 업로드
+                      파일 업로드 (이미지, ZIP 등)
                     </label>
                     <label className="flex cursor-pointer items-center gap-3 text-sm font-bold text-gray-700">
                       <input
@@ -458,7 +458,7 @@ export default function CourseAssignmentEditorOverlay({
                         type="checkbox"
                         className="h-4 w-4 accent-blue-600"
                       />
-                      외부 링크 제출
+                      외부 링크 (Github, Notion 등)
                     </label>
                   </div>
                 </div>
@@ -486,7 +486,7 @@ export default function CourseAssignmentEditorOverlay({
                       </div>
                       <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-12">
                         <div className="lg:col-span-5">
-                          <label className="mb-1 block text-[10px] font-extrabold text-gray-500">평가 항목</label>
+                          <label className="mb-1 block text-[10px] font-extrabold text-gray-500">평가 항목 내용</label>
                           <input
                             value={rubric.criteriaName}
                             onChange={(event) => updateRubric(rubric.localId, 'criteriaName', event.target.value)}
@@ -495,7 +495,7 @@ export default function CourseAssignmentEditorOverlay({
                           />
                         </div>
                         <div className="lg:col-span-5">
-                          <label className="mb-1 block text-[10px] font-extrabold text-gray-500">자동 검색 키워드</label>
+                          <label className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-gray-500">자동 검사 키워드 <i className="fas fa-info-circle text-gray-400" title="쉼표(,)로 구분하여 입력하세요" /></label>
                           <input
                             value={rubric.criteriaKeywords ?? ''}
                             onChange={(event) => updateRubric(rubric.localId, 'criteriaKeywords', event.target.value)}
@@ -516,7 +516,7 @@ export default function CourseAssignmentEditorOverlay({
                           </div>
                         </div>
                       </div>
-                      <button type="button" onClick={() => removeRubric(rubric.localId)} className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition hover:bg-red-50 hover:text-red-500">
+                      <button type="button" title="항목 삭제" onClick={() => removeRubric(rubric.localId)} className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-gray-300 transition hover:bg-red-50 hover:text-red-500">
                         <i className="fas fa-trash-alt" />
                       </button>
                     </div>
@@ -536,7 +536,7 @@ export default function CourseAssignmentEditorOverlay({
 
             <div className="content-assignment-editor-card content-assignment-editor-score-card grid grid-cols-1 gap-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm md:grid-cols-2">
               <div>
-                <div className="mb-2 flex items-end justify-between">
+                <div className="mb-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
                   <label className="block text-sm font-extrabold text-gray-800">총 배점 합계</label>
                   <span className="text-[10px] font-bold text-gray-400">
                     루브릭 점수가 자동 합산됩니다.
@@ -555,8 +555,8 @@ export default function CourseAssignmentEditorOverlay({
               </div>
 
               <div>
-                <div className="mb-2 flex items-end justify-between">
-                  <label className="block text-sm font-extrabold text-gray-800">과제 패스 기준</label>
+                <div className="mb-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
+                  <label className="block text-sm font-extrabold text-gray-800">과제 이수 기준 (Pass 점수)</label>
                   <span className="text-[10px] font-bold text-gray-400">총점 이하 점수만 입력 가능합니다.</span>
                 </div>
                 <div className="relative">

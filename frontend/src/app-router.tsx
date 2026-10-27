@@ -23,7 +23,7 @@ const loadWorkspaceStyles = () => Promise.resolve()
 
 const routeLoaders = {
   app: () => import('./App'),
-  contentAssignmentEditor: () => import('./features/course/ContentAssignmentEditorApp'),
+  contentAssignmentEditor: loadWithStyle(loadInstructorStyles, () => import('./features/course/ContentAssignmentEditorApp')),
   courseDetail: () => import('./features/course/CourseDetailApp'),
   courseEditor: () => import('./features/course/CourseEditorApp'),
   communityList: () => import('./features/community/CommunityListPage'),
