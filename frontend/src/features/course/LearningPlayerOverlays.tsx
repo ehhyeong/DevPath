@@ -5,6 +5,7 @@ import { formatRelativeTime, formatShortDate, isQuestionAnswered } from './learn
 import { formatDateLabel, formatTime } from './learning-player-support'
 import { DEMO_COURSE_TITLE, DEMO_TEXT } from '../../lib/demo-typing'
 import { useDemoAccount, useDemoTyping } from '../../lib/useDemoTyping'
+import AssignmentGradingFeedback from './AssignmentGradingFeedback'
 
 type Props = { model: LearningPlayerReadyModel }
 
@@ -530,8 +531,8 @@ export default function LearningPlayerOverlays({ model }: Props) {
                         <i className="fas fa-robot text-[#00C471]" />
                         AI 코드 리뷰어 피드백
                       </h4>
-                      <div className="learning-assignment-feedback-card custom-scrollbar max-h-[clamp(180px,30vh,340px)] overflow-y-auto overscroll-contain whitespace-pre-line rounded-xl border border-emerald-100 bg-emerald-50 p-4 pr-[18px] text-xs leading-relaxed font-medium text-emerald-950 [@media(max-height:760px)]:max-h-[220px]">
-                        {assignmentGradingFeedback}
+                      <div className="learning-assignment-feedback-card rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+                        <AssignmentGradingFeedback content={assignmentGradingFeedback} />
                       </div>
                     </div>
                   ) : null}
