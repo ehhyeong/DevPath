@@ -81,7 +81,7 @@ export function useDemoTyping({ text, value, onValue, enabled, active, scopeKey,
   function start(event?: MouseEvent<HTMLInputElement | HTMLTextAreaElement>) {
     if (!enabled || !active || (!replaceExisting && value) || usedRef.current || (event && event.button !== 0)) return false
     usedRef.current = true
-    if (instant) {
+    if (instant && !(replaceExisting && value && event)) {
       onValue(text)
       return true
     }
@@ -92,6 +92,13 @@ export function useDemoTyping({ text, value, onValue, enabled, active, scopeKey,
       onValue(next)
     }
     const beginTyping = () => {
+      if (instant) {
+        emitValue(text)
+        cancelRef.current = null
+        pendingValuesRef.current = []
+        setTyping(false)
+        return
+      }
       cancelRef.current = startDemoTyping(text, emitValue, () => {
         cancelRef.current = null
         pendingValuesRef.current = []

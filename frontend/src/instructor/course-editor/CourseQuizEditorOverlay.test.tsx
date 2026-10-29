@@ -28,7 +28,7 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers())
 
 describe('강사 퀴즈 수정 시연', () => {
-  it.each(['question', 'explanation'])('%s 칸을 전체 선택하고 지운 뒤 타이핑하며 거짓 정답으로 저장한다', async (field) => {
+  it.each(['question', 'explanation'])('%s 칸을 전체 선택하고 지운 뒤 한 번에 교체하며 거짓 정답으로 저장한다', async (field) => {
     const view = await act(async () => render(<CourseQuizEditorOverlay lessonId={338} lessonTitle="시연 퀴즈" demoCourse onClose={() => {}} />))
     const third = view.container.querySelectorAll('.course-quiz-editor-question-card')[2] as HTMLElement
     const question = within(third).getByPlaceholderText('질문을 입력하세요')
@@ -46,14 +46,15 @@ describe('강사 퀴즈 수정 시연', () => {
     act(() => vi.advanceTimersByTime(350))
     expect(selected).toHaveValue('')
     act(() => vi.advanceTimersByTime(100))
-    expect(selected).toHaveValue(field === 'question' ? 'J' : 'ㄱ')
-    expect(question).toHaveValue(field === 'question' ? 'J' : '기존 문제 3')
-    expect(explanation).toHaveValue(field === 'explanation' ? 'ㄱ' : '기존 해설 3')
-    act(() => vi.advanceTimersByTime(5000))
+    expect(question).toHaveValue(field === 'question' ? newQuestion : '기존 문제 3')
+    expect(explanation).toHaveValue(field === 'explanation' ? newExplanation : '기존 해설 3')
+    expect(screen.getByRole('button', { name: '저장 완료' })).toBeEnabled()
+    expect(vi.getTimerCount()).toBe(0)
     fireEvent.click(screen.getAllByPlaceholderText('질문을 입력하세요')[0])
     expect(screen.getAllByPlaceholderText('질문을 입력하세요')[0]).toHaveValue('기존 문제 1')
     fireEvent.click(field === 'question' ? explanation : question)
-    act(() => vi.advanceTimersByTime(5000))
+    act(() => vi.advanceTimersByTime(350))
+    act(() => vi.advanceTimersByTime(100))
     expect(question).toHaveValue(newQuestion)
     expect(explanation).toHaveValue(newExplanation)
     fireEvent.change(question, { target: { value: `${newQuestion} (수정)` } })
@@ -64,6 +65,23 @@ describe('강사 퀴즈 수정 시연', () => {
     expect(saved.questionText).toBe(`${newQuestion} (수정)`)
     expect(saved.explanation).toBe(newExplanation)
     expect(saved.options.map((option) => option.isCorrect)).toEqual([false, true])
+  })
+
+  it.each(['question', 'explanation'])('%s만 클릭하고 저장하면 클릭하지 않은 칸의 기존 내용은 유지한다', async (field) => {
+    await act(async () => render(<CourseQuizEditorOverlay lessonId={338} lessonTitle="퀴즈" demoCourse onClose={() => {}} />))
+    vi.useFakeTimers()
+    const question = screen.getAllByPlaceholderText('질문을 입력하세요')[2]
+    const explanation = screen.getAllByPlaceholderText('정답 근거를 한두 문장으로 간결하게 입력하세요.')[2]
+    fireEvent.click(field === 'question' ? question : explanation)
+    act(() => vi.advanceTimersByTime(350))
+    act(() => vi.advanceTimersByTime(100))
+    act(() => vi.advanceTimersByTime(5000))
+    expect(question).toHaveValue(field === 'question' ? newQuestion : '기존 문제 3')
+    expect(explanation).toHaveValue(field === 'explanation' ? newExplanation : '기존 해설 3')
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: '저장 완료' })))
+    const saved = vi.mocked(instructorLessonEvaluationApi.saveQuizEditor).mock.calls[0][1].questions[2]
+    expect(saved.questionText).toBe(field === 'question' ? newQuestion : '기존 문제 3')
+    expect(saved.explanation).toBe(field === 'explanation' ? newExplanation : '기존 해설 3')
   })
 
   it.each(['other-account', 'other-course'])('%s에서는 기존 내용을 바꾸지 않는다', async (scope) => {
@@ -78,14 +96,14 @@ describe('강사 퀴즈 수정 시연', () => {
     expect(explanation).toHaveValue('기존 해설 3')
   })
 
-  it('선택·타이핑 중 수동 입력을 시작하면 새 입력을 덮어쓰지 않는다', async () => {
+  it.each([0, 350])('%dms 단계에서 수동 입력을 시작하면 새 입력을 덮어쓰지 않는다', async (elapsed) => {
     await act(async () => render(<CourseQuizEditorOverlay lessonId={338} lessonTitle="퀴즈" demoCourse onClose={() => {}} />))
     vi.useFakeTimers()
     const question = screen.getAllByPlaceholderText('질문을 입력하세요')[2]
     const explanation = screen.getAllByPlaceholderText('정답 근거를 한두 문장으로 간결하게 입력하세요.')[2]
     fireEvent.click(question)
     fireEvent.click(explanation)
-    act(() => vi.advanceTimersByTime(700))
+    act(() => vi.advanceTimersByTime(elapsed))
     fireEvent.keyDown(question, { key: 'a' })
     fireEvent.change(question, { target: { value: '직접 입력한 문제' } })
     act(() => vi.advanceTimersByTime(5000))
@@ -95,7 +113,7 @@ describe('강사 퀴즈 수정 시연', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it.each([0, 350, 700])('%dms 단계에서 화면을 닫으면 선택·삭제·타이핑 타이머를 해제한다', async (elapsed) => {
+  it.each([0, 350, 450])('%dms 단계에서 화면을 닫으면 선택·삭제·교체 타이머를 해제한다', async (elapsed) => {
     const view = await act(async () => render(<CourseQuizEditorOverlay lessonId={338} lessonTitle="퀴즈" demoCourse onClose={() => {}} />))
     vi.useFakeTimers()
     fireEvent.click(screen.getAllByPlaceholderText('질문을 입력하세요')[2])
