@@ -8,10 +8,12 @@ export type SortFilter = 'popular' | 'recent' | 'views' | 'comments'
 export type ShowcaseSummary = {
   showcaseId: number
   userId: number
+  authorName?: string | null
   authorProfileImage?: string | null
   title: string
   description?: string | null
   thumbnailUrl?: string | null
+  techStack?: string | null
   category: ShowcaseCategory
   isPublic?: boolean
   viewCount: number
@@ -32,6 +34,7 @@ export type ShowcaseDetail = ShowcaseSummary & {
 export type ShowcaseComment = {
   commentId: number
   userId: number
+  authorName?: string | null
   authorProfileImage?: string | null
   content: string
   createdAt?: string | null
@@ -126,7 +129,7 @@ export function mapCompletedWorkspaceProject(project: WorkspaceHubProject): Comp
 
 export function getShowcaseTeam(showcase: ShowcaseSummary) {
   return {
-    name: `작성자 ${showcase.userId}`,
+    name: showcase.authorName?.trim() || 'DevPath 멤버',
     image: showcase.authorProfileImage ?? null,
   }
 }
@@ -136,15 +139,16 @@ export function getShowcaseStatus(showcase: ShowcaseSummary) {
 }
 
 export function getShowcaseShort(showcase: ShowcaseSummary) {
-  return showcase.description || '완성된 프로젝트를 공유하고 피드백을 받는 쇼케이스입니다.'
+  return showcase.description?.trim().split(/\r?\n/)[0] || '완성된 프로젝트를 공유하고 피드백을 받는 쇼케이스입니다.'
 }
 
 export function getShowcaseTechStack(showcase: ShowcaseSummary) {
-  return [categoryLabels[showcase.category] ?? 'Project']
+  const techStack = showcase.techStack?.split(',').map((tech) => tech.trim()).filter(Boolean) ?? []
+  return techStack.length ? techStack : [categoryLabels[showcase.category] ?? 'Project']
 }
 
-export function getCommentAuthorName(userId: number) {
-  return `작성자 ${userId}`
+export function getCommentAuthorName(comment: ShowcaseComment) {
+  return comment.authorName?.trim() || 'DevPath 멤버'
 }
 
 export function formatViews(value: number) {

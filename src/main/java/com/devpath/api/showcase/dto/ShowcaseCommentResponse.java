@@ -12,20 +12,23 @@ public class ShowcaseCommentResponse {
   private Long commentId;
   private Long showcaseId;
   private Long userId;
+  private String authorName;
   private String authorProfileImage;
   private String content;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
   public static ShowcaseCommentResponse from(ShowcaseComment comment) {
-    return from(comment, null);
+    return from(comment, null, null);
   }
 
-  public static ShowcaseCommentResponse from(ShowcaseComment comment, String authorProfileImage) {
+  public static ShowcaseCommentResponse from(
+      ShowcaseComment comment, String authorProfileImage, String authorName) {
     return ShowcaseCommentResponse.builder()
         .commentId(comment.getId())
         .showcaseId(comment.getShowcaseId())
         .userId(comment.getUserId())
+        .authorName(authorName)
         .authorProfileImage(authorProfileImage)
         .content(comment.getContent())
         .createdAt(comment.getCreatedAt())

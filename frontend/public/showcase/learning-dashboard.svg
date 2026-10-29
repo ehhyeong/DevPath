@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">DevPath 학습 대시보드 미리보기</title>
+  <desc id="desc">주간 학습 기록과 이어서 볼 강의, 단계별 로드맵을 보여주는 대시보드 화면이다.</desc>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#d9f3e8"/><stop offset="1" stop-color="#edf6ef"/></linearGradient></defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <g font-family="Arial, Malgun Gothic, sans-serif">
+    <text x="60" y="66" font-size="19" font-weight="700" fill="#21765c" letter-spacing="3">DEVPATH / LEARNING WORKSPACE</text>
+    <rect x="50" y="99" width="1100" height="535" rx="20" fill="#fff" stroke="#c5dfd2"/>
+    <path d="M70 99H257V634H70Q50 634 50 614V119Q50 99 70 99" fill="#132d28"/>
+    <text x="81" y="151" font-size="26" font-weight="700" fill="#fff">DevPath<tspan fill="#5fe1a2">.</tspan></text>
+    <text x="82" y="211" font-size="13" fill="#9eb7ad">MY LEARNING</text>
+    <rect x="66" y="231" width="174" height="43" rx="8" fill="#255546"/>
+    <g fill="#a8c2b7" font-size="16"><text x="85" y="258" fill="#86efb5">학습 대시보드</text><text x="85" y="310">나의 로드맵</text><text x="85" y="360">수강 중인 강의</text><text x="85" y="410">프로젝트 기록</text><text x="85" y="460">질문 노트</text></g>
+    <circle cx="94" cy="584" r="17" fill="#72c5a5"/><text x="87" y="590" font-size="16" fill="#173f32">D</text><text x="124" y="590" font-size="14" fill="#d6e7de">나의 학습 공간</text>
+    <text x="289" y="154" font-size="25" font-weight="700" fill="#183c30">오늘도 한 걸음, 이어서 시작해요.</text>
+    <text x="290" y="183" font-size="14" fill="#71857d">작은 기록이 쌓여 나만의 개발 경로가 됩니다.</text>
+    <rect x="290" y="210" width="254" height="101" rx="12" fill="#f0f8f3"/><rect x="559" y="210" width="254" height="101" rx="12" fill="#f5f6fa"/><rect x="828" y="210" width="288" height="101" rx="12" fill="#fff7ed"/>
+    <g font-size="14" fill="#687e72"><text x="309" y="239">이번 주 학습 시간</text><text x="578" y="239">완료한 학습</text><text x="847" y="239">이어가는 기록</text></g>
+    <g font-size="31" fill="#244637" font-weight="700"><text x="309" y="281">4h 32m</text><text x="578" y="281">12 <tspan font-size="16" fill="#839189">/ 18개</tspan></text><text x="847" y="281">7일 <tspan font-size="16" fill="#a88051">연속 학습</tspan></text></g>
+    <rect x="290" y="333" width="492" height="267" rx="12" fill="#fff" stroke="#e1eae4"/><text x="312" y="369" font-size="17" font-weight="700" fill="#244637">나의 프론트엔드 로드맵</text><text x="312" y="397" font-size="13" fill="#7f9187">PHASE 02 · 인터랙션을 만드는 시간</text>
+    <path d="M340 456H718" stroke="#d5e7dc" stroke-width="5"/><path d="M340 456H530" stroke="#38a873" stroke-width="5"/>
+    <circle cx="340" cy="456" r="17" fill="#38a873"/><circle cx="530" cy="456" r="17" fill="#38a873"/><circle cx="718" cy="456" r="17" fill="#dce9e1"/>
+    <g font-size="14" fill="#527260"><text x="316" y="500">HTML · CSS</text><text x="493" y="500">JavaScript</text><text x="697" y="500">React</text></g>
+    <rect x="312" y="534" width="443" height="43" rx="8" fill="#f0f8f3"/><text x="328" y="561" font-size="14" fill="#2d7955">다음 목표  ·  브라우저 렌더링 흐름 이해하기</text>
+    <rect x="804" y="333" width="312" height="267" rx="12" fill="#173f32"/><text x="827" y="369" font-size="13" letter-spacing="2" fill="#8ccca9">CONTINUE LEARNING</text><text x="827" y="413" font-size="22" font-weight="700" fill="#fff">브라우저 렌더링</text><text x="827" y="442" font-size="14" fill="#b1c9ba">DOM부터 페인트까지</text>
+    <rect x="827" y="476" width="266" height="6" rx="3" fill="#36594a"/><rect x="827" y="476" width="171" height="6" rx="3" fill="#6de0a5"/><text x="827" y="508" font-size="13" fill="#b1c9ba">진도 64% · 마지막 학습에서 이어보기</text>
+    <rect x="827" y="535" width="266" height="41" rx="8" fill="#7ae3ac"/><text x="907" y="562" font-size="15" font-weight="700" fill="#143e2c">학습 이어가기 →</text>
+  </g>
+</svg>

@@ -44,7 +44,7 @@ class LocalSeedSqlExecutorTest {
     expectedRows.put("db/local/lounge-post-seeds.sql", 13);
     expectedRows.put("db/local/project-experience-users.sql", 4);
     expectedRows.put("db/local/project-experience-projects.sql", 3);
-    expectedRows.put("db/local/project-experience-showcases.sql", 3);
+    expectedRows.put("db/local/project-experience-showcases.sql", 6);
     expectedRows.put("db/local/test-accounts.sql", 3);
     expectedRows.put("db/local/learner-workspace/hub-squad-accounts.sql", 2);
     expectedRows.put("db/local/learner-workspace/hub-squad-milestones.sql", 3);

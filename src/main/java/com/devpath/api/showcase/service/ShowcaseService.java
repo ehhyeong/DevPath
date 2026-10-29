@@ -16,8 +16,10 @@ import com.devpath.domain.showcase.entity.ShowcaseSort;
 import com.devpath.domain.showcase.repository.ShowcaseLikeRepository;
 import com.devpath.domain.showcase.repository.ShowcaseLinkRepository;
 import com.devpath.domain.showcase.repository.ShowcaseRepository;
+import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
+import com.devpath.domain.user.repository.UserRepository;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ public class ShowcaseService {
   private final ShowcaseLikeRepository showcaseLikeRepository;
   private final ShowcaseLinkRepository showcaseLinkRepository;
   private final UserProfileRepository userProfileRepository;
+  private final UserRepository userRepository;
 
   @Transactional
   public ShowcaseResponse createShowcase(Long userId, CreateShowcaseRequest request) {
@@ -43,6 +46,7 @@ public class ShowcaseService {
             .title(request.getTitle())
             .description(request.getDescription())
             .thumbnailUrl(request.getThumbnailUrl())
+            .techStack(request.getTechStack())
             .category(request.getCategory())
             .isPublic(request.isPublic())
             .build();
@@ -64,13 +68,18 @@ public class ShowcaseService {
               : showcaseRepository.findAllByIsDeletedFalseOrderByCreatedAtDesc();
     }
     Map<Long, String> profileImages = profileImages(showcases);
+    Map<Long, String> authorNames = new HashMap<>();
+    userRepository
+        .findAllById(showcases.stream().map(Showcase::getUserId).distinct().toList())
+        .forEach(user -> authorNames.put(user.getId(), user.getName()));
     return showcases.stream()
         .map(
             s ->
                 ShowcaseSummaryResponse.of(
                     s,
                     showcaseLikeRepository.countByShowcaseId(s.getId()),
-                    profileImages.get(s.getUserId())))
+                    profileImages.get(s.getUserId()),
+                    authorNames.get(s.getUserId())))
         .toList();
   }
 
@@ -90,6 +99,9 @@ public class ShowcaseService {
         request.getThumbnailUrl(),
         request.getCategory(),
         request.isPublic());
+    if (request.getTechStack() != null) {
+      showcase.updateTechStack(request.getTechStack());
+    }
     return toResponse(showcase);
   }
 
@@ -158,7 +170,10 @@ public class ShowcaseService {
         showcaseLinkRepository.findAllByShowcaseId(showcase.getId()).stream()
             .map(ShowcaseLinkResponse::from)
             .toList();
-    return ShowcaseResponse.of(showcase, likeCount, links, profileImage(showcase.getUserId()));
+    String authorName =
+        userRepository.findById(showcase.getUserId()).map(User::getName).orElse(null);
+    return ShowcaseResponse.of(
+        showcase, likeCount, links, profileImage(showcase.getUserId()), authorName);
   }
 
   private String profileImage(Long userId) {

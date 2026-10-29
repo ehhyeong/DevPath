@@ -229,6 +229,7 @@ export default function DevShowcaseApp() {
             title: newShowcase.title.trim(),
             description: newShowcase.description.trim() || newShowcase.short.trim(),
             thumbnailUrl: null,
+            techStack: newShowcase.tech.trim(),
             category: newShowcase.category,
             isPublic: true,
           }),
@@ -305,7 +306,7 @@ export default function DevShowcaseApp() {
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
                       className="dev-showcase-search-input w-full bg-transparent text-[14px]! leading-[20px]! outline-none placeholder:text-[14px] placeholder:leading-[20px] placeholder:text-[#9CA3AF] placeholder:opacity-100"
-                      placeholder="프로젝트 제목/설명/팀 이름 검색"
+                      placeholder="프로젝트·작성자·기술 스택 검색"
                     />
                   </div>
 
@@ -561,6 +562,9 @@ function ShowcaseCard({
       }}
       className="project-card group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition duration-300 hover:border-brand hover:shadow-xl hover:[transform:none]!"
     >
+      {showcase.thumbnailUrl ? (
+        <img src={showcase.thumbnailUrl} alt={`${showcase.title} 미리보기`} loading="lazy" className="mb-5 aspect-video w-full rounded-xl border border-gray-100 object-cover" />
+      ) : null}
       <div className="mb-4 flex items-start justify-between">
         <div className="flex gap-2">
           <span className="rounded border border-gray-200 bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-700">{categoryLabels[showcase.category]}</span>
@@ -665,12 +669,15 @@ function DetailModal({
         <div className="flex-1 overflow-y-auto">
           <div className="grid grid-cols-1 gap-6 p-6 lg:grid-cols-3">
             <section className="space-y-6 lg:col-span-2">
+              {showcase.thumbnailUrl ? (
+                <img src={showcase.thumbnailUrl} alt={`${showcase.title} 미리보기`} className="aspect-video w-full rounded-2xl border border-gray-200 object-cover" />
+              ) : null}
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6">
                 <h3 className="mb-4 flex items-center gap-2 border-b border-gray-200 pb-2 text-sm font-extrabold text-gray-900">
                   <i className="fas fa-align-left text-brand"></i>
                   상세 설명
                 </h3>
-                <p className="text-sm leading-relaxed text-gray-700">{showcase.description}</p>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-gray-700">{showcase.description}</p>
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -718,10 +725,10 @@ function DetailModal({
                   {comments.length > 0 ? (
                     comments.map((comment) => (
                       <div key={comment.commentId} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition hover:bg-gray-50">
-                        <UserAvatar name={getCommentAuthorName(comment.userId)} imageUrl={comment.authorProfileImage} className="h-10 w-10 bg-white" iconClassName="text-sm" />
+                        <UserAvatar name={getCommentAuthorName(comment)} imageUrl={comment.authorProfileImage} className="h-10 w-10 bg-white" iconClassName="text-sm" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm font-extrabold text-gray-900">{getCommentAuthorName(comment.userId)}</p>
+                            <p className="text-sm font-extrabold text-gray-900">{getCommentAuthorName(comment)}</p>
                             <div className="flex items-center gap-2">
                               <span className="text-[11px] font-bold text-gray-400">{formatDate(comment.createdAt)}</span>
                               <button type="button" className="text-gray-300 transition hover:text-red-500" title="댓글 삭제">
@@ -747,7 +754,7 @@ function DetailModal({
                 <div className="flex items-center gap-3">
                   <UserAvatar name={team.name} imageUrl={team.image} className="h-12 w-12 bg-gray-50 shadow-sm" iconClassName="text-base" />
                   <div className="min-w-0">
-                    <p className="text-[10px] font-extrabold tracking-wider text-gray-400">TEAM</p>
+                    <p className="text-[10px] font-extrabold tracking-wider text-gray-400">작성자</p>
                     <p className="truncate text-base font-extrabold text-gray-900">{team.name}</p>
                   </div>
                 </div>
