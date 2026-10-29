@@ -228,7 +228,9 @@ export function useLearningAssessmentActions(props: Props) {
         [quizModalLesson.lessonId]: scorePercent,
       }
       if (result.passed) {
+        // 다음 학습의 선행 조건이 해제되도록 선택 항목을 바꾸기 전에 진도를 반영한다.
         markLessonCompletedForNavigation(quizModalLesson)
+        moveToLessonAfterQuiz(quizModalLesson)
       }
     } catch (error) {
       setQuizMessage(error instanceof Error ? error.message : '퀴즈 제출에 실패했습니다.')
@@ -245,23 +247,23 @@ export function useLearningAssessmentActions(props: Props) {
     setQuizMessage(null)
   }
 
-  function handleQuizResultContinue() {
-    if (!quizModalLesson || !quizAttemptResult?.passed) return
-
-    const currentQuizLessonIndex = lessons.findIndex((item) => item.lessonId === quizModalLesson.lessonId)
-    const nextSectionFirstLesson = currentQuizLessonIndex >= 0
-      ? lessons.slice(currentQuizLessonIndex + 1).find((item) => item.sectionId !== quizModalLesson.sectionId) ?? null
-      : null
-
-    if (nextSectionFirstLesson) {
-      setSelectedLessonId(nextSectionFirstLesson.lessonId)
-      closeQuizModal()
-      setNotice(`"${nextSectionFirstLesson.sectionTitle}" 섹션의 첫 강의로 이동했습니다.`)
-      return
-    }
+  function moveToLessonAfterQuiz(quizLesson: LearningLesson) {
+    const currentQuizLessonIndex = lessons.findIndex((item) => item.lessonId === quizLesson.lessonId)
+    const followingLesson = currentQuizLessonIndex >= 0 ? lessons[currentQuizLessonIndex + 1] : null
+    if (!followingLesson) return false
 
     closeQuizModal()
-    setNotice('퀴즈를 통과했습니다. 마지막 섹션입니다.')
+    setSelectedLessonId(followingLesson.lessonId)
+    setNotice(`퀴즈를 통과했습니다. "${followingLesson.title}" 학습을 열었습니다.`)
+    return true
+  }
+
+  function handleQuizResultContinue() {
+    if (!quizModalLesson || !quizAttemptResult?.passed) return
+    if (moveToLessonAfterQuiz(quizModalLesson)) return
+
+    closeQuizModal()
+    setNotice('퀴즈를 통과했습니다. 마지막 학습 항목입니다.')
   }
 
   function handleAssignmentFilesSelected(fileList: FileList | null) {

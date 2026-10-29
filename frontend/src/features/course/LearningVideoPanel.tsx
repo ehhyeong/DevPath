@@ -246,7 +246,7 @@ export default function LearningVideoPanel({ model }: Props) {
                         <>
                           이번 섹션의 핵심 내용을 확인합니다.
                           <br />
-                          퀴즈를 완료하면 다음 강의로 이동할 수 있습니다.
+                          퀴즈를 통과하면 다음 학습으로 자동 이동합니다.
                         </>
                       ) : selectedLessonHasAssignment && selectedLessonAssignment ? (
                         <>
