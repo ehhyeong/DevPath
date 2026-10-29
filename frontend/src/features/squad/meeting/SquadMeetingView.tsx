@@ -358,32 +358,32 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
           </button>
         </div>
 
+        <div className="p-3 border-b border-gray-800 bg-gray-800 flex justify-between items-center shrink-0 shadow-sm">
+          <div className="flex items-center gap-2">
+            {voiceMinutes?.recording ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-red-500 pulse-record"></span>
+                <span className="text-xs font-bold text-red-400 tracking-wide">
+                  {speechRecognitionActive ? '내 마이크 기록 중...' : '직접 입력 중...'}
+                </span>
+              </>
+            ) : (
+              <span className="text-xs font-bold text-gray-400 tracking-wide">기록 대기 중...</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => void toggleMinutesRecording()}
+            disabled={minutesSaving}
+            className={`squad-meeting-room-record-button flex h-[28px]! items-center gap-1.5 whitespace-nowrap rounded-[6px]! px-[12px]! py-0! text-[10px]! leading-[12px]! font-bold text-white box-border transition disabled:opacity-60 ${voiceMinutes?.recording ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'}`}
+          >
+            <div className={`${voiceMinutes?.recording ? 'w-2 h-2 rounded-sm' : 'w-1.5 h-1.5 rounded-full'} bg-white`}></div>
+            {voiceMinutes?.recording ? '기록 중지' : '기록 시작'}
+          </button>
+        </div>
+
         {roomPanelTab === 'minutes' ? (
           <div className="flex-1 flex flex-col overflow-hidden bg-gray-900 relative">
-            <div className="p-3 border-b border-gray-800 bg-gray-800 flex justify-between items-center shrink-0 shadow-sm">
-              <div className="flex items-center gap-2">
-                {voiceMinutes?.recording ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-red-500 pulse-record"></span>
-                    <span className="text-xs font-bold text-red-400 tracking-wide">
-                      {speechRecognitionActive ? '내 마이크 기록 중...' : '직접 입력 중...'}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-xs font-bold text-gray-400 tracking-wide">기록 대기 중...</span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => void toggleMinutesRecording()}
-                disabled={minutesSaving}
-                className={`squad-meeting-room-record-button flex h-[28px]! items-center gap-1.5 whitespace-nowrap rounded-[6px]! px-[12px]! py-0! text-[10px]! leading-[12px]! font-bold text-white box-border transition disabled:opacity-60 ${voiceMinutes?.recording ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'}`}
-              >
-                <div className={`${voiceMinutes?.recording ? 'w-2 h-2 rounded-sm' : 'w-1.5 h-1.5 rounded-full'} bg-white`}></div>
-                {voiceMinutes?.recording ? '기록 중지' : '기록 시작'}
-              </button>
-            </div>
-
             <div className="flex-1 overflow-y-auto dark-scrollbar p-5 space-y-5">
               {minutesDraft.trim() ? (
                 <textarea
