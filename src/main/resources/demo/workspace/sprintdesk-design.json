@@ -1,0 +1,460 @@
+{
+  "title": "팀 스프린트·이슈 관리 보드 (SprintDesk)",
+  "summary": "작은 개발팀이 스프린트 목표와 담당 이슈를 정하고 보드에서 진행 상태를 공유하는 협업 서비스입니다.",
+  "difficulty": "mvp",
+  "stack": {
+    "frontend": "React + TypeScript",
+    "backend": "Spring Boot",
+    "database": "PostgreSQL",
+    "libraries": [
+      "Spring Security",
+      "Spring Data JPA",
+      "React Query",
+      "dnd-kit"
+    ],
+    "selectionReason": "React와 dnd-kit으로 상태 보드를 구현하고 Spring Boot의 프로젝트 권한 검증 및 PostgreSQL의 버전 컬럼으로 여러 팀원의 동시 수정을 다룹니다."
+  },
+  "scenario": {
+    "userFlows": [
+      {
+        "actor": "팀장",
+        "action": "프로젝트를 만들고 팀원을 초대해 스프린트 목표를 정합니다."
+      },
+      {
+        "actor": "팀원",
+        "action": "담당 이슈를 등록하고 보드에서 진행 상태를 변경합니다."
+      },
+      {
+        "actor": "팀장",
+        "action": "스프린트별 미완료 이슈와 담당자를 확인해 다음 계획을 조정합니다."
+      }
+    ],
+    "coreFeatures": [
+      "회원 인증과 프로젝트 팀장·팀원 권한 관리",
+      "프로젝트 개설과 팀원 초대",
+      "기간과 목표를 가진 스프린트 생성",
+      "담당 이슈 등록·조회와 상태 보드 갱신"
+    ]
+  },
+  "architecture": {
+    "style": "Layered Architecture",
+    "description": "Controller가 인증 사용자와 변경 요청을 받고 Service가 프로젝트 참여·스프린트 상태·허용된 이슈 상태 전이를 검증합니다. Repository는 프로젝트·스프린트별 조회와 버전 기반 동시 수정 감지를 담당합니다.",
+    "components": [
+      {
+        "name": "React Web",
+        "responsibility": "프로젝트 목록·스프린트 계획·이슈 보드와 담당자 필터"
+      },
+      {
+        "name": "Spring Security",
+        "responsibility": "인증 사용자 확인과 소유자·참여자 권한 검증"
+      },
+      {
+        "name": "SprintDesk API",
+        "responsibility": "팀원 초대, 스프린트 생성, 이슈 할당과 상태 전이"
+      },
+      {
+        "name": "PostgreSQL",
+        "responsibility": "프로젝트·참여자·스프린트·이슈 및 동시 수정 버전 저장"
+      }
+    ],
+    "erdMermaid": "erDiagram\n    MEMBERS ||--o{ PROJECTS : owns\n    PROJECTS ||--o{ PROJECT_MEMBERS : includes\n    MEMBERS ||--o{ PROJECT_MEMBERS : joins\n    PROJECTS ||--o{ SPRINTS : plans\n    SPRINTS ||--o{ ISSUES : contains\n    MEMBERS ||--o{ ISSUES : assigned\n    MEMBERS {\n        bigint id PK\n        varchar email UK\n        varchar password_hash\n        varchar name\n    }\n    PROJECTS {\n        bigint id PK\n        bigint owner_id FK\n        varchar name\n        text description\n    }\n    PROJECT_MEMBERS {\n        bigint id PK\n        bigint project_id FK\n        bigint member_id FK\n        varchar role\n    }\n    SPRINTS {\n        bigint id PK\n        bigint project_id FK\n        varchar goal\n        date starts_on\n        date ends_on\n        varchar status\n    }\n    ISSUES {\n        bigint id PK\n        bigint sprint_id FK\n        bigint assignee_id FK\n        varchar title\n        varchar status\n        bigint version\n    }",
+    "entities": [
+      {
+        "name": "MEMBERS",
+        "purpose": "인증 사용자",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "회원 ID"
+          },
+          {
+            "name": "email",
+            "type": "varchar(255)",
+            "constraints": "UK, NOT NULL",
+            "description": "로그인 이메일"
+          },
+          {
+            "name": "password_hash",
+            "type": "varchar(255)",
+            "constraints": "NOT NULL",
+            "description": "해시된 비밀번호"
+          },
+          {
+            "name": "name",
+            "type": "varchar(100)",
+            "constraints": "NOT NULL",
+            "description": "표시 이름"
+          }
+        ]
+      },
+      {
+        "name": "PROJECTS",
+        "purpose": "팀 프로젝트",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "식별자"
+          },
+          {
+            "name": "owner_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "팀장 회원 ID"
+          },
+          {
+            "name": "name",
+            "type": "varchar(100)",
+            "constraints": "NOT NULL",
+            "description": "프로젝트 이름"
+          },
+          {
+            "name": "description",
+            "type": "text",
+            "constraints": "NOT NULL",
+            "description": "프로젝트 목표"
+          }
+        ]
+      },
+      {
+        "name": "PROJECT_MEMBERS",
+        "purpose": "프로젝트 참여 관계",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "식별자"
+          },
+          {
+            "name": "project_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL, UK(project_id, member_id)",
+            "description": "프로젝트 ID"
+          },
+          {
+            "name": "member_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL, UK(project_id, member_id)",
+            "description": "팀원 ID"
+          },
+          {
+            "name": "role",
+            "type": "varchar(20)",
+            "constraints": "NOT NULL",
+            "description": "LEADER 또는 MEMBER"
+          }
+        ]
+      },
+      {
+        "name": "SPRINTS",
+        "purpose": "기간과 목표가 있는 스프린트",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "식별자"
+          },
+          {
+            "name": "project_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "프로젝트 ID"
+          },
+          {
+            "name": "goal",
+            "type": "varchar(255)",
+            "constraints": "NOT NULL",
+            "description": "스프린트 목표"
+          },
+          {
+            "name": "starts_on",
+            "type": "date",
+            "constraints": "NOT NULL",
+            "description": "시작 날짜"
+          },
+          {
+            "name": "ends_on",
+            "type": "date",
+            "constraints": "NOT NULL",
+            "description": "종료 날짜"
+          },
+          {
+            "name": "status",
+            "type": "varchar(20)",
+            "constraints": "NOT NULL",
+            "description": "PLANNED, ACTIVE, CLOSED"
+          }
+        ]
+      },
+      {
+        "name": "ISSUES",
+        "purpose": "담당 이슈와 진행 상태",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "식별자"
+          },
+          {
+            "name": "sprint_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "스프린트 ID"
+          },
+          {
+            "name": "assignee_id",
+            "type": "bigint",
+            "constraints": "FK",
+            "description": "담당 팀원 ID"
+          },
+          {
+            "name": "title",
+            "type": "varchar(150)",
+            "constraints": "NOT NULL",
+            "description": "작업 제목"
+          },
+          {
+            "name": "status",
+            "type": "varchar(20)",
+            "constraints": "NOT NULL",
+            "description": "TODO, IN_PROGRESS, DONE"
+          },
+          {
+            "name": "version",
+            "type": "bigint",
+            "constraints": "NOT NULL",
+            "description": "낙관적 잠금 버전"
+          }
+        ]
+      }
+    ],
+    "technicalChallenges": [
+      "프로젝트 비참여자의 이슈 변경과 다른 프로젝트 담당자 지정을 차단합니다.",
+      "이슈 버전으로 동시 수정을 감지하고 충돌 시 최신 상태를 안내합니다.",
+      "종료된 스프린트의 변경 제한과 허용된 상태 전이를 일관되게 적용합니다."
+    ]
+  },
+  "apis": [
+    {
+      "group": "AUTH (인증)",
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "description": "회원가입",
+      "auth": "없음",
+      "requestExample": "{\"email\":\"demo@example.com\",\"password\":\"example-password\",\"name\":\"사용자\"}",
+      "responseExample": "{\"memberId\":1}"
+    },
+    {
+      "group": "AUTH (인증)",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "로그인",
+      "auth": "없음",
+      "requestExample": "{\"email\":\"demo@example.com\",\"password\":\"example-password\"}",
+      "responseExample": "{\"accessToken\":\"example-token\"}"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects",
+      "description": "팀 프로젝트 생성",
+      "auth": "MEMBER",
+      "requestExample": "{\"name\":\"포트폴리오 빌더\",\"description\":\"문서 편집 MVP\"}",
+      "responseExample": "{\"projectId\":61}",
+      "group": "프로젝트"
+    },
+    {
+      "method": "GET",
+      "path": "/api/projects",
+      "description": "내 프로젝트 목록",
+      "auth": "MEMBER",
+      "requestExample": "{}",
+      "responseExample": "{\"projects\":[{\"projectId\":61,\"name\":\"포트폴리오 빌더\"}]}",
+      "group": "프로젝트"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/{projectId}/members",
+      "description": "팀장 팀원 초대",
+      "auth": "MEMBER",
+      "requestExample": "{\"email\":\"teammate@example.com\"}",
+      "responseExample": "{\"memberId\":8,\"role\":\"MEMBER\"}",
+      "group": "팀원"
+    },
+    {
+      "method": "POST",
+      "path": "/api/projects/{projectId}/sprints",
+      "description": "스프린트 생성",
+      "auth": "MEMBER",
+      "requestExample": "{\"goal\":\"편집부터 PDF 출력까지\",\"startsOn\":\"2026-11-02\",\"endsOn\":\"2026-11-13\"}",
+      "responseExample": "{\"sprintId\":71,\"status\":\"ACTIVE\"}",
+      "group": "스프린트"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sprints/{sprintId}/issues",
+      "description": "스프린트 이슈 목록",
+      "auth": "MEMBER",
+      "requestExample": "{}",
+      "responseExample": "{\"issues\":[{\"issueId\":81,\"title\":\"PDF 미리보기\",\"status\":\"TODO\",\"version\":0}]}",
+      "group": "이슈"
+    },
+    {
+      "method": "POST",
+      "path": "/api/sprints/{sprintId}/issues",
+      "description": "팀원 이슈 등록",
+      "auth": "MEMBER",
+      "requestExample": "{\"title\":\"PDF 미리보기\",\"assigneeId\":8}",
+      "responseExample": "{\"issueId\":81,\"status\":\"TODO\",\"version\":0}",
+      "group": "이슈"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/issues/{issueId}/status",
+      "description": "참여자 이슈 상태 변경",
+      "auth": "MEMBER",
+      "requestExample": "{\"status\":\"IN_PROGRESS\",\"version\":0}",
+      "responseExample": "{\"issueId\":81,\"status\":\"IN_PROGRESS\",\"version\":1}",
+      "group": "이슈"
+    }
+  ],
+  "roadmap": [
+    {
+      "phase": 1,
+      "title": "인증과 팀 프로젝트",
+      "goal": "팀장과 팀원의 권한 경계를 정의합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "프로젝트·스프린트·이슈 ERD 설계",
+        "회원 인증과 프로젝트 참여 권한 구현",
+        "프로젝트 목록·로그인 화면 구현"
+      ]
+    },
+    {
+      "phase": 2,
+      "title": "팀원과 스프린트 계획",
+      "goal": "팀원과 기간별 작업 목표를 관리합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "팀원 초대와 중복 참여 방지 구현",
+        "스프린트 생성과 기간 검증",
+        "스프린트 계획 화면 구현"
+      ]
+    },
+    {
+      "phase": 3,
+      "title": "이슈 보드와 상태 전이",
+      "goal": "작업 등록과 동시 상태 변경을 처리합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "이슈 등록·담당자 검증 API 구현",
+        "상태 전이와 낙관적 잠금 구현",
+        "드래그 보드와 충돌 복구 UI 구현"
+      ]
+    },
+    {
+      "phase": 4,
+      "title": "통합 검증과 배포",
+      "goal": "실제 팀 협업 흐름을 검증합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "동시 수정·비참여자·종료 스프린트 테스트",
+        "키보드로 조작 가능한 보드 점검",
+        "Docker 배포와 운영 로그 구성"
+      ]
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "category": "보안",
+      "question": "이슈 번호만 알면 다른 프로젝트 작업을 변경할 수 있나요?",
+      "answer": "이슈가 속한 스프린트의 프로젝트를 찾아 인증 사용자의 참여 관계를 확인합니다. 담당자 지정 시에도 같은 프로젝트의 팀원인지 검사합니다.",
+      "keywords": [
+        "참여 관계",
+        "인가",
+        "소유 범위"
+      ],
+      "tasks": [
+        "회원 인증과 프로젝트 참여 권한 구현"
+      ],
+      "apis": [
+        "PATCH /api/issues/{issueId}/status"
+      ],
+      "erd": "ISSUES, SPRINTS, PROJECT_MEMBERS"
+    },
+    {
+      "category": "동시성",
+      "question": "두 팀원이 같은 이슈를 동시에 옮기면 어떻게 하나요?",
+      "answer": "요청에 기대 버전을 포함하고 엔티티의 @Version으로 동시 수정을 감지합니다. 충돌한 요청은 최신 상태를 조회해 재시도 여부를 사용자가 결정하도록 안내합니다.",
+      "keywords": [
+        "낙관적 잠금",
+        "버전",
+        "충돌 복구"
+      ],
+      "tasks": [
+        "상태 전이와 낙관적 잠금 구현"
+      ],
+      "apis": [
+        "PATCH /api/issues/{issueId}/status"
+      ],
+      "erd": "ISSUES"
+    },
+    {
+      "category": "설계",
+      "question": "상태 변경 규칙을 어디에서 관리하나요?",
+      "answer": "서비스에서 참여 권한과 스프린트 상태를 검증하고 도메인 메서드에서 허용된 상태 전이를 보장합니다. 화면별로 다른 규칙을 구현하지 않습니다.",
+      "keywords": [
+        "도메인 규칙",
+        "상태 전이",
+        "계층 책임"
+      ],
+      "tasks": [
+        "상태 전이와 낙관적 잠금 구현"
+      ],
+      "apis": [
+        "PATCH /api/issues/{issueId}/status"
+      ],
+      "erd": "ISSUES, SPRINTS"
+    },
+    {
+      "category": "프론트엔드",
+      "question": "보드의 낙관적 UI 갱신이 실패하면 어떻게 하나요?",
+      "answer": "변경 전 상태를 보관했다가 실패 시 복원하고 최신 데이터를 다시 조회합니다. 충돌 응답은 일반 네트워크 오류와 구분해 다른 팀원의 변경을 설명합니다.",
+      "keywords": [
+        "낙관적 UI",
+        "롤백",
+        "캐시 무효화"
+      ],
+      "tasks": [
+        "드래그 보드와 충돌 복구 UI 구현"
+      ],
+      "apis": [
+        "GET /api/sprints/{sprintId}/issues",
+        "PATCH /api/issues/{issueId}/status"
+      ],
+      "erd": "ISSUES"
+    },
+    {
+      "category": "테스트",
+      "question": "종료된 스프린트의 변경 제한을 어떻게 테스트하나요?",
+      "answer": "스프린트 상태와 참여 역할별로 허용·거부 사례를 만들고 버전이 같은 두 요청을 동시에 실행합니다. 성공한 변경과 충돌 응답이 기대한 개수인지 검증합니다.",
+      "keywords": [
+        "상태 기반 테스트",
+        "동시성",
+        "권한 매트릭스"
+      ],
+      "tasks": [
+        "동시 수정·비참여자·종료 스프린트 테스트"
+      ],
+      "apis": [
+        "PATCH /api/issues/{issueId}/status"
+      ],
+      "erd": "SPRINTS, ISSUES"
+    }
+  ]
+}

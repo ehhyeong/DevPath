@@ -1,0 +1,35 @@
+{
+  "key": "pantryshare-reservations-v1#1",
+  "filePath": "src/main/java/com/pantryshare/reservation/ReservationService.java",
+  "diff": "diff --git a/src/main/java/com/pantryshare/reservation/ReservationService.java b/src/main/java/com/pantryshare/reservation/ReservationService.java\n--- a/src/main/java/com/pantryshare/reservation/ReservationService.java\n+++ b/src/main/java/com/pantryshare/reservation/ReservationService.java\n@@ -1,6 +1,16 @@\n package com.pantryshare.reservation;\n\n @Service\n @RequiredArgsConstructor\n public class ReservationService {\n+    private final OfferRepository offers;\n+    private final ReservationRepository reservations;\n+\n+    @Transactional\n+    public Reservation reserve(Long offerId, Long memberId, int quantity) {\n+        Offer offer = offers.findById(offerId).orElseThrow();\n+        if (offer.getRemainingQuantity() < quantity) throw new SoldOutException();\n+        offer.decrease(quantity);\n+        return reservations.save(new Reservation(offerId, memberId, quantity));\n+    }\n }\n",
+  "title": "feat: PantryShare 나눔 수량 예약 API",
+  "description": "POST /api/offers/{offerId}/reservations 구현 PR입니다. 초과 예약 방지, 수량 검증과 수령 기한을 검토해 주세요.",
+  "sourceBranch": "feature/offer-reservations",
+  "juseungComment": "프론트에서는 예약 성공 후 남은 수량과 내 예약 목록을 갱신하겠습니다. 마지막 수량 예약 충돌은 품절 안내로 구분해서 보여주면 좋겠습니다.",
+  "taehyungComment": "조회와 수량 차감 사이에 동시 요청이 들어오면 초과 예약될 수 있습니다. 조건부 UPDATE나 행 잠금을 검토하고 quantity가 양수인지, 수령 기한이 남았는지도 확인해 주세요.",
+  "aiTitle": "PantryShare 나눔 예약 API 검토",
+  "aiSummary": "예약과 수량 차감을 같은 트랜잭션에 둔 점은 좋습니다. 동시성 제어, 양수 수량 검증과 마감 상태 확인이 필요합니다.",
+  "aiComments": [
+    {
+      "category": "동시성",
+      "lineNumber": 11,
+      "title": "조회 후 차감의 경쟁 조건 방지",
+      "message": "두 트랜잭션이 같은 잔여 수량을 읽으면 모두 예약에 성공할 수 있습니다.",
+      "suggestion": "조건부 UPDATE의 영향 행 수를 검사하거나 나눔 행 잠금을 적용하세요."
+    },
+    {
+      "category": "입력 검증",
+      "lineNumber": 12,
+      "title": "예약 수량은 양수로 제한",
+      "message": "음수 수량이 들어오면 차감 연산이 오히려 가용 수량을 늘릴 수 있습니다.",
+      "suggestion": "입력 DTO와 도메인에서 quantity > 0 규칙을 검증하세요."
+    },
+    {
+      "category": "테스트",
+      "lineNumber": 13,
+      "title": "마감·품절 예약 경계 검증",
+      "message": "공개 상태와 수령 기한이 지난 나눔도 예약할 수 있습니다.",
+      "suggestion": "마감 시각 경계, CLOSED 상태와 마지막 수량 동시 예약을 테스트하세요."
+    }
+  ]
+}

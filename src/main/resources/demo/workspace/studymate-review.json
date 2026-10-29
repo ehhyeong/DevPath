@@ -1,0 +1,35 @@
+{
+  "key": "studymate-attendance-v1#1",
+  "filePath": "src/main/java/com/studymate/attendance/AttendanceService.java",
+  "diff": "diff --git a/src/main/java/com/studymate/attendance/AttendanceService.java b/src/main/java/com/studymate/attendance/AttendanceService.java\n--- a/src/main/java/com/studymate/attendance/AttendanceService.java\n+++ b/src/main/java/com/studymate/attendance/AttendanceService.java\n@@ -1,6 +1,17 @@\n package com.studymate.attendance;\n\n @Service\n @RequiredArgsConstructor\n public class AttendanceService {\n+    private final AttendanceRepository attendances;\n+    private final SessionRepository sessions;\n+\n+    @Transactional\n+    public Attendance checkIn(Long sessionId, Long memberId) {\n+        Session session = sessions.findById(sessionId).orElseThrow();\n+        Attendance attendance = attendances.findBySessionIdAndMemberId(sessionId, memberId)\n+            .orElseGet(() -> new Attendance(sessionId, memberId));\n+        attendance.checkIn(Instant.now());\n+        return attendances.save(attendance);\n+    }\n }\n",
+  "title": "feat: StudyMate 모임 출석 체크 API",
+  "description": "PUT /api/sessions/{sessionId}/attendance 구현 PR입니다. 참여자 권한, 중복 체크인과 모임 시간 경계를 검토해 주세요.",
+  "sourceBranch": "feature/session-attendance",
+  "juseungComment": "프론트에서는 체크인 응답으로 내 출석 상태와 참여 인원을 갱신하겠습니다. 버튼을 연속으로 눌러도 동일한 출석 결과를 받는지 확인해 주세요.",
+  "taehyungComment": "memberId는 인증 정보에서 가져오고 해당 스터디 참여자인지 검증해 주세요. session_id·member_id 유니크 제약과 출석 가능 시간도 함께 확인하면 좋겠습니다.",
+  "aiTitle": "StudyMate 출석 체크 API 검토",
+  "aiSummary": "모임별 출석 저장 흐름은 단순합니다. 스터디 참여 권한, 중복 체크인의 멱등 처리와 시간 경계를 보완하세요.",
+  "aiComments": [
+    {
+      "category": "보안",
+      "lineNumber": 11,
+      "title": "스터디 참여자만 출석 허용",
+      "message": "모임을 조회하지만 인증 회원의 스터디 참여 여부는 확인하지 않습니다.",
+      "suggestion": "인증된 회원 ID로 STUDY_MEMBERS를 조회해 참여 관계를 검증하세요."
+    },
+    {
+      "category": "데이터 정합성",
+      "lineNumber": 12,
+      "title": "중복 체크인 유일성 보장",
+      "message": "동시 요청이 조회를 함께 통과하면 출석이 중복 생성될 수 있습니다.",
+      "suggestion": "session_id·member_id UNIQUE 제약과 기존 결과 반환 정책을 적용하세요."
+    },
+    {
+      "category": "테스트",
+      "lineNumber": 14,
+      "title": "출석 시간 경계 테스트",
+      "message": "모임 시작 전이나 종료 후에도 현재 구현으로는 출석할 수 있습니다.",
+      "suggestion": "Clock을 주입해 모임 시작·종료 경계와 반복 체크인을 테스트하세요."
+    }
+  ]
+}

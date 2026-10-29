@@ -32,7 +32,8 @@ class WorkspaceCodeReviewAiReviewer {
     if (demoScenario.isDemoReview(workspaceId, row)) {
       // 같은 시연 PR을 다시 열거나 재요청해도 이미 저장한 리뷰를 재사용한다.
       if (row.summary().aiCodeReviewId() == null) {
-        demoScenario.review(workspaceId, reviewId, userId, selectedFilePath, reviewDiff);
+        demoScenario.review(
+            workspaceId, reviewId, userId, selectedFilePath, reviewDiff, row.externalId());
       }
       return;
     }
