@@ -228,9 +228,8 @@ export function useLearningAssessmentActions(props: Props) {
         [quizModalLesson.lessonId]: scorePercent,
       }
       if (result.passed) {
-        // 다음 학습의 선행 조건이 해제되도록 선택 항목을 바꾸기 전에 진도를 반영한다.
+        // 통과 진도는 즉시 저장하고 해설 확인 후 결과 버튼에서 다음 학습으로 이동한다.
         markLessonCompletedForNavigation(quizModalLesson)
-        moveToLessonAfterQuiz(quizModalLesson)
       }
     } catch (error) {
       setQuizMessage(error instanceof Error ? error.message : '퀴즈 제출에 실패했습니다.')

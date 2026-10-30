@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 for (const scenario of ['assignment', 'next-section', 'last', 'failed', 'error'] as const) {
-  test(`퀴즈 제출 후 커리큘럼 순서와 통과 여부에 따라 이동한다 (${scenario})`, async ({ page }) => {
+  test(`퀴즈 해설을 확인한 뒤 커리큘럼 순서와 통과 여부에 따라 이동한다 (${scenario})`, async ({ page }) => {
     await page.addInitScript(() => {
       const exp = Math.floor(Date.now() / 1000) + 3600
       const claims = btoa(JSON.stringify({ sub: '7', role: 'ROLE_LEARNER', exp }))
@@ -52,7 +52,12 @@ for (const scenario of ['assignment', 'next-section', 'last', 'failed', 'error']
           return
         }
         data = { attemptId: 501, quizId: 81, quizTitle: '렌더링 퀴즈', score: scenario === 'failed' ? 0 : 10, maxScore: 10,
-          passed: scenario !== 'failed', attemptNumber: 1, completedAt: '2026-10-29T12:00:00', questionResults: [] }
+          passed: scenario !== 'failed', attemptNumber: 1, completedAt: '2026-10-29T12:00:00',
+          questionResults: questions.map((question) => ({
+            ...question, correct: scenario !== 'failed', earnedPoints: scenario === 'failed' ? 0 : 5,
+            selectedOptionId: question.questionId * 10, selectedOptionText: '참', textAnswer: null,
+            correctAnswerText: scenario === 'failed' ? '거짓' : '참', explanation: `채점 후 해설 ${question.questionId}`,
+          })) }
       }
       await route.fulfill({ json: { success: true, data } })
     })
@@ -80,7 +85,18 @@ for (const scenario of ['assignment', 'next-section', 'last', 'failed', 'error']
     expect(completed.has(702)).toBe(false)
     releaseAttempt()
 
+    if (scenario !== 'error') {
+      await expect(dialog.getByText(scenario === 'failed' ? '통과 점수에 도달하지 못했습니다.' : '퀴즈를 통과했습니다.', { exact: true })).toBeVisible()
+      await expect(dialog.getByText('채점 후 해설 1', { exact: true })).toBeVisible()
+      await expect(dialog.getByText('채점 후 해설 2', { exact: true })).toBeVisible()
+      await expect(dialog.getByText(`정답: ${scenario === 'failed' ? '거짓' : '참'}`, { exact: true })).toHaveCount(2)
+      await expect(page).toHaveURL(/lessonId=702/)
+      await expect.poll(() => completed.has(702)).toBe(scenario !== 'failed')
+      await expect(page.getByRole('heading', { name: '수고하셨습니다!', exact: true })).not.toBeVisible()
+    }
+
     if (scenario === 'assignment' || scenario === 'next-section') {
+      await dialog.getByRole('button', { name: '다음 학습으로', exact: true }).click()
       await expect(page).toHaveURL(new RegExp(`lessonId=${scenario === 'assignment' ? 703 : 704}`))
       await expect(dialog).not.toBeVisible()
       await expect.poll(() => completed.has(702)).toBe(true)
@@ -92,6 +108,10 @@ for (const scenario of ['assignment', 'next-section', 'last', 'failed', 'error']
       if (scenario === 'failed') {
         await dialog.getByRole('button', { name: '다시 응시하기' }).click()
         await expect(dialog.getByRole('button', { name: '다음 문제' })).toBeVisible()
+      } else if (scenario === 'last') {
+        await dialog.getByRole('button', { name: '다음 학습으로', exact: true }).click()
+        await expect(dialog).not.toBeVisible()
+        await expect(page.getByRole('heading', { name: '수고하셨습니다!', exact: true })).toBeVisible()
       }
     }
   })

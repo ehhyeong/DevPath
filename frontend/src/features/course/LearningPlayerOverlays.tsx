@@ -553,7 +553,8 @@ export default function LearningPlayerOverlays({ model }: Props) {
             </div>
           ) : null}
 
-          {completionVisible && completionProofCard && completionTheme ? (
+          {/* 마지막 퀴즈의 해설을 닫은 뒤 수료 화면을 표시한다. */}
+          {completionVisible && !quizModalLesson && completionProofCard && completionTheme ? (
             <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden bg-[#0F172A] px-6 py-10">
               <div
                 className="pointer-events-none absolute inset-0 opacity-90"
