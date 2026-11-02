@@ -16,9 +16,13 @@ import com.devpath.domain.course.entity.Lesson;
 import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.learning.repository.AssignmentRepository;
+import com.devpath.domain.learning.repository.QuizRepository;
 import com.devpath.domain.notification.service.InstructorNotificationPublisher;
+import com.devpath.domain.roadmap.entity.RoadmapNode;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,6 +39,8 @@ public class AdminCourseGovernanceService {
   private final HlsPlaybackService hlsPlaybackService;
   private final InstructorNotificationPublisher instructorNotificationPublisher;
   private final CourseReviewHistoryRepository courseReviewHistoryRepository;
+  private final QuizRepository quizRepository;
+  private final AssignmentRepository assignmentRepository;
 
   public List<PendingCourseResponse> getPendingCourses() {
     return courseRepository.findByStatus(CourseStatus.IN_REVIEW).stream()
@@ -66,12 +72,59 @@ public class AdminCourseGovernanceService {
             .map(CourseReviewHistoryResponse::from)
             .toList();
 
+    List<Long> quizNodeIds =
+        lessons.stream()
+            .map(Lesson::getQuizRoadmapNode)
+            .filter(Objects::nonNull)
+            .map(RoadmapNode::getNodeId)
+            .distinct()
+            .toList();
+    List<Long> assignmentNodeIds =
+        lessons.stream()
+            .map(Lesson::getAssignmentRoadmapNode)
+            .filter(Objects::nonNull)
+            .map(RoadmapNode::getNodeId)
+            .distinct()
+            .toList();
+    // 공개 전 콘텐츠도 심사 대상이므로 노드별 최신 미삭제 평가를 조회한다.
+    Map<Long, CourseReviewDetailResponse.QuizItem> quizzes =
+        quizNodeIds.isEmpty()
+            ? Map.of()
+            : quizRepository
+                .findAllByRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(quizNodeIds)
+                .stream()
+                .collect(
+                    Collectors.toMap(
+                        quiz -> quiz.getRoadmapNode().getNodeId(),
+                        CourseReviewDetailResponse.QuizItem::from,
+                        (latest, older) -> latest));
+    Map<Long, CourseReviewDetailResponse.AssignmentItem> assignments =
+        assignmentNodeIds.isEmpty()
+            ? Map.of()
+            : assignmentRepository
+                .findAllByRoadmapNodeNodeIdInAndIsDeletedFalseOrderByCreatedAtDesc(
+                    assignmentNodeIds)
+                .stream()
+                .collect(
+                    Collectors.toMap(
+                        assignment -> assignment.getRoadmapNode().getNodeId(),
+                        CourseReviewDetailResponse.AssignmentItem::from,
+                        (latest, older) -> latest));
+
     return CourseReviewDetailResponse.from(
         course,
         sections,
         lessonsBySectionId,
         reviewHistory,
-        lesson -> hlsPlaybackService.issuePlaybackUrl(lesson, adminId));
+        lesson -> hlsPlaybackService.issuePlaybackUrl(lesson, adminId),
+        lesson ->
+            lesson.getQuizRoadmapNode() == null
+                ? null
+                : quizzes.get(lesson.getQuizRoadmapNode().getNodeId()),
+        lesson ->
+            lesson.getAssignmentRoadmapNode() == null
+                ? null
+                : assignments.get(lesson.getAssignmentRoadmapNode().getNodeId()));
   }
 
   @Transactional

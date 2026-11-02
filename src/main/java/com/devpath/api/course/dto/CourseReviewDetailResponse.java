@@ -1,10 +1,16 @@
 package com.devpath.api.course.dto;
 
+import com.devpath.api.evaluation.dto.response.QuizDetailResponse;
 import com.devpath.domain.course.entity.Course;
 import com.devpath.domain.course.entity.CourseSection;
 import com.devpath.domain.course.entity.Lesson;
+import com.devpath.domain.learning.entity.Assignment;
+import com.devpath.domain.learning.entity.Quiz;
+import com.devpath.domain.learning.entity.QuizQuestion;
+import com.devpath.domain.learning.entity.Rubric;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -48,7 +54,9 @@ public class CourseReviewDetailResponse {
       List<CourseSection> sections,
       Map<Long, List<Lesson>> lessonsBySectionId,
       List<CourseReviewHistoryResponse> reviewHistory,
-      Function<Lesson, String> playbackUrlResolver) {
+      Function<Lesson, String> playbackUrlResolver,
+      Function<Lesson, QuizItem> quizResolver,
+      Function<Lesson, AssignmentItem> assignmentResolver) {
     List<Lesson> lessons =
         sections.stream()
             .flatMap(
@@ -102,7 +110,9 @@ public class CourseReviewDetailResponse {
                         SectionItem.from(
                             section,
                             lessonsBySectionId.getOrDefault(section.getSectionId(), List.of()),
-                            playbackUrlResolver))
+                            playbackUrlResolver,
+                            quizResolver,
+                            assignmentResolver))
                 .toList())
         .reviewHistory(reviewHistory)
         .build();
@@ -119,7 +129,11 @@ public class CourseReviewDetailResponse {
     private List<LessonItem> lessons;
 
     private static SectionItem from(
-        CourseSection section, List<Lesson> lessons, Function<Lesson, String> playbackUrlResolver) {
+        CourseSection section,
+        List<Lesson> lessons,
+        Function<Lesson, String> playbackUrlResolver,
+        Function<Lesson, QuizItem> quizResolver,
+        Function<Lesson, AssignmentItem> assignmentResolver) {
       return SectionItem.builder()
           .sectionId(section.getSectionId())
           .title(section.getTitle())
@@ -127,7 +141,12 @@ public class CourseReviewDetailResponse {
           .sortOrder(section.getOrderIndex())
           .published(section.getIsPublished())
           .lessons(
-              lessons.stream().map(lesson -> LessonItem.from(lesson, playbackUrlResolver)).toList())
+              lessons.stream()
+                  .map(
+                      lesson ->
+                          LessonItem.from(
+                              lesson, playbackUrlResolver, quizResolver, assignmentResolver))
+                  .toList())
           .build();
     }
   }
@@ -145,8 +164,14 @@ public class CourseReviewDetailResponse {
     private Boolean preview;
     private Boolean published;
     private Integer sortOrder;
+    private QuizItem quiz;
+    private AssignmentItem assignment;
 
-    private static LessonItem from(Lesson lesson, Function<Lesson, String> playbackUrlResolver) {
+    private static LessonItem from(
+        Lesson lesson,
+        Function<Lesson, String> playbackUrlResolver,
+        Function<Lesson, QuizItem> quizResolver,
+        Function<Lesson, AssignmentItem> assignmentResolver) {
       return LessonItem.builder()
           .lessonId(lesson.getLessonId())
           .title(lesson.getTitle())
@@ -158,6 +183,101 @@ public class CourseReviewDetailResponse {
           .preview(lesson.getIsPreview())
           .published(lesson.getIsPublished())
           .sortOrder(lesson.getOrderIndex())
+          .quiz(quizResolver.apply(lesson))
+          .assignment(assignmentResolver.apply(lesson))
+          .build();
+    }
+  }
+
+  @Getter
+  @Builder
+  public static class QuizItem {
+    private Long quizId;
+    private String title;
+    private String description;
+    private Integer totalScore;
+    private Integer passScore;
+    private Integer timeLimitMinutes;
+    private Boolean exposeAnswer;
+    private Boolean exposeExplanation;
+    private List<QuizDetailResponse.QuestionInfo> questions;
+
+    public static QuizItem from(Quiz quiz) {
+      return QuizItem.builder()
+          .quizId(quiz.getId())
+          .title(quiz.getTitle())
+          .description(quiz.getDescription())
+          .totalScore(quiz.getTotalScore())
+          .passScore(quiz.getPassScore())
+          .timeLimitMinutes(quiz.getTimeLimitMinutes())
+          .exposeAnswer(quiz.getExposeAnswer())
+          .exposeExplanation(quiz.getExposeExplanation())
+          // 검수에는 학습자 공개 설정과 무관하게 정답과 해설이 필요하다.
+          .questions(
+              quiz.getQuestions().stream()
+                  .filter(question -> !Boolean.TRUE.equals(question.getIsDeleted()))
+                  .sorted(Comparator.comparing(QuizQuestion::getDisplayOrder))
+                  .map(QuizDetailResponse.QuestionInfo::from)
+                  .toList())
+          .build();
+    }
+  }
+
+  @Getter
+  @Builder
+  public static class AssignmentItem {
+    private Long assignmentId;
+    private String title;
+    private String description;
+    private String submissionRuleDescription;
+    private Integer totalScore;
+    private Integer passScore;
+    private String submissionType;
+    private Boolean aiReviewEnabled;
+    private Boolean allowTextSubmission;
+    private Boolean allowFileSubmission;
+    private Boolean allowUrlSubmission;
+    private String allowedFileFormats;
+    private Boolean readmeRequired;
+    private Boolean testRequired;
+    private Boolean lintRequired;
+    private Boolean allowLateSubmission;
+    private LocalDateTime dueAt;
+    private List<CourseDetailResponse.AssignmentRubricItem> rubrics;
+
+    public static AssignmentItem from(Assignment assignment) {
+      return AssignmentItem.builder()
+          .assignmentId(assignment.getId())
+          .title(assignment.getTitle())
+          .description(assignment.getDescription())
+          .submissionRuleDescription(assignment.getSubmissionRuleDescription())
+          .totalScore(assignment.getTotalScore())
+          .passScore(assignment.getPassScore())
+          .submissionType(assignment.getSubmissionType().name())
+          .aiReviewEnabled(assignment.getAiReviewEnabled())
+          .allowTextSubmission(assignment.getAllowTextSubmission())
+          .allowFileSubmission(assignment.getAllowFileSubmission())
+          .allowUrlSubmission(assignment.getAllowUrlSubmission())
+          .allowedFileFormats(assignment.getAllowedFileFormats())
+          .readmeRequired(assignment.getReadmeRequired())
+          .testRequired(assignment.getTestRequired())
+          .lintRequired(assignment.getLintRequired())
+          .allowLateSubmission(assignment.getAllowLateSubmission())
+          .dueAt(assignment.getDueAt())
+          .rubrics(
+              assignment.getRubrics().stream()
+                  .filter(rubric -> !Boolean.TRUE.equals(rubric.getIsDeleted()))
+                  .sorted(Comparator.comparing(Rubric::getDisplayOrder))
+                  .map(
+                      rubric ->
+                          CourseDetailResponse.AssignmentRubricItem.builder()
+                              .rubricId(rubric.getId())
+                              .criteriaName(rubric.getCriteriaName())
+                              .criteriaDescription(rubric.getCriteriaDescription())
+                              .maxPoints(rubric.getMaxPoints())
+                              .displayOrder(rubric.getDisplayOrder())
+                              .build())
+                  .toList())
           .build();
     }
   }

@@ -161,6 +161,55 @@ export interface AdminCourseReviewLesson {
   preview: boolean | null
   published: boolean | null
   sortOrder: number | null
+  quiz?: AdminCourseReviewQuiz | null
+  assignment?: AdminCourseReviewAssignment | null
+}
+
+export interface AdminCourseReviewQuiz {
+  quizId: number
+  title: string
+  description: string | null
+  totalScore: number
+  passScore: number | null
+  timeLimitMinutes: number | null
+  exposeAnswer: boolean
+  exposeExplanation: boolean
+  questions: {
+    questionId: number
+    questionType: string
+    questionText: string
+    points: number
+    explanation: string | null
+    displayOrder: number
+    options: { optionId: number; optionText: string; isCorrect: boolean; displayOrder: number }[]
+  }[]
+}
+
+export interface AdminCourseReviewAssignment {
+  assignmentId: number
+  title: string
+  description: string
+  submissionRuleDescription: string | null
+  totalScore: number
+  passScore: number | null
+  submissionType: string
+  aiReviewEnabled: boolean | null
+  allowTextSubmission: boolean | null
+  allowFileSubmission: boolean | null
+  allowUrlSubmission: boolean | null
+  allowedFileFormats: string | null
+  readmeRequired: boolean
+  testRequired: boolean
+  lintRequired: boolean
+  allowLateSubmission: boolean
+  dueAt: string | null
+  rubrics: {
+    rubricId: number
+    criteriaName: string
+    criteriaDescription: string | null
+    maxPoints: number
+    displayOrder: number
+  }[]
 }
 
 export interface AdminCourseReviewSection {

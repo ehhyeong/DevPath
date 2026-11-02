@@ -552,7 +552,8 @@ export function getRoleLabel(role: string | null) {
 export function getPostLoginRedirect(role: string | null) {
   const returnPath = consumePostLoginReturnPath()
 
-  if (returnPath) {
+  // 관리자는 로그인 전 일반 화면 대신 전용 대시보드에서 작업을 시작한다.
+  if (returnPath && role !== 'ROLE_ADMIN') {
     return returnPath
   }
 
