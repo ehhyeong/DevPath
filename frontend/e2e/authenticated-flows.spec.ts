@@ -626,48 +626,104 @@ test('강사 대시보드 사이드바는 기본 접힘 상태에서 hover 시 �
   await expect(menuLabel).toHaveCSS('opacity', '0')
 })
 
-test('강사 대시보드 헤더는 홈과 같은 상단 메뉴와 hover 하위 메뉴를 사용한다', async ({ page }) => {
-  await loginAsInstructor(page)
-  await page.goto('/instructor-dashboard')
+for (const scenario of ['guest-home', 'instructor-home', 'instructor-dashboard', 'project'] as const) {
+  for (const width of [1280, 1440]) {
+    test(`공통 헤더는 해당 메뉴의 하위 목록만 펼친다 (${scenario}, ${width}px)`, async ({ page }, testInfo) => {
+      await page.setViewportSize({ width, height: 900 })
+      if (scenario === 'instructor-home' || scenario === 'instructor-dashboard') await loginAsInstructor(page)
+      else if (scenario === 'project') await login(page)
+      await page.goto(scenario === 'instructor-dashboard' ? '/instructor-dashboard' : scenario === 'project' ? '/workspace-hub' : '/home')
 
-  const header = page.locator('nav.app-header')
-  const topLevelLabels = ['로드맵', '강의', '프로젝트', '채용분석', '커뮤니티', '강사 대시보드']
+      const header = page.locator('.site-header-navigation:visible')
+      const hasInstructorMenu = scenario === 'instructor-home' || scenario === 'instructor-dashboard'
+      const topLevelLabels = ['로드맵', '강의', '프로젝트', '채용분석', '커뮤니티', ...(hasInstructorMenu ? ['강사 대시보드'] : [])]
+      await expect(header).toBeVisible()
+      await page.mouse.move(width - 10, 500)
+      const originalBounds = await header.locator('.site-header-nav-link').evaluateAll((links) => links.map((link) => {
+        const { x, width } = link.getBoundingClientRect()
+        return { x, width }
+      }))
 
-  for (const label of topLevelLabels) {
-    await expect(header.getByRole('link', { name: label, exact: true })).toBeVisible()
+      for (const label of topLevelLabels) {
+        await expect(header.getByRole('link', { name: label, exact: true })).toBeVisible()
+      }
+
+      const dropdowns = [
+        { label: '로드맵', items: ['로드맵 추천', '로드맵 탐색', '내 로드맵'] },
+        { label: '프로젝트', items: ['라운지 대시보드', '라운지 (팀 찾기)', '멘토링 찾기', '워크스페이스', '런칭 쇼케이스'] },
+        { label: '커뮤니티', items: ['전체글', 'Q&A', '기술 공유', '커리어/이직', '자유게시판'] },
+        ...(hasInstructorMenu ? [{ label: '강사 대시보드', items: ['대시보드', '강의 관리', '멘토링 관리', '수강생 분석', '질문 게시판', '수강평 관리', '정산 관리', '마케팅 관리'] }] : []),
+      ]
+
+      for (const dropdown of dropdowns) {
+        const topLevelLink = header.getByRole('link', { name: dropdown.label, exact: true })
+        await expect(topLevelLink.locator('.site-header-nav-chevron')).toBeVisible()
+        await topLevelLink.hover()
+
+        const menu = header.getByRole('menu', { name: `${dropdown.label} 세부 메뉴` })
+        await expect(menu).toBeVisible()
+        const topBounds = await topLevelLink.boundingBox()
+        const submenuBounds = await menu.getByRole('menuitem').first().boundingBox()
+        expect(Math.abs(topBounds!.x - submenuBounds!.x)).toBeLessThanOrEqual(1)
+        await expect(menu.getByRole('menuitem')).toHaveCount(dropdown.items.length)
+        await expect(menu.locator('.site-header-mega-link-icon')).toHaveCount(dropdown.items.length)
+        await expect(header.getByRole('menu')).toHaveCount(1)
+        for (const other of dropdowns) {
+          if (other.label !== dropdown.label) await expect(header.getByRole('menu', { name: `${other.label} 세부 메뉴`, hidden: true })).not.toBeVisible()
+        }
+
+        for (const item of dropdown.items) {
+          await expect(menu.getByRole('menuitem', { name: item, exact: true })).toBeVisible()
+        }
+        await menu.getByRole('menuitem').first().hover()
+        await expect(menu).toBeVisible()
+        const menuBounds = await menu.boundingBox()
+        expect(menuBounds!.x).toBeGreaterThanOrEqual(0)
+        expect(menuBounds!.x + menuBounds!.width).toBeLessThanOrEqual(width)
+        await expect(menu.getByRole('menuitem').first()).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+        await expect(menu.getByRole('menuitem').first()).toHaveCSS('color', 'rgb(0, 196, 113)')
+      }
+
+      expect(await header.locator('.site-header-nav-link').evaluateAll((links) => links.map((link) => {
+        const { x, width } = link.getBoundingClientRect()
+        return { x, width }
+      }))).toEqual(originalBounds)
+      for (const label of ['강의', '채용분석']) {
+        await header.getByRole('link', { name: label, exact: true }).hover()
+        await expect(header.getByRole('menu')).toHaveCount(0)
+      }
+      await page.mouse.move(width - 10, 500)
+      await expect(header.getByRole('menu')).toHaveCount(0)
+      const roadmapLink = header.getByRole('link', { name: '로드맵', exact: true })
+      await roadmapLink.focus()
+      await expect(header.getByRole('menu', { name: '로드맵 세부 메뉴' })).toBeVisible()
+      await page.keyboard.press('Tab')
+      await expect(header.getByRole('menuitem', { name: '로드맵 추천', exact: true })).toBeFocused()
+      await header.getByRole('link', { name: '프로젝트', exact: true }).hover()
+      await expect(header.getByRole('menu')).toHaveCount(1)
+      await expect(header.getByRole('menu', { name: '프로젝트 세부 메뉴' })).toBeVisible()
+      await header.getByRole('link', { name: '강의', exact: true }).focus()
+      await page.mouse.move(width - 10, 500)
+      await expect(header.getByRole('menu')).toHaveCount(0)
+
+      if (hasInstructorMenu) {
+        if (scenario === 'instructor-dashboard') await expect(header.getByRole('link', { name: '강사 대시보드', exact: true })).toHaveClass(/site-header-nav-link--active/)
+        await page.setViewportSize({ width, height: 300 })
+        await header.getByRole('link', { name: '강사 대시보드', exact: true }).hover()
+        const menu = header.getByRole('menu', { name: '강사 대시보드 세부 메뉴' })
+        expect(await menu.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
+        await menu.getByRole('menuitem', { name: '마케팅 관리', exact: true }).hover()
+        await expect(menu).toBeVisible()
+        expect(await menu.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+        await page.setViewportSize({ width, height: 900 })
+      }
+      await header.getByRole('link', { name: '프로젝트', exact: true }).hover()
+      await page.screenshot({ path: testInfo.outputPath('independent-header-menu.png') })
+      await header.getByRole('link', { name: '강의', exact: true }).click()
+      await expect(page).toHaveURL(/\/lecture-list$/)
+    })
   }
-
-  const dropdowns = [
-    { label: '로드맵', items: ['로드맵 추천', '로드맵 탐색', '내 로드맵'] },
-    { label: '프로젝트', items: ['라운지 대시보드', '라운지 (팀 찾기)', '멘토링 찾기', '워크스페이스', '런칭 쇼케이스'] },
-    { label: '커뮤니티', items: ['전체글', 'Q&A', '기술 공유', '커리어/이직', '자유게시판'] },
-    { label: '강사 대시보드', items: ['대시보드', '강의 관리', '멘토링 관리', '수강생 분석', '질문 게시판', '수강평 관리', '정산 관리', '마케팅 관리'] },
-  ]
-
-  for (const dropdown of dropdowns) {
-    const topLevelLink = header.getByRole('link', { name: dropdown.label, exact: true })
-    await expect(topLevelLink.locator('.site-header-nav-chevron')).toBeVisible()
-    await topLevelLink.hover()
-
-    const menu = header.getByRole('menu', { name: `${dropdown.label} 세부 메뉴` })
-    await expect(menu).toBeVisible()
-    const topBounds = await topLevelLink.boundingBox()
-    const submenuBounds = await menu.locator('.site-header-mega-link-label').first().boundingBox()
-    expect(Math.abs(topBounds!.x - submenuBounds!.x)).toBeLessThanOrEqual(1)
-    await expect(menu.getByRole('menuitem')).toHaveCount(dropdown.items.length)
-    await expect(menu.locator('i')).toHaveCount(0)
-    await expect(header.getByRole('menu')).toHaveCount(dropdowns.length)
-    for (const other of dropdowns) {
-      await expect(header.getByRole('menu', { name: `${other.label} 세부 메뉴` })).toBeVisible()
-    }
-
-    for (const item of dropdown.items) {
-      await expect(menu.getByRole('menuitem', { name: item, exact: true })).toBeVisible()
-    }
-  }
-
-  await expect(header.getByRole('link', { name: '강사 대시보드', exact: true })).toHaveClass(/site-header-nav-link--active/)
-})
+}
 
 test('일반 체크박스는 공통 브랜드 스타일을 사용한다', async ({ page }) => {
   await page.goto('/')
