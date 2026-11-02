@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { authApi } from '../lib/api/auth'
 import {
   consumePostLoginReturnPath,
+  getPostLoginRedirect,
   persistAuthSession,
   storePostLoginReturnPath,
 } from '../lib/auth-session'
@@ -93,8 +94,10 @@ function AuthModal({ view, onClose, onViewChange, onAuthenticated }: AuthModalPr
         password: loginPassword,
       })
 
-      persistAuthSession(response, rememberMe)
-      const returnPath = consumePostLoginReturnPath()
+      const session = persistAuthSession(response, rememberMe)
+      const returnPath = session.role === 'ROLE_ADMIN'
+        ? getPostLoginRedirect(session.role)
+        : consumePostLoginReturnPath()
       setLoginStatus({
         tone: 'success',
         message: '로그인되었습니다.',

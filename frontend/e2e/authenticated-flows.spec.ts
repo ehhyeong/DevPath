@@ -135,6 +135,7 @@ async function mockApi(route: Route) {
   if (pathname === '/api/auth/login') {
     const credentials = request.postDataJSON() as { email?: string }
     const isInstructor = credentials.email === 'instructor@devpath.test'
+    const isAdmin = credentials.email === 'admin@devpath.test'
 
     await route.fulfill({
       status: 200,
@@ -143,7 +144,7 @@ async function mockApi(route: Route) {
         success: true,
         data: {
           tokenType: 'Bearer',
-          accessToken: token(isInstructor ? 'ROLE_INSTRUCTOR' : 'LEARNER'),
+          accessToken: token(isAdmin ? 'ROLE_ADMIN' : isInstructor ? 'ROLE_INSTRUCTOR' : 'LEARNER'),
           refreshToken: 'e2e-refresh-token',
           name: isInstructor ? 'E2E 강사' : profile.name,
         },
@@ -214,6 +215,66 @@ test.beforeEach(async ({ page }) => {
     }
 
     await route.continue()
+  })
+})
+
+test.describe('관리자 로그인 이동', () => {
+  for (const returnPath of [null, '/dashboard']) {
+    test(`일반 로그인은 관리자 대시보드로 이동한다 (복귀 경로 ${returnPath ?? '없음'})`, async ({ page }) => {
+      await page.goto('/home?auth=login')
+      if (returnPath) await page.evaluate((path) => sessionStorage.setItem('devpath.auth.return-path', path), returnPath)
+      await page.getByLabel('이메일').fill('admin@devpath.test')
+      await page.getByLabel('비밀번호').fill('devpath-e2e-password')
+      await page.getByRole('button', { name: '로그인하기' }).click()
+
+      await expect(page).toHaveURL(/\/admin-dashboard$/)
+      await expect(page.locator('#admin-dashboard-root')).toBeVisible()
+      expect(await page.evaluate(() => sessionStorage.getItem('devpath.auth.return-path'))).toBeNull()
+    })
+  }
+
+  for (const entry of ['google', 'github', 'session']) {
+    test(`${entry} 진입은 저장된 복귀 경로보다 관리자 대시보드를 우선한다`, async ({ page }) => {
+      const accessToken = token('ROLE_ADMIN')
+      await page.goto('/home')
+      await page.evaluate(({ accessToken, existing }) => {
+        sessionStorage.setItem('devpath.auth.return-path', '/dashboard')
+        if (existing) localStorage.setItem('devpath.auth.session', JSON.stringify({
+          tokenType: 'Bearer', accessToken, refreshToken: 'e2e-refresh-token', name: 'E2E 관리자',
+          userId: 101, role: 'ROLE_ADMIN', exp: 4_102_444_800, storage: 'local',
+        }))
+      }, { accessToken, existing: entry === 'session' })
+      await page.goto(entry === 'session' ? '/login' : `/oauth2/redirect#${new URLSearchParams({
+        accessToken, refreshToken: 'e2e-refresh-token', provider: entry, name: 'E2E 관리자',
+      })}`)
+
+      await expect(page).toHaveURL(/\/admin-dashboard$/)
+      await expect(page.locator('#admin-dashboard-root')).toBeVisible()
+      expect(await page.evaluate(() => sessionStorage.getItem('devpath.auth.return-path'))).toBeNull()
+    })
+  }
+
+  for (const [email, returnPath] of [['e2e@devpath.test', '/dashboard'], ['instructor@devpath.test', '/instructor-dashboard']]) {
+    test(`${email} 일반 로그인은 저장된 복귀 경로를 유지한다`, async ({ page }) => {
+      await page.goto('/home?auth=login')
+      await page.evaluate((path) => sessionStorage.setItem('devpath.auth.return-path', path), returnPath)
+      await page.getByLabel('이메일').fill(email)
+      await page.getByLabel('비밀번호').fill('devpath-e2e-password')
+      await page.getByRole('button', { name: '로그인하기' }).click()
+
+      await expect(page).toHaveURL(new RegExp(`${returnPath}$`))
+      expect(await page.evaluate(() => sessionStorage.getItem('devpath.auth.return-path'))).toBeNull()
+    })
+  }
+
+  test('학습자 일반 로그인은 복귀 경로가 없으면 로그인한 화면에 머문다', async ({ page }) => {
+    await page.goto('/home?auth=login')
+    await page.getByLabel('이메일').fill('e2e@devpath.test')
+    await page.getByLabel('비밀번호').fill('devpath-e2e-password')
+    await page.getByRole('button', { name: '로그인하기' }).click()
+
+    await expect(page.getByText('DevPath에 오신 것을 환영합니다')).toBeHidden()
+    await expect(page).toHaveURL(/\/home$/)
   })
 })
 
