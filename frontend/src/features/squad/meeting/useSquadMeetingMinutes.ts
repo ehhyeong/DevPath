@@ -101,9 +101,10 @@ function shouldSyncMinutesDraftFromServer() {
 
 function formatLocalTranscriptLine(text: string) {
     const time = new Date().toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
+      timeZone: 'Asia/Seoul',
+      hour: 'numeric',
       minute: '2-digit',
-      hour12: false,
+      hour12: true,
     })
     const speakerName = session?.name?.trim() || '나'
 
