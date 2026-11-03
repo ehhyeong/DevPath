@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import AiAssistantPanel from './AiAssistantPanel'
+import AiAssistantPanel, { type AiAnswer } from './AiAssistantPanel'
 import SquadWorkspaceAiPanel from './SquadWorkspaceAiPanel'
 import { DEMO_TEXT } from '../lib/demo-typing'
 import { userApi } from '../lib/api/auth'
@@ -16,6 +16,83 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers())
 
 describe('AI 입력 시연', () => {
+  it.each(['동기', '비동기'])('%s 적용 성공 후 닫고 다시 열어도 대화와 완료 상태를 유지한다', async (mode) => {
+    const run = vi.fn<NonNullable<AiAnswer['action']>['run']>(() => mode === '동기' ? undefined : Promise.resolve('변경을 저장했습니다.'))
+    const onAsk = vi.fn(async () => ({ text: '로드맵 제안입니다.', action: { label: '캔버스에 적용', run } }))
+    render(<AiAssistantPanel fabLabel="AI 네비게이터" panelTitle="로드맵" greeting="안내" resetGreeting="안내"
+      placeholder="입력" thinkingLabel="분석" suggestions={[]} onAsk={onAsk} />)
+    const fab = screen.getByRole('button', { name: 'AI 네비게이터' })
+    fireEvent.click(fab)
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'React 노드를 추가해 줘' } })
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: '전송' })))
+    expect(fab).toHaveAttribute('aria-expanded', 'true')
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: '캔버스에 적용' })))
+
+    expect(fab).toHaveAttribute('aria-expanded', 'false')
+    expect(fab).toHaveFocus()
+    expect(run).toHaveBeenCalledOnce()
+    fireEvent.click(fab)
+    expect(screen.getByText('React 노드를 추가해 줘')).toBeInTheDocument()
+    expect(screen.getByText('로드맵 제안입니다.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '캔버스에 추가함' })).toBeDisabled()
+    if (mode === '비동기') expect(screen.getByText('변경을 저장했습니다.')).toBeInTheDocument()
+  })
+
+  it('실행 중에는 열린 채 중복 실행을 막고 실패 후 재시도에 성공하면 닫는다', async () => {
+    let rejectAction!: (reason: Error) => void
+    const run = vi.fn(() => Promise.resolve('저장 완료')).mockImplementationOnce(() => new Promise<string>((_, reject) => { rejectAction = reject }))
+    const onAsk = vi.fn(async () => ({ text: '작업을 등록하겠습니다.', action: { label: '변경 실행', run } }))
+    render(<AiAssistantPanel fabLabel="AI 에이전트" panelTitle="워크스페이스" greeting="안내" resetGreeting="안내"
+      placeholder="입력" thinkingLabel="분석" suggestions={[]} onAsk={onAsk} />)
+    const fab = screen.getByRole('button', { name: 'AI 에이전트' })
+    fireEvent.click(fab)
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '작업을 추가해 줘' } })
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: '전송' })))
+    const execute = screen.getByRole('button', { name: '변경 실행' })
+    fireEvent.click(execute)
+    expect(execute).toBeDisabled()
+    expect(fab).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(execute)
+    expect(run).toHaveBeenCalledOnce()
+
+    await act(async () => rejectAction(new Error('저장에 실패했습니다.')))
+
+    expect(fab).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('저장에 실패했습니다.')).toBeInTheDocument()
+    expect(execute).toBeEnabled()
+    await act(async () => fireEvent.click(execute))
+    expect(fab).toHaveAttribute('aria-expanded', 'false')
+    expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('스쿼드 실행 성공 후 다시 열어도 서버의 질문·답변과 실행 완료 상태를 유지한다', async () => {
+    window.history.replaceState({}, '', '/squad-tasks?workspaceId=42')
+    let executed = false
+    vi.mocked(projectApiRequest).mockImplementation(async (path, options) => {
+      if (path.endsWith('/actions') && options?.method === 'POST') {
+        executed = true
+        return { content: '작업을 등록했습니다.' } as never
+      }
+      return [
+        { id: 1, role: 'USER', authorId: 7, content: '로그인 테스트 작업을 추가해 줘', actions: [] },
+        { id: 2, role: 'ASSISTANT', content: '로그인 테스트 작업 등록 제안', actions: [{ type: 'TASK_CREATE', summary: '로그인 테스트 등록' }], actionStatus: executed ? 'EXECUTED' : 'PENDING' },
+      ] as never
+    })
+    render(<SquadWorkspaceAiPanel />)
+    const fab = screen.getByRole('button', { name: 'AI 에이전트' })
+    await act(async () => fireEvent.click(fab))
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: '변경 1건 실행' })))
+
+    expect(fab).toHaveAttribute('aria-expanded', 'false')
+    expect(executed).toBe(true)
+    await act(async () => fireEvent.click(fab))
+    expect(screen.getByText('로그인 테스트 작업을 추가해 줘')).toBeInTheDocument()
+    expect(screen.getByText(/로그인 테스트 작업 등록 제안/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '실행 완료' })).toBeDisabled()
+  })
+
   it('저장된 대화를 불러오고 비우는 기존 기능과 시연 입력을 함께 유지한다', async () => {
     const loadMessages = vi.fn(async () => [{ role: 'bot' as const, text: '서버에 저장된 대화' }])
     const onReset = vi.fn(async () => {})

@@ -3,6 +3,8 @@ package com.devpath.api.voice.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.devpath.api.voice.dto.VoiceRequest;
@@ -22,13 +24,19 @@ import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -58,6 +66,44 @@ class VoiceMeetingMinutesServiceTest {
             voiceChatMessageRepository,
             workspaceTaskRepository,
             new VoiceMinutesAnalyzer(geminiProvider, new ObjectMapper()));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "2026-11-03T00:05:00Z, 오전 9:05",
+    "2026-11-03T03:05:00Z, 오후 12:05",
+    "2026-11-03T14:59:00Z, 오후 11:59",
+    "2026-11-03T15:05:00Z, 오전 12:05"
+  })
+  void appendsTranscriptInKoreanTimeWithAmPmEvenWhenServerClockIsUtc(
+      String instant, String expectedTime) {
+    User user = User.builder().email("voice@example.com").name("박주승").build();
+    ReflectionTestUtils.setField(user, "id", 23L);
+    VoiceChannel channel = VoiceChannel.builder().workspaceId(9L).creator(user).name("회의").build();
+    ReflectionTestUtils.setField(channel, "id", 5L);
+    VoiceMeetingMinutes minutes =
+        VoiceMeetingMinutes.builder().channel(channel).updatedBy(user).build();
+    minutes.update(user, true, "기존 음성 기록", null);
+    when(voiceChannelRepository.findByIdAndIsDeletedFalse(5L)).thenReturn(Optional.of(channel));
+    when(userRepository.findById(23L)).thenReturn(Optional.of(user));
+    when(workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(9L, 23L)).thenReturn(true);
+    when(voiceMeetingMinutesRepository.findForUpdateByChannelId(5L))
+        .thenReturn(Optional.of(minutes));
+    Clock utc = Clock.fixed(Instant.parse(instant), ZoneOffset.UTC);
+    ZoneId seoul = ZoneId.of("Asia/Seoul");
+    Clock korea = utc.withZone(seoul);
+
+    try (var clocks = mockStatic(Clock.class, CALLS_REAL_METHODS)) {
+      clocks.when(Clock::systemDefaultZone).thenReturn(utc);
+      clocks.when(() -> Clock.system(seoul)).thenReturn(korea);
+
+      var result =
+          voiceMeetingMinutesService.appendMinutesTranscript(
+              5L, 23L, new VoiceRequest.MinutesTranscriptAppend("로그인 기능을 테스트하겠습니다."));
+
+      assertThat(result.transcript())
+          .isEqualTo("기존 음성 기록\n[" + expectedTime + "] 박주승: 로그인 기능을 테스트하겠습니다.");
+    }
   }
 
   @Test

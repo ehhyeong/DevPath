@@ -137,6 +137,7 @@ export type CameraSignalPayload = {
 export type VoiceMeetingSyncPayload = {
   chatMessage?: VoiceChatMessage
   minutes?: VoiceMeetingMinutes
+  transcriptPreview?: string
 }
 
 export type ScreenShareView = {

@@ -38,9 +38,9 @@ export default function MeetingParticipantStage({ participants, members, current
     const { participant, media, share } = card
     const member = members.find((item) => item.learnerId === participant.userId)
     const name = `${participant.userName}${participant.userId === currentUserId ? ' (나)' : ''}${share ? ' 화면 공유' : ''}`
-    const speaking = participant.speaking && !participant.muted && !share
+    const speaking = participant.speaking && !participant.muted
     return (
-      <div key={card.key} className={`meeting-participant-card relative isolate overflow-hidden rounded-xl border bg-gray-800 shadow-md ${expanded ? 'h-full w-full' : 'h-44 w-72 max-w-full shrink-0'} ${speaking ? 'border-brand shadow-[0_0_15px_rgba(0,196,113,0.2)]' : 'border-gray-700'}`} data-participant-id={participant.participantId} data-media-kind={share ? 'screen' : 'camera'}>
+      <div key={card.key} className={`meeting-participant-card relative isolate overflow-hidden rounded-xl border-2 bg-gray-800 ${expanded ? 'h-full w-full' : 'h-44 w-72 max-w-full shrink-0'} ${speaking ? 'border-brand shadow-[0_0_0_2px_rgba(0,196,113,0.75),0_0_20px_rgba(0,196,113,0.3)]' : 'border-gray-700 shadow-md'}`} data-participant-id={participant.participantId} data-media-kind={share ? 'screen' : 'camera'}>
         <button type="button" onClick={() => setFocusedKey(card.key)} className="absolute inset-0 flex h-full w-full items-center justify-center bg-transparent p-0! outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand" aria-label={`${name} 크게 보기`}>
           {media ? <MediaStreamVideo stream={media.stream} muted={media.local} className={`h-full w-full ${share || expanded ? 'object-contain' : 'object-cover'} ${media.local && !share ? '-scale-x-100' : ''}`} /> : <UserAvatar name={participant.userName} imageUrl={member?.profileImage} className="h-20 w-20 border-2 border-gray-600 bg-gray-700!" iconClassName="text-3xl text-gray-300" />}
         </button>

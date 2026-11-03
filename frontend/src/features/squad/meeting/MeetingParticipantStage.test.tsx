@@ -12,6 +12,31 @@ const participants: VoiceParticipant[] = [
 const props = { participants, members: [], currentUserId: 77, getCamera: () => null, screenShares: [], onFullscreenShare: vi.fn() }
 
 describe('회의 참가자 카드', () => {
+  it.each(['프로필', '카메라', '화면 공유'])('%s 타일은 발언 중 초록 테두리를 표시하고 확대·음소거·발언 종료를 반영한다', (mode) => {
+    const participant = { ...participants[1] }
+    const stream = { id: 'media-stream' } as MediaStream
+    const media = { userId: 77, userName: '첫 번째', local: true, stream }
+    const mediaProps = {
+      ...props,
+      getCamera: () => mode === '카메라' ? media : null,
+      screenShares: mode === '화면 공유' ? [media] : [],
+    }
+    const { container, rerender } = render(<MeetingParticipantStage {...mediaProps} participants={[participant]} />)
+    let card = container.querySelector('.meeting-participant-card')
+    expect(card).toHaveClass('border-2', 'border-gray-700')
+    rerender(<MeetingParticipantStage {...mediaProps} participants={[{ ...participant, speaking: true }]} />)
+    expect(card).toHaveClass('border-brand')
+    fireEvent.click(screen.getByRole('button', { name: /크게 보기/ }))
+    card = container.querySelector('.meeting-focused-card .meeting-participant-card')
+    expect(card).toHaveClass('border-2', 'border-brand')
+    rerender(<MeetingParticipantStage {...mediaProps} participants={[{ ...participant, speaking: true, muted: true }]} />)
+    expect(card).toHaveClass('border-gray-700')
+    expect(card).not.toHaveClass('border-brand')
+    rerender(<MeetingParticipantStage {...mediaProps} participants={[{ ...participant, speaking: false }]} />)
+    expect(card).toHaveClass('border-gray-700')
+    expect(card).not.toHaveClass('border-brand')
+  })
+
   it('입장 순서대로 실제 인원만 표시하고 자동 발표 화면을 만들지 않는다', () => {
     const { container, rerender } = render(<MeetingParticipantStage {...props} participants={[participants[1]]} />)
     expect(container.querySelectorAll('.meeting-participant-card')).toHaveLength(1)

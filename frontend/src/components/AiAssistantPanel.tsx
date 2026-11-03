@@ -322,6 +322,7 @@ export default function AiAssistantPanel({
 
     if (!(pending instanceof Promise)) {
       updateMessage(messageId, { actionDone: true })
+      closePanel()
       return
     }
 
@@ -336,6 +337,7 @@ export default function AiAssistantPanel({
         if (resultText) {
           appendMessage('bot', resultText)
         }
+        closePanel()
       }
     } catch (error) {
       // 실패하면 다시 누를 수 있게 버튼을 풀어 둔다.

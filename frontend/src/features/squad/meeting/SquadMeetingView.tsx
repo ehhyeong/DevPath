@@ -16,13 +16,20 @@ import { DEMO_TEXT } from '../../../lib/demo-typing'
 import { useDemoAccount, useDemoTyping } from '../../../lib/useDemoTyping'
 import { useDemoWorkspace } from '../useDemoWorkspace'
 export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorkspacePageProps) {
-  const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
+  const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, minutesInterimTranscript, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
   const demoWorkspace = useDemoWorkspace(workspaceId, Boolean(model.aiWorkspace && isJoined))
   const demoAccount = useDemoAccount('kim.hakseup@devpath.com', demoWorkspace)
   const demoChat = useDemoTyping({ text: DEMO_TEXT.meeting, value: voiceChatInput, onValue: setVoiceChatInput,
     enabled: demoAccount, active: Boolean(isJoined && roomPanelTab === 'chat' && !chatSending),
     scopeKey: activeChannel?.channelId, instant: true })
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
+  const displayedTranscript = voiceMinutes?.recording && minutesInterimTranscript
+    ? [minutesDraft.trimEnd(), minutesInterimTranscript].filter(Boolean).join('\n')
+    : minutesDraft
+  useLayoutEffect(() => {
+    const field = minutesTextareaRef.current
+    if (voiceMinutes?.recording && field) field.scrollTop = field.scrollHeight
+  }, [displayedTranscript, voiceMinutes?.recording, minutesTextareaRef, roomPanelTab, roomSidePanelOpen])
   useLayoutEffect(() => {
     const field = chatInputRef.current
     // 시연처럼 상태로 문구를 채우면 브라우저가 끝 커서를 따라 스크롤하지 않는다. 중간 편집 위치는 유지한다.
@@ -385,10 +392,10 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
         {roomPanelTab === 'minutes' ? (
           <div className="flex-1 flex flex-col overflow-hidden bg-gray-900 relative">
             <div className="flex-1 overflow-y-auto dark-scrollbar p-5 space-y-5">
-              {minutesDraft.trim() ? (
+              {displayedTranscript.trim() ? (
                 <textarea
                   ref={minutesTextareaRef}
-                  value={minutesDraft}
+                  value={displayedTranscript}
                   onChange={(event) => setMinutesDraft(event.target.value)}
                   onBlur={() => {
                     if (!voiceMinutes?.recording) {

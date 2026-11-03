@@ -12,10 +12,12 @@ import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,7 +31,10 @@ public class VoiceMeetingMinutesService {
   private static final int ACTION_ITEM_LIMIT = 20;
   private static final int TRANSCRIPT_LIMIT = 20000;
   private static final int TRANSCRIPT_LINE_LIMIT = 1000;
-  private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+  // UTC로 실행되는 배포 서버에서도 회의 기록은 한국 시각으로 표시한다.
+  private static final ZoneId MEETING_TIME_ZONE = ZoneId.of("Asia/Seoul");
+  private static final DateTimeFormatter TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("a h:mm", Locale.KOREAN);
 
   private final VoiceChannelAccess voiceChannelAccess;
   private final VoiceMeetingMinutesRepository voiceMeetingMinutesRepository;
@@ -148,7 +153,7 @@ public class VoiceMeetingMinutesService {
   }
 
   private String buildTranscriptLine(User user, String text) {
-    String time = LocalTime.now().format(TIME_FORMATTER);
+    String time = LocalTime.now(MEETING_TIME_ZONE).format(TIME_FORMATTER);
     String speakerName = normalizeText(user.getName());
     String transcript = shorten(normalizeText(text), TRANSCRIPT_LINE_LIMIT);
 
