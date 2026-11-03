@@ -7,9 +7,11 @@ import com.devpath.domain.user.entity.UserRole;
 import com.devpath.domain.user.repository.UserRepository;
 import com.devpath.domain.workspace.entity.Workspace;
 import com.devpath.domain.workspace.entity.WorkspaceMember;
+import com.devpath.domain.workspace.entity.WorkspaceTaskStatus;
 import com.devpath.domain.workspace.repository.WorkspaceAiDesignRepository;
 import com.devpath.domain.workspace.repository.WorkspaceMemberRepository;
 import com.devpath.domain.workspace.repository.WorkspaceRepository;
+import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ class WorkspaceDemoScenario {
   private final WorkspaceMemberRepository members;
   private final WorkspaceAiDesignRepository designs;
   private final WorkspaceCodeReviewStore reviews;
+  private final WorkspaceTaskRepository tasks;
   private final ObjectMapper mapper;
   private final List<DemoProject> projects;
 
@@ -42,12 +45,14 @@ class WorkspaceDemoScenario {
       WorkspaceMemberRepository members,
       WorkspaceAiDesignRepository designs,
       WorkspaceCodeReviewStore reviews,
+      WorkspaceTaskRepository tasks,
       ObjectMapper mapper) {
     this.users = users;
     this.workspaces = workspaces;
     this.members = members;
     this.designs = designs;
     this.reviews = reviews;
+    this.tasks = tasks;
     this.mapper = mapper;
     this.projects =
         List.of("routinecare", "studymate", "pantryshare", "sprintdesk").stream()
@@ -55,7 +60,8 @@ class WorkspaceDemoScenario {
                 id ->
                     new DemoProject(
                         read(id + "-design.json", WorkspaceAiDesignResponse.class),
-                        read(id + "-review.json", ReviewSeed.class)))
+                        read(id + "-review.json", ReviewSeed.class),
+                        read(id + "-board.json", TaskSeed[].class)))
             .toList();
   }
 
@@ -118,10 +124,15 @@ class WorkspaceDemoScenario {
             WorkspaceMember.builder()
                 .workspaceId(workspace.getId())
                 .learnerId(user.getId())
+                .positionLabel(positionLabel(user.getEmail()))
                 .build());
       }
     }
     if (reviews.hasDemoReview(workspace.getId(), review.key())) return;
+    members
+        .findByWorkspaceIdAndLearnerId(workspace.getId(), workspace.getOwnerId())
+        .ifPresent(member -> member.assignPositionLabel(positionLabel(OWNER_EMAIL)));
+    initializeBoard(workspace, project, invitedMembers);
     String diff = review.diff();
     long additions =
         diff.lines().filter(line -> line.startsWith("+") && !line.startsWith("+++")).count();
@@ -149,6 +160,42 @@ class WorkspaceDemoScenario {
               ? review.taehyungComment()
               : review.juseungComment());
     }
+  }
+
+  private void initializeBoard(
+      Workspace workspace, DemoProject project, List<User> invitedMembers) {
+    var workspaceTasks =
+        tasks.findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(workspace.getId());
+    for (TaskSeed seed : project.tasks()) {
+      Long assigneeId =
+          OWNER_EMAIL.equals(seed.assigneeEmail())
+              ? workspace.getOwnerId()
+              : invitedMembers.stream()
+                  .filter(member -> member.getEmail().equals(seed.assigneeEmail()))
+                  .findFirst()
+                  .orElseThrow()
+                  .getId();
+      workspaceTasks.stream()
+          .filter(task -> task.getTitle().equals(seed.title()))
+          // 시연 초기 배분만 수행하고 직접 배정하거나 이동한 작업은 보존한다.
+          .filter(
+              task -> task.getAssigneeId() == null && task.getStatus() == WorkspaceTaskStatus.TODO)
+          .filter(task -> workspace.getOwnerId().equals(task.getCreatedById()))
+          .forEach(
+              task -> {
+                task.changeAssignee(assigneeId);
+                task.changeStatus(seed.status());
+              });
+    }
+  }
+
+  private String positionLabel(String email) {
+    return switch (email) {
+      case OWNER_EMAIL -> "Frontend 개발자";
+      case "kim.taehyung@devpath.com" -> "Backend·인프라";
+      case "park.juseung@devpath.com" -> "QA·테스트";
+      default -> throw new IllegalArgumentException("시연 팀원 계정이 아닙니다. " + email);
+    };
   }
 
   boolean isDemoReview(Long workspaceId, WorkspaceCodeReviewStore.DetailRow row) {
@@ -199,7 +246,10 @@ class WorkspaceDemoScenario {
     }
   }
 
-  private record DemoProject(WorkspaceAiDesignResponse design, ReviewSeed review) {}
+  private record DemoProject(
+      WorkspaceAiDesignResponse design, ReviewSeed review, TaskSeed[] tasks) {}
+
+  private record TaskSeed(String title, String assigneeEmail, WorkspaceTaskStatus status) {}
 
   private record ReviewSeed(
       String key,

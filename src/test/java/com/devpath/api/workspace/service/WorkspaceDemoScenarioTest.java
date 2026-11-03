@@ -15,6 +15,7 @@ import com.devpath.domain.workspace.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,6 +35,7 @@ class WorkspaceDemoScenarioTest {
   private final WorkspaceRepository workspaces = mock(WorkspaceRepository.class);
   private final WorkspaceMemberRepository members = mock(WorkspaceMemberRepository.class);
   private final WorkspaceAiDesignRepository designs = mock(WorkspaceAiDesignRepository.class);
+  private final WorkspaceTaskRepository tasks = mock(WorkspaceTaskRepository.class);
   private final ObjectMapper mapper = new ObjectMapper();
   private EmbeddedDatabase database;
   private JdbcTemplate jdbc;
@@ -73,7 +75,7 @@ class WorkspaceDemoScenarioTest {
         .set(false);
     store = new WorkspaceCodeReviewStore(jdbc);
     store.initializeSchema();
-    demo = new WorkspaceDemoScenario(users, workspaces, members, designs, store, mapper);
+    demo = new WorkspaceDemoScenario(users, workspaces, members, designs, store, tasks, mapper);
     User owner = user(7L, WorkspaceDemoScenario.OWNER_EMAIL);
     when(users.findById(7L)).thenReturn(Optional.of(owner));
     when(users.findByEmail("park.juseung@devpath.com"))
@@ -163,6 +165,104 @@ class WorkspaceDemoScenarioTest {
     assertThat(demo.isDemoWorkspace(43L)).isFalse();
     when(users.findById(7L)).thenReturn(Optional.of(user(7L, "other@devpath.com")));
     assertThat(demo.isDemoWorkspace(42L)).isFalse();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"routinecare", "studymate", "pantryshare", "sprintdesk"})
+  void assignsAllPresetTasksToTeamRolesAndPreservesLaterEdits(String preset) throws Exception {
+    var design = fixture(preset);
+    var owner = WorkspaceMember.builder().workspaceId(42L).learnerId(7L).build();
+    when(members.findByWorkspaceIdAndLearnerId(42L, 7L)).thenReturn(Optional.of(owner));
+    var board =
+        design.roadmap().stream()
+            .flatMap(phase -> phase.tasks().stream())
+            .map(
+                title ->
+                    WorkspaceTask.builder().workspaceId(42L).title(title).createdById(7L).build())
+            .toList();
+    var preassigned =
+        WorkspaceTask.builder()
+            .workspaceId(42L)
+            .title(board.getFirst().getTitle())
+            .createdById(7L)
+            .assigneeId(8L)
+            .build();
+    var moved =
+        WorkspaceTask.builder()
+            .workspaceId(42L)
+            .title(board.getFirst().getTitle())
+            .createdById(7L)
+            .status(WorkspaceTaskStatus.IN_PROGRESS)
+            .build();
+    var teammateTask =
+        WorkspaceTask.builder()
+            .workspaceId(42L)
+            .title(board.getFirst().getTitle())
+            .createdById(8L)
+            .build();
+    var manualTask =
+        WorkspaceTask.builder().workspaceId(42L).title("직접 추가한 작업").createdById(7L).build();
+    var allTasks = new ArrayList<>(board);
+    allTasks.addAll(List.of(preassigned, moved, teammateTask, manualTask));
+    when(tasks.findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(42L)).thenReturn(allTasks);
+
+    demo.initialize(workspace, design);
+
+    assertThat(owner.getPositionLabel()).isEqualTo("Frontend 개발자");
+    assertThat(preassigned.getAssigneeId()).isEqualTo(8L);
+    assertThat(preassigned.getStatus()).isEqualTo(WorkspaceTaskStatus.TODO);
+    assertThat(moved.getAssigneeId()).isNull();
+    assertThat(moved.getStatus()).isEqualTo(WorkspaceTaskStatus.IN_PROGRESS);
+    assertThat(teammateTask.getAssigneeId()).isNull();
+    assertThat(manualTask.getAssigneeId()).isNull();
+    var invitations = ArgumentCaptor.forClass(WorkspaceMember.class);
+    verify(members, times(2)).save(invitations.capture());
+    assertThat(invitations.getAllValues())
+        .extracting(WorkspaceMember::getPositionLabel)
+        .containsExactly("QA·테스트", "Backend·인프라");
+    assertThat(board).allSatisfy(task -> assertThat(task.getAssigneeId()).isIn(7L, 8L, 9L));
+    assertThat(board)
+        .filteredOn(task -> task.getAssigneeId().equals(7L))
+        .extracting(WorkspaceTask::getTitle)
+        .containsExactly(
+            design.roadmap().get(0).tasks().get(2),
+            design.roadmap().get(1).tasks().get(2),
+            design.roadmap().get(2).tasks().get(2),
+            design.roadmap().get(3).tasks().get(1));
+    var qaTasks =
+        board.stream()
+            .filter(task -> task.getAssigneeId().equals(8L))
+            .map(WorkspaceTask::getTitle)
+            .toList();
+    if (preset.equals("sprintdesk")) {
+      assertThat(qaTasks).containsExactly(design.roadmap().get(3).tasks().get(0));
+      assertThat(board.get(7).getAssigneeId()).isEqualTo(9L);
+    } else {
+      assertThat(qaTasks)
+          .containsExactly(
+              design.roadmap().get(2).tasks().get(1), design.roadmap().get(3).tasks().get(0));
+    }
+    assertThat(board).filteredOn(task -> task.getStatus() == WorkspaceTaskStatus.DONE).hasSize(5);
+    assertThat(board)
+        .filteredOn(task -> task.getStatus() == WorkspaceTaskStatus.IN_REVIEW)
+        .hasSize(2);
+    assertThat(board)
+        .filteredOn(task -> task.getStatus() == WorkspaceTaskStatus.IN_PROGRESS)
+        .hasSize(2);
+    assertThat(board).filteredOn(task -> task.getStatus() == WorkspaceTaskStatus.TODO).hasSize(3);
+    var custom = board.getFirst();
+    custom.changeAssignee(7L);
+    custom.changeStatus(WorkspaceTaskStatus.IN_PROGRESS);
+    owner.assignPositionLabel("프론트 리드");
+    when(members.existsByWorkspaceIdAndLearnerId(42L, 8L)).thenReturn(true);
+    when(members.existsByWorkspaceIdAndLearnerId(42L, 9L)).thenReturn(true);
+
+    demo.initialize(workspace, design);
+
+    assertThat(custom.getAssigneeId()).isEqualTo(7L);
+    assertThat(custom.getStatus()).isEqualTo(WorkspaceTaskStatus.IN_PROGRESS);
+    assertThat(owner.getPositionLabel()).isEqualTo("프론트 리드");
+    verify(tasks, times(1)).findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(42L);
   }
 
   @ParameterizedTest
