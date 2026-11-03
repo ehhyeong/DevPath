@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SquadMeetingView from './SquadMeetingView'
 import type { SquadMeetingViewModel } from './useSquadMeetingController'
@@ -17,17 +17,19 @@ beforeEach(() => {
   vi.spyOn(userApi, 'getMyProfile').mockResolvedValue({ userId: 7, email: 'kim.hakseup@devpath.com' } as never)
 })
 
-function Room({ send, saving = false }: { send: (text: string) => void; saving?: boolean }) {
+function Room({ send, saving = false, draft = '', interim = '' }: { send: (text: string) => void; saving?: boolean; draft?: string; interim?: string }) {
   const [voiceChatInput, setVoiceChatInput] = useState('')
   const [roomPanelTab, setRoomPanelTab] = useState<'minutes' | 'chat'>('chat')
   const [recording, setRecording] = useState(false)
+  const minutesTextareaRef = useRef<HTMLTextAreaElement>(null)
   return <SquadMeetingView {...{
     workspaceId: 42, session: { userId: 7, name: '김학습' }, activeChannel: { channelId: 1, name: '회의실' },
     channels: [], participants: [], members: [], roomParticipants: [], waitingMembers: [], voiceChatMessages: [],
     roomPanelTab, setRoomPanelTab, roomSidePanelOpen: true, voiceChatInput, setVoiceChatInput,
     voiceMinutes: { channelId: 1, recording, transcript: '' }, minutesSaving: saving,
     toggleMinutesRecording: () => setRecording((current) => !current),
-    minutesDraft: '', minutesActionItems: [], selectedMinutesActionItems: [], remoteScreenShares: [], remoteCameraStreams: [],
+    minutesDraft: draft, minutesInterimTranscript: interim, minutesTextareaRef,
+    minutesActionItems: [], selectedMinutesActionItems: [], remoteScreenShares: [], remoteCameraStreams: [],
     floatingReactions: [], localCameraStream: null, localScreenShareStream: null, micLevel: 0,
     securityStatus: { detail: '연결됨' }, networkStatus: { detail: '연결됨', label: '온라인', tone: 'good' },
     isJoined: true, loading: false, projectName: 'RoutineCare', sendVoiceChatMessage: () => send(voiceChatInput),
@@ -52,6 +54,24 @@ describe('회의실 시연 채팅', () => {
 })
 
 describe('회의 기록 공통 제어', () => {
+  it('확정 전 중간 문장도 표시하고 수정된 문장으로 교체하며 중지하면 확정 기록만 남긴다', async () => {
+    vi.mocked(getWorkspaceAiDesign).mockResolvedValue({ workspaceId: 42, demoWorkspace: false } as never)
+    const send = vi.fn()
+    const view = render(<Room send={send} draft="확정된 회의 기록" interim="[오후 6:30] 박주승: 로그인" />)
+    await act(async () => {})
+    fireEvent.click(screen.getByRole('button', { name: '기록 시작' }))
+    fireEvent.click(screen.getByRole('button', { name: /AI 회의록$/ }))
+    const transcript = screen.getByRole('textbox')
+    expect(transcript).toHaveValue('확정된 회의 기록\n[오후 6:30] 박주승: 로그인')
+    expect(transcript).toHaveProperty('readOnly', true)
+    Object.defineProperty(transcript, 'scrollHeight', { configurable: true, value: 600 })
+    view.rerender(<Room send={send} draft="확정된 회의 기록" interim="[오후 6:30] 박주승: 로그인 기능 테스트" />)
+    expect(transcript).toHaveValue('확정된 회의 기록\n[오후 6:30] 박주승: 로그인 기능 테스트')
+    expect(transcript.scrollTop).toBe(600)
+    fireEvent.click(screen.getByRole('button', { name: '기록 중지' }))
+    expect(transcript).toHaveValue('확정된 회의 기록')
+  })
+
   it('팀 채팅방에서 기록을 시작·중지하고 탭 전환 뒤에도 상태와 입력을 유지한다', async () => {
     vi.mocked(getWorkspaceAiDesign).mockResolvedValue({ workspaceId: 42, demoWorkspace: false } as never)
     await act(async () => render(<Room send={vi.fn()} />))
