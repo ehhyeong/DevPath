@@ -204,8 +204,8 @@ BEGIN
         FROM (
             VALUES
                 (v_demo_user_id, NULL, NULL, NULL, NULL),
-                (v_taehyung_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=kim-taehyung', '김태형', 'React UI 구현을 맡은 팀원입니다.', 'https://github.com/devpath-demo/kim-taehyung'),
-                (v_juseung_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=park-juseung', '박주승', 'TypeScript 상태 모델과 QA를 맡은 팀원입니다.', 'https://github.com/devpath-demo/park-juseung'),
+                (v_taehyung_id, NULL, '김태형', 'React UI 구현을 맡은 팀원입니다.', 'https://github.com/devpath-demo/kim-taehyung'),
+                (v_juseung_id, NULL, '박주승', 'TypeScript 상태 모델과 QA를 맡은 팀원입니다.', 'https://github.com/devpath-demo/park-juseung'),
                 (v_common_mentor_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend-common-mentor', '정다은', '공통과제형 React 과제를 멘토링하는 프론트엔드 멘토입니다.', 'https://github.com/devpath-demo/frontend-common-mentor'),
                 (v_team_mentor_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend-team-mentor', '이민준', '팀프로젝트형 TypeScript 대시보드를 멘토링하는 프론트엔드 멘토입니다.', 'https://github.com/devpath-demo/frontend-team-mentor')
         ) AS seed(user_id, profile_image, channel_name, bio, github_url)
@@ -227,8 +227,8 @@ BEGIN
           FROM (
               VALUES
                   (v_demo_user_id, NULL, NULL, NULL, NULL),
-                  (v_taehyung_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=kim-taehyung', '김태형', 'React UI 구현을 맡은 팀원입니다.', 'https://github.com/devpath-demo/kim-taehyung'),
-                  (v_juseung_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=park-juseung', '박주승', 'TypeScript 상태 모델과 QA를 맡은 팀원입니다.', 'https://github.com/devpath-demo/park-juseung'),
+                  (v_taehyung_id, NULL, '김태형', 'React UI 구현을 맡은 팀원입니다.', 'https://github.com/devpath-demo/kim-taehyung'),
+                  (v_juseung_id, NULL, '박주승', 'TypeScript 상태 모델과 QA를 맡은 팀원입니다.', 'https://github.com/devpath-demo/park-juseung'),
                   (v_common_mentor_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend-common-mentor', '정다은', '공통과제형 React 과제를 멘토링하는 프론트엔드 멘토입니다.', 'https://github.com/devpath-demo/frontend-common-mentor'),
                   (v_team_mentor_id, 'https://api.dicebear.com/7.x/avataaars/svg?seed=frontend-team-mentor', '이민준', '팀프로젝트형 TypeScript 대시보드를 멘토링하는 프론트엔드 멘토입니다.', 'https://github.com/devpath-demo/frontend-team-mentor')
           ) AS seed(user_id, profile_image, channel_name, bio, github_url)
