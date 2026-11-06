@@ -132,31 +132,42 @@ export default function WorkspaceHubApp() {
     const controller = new AbortController()
     const currentSession = readStoredAuthSession()
     setSession(currentSession)
-    async function load() {
-      setLoading(true)
+    let refreshing = false
+    async function load(silent = false) {
+      if (refreshing) return
+      refreshing = true
+      if (!silent) setLoading(true)
       try {
         const [shell, nextProjects] = await Promise.all([
           projectApiRequest<LoungeShellResponse>(
             '/api/lounge/shell',
             { signal: controller.signal },
             'optional',
+            { cache: false },
           ).catch(() => null),
           projectApiRequest<WorkspaceHubProject[]>(
             '/api/workspaces/hub/projects',
             { signal: controller.signal },
             'required',
+            { cache: false },
           ),
         ])
 
-        setAsideSquads(shell?.mySquads ?? [])
-        setProfileImage(shell?.user?.profileImage ?? null)
+        if (controller.signal.aborted) return
+        if (shell) {
+          setAsideSquads(shell.mySquads ?? [])
+          setProfileImage(shell.user?.profileImage ?? null)
+        }
         setProjects(nextProjects)
+        setSettingsProject(current => current && !nextProjects.some(project => project.projectId === current.projectId) ? null : current)
+        setMembersProject(current => current && !nextProjects.some(project => project.projectId === current.projectId) ? null : current)
       } catch (error) {
-        if ((error as Error).name !== 'CanceledError') {
+        if (!controller.signal.aborted && (error as Error).name !== 'CanceledError') {
           console.error(error)
         }
       } finally {
-        if (!controller.signal.aborted) {
+        refreshing = false
+        if (!controller.signal.aborted && !silent) {
           setLoading(false)
         }
       }
@@ -164,7 +175,24 @@ export default function WorkspaceHubApp() {
 
     void load()
 
-    return () => controller.abort()
+    const refresh = () => {
+      if (document.hidden || window.location.pathname !== '/workspace-hub' || !readStoredAuthSession()?.accessToken) return
+      void load(true)
+    }
+    // 다른 팀원이 삭제/탈퇴한 목록도 갱신하고, 화면 복귀 시에는 주기 갱신을 기다리지 않는다.
+    const intervalId = window.setInterval(refresh, 5000)
+    window.addEventListener('focus', refresh)
+    window.addEventListener(SPA_NAVIGATION_EVENT, refresh)
+    window.addEventListener('popstate', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      controller.abort()
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refresh)
+      window.removeEventListener(SPA_NAVIGATION_EVENT, refresh)
+      window.removeEventListener('popstate', refresh)
+      document.removeEventListener('visibilitychange', refresh)
+    }
   }, [dataReloadKey, setSession])
 
   useEffect(() => {
@@ -368,6 +396,7 @@ export default function WorkspaceHubApp() {
       if (membersProject?.projectId === project.projectId) {
         setMembersProject(null)
       }
+      setDataReloadKey((current) => current + 1)
       showAuthToast({
         message: deleting ? '워크스페이스를 삭제했습니다.' : '워크스페이스에서 나갔습니다.',
         durationMs: 2200,
