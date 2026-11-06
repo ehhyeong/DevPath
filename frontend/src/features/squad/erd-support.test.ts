@@ -13,15 +13,18 @@ describe('AI ERD 기본 보기 배율', () => {
     expect(getErdViewportScale(260, 180, 1182, 774)).toBe(1)
   })
 
-  it.each([[3200, 800], [800, 3200]])('큰 도면 %s×%s도 기준 읽기 크기를 유지한다', (width, height) => {
-    expect(getErdViewportScale(width, height, 1182, 774)).toBe(0.7)
+  it.each([[3200, 800], [800, 3200]])('큰 도면 %s×%s도 가로·세로 모두 캔버스 안에 맞춘다', (width, height) => {
+    const scale = getErdViewportScale(width, height, 1182, 774)
+    expect(width * scale).toBeLessThanOrEqual(1182 - 96)
+    expect(height * scale).toBeLessThanOrEqual(774 - 96)
+    expect(scale).toBe(Math.min((1182 - 96) / width, (774 - 96) / height))
   })
 
-  it('화면이 줄어들면 기본 배율을 조정하고 읽기 크기 하한을 유지한다', () => {
+  it('좁은 화면에서도 도면이 잘리지 않도록 배율을 낮춘다', () => {
     const wide = getErdViewportScale(1000, 600, 1400, 900)
     const narrow = getErdViewportScale(1000, 600, 900, 768)
     expect(narrow).toBeLessThan(wide)
     expect(1000 * narrow).toBeLessThanOrEqual(900 - 96)
-    expect(getErdViewportScale(1000, 600, 480, 560)).toBe(0.7)
+    expect(getErdViewportScale(1000, 600, 480, 560)).toBe(0.384)
   })
 })
