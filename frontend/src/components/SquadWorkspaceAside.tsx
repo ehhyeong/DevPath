@@ -66,7 +66,11 @@ function setSquadWorkspaceAsideExpanded(expanded: boolean) {
 
 function subscribeSquadWorkspaceAside(listener: () => void) {
   squadWorkspaceAsideListeners.add(listener)
-  return () => squadWorkspaceAsideListeners.delete(listener)
+  window.addEventListener('storage', listener)
+  return () => {
+    squadWorkspaceAsideListeners.delete(listener)
+    window.removeEventListener('storage', listener)
+  }
 }
 
 function preserveSquadWorkspaceAsideForNavigation() {
@@ -111,6 +115,7 @@ function storeSidebarPinned(storageKey: string, value: boolean) {
   }
 
   window.localStorage.setItem(storageKey, value ? 'true' : 'false')
+  squadWorkspaceAsideListeners.forEach((listener) => listener())
 }
 
 function navHref(path: string, workspaceId: number | null, aiWorkspace = false) {
@@ -134,18 +139,18 @@ export default function SquadWorkspaceAside({
   onNavigate,
 }: SquadWorkspaceAsideProps) {
   const [reviewAccess, setReviewAccess] = useState<{ workspaceId: number; aiWorkspace: boolean; allowed: boolean } | null>(null)
-  // 일반 스쿼드의 기존 고정값을 보존하고 AI 워크스페이스는 별도 설정을 사용한다.
-  const [localPinned, setLocalPinned] = useState(() => ({
-    standard: readSidebarPinned(SIDEBAR_PINNED_STORAGE_KEY),
-    ai: readSidebarPinned(AI_SIDEBAR_PINNED_STORAGE_KEY),
-  }))
-  const pinMode = aiWorkspace ? 'ai' : 'standard'
+  // 메뉴를 숨긴 채 보존해도 다른 메뉴의 핀 변경을 즉시 반영한다. 일반/AI 설정은 분리한다.
+  const storedPinned = useSyncExternalStore(
+    subscribeSquadWorkspaceAside,
+    () => readSidebarPinned(aiWorkspace ? AI_SIDEBAR_PINNED_STORAGE_KEY : SIDEBAR_PINNED_STORAGE_KEY),
+    () => false,
+  )
   const expanded = useSyncExternalStore(
     subscribeSquadWorkspaceAside,
     () => squadWorkspaceAsideExpanded,
     () => false,
   )
-  const sidebarPinned = pinned ?? localPinned[pinMode]
+  const sidebarPinned = pinned ?? storedPinned
   const sidebarOpen = sidebarPinned || expanded
   const activeGithubLinked = reviewAccess?.workspaceId === workspaceId && reviewAccess?.aiWorkspace === aiWorkspace && reviewAccess?.allowed
   const dataVersion = useWorkspaceDataVersion()
@@ -299,11 +304,8 @@ export default function SquadWorkspaceAside({
       return
     }
 
-    setLocalPinned((current) => {
-      const next = !current[pinMode]
-      storeSidebarPinned(aiWorkspace ? AI_SIDEBAR_PINNED_STORAGE_KEY : SIDEBAR_PINNED_STORAGE_KEY, next)
-      return { ...current, [pinMode]: next }
-    })
+    const storageKey = aiWorkspace ? AI_SIDEBAR_PINNED_STORAGE_KEY : SIDEBAR_PINNED_STORAGE_KEY
+    storeSidebarPinned(storageKey, !readSidebarPinned(storageKey))
   }
 
   return (

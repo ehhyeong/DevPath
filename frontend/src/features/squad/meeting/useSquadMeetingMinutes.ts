@@ -18,6 +18,7 @@ type MeetingMinutesOptions = {
 
 export function useSquadMeetingMinutes({ workspaceId,activeChannel,isJoined,isMuted,session,broadcastMeetingSync,setRoomPanelTab }: MeetingMinutesOptions) {
   const [voiceChatMessages, setVoiceChatMessages] = useState<VoiceChatMessage[]>([])
+  const [voiceChatChannelId, setVoiceChatChannelId] = useState<number | null>(null)
   const [voiceChatInput, setVoiceChatInput] = useState('')
   const [voiceMinutes, setVoiceMinutes] = useState<VoiceMeetingMinutes | null>(null)
   const [minutesDraft, setMinutesDraft] = useState('')
@@ -73,6 +74,7 @@ async function refreshVoiceMeetingPanel(channelId = activeChannel?.channelId, sy
     ])
 
     setVoiceChatMessages(messages)
+    setVoiceChatChannelId(channelId)
     applyVoiceMinutes(minutes, syncDraft)
   }
 
@@ -507,6 +509,7 @@ useEffect(() => {
 useEffect(() => {
     if (!activeChannel?.channelId || !isJoined || !session?.accessToken) {
       setVoiceChatMessages([])
+      setVoiceChatChannelId(null)
       setVoiceChatInput('')
       setVoiceMinutes(null)
       setMinutesDraft('')
@@ -532,6 +535,7 @@ useEffect(() => {
         }
 
         setVoiceChatMessages(messages)
+        setVoiceChatChannelId(channelId)
         setVoiceMinutes(minutes)
         if (shouldSyncMinutesDraftFromServerRef.current()) {
           setMinutesDraft(minutes.transcript ?? '')
@@ -553,6 +557,7 @@ useEffect(() => {
         }
 
         setVoiceChatMessages(messages)
+        setVoiceChatChannelId(channelId)
         setVoiceMinutes(minutes)
 
         if (shouldSyncMinutesDraftFromServerRef.current()) {
@@ -575,6 +580,7 @@ useEffect(() => {
   }, [activeChannel?.channelId, isJoined, session?.accessToken, setRoomPanelTab, shouldSyncMinutesDraftFromServerRef])
 
   return {
+    voiceChatLoaded: voiceChatChannelId === activeChannel?.channelId,
     voiceChatMessages,voiceChatInput,setVoiceChatInput,voiceMinutes,minutesDraft,setMinutesDraft,
     minutesInterimTranscript: Object.values(transcriptPreviews).join('\n'),applyTranscriptPreview,
     minutesActionItems,selectedMinutesActionItems,minutesSummaryReportOpen,setMinutesSummaryReportOpen,
