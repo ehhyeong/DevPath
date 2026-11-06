@@ -1,8 +1,9 @@
-import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
+import { useCallback, useId, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import AuthModal from '../../../components/AuthModal'
 import MeetingAudioSettings from './MeetingAudioSettings'
 import MeetingParticipantStage from './MeetingParticipantStage'
 import MeetingParticipantAudioMenu, { type ParticipantAudioMenuTarget } from './MeetingParticipantAudioMenu'
+import { useMeetingChatUnread } from './useMeetingChatUnread'
 import SquadWorkspaceAside from '../../../components/SquadWorkspaceAside'
 import SquadWorkspaceLoadingView from '../../../components/SquadWorkspaceLoadingView'
 import SquadWorkspaceHeader from '../../../components/SquadWorkspaceHeader'
@@ -30,6 +31,11 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
   }
   const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, minutesInterimTranscript, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
   const demoWorkspace = useDemoWorkspace(workspaceId, Boolean(model.aiWorkspace && isJoined))
+  const unreadChatCount = useMeetingChatUnread({ channelId: activeChannel?.channelId ?? null, currentUserId: session?.userId, messages: voiceChatMessages, ready: Boolean(isJoined && model.voiceChatLoaded), chatVisible: Boolean(roomSidePanelOpen && roomPanelTab === 'chat') })
+  const unreadChatStatusId = useId()
+  function renderUnreadChatBadge(className = '') {
+    return unreadChatCount > 0 ? <span aria-hidden="true" className={`meeting-chat-unread-badge inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] leading-none font-extrabold text-white ${className}`}>{unreadChatCount > 99 ? '99+' : unreadChatCount}</span> : null
+  }
   const demoAccount = useDemoAccount('kim.hakseup@devpath.com', demoWorkspace)
   const demoChat = useDemoTyping({ text: DEMO_TEXT.meeting, value: voiceChatInput, onValue: setVoiceChatInput,
     enabled: demoAccount, active: Boolean(isJoined && roomPanelTab === 'chat' && !chatSending),
@@ -373,9 +379,11 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
           <button
             type="button"
             onClick={() => setRoomPanelTab('chat')}
+            aria-label="팀 채팅방"
+            aria-describedby={unreadChatCount > 0 ? unreadChatStatusId : undefined}
             className={`squad-meeting-room-tab-button flex h-[44px]! min-h-[44px]! flex-1 items-center justify-center gap-2 border-b-2 p-0! text-[12px]! leading-[16px]! font-bold box-border transition [&_i]:text-[14px]! [&_i]:leading-[16px]! ${roomPanelTab === 'chat' ? 'text-brand border-brand bg-gray-800' : 'text-gray-400 hover:text-gray-200 border-transparent'}`}
           >
-            <i className="fas fa-comments text-sm"></i> 팀 채팅방
+            <i className="fas fa-comments text-sm"></i> 팀 채팅방 {renderUnreadChatBadge()}
           </button>
         </div>
 
@@ -613,11 +621,14 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
             <button
               type="button"
               onClick={() => setRoomSidePanelOpen((current) => !current)}
-              className="squad-meeting-room-panel-toggle flex h-[36px]! w-[36px]! flex-[0_0_36px] items-center justify-center rounded-[8px]! border border-gray-600 bg-gray-700 p-0! box-border transition hover:bg-gray-600 [&_i]:text-[14px]! [&_i]:leading-[16px]!"
+              className="squad-meeting-room-panel-toggle relative flex h-[36px]! w-[36px]! flex-[0_0_36px] items-center justify-center rounded-[8px]! border border-gray-600 bg-gray-700 p-0! box-border transition hover:bg-gray-600 [&_i]:text-[14px]! [&_i]:leading-[16px]!"
               title="패널 열기/닫기"
+              aria-describedby={unreadChatCount > 0 ? unreadChatStatusId : undefined}
             >
               <i className="fas fa-list-ul"></i>
+              {!roomSidePanelOpen ? renderUnreadChatBadge('absolute -top-2 -right-2') : null}
             </button>
+            <span id={unreadChatStatusId} role="status" aria-live="polite" className="sr-only">{unreadChatCount > 0 ? `읽지 않은 팀 채팅 ${unreadChatCount}개` : ''}</span>
           </div>
         </header>
 

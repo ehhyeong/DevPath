@@ -6,6 +6,7 @@ import type { SquadMeetingViewModel } from './useSquadMeetingController'
 import { DEMO_TEXT } from '../../../lib/demo-typing'
 import { getWorkspaceAiDesign } from '../../project/api'
 import { userApi } from '../../../lib/api/auth'
+import type { VoiceChatMessage } from './meeting-types'
 
 vi.mock('../../../lib/auth-session', async (original) => ({ ...await original<typeof import('../../../lib/auth-session')>(), readStoredAuthSession: () => ({ userId: 7 }) }))
 vi.mock('../../project/api', async (original) => ({ ...await original<typeof import('../../project/api')>(), getWorkspaceAiDesign: vi.fn() }))
@@ -17,14 +18,14 @@ beforeEach(() => {
   vi.spyOn(userApi, 'getMyProfile').mockResolvedValue({ userId: 7, email: 'kim.hakseup@devpath.com' } as never)
 })
 
-function Room({ send, saving = false, draft = '', interim = '' }: { send: (text: string) => void; saving?: boolean; draft?: string; interim?: string }) {
+function Room({ send, saving = false, draft = '', interim = '', messages = [] }: { send: (text: string) => void; saving?: boolean; draft?: string; interim?: string; messages?: VoiceChatMessage[] }) {
   const [voiceChatInput, setVoiceChatInput] = useState('')
   const [roomPanelTab, setRoomPanelTab] = useState<'minutes' | 'chat'>('chat')
   const [recording, setRecording] = useState(false)
   const minutesTextareaRef = useRef<HTMLTextAreaElement>(null)
   return <SquadMeetingView {...{
     workspaceId: 42, session: { userId: 7, name: '김학습' }, activeChannel: { channelId: 1, name: '회의실' },
-    channels: [], participants: [], members: [], roomParticipants: [], waitingMembers: [], voiceChatMessages: [],
+    channels: [], participants: [], members: [], roomParticipants: [], waitingMembers: [], voiceChatMessages: messages, voiceChatLoaded: true,
     roomPanelTab, setRoomPanelTab, roomSidePanelOpen: true, voiceChatInput, setVoiceChatInput,
     voiceMinutes: { channelId: 1, recording, transcript: '' }, minutesSaving: saving,
     toggleMinutesRecording: () => setRecording((current) => !current),
@@ -54,6 +55,20 @@ describe('회의실 시연 채팅', () => {
 })
 
 describe('회의 기록 공통 제어', () => {
+  it('회의록 탭에서 새 채팅 배지와 접근성 알림을 표시하고 채팅을 열면 해제한다', async () => {
+    vi.mocked(getWorkspaceAiDesign).mockResolvedValue({ workspaceId: 42, demoWorkspace: false } as never)
+    const send = vi.fn()
+    const view = render(<Room send={send} />)
+    await act(async () => {})
+    fireEvent.click(screen.getByRole('button', { name: 'AI 회의록' }))
+    const messages = Array.from({ length: 105 }, (_, index) => ({ messageId: index + 1, channelId: 1, senderId: 8, senderName: '박주승', content: `메시지 ${index + 1}` }))
+    view.rerender(<Room send={send} messages={messages} />)
+    expect(view.container.querySelector('.meeting-chat-unread-badge')).toHaveTextContent('99+')
+    expect(screen.getByRole('status')).toHaveTextContent('읽지 않은 팀 채팅 105개')
+    fireEvent.click(screen.getByRole('button', { name: '팀 채팅방' }))
+    expect(view.container.querySelector('.meeting-chat-unread-badge')).toBeNull()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+  })
   it('확정 전 중간 문장도 표시하고 수정된 문장으로 교체하며 중지하면 확정 기록만 남긴다', async () => {
     vi.mocked(getWorkspaceAiDesign).mockResolvedValue({ workspaceId: 42, demoWorkspace: false } as never)
     const send = vi.fn()
