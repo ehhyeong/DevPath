@@ -1,5 +1,4 @@
-
-
+import { formatMentoringRecruitmentContent, parseMentoringRecruitmentContent, type MentoringRecruitmentContent } from '../../features/mentoring/mentoring-recruitment-content'
 
 export type MentoringTab = 'recruiting' | 'requests' | 'ongoing' | 'completed'
 export type MentoringMode = 'study' | 'team'
@@ -129,7 +128,7 @@ export type WorkspaceSettingsForm = {
 
 export type ProjectRoleInput = { name: string; count: number }
 
-export type ProjectFormState = {
+export type ProjectFormState = MentoringRecruitmentContent & {
   mode: MentoringMode
   category: string
   recruitStatus: '모집중' | '모집마감'
@@ -139,7 +138,6 @@ export type ProjectFormState = {
   tags: string[]
   mentorName: string
   mentorBio: string
-  intro: string
   weeks: string[]
   roles: ProjectRoleInput[]
 }
@@ -225,6 +223,10 @@ export function createDefaultForm(): ProjectFormState {
     mentorName: '',
     mentorBio: '',
     intro: '',
+    targetAudience: '',
+    prerequisites: '',
+    operationGuide: '',
+    deliverables: '',
     weeks: ['요구사항 분석 및 ERD 설계', '핵심 API 비즈니스 로직 개발'],
     roles: [{ name: 'Frontend', count: 2 }, { name: 'Backend', count: 2 }],
   }
@@ -242,6 +244,10 @@ export function createSampleForm(): ProjectFormState {
     mentorName: '코드마스터 J',
     mentorBio: '네카라쿠배 백엔드 리드 개발자',
     intro: '실제 운영 환경과 유사한 트래픽 시나리오를 경험합니다. 선착순 쿠폰 발급, 재고 동시성 이슈 등을 집중적으로 다루며 코드 리뷰를 진행합니다.',
+    targetAudience: 'Spring Boot로 CRUD API를 구현해 봤으며 동시성과 성능 개선을 경험하고 싶은 분',
+    prerequisites: 'Java·Spring Boot 기초, 관계형 DB와 SQL, Git 브랜치·PR 사용 경험',
+    operationGuide: '매주 온라인 코드 리뷰를 진행합니다. 개인 저장소에 과제를 구현하고 PR로 제출하면 설계·테스트·성능 관점의 피드백을 받습니다.',
+    deliverables: '이커머스 API 서버, ERD와 API 명세서, 동시성 테스트, 부하 테스트 전후 비교 및 기술 회고',
     weeks: ['요구사항 분석 및 ERD 설계', '회원/상품 기능 구현 및 단위 테스트 작성', '대용량 트래픽 처리를 위한 Redis/Kafka 도입', '성능 최적화 및 최종 발표'],
     roles: [{ name: 'Frontend', count: 2 }, { name: 'Backend', count: 2 }],
   }
@@ -258,7 +264,7 @@ export function projectToForm(project: RecruitingProject): ProjectFormState {
     tags: project.tags,
     mentorName: project.mentorName,
     mentorBio: project.mentorBio,
-    intro: project.intro,
+    ...parseMentoringRecruitmentContent(project.intro),
     weeks: project.weeks.length > 0 ? project.weeks : [''],
     roles: project.roles.length > 0 ? project.roles.map((role) => ({ name: role.name, count: role.total })) : [{ name: 'Frontend', count: 2 }, { name: 'Backend', count: 2 }],
   }
@@ -274,6 +280,7 @@ export function getPreviewCapacity(form: ProjectFormState) {
 }
 
 export function buildProjectFromForm(form: ProjectFormState, previousProject?: RecruitingProject): RecruitingProject {
+  const intro = formatMentoringRecruitmentContent(form)
   const weeks = form.weeks.map((week) => week.trim()).filter(Boolean)
   const tags = form.tags.map((tag) => tag.trim()).filter(Boolean)
   const requestTitle = form.title.replace(/ 구축$| 서비스$| 스터디$/g, '').trim() || form.title.trim()
@@ -294,7 +301,7 @@ export function buildProjectFromForm(form: ProjectFormState, previousProject?: R
       tags,
       mentorName: form.mentorName.trim(),
       mentorBio: form.mentorBio.trim(),
-      intro: form.intro.trim(),
+      intro,
       durationWeeks: Math.max(1, Number(form.durationWeeks || 0)),
       weeks,
     }
@@ -317,7 +324,7 @@ export function buildProjectFromForm(form: ProjectFormState, previousProject?: R
     tags,
     mentorName: form.mentorName.trim(),
     mentorBio: form.mentorBio.trim(),
-    intro: form.intro.trim(),
+    intro,
     durationWeeks: Math.max(1, Number(form.durationWeeks || 0)),
     weeks,
   }

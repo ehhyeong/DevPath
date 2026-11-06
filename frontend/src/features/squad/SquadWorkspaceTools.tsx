@@ -188,6 +188,7 @@ export default function SquadWorkspaceTools({ workspaceId }: { workspaceId: numb
   }
 
   async function openChatSurface() {
+    setChatTab('team')
     const documentPictureInPicture = window.documentPictureInPicture
 
     if (!documentPictureInPicture) {

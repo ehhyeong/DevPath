@@ -9,6 +9,8 @@ import { AUTH_SESSION_SYNC_EVENT, clearStoredAuthSession, getPostLoginRedirect, 
 import LoginRequiredView from '../../components/LoginRequiredView'
 import { showAuthToast } from '../../lib/auth-toast'
 import { projectApiRequest } from '../project/api'
+import MentoringRecruitmentDetails from './MentoringRecruitmentDetails'
+import { parseMentoringRecruitmentContent } from './mentoring-recruitment-content'
 
 type CategoryFilter =
   | 'all'
@@ -691,7 +693,7 @@ function MentoringCard({ project, onOpen }: { project: MentoringProject; onOpen:
         <h3 className="font-extrabold text-xl text-gray-900 mb-2 group-hover:text-brand transition line-clamp-1">
           {project.title}
         </h3>
-        <p className="text-sm text-gray-500 mb-5 line-clamp-2 leading-relaxed h-10">{project.desc}</p>
+        <p className="text-sm text-gray-500 mb-5 line-clamp-2 leading-relaxed h-10">{parseMentoringRecruitmentContent(project.desc).intro}</p>
         <div className="flex flex-wrap gap-2 mb-6">
           {project.stacks.map((stack) => (
             <span
@@ -737,11 +739,12 @@ function DetailModal({
   return (
     <div id="detailModal" className="mentoring-hub-modal fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="mentoring-detail-modal relative z-10 flex max-h-[95vh] w-full max-w-[672px] animate-[mentoringModalSlideUp_0.3s_ease-out_forwards] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-label={`${project.title} 모집 상세`} className="mentoring-detail-modal relative z-10 flex max-h-[95vh] w-full max-w-[672px] animate-[mentoringModalSlideUp_0.3s_ease-out_forwards] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         <div className="p-8 bg-gradient-to-br from-gray-800 to-gray-900 relative shrink-0 text-white">
           <button
             type="button"
             onClick={onClose}
+            aria-label="모집 상세 닫기"
             className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white w-8 h-8 rounded-full flex items-center justify-center transition"
           >
             <i className="fas fa-times"></i>
@@ -782,7 +785,7 @@ function DetailModal({
               <h3 className="text-sm font-extrabold text-gray-900 mb-3 flex items-center gap-2 border-b border-gray-100 pb-2">
                 <i className="fas fa-bullseye text-brand"></i> 프로젝트 소개
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{project.desc}</p>
+              <MentoringRecruitmentDetails content={project.desc} />
             </div>
 
             <div>

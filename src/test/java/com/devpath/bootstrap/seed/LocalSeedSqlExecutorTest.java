@@ -66,6 +66,51 @@ class LocalSeedSqlExecutorTest {
   }
 
   @Test
+  void mentoringSeedsProvideRecruitmentDetailsWithoutChangingRecruitmentSettings() {
+    database =
+        new EmbeddedDatabaseBuilder()
+            .generateUniqueName(true)
+            .setType(EmbeddedDatabaseType.H2)
+            .build();
+    LocalSeedSqlExecutor executor = new LocalSeedSqlExecutor(new JdbcTemplate(database));
+    List<String> settings =
+        executor.query(
+            "db/local/mentoring-hub-seeds.sql",
+            (row, rowNumber) -> {
+              String content = row.getString("content");
+              String[] sections = content.split("\\n\\n## ");
+              assertThat(sections).as(row.getString("title")).hasSize(5);
+              assertThat(sections[0]).isNotBlank();
+              List<String> headings = List.of("참여 대상", "준비 지식", "진행 및 피드백 방식", "최종 결과물");
+              for (int i = 0; i < headings.size(); i++) {
+                assertThat(sections[i + 1]).startsWith(headings.get(i) + "\n");
+                assertThat(sections[i + 1].substring(headings.get(i).length()).trim())
+                    .hasSizeGreaterThan(10);
+              }
+              assertThat(row.getString("curriculum").split("\\n")).hasSize(4);
+              return String.join(
+                  "|",
+                  row.getString("title"),
+                  row.getString("category"),
+                  row.getString("mentoring_type"),
+                  row.getString("duration_weeks"),
+                  row.getString("current_participants"),
+                  row.getString("max_participants"),
+                  String.valueOf(row.getBoolean("closed")));
+            });
+
+    assertThat(settings)
+        .containsExactly(
+            "대용량 이커머스 주문 서버 멘토링|Backend|study|4|5|10|false",
+            "Next.js 블로그 플랫폼 팀 프로젝트|Frontend|team|4|3|4|false",
+            "추천 시스템 데이터 파이프라인|AI|study|5|2|6|false",
+            "React Native 출시형 사이드 프로젝트|App|team|5|4|5|false",
+            "AWS와 Kubernetes 무중단 배포 실습|DevOps|team|6|3|6|false",
+            "PM 포트폴리오용 문제 정의 스터디|PM|study|3|6|8|false",
+            "디자인 시스템 접근성 리디자인|Design|team|4|5|5|true");
+  }
+
+  @Test
   void executeLoadsUtf8SqlWithoutChangingItsContent() {
     JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
     LocalSeedSqlExecutor executor = new LocalSeedSqlExecutor(jdbcTemplate);
