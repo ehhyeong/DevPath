@@ -50,25 +50,54 @@ export function readAudioProcessingStatus(stream: MediaStream, noiseGate: boolea
   }
 }
 
-export function createNoiseGatedVoiceStream(rawStream: MediaStream) {
+export function createVolumeControlledStream(rawStream: MediaStream, volume = 100) {
   const AudioContextClass = getAudioContextClass()
-  if (!AudioContextClass) return { stream: rawStream,stop: () => undefined }
+  if (!AudioContextClass) throw new Error('이 브라우저에서는 회의 음량 조절을 지원하지 않습니다.')
+  const audioContext = new AudioContextClass()
+  const source = audioContext.createMediaStreamSource(rawStream)
+  const gain = audioContext.createGain()
+  const destination = audioContext.createMediaStreamDestination()
+  gain.gain.value = volume / 100
+  source.connect(gain)
+  gain.connect(destination)
+  void audioContext.resume().catch(() => undefined)
+  return {
+    stream: destination.stream,
+    setVolume: (next: number) => { gain.gain.setTargetAtTime(next / 100, audioContext.currentTime, 0.015) },
+    resume: () => audioContext.resume(),
+    stop: () => {
+      source.disconnect()
+      gain.disconnect()
+      destination.stream.getTracks().forEach((track) => track.stop())
+      void audioContext.close().catch(() => undefined)
+    },
+  }
+}
+
+export function createNoiseGatedVoiceStream(rawStream: MediaStream, volume = 100, noiseGateEnabled = false) {
+  const AudioContextClass = getAudioContextClass()
+  if (!AudioContextClass) throw new Error('이 브라우저에서는 회의 마이크 음량 조절을 지원하지 않습니다.')
 
   const audioContext = new AudioContextClass()
   const source = audioContext.createMediaStreamSource(rawStream)
   const analyser = audioContext.createAnalyser()
+  const inputGain = audioContext.createGain()
   const gate = audioContext.createGain()
   const destination = audioContext.createMediaStreamDestination()
-  const data = new Uint8Array(analyser.frequencyBinCount)
   let ambientRms = 0.006
   let frameId: number | null = null
+  let gateEnabled = noiseGateEnabled
 
   analyser.fftSize = 512
+  const data = new Uint8Array(analyser.fftSize)
   analyser.smoothingTimeConstant = 0.65
+  inputGain.gain.value = volume / 100
   gate.gain.setValueAtTime(1, audioContext.currentTime)
-  source.connect(analyser)
-  source.connect(gate)
+  source.connect(inputGain)
+  inputGain.connect(analyser)
+  inputGain.connect(gate)
   gate.connect(destination)
+  void audioContext.resume().catch(() => undefined)
 
   function tick() {
     analyser.getByteTimeDomainData(data)
@@ -79,8 +108,9 @@ export function createNoiseGatedVoiceStream(rawStream: MediaStream) {
     }, 0)
     const rms = Math.sqrt(sum / data.length)
     const ambientSample = Math.min(rms, ambientRms + 0.008)
-    ambientRms = ambientRms * 0.985 + ambientSample * 0.015
-    const targetGain = rms > Math.max(0.014, ambientRms * 2.3) ? 1 : 0.08
+    // 발화 중에는 주변 소음 기준을 올리지 않아 긴 발언이 잡음으로 바뀌지 않게 한다.
+    if (rms < Math.max(0.014, ambientRms * 2.3)) ambientRms = ambientRms * 0.985 + ambientSample * 0.015
+    const targetGain = !gateEnabled || rms > Math.max(0.014, ambientRms * 2.3) ? 1 : 0.08
     gate.gain.setTargetAtTime(targetGain, audioContext.currentTime, targetGain === 1 ? 0.015 : 0.08)
     frameId = window.requestAnimationFrame(tick)
   }
@@ -89,9 +119,17 @@ export function createNoiseGatedVoiceStream(rawStream: MediaStream) {
 
   return {
     stream: destination.stream,
+    setVolume: (next: number) => { inputGain.gain.setTargetAtTime(next / 100, audioContext.currentTime, 0.015) },
+    setNoiseGateEnabled: (enabled: boolean) => { gateEnabled = enabled },
+    resume: () => audioContext.resume(),
     stop: () => {
       if (frameId != null) window.cancelAnimationFrame(frameId)
       frameId = null
+      source.disconnect()
+      inputGain.disconnect()
+      analyser.disconnect()
+      gate.disconnect()
+      destination.stream.getTracks().forEach((track) => track.stop())
       void audioContext.close().catch(() => undefined)
     },
   }
@@ -104,13 +142,13 @@ export function createVoiceActivityMonitor(stream: MediaStream, onSpeakingChange
   const audioContext = new AudioContextClass()
   const source = audioContext.createMediaStreamSource(stream)
   const analyser = audioContext.createAnalyser()
-  const data = new Uint8Array(analyser.frequencyBinCount)
   let ambientLevel = 3
   let speechFrames = 0
   let silentFrames = 0
   let frameId: number | null = null
 
   analyser.fftSize = 512
+  const data = new Uint8Array(analyser.fftSize)
   analyser.smoothingTimeConstant = 0.75
   source.connect(analyser)
 

@@ -100,7 +100,11 @@ export default function SquadErdView({ model, aiWorkspace = false, design }: Squ
     if (width <= 0 || height <= 0) return
 
     // Mermaid의 width="100%"는 폭 없는 flex 자식에서 SVG 기본 폭 300px로 축소된다.
-    const updateScale = () => setDiagramViewport({ width, height, scale: getErdViewportScale(width, height, canvas.clientWidth, canvas.clientHeight) })
+    const updateScale = () => {
+      // 메뉴 전환으로 숨겨진 화면은 크기가 0이므로 보일 때의 배율을 유지한다.
+      if (!canvas.clientWidth || !canvas.clientHeight) return
+      setDiagramViewport({ width, height, scale: getErdViewportScale(width, height, canvas.clientWidth, canvas.clientHeight) })
+    }
     updateScale()
     const observer = new ResizeObserver(updateScale)
     observer.observe(canvas)

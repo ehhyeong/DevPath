@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef, type CSSProperties } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
 import AuthModal from '../../../components/AuthModal'
 import MeetingAudioSettings from './MeetingAudioSettings'
 import MeetingParticipantStage from './MeetingParticipantStage'
+import MeetingParticipantAudioMenu, { type ParticipantAudioMenuTarget } from './MeetingParticipantAudioMenu'
 import SquadWorkspaceAside from '../../../components/SquadWorkspaceAside'
 import SquadWorkspaceLoadingView from '../../../components/SquadWorkspaceLoadingView'
 import SquadWorkspaceHeader from '../../../components/SquadWorkspaceHeader'
@@ -16,6 +17,17 @@ import { DEMO_TEXT } from '../../../lib/demo-typing'
 import { useDemoAccount, useDemoTyping } from '../../../lib/useDemoTyping'
 import { useDemoWorkspace } from '../useDemoWorkspace'
 export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorkspacePageProps) {
+  const [participantAudioMenu, setParticipantAudioMenu] = useState<ParticipantAudioMenuTarget | null>(null)
+  const closeParticipantAudioMenu = useCallback(() => setParticipantAudioMenu(null), [])
+  function openParticipantAudio(participant: VoiceParticipant, event: MouseEvent<HTMLElement>) {
+    if (participant.userId === model.session?.userId) {
+      setParticipantAudioMenu(null)
+      model.setAudioSettingsOpen(true)
+      return
+    }
+    const bounds = event.currentTarget.getBoundingClientRect()
+    setParticipantAudioMenu({ participant, x: event.clientX || bounds.left, y: event.clientY || bounds.bottom, trigger: event.currentTarget })
+  }
   const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, minutesInterimTranscript, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
   const demoWorkspace = useDemoWorkspace(workspaceId, Boolean(model.aiWorkspace && isJoined))
   const demoAccount = useDemoAccount('kim.hakseup@devpath.com', demoWorkspace)
@@ -207,15 +219,17 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
     return (
       <div
         key={participant.participantId}
+        onContextMenu={(event) => { event.preventDefault(); openParticipantAudio(participant, event) }}
         className={`squad-meeting-participant-tile relative isolate flex min-h-[var(--participant-card-height)] items-center justify-center overflow-hidden rounded-[12px] border border-[#374151] bg-[#111827] [box-shadow:0_8px_24px_rgba(0,0,0,0.18)] ${threeParticipantPlacement} ${speaking ? 'is-speaking border-[#00c471] [box-shadow:0_0_0_2px_rgba(0,196,113,0.65),0_0_26px_rgba(0,196,113,0.22)] [&_.squad-meeting-participant-avatar]:border-[#00c471]!' : ''} ${cameraView ? 'has-video bg-[#020617] after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:z-[1] after:h-[44%] after:bg-[linear-gradient(to_top,rgba(0,0,0,0.72),transparent)] after:content-[""]' : ''}`}
       >
+        <button type="button" onClick={(event) => openParticipantAudio(participant, event)} aria-label={`${participant.userName} 오디오 설정 열기`} className="absolute top-2 right-2 z-[3] flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 p-0! text-xs! text-gray-300 hover:text-white"><i className="fas fa-ellipsis-h" aria-hidden="true" /></button>
         {speaking ? (
           <div className="squad-meeting-participant-pulse absolute aspect-square w-[calc(var(--participant-avatar-size)+28px)] rounded-[9999px] border-[4px] border-[#00c471] opacity-[0.65] [animation:squadMeetingParticipantPulse_1.8s_ease-out_infinite]" aria-hidden="true"></div>
         ) : null}
         {cameraView ? (
           <MediaStreamVideo
             stream={cameraView.stream}
-            muted={cameraView.local}
+            muted
             className={`squad-meeting-participant-video absolute inset-0 z-0 h-full w-full bg-[#020617] object-cover ${cameraView.local ? 'is-local -scale-x-100' : ''}`}
           />
         ) : (
@@ -237,10 +251,10 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
 
   function renderScreenShareView(screenShare: ScreenShareView) {
     return (
-      <div className="squad-meeting-screen-share-view relative flex h-full w-full min-h-0 select-none items-center justify-center overflow-hidden rounded-[12px] bg-[#020617]">
+      <div onContextMenu={(event) => { const participant = roomParticipants.find((item) => item.userId === screenShare.userId); if (participant) { event.preventDefault(); openParticipantAudio(participant, event) } }} className="squad-meeting-screen-share-view relative flex h-full w-full min-h-0 select-none items-center justify-center overflow-hidden rounded-[12px] bg-[#020617]">
         <MediaStreamVideo
           stream={screenShare.stream}
-          muted={screenShare.local}
+          muted
           className="squad-meeting-screen-share-video h-full w-full bg-[#020617] object-contain"
         />
         <button
@@ -330,7 +344,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
         >
           <MediaStreamVideo
             stream={screenShare.stream}
-            muted={screenShare.local}
+            muted
             className="squad-meeting-screen-share-player-video h-full max-h-full w-full max-w-full origin-center bg-[#020617] object-contain transition-[transform] duration-[90ms] ease-out will-change-transform"
             style={videoStyle}
           />
@@ -610,7 +624,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
         <main className="flex-1 flex overflow-hidden relative">
           <section className={`squad-meeting-room-stage-shell group/room-stage relative flex min-w-0 flex-1 flex-col overflow-hidden p-4 ${model.aiWorkspace ? '' : 'pb-[112px]!'}`}>
             <div className={`squad-meeting-participant-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 box-border shadow-inner ${model.aiWorkspace ? '' : 'p-4'}`}>
-              {model.aiWorkspace ? <MeetingParticipantStage participants={gridParticipants} members={members} currentUserId={session?.userId} getCamera={getParticipantCameraView} screenShares={activeScreenShares} onFullscreenShare={openScreenSharePlayer} /> : activeScreenShares.length > 0 ? (
+              {model.aiWorkspace ? <MeetingParticipantStage participants={gridParticipants} members={members} currentUserId={session?.userId} getCamera={getParticipantCameraView} screenShares={activeScreenShares} onFullscreenShare={openScreenSharePlayer} onAudioSettings={openParticipantAudio} participantAudio={model.audioControls?.participants} /> : activeScreenShares.length > 0 ? (
                 <div className={`grid h-full min-h-0 w-full gap-3 ${screenShareGridClass}`}>
                   {activeScreenShares.map((screenShare) => (
                     <div key={screenShare.userId} className="min-h-0 min-w-0 overflow-hidden rounded-[12px]">
@@ -1074,6 +1088,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
       )}
 
       <MeetingAudioSettings model={model} />
+      {participantAudioMenu && isJoined && roomParticipants.some((participant) => participant.userId === participantAudioMenu.participant.userId) ? <MeetingParticipantAudioMenu target={participantAudioMenu} controls={model.audioControls} onClose={closeParticipantAudioMenu} /> : null}
 
       {renderAuthModal()}
     </div>
