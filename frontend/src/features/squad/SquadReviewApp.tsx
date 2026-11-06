@@ -128,7 +128,6 @@ export default function SquadReviewApp({ aiWorkspace = false, design }: AiWorksp
         activePage="review"
         workspaceId={workspaceId}
         projectName={projectName}
-        reviewBadgeCount={openReviews.length}
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
