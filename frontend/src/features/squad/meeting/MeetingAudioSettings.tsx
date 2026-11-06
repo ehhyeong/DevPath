@@ -1,5 +1,6 @@
 import type { SquadMeetingViewModel } from './useSquadMeetingController'
 import { showAuthToast } from '../../../lib/auth-toast'
+import MeetingVolumeSlider from './MeetingVolumeSlider'
 
 type Props = { model: SquadMeetingViewModel & { aiWorkspace?: boolean } }
 
@@ -18,7 +19,7 @@ export default function MeetingAudioSettings({ model }: Props) {
     <>
       {audioSettingsOpen ? (
         <div className="squad-meeting-audio-modal fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-opacity">
-          <div className="squad-meeting-audio-panel w-[min(448px,calc(100vw-32px))]! max-w-[448px]! animate-[modalScaleIn_0.2s_ease-out_forwards] overflow-hidden rounded-[16px]! bg-white shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-label="오디오 설정" className="squad-meeting-audio-panel flex max-h-[90dvh] w-[min(448px,calc(100vw-32px))]! max-w-[448px]! animate-[modalScaleIn_0.2s_ease-out_forwards] flex-col overflow-hidden rounded-[16px]! bg-white shadow-2xl">
             <div className={`squad-meeting-audio-header flex items-center justify-between border-b border-gray-100 bg-gray-50 ${model.aiWorkspace ? 'p-6' : 'h-[69px]! p-[20px]!'}`}>
               <h3 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
                 <i className="fas fa-sliders-h text-brand"></i> 오디오 설정
@@ -32,7 +33,7 @@ export default function MeetingAudioSettings({ model }: Props) {
                 <i className="fas fa-times text-xl"></i>
               </button>
             </div>
-            <div className="squad-meeting-audio-body p-[24px]! [&>*+*]:mt-[24px]!">
+            <div className="squad-meeting-audio-body min-h-0 overflow-y-auto p-[24px]! [&>*+*]:mt-[24px]!">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-2">마이크 (입력)</label>
                 <select
@@ -44,6 +45,7 @@ export default function MeetingAudioSettings({ model }: Props) {
                     <option key={option.deviceId} value={option.deviceId}>{option.label}</option>
                   ))}
                 </select>
+                <div className="mb-4"><MeetingVolumeSlider label="마이크 입력 음량" value={model.audioControls.microphoneVolume} onChange={model.audioControls.setMicrophoneVolume} /></div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -66,6 +68,8 @@ export default function MeetingAudioSettings({ model }: Props) {
                   <AudioProcessingBadge label="자동 게인" enabled={audioProcessingStatus.autoGainControl} />
                   <AudioProcessingBadge label="노이즈 게이트" enabled={audioProcessingStatus.noiseGate} />
                 </div>
+                <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs font-bold text-gray-600"><input type="checkbox" checked={model.audioControls.noiseGateEnabled} onChange={(event) => model.audioControls.setNoiseGateEnabled(event.target.checked)} className="accent-[#00c471]" />노이즈 게이트 사용</label>
+                <p className="mt-2 text-[11px] text-gray-400">작은 목소리가 끊기거나 줄어들면 노이즈 게이트를 꺼 주세요.</p>
                 <p className="mt-2 text-[11px] font-bold text-gray-400">
                   브라우저가 지원하는 항목만 실제로 켜집니다.
                 </p>
@@ -81,6 +85,7 @@ export default function MeetingAudioSettings({ model }: Props) {
                     <option key={option.deviceId} value={option.deviceId}>{option.label}</option>
                   ))}
                 </select>
+                <div className="mb-4"><MeetingVolumeSlider label="전체 듣기 음량" value={model.audioControls.outputVolume} onChange={model.audioControls.setOutputVolume} /></div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -96,7 +101,7 @@ export default function MeetingAudioSettings({ model }: Props) {
                 </div>
               </div>
               {audioDeviceError ? (
-                <p className="sr-only" role="status">{audioDeviceError}</p>
+                <p className="text-xs text-red-600" role="status">{audioDeviceError}</p>
               ) : null}
               <button
                 type="button"
@@ -105,6 +110,7 @@ export default function MeetingAudioSettings({ model }: Props) {
               >
                 <i className="fas fa-sync-alt"></i> 장치 다시 검색
               </button>
+              <div className="flex items-center justify-between gap-3 text-[11px] text-gray-500"><span>음량은 즉시 반영됩니다.</span><button type="button" onClick={() => { model.audioControls.setMicrophoneVolume(100); model.audioControls.setOutputVolume(100); model.audioControls.setNoiseGateEnabled(false) }} className="shrink-0 text-xs! font-bold text-gray-600 hover:text-brand">내 음량 초기화</button></div>
             </div>
             <div className="squad-meeting-audio-footer flex h-[73px]! justify-end gap-2 border-t border-gray-100 bg-gray-50 p-[20px]!">
               <button
@@ -112,7 +118,7 @@ export default function MeetingAudioSettings({ model }: Props) {
                 onClick={() => setAudioSettingsOpen(false)}
                 className="squad-meeting-audio-cancel h-[36px]! rounded-[12px]! border border-gray-200 bg-white px-5 pt-0! pb-0! text-[14px]! leading-[20px]! font-bold text-gray-600 shadow-sm transition hover:bg-gray-50"
               >
-                취소
+                닫기
               </button>
               <button
                 type="button"

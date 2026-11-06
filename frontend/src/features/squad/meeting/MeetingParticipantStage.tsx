@@ -3,6 +3,7 @@ import UserAvatar from '../../../components/UserAvatar'
 import { showAuthToast } from '../../../lib/auth-toast'
 import { MediaStreamVideo } from './meeting-media-stream-video'
 import type { CameraView, ScreenShareView, VoiceParticipant, WorkspaceMember } from './meeting-types'
+import type { ParticipantAudioSettings } from './useMeetingAudioControls'
 
 type Props = {
   participants: VoiceParticipant[]
@@ -11,9 +12,11 @@ type Props = {
   getCamera: (participant: VoiceParticipant) => CameraView | null
   screenShares: ScreenShareView[]
   onFullscreenShare: (userId: number) => void
+  onAudioSettings?: (participant: VoiceParticipant, event: React.MouseEvent<HTMLElement>) => void
+  participantAudio?: Record<number, ParticipantAudioSettings>
 }
 
-export default function MeetingParticipantStage({ participants, members, currentUserId, getCamera, screenShares, onFullscreenShare }: Props) {
+export default function MeetingParticipantStage({ participants, members, currentUserId, getCamera, screenShares, onFullscreenShare, onAudioSettings, participantAudio }: Props) {
   // 확대 선택은 서버나 시그널링에 보내지 않아 각 참가자의 화면에만 적용된다.
   const [focusedKey, setFocusedKey] = useState<string | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -40,10 +43,11 @@ export default function MeetingParticipantStage({ participants, members, current
     const name = `${participant.userName}${participant.userId === currentUserId ? ' (나)' : ''}${share ? ' 화면 공유' : ''}`
     const speaking = participant.speaking && !participant.muted
     return (
-      <div key={card.key} className={`meeting-participant-card relative isolate overflow-hidden rounded-xl border-2 bg-gray-800 ${expanded ? 'h-full w-full' : 'h-44 w-72 max-w-full shrink-0'} ${speaking ? 'border-brand shadow-[0_0_0_2px_rgba(0,196,113,0.75),0_0_20px_rgba(0,196,113,0.3)]' : 'border-gray-700 shadow-md'}`} data-participant-id={participant.participantId} data-media-kind={share ? 'screen' : 'camera'}>
+      <div key={card.key} onContextMenu={onAudioSettings ? (event) => { event.preventDefault(); onAudioSettings(participant, event) } : undefined} className={`meeting-participant-card relative isolate overflow-hidden rounded-xl border-2 bg-gray-800 ${expanded ? 'h-full w-full' : 'h-44 w-72 max-w-full shrink-0'} ${speaking ? 'border-brand shadow-[0_0_0_2px_rgba(0,196,113,0.75),0_0_20px_rgba(0,196,113,0.3)]' : 'border-gray-700 shadow-md'}`} data-participant-id={participant.participantId} data-media-kind={share ? 'screen' : 'camera'}>
         <button type="button" onClick={() => setFocusedKey(card.key)} className="absolute inset-0 flex h-full w-full items-center justify-center bg-transparent p-0! outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand" aria-label={`${name} 크게 보기`}>
-          {media ? <MediaStreamVideo stream={media.stream} muted={media.local} className={`h-full w-full ${share || expanded ? 'object-contain' : 'object-cover'} ${media.local && !share ? '-scale-x-100' : ''}`} /> : <UserAvatar name={participant.userName} imageUrl={member?.profileImage} className="h-20 w-20 border-2 border-gray-600 bg-gray-700!" iconClassName="text-3xl text-gray-300" />}
+          {media ? <MediaStreamVideo stream={media.stream} muted className={`h-full w-full ${share || expanded ? 'object-contain' : 'object-cover'} ${media.local && !share ? '-scale-x-100' : ''}`} /> : <UserAvatar name={participant.userName} imageUrl={member?.profileImage} className="h-20 w-20 border-2 border-gray-600 bg-gray-700!" iconClassName="text-3xl text-gray-300" />}
         </button>
+        {onAudioSettings ? <button type="button" onClick={(event) => onAudioSettings(participant, event)} aria-label={`${participant.userName} 오디오 설정 열기`} className="absolute top-2 left-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 p-0! text-xs! text-gray-300 hover:bg-gray-600 hover:text-white"><i className="fas fa-ellipsis-h" aria-hidden="true" /></button> : null}
         {media ? <button type="button" onClick={async () => {
           if (share) onFullscreenShare(participant.userId)
           else {
@@ -58,7 +62,7 @@ export default function MeetingParticipantStage({ participants, members, current
           }
         }} aria-label={`${name} 전체화면으로 보기`} className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-gray-600 bg-black/70 p-0! text-xs! text-white transition hover:bg-gray-700"><i className="fas fa-expand" aria-hidden="true" /></button> : null}
         <div className="pointer-events-none absolute bottom-2 left-2 z-10 flex max-w-[calc(100%-16px)] items-center gap-2 rounded border border-gray-600 bg-black/70 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-sm">
-          <i className={`fas ${share ? 'fa-desktop text-brand' : participant.muted ? 'fa-microphone-slash text-red-500' : 'fa-microphone text-brand'} text-[10px]`} aria-hidden="true" /><span className="truncate">{name}</span>
+          <i className={`fas ${share ? 'fa-desktop text-brand' : participant.muted ? 'fa-microphone-slash text-red-500' : 'fa-microphone text-brand'} text-[10px]`} aria-hidden="true" /><span className="truncate">{name}</span>{participantAudio?.[participant.userId]?.muted ? <i className="fas fa-volume-mute text-red-400" aria-label="내게 음소거됨" /> : null}
         </div>
       </div>
     )
