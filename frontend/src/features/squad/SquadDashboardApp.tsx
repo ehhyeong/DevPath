@@ -322,8 +322,8 @@ export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWor
         activePage="dashboard"
         workspaceId={workspaceId}
         projectName={sideProjectName}
-        pinned={sidebarPinned}
-        onTogglePinned={toggleSidebarPin}
+        pinned={aiWorkspace ? undefined : sidebarPinned}
+        onTogglePinned={aiWorkspace ? undefined : toggleSidebarPin}
         reviewBadgeCount={aiWorkspace ? 0 : hasAnyDashboardData ? 1 : 0}
       />
 
