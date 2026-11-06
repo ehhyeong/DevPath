@@ -6,7 +6,7 @@ import { type AuthView } from '../../components/AuthModal'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import { projectApiRequest } from '../project/api'
-import { useWorkspaceDataVersion } from '../../lib/workspace-events'
+import { useWorkspaceDataVersion, WORKSPACE_DATA_CHANGED_EVENT } from '../../lib/workspace-events'
 import { createSquadNotification, squadActorName } from './notifications'
 import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
 
@@ -309,6 +309,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
       'required',
     )
     setBoard(boardData)
+    window.dispatchEvent(new Event(WORKSPACE_DATA_CHANGED_EVENT))
 
     const nextId =
       preferredReviewId ??

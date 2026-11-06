@@ -198,27 +198,28 @@ export default function SquadErdView({ model, aiWorkspace = false, design }: Squ
 
               <div className="erd-schema-list-container flex-1 space-y-4 overflow-y-auto bg-white p-[16px]!">
                 <div className="erd-schema-list-heading mb-[8px]! flex min-h-[16px] items-center gap-[8px]!">
-                  <span className="erd-schema-list-title text-[10px]! leading-[16px]! font-[700]! text-gray-400 uppercase">Schema List</span>
+                  <span className="erd-schema-list-title text-[12px]! leading-[18px]! font-[700]! text-gray-500">테이블 목록</span>
                   <div className="h-px bg-gray-100 flex-1"></div>
                 </div>
 
                 {validationIssues.length > 0 ? (
-                  <div className="erd-validation-box mb-[12px]! rounded-xl border border-amber-200 bg-amber-50 p-3">
-                    <div className="flex items-center gap-2 text-[10px] font-extrabold text-amber-700 mb-2">
-                      <i className="fas fa-triangle-exclamation"></i>
-                      설계 검증 {validationIssues.length}개
-                    </div>
-                    <ul className="space-y-1">
-                      {validationIssues.slice(0, 5).map((issue) => (
-                        <li key={issue} className="text-[10px] leading-4 text-amber-800">
-                          {issue}
+                  <details open className="erd-validation-box mb-[12px]! rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <summary className="cursor-pointer text-[12px] leading-5 font-extrabold text-amber-800">
+                      설계 확인이 필요한 항목 <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5">{validationIssues.length}개</span>
+                    </summary>
+                    <p className="mt-2 text-[12px] leading-5 text-amber-800">아래 테이블과 관계 설정을 확인해 주세요.</p>
+                    <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1" aria-label="설계 검증 항목">
+                      {validationIssues.map((issue, index) => (
+                        <li key={`${issue.target}-${issue.message}-${index}`} className="rounded-lg border border-amber-100 bg-white/80 p-2.5 text-[12px] leading-5 text-amber-900">
+                          <p className="break-all font-mono font-bold">{issue.target}</p>
+                          <p className="mt-1 break-words">{issue.message}</p>
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </details>
                 ) : (
-                  <div className="erd-validation-box mb-[12px]! rounded-xl border border-green-100 bg-green-50 p-3 text-[10px] font-bold text-green-700">
-                    <i className="fas fa-circle-check mr-1"></i> 기본 관계 검증 통과
+                  <div className="erd-validation-box mb-[12px]! rounded-xl border border-green-100 bg-green-50 p-3 text-[12px] leading-5 font-bold text-green-700">
+                    <i className="fas fa-circle-check mr-1"></i> 기본 키·관계 연결 확인 완료
                   </div>
                 )}
 
@@ -346,7 +347,7 @@ export default function SquadErdView({ model, aiWorkspace = false, design }: Squ
 
                   {schema.relationships.length > 0 ? (
                     <div className="erd-relationship-list mt-[16px]! rounded-xl border border-blue-100 bg-blue-50/60 p-3">
-                      <p className="text-[10px] font-extrabold text-blue-700 uppercase mb-2">Relationships</p>
+                      <p className="text-[12px] leading-5 font-extrabold text-blue-700 mb-2">테이블 관계</p>
                       <div className="space-y-2">
                         {schema.relationships.map((relationship) => (
                           <div key={relationship.id} className="erd-relationship-item rounded-lg bg-white border border-blue-100 p-2 text-[10px]!">

@@ -134,8 +134,13 @@ class WorkspaceMembershipService {
       return false;
     }
 
+    // AI 생성 스쿼드는 별도 Project/LEADER가 없으므로 실제 삭제 API와 같이 소유자를 먼저 확인한다.
+    if (workspace.getOwnerId() != null && workspace.getOwnerId().equals(userId)) {
+      return true;
+    }
+
     if (workspace.getType() != WorkspaceType.SQUAD) {
-      return workspace.getOwnerId() != null && workspace.getOwnerId().equals(userId);
+      return false;
     }
 
     return findMatchingSquadProjects(workspace).stream()
