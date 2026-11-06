@@ -4,6 +4,8 @@ import { navigateTo } from '../../lib/spa-navigation'
 import { projectApiRequest } from '../../features/project/api'
 import { instructorMentoringApi } from '../../lib/api/instructor'
 import type { InstructorMentoringBoard } from '../../types/instructor'
+import MentoringRecruitmentDetails from '../../features/mentoring/MentoringRecruitmentDetails'
+import { MENTORING_RECRUITMENT_SECTIONS, formatMentoringRecruitmentContent, parseMentoringRecruitmentContent } from '../../features/mentoring/mentoring-recruitment-content'
 import { applyApprovedRequest,avatarUrl,buildProjectFromForm,calculateOngoingProgress,createDefaultForm,createSampleForm,getLiveApplicationId,getLivePostId,getPreviewCapacity,INSTRUCTOR_MENTORING_UI_LOCK_CLASSES,modeMeta,projectToForm,shortRoleLabel,toMentoringPostPayload,withPostId,type MentoringMode,type MentoringPostDetail,type MentoringTab,type OngoingProject,type PendingRequest,type ProjectFormState,type ProjectRoleInput,type RecruitingProject,type WorkspaceDashboardSummary,type WorkspaceMilestoneSummary,type WorkspaceSettingsForm,type WorkspaceSettingsSummary,type WorkspaceTaskSummary } from './instructor-mentoring-model'
 
 
@@ -585,7 +587,7 @@ export default function InstructorMentoringPage() {
                     <span className="rounded border border-gray-200 bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-600">{project.category}</span>
                   </div>
                   <div className="relative">
-                    <button type="button" onClick={(event) => { event.stopPropagation(); setOpenMenuId((current) => (current === `recruit-${project.id}` ? null : `recruit-${project.id}`)) }} className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
+                    <button type="button" aria-label={`${project.title} 공고 관리`} onClick={(event) => { event.stopPropagation(); setOpenMenuId((current) => (current === `recruit-${project.id}` ? null : `recruit-${project.id}`)) }} className="rounded-full p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600">
                       <i className="fas fa-ellipsis-h" />
                     </button>
                     {openMenuId === `recruit-${project.id}` ? (
@@ -597,7 +599,7 @@ export default function InstructorMentoringPage() {
                   </div>
                 </div>
                 <div className="mb-3"><h3 className="line-clamp-2 text-lg leading-tight font-extrabold text-gray-900 transition group-hover:text-brand">{project.title}</h3></div>
-                <p className="mb-6 line-clamp-2 flex-1 text-xs leading-relaxed text-gray-500">{project.description}</p>
+                <p className="mb-6 line-clamp-2 flex-1 text-xs leading-relaxed text-gray-500">{parseMentoringRecruitmentContent(project.description).intro}</p>
                 {project.mode === 'study' ? (
                   <div className="mb-6 flex items-center justify-between rounded-lg bg-gray-50 p-3">
                     <span className="text-[11px] font-bold text-gray-500">현재 모집 현황</span>
@@ -906,10 +908,10 @@ export default function InstructorMentoringPage() {
 
       {projectFormOpen ? (
         <div className="instructor-mentoring-form-backdrop fixed inset-0 z-[2400] flex items-center justify-center bg-[rgba(17,24,39,0.50)] p-4 backdrop-blur-[2px]">
-          <div className="instructor-mentoring-form-modal flex max-h-[90vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-[18px] border border-gray-200 bg-white shadow-[0_30px_90px_rgba(17,24,39,0.28)]" onClick={(event) => event.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label="멘토링 모집 공고 작성" className="instructor-mentoring-form-modal flex max-h-[90vh] w-full max-w-[1100px] flex-col overflow-hidden rounded-[18px] border border-gray-200 bg-white shadow-[0_30px_90px_rgba(17,24,39,0.28)]" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-4 py-[14px]">
               <div className="flex items-center gap-2 text-sm font-black text-gray-900"><i className="fas fa-pen-nib text-brand" />멘토링 모집 공고 작성 (학습자 화면 미리보기)</div>
-              <button type="button" onClick={closeProjectForm} className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition hover:-translate-y-px hover:bg-gray-50"><i className="fas fa-times" /></button>
+              <button type="button" aria-label="모집 공고 작성 닫기" onClick={closeProjectForm} className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition hover:-translate-y-px hover:bg-gray-50"><i className="fas fa-times" /></button>
             </div>
             <div className="custom-scrollbar overflow-auto bg-white p-4">
               <div className="instructor-mentoring-form-grid grid grid-cols-1 gap-[14px] lg:grid-cols-2">
@@ -940,11 +942,20 @@ export default function InstructorMentoringPage() {
                     <div><span className="mb-2 block text-xs font-black text-gray-700">기술 스택 (태그)</span><div className="flex items-center gap-2"><input type="text" value={tagInput} onChange={(event) => setTagInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addTag() } }} placeholder="예) Spring Boot" className="flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,196,113,0.18)]" /><button type="button" onClick={addTag} className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-black text-gray-900 transition hover:-translate-y-px hover:bg-gray-50">추가</button></div><div className="mt-2 flex flex-wrap gap-2">{form.tags.map((tag) => <span key={tag} className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-black text-gray-700">{tag}<button type="button" onClick={() => removeTag(tag)} className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-red-500 hover:text-red-500"><i className="fas fa-times text-[10px]" /></button></span>)}</div></div>
                     <label className="block"><span className="mb-2 block text-xs font-black text-gray-700">멘토 이름 *</span><input type="text" maxLength={20} value={form.mentorName} onChange={(event) => updateForm('mentorName', event.target.value)} placeholder="예) 코드마스터 J" className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,196,113,0.18)]" /></label>
                     <label className="block"><span className="mb-2 block text-xs font-black text-gray-700">멘토 소개(한 줄) *</span><input type="text" maxLength={40} value={form.mentorBio} onChange={(event) => updateForm('mentorBio', event.target.value)} placeholder="예) 네카라쿠배 백엔드 리드 개발자" className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,196,113,0.18)]" /></label>
-                    <label className="block"><span className="mb-2 block text-xs font-black text-gray-700">상세 소개 *</span><textarea maxLength={600} value={form.intro} onChange={(event) => updateForm('intro', event.target.value)} placeholder="학습자에게 보이는 소개 문구를 작성하세요." className="min-h-[92px] w-full resize-y rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,196,113,0.18)]" /></label>
+                    <label className="block"><span className="mb-2 block text-xs font-black text-gray-700">상세 소개 *</span><textarea aria-label="상세 소개" maxLength={600} value={form.intro} onChange={(event) => updateForm('intro', event.target.value)} placeholder="함께 해결할 문제와 프로젝트의 핵심 목표를 소개해 주세요." className="min-h-[92px] w-full resize-y rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,196,113,0.18)]" /></label>
+                    <fieldset className="space-y-4 rounded-xl border border-green-100 bg-green-50/40 p-3">
+                      <legend className="px-1 text-xs font-extrabold text-gray-900">지원 전 알아야 할 내용 <span className="ml-1 font-medium text-gray-400">선택</span></legend>
+                      <p className="text-xs leading-5 text-gray-500">참여 조건과 운영 방식을 구체적으로 적으면 학습자가 자신에게 맞는 모집인지 판단하기 쉬워집니다.</p>
+                      {MENTORING_RECRUITMENT_SECTIONS.map((section) => <label key={section.key} className="block">
+                        <span className="mb-1 block text-xs font-extrabold text-gray-700">{section.label}</span>
+                        <span className="mb-2 block text-[11px] leading-5 text-gray-500">{section.hint}</span>
+                        <textarea aria-label={section.label} maxLength={600} rows={3} value={form[section.key]} onChange={(event) => updateForm(section.key, event.target.value)} placeholder={section.placeholder} className="w-full resize-y rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,196,113,0.18)]" />
+                      </label>)}
+                    </fieldset>
                     <div><span className="mb-2 block text-xs font-black text-gray-700">주차별 커리큘럼 *</span><div className="grid grid-cols-1 gap-2">{form.weeks.map((week, index) => <input key={`week-${index}`} type="text" value={week} onChange={(event) => updateWeek(index, event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand focus:shadow-[0_0_0_3px_rgba(0,196,113,0.18)]" />)}</div><button type="button" onClick={addWeek} className="mt-2 w-fit rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600 transition hover:bg-gray-200">+ 주차 추가</button></div>
                   </div>
                 </div>
-                <div className="rounded-2xl border-none bg-gray-50">
+                <div className="self-start rounded-2xl border-none bg-gray-50 lg:sticky lg:top-0 lg:max-h-[calc(90dvh-160px)] lg:overflow-y-auto">
                   <div className="flex items-center justify-between px-3 pt-3 pb-0"><div className="instructor-mentoring-fixed-text flex items-center gap-2 text-[13px] font-black text-gray-500"><i className="fas fa-eye text-gray-400" />학습자 화면 미리보기</div><button type="button" onClick={loadSample} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-black text-gray-900 transition hover:-translate-y-px hover:bg-gray-50">샘플 데이터 채우기</button></div>
                   <div className="p-3">
                     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
@@ -965,7 +976,7 @@ export default function InstructorMentoringPage() {
                           </div>
                         </div>
                         <div className="instructor-mentoring-fixed-text mb-2 flex items-center gap-2 text-[13px] font-black text-gray-900"><i className="fas fa-bullseye text-brand" />프로젝트 상세 소개</div>
-                        <div className="max-h-32 overflow-y-auto text-sm leading-6 text-gray-700">{form.intro || '프로젝트 소개가 여기에 표시됩니다.'}</div>
+                        <MentoringRecruitmentDetails content={formatMentoringRecruitmentContent(form)} emptyMessage="프로젝트 소개와 지원 전 안내가 여기에 표시됩니다." />
                         <div className="instructor-mentoring-fixed-text mt-4 mb-2 flex items-center gap-2 text-[13px] font-black text-gray-900"><i className="fas fa-list-ol text-brand" />주차별 커리큘럼</div>
                         <div className="space-y-2.5">{form.weeks.map((week, index) => <div key={`preview-week-${index}`} className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-[10px]"><div className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-black text-white">{index + 1}</div><div className="instructor-mentoring-fixed-text mt-0.5 text-[13px] leading-[1.35] font-extrabold text-gray-900">{week || `${index + 1}주차 커리큘럼`}</div></div>)}</div>
                         <div className="mt-4 grid grid-cols-2 gap-3">
