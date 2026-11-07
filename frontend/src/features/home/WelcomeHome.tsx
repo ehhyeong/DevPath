@@ -14,7 +14,7 @@ type PromotionSlide = {
   href: string
 }
 
-// 버튼 좌표는 첨부 원본(2089×753)의 픽셀 기준이며 이미지와 같은 비율로 확대·축소한다.
+// 버튼은 원본(2089×753)의 좌표로 이미지와 함께 확대·축소하며 배너 바깥 장식만 잘라낸다.
 const promotionSlides: PromotionSlide[] = [
   {
     image: '/images/home/ai-builder.png',
@@ -98,16 +98,19 @@ export default function WelcomeHome({ displayName }: WelcomeHomeProps) {
             </div>
           </div>
 
-          <div className="relative aspect-[2089/753] w-full overflow-hidden rounded-2xl bg-[#002d2a] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.15)] sm:rounded-3xl" data-testid="welcome-promotion">
+          <div className="relative h-[260px] w-full overflow-hidden rounded-2xl bg-[#002d2a] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.15)] sm:rounded-3xl" data-testid="welcome-promotion">
             <div className="flex h-full transition-transform duration-600 ease-[cubic-bezier(0.25,1,0.2,1)]" style={{ transform: `translateX(-${slideIndex * 100}%)` }} data-testid="welcome-carousel-track">
               {promotionSlides.map((slide, index) => (
-                <div key={slide.href} className="relative h-full min-w-full shrink-0 overflow-hidden" aria-hidden={slideIndex !== index} inert={slideIndex !== index}>
+                <div key={slide.href} className="relative h-full w-full shrink-0 overflow-hidden" aria-hidden={slideIndex !== index} inert={slideIndex !== index}>
+                  {/* 아래쪽 CTA를 위로 옮기되 하단 공백이 생기지 않도록 이미지는 최소 276px 높이로 표시한다. */}
+                  <div className="absolute top-[47%] left-0 aspect-[2089/753] w-full min-w-[calc(276px*2089/753)] -translate-y-1/2">
                   <img src={slide.image} alt={slide.alt} width={2089} height={753} className="block h-full w-full" loading={index === 0 ? 'eager' : 'lazy'} fetchPriority={index === 0 ? 'high' : 'auto'} decoding="async" />
                   <button
                     className="absolute min-h-11 -translate-y-1/2 cursor-pointer rounded-full bg-transparent transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                     style={{ left: `${slide.buttonBounds.left / 2089 * 100}%`, top: `${(slide.buttonBounds.top + slide.buttonBounds.height / 2) / 753 * 100}%`, width: `${slide.buttonBounds.width / 2089 * 100}%`, height: `${slide.buttonBounds.height / 753 * 100}%` }}
                     onClick={() => navigateTo(slide.href)} type="button"
                   ><span className="sr-only">{slide.buttonLabel}</span></button>
+                  </div>
                 </div>
               ))}
             </div>
