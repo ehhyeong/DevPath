@@ -1,12 +1,14 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { homeApi } from '../../lib/api/home'
+import { navigateTo } from '../../lib/spa-navigation'
 import type { AuthenticatedHomeDashboard } from '../../types/home'
 import WelcomeHome from './WelcomeHome'
 
 vi.mock('../../lib/api/home', () => ({
   homeApi: { getDashboard: vi.fn() },
 }))
+vi.mock('../../lib/spa-navigation', () => ({ navigateTo: vi.fn() }))
 
 const emptyDashboard: AuthenticatedHomeDashboard = {
   currentLearning: null,
@@ -44,7 +46,7 @@ describe('로그인 후 홈 배너', () => {
     act(() => vi.advanceTimersByTime(1000))
     expect(screen.getByRole('button', { name: '5번 배너 보기' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'AI 아키텍처 생성하기', hidden: true }).closest('[aria-hidden]')).toHaveAttribute('inert')
-    expect(screen.getByRole('button', { name: '스쿼드 라운지 입장', hidden: true })).toHaveClass('text-[#1e3a8a]')
+    expect(screen.getByRole('button', { name: '스쿼드 라운지 입장', hidden: true }).closest('[aria-hidden]')).toHaveAttribute('inert')
     expect(screen.queryByRole('button', { name: '특가 수강권 확인하기', hidden: true })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /테스터님, 오늘도\s*성장을 이어가세요!/ })).toBeInTheDocument()
 
@@ -52,6 +54,26 @@ describe('로그인 후 홈 배너', () => {
     expect(screen.getByRole('button', { name: '1번 배너 보기' })).toHaveAttribute('aria-pressed', 'true')
     unmount()
     expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it.each([
+    [1, 'AI 아키텍처 생성하기', '/project-create', 'ai-builder.png'],
+    [2, '스쿼드 라운지 입장', '/community-lounge', 'team-squad.png'],
+    [3, '내 맞춤 로드맵 찾기', '/roadmap-hub', 'curated-roadmap.png'],
+    [4, '내 시장 가치 확인하기', '/job-matching', 'job-analysis.png'],
+    [5, '런칭된 프로젝트 구경하기', '/dev-showcase', 'showcase.png'],
+  ])('%i번 이미지의 실제 버튼으로 기존 페이지에 이동한다', async (number, label, href, filename) => {
+    render(<WelcomeHome displayName="테스터" />)
+    await screen.findByRole('heading', { name: /테스터님, 오늘도/ })
+    fireEvent.click(screen.getByRole('button', { name: `${number}번 배너 보기` }))
+    const button = screen.getByRole('button', { name: label })
+    const image = button.parentElement?.querySelector('img')
+    expect(image).toHaveAttribute('src', `/images/home/${filename}`)
+    expect(image).toHaveAttribute('width', '2089')
+    expect(image).toHaveAttribute('height', '753')
+    expect(image).toHaveAttribute('alt', expect.stringMatching(/[가-힣]/))
+    fireEvent.click(button)
+    expect(navigateTo).toHaveBeenLastCalledWith(href)
   })
 
   it('로그인 사용자의 실제 홈 API 응답을 화면에 표시하고 인기 강의를 좌우로 이동한다', async () => {
