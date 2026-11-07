@@ -57,21 +57,23 @@ describe('로그인 후 홈 배너', () => {
   })
 
   it.each([
-    [1, 'AI 아키텍처 생성하기', '/project-create', 'ai-builder.png'],
-    [2, '스쿼드 라운지 입장', '/community-lounge', 'team-squad.png'],
-    [3, '내 맞춤 로드맵 찾기', '/roadmap-hub', 'curated-roadmap.png'],
-    [4, '내 시장 가치 확인하기', '/job-matching', 'job-analysis.png'],
-    [5, '런칭된 프로젝트 구경하기', '/dev-showcase', 'showcase.png'],
-  ])('%i번 이미지의 실제 버튼으로 기존 페이지에 이동한다', async (number, label, href, filename) => {
+    [1, 'AI 아키텍처 생성하기', '/project-create', 'ai-builder-artwork.png', '토이 프로젝트는 그만'],
+    [2, '스쿼드 라운지 입장', '/community-lounge', 'team-squad-artwork.png', '최고의 팀원'],
+    [3, '내 맞춤 로드맵 찾기', '/roadmap-hub', 'curated-roadmap-artwork.png', '막막하신가요'],
+    [4, '내 시장 가치 확인하기', '/job-matching', 'job-analysis-artwork.png', '기업 리스트'],
+    [5, '런칭된 프로젝트 구경하기', '/dev-showcase', 'showcase-artwork.png', '완벽한 이력서'],
+  ])('%i번 배너의 그림과 실제 제목·버튼을 분리하고 기존 페이지로 이동한다', async (number, label, href, filename, title) => {
     render(<WelcomeHome displayName="테스터" />)
     await screen.findByRole('heading', { name: /테스터님, 오늘도/ })
     fireEvent.click(screen.getByRole('button', { name: `${number}번 배너 보기` }))
     const button = screen.getByRole('button', { name: label })
-    const image = button.parentElement?.querySelector('img')
+    const image = button.closest('[aria-hidden]')?.querySelector('img')
     expect(image).toHaveAttribute('src', `/images/home/${filename}`)
-    expect(image).toHaveAttribute('width', '2089')
-    expect(image).toHaveAttribute('height', '753')
+    expect(image).toHaveAttribute('width', '1774')
+    expect(image).toHaveAttribute('height', '887')
     expect(image).toHaveAttribute('alt', expect.stringMatching(/[가-힣]/))
+    expect(screen.getByRole('heading', { level: 2, name: new RegExp(title) })).toBeVisible()
+    expect(button).toHaveTextContent(label)
     fireEvent.click(button)
     expect(navigateTo).toHaveBeenLastCalledWith(href)
   })
