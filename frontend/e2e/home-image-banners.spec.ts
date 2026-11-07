@@ -38,7 +38,9 @@ test('다섯 이미지의 그려진 버튼을 클릭하면 각 기능으로 이�
     await expect(button).toBeVisible()
     await expect.poll(async () => {
       const [bannerBox, buttonBox] = await Promise.all([page.getByTestId('welcome-promotion').boundingBox(), button.boundingBox()])
-      return Boolean(bannerBox && buttonBox && Math.abs(buttonBox.x + buttonBox.width / 2 - (bannerBox.x + slide.center[0] / 2089 * bannerBox.width)) < 1)
+      if (!bannerBox || !buttonBox) return false
+      const imageWidth = Math.max(bannerBox.width, 276 * 2089 / 753)
+      return Math.abs(buttonBox.x + buttonBox.width / 2 - (bannerBox.x + slide.center[0] / 2089 * imageWidth)) < 1
     }).toBe(true)
     const imageBox = (await image.boundingBox())!
     await page.screenshot({ path: testInfo.outputPath(`home-${slide.filename}`) })
@@ -47,24 +49,36 @@ test('다섯 이미지의 그려진 버튼을 클릭하면 각 기능으로 이�
   }
 })
 
-test('화면 크기가 바뀌어도 전체 이미지 비율과 버튼 중심을 유지한다', async ({ page }, testInfo) => {
+test('화면 크기가 바뀌어도 기존 260px 높이와 버튼 중심을 유지한다', async ({ page }, testInfo) => {
   test.setTimeout(60_000)
   await page.goto('/home')
   for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport)
     const banner = page.getByTestId('welcome-promotion')
+    await expect(banner).toHaveCSS('height', '260px')
     for (const [index, slide] of slides.entries()) {
       await page.getByRole('button', { name: `${index + 1}번 배너 보기` }).click()
       const button = page.getByRole('button', { name: slide.label, exact: true })
       await button.scrollIntoViewIfNeeded()
+      expect((await button.boundingBox())?.height).toBeGreaterThanOrEqual(44)
       await expect.poll(async () => {
         const [bannerBox, buttonBox] = await Promise.all([banner.boundingBox(), button.boundingBox()])
-        if (!bannerBox || !buttonBox) return false
-        return Math.abs(bannerBox.width / bannerBox.height - 2089 / 753) < 0.01
-          && Math.abs(buttonBox.x + buttonBox.width / 2 - (bannerBox.x + slide.center[0] / 2089 * bannerBox.width)) < 1
-          && Math.abs(buttonBox.y + buttonBox.height / 2 - (bannerBox.y + slide.center[1] / 753 * bannerBox.height)) < 1
-          && buttonBox.height >= 44
-      }).toBe(true)
+        if (!bannerBox || !buttonBox) return null
+        const imageWidth = Math.max(bannerBox.width, 276 * 2089 / 753)
+        const imageHeight = imageWidth * 753 / 2089
+        return {
+          height: Math.round(bannerBox.height),
+          xOffset: Math.round(Math.abs(buttonBox.x + buttonBox.width / 2 - (bannerBox.x + slide.center[0] / 2089 * imageWidth))),
+          yOffset: Math.round(Math.abs(buttonBox.y + buttonBox.height / 2 - (bannerBox.y + 260 * 0.47 - imageHeight / 2 + slide.center[1] / 753 * imageHeight))),
+        }
+      }).toEqual({ height: 260, xOffset: 0, yOffset: 0 })
+      const [bannerBox, buttonBox] = await Promise.all([banner.boundingBox(), button.boundingBox()])
+      expect(buttonBox!.y).toBeGreaterThanOrEqual(bannerBox!.y)
+      expect(buttonBox!.y + buttonBox!.height).toBeLessThanOrEqual(bannerBox!.y + bannerBox!.height)
+      const imageBox = (await button.locator('..').locator('img').boundingBox())!
+      expect(imageBox.width / imageBox.height).toBeCloseTo(2089 / 753, 2)
+      expect(imageBox.y).toBeLessThanOrEqual(bannerBox!.y)
+      expect(imageBox.y + imageBox.height).toBeGreaterThanOrEqual(bannerBox!.y + bannerBox!.height)
       const clickable = await button.evaluate(element => {
         const box = element.getBoundingClientRect()
         return element.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2))
