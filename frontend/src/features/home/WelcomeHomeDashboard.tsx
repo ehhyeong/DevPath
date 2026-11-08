@@ -140,12 +140,12 @@ export default function WelcomeHomeDashboard({ dashboard, error, greetingName, l
     <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="relative flex h-full flex-col justify-between overflow-hidden rounded-[1.25rem]! border border-[#e5e7eb] bg-white p-7 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all duration-250 ease-[ease] before:pointer-events-none before:absolute before:-top-1/2 before:-left-1/2 before:size-[200%] before:bg-[radial-gradient(circle,rgba(0,196,113,0.08)_0%,rgba(255,255,255,0)_70%)] before:opacity-0 before:transition-opacity before:duration-500 before:content-[''] hover:-translate-y-0.5 hover:border-[#d1d5db] hover:shadow-[0_10px_20px_-5px_rgba(0,0,0,0.06)] hover:before:opacity-100">
-          <div>
+          <div className="[container-type:inline-size]">
             <div className="mb-3 flex items-center gap-1.5">
               <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4ade80] opacity-75"></span><span className="relative inline-flex h-2 w-2 rounded-full bg-[#00c471]"></span></span>
               <span className="text-[10px] font-extrabold tracking-wider text-[#00c471] uppercase">Learning Status</span>
             </div>
-            <h2 className="mb-2 text-xl leading-tight font-black text-[#111827]">{greetingName}님, 오늘도<br />성장을 이어가세요!</h2>
+            <h2 className="mb-2 text-[clamp(12px,5.5cqw,20px)] leading-tight font-black whitespace-nowrap text-[#111827]">{greetingName}님, 오늘도 성장을 이어가세요!</h2>
             <p className="line-clamp-1 text-[12px] font-medium text-[#6b7280]">
               {loading ? '학습 기록을 불러오는 중입니다.' : currentLearning?.lessonTitle ?? (error ? '학습 기록을 불러오지 못했습니다.' : '아직 학습 기록이 없습니다.')}
             </p>

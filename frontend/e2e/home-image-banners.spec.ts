@@ -25,6 +25,24 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
+test('로그인 환영 문구는 좁은 카드에서도 잘림 없이 한 줄로 표시한다', async ({ page }, testInfo) => {
+  await page.goto('/home')
+  const greeting = page.getByRole('heading', { name: '김학습님, 오늘도 성장을 이어가세요!', exact: true })
+  for (const viewport of [{ width: 1920, height: 1080 }, { width: 1440, height: 900 }, { width: 1280, height: 900 }, { width: 1024, height: 768 }, { width: 768, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 720 }]) {
+    await page.setViewportSize(viewport)
+    await greeting.scrollIntoViewIfNeeded()
+    await page.evaluate(() => document.fonts.ready)
+    await expect.poll(() => greeting.evaluate(element => {
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      const lines = new Set(Array.from(range.getClientRects()).filter(box => box.width > 0).map(box => Math.round(box.y)))
+      return { lines: lines.size, fits: element.scrollWidth <= element.clientWidth, fontReadable: parseFloat(getComputedStyle(element).fontSize) >= 12 }
+    })).toEqual({ lines: 1, fits: true, fontReadable: true })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    if ([1440, 1024, 320].includes(viewport.width)) await page.screenshot({ path: testInfo.outputPath(`greeting-${viewport.width}.png`) })
+  }
+})
+
 test('다섯 배너의 실제 제목과 새 일러스트를 표시하고 버튼으로 각 기능에 이동한다', async ({ page }, testInfo) => {
   test.setTimeout(60_000)
   await page.setViewportSize({ width: 1440, height: 900 })

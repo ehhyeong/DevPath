@@ -24,6 +24,12 @@ describe('로그인 후 홈 배너', () => {
     vi.useRealTimers()
   })
 
+  it('환영 인사의 이름과 문구를 공백으로 이어서 표시한다', async () => {
+    render(<WelcomeHome displayName="김학습" />)
+    const greeting = await screen.findByRole('heading', { name: /김학습님, 오늘도/ })
+    expect(greeting).toHaveTextContent('김학습님, 오늘도 성장을 이어가세요!')
+  })
+
   it('5초마다 다음 배너를 표시하고 마지막 배너 이후 처음으로 돌아온다', () => {
     vi.useFakeTimers()
     render(<WelcomeHome displayName="이태형" />)
