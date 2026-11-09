@@ -3,9 +3,9 @@
   "filePath": "src/main/java/com/sprintdesk/issue/IssueStatusService.java",
   "diff": "diff --git a/src/main/java/com/sprintdesk/issue/IssueStatusService.java b/src/main/java/com/sprintdesk/issue/IssueStatusService.java\n--- a/src/main/java/com/sprintdesk/issue/IssueStatusService.java\n+++ b/src/main/java/com/sprintdesk/issue/IssueStatusService.java\n@@ -1,6 +1,14 @@\n package com.sprintdesk.issue;\n\n @Service\n @RequiredArgsConstructor\n public class IssueStatusService {\n+    private final IssueRepository issues;\n+\n+    @Transactional\n+    public Issue changeStatus(Long issueId, Long memberId, IssueStatus nextStatus) {\n+        Issue issue = issues.findById(issueId).orElseThrow();\n+        issue.changeStatus(nextStatus);\n+        return issues.save(issue);\n+    }\n }\n",
   "title": "feat: SprintDesk 이슈 상태 변경 API",
-  "description": "PATCH /api/issues/{issueId}/status 구현 PR입니다. 프로젝트 권한, 동시 수정과 종료 스프린트의 상태 변경을 검토해 주세요.",
+  "description": "PATCH /api/issues/{issueId}/status 구현 PR입니다. 프로젝트 권한, 동시 수정과 종료 스프린트의 상태 변경을 검토해 주세요.\n서비스·컨트롤러·React 화면·회귀 테스트·DB 인덱스 총 5개 변경 파일을 함께 검토합니다.",
   "sourceBranch": "feature/issue-status",
-  "juseungComment": "보드에서 이슈 이동 후 서버 응답으로 상태와 버전을 갱신하겠습니다. 다른 팀원이 먼저 수정한 경우에는 최신 상태를 받아 이동을 복구할 수 있도록 충돌 응답을 구분해 주세요.",
+  "juseungComment": "동시 상태 변경, 프로젝트 비참여자, 종료 스프린트의 변경 거부를 확인하고 충돌 시 최신 버전을 반환하는지 검증하겠습니다.",
   "taehyungComment": "인증 사용자가 이슈의 프로젝트 참여자인지 확인해 주세요. @Version과 요청의 기대 버전으로 동시 수정을 감지하고 종료된 스프린트의 변경도 제한하면 좋겠습니다.",
   "aiTitle": "SprintDesk 이슈 상태 변경 API 검토",
   "aiSummary": "이슈 상태 변경의 기본 흐름은 명확합니다. 프로젝트 참여 권한, 버전 충돌과 종료 스프린트 규칙을 보완하세요.",
@@ -15,21 +15,51 @@
       "lineNumber": 10,
       "title": "프로젝트 참여 권한 확인",
       "message": "memberId를 받지만 참여 관계를 검사하지 않아 다른 프로젝트 이슈도 변경할 수 있습니다.",
-      "suggestion": "인증 사용자와 이슈가 속한 프로젝트의 참여 관계를 서버에서 검증하세요."
+      "suggestion": "인증 사용자와 이슈가 속한 프로젝트의 참여 관계를 서버에서 검증하세요.",
+      "filePath": "src/main/java/com/sprintdesk/issue/IssueStatusService.java"
     },
     {
       "category": "동시성",
       "lineNumber": 11,
       "title": "동시 상태 변경 충돌 감지",
       "message": "동시에 이슈를 옮기면 마지막 저장이 다른 팀원의 변경을 덮어쓸 수 있습니다.",
-      "suggestion": "@Version과 기대 버전을 확인하고 충돌 응답 시 최신 상태를 전달하세요."
+      "suggestion": "@Version과 기대 버전을 확인하고 충돌 응답 시 최신 상태를 전달하세요.",
+      "filePath": "src/main/java/com/sprintdesk/issue/IssueStatusService.java"
     },
     {
       "category": "테스트",
-      "lineNumber": 11,
+      "lineNumber": 17,
       "title": "종료 스프린트와 상태 전이 검증",
       "message": "스프린트 종료 여부와 허용되지 않은 상태 전이를 구분하지 않습니다.",
-      "suggestion": "종료 스프린트 변경 거부, 상태별 허용 전이와 버전 충돌 테스트를 추가하세요."
+      "suggestion": "종료 스프린트 변경 거부, 상태별 허용 전이와 버전 충돌 테스트를 추가하세요.",
+      "filePath": "src/test/java/com/sprintdesk/issue/IssueStatusServiceTest.java"
+    }
+  ],
+  "files": [
+    {
+      "filePath": "src/main/java/com/sprintdesk/issue/IssueStatusService.java",
+      "diff": "diff --git a/src/main/java/com/sprintdesk/issue/IssueStatusService.java b/src/main/java/com/sprintdesk/issue/IssueStatusService.java\n--- a/src/main/java/com/sprintdesk/issue/IssueStatusService.java\n+++ b/src/main/java/com/sprintdesk/issue/IssueStatusService.java\n@@ -1,6 +1,14 @@\n package com.sprintdesk.issue;\n\n @Service\n @RequiredArgsConstructor\n public class IssueStatusService {\n+    private final IssueRepository issues;\n+\n+    @Transactional\n+    public Issue changeStatus(Long issueId, Long memberId, IssueStatus nextStatus) {\n+        Issue issue = issues.findById(issueId).orElseThrow();\n+        issue.changeStatus(nextStatus);\n+        return issues.save(issue);\n+    }\n }\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/main/java/com/sprintdesk/issue/IssueStatusController.java",
+      "diff": "diff --git a/src/main/java/com/sprintdesk/issue/IssueStatusController.java b/src/main/java/com/sprintdesk/issue/IssueStatusController.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/sprintdesk/issue/IssueStatusController.java\n@@ -0,0 +1,19 @@\n+package com.sprintdesk.issue;\n+\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.web.bind.annotation.*;\n+\n+@RestController\n+@RequiredArgsConstructor\n+public class IssueStatusController {\n+    private final IssueStatusService service;\n+\n+    @PatchMapping(\"/api/issues/{issueId}/status\")\n+    public CreatedResponse create(@PathVariable Long issueId, @RequestBody IssueStatusRequest request) {\n+        Issue saved = service.changeStatus(issueId, request.memberId(), request.nextStatus());\n+        return new CreatedResponse(saved.getId());\n+    }\n+\n+    public record IssueStatusRequest(Long memberId, IssueStatus nextStatus) {}\n+    public record CreatedResponse(Long issueId) {}\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "frontend/src/features/issue/IssueStatusPanel.tsx",
+      "diff": "diff --git a/frontend/src/features/issue/IssueStatusPanel.tsx b/frontend/src/features/issue/IssueStatusPanel.tsx\n--- a/frontend/src/features/issue/IssueStatusPanel.tsx\n+++ b/frontend/src/features/issue/IssueStatusPanel.tsx\n@@ -1,2 +1,24 @@\n-export function FeaturePanel() { return null; }\n-// 화면 구현 예정\n+import { useState } from 'react';\n+import { api } from '../../lib/api';\n+\n+type Props = { issueId: number; memberId: number; reload: () => Promise<void> };\n+\n+export function IssueStatusPanel({ issueId, memberId, reload }: Props) {\n+  const [nextStatus, setNextStatus] = useState('IN_PROGRESS');\n+  const [error, setError] = useState('');\n+  async function submit() {\n+    setError('');\n+    try {\n+      await api.patch(`/api/issues/${issueId}/status`, { memberId, nextStatus });\n+      await reload();\n+    } catch {\n+      setError('요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');\n+    }\n+  }\n+  return <section>\n+    <h2>이슈 상태 변경</h2>\n+    <label>다음 상태<select value={nextStatus} onChange={e => setNextStatus(e.target.value)}><option value=\"IN_PROGRESS\">진행 중</option><option value=\"IN_REVIEW\">리뷰 대기</option><option value=\"DONE\">완료</option></select></label>\n+    {error && <p role=\"alert\">{error}</p>}\n+    <button onClick={submit}>저장하기</button>\n+  </section>;\n+}\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/test/java/com/sprintdesk/issue/IssueStatusServiceTest.java",
+      "diff": "diff --git a/src/test/java/com/sprintdesk/issue/IssueStatusServiceTest.java b/src/test/java/com/sprintdesk/issue/IssueStatusServiceTest.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/test/java/com/sprintdesk/issue/IssueStatusServiceTest.java\n@@ -0,0 +1,20 @@\n+package com.sprintdesk.issue;\n+\n+import java.util.Optional;\n+import org.junit.jupiter.api.Test;\n+import static org.assertj.core.api.Assertions.assertThat;\n+import static org.mockito.Mockito.*;\n+\n+class IssueStatusServiceTest {\n+    @Test\n+    void returnsCreatedRecordForValidRequest() {\n+        var issues = mock(IssueRepository.class);\n+        var resource = mock(Issue.class);\n+        when(issues.findById(1L)).thenReturn(Optional.of(resource));\n+        when(issues.save(any(Issue.class))).thenAnswer(invocation -> invocation.getArgument(0));\n+        var service = new IssueStatusService(issues);\n+        var saved = service.changeStatus(1L, 7L, IssueStatus.IN_PROGRESS);\n+        assertThat(saved).isNotNull();\n+        verify(issues).save(any(Issue.class));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/resources/db/migration/V2__index_sprintdesk_issue.sql",
+      "diff": "diff --git a/src/main/resources/db/migration/V2__index_sprintdesk_issue.sql b/src/main/resources/db/migration/V2__index_sprintdesk_issue.sql\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/resources/db/migration/V2__index_sprintdesk_issue.sql\n@@ -0,0 +1,1 @@\n+CREATE INDEX idx_issues_project_status ON issues (project_id, status);\n",
+      "changeType": "added"
     }
   ]
 }

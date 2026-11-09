@@ -20,15 +20,21 @@ describe('코드 리뷰 diff와 지적 위치', () => {
   })
   it('서버 scope/파일 제목을 포함한 AI 줄 번호를 실제 파일/코드 줄로 연결한다', () => {
     expect(findAiReviewLine([file], file.filePath, finding, 'GEMINI')).toMatchObject({ filePath: 'auth.ts', line: { newLineNumber: 9, rawLineNumber: 8 } })
+    expect(findAiReviewLine([file], file.filePath, finding, 'DEMO_MULTI_FILE')).toMatchObject({ filePath: 'auth.ts', line: { newLineNumber: 9 } })
     const second = { ...file, filePath: 'session.ts', diffText: '@@ -100 +100 @@\n+refresh()' }
     const offset = 4 + diff.split(/\r?\n/).length + 2
     expect(findAiReviewLine([second, file], file.filePath, { ...finding, lineNumber: offset + 2 }, 'RULE_BASED')).toMatchObject({ filePath: 'session.ts', line: { newLineNumber: 100 } })
     expect(findAiReviewLine([file], file.filePath, { ...finding, lineNumber: 9 }, 'GEMINI')).toBeNull()
   })
   it('위치를 확정할 수 없는 다중 파일/없는 행은 연결하지 않는다', () => {
-    expect(findAiReviewLine([file, { ...file, filePath: 'other.ts' }], file.filePath, { ...finding, lineNumber: 9 }, 'DEMO')).toBeNull()
+    expect(findAiReviewLine([file, { ...file, filePath: 'other.ts' }], file.filePath, { ...finding, lineNumber: 9 }, 'UNKNOWN')).toBeNull()
     expect(findAiReviewLine([file], file.filePath, { ...finding, lineNumber: 999 }, 'GEMINI')).toBeNull()
     expect(findAiReviewLine([file], file.filePath, { ...finding, lineNumber: 9 }, 'DEMO')).toMatchObject({ line: { newLineNumber: 9 } })
+  })
+  it('기존 DEMO PR에 파일을 보강해도 저장된 대표 파일의 AI 코드 위치를 유지한다', () => {
+    const files = [{ ...file, filePath: 'other.ts' }, file]
+    expect(findAiReviewLine(files, file.filePath, { ...finding, lineNumber: 9 }, 'DEMO')).toMatchObject({ filePath: 'auth.ts', line: { newLineNumber: 9 } })
+    expect(findAiReviewLine(files, 'missing.ts', finding, 'DEMO')).toBeNull()
   })
   it('한글 보안/중복 지적도 경고로 구분하고 제안 수락을 해결 완료로 표시하지 않는다', () => {
     expect(reviewFindingPresentation(finding)).toMatchObject({ label: '확인 필요', color: 'text-amber-700' })

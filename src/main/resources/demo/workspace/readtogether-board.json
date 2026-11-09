@@ -1,0 +1,62 @@
+[
+  {
+    "title": "서재·기록·모임 ERD와 마이그레이션 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "회원 인증과 비공개 서재 권한 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "개인 서재와 로그인 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "책 등록·수정·목록 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "독서 모임 참여와 중복 가입 방지 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "책 추가와 페이지 입력 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "독서 기록 저장·조회 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "페이지 범위와 동시 수정 테스트 구현",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "주간 통계와 모임 진행률 UI 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "비공개 기록·완독·역순 요청 통합 테스트",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "진행률 접근성과 모바일 서재 점검",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "Docker 배포와 독서 기록 로그 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "TODO"
+  }
+]

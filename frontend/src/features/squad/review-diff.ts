@@ -41,8 +41,8 @@ export function parseReviewDiff(diff: string): ReviewDiffLine[] {
 export function findAiReviewLine(files: CodeReviewFile[], primaryFilePath: string, comment: AiReviewComment, providerName: string) {
   if (!comment.lineNumber || comment.lineNumber < 1) return null
   const ordered = [...files].sort((a, b) => Number(b.filePath === primaryFilePath) - Number(a.filePath === primaryFilePath))
-  // 두 provider는 서버의 scope 3줄 + 파일 제목 + 원본 diff 전체를 입력받아 그 입력의 줄 번호를 반환한다.
-  if (/RULE_BASED|GEMINI/i.test(providerName)) {
+  // 다중 파일 시드도 실제 provider처럼 scope/파일 헤더를 포함한 입력 줄 번호를 반환한다. 기존 DEMO는 코드 줄 기준이다.
+  if (/RULE_BASED|GEMINI|^DEMO_MULTI_FILE$/i.test(providerName)) {
     let offset = 4
     for (const file of ordered) {
       const line = parseReviewDiff(file.diffText ?? '').find(row => offset + row.rawLineNumber === comment.lineNumber)
@@ -51,9 +51,10 @@ export function findAiReviewLine(files: CodeReviewFile[], primaryFilePath: strin
     }
     return null
   }
-  // 파일 경로가 없는 시연/수동 지적은 파일이 하나일 때만 코드 줄에 연결해 다른 파일로의 오이동을 막는다.
-  if (files.length !== 1) return null
-  const file = files[0]
+  // 기존 DEMO는 보강 전 대표 파일만 분석했다. 추가 파일이 생겨도 저장된 대표 파일의 코드 줄로 복원한다.
+  const legacyFiles = providerName === 'DEMO' ? files.filter(file => file.filePath === primaryFilePath) : files
+  if (legacyFiles.length !== 1) return null
+  const file = legacyFiles[0]
   const line = parseReviewDiff(file.diffText ?? '').find(row => row.newLineNumber === comment.lineNumber)
     ?? parseReviewDiff(file.diffText ?? '').find(row => row.oldLineNumber === comment.lineNumber)
   return line ? { filePath: file.filePath, line } : null

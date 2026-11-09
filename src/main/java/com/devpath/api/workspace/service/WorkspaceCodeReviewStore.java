@@ -98,6 +98,34 @@ class WorkspaceCodeReviewStore {
         workspaceId);
   }
 
+  void addDemoReviewFile(
+      Long workspaceId,
+      Long reviewId,
+      String filePath,
+      String diffText,
+      String changeType,
+      int displayOrder) {
+    LineStats stats = countLineStats(diffText);
+    insertFileDiff(
+        workspaceId,
+        reviewId,
+        filePath,
+        diffText,
+        stats.additions(),
+        stats.deletions(),
+        changeType,
+        displayOrder);
+    jdbcTemplate.update(
+        """
+        UPDATE workspace_code_reviews r
+           SET additions = (SELECT COALESCE(SUM(f.additions), 0) FROM workspace_code_review_files f WHERE f.workspace_id = r.workspace_id AND f.review_id = r.id),
+               deletions = (SELECT COALESCE(SUM(f.deletions), 0) FROM workspace_code_review_files f WHERE f.workspace_id = r.workspace_id AND f.review_id = r.id)
+         WHERE r.workspace_id = ? AND r.id = ? AND r.is_deleted = FALSE
+        """,
+        workspaceId,
+        reviewId);
+  }
+
   boolean hasDemoReview(Long workspaceId, String key) {
     return Boolean.TRUE.equals(
         jdbcTemplate.queryForObject(
