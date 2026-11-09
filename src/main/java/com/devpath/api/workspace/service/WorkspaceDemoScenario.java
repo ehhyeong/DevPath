@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,8 @@ class WorkspaceDemoScenario {
   static final String REVIEW_KEY = "routinecare-records-v1#1";
   static final long DESIGN_DELAY_MILLIS = 7500L;
   static final long REVIEW_DELAY_MILLIS = 5500L;
+  private static final Pattern HUNK_HEADER =
+      Pattern.compile("^@@ -\\d+(?:,\\d+)? \\+(\\d+)(?:,\\d+)? @@");
   static final String TAEHYUNG_COMMENT =
       "memberId는 요청 본문 대신 인증된 사용자 정보에서 가져오면 좋겠습니다. 같은 사용자가 같은 날짜에 동시에 저장해도 기록이 중복되지 않도록 member_id·record_date 유니크 제약도 확인해 주세요.";
 
@@ -55,7 +58,16 @@ class WorkspaceDemoScenario {
     this.tasks = tasks;
     this.mapper = mapper;
     this.projects =
-        List.of("routinecare", "studymate", "pantryshare", "sprintdesk").stream()
+        List.of(
+                "routinecare",
+                "studymate",
+                "pantryshare",
+                "sprintdesk",
+                "toolshare",
+                "tripledger",
+                "eventpass",
+                "readtogether")
+            .stream()
             .map(
                 id ->
                     new DemoProject(
@@ -93,7 +105,7 @@ class WorkspaceDemoScenario {
 
   WorkspaceAiDesignResponse design(WorkspaceAiDesignRequest request) {
     pause(DESIGN_DELAY_MILLIS);
-    // 0~3의 균등한 정수 선택이므로 각 주제는 매번 25%이며 연속 중복도 허용한다.
+    // 등록된 주제를 균등하게 선택하며 연속 중복도 허용한다.
     return projects
         .get(ThreadLocalRandom.current().nextInt(projects.size()))
         .design()
@@ -148,7 +160,16 @@ class WorkspaceDemoScenario {
             review.sourceBranch(),
             "main",
             (int) additions,
-            0);
+            (int)
+                diff.lines()
+                    .filter(line -> line.startsWith("-") && !line.startsWith("---"))
+                    .count());
+    for (int index = 0; index < review.files().size(); index++) {
+      ReviewFile file = review.files().get(index);
+      if (review.filePath().equals(file.filePath())) continue;
+      reviews.addDemoReviewFile(
+          workspace.getId(), reviewId, file.filePath(), file.diff(), file.changeType(), index);
+    }
     reviews.markDemoReview(workspace.getId(), reviewId, review.key());
     for (User member : invitedMembers) {
       reviews.insertMemberComment(
@@ -219,17 +240,43 @@ class WorkspaceDemoScenario {
             .findFirst()
             .orElseThrow();
     Long aiReviewId =
-        reviews.createDemoAiReview(userId, review.aiTitle(), diff, review.aiSummary(), "DEMO");
+        reviews.createDemoAiReview(
+            userId, review.aiTitle(), diff, review.aiSummary(), "DEMO_MULTI_FILE");
     for (ReviewComment comment : review.aiComments()) {
       reviews.insertDemoAiReviewComment(
           aiReviewId,
           comment.category(),
-          comment.lineNumber(),
+          reviewInputLine(diff, comment.filePath(), comment.lineNumber()),
           comment.title(),
           comment.message(),
           comment.suggestion());
     }
     reviews.attachAiReview(workspaceId, reviewId, aiReviewId, selectedFilePath);
+  }
+
+  private int reviewInputLine(String diff, String filePath, int codeLine) {
+    boolean targetFile = false;
+    int nextCodeLine = 0;
+    String[] lines = diff.split("\\R");
+    for (int index = 0; index < lines.length; index++) {
+      String line = lines[index];
+      if (line.startsWith("### FILE: ")) {
+        targetFile = line.startsWith("### FILE: " + filePath + " (+");
+        nextCodeLine = 0;
+        continue;
+      }
+      if (!targetFile) continue;
+      var hunk = HUNK_HEADER.matcher(line);
+      if (hunk.find()) {
+        nextCodeLine = Integer.parseInt(hunk.group(1));
+        continue;
+      }
+      if (nextCodeLine == 0 || line.startsWith("-") || line.startsWith("\\ No newline")) continue;
+      // AI 입력에는 scope/파일 헤더가 포함되므로 코드 줄을 전체 입력의 줄 번호로 변환한다.
+      if (nextCodeLine == codeLine) return index + 1;
+      nextCodeLine++;
+    }
+    throw new IllegalStateException("시연 AI 지적의 코드 위치를 확인해 주세요. " + filePath + ":" + codeLine);
   }
 
   private boolean isDemoOwner(User user) {
@@ -262,10 +309,18 @@ class WorkspaceDemoScenario {
       String taehyungComment,
       String aiTitle,
       String aiSummary,
-      List<ReviewComment> aiComments) {}
+      List<ReviewComment> aiComments,
+      List<ReviewFile> files) {}
+
+  private record ReviewFile(String filePath, String diff, String changeType) {}
 
   private record ReviewComment(
-      String category, int lineNumber, String title, String message, String suggestion) {}
+      String category,
+      int lineNumber,
+      String title,
+      String message,
+      String suggestion,
+      String filePath) {}
 
   private void pause(long millis) {
     try {

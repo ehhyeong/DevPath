@@ -1,0 +1,65 @@
+{
+  "key": "toolshare-loans-v1#1",
+  "filePath": "src/main/java/com/toolshare/loan/LoanService.java",
+  "title": "feat: ToolShare 대여 요청 흐름 구현",
+  "description": "POST /api/tools/{toolId}/loans 구현과 연결 화면·테스트·DB 인덱스를 함께 검토하는 PR입니다. 종료일은 시작일 이후여야 하며 승인된 대여의 인수·반납 순서만 허용합니다.",
+  "sourceBranch": "feature/toolshare-loan",
+  "diff": "diff --git a/src/main/java/com/toolshare/loan/LoanService.java b/src/main/java/com/toolshare/loan/LoanService.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/toolshare/loan/LoanService.java\n@@ -0,0 +1,20 @@\n+package com.toolshare.loan;\n+\n+import java.time.LocalDate;\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.stereotype.Service;\n+import org.springframework.transaction.annotation.Transactional;\n+\n+@Service\n+@RequiredArgsConstructor\n+public class LoanService {\n+    private final ToolRepository tools;\n+    private final LoanRepository loans;\n+\n+    @Transactional\n+    public Loan requestLoan(Long toolId, Long memberId, LocalDate startDate, LocalDate endDate) {\n+        Tool tool = tools.findById(toolId).orElseThrow();\n+        if (startDate.isAfter(endDate)) throw new InvalidLoanPeriodException();\n+        return loans.save(new Loan(tool.getId(), memberId, startDate, endDate));\n+    }\n+}\n",
+  "juseungComment": "정상 저장 외에 정상 요청 테스트만으로는 같은 기간 동시 승인이나 승인 전 반납 오류를 확인할 수 없습니다. 동시 승인·기간 경계·승인 전 반납 거부 테스트를 추가하세요.",
+  "taehyungComment": "인증된 요청자와 tool.ownerId를 비교하고 자기 대여 요청을 거부하세요. 공구 단위 잠금과 기간 겹침 조회를 같은 트랜잭션에서 수행하세요.",
+  "aiTitle": "ToolShare 대여 요청 다중 파일 검토",
+  "aiSummary": "대여 요청의 서비스·컨트롤러·화면·테스트·DB 변경을 함께 확인했습니다. 공구 소유자의 자기 대여 요청 거부, 승인된 대여와 겹치는 기간 확인과 경계 테스트를 보완하세요.",
+  "aiComments": [
+    {
+      "category": "보안",
+      "title": "공구 소유자의 자기 대여 요청 거부",
+      "message": "현재 서비스는 공구의 소유자와 요청자를 비교하지 않아 자기 공구에 대여를 요청할 수 있습니다.",
+      "suggestion": "인증된 요청자와 tool.ownerId를 비교하고 자기 대여 요청을 거부하세요.",
+      "filePath": "src/main/java/com/toolshare/loan/LoanService.java",
+      "lineNumber": 15
+    },
+    {
+      "category": "동시성",
+      "title": "승인된 대여와 겹치는 기간 확인",
+      "message": "날짜 순서만 검사하고 이미 승인된 대여와 겹치는지는 확인하지 않습니다.",
+      "suggestion": "공구 단위 잠금과 기간 겹침 조회를 같은 트랜잭션에서 수행하세요.",
+      "filePath": "src/main/java/com/toolshare/loan/LoanService.java",
+      "lineNumber": 18
+    },
+    {
+      "category": "테스트",
+      "title": "겹치는 날짜와 미승인 반납 사례 검증",
+      "message": "정상 요청 테스트만으로는 같은 기간 동시 승인이나 승인 전 반납 오류를 확인할 수 없습니다.",
+      "suggestion": "동시 승인·기간 경계·승인 전 반납 거부 테스트를 추가하세요.",
+      "filePath": "src/test/java/com/toolshare/loan/LoanServiceTest.java",
+      "lineNumber": 20
+    }
+  ],
+  "files": [
+    {
+      "filePath": "src/main/java/com/toolshare/loan/LoanService.java",
+      "diff": "diff --git a/src/main/java/com/toolshare/loan/LoanService.java b/src/main/java/com/toolshare/loan/LoanService.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/toolshare/loan/LoanService.java\n@@ -0,0 +1,20 @@\n+package com.toolshare.loan;\n+\n+import java.time.LocalDate;\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.stereotype.Service;\n+import org.springframework.transaction.annotation.Transactional;\n+\n+@Service\n+@RequiredArgsConstructor\n+public class LoanService {\n+    private final ToolRepository tools;\n+    private final LoanRepository loans;\n+\n+    @Transactional\n+    public Loan requestLoan(Long toolId, Long memberId, LocalDate startDate, LocalDate endDate) {\n+        Tool tool = tools.findById(toolId).orElseThrow();\n+        if (startDate.isAfter(endDate)) throw new InvalidLoanPeriodException();\n+        return loans.save(new Loan(tool.getId(), memberId, startDate, endDate));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/java/com/toolshare/loan/LoanController.java",
+      "diff": "diff --git a/src/main/java/com/toolshare/loan/LoanController.java b/src/main/java/com/toolshare/loan/LoanController.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/toolshare/loan/LoanController.java\n@@ -0,0 +1,20 @@\n+package com.toolshare.loan;\n+\n+import java.time.LocalDate;\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.web.bind.annotation.*;\n+\n+@RestController\n+@RequiredArgsConstructor\n+public class LoanController {\n+    private final LoanService service;\n+\n+    @PostMapping(\"/api/tools/{toolId}/loans\")\n+    public CreatedResponse create(@PathVariable Long toolId, @RequestBody LoanRequest request) {\n+        Loan saved = service.requestLoan(toolId, request.memberId(), request.startDate(), request.endDate());\n+        return new CreatedResponse(saved.getId());\n+    }\n+\n+    public record LoanRequest(Long memberId, LocalDate startDate, LocalDate endDate) {}\n+    public record CreatedResponse(Long loanId) {}\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "frontend/src/features/loan/LoanRequestPanel.tsx",
+      "diff": "diff --git a/frontend/src/features/loan/LoanRequestPanel.tsx b/frontend/src/features/loan/LoanRequestPanel.tsx\n--- a/frontend/src/features/loan/LoanRequestPanel.tsx\n+++ b/frontend/src/features/loan/LoanRequestPanel.tsx\n@@ -1,2 +1,26 @@\n-export function FeaturePanel() { return null; }\n-// 화면 구현 예정\n+import { useState } from 'react';\n+import { api } from '../../lib/api';\n+\n+type Props = { toolId: number; memberId: number; reload: () => Promise<void> };\n+\n+export function LoanRequestPanel({ toolId, memberId, reload }: Props) {\n+  const [startDate, setStartDate] = useState('2026-11-16');\n+  const [endDate, setEndDate] = useState('2026-11-18');\n+  const [error, setError] = useState('');\n+  async function submit() {\n+    setError('');\n+    try {\n+      await api.post(`/api/tools/${toolId}/loans`, { memberId, startDate, endDate });\n+      await reload();\n+    } catch {\n+      setError('요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');\n+    }\n+  }\n+  return <section>\n+    <h2>대여 요청</h2>\n+    <label>시작일<input type=\"date\" value={startDate} onChange={e => setStartDate(e.target.value)} /></label>\n+    <label>반납일<input type=\"date\" value={endDate} onChange={e => setEndDate(e.target.value)} /></label>\n+    {error && <p role=\"alert\">{error}</p>}\n+    <button onClick={submit}>저장하기</button>\n+  </section>;\n+}\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/test/java/com/toolshare/loan/LoanServiceTest.java",
+      "diff": "diff --git a/src/test/java/com/toolshare/loan/LoanServiceTest.java b/src/test/java/com/toolshare/loan/LoanServiceTest.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/test/java/com/toolshare/loan/LoanServiceTest.java\n@@ -0,0 +1,23 @@\n+package com.toolshare.loan;\n+\n+import java.time.LocalDate;\n+import java.util.Optional;\n+import org.junit.jupiter.api.Test;\n+import static org.assertj.core.api.Assertions.assertThat;\n+import static org.mockito.Mockito.*;\n+\n+class LoanServiceTest {\n+    @Test\n+    void returnsCreatedRecordForValidRequest() {\n+        var tools = mock(ToolRepository.class);\n+        var loans = mock(LoanRepository.class);\n+        var resource = mock(Tool.class);\n+        when(tools.findById(1L)).thenReturn(Optional.of(resource));\n+        when(resource.getId()).thenReturn(1L);\n+        when(loans.save(any(Loan.class))).thenAnswer(invocation -> invocation.getArgument(0));\n+        var service = new LoanService(tools, loans);\n+        var saved = service.requestLoan(1L, 7L, LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 18));\n+        assertThat(saved).isNotNull();\n+        verify(loans).save(any(Loan.class));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/resources/db/migration/V2__index_toolshare_loan.sql",
+      "diff": "diff --git a/src/main/resources/db/migration/V2__index_toolshare_loan.sql b/src/main/resources/db/migration/V2__index_toolshare_loan.sql\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/resources/db/migration/V2__index_toolshare_loan.sql\n@@ -0,0 +1,1 @@\n+CREATE INDEX idx_loans_tool_period ON loans (tool_id, start_date, end_date);\n",
+      "changeType": "added"
+    }
+  ]
+}

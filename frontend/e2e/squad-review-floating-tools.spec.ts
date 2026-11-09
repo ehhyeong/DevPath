@@ -35,7 +35,7 @@ test('코드 피드백 도구는 하단 영역과 서로 겹치지 않고 높이
   await page.goto('/squad-review?workspaceId=42')
   const ai = page.getByRole('button', { name: 'AI 에이전트', exact: true })
   const chat = page.getByRole('button', { name: '팀채팅', exact: true })
-  const footer = page.getByRole('button', { name: /Merge Pull Request/ }).locator('xpath=../..')
+  const footer = page.getByRole('button', { name: /PR 병합/ }).locator('xpath=../..')
   await expect(ai).toBeVisible({ timeout: 30_000 })
   await expect(chat).toBeVisible()
   await expect(footer).toBeVisible()
@@ -56,6 +56,13 @@ test('코드 피드백 도구는 하단 영역과 서로 겹치지 않고 높이
   for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 700 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(viewport)
     await expectClearance()
+    const submit = page.getByRole('button', { name: '피드백 등록', exact: true })
+    await submit.scrollIntoViewIfNeeded()
+    await expect(submit).toBeVisible()
+    expect(await submit.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      return [0.2, 0.5, 0.8].every(ratio => element.contains(document.elementFromPoint(rect.x + rect.width * ratio, rect.y + rect.height / 2)))
+    })).toBe(true)
   }
 
   await page.setViewportSize({ width: 1440, height: 900 })

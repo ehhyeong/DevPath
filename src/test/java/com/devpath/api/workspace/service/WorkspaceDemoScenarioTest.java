@@ -120,7 +120,17 @@ class WorkspaceDemoScenarioTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"routinecare", "studymate", "pantryshare", "sprintdesk"})
+  @ValueSource(
+      strings = {
+        "routinecare",
+        "studymate",
+        "pantryshare",
+        "sprintdesk",
+        "toolshare",
+        "tripledger",
+        "eventpass",
+        "readtogether"
+      })
   void persistsOneOpenPrAndRequestedMembersAndKeepsAccessScopedToItsOwner(String preset)
       throws Exception {
     var design = fixture(preset);
@@ -160,6 +170,17 @@ class WorkspaceDemoScenarioTest {
         .allSatisfy(
             comment -> assertThat(comment.filePath()).isEqualTo(review.path("filePath").asText()));
     var row = store.findDetailRow(42L, reviewId);
+    assertThat(row.files()).hasSize(5);
+    assertThat(row.files()).extracting(file -> file.filePath()).doesNotHaveDuplicates();
+    assertThat(row.summary().fileCount()).isEqualTo(5);
+    assertThat(row.summary().additions())
+        .isEqualTo(row.files().stream().mapToInt(file -> file.additions()).sum());
+    assertThat(row.summary().deletions())
+        .isEqualTo(row.files().stream().mapToInt(file -> file.deletions()).sum());
+    for (var file : row.files()) {
+      assertThat(file.diffText()).contains("diff --git", "@@");
+      assertThat(file.additions()).isGreaterThan(0);
+    }
     assertThat(row.externalId()).isEqualTo(review.path("key").asText());
     assertThat(demo.isDemoReview(42L, row)).isTrue();
     assertThat(demo.isDemoWorkspace(43L)).isFalse();
@@ -168,7 +189,17 @@ class WorkspaceDemoScenarioTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"routinecare", "studymate", "pantryshare", "sprintdesk"})
+  @ValueSource(
+      strings = {
+        "routinecare",
+        "studymate",
+        "pantryshare",
+        "sprintdesk",
+        "toolshare",
+        "tripledger",
+        "eventpass",
+        "readtogether"
+      })
   void assignsAllPresetTasksToTeamRolesAndPreservesLaterEdits(String preset) throws Exception {
     var design = fixture(preset);
     var owner = WorkspaceMember.builder().workspaceId(42L).learnerId(7L).build();
@@ -266,7 +297,7 @@ class WorkspaceDemoScenarioTest {
   }
 
   @ParameterizedTest
-  @ValueSource(ints = {0, 1, 2, 3})
+  @ValueSource(ints = {0, 1, 2, 3, 4, 5, 6, 7})
   void returnsDesignAfterSevenAndHalfSecondsAndStoresReviewAfterFiveAndHalfWithoutAiNetwork(
       int presetIndex) throws Exception {
     WorkspaceAiDesignClient client = mock(WorkspaceAiDesignClient.class);
@@ -276,14 +307,22 @@ class WorkspaceDemoScenarioTest {
     ThreadLocalRandom random = mock(ThreadLocalRandom.class);
     try (var selection = mockStatic(ThreadLocalRandom.class)) {
       selection.when(ThreadLocalRandom::current).thenReturn(random);
-      when(random.nextInt(4)).thenReturn(presetIndex);
+      when(random.nextInt(8)).thenReturn(presetIndex);
       Instant started = Instant.now();
       design = service.generate(7L, request);
       assertThat(Duration.between(started, Instant.now()).toMillis()).isGreaterThanOrEqualTo(7500L);
       assertThat(design)
           .isEqualTo(
               fixture(
-                  List.of("routinecare", "studymate", "pantryshare", "sprintdesk")
+                  List.of(
+                          "routinecare",
+                          "studymate",
+                          "pantryshare",
+                          "sprintdesk",
+                          "toolshare",
+                          "tripledger",
+                          "eventpass",
+                          "readtogether")
                       .get(presetIndex)));
       if (presetIndex == 0) {
         started = Instant.now();
@@ -291,7 +330,7 @@ class WorkspaceDemoScenarioTest {
         assertThat(Duration.between(started, Instant.now()).toMillis())
             .isGreaterThanOrEqualTo(7500L);
       }
-      verify(random, times(presetIndex == 0 ? 2 : 1)).nextInt(4);
+      verify(random, times(presetIndex == 0 ? 2 : 1)).nextInt(8);
     }
     verifyNoInteractions(client);
     assertThat(design.architecture().entities()).hasSize(5);
@@ -319,12 +358,30 @@ class WorkspaceDemoScenarioTest {
     assertThat(row.summary().aiCodeReviewId()).isNotNull();
     assertThat(row.summary().aiCommentCount()).isEqualTo(3);
     assertThat(jdbc.queryForObject("SELECT provider_name FROM ai_code_reviews", String.class))
-        .isEqualTo("DEMO");
+        .isEqualTo("DEMO_MULTI_FILE");
     assertThat(jdbc.queryForObject("SELECT count(*) FROM ai_review_comments", Integer.class))
         .isEqualTo(3);
+    String reviewInput = jdbc.queryForObject("SELECT diff_text FROM ai_code_reviews", String.class);
+    String[] reviewLines = reviewInput.split("\\R");
+    var lineNumbers =
+        jdbc.queryForList(
+            "SELECT line_number FROM ai_review_comments ORDER BY ai_review_comment_id",
+            Integer.class);
+    assertThat(lineNumbers).allSatisfy(line -> assertThat(line).isBetween(1, reviewLines.length));
+    assertThat(reviewLines[lineNumbers.get(2) - 1]).contains("assertThat(saved)");
+    assertThat(reviewInput).contains("frontend/src/features/", "src/test/java/", "db/migration/");
     assertThat(jdbc.queryForObject("SELECT title FROM ai_code_reviews", String.class))
         .contains(
-            List.of("RoutineCare", "StudyMate", "PantryShare", "SprintDesk").get(presetIndex));
+            List.of(
+                    "RoutineCare",
+                    "StudyMate",
+                    "PantryShare",
+                    "SprintDesk",
+                    "ToolShare",
+                    "TripLedger",
+                    "EventPass",
+                    "ReadTogether")
+                .get(presetIndex));
     reviewer.createReview(42L, reviewId, 7L, null, row);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM ai_code_reviews", Integer.class))
         .isEqualTo(1);

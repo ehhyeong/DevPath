@@ -718,7 +718,6 @@ function readEditIdFromLocation(): number | null {
       setSavedCustomRoadmapId(customRoadmapId)
       setSaveModalOpen(false)
       if (!isEdit) {
-        setNodes([])
         setBranchTarget(null)
         setRoadmapTitle('')
       }

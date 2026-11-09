@@ -1,0 +1,62 @@
+[
+  {
+    "title": "공구·대여·인수 ERD와 마이그레이션 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "회원 인증과 공구 소유자 권한 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "로그인 및 공구 목록 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "공구 등록·상태 조회 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "대여 기간 겹침 조회 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "날짜 선택과 대여 요청 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "대여 요청·승인·취소 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "동시 대여와 기간 겹침 테스트 구현",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "인수·반납 현황과 오류 복구 UI 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "소유자·기간 경계·반납 통합 테스트",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "모바일 날짜 선택과 접근성 점검",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "Docker 배포와 대여 이력 로그 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "TODO"
+  }
+]

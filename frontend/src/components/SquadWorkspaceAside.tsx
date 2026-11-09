@@ -345,6 +345,10 @@ export default function SquadWorkspaceAside({
     <aside
       className={`${sidebarPinned ? 'pinned w-[256px]! ' : ''}${expanded ? 'is-expanded w-[256px]! ' : ''}${aiWorkspace ? 'ai-squad-aside ' : ''}squad-workspace-aside w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}
       onMouseEnter={() => setSquadWorkspaceAsideExpanded(true)}
+      onFocus={() => setSquadWorkspaceAsideExpanded(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null) && !event.currentTarget.matches(':hover')) setSquadWorkspaceAsideExpanded(false)
+      }}
       onMouseLeave={() => {
         if (!squadWorkspaceAsideNavigationPending) {
           setSquadWorkspaceAsideExpanded(false)
@@ -391,6 +395,8 @@ export default function SquadWorkspaceAside({
                   <a
                     key={item.key}
                     href={href}
+                    title={item.label}
+                    aria-label={item.label}
                     onClick={(event) => handleNavigate(event, href, item)}
                     className={`workspace-nav-item relative flex box-border items-center rounded-[12px]! px-[16px]! ${aiWorkspace ? '' : 'mb-[4px] min-h-[48px]! py-[14px]!'} [transition:all_0.2s_ease-in-out]! ${aiWorkspace ? 'hover:translate-x-0!' : 'hover:translate-x-[4px]!'} ${activePage === item.key ? 'active bg-[#EBFDF5]! font-bold! text-[#00C471]! hover:bg-[#EBFDF5]! hover:text-[#00C471]!' : 'font-semibold! text-[#6B7280]! hover:bg-[#F3F4F6]! hover:text-[#111827]!'} ${blocked ? 'cursor-not-allowed opacity-50 hover:translate-x-0!' : ''}`}
                     aria-disabled={blocked}

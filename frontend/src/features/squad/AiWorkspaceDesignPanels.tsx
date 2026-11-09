@@ -2,7 +2,7 @@ import { aiWorkspacePageHref } from './ai-workspace-navigation'
 import type { WorkspaceAiDesign } from '../project/api'
 import { getAiRoadmapPhases } from './ai-roadmap'
 
-export type AiWorkspacePageProps = { aiWorkspace?: boolean; design?: WorkspaceAiDesign | null }
+export type AiWorkspacePageProps = { aiWorkspace?: boolean; design?: WorkspaceAiDesign | null; projectName?: string }
 
 export function AiDesignSummary({ design, workspaceId }: { design: WorkspaceAiDesign; workspaceId: number | null }) {
   return <section className="relative overflow-hidden rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-teal-50 p-7">

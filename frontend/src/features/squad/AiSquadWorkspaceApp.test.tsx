@@ -456,6 +456,22 @@ describe('저장된 AI 워크스페이스 대시보드', () => {
     await waitFor(() => expect(screen.getByRole('link', { name: /코드 피드백/ })).toHaveAttribute('aria-disabled', 'false'))
   })
 
+  it('코드 피드백 초기 조회에 전용 스켈레톤과 프로젝트명 자리표시자를 제공한다', async () => {
+    window.history.replaceState({}, '', '/squad-review?workspaceId=42&ai=1')
+    const response = { workspaceId: 42, dashboardUrl: '/squad-dashboard?workspaceId=42&ai=1', createdAt: '2026-10-05T00:00:00Z', design: persistedDesign() }
+    let releaseDesign!: (value: typeof response) => void
+    vi.mocked(getWorkspaceAiDesign).mockReturnValue(new Promise((resolve) => { releaseDesign = resolve }))
+    mockWorkspaceRequests([{ provider: 'GITHUB', active: true, repositoryUrl: 'https://github.com/example/test' }])
+    const view = render(<AiSquadWorkspaceApp />)
+    expect(screen.getByRole('status', { name: '코드 리뷰를 불러오는 중입니다' })).toHaveAttribute('aria-busy', 'true')
+    expect(view.container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(3)
+    expect(screen.getByLabelText('프로젝트 이름을 불러오는 중입니다')).toBeInTheDocument()
+    expect(screen.queryByText('AI 설계를 불러오는 중입니다...')).not.toBeInTheDocument()
+    releaseDesign(response)
+    expect(await screen.findByText('시연 코드 피드백 페이지')).toBeInTheDocument()
+    expect(screen.queryByLabelText('프로젝트 이름을 불러오는 중입니다')).not.toBeInTheDocument()
+  })
+
   it('최초 설계 조회 중에도 현재 메뉴와 펼침 상태를 제공하고 목업 제목을 노출하지 않는다', async () => {
     window.history.replaceState({}, '', '/squad-blueprint?workspaceId=42&ai=1')
     const response = { workspaceId: 42, dashboardUrl: '/squad-dashboard?workspaceId=42&ai=1', createdAt: '2026-10-05T00:00:00Z', design: persistedDesign() }

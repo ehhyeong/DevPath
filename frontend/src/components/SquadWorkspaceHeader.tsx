@@ -23,6 +23,8 @@ type SquadWorkspaceHeaderProps = {
   currentUserName?: string | null
   onLogout: () => void
   aiWorkspace?: boolean
+  projectNameLoading?: boolean
+  avatarFallback?: 'icon' | 'initials'
 }
 
 function navHref(path: string, workspaceId: number | null) {
@@ -41,6 +43,8 @@ export default function SquadWorkspaceHeader({
   statusActive = true,
   onLogout,
   aiWorkspace = false,
+  projectNameLoading = false,
+  avatarFallback = 'icon',
 }: SquadWorkspaceHeaderProps) {
   const [notificationOpen, setNotificationOpen] = useState(false)
   const [notifications, setNotifications] = useState<SquadHeaderNotification[]>([])
@@ -109,7 +113,7 @@ export default function SquadWorkspaceHeader({
           <span className={`${statusActive ? 'animate-pulse bg-brand' : 'bg-gray-400'} h-1.5 w-1.5 rounded-full`}></span>
           {statusLabel}
         </span>
-        <span className="truncate tracking-tight">{projectName}</span>
+        {projectNameLoading ? <span data-workspace-project-name aria-label="프로젝트 이름을 불러오는 중입니다" className="inline-block h-5 w-32 animate-pulse rounded bg-gray-100" /> : <span data-workspace-project-name className="truncate tracking-tight">{projectName}</span>}
       </div>
 
       <div className="relative flex items-center gap-5">
@@ -122,6 +126,7 @@ export default function SquadWorkspaceHeader({
                 <div key={member.memberId} className="group relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center hover:z-30" aria-label={label} title={label}>
                   <UserAvatar
                     name={label}
+                    fallback={avatarFallback}
                     imageUrl={member.profileImage}
                     className="h-8 w-8 border-2 border-white bg-gray-100 shadow-sm transition-transform group-hover:scale-110"
                     iconClassName="text-xs"

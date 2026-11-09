@@ -2140,7 +2140,7 @@ test('GitHub 연결 후 원본 리뷰 목록·Diff 상세·댓글 입력과 리�
   await expect(page.getByText('const report = 1;', { exact: false }).first()).toBeVisible()
   await page.getByPlaceholder('피드백에 대한 답변이나 새로운 코멘트를 남겨보세요.').fill('중복 요청 검증을 확인했습니다.')
   const comment = page.waitForRequest((request) => request.method() === 'POST' && request.url().endsWith('/code-reviews/401/comments'))
-  await page.getByRole('button', { name: 'Comment', exact: true }).click()
+  await page.getByRole('button', { name: '피드백 등록', exact: true }).click()
   expect((await comment).postDataJSON().body).toBe('중복 요청 검증을 확인했습니다.')
   await expect(page.getByText('중복 요청 검증을 확인했습니다.', { exact: true })).toBeVisible()
   await expect(page.getByPlaceholder('피드백에 대한 답변이나 새로운 코멘트를 남겨보세요.')).toHaveValue('')
