@@ -6,6 +6,18 @@ import { projectApiRequest } from '../features/project/api'
 vi.mock('../features/project/api', () => ({ projectApiRequest: vi.fn(async () => []) }))
 
 describe('시연 워크스페이스 코드 피드백 접근', () => {
+  it('접힌 메뉴의 이름을 제공하고 키보드 포커스로 라벨을 펼친다', () => {
+    render(<SquadWorkspaceAside activePage="dashboard" workspaceId={42} aiWorkspace />)
+    const aside = screen.getByRole('complementary')
+    fireEvent.mouseLeave(aside)
+    const link = screen.getByRole('link', { name: '코드 피드백' })
+    expect(link).toHaveAttribute('title', '코드 피드백')
+    fireEvent.focus(link)
+    expect(aside).toHaveClass('is-expanded')
+    fireEvent.blur(link, { relatedTarget: document.body })
+    expect(aside).not.toHaveClass('is-expanded')
+  })
+
   afterEach(() => vi.mocked(projectApiRequest).mockImplementation(async () => [] as never))
 
   it('서버가 확인한 시연 AI 워크스페이스만 열고 일반 모드와 다른 워크스페이스로 권한을 넘기지 않는다', async () => {

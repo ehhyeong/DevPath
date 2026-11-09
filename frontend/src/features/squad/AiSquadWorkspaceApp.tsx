@@ -1,6 +1,7 @@
 import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState, type Dispatch, type FormEvent, type ReactNode, type SetStateAction } from 'react'
 import SquadWorkspaceAside, { type SquadWorkspaceAsidePage } from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceHeader from '../../components/SquadWorkspaceHeader'
+import SquadReviewLoadingContent from './SquadReviewLoadingContent'
 import UserAvatar from '../../components/UserAvatar'
 import { clearStoredAuthSession } from '../../lib/auth-session'
 import { showAuthToast } from '../../lib/auth-toast'
@@ -166,7 +167,7 @@ function go(path: AiRoute, hash = '') {
 
 function AiShell({ activePage, children, dark = false, showHeader = true, workspaceId = null }: { activePage: SquadWorkspaceAsidePage; children: ReactNode; dark?: boolean; showHeader?: boolean; workspaceId?: number | null }) {
   const { dashboard, design } = useAiWorkspace()
-  const projectName = dashboard?.name ?? (workspaceId ? design?.title ?? '스쿼드 프로젝트' : aiSquadProject.title)
+  const projectName = dashboard?.name ?? (workspaceId ? design?.title ?? (activePage === 'review' ? '' : '스쿼드 프로젝트') : aiSquadProject.title)
   const members = dashboard?.members ?? []
 
   function handleLogout() {
@@ -188,8 +189,10 @@ function AiShell({ activePage, children, dark = false, showHeader = true, worksp
             aiWorkspace
             workspaceId={workspaceId}
             projectName={projectName}
+            projectNameLoading={activePage === 'review' && !projectName}
+            avatarFallback={activePage === 'review' ? 'initials' : 'icon'}
             members={members}
-            statusLabel={dashboard?.status === 'ARCHIVED' ? '보관됨' : '진행 중'}
+            statusLabel={activePage === 'review' ? '코드 피드백' : dashboard?.status === 'ARCHIVED' ? '보관됨' : '진행 중'}
             statusActive={dashboard?.status !== 'ARCHIVED'}
             onLogout={handleLogout}
           />
@@ -1536,8 +1539,10 @@ export default function AiSquadWorkspaceApp() {
       {Array.from(renderedRoutes).map((pageRoute) => {
         const PersistedPage = workspaceId && pageRoute in persistedPages ? persistedPages[pageRoute as keyof typeof persistedPages] : null
         const reviewLocked = workspaceId && pageRoute === '/squad-review' && demoWorkspaceId !== workspaceId && !integrations.some((integration) => integration.provider === 'GITHUB' && (integration.active ?? integration.isActive) && integration.repositoryUrl)
+        const initialLoading = pageRoute === '/squad-review' && loadError?.workspaceId !== workspaceId ? <SquadReviewLoadingContent /> : <main role="status" className="flex flex-1 items-center justify-center text-sm font-bold text-gray-500">{loadError?.workspaceId === workspaceId ? loadError.message : 'AI 설계를 불러오는 중입니다...'}</main>
+        const pageLoading = pageRoute === '/squad-review' ? <SquadReviewLoadingContent /> : <main role="status" className="flex flex-1 items-center justify-center text-sm font-bold text-gray-500">{pageRoute === '/squad-files' ? '팀 자료실을 불러오는 중입니다...' : '워크스페이스를 불러오는 중입니다...'}</main>
         return <div key={pageRoute} className={pageRoute === route ? 'contents' : 'hidden'} aria-hidden={pageRoute !== route}>
-          {designPending && pageRoute !== '/squad-files' ? <AiShell activePage={routePage[pageRoute]} workspaceId={workspaceId}><main role="status" className="flex flex-1 items-center justify-center text-sm font-bold text-gray-500">{loadError?.workspaceId === workspaceId ? loadError.message : 'AI 설계를 불러오는 중입니다...'}</main></AiShell> : reviewLocked ? <AiShell activePage="review" workspaceId={workspaceId}><main className="flex flex-1 items-center justify-center p-8"><Card className="max-w-lg p-10 text-center"><i className="fab fa-github text-4xl text-gray-400" /><h1 className="mt-4 text-xl font-extrabold text-gray-900">GitHub 연결이 필요합니다</h1><p className="mt-3 text-sm text-gray-500">스쿼드 설정에서 저장소와 토큰을 연결하면 코드 피드백을 사용할 수 있습니다.</p><a href={aiHref('/squad-settings')} className="mt-6 inline-block rounded-xl bg-gray-900 px-5 py-3 text-sm font-bold text-white">외부 연동 설정하기</a></Card></main></AiShell> : PersistedPage ? <Suspense fallback={<AiShell activePage={routePage[pageRoute]} workspaceId={workspaceId}><main role="status" className="flex flex-1 items-center justify-center text-sm font-bold text-gray-500">{pageRoute === '/squad-files' ? '팀 자료실을 불러오는 중입니다...' : '워크스페이스를 불러오는 중입니다...'}</main></AiShell>}><PersistedPage key={workspaceId} aiWorkspace design={workspaceDesign} /></Suspense> : pageRoute === '/squad-meeting' ? <MeetingPage /> : <AiShell activePage={routePage[pageRoute]} showHeader={pageRoute !== '/squad-erd'} workspaceId={workspaceId}><CurrentPage key={workspaceId} route={pageRoute} /></AiShell>}
+          {designPending && pageRoute !== '/squad-files' ? <AiShell activePage={routePage[pageRoute]} workspaceId={workspaceId}>{initialLoading}</AiShell> : reviewLocked ? <AiShell activePage="review" workspaceId={workspaceId}><main className="flex flex-1 items-center justify-center p-8"><Card className="max-w-lg p-10 text-center"><i className="fab fa-github text-4xl text-gray-400" /><h1 className="mt-4 text-xl font-extrabold text-gray-900">GitHub 연결이 필요합니다</h1><p className="mt-3 text-sm text-gray-500">스쿼드 설정에서 저장소와 토큰을 연결하면 코드 피드백을 사용할 수 있습니다.</p><a href={aiHref('/squad-settings')} className="mt-6 inline-block rounded-xl bg-gray-900 px-5 py-3 text-sm font-bold text-white">외부 연동 설정하기</a></Card></main></AiShell> : PersistedPage ? <Suspense fallback={<AiShell activePage={routePage[pageRoute]} workspaceId={workspaceId}>{pageLoading}</AiShell>}><PersistedPage key={workspaceId} aiWorkspace design={workspaceDesign} projectName={dashboard?.name ?? workspaceDesign?.title} /></Suspense> : pageRoute === '/squad-meeting' ? <MeetingPage /> : <AiShell activePage={routePage[pageRoute]} showHeader={pageRoute !== '/squad-erd'} workspaceId={workspaceId}><CurrentPage key={workspaceId} route={pageRoute} /></AiShell>}
         </div>
       })}
           {route === '/squad-dashboard' && createdModalOpen && workspaceId && workspaceDesign ? (

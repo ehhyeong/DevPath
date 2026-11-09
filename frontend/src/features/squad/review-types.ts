@@ -30,6 +30,7 @@ export type CodeReviewSummary = {
 export type AiReviewComment = {
   commentId: number
   category: string
+  status?: 'PENDING' | 'ACCEPTED' | 'REJECTED'
   lineNumber?: number | null
   title: string
   message: string
