@@ -13,6 +13,16 @@ import type { MyRoadmapSummary, RecommendationChange, RecommendationChangeHistor
 import { buildRoadmapLayout, findRoadmapByOriginalId, readAuthViewFromLocation, readPositiveNumberParam, roadmapContentClassName, roadmapDoneNodeCountCardClassName, roadmapHeaderMetricsShellClassName, roadmapHeaderMetricsShellInnerClassName, roadmapMainClassName, roadmapNodeCountCardClassName, roadmapNodeCountLabelClassName, roadmapNodeCountNumberClassName, roadmapNodeCountWrapClassName, roadmapPageClassName, roadmapTotalNodeCountCardClassName, syncAuthViewInLocation } from './roadmap-detail-support'
 import { RoadmapGraph, NodeDrawer, ChangesPanel, RoadmapHeaderMetrics, RoadmapSwitcherDropdown, RoadmapPageToolbar } from './roadmap-detail-components'
 
+function readRoadmapInfoOpen(storageKey: string | null): boolean {
+  if (!storageKey) return true
+  try {
+    return window.localStorage.getItem(storageKey) !== 'false'
+  } catch {
+    // 저장소 접근이 차단된 브라우저에서는 기본 펼침으로 표시한다.
+    return true
+  }
+}
+
 export default function RoadmapDetailPage() {
   useInternalPageScroll()
 
@@ -23,6 +33,9 @@ export default function RoadmapDetailPage() {
   const focusOriginalNodeId = readPositiveNumberParam(params, 'focusOriginalNodeId')
 
   const [session, setSession]       = useState(() => readStoredAuthSession())
+  const infoStorageKey = session?.userId && customRoadmapId
+    ? `devpath.roadmap.info-open:${session.userId}:${customRoadmapId}`
+    : null
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [authView, setAuthView]     = useState<AuthView | null>(() => readAuthViewFromLocation())
   const [roadmap, setRoadmap]       = useState<RoadmapDetail | null>(null)
@@ -32,7 +45,7 @@ export default function RoadmapDetailPage() {
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState<string | null>(null)
   const [panelOpen, setPanelOpen]   = useState(false)
-  const [infoOpen, setInfoOpen]     = useState(false)
+  const [infoOpen, setInfoOpen]     = useState(() => readRoadmapInfoOpen(infoStorageKey))
   const [processing, setProcessing] = useState(false)
   const [drawerNode, setDrawerNode] = useState<RoadmapNodeItem | null>(null)
   const [focusTarget, setFocusTarget] = useState<{ node: RoadmapNodeItem; openDrawer: boolean } | null>(null)
@@ -52,12 +65,23 @@ export default function RoadmapDetailPage() {
     setMyRoadmaps([])
     setError(null)
     setPanelOpen(false)
-    setInfoOpen(false)
+    setInfoOpen(readRoadmapInfoOpen(infoStorageKey))
     setProcessing(false)
     setDrawerNode(null)
     setRecommendPolling(false)
     setRecommendStatus(null)
-  }, [])
+  }, [infoStorageKey])
+
+  function toggleRoadmapInfo() {
+    const nextOpen = !infoOpen
+    setInfoOpen(nextOpen)
+    if (!infoStorageKey) return
+    try {
+      window.localStorage.setItem(infoStorageKey, String(nextOpen))
+    } catch {
+      // 저장소 접근이 차단되어도 현재 화면의 접기/펼치기는 유지한다.
+    }
+  }
 
   // 노드 클리어 후 백그라운드 추천 생성의 진행 상태를 폴링한다.
   // 시간 상한(매직넘버) 없이, DONE/FAILED 또는 RUNNING 후 IDLE(=TTL 만료=작업 종료)일 때만 종료한다.
@@ -721,7 +745,7 @@ export default function RoadmapDetailPage() {
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
               <div
                 className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 transition"
-                onClick={() => setInfoOpen((v) => !v)}
+                onClick={toggleRoadmapInfo}
               >
                 <div className="flex items-center gap-2 font-bold text-gray-800">
                   <i className="fas fa-info-circle text-gray-400" />
