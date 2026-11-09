@@ -563,7 +563,7 @@ function RoadmapHubPage() {
           </div>
         </header>
 
-        <div className="mx-auto mt-12 max-w-7xl space-y-20 px-6 pb-32">
+        <div className="mx-auto mt-8 max-w-7xl space-y-20 px-6 pb-32">
           <RoadmapHubSections
             catalog={catalog}
             loading={loading}
