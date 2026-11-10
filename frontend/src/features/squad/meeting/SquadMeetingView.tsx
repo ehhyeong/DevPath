@@ -12,7 +12,7 @@ import SquadWorkspaceHeader from '../../../components/SquadWorkspaceHeader'
 import UserAvatar from '../../../components/UserAvatar'
 import { showAuthToast } from '../../../lib/auth-toast'
 import { MediaStreamVideo } from './meeting-media-stream-video'
-import { SCREEN_SHARE_BUTTON_ZOOM_STEP,SCREEN_SHARE_MIN_ZOOM,VOICE_REACTIONS,formatMeetingTime,navHref } from './meeting-support'
+import { SCREEN_SHARE_BUTTON_ZOOM_STEP,SCREEN_SHARE_MIN_ZOOM,VOICE_REACTIONS,combineMinutesTranscript,formatMeetingTime,navHref } from './meeting-support'
 import type { CameraView,ScreenShareView,VoiceParticipant,WorkspaceMember } from './meeting-types'
 import type { SquadMeetingViewModel } from './useSquadMeetingController'
 import type { AiWorkspacePageProps } from '../AiWorkspaceDesignPanels'
@@ -45,9 +45,8 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
     enabled: demoAccount, active: Boolean(isJoined && roomPanelTab === 'chat' && !chatSending),
     scopeKey: activeChannel?.channelId, instant: true })
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
-  const displayedTranscript = voiceMinutes?.recording && minutesInterimTranscript
-    ? [minutesDraft.trimEnd(), minutesInterimTranscript].filter(Boolean).join('\n')
-    : minutesDraft
+  const minutesTranscriptPending = Boolean(model.minutesTranscriptPending || minutesInterimTranscript)
+  const displayedTranscript = combineMinutesTranscript(minutesDraft, minutesInterimTranscript)
   useLayoutEffect(() => {
     const field = minutesTextareaRef.current
     if (voiceMinutes?.recording && field) field.scrollTop = field.scrollHeight
@@ -367,7 +366,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
 
   function renderRoomPanel() {
     const summary = voiceMinutes?.summary?.trim() ?? ''
-    const summarySourceAvailable = Boolean(minutesDraft.trim() || voiceChatMessages.length > 0)
+    const summarySourceAvailable = Boolean(displayedTranscript.trim() || voiceChatMessages.length > 0)
     const selectedActionItemCount = minutesActionItems.filter((_, index) =>
       selectedMinutesActionItems.includes(index),
     ).length
@@ -423,7 +422,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
               <section aria-label="회의 원문">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <h3 className="text-sm font-bold text-gray-200">회의 원문</h3>
-                  <span className="text-xs text-gray-400">{voiceMinutes?.recording ? '실시간 기록' : '직접 수정 가능'}</span>
+                  <span className="text-xs text-gray-400">{voiceMinutes?.recording ? '실시간 기록' : minutesTranscriptPending ? '마지막 발화 저장 중' : '직접 수정 가능'}</span>
                 </div>
                 {displayedTranscript.trim() ? (
                   <textarea
@@ -432,11 +431,11 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
                     value={displayedTranscript}
                     onChange={(event) => setMinutesDraft(event.target.value)}
                     onBlur={() => {
-                      if (!voiceMinutes?.recording) {
+                      if (!voiceMinutes?.recording && !minutesTranscriptPending) {
                         void saveMinutesDraft(false)
                       }
                     }}
-                    readOnly={voiceMinutes?.recording}
+                    readOnly={Boolean(voiceMinutes?.recording || minutesTranscriptPending)}
                     className={`dark-scrollbar h-[260px] w-full resize-none rounded-xl border border-gray-700 bg-gray-800/60 p-4 text-sm! leading-7! text-gray-300 outline-none focus:border-brand ${voiceMinutes?.recording ? 'cursor-default' : ''}`}
                   />
                 ) : (
@@ -465,6 +464,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
             </div>
 
             <div className="p-4 border-t border-gray-800 bg-gray-800 shrink-0">
+              {minutesTranscriptPending ? <p className="mb-2 text-xs leading-5 text-gray-400">지금 요약하면 화면에 보이는 인식 중 문장도 포함합니다.</p> : null}
               <button
                 type="button"
                 onClick={() => void generateMinutesSummary()}

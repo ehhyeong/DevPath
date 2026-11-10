@@ -12,6 +12,12 @@ export function useLatest<T>(value: T) {
   return ref
 }
 
+export function combineMinutesTranscript(transcript: string, preview: string) {
+  const savedLines = new Set(transcript.split('\n'))
+  const pendingLines = preview.split('\n').filter(line => line.trim() && !savedLines.has(line))
+  return [transcript.trimEnd(), pendingLines.join('\n')].filter(Boolean).join('\n')
+}
+
 export const FALLBACK_AUDIO_INPUTS: AudioDeviceOption[] = [{ deviceId: 'default', label: '기본 마이크' }]
 export const FALLBACK_AUDIO_OUTPUTS: AudioDeviceOption[] = [{ deviceId: 'default', label: '기본 스피커' }]
 export const INITIAL_AUDIO_PROCESSING_STATUS: AudioProcessingStatus = {

@@ -104,10 +104,11 @@ export function updateSquadVoiceMinutes(channelId: number, payload: Partial<Voic
   )
 }
 
-export function createSquadVoiceMinutesSummary(channelId: number) {
+export function createSquadVoiceMinutesSummary(channelId: number, transcript?: string) {
+  // 저장 원문과 같은 최근 20000자 범위에서 현재 화면의 임시 발화까지 요약한다.
   return projectApiRequest<VoiceMeetingSummaryResponse>(
     `/api/voice-channels/${channelId}/minutes/summary`,
-    { method: 'POST', body: JSON.stringify({}) },
+    { method: 'POST', body: JSON.stringify({ transcript: transcript?.slice(-20000) }) },
     'required',
   )
 }

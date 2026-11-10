@@ -154,9 +154,11 @@ public class VoiceChannelController {
       description = "Builds and stores a summary from the voice meeting minutes and chat.")
   public ResponseEntity<ApiResponse<VoiceResponse.MinutesAnalysisDetail>> generateMinutesSummary(
       @PathVariable Long channelId,
-      @Parameter(hidden = true) @AuthenticationPrincipal Long userId) {
+      @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+      @Valid @RequestBody(required = false) VoiceRequest.MinutesSummary request) {
     return ResponseEntity.ok(
-        ApiResponse.ok(voiceMeetingMinutesService.generateMinutesSummary(channelId, userId)));
+        ApiResponse.ok(
+            voiceMeetingMinutesService.generateMinutesSummary(channelId, userId, request)));
   }
 
   @PostMapping("/api/voice-channels/{channelId}/minutes/action-items/tasks")
