@@ -352,9 +352,10 @@ export function RoadmapGraph({
           {layout.edges.map((edge) => {
             const path = makeEdgePath(edge, slotRects, edgeBusY[edge.id])
             if (!path) return null
+            // 다른 제안을 수락해 배열 순서가 바뀌어도 남은 연결선의 등장 효과를 다시 시작하지 않는다.
             return (
               <path
-                key={edge.id}
+                key={edge.kind === 'suggestion' ? `${edge.kind}:${edge.from}:${edge.to}` : edge.id}
                 d={path}
                 style={{ d: `path("${path}")` }}
                 className={`ui-roadmap-edge ${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme} ${
@@ -403,7 +404,9 @@ export function RoadmapGraph({
               '--slot-offset-y': `${slot.stackOffset ?? 0}px`,
             } as CSSProperties}
           >
-            {renderSlot(slot)}
+            {slot.kind === 'suggested-branch' || slot.kind === 'ghost-add' ? (
+              <div className="roadmap-suggestion-enter">{renderSlot(slot)}</div>
+            ) : renderSlot(slot)}
           </div>
         ))}
       </div>
