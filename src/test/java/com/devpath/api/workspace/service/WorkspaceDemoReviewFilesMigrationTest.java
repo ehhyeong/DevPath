@@ -4,8 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.util.List;
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ClassPathResource;
@@ -17,8 +21,8 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 class WorkspaceDemoReviewFilesMigrationTest {
   @ParameterizedTest
   @ValueSource(strings = {"postgresql", "oracle"})
-  void fillsOnlyOwnedLiveDemoPrsAndPreservesFilesCommentsStatusAndReview(String vendor)
-      throws Exception {
+  void fillsOnlyOwnedLiveDemoPrsAndPreservesFilesCommentsStatusAndReview(
+      String vendor, @TempDir Path migrations) throws Exception {
     try (var connection = DriverManager.getConnection("jdbc:h2:mem:demo_review_files_" + vendor)) {
       var jdbc = new JdbcTemplate(new SingleConnectionDataSource(connection, true));
       String booleanType = vendor.equals("oracle") ? "INTEGER" : "BOOLEAN";
@@ -106,7 +110,29 @@ class WorkspaceDemoReviewFilesMigrationTest {
           new EncodedResource(
               new ClassPathResource("db/migration/" + vendor + "/V7__expand_demo_review_files.sql"),
               StandardCharsets.UTF_8);
-      ScriptUtils.executeSqlScript(connection, script);
+      String filename = "V7__expand_demo_review_files.sql";
+      try (var input = script.getResource().getInputStream()) {
+        Files.copy(input, migrations.resolve(filename));
+      }
+      try (var input =
+          new ClassPathResource("db/migration/" + vendor + "/" + filename + ".conf")
+              .getInputStream()) {
+        Files.copy(input, migrations.resolve(filename + ".conf"));
+      }
+      var flyway =
+          Flyway.configure()
+              .dataSource(new SingleConnectionDataSource(connection, true))
+              .locations("filesystem:" + migrations)
+              .baselineOnMigrate(true)
+              .baselineVersion("6")
+              .load();
+      assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+      assertThat(flyway.getConfiguration().isPlaceholderReplacement()).isTrue();
+      assertThat(
+              jdbc.queryForObject(
+                  "SELECT diff_text FROM workspace_code_review_files WHERE review_id=102 AND file_path LIKE '%AttendancePanel.tsx'",
+                  String.class))
+          .contains("${sessionId}");
       int firstCount =
           jdbc.queryForObject("SELECT count(*) FROM workspace_code_review_files", Integer.class);
       ScriptUtils.executeSqlScript(connection, script);
