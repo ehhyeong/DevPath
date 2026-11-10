@@ -102,7 +102,7 @@ export default function SquadReviewApp({ aiWorkspace = false, design, projectNam
       <div className="squad-dashboard-page squad-review-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <SquadWorkspaceAside activePage="review" workspaceId={workspaceId} projectName={displayedProjectName} aiWorkspace={aiWorkspace} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <SquadWorkspaceHeader aiWorkspace={aiWorkspace} workspaceId={workspaceId} projectName={displayedProjectName} projectNameLoading={!displayedProjectName} members={[]} statusLabel="코드 피드백" statusActive currentUserName={session?.name} onLogout={handleLogout} avatarFallback="initials" />
+          <SquadWorkspaceHeader aiWorkspace={aiWorkspace} workspaceId={workspaceId} projectName={displayedProjectName} projectNameLoading={!displayedProjectName} members={[]} statusLabel="코드 피드백" statusActive currentUserName={session?.name} onLogout={handleLogout} />
           <SquadReviewLoadingContent />
         </div>
       </div>
@@ -144,7 +144,6 @@ export default function SquadReviewApp({ aiWorkspace = false, design, projectNam
           members={members}
           statusLabel="코드 피드백"
           statusActive
-          avatarFallback="initials"
           currentUserName={session?.name}
           onLogout={handleLogout}
         />

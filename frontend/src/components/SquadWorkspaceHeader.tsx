@@ -24,7 +24,6 @@ type SquadWorkspaceHeaderProps = {
   onLogout: () => void
   aiWorkspace?: boolean
   projectNameLoading?: boolean
-  avatarFallback?: 'icon' | 'initials'
 }
 
 function navHref(path: string, workspaceId: number | null) {
@@ -44,7 +43,6 @@ export default function SquadWorkspaceHeader({
   onLogout,
   aiWorkspace = false,
   projectNameLoading = false,
-  avatarFallback = 'icon',
 }: SquadWorkspaceHeaderProps) {
   const [notificationOpen, setNotificationOpen] = useState(false)
   const [notifications, setNotifications] = useState<SquadHeaderNotification[]>([])
@@ -126,7 +124,6 @@ export default function SquadWorkspaceHeader({
                 <div key={member.memberId} className="group relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center hover:z-30" aria-label={label} title={label}>
                   <UserAvatar
                     name={label}
-                    fallback={avatarFallback}
                     imageUrl={member.profileImage}
                     className="h-8 w-8 border-2 border-white bg-gray-100 shadow-sm transition-transform group-hover:scale-110"
                     iconClassName="text-xs"

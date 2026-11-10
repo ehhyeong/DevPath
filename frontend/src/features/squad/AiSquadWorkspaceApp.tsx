@@ -190,7 +190,6 @@ function AiShell({ activePage, children, dark = false, showHeader = true, worksp
             workspaceId={workspaceId}
             projectName={projectName}
             projectNameLoading={activePage === 'review' && !projectName}
-            avatarFallback={activePage === 'review' ? 'initials' : 'icon'}
             members={members}
             statusLabel={activePage === 'review' ? '코드 피드백' : dashboard?.status === 'ARCHIVED' ? '보관됨' : '진행 중'}
             statusActive={dashboard?.status !== 'ARCHIVED'}

@@ -4,7 +4,8 @@ for (const aiWorkspace of [false, true]) {
 test(`코드 리뷰 로딩·미처리 지적·실제 코드 줄 이동과 작성자 정보를 구분한다 (AI 워크스페이스 ${aiWorkspace})`, async ({ page }, testInfo) => {
   const diff = ['diff --git a/src/auth.ts b/src/auth.ts', 'index abc..def 100644', '--- a/src/auth.ts', '+++ b/src/auth.ts', '@@ -8,3 +8,4 @@', ' const ready = true', '-oldLogin()', '+await login()', '+clearError()', ' done()'].join('\n')
   const summary = { reviewId: 1, workspaceId: 42, issueKey: 'PR-1', title: '로그인 실패 처리와 중복 저장 방지', status: 'OPEN', authorId: 1, authorName: '김학습', filePath: 'src/auth.ts', fileCount: 2, sourceBranch: 'feature/auth', targetBranch: 'main', additions: 10, deletions: 0, aiCommentCount: 3 }
-  const members = [{ memberId: 1, learnerId: 1, learnerName: '김학습' }, { memberId: 2, learnerId: 2, learnerName: '박주승' }]
+  const profileImage = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+  const members = [{ memberId: 1, learnerId: 1, learnerName: '김학습', profileImage: null }, { memberId: 2, learnerId: 2, learnerName: '박주승', profileImage: null }, { memberId: 3, learnerId: 3, learnerName: '김태형', profileImage }]
   let releaseBoard!: () => void
   const boardReady = new Promise<void>(resolve => { releaseBoard = resolve })
   await page.addInitScript(() => {
@@ -50,6 +51,15 @@ test(`코드 리뷰 로딩·미처리 지적·실제 코드 줄 이동과 작성
   releaseBoard()
   await expect(page.getByRole('heading', { level: 1, name: summary.title, exact: true })).toBeVisible()
   await expect(page.locator('header')).toContainText('RoutineCare')
+  for (const name of ['김학습', '박주승']) {
+    const avatar = page.locator('header').getByRole('img', { name: `${name} default profile`, exact: true })
+    await expect(avatar.locator('.fa-user')).toHaveCount(1)
+    await expect(avatar).toHaveText('')
+  }
+  const uploadedAvatar = page.locator('header').getByRole('img', { name: '김태형 profile', exact: true })
+  await expect(uploadedAvatar).toHaveAttribute('src', profileImage)
+  await expect(uploadedAvatar).toBeVisible()
+  await expect.poll(() => uploadedAvatar.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0)
   expect((await page.locator('header').boundingBox())?.height).toBe(headerBefore?.height)
   const ai = page.locator('#aiReviewCard')
   await expect(ai.getByText('확인 필요', { exact: true })).toHaveCount(2)
