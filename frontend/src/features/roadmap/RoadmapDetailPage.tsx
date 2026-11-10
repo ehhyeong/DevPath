@@ -753,8 +753,8 @@ export default function RoadmapDetailPage() {
                 </div>
                 <i className={`fas fa-chevron-down text-gray-400 [transition:transform_0.3s]! ${infoOpen ? '[transform:rotate(180deg)]' : ''}`} />
               </div>
-              <div className={`${infoOpen ? 'max-h-[800px] [transition:max-height_0.5s_ease-in]' : 'max-h-0 [transition:max-height_0.3s_ease-out]'} overflow-hidden bg-gray-50 border-t border-gray-100`}>
-                <RoadmapInfoContent content={roadmap.infoContent} />
+              <div className="ui-collapse bg-gray-50" data-open={infoOpen} inert={!infoOpen}>
+                <div><div className="border-t border-gray-100"><RoadmapInfoContent content={roadmap.infoContent} /></div></div>
               </div>
             </div>
           </div>

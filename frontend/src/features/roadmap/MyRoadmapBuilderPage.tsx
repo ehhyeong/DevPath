@@ -14,9 +14,11 @@ import { getModuleUsageKey } from './roadmap-builder-model'
 import { TrashZone, TerminalDropZone, DroppableGap, MiniDragPreview, ModulePreviewPanel, DraggableModuleCard, DraggableSpineCard, DraggableBranchCard } from './roadmap-builder-support'
 
 import { useMyRoadmapBuilderController } from './useMyRoadmapBuilderController'
+import { useLayoutMotion } from '../../lib/useLayoutMotion'
 
 function MyRoadmapBuilderPage() {
   const { session, profileImage, authView, setAuthView, templates, selectedRoadmapId, templateSearch, templateSection, templatePickerOpen, setTemplatePickerOpen, search, setSearch, setPreviewModuleKey, loading, fetchError, nodes, branchTarget, setBranchTarget, saveModalOpen, setSaveModalOpen, roadmapTitle, handleRoadmapTitleChange, startDemoTitleTyping, stopDemoTitleTyping, demoTitleTyping, saving, saveError, savedCustomRoadmapId, showSuccessModal, setShowSuccessModal, activeDrag, editMyRoadmapId, editLoading, editLoadError, mainRef, titleInputRef, sensors, handleLogout, handleAuthenticated, selectedTemplate, templateSections, templateOptions, handleTemplateChange, handleTemplateSearchChange, handleTemplateSectionChange, reloadSelectedTemplate, usedIds, maxSortOrder, rows, filteredItems, visibleItemCountLabel, previewModule, handleAdd, handleBranchActivate, handleRemove, handleSwapBranch, handleClear, handleAiAsk, openSaveModal, handleSave, handleDragStart, handleDragEnd } = useMyRoadmapBuilderController()
+  useLayoutMotion(mainRef, `${rows.map(row => row.nodes.map(node => node.instanceId).join(',')).join('|')}:${activeDrag?.kind ?? ''}`)
 
 
   // ────────────────────────────────────────────
@@ -436,8 +438,8 @@ function MyRoadmapBuilderPage() {
                 const nodeB = row.nodes[1]
 
                 return (
-                  <div key={row.sortOrder}>
-                    <div className="group relative z-10 mb-2 animate-[builderStepPop_0.4s_cubic-bezier(0.175,0.885,0.32,1.275)_forwards]">
+                  <div key={row.nodes.map(node => node.instanceId).sort().join(',')} data-motion-key={row.nodes.map(node => node.instanceId).sort().join(',')}>
+                    <div className="group relative z-10 mb-2">
                       {row.isBranching ? (
                         // ── 분기 row ──
                         <div className="flex items-start">

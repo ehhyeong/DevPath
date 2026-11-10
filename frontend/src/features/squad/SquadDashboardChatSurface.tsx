@@ -337,9 +337,9 @@ export default function SquadDashboardChatSurface(props: Props) {
         {hasUnreadTeamMessages ? <span role="status" aria-label="읽지 않은 팀 채팅" className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span> : null}
       </button>
 
-      <div className={`${showChatPanel ? '' : 'hidden'} fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-[900] transition-opacity`} onClick={closeChatSurface}></div>
+      <div data-open={showChatPanel} className="ui-chat-backdrop fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-[900]" onClick={closeChatSurface}></div>
 
-      <div className={`${showChatPanel ? 'translate-x-0' : 'translate-x-full'} fixed top-0 right-0 w-full sm:w-[400px] h-full bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-[1000] transform transition-transform duration-300 flex flex-col`}>
+      <div data-open={showChatPanel} inert={!showChatPanel} className="ui-chat-panel fixed top-0 right-0 w-full sm:w-[400px] h-full bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-[1000] flex flex-col">
         <div className="h-16 border-b border-gray-100 flex items-center justify-between px-5 bg-white shrink-0">
           <h2 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
             <i className="fas fa-comments text-brand"></i> 스쿼드 소통방

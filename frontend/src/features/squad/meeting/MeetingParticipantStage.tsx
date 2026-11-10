@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import UserAvatar from '../../../components/UserAvatar'
+import { useLayoutMotion } from '../../../lib/useLayoutMotion'
 import { showAuthToast } from '../../../lib/auth-toast'
 import { MediaStreamVideo } from './meeting-media-stream-video'
 import type { CameraView, ScreenShareView, VoiceParticipant, WorkspaceMember } from './meeting-types'
@@ -30,6 +31,7 @@ export default function MeetingParticipantStage({ participants, members, current
     return { key: `participant-${participant.participantId}`, participant, media: share ?? camera, share: Boolean(share) }
   })
   const focused = cards.find((card) => card.key === focusedKey)
+  useLayoutMotion(stageRef, `${cards.map(card => card.key).join(',')}:${focused?.key ?? ''}`)
   if (focusedKey && !focused) setFocusedKey(null)
 
   function closeFocus() {
@@ -43,7 +45,7 @@ export default function MeetingParticipantStage({ participants, members, current
     const name = `${participant.userName}${participant.userId === currentUserId ? ' (나)' : ''}${share ? ' 화면 공유' : ''}`
     const speaking = participant.speaking && !participant.muted
     return (
-      <div key={card.key} onContextMenu={onAudioSettings ? (event) => { event.preventDefault(); onAudioSettings(participant, event) } : undefined} className={`meeting-participant-card relative isolate overflow-hidden rounded-xl border-2 bg-gray-800 ${expanded ? 'h-full w-full' : 'h-44 w-72 max-w-full shrink-0'} ${speaking ? 'border-brand shadow-[0_0_0_2px_rgba(0,196,113,0.75),0_0_20px_rgba(0,196,113,0.3)]' : 'border-gray-700 shadow-md'}`} data-participant-id={participant.participantId} data-media-kind={share ? 'screen' : 'camera'}>
+      <div key={card.key} data-motion-key={card.key} onContextMenu={onAudioSettings ? (event) => { event.preventDefault(); onAudioSettings(participant, event) } : undefined} className={`meeting-participant-card relative isolate overflow-hidden rounded-xl border-2 bg-gray-800 ${expanded ? 'h-full w-full' : 'h-44 w-72 max-w-full shrink-0'} ${speaking ? 'border-brand shadow-[0_0_0_2px_rgba(0,196,113,0.75),0_0_20px_rgba(0,196,113,0.3)]' : 'border-gray-700 shadow-md'}`} data-participant-id={participant.participantId} data-media-kind={share ? 'screen' : 'camera'}>
         <button type="button" onClick={() => setFocusedKey(card.key)} className="absolute inset-0 flex h-full w-full items-center justify-center bg-transparent p-0! outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand" aria-label={`${name} 크게 보기`}>
           {media ? <MediaStreamVideo stream={media.stream} muted className={`h-full w-full ${share || expanded ? 'object-contain' : 'object-cover'} ${media.local && !share ? '-scale-x-100' : ''}`} /> : <UserAvatar name={participant.userName} imageUrl={member?.profileImage} className="h-20 w-20 border-2 border-gray-600 bg-gray-700!" iconClassName="text-3xl text-gray-300" />}
         </button>

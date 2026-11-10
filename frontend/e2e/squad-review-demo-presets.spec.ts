@@ -61,6 +61,12 @@ for (const preset of ['routinecare', 'studymate', 'pantryshare', 'sprintdesk', '
     await page.setViewportSize({ width: 1440, height: 1000 })
     await page.goto('/squad-review?workspaceId=42&ai=1')
     await expect(page.getByRole('heading', { level: 1, name: seed.title, exact: true })).toBeVisible()
+    for (const member of members) {
+      const avatar = page.locator('header').getByRole('img', { name: `${member.learnerName} default profile`, exact: true })
+      await expect(avatar.locator('.fa-user')).toHaveCount(1)
+      await expect(avatar).toHaveText('')
+    }
+    await expect(page.locator('header img')).toHaveCount(0)
     await expect(page.locator('#codeDiffSection').getByText('변경 파일 5개', { exact: true })).toHaveCount(1)
     await page.getByRole('button', { name: '리뷰 파일 선택', exact: true }).first().click()
     for (const file of files) await expect(page.getByRole('button').filter({ hasText: file.filePath }).last()).toBeVisible()

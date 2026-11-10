@@ -1,6 +1,7 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import axios from 'axios'
-import { useEffect, useMemo, useState, type MouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useLayoutMotion } from '../../lib/useLayoutMotion'
 import { getCurrentLocationKey, navigateTo, SPA_NAVIGATION_EVENT } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from '../../components/ProjectAside'
@@ -173,7 +174,8 @@ export default function WorkspaceHubApp() {
       }
     }
 
-    void load()
+    // 생성·삭제 후 재조회에서는 기존 카드를 유지해야 빈자리를 채우는 이동이 끊기지 않는다.
+    void load(dataReloadKey > 0)
 
     const refresh = () => {
       if (document.hidden || window.location.pathname !== '/workspace-hub' || !readStoredAuthSession()?.accessToken) return
@@ -277,6 +279,8 @@ export default function WorkspaceHubApp() {
       }),
     [projects, statusFilter, typeFilter],
   )
+  const projectGridRef = useRef<HTMLDivElement>(null)
+  useLayoutMotion(projectGridRef, `${loading}:${visibleProjects.map(project => project.domId).join(',')}`)
 
   const showCreateCard = (statusFilter === 'all' || statusFilter === 'progress') && typeFilter === 'all'
 
@@ -462,7 +466,7 @@ export default function WorkspaceHubApp() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div ref={projectGridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {!loading &&
                 visibleProjects.map((project) => (
                   <WorkspaceProjectCard
@@ -560,7 +564,7 @@ function WorkspaceProjectCard({
 
   if (project.type === 'mentoring') {
     return (
-      <div id={project.domId} className="project-card bg-white rounded-xl p-5 cursor-pointer relative group flex flex-col" data-type={project.type} data-status={project.status} onClick={goToProject}>
+      <div id={project.domId} data-motion-key={project.domId} className="project-card bg-white rounded-xl p-5 cursor-pointer relative group flex flex-col" data-type={project.type} data-status={project.status} onClick={goToProject}>
         <div>
           <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
             <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap w-5/6">
@@ -630,7 +634,7 @@ function WorkspaceProjectCard({
   }
 
   return (
-    <div id={project.domId} className={`project-card ${isAiSquad ? 'workspace-ai-card' : 'bg-white'} rounded-xl p-5 cursor-pointer relative group flex flex-col`} data-type={project.type} data-status={project.status} onClick={goToProject} onPointerEnter={prepareProjectEntry} onFocus={prepareProjectEntry} role="link" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { prepareProjectEntry(); navigateTo(project.dashboardUrl) } }}>
+    <div id={project.domId} data-motion-key={project.domId} className={`project-card ${isAiSquad ? 'workspace-ai-card' : 'bg-white'} rounded-xl p-5 cursor-pointer relative group flex flex-col`} data-type={project.type} data-status={project.status} onClick={goToProject} onPointerEnter={prepareProjectEntry} onFocus={prepareProjectEntry} role="link" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { prepareProjectEntry(); navigateTo(project.dashboardUrl) } }}>
       <div>
         <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
           <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap">

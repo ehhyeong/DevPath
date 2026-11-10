@@ -102,7 +102,7 @@ export default function SquadReviewApp({ aiWorkspace = false, design, projectNam
       <div className="squad-dashboard-page squad-review-page flex h-screen overflow-hidden bg-[#F8F9FA]! font-['Pretendard',sans-serif] text-gray-800">
         <SquadWorkspaceAside activePage="review" workspaceId={workspaceId} projectName={displayedProjectName} aiWorkspace={aiWorkspace} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <SquadWorkspaceHeader aiWorkspace={aiWorkspace} workspaceId={workspaceId} projectName={displayedProjectName} projectNameLoading={!displayedProjectName} members={[]} statusLabel="코드 피드백" statusActive currentUserName={session?.name} onLogout={handleLogout} avatarFallback="initials" />
+          <SquadWorkspaceHeader aiWorkspace={aiWorkspace} workspaceId={workspaceId} projectName={displayedProjectName} projectNameLoading={!displayedProjectName} members={[]} statusLabel="코드 피드백" statusActive currentUserName={session?.name} onLogout={handleLogout} />
           <SquadReviewLoadingContent />
         </div>
       </div>
@@ -144,7 +144,6 @@ export default function SquadReviewApp({ aiWorkspace = false, design, projectNam
           members={members}
           statusLabel="코드 피드백"
           statusActive
-          avatarFallback="initials"
           currentUserName={session?.name}
           onLogout={handleLogout}
         />
@@ -211,7 +210,7 @@ export default function SquadReviewApp({ aiWorkspace = false, design, projectNam
             {detailLoading && !detail ? (
               renderDetailLoading()
             ) : detail ? (
-              <>
+              <div key={detail.summary.reviewId} className="ui-content-enter flex min-h-0 flex-1 flex-col">
                 <div className="shrink-0 border-b border-gray-200 bg-white p-4 lg:px-6 lg:py-5">
                   <div className="mb-3 flex flex-wrap items-start gap-3">
                     <span className={`${statusBadgeClass(detail.summary.status)} flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-bold`}>
@@ -360,7 +359,7 @@ export default function SquadReviewApp({ aiWorkspace = false, design, projectNam
                     </button>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
               renderEmptyDetail()
             )}

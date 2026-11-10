@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
+import { useLayoutMotion } from '../../lib/useLayoutMotion'
 import { type ChangeLabelProps, type GhostAddCardProps, type LayoutSlot, type ProofCardBadgeProps, type RoadmapGraphProps, type RoadmapNodeCardProps, type SlotRect, areSlotRectsEqual, changeBadgeStyle, changeTypeIcon, changeTypeLabel, getBranchBadgeMeta, getNodeBoxClass, getNodeLessonProgressPercent, isNodeReadyToClear, isPendingNodeStatus, getEdgeBusY, getLaneGridColumn, makeEdgePath, roadmapCanvasScrollClassName, roadmapEdgeBaseClassName, roadmapEdgeLayerClassName, roadmapEdgeStrokeClassName, roadmapGraphClassName, roadmapNodeBoxClassName, roadmapNodeDescriptionClassName, roadmapNodeHeaderClassName, roadmapNodeMetaClassName, roadmapNodeMetaTagClassName, roadmapNodeTitleGroupClassName, roadmapNodeTitleTextClassName, roadmapProofCardBadgeClassName, roadmapRuleBadgeClassName, roadmapSlotBaseClassName, roadmapSuggestionEdgeClassName } from './roadmap-detail-support'
 
 // Proof 카드를 노드 내부 왼쪽 위(필수 배지와 동일 높이)에 출력해 옆 브랜치 노드와의 겹침을 방지한다.
@@ -201,6 +202,7 @@ export function RoadmapGraph({
   const slotRefs = useRef(new Map<string, HTMLDivElement>())
   const [slotRects, setSlotRects] = useState<Record<string, SlotRect>>({})
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 })
+  useLayoutMotion(canvasRef, layout.slots.map(slot => `${slot.id}:${slot.row}:${slot.lane}:${slot.stackOffset ?? 0}`).join('|'))
 
   // 4칸 배치가 화면보다 넓으면 척추가 가운데 오도록 가로 스크롤을 맞춘다.
   useEffect(() => {
@@ -236,14 +238,16 @@ export function RoadmapGraph({
       const nextRects: Record<string, SlotRect> = {}
 
       slotRefs.current.forEach((element, id) => {
-        const rect = element.getBoundingClientRect()
+        // 시각 이동 중의 translate를 제외한 최종 배치로 연결선을 계산한다.
+        const offsetY = Number.parseFloat(getComputedStyle(element).getPropertyValue('--slot-offset-y')) || 0
+        const rect = { left: element.offsetLeft, top: element.offsetTop + offsetY, width: element.offsetWidth, height: element.offsetHeight }
         nextRects[id] = {
-          x: Math.round(rect.left - graphRect.left + rect.width / 2),
-          y: Math.round(rect.top - graphRect.top + rect.height / 2),
-          top: Math.round(rect.top - graphRect.top),
-          right: Math.round(rect.right - graphRect.left),
-          bottom: Math.round(rect.bottom - graphRect.top),
-          left: Math.round(rect.left - graphRect.left),
+          x: Math.round(rect.left + rect.width / 2),
+          y: Math.round(rect.top + rect.height / 2),
+          top: Math.round(rect.top),
+          right: Math.round(rect.left + rect.width),
+          bottom: Math.round(rect.top + rect.height),
+          left: Math.round(rect.left),
           width: Math.round(rect.width),
           height: Math.round(rect.height),
         }
@@ -345,7 +349,8 @@ export function RoadmapGraph({
               <path
                 key={edge.id}
                 d={path}
-                className={`${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme} ${
+                style={{ d: `path("${path}")` }}
+                className={`ui-roadmap-edge ${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme} ${
                   edge.kind === 'suggestion'
                     ? roadmapSuggestionEdgeClassName
                     : roadmapEdgeStrokeClassName[edge.theme]
@@ -360,6 +365,7 @@ export function RoadmapGraph({
             key={slot.id}
             ref={registerSlot(slot.id)}
             data-slot-id={slot.id}
+            data-motion-key={slot.id}
             className={`${roadmapSlotBaseClassName} roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
               slot.kind === 'official-branch' ||
               slot.kind === 'applied-branch' ||
