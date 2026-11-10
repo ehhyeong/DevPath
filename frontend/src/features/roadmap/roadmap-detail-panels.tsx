@@ -149,7 +149,7 @@ export function NodeDrawer({ node, customRoadmapId, originalRoadmapId, allNodes,
             </div>
             <h2 className="text-3xl font-bold text-gray-900 leading-tight break-words">{node.title}</h2>
           </div>
-          <button onClick={onClose} className="shrink-0 text-gray-400 hover:text-gray-600 p-2">
+          <button onClick={onClose} aria-label="노드 상세 닫기" className="shrink-0 text-gray-400 hover:text-gray-600 p-2">
             <i className="fas fa-times text-xl" />
           </button>
         </div>

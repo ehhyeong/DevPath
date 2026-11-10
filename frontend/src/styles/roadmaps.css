@@ -23,6 +23,21 @@
   padding-right: 24px;
 }
 
+.roadmap-node-located {
+  outline: 3px solid #10b981;
+  outline-offset: 4px;
+  animation: roadmap-node-locate 900ms ease-out 3;
+}
+
+@keyframes roadmap-node-locate {
+  from { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.35); }
+  to { box-shadow: 0 0 0 18px rgba(16, 185, 129, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roadmap-node-located { animation: none; }
+}
+
 /* ── 헤더 ── */
 .roadmap-page-toolbar {
   position: fixed;

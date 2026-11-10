@@ -23,6 +23,11 @@ function readRoadmapInfoOpen(storageKey: string | null): boolean {
   }
 }
 
+function scrollToRoadmapNode(node: RoadmapNodeItem) {
+  document.querySelector(`[data-slot-id="node-${node.customNodeId}"]`)
+    ?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center', inline: 'center' })
+}
+
 export default function RoadmapDetailPage() {
   useInternalPageScroll()
 
@@ -30,7 +35,7 @@ export default function RoadmapDetailPage() {
   const customRoadmapId = readPositiveNumberParam(params, 'id')
   const originalRoadmapId = readPositiveNumberParam(params, 'original')
   const initialNodeId = readPositiveNumberParam(params, 'nodeId')
-  const focusOriginalNodeId = readPositiveNumberParam(params, 'focusOriginalNodeId')
+  const [focusOriginalNodeId] = useState(() => readPositiveNumberParam(params, 'focusOriginalNodeId'))
 
   const [session, setSession]       = useState(() => readStoredAuthSession())
   const infoStorageKey = session?.userId && customRoadmapId
@@ -48,6 +53,7 @@ export default function RoadmapDetailPage() {
   const [infoOpen, setInfoOpen]     = useState(() => readRoadmapInfoOpen(infoStorageKey))
   const [processing, setProcessing] = useState(false)
   const [drawerNode, setDrawerNode] = useState<RoadmapNodeItem | null>(null)
+  const [addedNodeId, setAddedNodeId] = useState<number | null>(null)
   const [focusTarget, setFocusTarget] = useState<{ node: RoadmapNodeItem; openDrawer: boolean } | null>(null)
   const [myRoadmaps, setMyRoadmaps] = useState<MyRoadmapSummary[]>([])
   const [editMode, setEditMode] = useState(false)
@@ -68,9 +74,19 @@ export default function RoadmapDetailPage() {
     setInfoOpen(readRoadmapInfoOpen(infoStorageKey))
     setProcessing(false)
     setDrawerNode(null)
+    setAddedNodeId(null)
+    setFocusTarget(null)
     setRecommendPolling(false)
     setRecommendStatus(null)
   }, [infoStorageKey])
+
+  useEffect(() => {
+    if (!focusOriginalNodeId) return
+    // 추가 직후의 안내만 메모리에 남기고 새로고침·뒤로 가기에서 재생될 URL 표식은 소비한다.
+    const url = new URL(window.location.href)
+    url.searchParams.delete('focusOriginalNodeId')
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`)
+  }, [focusOriginalNodeId])
 
   function toggleRoadmapInfo() {
     const nextOpen = !infoOpen
@@ -280,15 +296,17 @@ export default function RoadmapDetailPage() {
         setProofCards(proofCardsData)
         setMyRoadmaps(roadmapsData.roadmaps)
         setDrawerNode(null)
-        // nodeId(커스텀 노드)는 잠긴 노드를 열지 않고, focusOriginalNodeId(방금 추가한 노드)는 클릭처럼 항상 연다.
+        // 일반 복귀는 잠금 상태를 따르고, 성장 공고의 새 노드는 패널에 가리지 않게 위치만 먼저 안내한다.
         const urlNode = initialNodeId
           ? roadmapData.nodes.find((node) => node.customNodeId === initialNodeId)
           : focusOriginalNodeId
             ? roadmapData.nodes.find((node) => node.originalNodeId === focusOriginalNodeId)
             : undefined
-        setFocusTarget(urlNode ? { node: urlNode, openDrawer: !initialNodeId || urlNode.status !== 'LOCKED' } : null)
+        setFocusTarget(urlNode ? { node: urlNode, openDrawer: Boolean(initialNodeId) && urlNode.status !== 'LOCKED' } : null)
+        setAddedNodeId(!initialNodeId && focusOriginalNodeId && urlNode ? urlNode.customNodeId : null)
 
-        if (changesData.length > 0) {
+        // 성장 공고에서 추가한 노드를 안내할 때만 다른 추천 패널의 자동 열기를 미룬다.
+        if (changesData.length > 0 && !focusOriginalNodeId) {
           setTimeout(() => setPanelOpen(true), 800)
         }
       })
@@ -302,18 +320,21 @@ export default function RoadmapDetailPage() {
     return () => abortRef.current?.abort()
   }, [customRoadmapId, focusOriginalNodeId, initialNodeId, originalRoadmapId, resetRoadmapPageState, session?.userId])
 
-  // URL로 지정된 노드로 먼저 스크롤해 위치를 보여 준 뒤 상세를 연다(먼저 열면 배경이 흐려져 위치가 안 보인다).
+  // 블러가 있는 상세를 열기 전에 URL로 전달된 노드의 위치를 먼저 보여 준다.
   useEffect(() => {
     if (!focusTarget || loading) return
-    document
-      .querySelector(`[data-slot-id="node-${focusTarget.node.customNodeId}"]`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+    scrollToRoadmapNode(focusTarget.node)
     const timer = window.setTimeout(() => {
       if (focusTarget.openDrawer) setDrawerNode(focusTarget.node)
       setFocusTarget(null)
-    }, 600)
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 600)
     return () => window.clearTimeout(timer)
   }, [focusTarget, loading])
+
+  function selectNode(node: RoadmapNodeItem) {
+    setFocusTarget(null)
+    setDrawerNode(node)
+  }
 
   // ── 이벤트 핸들러 ────────────────────────────────────────────────────────────
 
@@ -762,10 +783,11 @@ export default function RoadmapDetailPage() {
           {/* ── 로드맵 트리 ─────────────────────────────────────────────────── */}
           <RoadmapGraph
             layout={roadmapLayout}
+            addedNodeId={addedNodeId}
             proofCardByNodeId={proofCardByNodeId}
             changeByNodeId={changeByNodeId}
             processing={processing}
-            onNodeClick={setDrawerNode}
+            onNodeClick={selectNode}
             onApply={handleApply}
             onIgnore={handleIgnore}
           />
