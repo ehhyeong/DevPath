@@ -97,7 +97,7 @@ describe('회의 기록 공통 제어', () => {
     expect(view.container.querySelector('.meeting-chat-unread-badge')).toBeNull()
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
-  it('확정 전 중간 문장도 표시하고 수정된 문장으로 교체하며 중지하면 확정 기록만 남긴다', async () => {
+  it('중간 문장을 교체하고 중지 후 저장 대기 문장도 지우지 않고 표시한다', async () => {
     vi.mocked(getWorkspaceAiDesign).mockResolvedValue({ workspaceId: 42, demoWorkspace: false } as never)
     const send = vi.fn()
     const view = render(<Room send={send} draft="확정된 회의 기록" interim="[오후 6:30] 박주승: 로그인" />)
@@ -112,7 +112,11 @@ describe('회의 기록 공통 제어', () => {
     expect(transcript).toHaveValue('확정된 회의 기록\n[오후 6:30] 박주승: 로그인 기능 테스트')
     expect(transcript.scrollTop).toBe(600)
     fireEvent.click(screen.getByRole('button', { name: '기록 중지' }))
-    expect(transcript).toHaveValue('확정된 회의 기록')
+    expect(transcript).toHaveValue('확정된 회의 기록\n[오후 6:30] 박주승: 로그인 기능 테스트')
+    expect(transcript).toHaveProperty('readOnly', true)
+    expect(screen.getByRole('button', { name: 'AI 회의 핵심 요약 생성' })).toBeEnabled()
+    view.rerender(<Room send={send} draft="확정된 회의 기록\n[오후 6:30] 박주승: 로그인 기능 테스트" />)
+    expect(transcript).toHaveProperty('readOnly', false)
   })
 
   it('팀 채팅방에서 기록을 시작·중지하고 탭 전환 뒤에도 상태와 입력을 유지한다', async () => {

@@ -72,6 +72,10 @@ public class VoiceRequest {
       @Schema(description = "Meeting summary") @Size(max = 10000, message = "요약은 10000자 이하여야 합니다.")
           String summary) {}
 
+  @Schema(name = "VoiceMeetingMinutesSummaryRequest", description = "요약 버튼을 누른 시점의 회의 기록")
+  public record MinutesSummary(
+      @Size(max = 20000, message = "요약할 회의 기록은 20000자 이하여야 합니다.") String transcript) {}
+
   @Schema(
       name = "VoiceMeetingMinutesTranscriptAppendRequest",
       description = "Append one transcript line")

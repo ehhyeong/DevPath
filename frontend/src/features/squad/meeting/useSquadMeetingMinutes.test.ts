@@ -90,26 +90,28 @@ describe('음성 중간 인식 표시', () => {
     expect(result.current.minutesInterimTranscript).toBe('[오전 9:05] 박주승: 다음 작업은 배포')
   })
 
-  it('다른 팀원과 내 중간 문장을 함께 표시하고 중지·퇴장한 발언자의 문장만 지운다', async () => {
-    const { result, emit } = await startRecording()
+  it('중지 시 내 문장을 보존하고 다른 팀원의 중간 문장은 독립적으로 유지한다', async () => {
+    const { result, emit, recognition } = await startRecording()
     emit(0, ['로그인 테스트', false])
     act(() => result.current.applyTranscriptPreview(8, '[오전 9:05] 김태형: API 테스트'))
     expect(result.current.minutesInterimTranscript).toContain('박주승: 로그인 테스트')
     expect(result.current.minutesInterimTranscript).toContain('김태형: API 테스트')
     act(() => result.current.stopMinutesSpeechRecognition())
+    expect(result.current.minutesInterimTranscript).toContain('박주승: 로그인 테스트')
+    act(() => recognition.onend?.())
     expect(result.current.minutesInterimTranscript).toBe('[오전 9:05] 김태형: API 테스트')
     act(() => result.current.applyTranscriptPreview(8, ''))
     expect(result.current.minutesInterimTranscript).toBe('')
-    expect(result.current.minutesDraft).toBe('기존 기록')
+    expect(result.current.minutesDraft).toBe('기존 기록\n[오전 9:05] 박주승: 로그인 테스트')
   })
 
-  it.each(['종료', '오류'])('인식 %s 시 임시 문장을 지우고 확정 기록을 유지한다', async (event) => {
+  it.each(['종료', '오류'])('인식 %s 시 final이 없으면 마지막 표시 문장을 저장한다', async (event) => {
     const { result, emit, recognition } = await startRecording()
     emit(0, ['임시 문장', false])
     act(() => { if (event === '종료') recognition.onend?.(); else recognition.onerror?.({ error: 'no-speech' }) })
     expect(result.current.minutesInterimTranscript).toBe('')
-    expect(result.current.minutesDraft).toBe('기존 기록')
-    expect(appendSquadVoiceMinutesTranscriptLine).not.toHaveBeenCalled()
+    expect(result.current.minutesDraft).toBe('기존 기록\n[오전 9:05] 박주승: 임시 문장')
+    expect(appendSquadVoiceMinutesTranscriptLine).toHaveBeenCalledExactlyOnceWith(11, '임시 문장')
   })
 })
 
@@ -164,6 +166,6 @@ describe('음성 기록 시각', () => {
     expect(appendSquadVoiceMinutesTranscriptLine).toHaveBeenCalledWith(11, '로그인 기능을 테스트하겠습니다.')
     await act(async () => resolveSave({ ...minutes, transcript: expectedTranscript }))
     expect(result.current.minutesDraft).toBe(expectedTranscript)
-    expect(broadcastMeetingSync).toHaveBeenCalledWith('minutes-updated', { minutes: { ...minutes, transcript: expectedTranscript } })
+    expect(broadcastMeetingSync).toHaveBeenCalledWith('minutes-updated', { minutes: { ...minutes, transcript: expectedTranscript }, transcriptPreview: '' })
   })
 })

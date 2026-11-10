@@ -3,7 +3,7 @@ import type { AuthSession } from '../../../types/auth'
 import { showAuthToast } from '../../../lib/auth-toast'
 import { createSquadNotification,squadActorName } from '../notifications'
 import { appendSquadVoiceMinutesTranscriptLine,clearSquadVoiceChatMessages,createSquadVoiceEvent,createSquadVoiceMinutesKanbanTasks,createSquadVoiceMinutesSummary,fetchSquadVoiceChatMessages,fetchSquadVoiceMinutes,sendSquadVoiceChatMessage,updateSquadVoiceMinutes } from './meeting-api'
-import { normalizeVoiceMeetingSummaryResponse,useLatest } from './meeting-support'
+import { combineMinutesTranscript,normalizeVoiceMeetingSummaryResponse,useLatest } from './meeting-support'
 import type { RoomPanelTab,SpeechRecognitionLike,VoiceChannel,VoiceChatMessage,VoiceEventType,VoiceMeetingActionItem,VoiceMeetingMinutes,VoiceMeetingSyncPayload,WindowWithSpeechRecognition } from './meeting-types'
 
 type MeetingMinutesOptions = {
@@ -24,6 +24,11 @@ export function useSquadMeetingMinutes({ workspaceId,activeChannel,isJoined,isMu
   const [minutesDraft, setMinutesDraft] = useState('')
   const [transcriptPreviews, setTranscriptPreviews] = useState<Record<number, string>>({})
   const localTranscriptPreviewRef = useRef('')
+  const localInterimTextRef = useRef('')
+  const pendingTranscriptLinesRef = useRef<Array<{ text: string; line: string }>>([])
+  const transcriptSaveQueueRef = useRef<Promise<void> | null>(null)
+  const latestMinutesRef = useRef<VoiceMeetingMinutes | null>(null)
+  const minutesUpdateEpochRef = useRef(0)
   const [minutesActionItems, setMinutesActionItems] = useState<VoiceMeetingActionItem[]>([])
   const [selectedMinutesActionItems, setSelectedMinutesActionItems] = useState<number[]>([])
   const [minutesSummaryReportOpen, setMinutesSummaryReportOpen] = useState(false)
@@ -34,6 +39,9 @@ export function useSquadMeetingMinutes({ workspaceId,activeChannel,isJoined,isMu
   const [speechRecognitionActive, setSpeechRecognitionActive] = useState(false)
   const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const speechRecognitionRestartRef = useRef(false)
+  const recognitionStoppingRef = useRef(false)
+  const restartAfterStopRef = useRef(false)
+  const stopRecognitionRef = useRef<(() => void) | null>(null)
   const minutesTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const minutesAppendErrorShownRef = useRef(false)
 
@@ -56,10 +64,12 @@ function appendVoiceChatMessage(message: VoiceChatMessage) {
   }
 
 function applyVoiceMinutes(minutes: VoiceMeetingMinutes, syncDraft = false) {
+    latestMinutesRef.current = minutes
+    minutesUpdateEpochRef.current += 1
     setVoiceMinutes(minutes)
 
     if (syncDraft || shouldSyncMinutesDraftFromServer()) {
-      setMinutesDraft(minutes.transcript ?? '')
+      setMinutesDraft(combineMinutesTranscript(minutes.transcript ?? '', pendingTranscriptLinesRef.current.map(item => item.line).join('\n')))
     }
   }
 
@@ -68,6 +78,7 @@ async function refreshVoiceMeetingPanel(channelId = activeChannel?.channelId, sy
       return
     }
 
+    const epoch = minutesUpdateEpochRef.current
     const [messages, minutes] = await Promise.all([
       fetchVoiceChatMessages(channelId),
       fetchVoiceMinutes(channelId),
@@ -75,7 +86,7 @@ async function refreshVoiceMeetingPanel(channelId = activeChannel?.channelId, sy
 
     setVoiceChatMessages(messages)
     setVoiceChatChannelId(channelId)
-    applyVoiceMinutes(minutes, syncDraft)
+    if (epoch === minutesUpdateEpochRef.current) applyVoiceMinutes(minutes, syncDraft)
   }
 
 function voiceEventLabel(type: VoiceEventType) {
@@ -100,7 +111,7 @@ function getSpeechRecognitionConstructor() {
   }
 
 function shouldSyncMinutesDraftFromServer() {
-    return Boolean(voiceMinutes?.recording) || document.activeElement !== minutesTextareaRef.current
+    return Boolean(latestMinutesRef.current?.recording) || document.activeElement !== minutesTextareaRef.current
   }
 
 function formatLocalTranscriptLine(text: string) {
@@ -132,7 +143,18 @@ function appendMinutesTranscript(text: string) {
       return `${current.trimEnd()}\n${optimisticLine}`
     })
 
-    void appendMinutesTranscriptToServer(transcript)
+    const pending = { text: transcript, line: optimisticLine }
+    pendingTranscriptLinesRef.current.push(pending)
+    const previous = transcriptSaveQueueRef.current
+    const save = async () => {
+      if (previous) await previous
+      await appendMinutesTranscriptToServer(pending)
+    }
+    const saving = save()
+    transcriptSaveQueueRef.current = saving
+    void saving.finally(() => {
+      if (transcriptSaveQueueRef.current === saving) transcriptSaveQueueRef.current = null
+    })
   }
 
 function applyTranscriptPreview(userId: number, preview: string) {
@@ -145,25 +167,35 @@ function applyTranscriptPreview(userId: number, preview: string) {
   }
 
 function updateLocalTranscriptPreview(text: string) {
+    localInterimTextRef.current = text.trim()
     const preview = text.trim() ? formatLocalTranscriptLine(text.trim()) : ''
-    if (preview === localTranscriptPreviewRef.current) return
-    localTranscriptPreviewRef.current = preview
     if (session?.userId != null) applyTranscriptPreview(session.userId, preview)
-    // 중간 결과는 수정될 수 있어 저장된 회의록과 분리한 임시 이벤트로 공유한다.
-    broadcastMeetingSync('minutes-updated', { transcriptPreview: preview })
+    const sharedPreview = [...pendingTranscriptLinesRef.current.map(item => item.line), preview].filter(Boolean).join('\n')
+    if (sharedPreview === localTranscriptPreviewRef.current) return
+    localTranscriptPreviewRef.current = sharedPreview
+    // 확정됐어도 저장 응답 전에는 다른 참여자의 화면/요약에서 문장을 빼지 않는다.
+    broadcastMeetingSync('minutes-updated', { transcriptPreview: sharedPreview })
   }
 
-async function appendMinutesTranscriptToServer(text: string) {
+async function appendMinutesTranscriptToServer(pending: { text: string; line: string }) {
     if (!activeChannel) {
       return
     }
 
     try {
-      const minutes = await appendSquadVoiceMinutesTranscriptLine(activeChannel.channelId, text)
+      const epoch = minutesUpdateEpochRef.current
+      const minutes = await appendSquadVoiceMinutesTranscriptLine(activeChannel.channelId, pending.text)
 
+      pendingTranscriptLinesRef.current = pendingTranscriptLinesRef.current.filter(item => item !== pending)
       minutesAppendErrorShownRef.current = false
-      applyVoiceMinutes(minutes)
-      broadcastMeetingSync('minutes-updated', { minutes })
+      const latest = latestMinutesRef.current
+      const next = epoch !== minutesUpdateEpochRef.current && latest
+        ? { ...minutes, recording: latest.recording, transcript: (latest.transcript ?? '').startsWith(minutes.transcript ?? '') ? latest.transcript : minutes.transcript }
+        : minutes
+      applyVoiceMinutes(next)
+      const preview = [...pendingTranscriptLinesRef.current.map(item => item.line), localInterimTextRef.current ? formatLocalTranscriptLine(localInterimTextRef.current) : ''].filter(Boolean).join('\n')
+      localTranscriptPreviewRef.current = preview
+      broadcastMeetingSync('minutes-updated', { minutes: next, transcriptPreview: preview })
     } catch {
       if (!minutesAppendErrorShownRef.current) {
         minutesAppendErrorShownRef.current = true
@@ -185,7 +217,7 @@ function startMinutesSpeechRecognition() {
       return false
     }
 
-    stopMinutesSpeechRecognition()
+    if (speechRecognitionRef.current) return true
 
     try {
       const recognition = new SpeechRecognition()
@@ -193,6 +225,29 @@ function startMinutesSpeechRecognition() {
       recognition.lang = 'ko-KR'
       recognition.continuous = true
       recognition.interimResults = true
+      let finished = false
+      let stopTimeout: number | undefined
+      const finishRecognition = () => {
+        if (finished) return
+        finished = true
+        window.clearTimeout(stopTimeout)
+        // 일부 브라우저가 final 없이 끝나도 마지막으로 보여 준 발화는 한 번 보존한다.
+        if (localInterimTextRef.current) appendMinutesTranscript(localInterimTextRef.current)
+        updateLocalTranscriptPreview('')
+        recognition.onresult = null
+        recognition.onend = null
+        recognition.onerror = null
+        const restart = speechRecognitionRestartRef.current || restartAfterStopRef.current
+        if (speechRecognitionRef.current === recognition) {
+          speechRecognitionRef.current = null
+          stopRecognitionRef.current = null
+          recognitionStoppingRef.current = false
+        }
+        setSpeechRecognitionActive(false)
+        if (restart) window.setTimeout(() => {
+          if (shouldRecognizeRef.current && !speechRecognitionRef.current) startMinutesSpeechRecognitionRef.current()
+        }, 300)
+      }
       recognition.onresult = (event) => {
         const interimParts: string[] = []
         for (let index = 0; index < event.results.length; index += 1) {
@@ -206,30 +261,19 @@ function startMinutesSpeechRecognition() {
         }
         updateLocalTranscriptPreview(interimParts.join(' '))
       }
-      recognition.onerror = () => {
-        updateLocalTranscriptPreview('')
+      recognition.onerror = finishRecognition
+      recognition.onend = finishRecognition
+      stopRecognitionRef.current = () => {
+        if (recognitionStoppingRef.current) return
+        recognitionStoppingRef.current = true
         setSpeechRecognitionActive(false)
-      }
-      recognition.onend = () => {
-        updateLocalTranscriptPreview('')
-        setSpeechRecognitionActive(false)
-
-        if (!speechRecognitionRestartRef.current || speechRecognitionRef.current !== recognition) {
-          return
+        // end 이벤트가 오지 않아도 종료 대기를 계속하지 않고 2초 뒤 마지막 표시 문장을 보존한다.
+        stopTimeout = window.setTimeout(() => {
+          try { recognition.abort() } finally { finishRecognition() }
+        }, 2000)
+        try { recognition.stop() } catch {
+          try { recognition.abort() } finally { finishRecognition() }
         }
-
-        window.setTimeout(() => {
-          if (!speechRecognitionRestartRef.current || speechRecognitionRef.current !== recognition) {
-            return
-          }
-
-          try {
-            recognition.start()
-            setSpeechRecognitionActive(true)
-          } catch {
-            setSpeechRecognitionActive(false)
-          }
-        }, 300)
       }
 
       speechRecognitionRef.current = recognition
@@ -247,24 +291,9 @@ function startMinutesSpeechRecognition() {
   }
 
 function stopMinutesSpeechRecognition() {
-    updateLocalTranscriptPreview('')
     speechRecognitionRestartRef.current = false
-    const recognition = speechRecognitionRef.current
-    speechRecognitionRef.current = null
-
-    if (recognition) {
-      recognition.onresult = null
-      recognition.onend = null
-      recognition.onerror = null
-
-      try {
-        recognition.stop()
-      } catch {
-        recognition.abort()
-      }
-    }
-
-    setSpeechRecognitionActive(false)
+    restartAfterStopRef.current = false
+    stopRecognitionRef.current?.()
   }
 
 async function sendVoiceChatMessage() {
@@ -339,10 +368,15 @@ async function updateVoiceMinutes(payload: Partial<VoiceMeetingMinutes>, syncDra
     setMinutesSaving(true)
 
     try {
+      const epoch = minutesUpdateEpochRef.current
       const minutes = await updateSquadVoiceMinutes(activeChannel.channelId, payload)
-
-      applyVoiceMinutes(minutes, syncDraft)
-      broadcastMeetingSync('minutes-updated', { minutes })
+      const latest = latestMinutesRef.current
+      const transcript = latest?.transcript ?? ''
+      const next = epoch !== minutesUpdateEpochRef.current && payload.transcript === undefined && transcript.startsWith(minutes.transcript ?? '')
+        ? { ...minutes, transcript }
+        : minutes
+      applyVoiceMinutes(next, syncDraft)
+      broadcastMeetingSync('minutes-updated', { minutes: next })
 
       return true
     } catch (minutesError) {
@@ -404,18 +438,11 @@ async function generateMinutesSummary() {
       return
     }
 
-    if (minutesDraft !== (voiceMinutes?.transcript ?? '')) {
-      const saved = await updateVoiceMinutes({ transcript: minutesDraft }, true)
-
-      if (!saved) {
-        return
-      }
-    }
-
+    const transcriptSnapshot = combineMinutesTranscript(minutesDraft, Object.values(transcriptPreviews).join('\n'))
     setMinutesSaving(true)
 
     try {
-      const response = await createSquadVoiceMinutesSummary(activeChannel.channelId)
+      const response = await createSquadVoiceMinutesSummary(activeChannel.channelId, transcriptSnapshot)
 
       const analysis = normalizeVoiceMeetingSummaryResponse(response)
       const minutes = analysis.minutes
@@ -425,8 +452,12 @@ async function generateMinutesSummary() {
         throw new Error('회의 요약 응답을 읽지 못했습니다.')
       }
 
-      applyVoiceMinutes(minutes, true)
-      broadcastMeetingSync('minutes-updated', { minutes })
+      const current = latestMinutesRef.current ?? minutes
+      minutesUpdateEpochRef.current += 1
+      latestMinutesRef.current = { ...current, summary: minutes.summary }
+      setVoiceMinutes(latestMinutesRef.current)
+      // 요약 중 도착한 원문을 옛 응답으로 되돌리지 않고 상대 화면은 최신 원문을 재조회한다.
+      broadcastMeetingSync('minutes-updated', {})
       setMinutesActionItems(actionItems)
       setSelectedMinutesActionItems(actionItems.map((_, index) => index))
       setMinutesSummaryReportOpen(true)
@@ -486,7 +517,8 @@ async function createKanbanTasksFromMinutes() {
 
   const startMinutesSpeechRecognitionRef = useLatest(startMinutesSpeechRecognition)
   const stopMinutesSpeechRecognitionRef = useLatest(stopMinutesSpeechRecognition)
-  const shouldSyncMinutesDraftFromServerRef = useLatest(shouldSyncMinutesDraftFromServer)
+  const applyVoiceMinutesRef = useLatest(applyVoiceMinutes)
+  const shouldRecognizeRef = useLatest(Boolean(isJoined && voiceMinutes?.recording && !isMuted))
 
 useEffect(() => {
     if (!isJoined) {
@@ -497,12 +529,13 @@ useEffect(() => {
 useEffect(() => {
     if (!isJoined || !voiceMinutes?.recording || isMuted) {
       stopMinutesSpeechRecognitionRef.current()
-      if (!isJoined || !voiceMinutes?.recording) setTranscriptPreviews({})
       return
     }
 
     if (!speechRecognitionRef.current) {
       startMinutesSpeechRecognitionRef.current()
+    } else if (recognitionStoppingRef.current) {
+      restartAfterStopRef.current = true
     }
   }, [activeChannel?.channelId, isJoined, isMuted, startMinutesSpeechRecognitionRef, stopMinutesSpeechRecognitionRef, voiceMinutes?.recording])
 
@@ -525,6 +558,7 @@ useEffect(() => {
 
     async function syncMeetingPanel() {
       try {
+        const epoch = minutesUpdateEpochRef.current
         const [messages, minutes] = await Promise.all([
           fetchVoiceChatMessages(channelId),
           fetchVoiceMinutes(channelId),
@@ -536,10 +570,7 @@ useEffect(() => {
 
         setVoiceChatMessages(messages)
         setVoiceChatChannelId(channelId)
-        setVoiceMinutes(minutes)
-        if (shouldSyncMinutesDraftFromServerRef.current()) {
-          setMinutesDraft(minutes.transcript ?? '')
-        }
+        if (epoch === minutesUpdateEpochRef.current) applyVoiceMinutesRef.current(minutes)
       } catch {
         // The call itself should stay usable even if the side panel refresh misses once.
       }
@@ -547,6 +578,7 @@ useEffect(() => {
 
     async function syncRoomPanel() {
       try {
+        const epoch = minutesUpdateEpochRef.current
         const [messages, minutes] = await Promise.all([
           fetchVoiceChatMessages(channelId),
           fetchVoiceMinutes(channelId),
@@ -558,11 +590,7 @@ useEffect(() => {
 
         setVoiceChatMessages(messages)
         setVoiceChatChannelId(channelId)
-        setVoiceMinutes(minutes)
-
-        if (shouldSyncMinutesDraftFromServerRef.current()) {
-          setMinutesDraft(minutes.transcript ?? '')
-        }
+        if (epoch === minutesUpdateEpochRef.current) applyVoiceMinutesRef.current(minutes)
       } catch {
         // Room panel polling is a convenience layer.
       }
@@ -577,11 +605,12 @@ useEffect(() => {
       stopped = true
       window.clearInterval(refreshId)
     }
-  }, [activeChannel?.channelId, isJoined, session?.accessToken, setRoomPanelTab, shouldSyncMinutesDraftFromServerRef])
+  }, [activeChannel?.channelId, isJoined, session?.accessToken, setRoomPanelTab, applyVoiceMinutesRef])
 
   return {
     voiceChatLoaded: voiceChatChannelId === activeChannel?.channelId,
     voiceChatMessages,voiceChatInput,setVoiceChatInput,voiceMinutes,minutesDraft,setMinutesDraft,
+    minutesTranscriptPending: Boolean(Object.values(transcriptPreviews).some(Boolean) || pendingTranscriptLinesRef.current.length),
     minutesInterimTranscript: Object.values(transcriptPreviews).join('\n'),applyTranscriptPreview,
     minutesActionItems,selectedMinutesActionItems,minutesSummaryReportOpen,setMinutesSummaryReportOpen,
     chatSending,chatClearing,minutesSaving,kanbanTaskCreating,speechRecognitionActive,minutesTextareaRef,

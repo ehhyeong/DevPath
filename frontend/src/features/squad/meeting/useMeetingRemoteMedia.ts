@@ -110,9 +110,18 @@ export function useMeetingRemoteMedia(props: Props) {
     const view = { userId, userName: getVoiceDisplayName(userId, userName), stream: cameraStream, local: false }
     remoteCameraStreamsRef.current.set(userId, view)
     if (remoteCameraPendingRef.current.has(userId)) setRemoteCameraStreams((current) => new Map(current).set(userId, view))
-    track.onended = () => clearRemoteCameraStream(userId, true)
+    // 교체 전 트랙의 지연 이벤트가 현재 영상이나 사용자의 켜짐 상태를 지우지 않게 한다.
+    track.onended = () => {
+      if (remoteCameraStreamsRef.current.get(userId) !== view) return
+      remoteCameraStreamsRef.current.delete(userId)
+      setRemoteCameraStreams((current) => {
+        const next = new Map(current)
+        next.delete(userId)
+        return next
+      })
+    }
     track.onunmute = () => {
-      if (remoteCameraPendingRef.current.has(userId)) setRemoteCameraStreams((current) => new Map(current).set(userId, view))
+      if (remoteCameraStreamsRef.current.get(userId) === view && remoteCameraPendingRef.current.has(userId)) setRemoteCameraStreams((current) => new Map(current).set(userId, view))
     }
   }
 

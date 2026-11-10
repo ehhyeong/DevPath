@@ -79,7 +79,8 @@ public class VoiceMeetingMinutesService {
   }
 
   @Transactional
-  public VoiceResponse.MinutesAnalysisDetail generateMinutesSummary(Long channelId, Long userId) {
+  public VoiceResponse.MinutesAnalysisDetail generateMinutesSummary(
+      Long channelId, Long userId, VoiceRequest.MinutesSummary request) {
     VoiceChannel channel = voiceChannelAccess.getActiveChannel(channelId);
     User user = voiceChannelAccess.getUser(userId);
     voiceChannelAccess.validateWorkspaceMember(channel.getWorkspaceId(), user.getId());
@@ -90,10 +91,15 @@ public class VoiceMeetingMinutesService {
             channel.getId());
     Collections.reverse(messages);
 
-    String fallbackSummary = buildSummary(minutes, messages);
+    // 임시 문장은 이번 요약의 입력으로만 사용하고, 후속 final과 중복되지 않도록 원문에는 쓰지 않는다.
+    String transcript =
+        request != null && request.transcript() != null
+            ? request.transcript()
+            : minutes.getTranscript();
+    String fallbackSummary = buildSummary(transcript, messages);
     VoiceMinutesAnalyzer.Analysis analysis =
-        hasInput(minutes, messages)
-            ? voiceMinutesAnalyzer.analyze(minutes, messages, fallbackSummary)
+        hasInput(transcript, messages)
+            ? voiceMinutesAnalyzer.analyze(transcript, messages, fallbackSummary)
             : new VoiceMinutesAnalyzer.Analysis(fallbackSummary, List.of());
 
     minutes.update(user, null, null, analysis.summary());
@@ -160,8 +166,8 @@ public class VoiceMeetingMinutesService {
     return "[%s] %s: %s".formatted(time, speakerName.isBlank() ? "User" : speakerName, transcript);
   }
 
-  private boolean hasInput(VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
-    return !normalizeText(minutes.getTranscript()).isBlank() || !messages.isEmpty();
+  private boolean hasInput(String transcript, List<VoiceChatMessage> messages) {
+    return !normalizeText(transcript).isBlank() || !messages.isEmpty();
   }
 
   private VoiceMeetingMinutes getOrCreateMinutes(VoiceChannel channel, User user) {
@@ -182,9 +188,9 @@ public class VoiceMeetingMinutesService {
                     VoiceMeetingMinutes.builder().channel(channel).updatedBy(user).build()));
   }
 
-  private String buildSummary(VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
+  private String buildSummary(String sourceTranscript, List<VoiceChatMessage> messages) {
     List<String> parts = new ArrayList<>();
-    String transcript = normalizeMultiline(minutes.getTranscript());
+    String transcript = normalizeMultiline(sourceTranscript);
 
     if (!transcript.isBlank()) {
       String transcriptLines =

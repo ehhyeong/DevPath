@@ -137,7 +137,7 @@ class VoiceMeetingMinutesServiceTest {
                         .build())));
     when(geminiProvider.generate(anyString())).thenReturn("잘못된 JSON");
 
-    var result = voiceMeetingMinutesService.generateMinutesSummary(5L, 23L);
+    var result = voiceMeetingMinutesService.generateMinutesSummary(5L, 23L, null);
 
     assertThat(result.minutes().summary())
         .isEqualTo(
@@ -193,12 +193,45 @@ class VoiceMeetingMinutesServiceTest {
             """);
 
     VoiceResponse.MinutesAnalysisDetail result =
-        voiceMeetingMinutesService.generateMinutesSummary(channelId, userId);
+        voiceMeetingMinutesService.generateMinutesSummary(channelId, userId, null);
 
     assertThat(result.minutes().summary()).isEqualTo("결제 화면을 완성하고 리뷰 일정을 확정했다.");
     assertThat(result.actionItems()).hasSize(1);
     assertThat(result.actionItems().getFirst().title()).isEqualTo("결제 UI 완성");
     assertThat(result.actionItems().getFirst().dueDate()).isEqualTo(LocalDate.of(2026, 8, 10));
+  }
+
+  @Test
+  void summarizesInterimSnapshotWithoutPersistingItAsTranscript() {
+    User user = User.builder().email("voice@example.com").name("발언자").build();
+    ReflectionTestUtils.setField(user, "id", 23L);
+    VoiceChannel channel = VoiceChannel.builder().workspaceId(9L).creator(user).name("회의").build();
+    ReflectionTestUtils.setField(channel, "id", 5L);
+    VoiceMeetingMinutes minutes =
+        VoiceMeetingMinutes.builder().channel(channel).updatedBy(user).build();
+    minutes.update(user, true, "기존 확정 기록", null);
+    when(voiceChannelRepository.findByIdAndIsDeletedFalse(5L)).thenReturn(Optional.of(channel));
+    when(userRepository.findById(23L)).thenReturn(Optional.of(user));
+    when(workspaceMemberRepository.existsByWorkspaceIdAndLearnerId(9L, 23L)).thenReturn(true);
+    when(voiceMeetingMinutesRepository.findByChannel_IdAndIsDeletedFalse(5L))
+        .thenReturn(Optional.of(minutes));
+    when(voiceChatMessageRepository.findTop500ByChannel_IdAndIsDeletedFalseOrderByCreatedAtDesc(5L))
+        .thenReturn(new ArrayList<>());
+    when(geminiProvider.generate(anyString()))
+        .thenAnswer(
+            invocation -> {
+              assertThat((String) invocation.getArgument(0)).contains("기존 확정 기록\n팀원이 말하는 임시 대본");
+              return "{\"summary\":\"임시 대본을 포함한 요약\",\"actionItems\":[]}";
+            });
+
+    var result =
+        voiceMeetingMinutesService.generateMinutesSummary(
+            5L, 23L, new VoiceRequest.MinutesSummary("기존 확정 기록\n팀원이 말하는 임시 대본"));
+
+    assertThat(result.minutes().summary()).isEqualTo("임시 대본을 포함한 요약");
+    assertThat(result.minutes().transcript()).isEqualTo("기존 확정 기록");
+    assertThat(minutes.getTranscript()).isEqualTo("기존 확정 기록");
+    assertThat(minutes.getRecording()).isTrue();
   }
 
   @Test

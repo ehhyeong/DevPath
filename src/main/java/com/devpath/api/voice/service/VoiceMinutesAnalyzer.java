@@ -3,7 +3,6 @@ package com.devpath.api.voice.service;
 import com.devpath.api.voice.dto.VoiceResponse;
 import com.devpath.common.provider.GeminiProvider;
 import com.devpath.domain.voice.entity.VoiceChatMessage;
-import com.devpath.domain.voice.entity.VoiceMeetingMinutes;
 import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,9 +24,8 @@ class VoiceMinutesAnalyzer {
   private final GeminiProvider geminiProvider;
   private final ObjectMapper objectMapper;
 
-  Analysis analyze(
-      VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages, String fallbackSummary) {
-    String response = geminiProvider.generate(buildPrompt(minutes, messages));
+  Analysis analyze(String transcript, List<VoiceChatMessage> messages, String fallbackSummary) {
+    String response = geminiProvider.generate(buildPrompt(transcript, messages));
 
     if (normalizeText(response).isBlank()) {
       return new Analysis(fallbackSummary, List.of());
@@ -48,8 +46,9 @@ class VoiceMinutesAnalyzer {
     }
   }
 
-  private String buildPrompt(VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
-    String transcript = shorten(normalizeMultiline(minutes.getTranscript()), 12000);
+  private String buildPrompt(String sourceTranscript, List<VoiceChatMessage> messages) {
+    // 원문/요약 요청의 20,000자 한도 안에서는 끝에 붙은 임시 발화까지 분석한다.
+    String transcript = shorten(normalizeMultiline(sourceTranscript), 20000);
     String chatLines = buildChatLines(messages);
 
     return """

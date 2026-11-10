@@ -17,9 +17,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
+// 상태/요약만 바꾼 요청이 다른 참여자가 방금 저장한 원문까지 옛 값으로 덮지 않도록 한다.
+@DynamicUpdate
 @Table(name = "voice_meeting_minutes")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
