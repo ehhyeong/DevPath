@@ -31,7 +31,7 @@ export function ChangeLabel({ change }: ChangeLabelProps) {
   )
 }
 
-export function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }: RoadmapNodeCardProps) {
+export function RoadmapNodeCard({ node, newlyAdded, proofCard, pendingChange, badge, onNodeClick }: RoadmapNodeCardProps) {
   const readyToClear = isNodeReadyToClear(node)
   const progressPercent = node.clearProgressPercent ?? getNodeLessonProgressPercent(node)
   const visibleBadge = badge ?? {
@@ -47,7 +47,12 @@ export function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeC
   }
 
   return (
-    <div className={getNodeBoxClass(node, pendingChange)} onClick={handleClick}>
+    <div className={`${getNodeBoxClass(node, pendingChange)}${newlyAdded ? ' roadmap-node-located' : ''}`} aria-current={newlyAdded ? 'true' : undefined} onClick={handleClick}>
+      {newlyAdded && (
+        <span className="roadmap-node-location-label inline-flex self-start items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+          <i className="fas fa-location-dot" aria-hidden="true" />추가된 노드
+        </span>
+      )}
       {pendingChange && <ChangeLabel change={pendingChange} />}
       {proofCard && node.status === 'COMPLETED' && (
         <ProofCardBadge card={proofCard} />
@@ -190,6 +195,7 @@ export function GhostAddCard({ change, processing, badge, onApply, onIgnore }: G
 
 export function RoadmapGraph({
   layout,
+  addedNodeId,
   proofCardByNodeId,
   changeByNodeId,
   processing,
@@ -293,6 +299,7 @@ export function RoadmapGraph({
       return (
         <RoadmapNodeCard
           node={slot.node}
+          newlyAdded={slot.node.customNodeId === addedNodeId}
           proofCard={nodeOriginalId == null ? undefined : proofCardByNodeId[nodeOriginalId]}
           pendingChange={nodeOriginalId == null ? undefined : changeByNodeId[nodeOriginalId]}
           badge={slot.badge}
@@ -345,9 +352,10 @@ export function RoadmapGraph({
           {layout.edges.map((edge) => {
             const path = makeEdgePath(edge, slotRects, edgeBusY[edge.id])
             if (!path) return null
+            // 다른 제안을 수락해 배열 순서가 바뀌어도 남은 연결선의 등장 효과를 다시 시작하지 않는다.
             return (
               <path
-                key={edge.id}
+                key={edge.kind === 'suggestion' ? `${edge.kind}:${edge.from}:${edge.to}` : edge.id}
                 d={path}
                 style={{ d: `path("${path}")` }}
                 className={`ui-roadmap-edge ${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme} ${
@@ -396,7 +404,9 @@ export function RoadmapGraph({
               '--slot-offset-y': `${slot.stackOffset ?? 0}px`,
             } as CSSProperties}
           >
-            {renderSlot(slot)}
+            {slot.kind === 'suggested-branch' || slot.kind === 'ghost-add' ? (
+              <div className="roadmap-suggestion-enter">{renderSlot(slot)}</div>
+            ) : renderSlot(slot)}
           </div>
         ))}
       </div>

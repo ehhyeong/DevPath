@@ -616,6 +616,7 @@ export const roadmapNodeMetaTagClassName = 'inline-flex flex-[0_0_auto] items-ce
 
 export interface RoadmapNodeCardProps {
   node: RoadmapNodeItem
+  newlyAdded?: boolean
   proofCard?: ProofCardSummary
   pendingChange?: RecommendationChange
   badge?: BranchBadgeMeta
@@ -726,6 +727,7 @@ export function makeEdgePath(edge: LayoutEdge, rects: Record<string, SlotRect>, 
 
 export interface RoadmapGraphProps {
   layout: RoadmapLayout
+  addedNodeId?: number | null
   proofCardByNodeId: Record<number, ProofCardSummary | undefined>
   changeByNodeId: Record<number, RecommendationChange | undefined>
   processing: boolean
