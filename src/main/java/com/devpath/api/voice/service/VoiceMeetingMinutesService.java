@@ -184,10 +184,16 @@ public class VoiceMeetingMinutesService {
 
   private String buildSummary(VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
     List<String> parts = new ArrayList<>();
-    String transcript = normalizeText(minutes.getTranscript());
+    String transcript = normalizeMultiline(minutes.getTranscript());
 
     if (!transcript.isBlank()) {
-      parts.add("회의 기록: " + shorten(transcript, 700));
+      String transcriptLines =
+          shorten(transcript, 700)
+              .lines()
+              .filter(line -> !line.isBlank())
+              .map(line -> "- " + line.trim())
+              .collect(Collectors.joining("\n"));
+      parts.add("### 회의 기록 발췌\n" + transcriptLines);
     }
 
     if (!messages.isEmpty()) {
@@ -196,18 +202,19 @@ public class VoiceMeetingMinutesService {
               .limit(12)
               .map(
                   message ->
-                      message.getSender().getName()
+                      "- "
+                          + message.getSender().getName()
                           + ": "
                           + shorten(normalizeText(message.getContent()), 120))
-              .collect(Collectors.joining(" / "));
-      parts.add("회의 채팅: " + chatLines);
+              .collect(Collectors.joining("\n"));
+      parts.add("### 회의 채팅 발췌\n" + chatLines);
     }
 
     if (parts.isEmpty()) {
       return "아직 요약할 회의 기록이나 채팅이 없습니다.";
     }
 
-    return String.join("\n", parts);
+    return "AI 요약을 생성하지 못해 원문 일부를 표시합니다.\n\n" + String.join("\n\n", parts);
   }
 
   private String normalizeText(String value) {
