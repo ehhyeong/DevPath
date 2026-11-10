@@ -177,8 +177,13 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
   useEffect(() => {
     if (!focusedDiffLine || focusedDiffLine.filePath !== selectedFilePath || !detail) return
     const element = document.getElementById(`review-${detail.summary.reviewId}-${encodeURIComponent(focusedDiffLine.filePath)}-${focusedDiffLine.rawLineNumber}`)
-    element?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    element?.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'instant' : 'smooth' })
     element?.focus({ preventScroll: true })
+    if (element?.animate && !reduceMotion) {
+      const animation = element.animate([{ backgroundColor: '#FEF3C7' }, { backgroundColor: getComputedStyle(element).backgroundColor }], { duration: 850, easing: 'ease-out' })
+      return () => animation.cancel()
+    }
   }, [detail, focusedDiffLine, selectedFilePath])
 
   const selectedFileStorageKey = useCallback((reviewId: number) => {
@@ -816,7 +821,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
           const lines = parseReviewDiff(activeFile.diffText ?? '')
 
           return (
-            <div id="selectedReviewFile" key={`${activeFile.fileId ?? activeFile.filePath}-selected`} className="scroll-mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div id="selectedReviewFile" key={`${activeFile.fileId ?? activeFile.filePath}-selected`} className="ui-content-enter scroll-mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 p-3">
                 <span className="min-w-0 break-all font-mono text-xs font-semibold leading-5 text-gray-700" title={activeFile.filePath}>
                   <i className="fas fa-file-code mr-1 text-gray-400"></i> {activeFile.filePath}
@@ -837,7 +842,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
 
                   const focused = focusedDiffLine?.filePath === activeFile.filePath && focusedDiffLine.rawLineNumber === line.rawLineNumber
                   return (
-                    <div id={`review-${detail?.summary.reviewId}-${encodeURIComponent(activeFile.filePath)}-${line.rawLineNumber}`} tabIndex={-1} data-old-line={line.oldLineNumber} data-new-line={line.newLineNumber} key={line.rawLineNumber} className={`code-line group relative grid min-h-[30px] grid-cols-[48px_48px_minmax(0,1fr)] font-['JetBrains_Mono','Consolas',monospace] text-sm leading-[30px] focus:outline-none ${lineClass} ${focused ? 'ring-2 ring-inset ring-amber-400 bg-amber-50!' : ''}`}>
+                    <div id={`review-${detail?.summary.reviewId}-${encodeURIComponent(activeFile.filePath)}-${line.rawLineNumber}`} tabIndex={-1} data-old-line={line.oldLineNumber} data-new-line={line.newLineNumber} key={line.rawLineNumber} className={`code-line group relative grid min-h-[30px] grid-cols-[48px_48px_minmax(0,1fr)] font-['JetBrains_Mono','Consolas',monospace] text-sm leading-[30px] focus:outline-none ${lineClass} ${focused ? 'ring-2 ring-inset ring-amber-400' : ''}`}>
                       <div className="code-num select-none border-r border-gray-200 pr-3 text-right tabular-nums text-gray-500">{line.oldLineNumber ?? ''}</div>
                       <div className="code-num select-none border-r border-gray-200 pr-3 text-right tabular-nums text-gray-500">{line.newLineNumber ?? ''}</div>
                       <div className="whitespace-pre px-4">{line.text || ' '}</div>

@@ -210,7 +210,7 @@ export default function SquadReviewApp({ aiWorkspace = false, design, projectNam
             {detailLoading && !detail ? (
               renderDetailLoading()
             ) : detail ? (
-              <>
+              <div key={detail.summary.reviewId} className="ui-content-enter flex min-h-0 flex-1 flex-col">
                 <div className="shrink-0 border-b border-gray-200 bg-white p-4 lg:px-6 lg:py-5">
                   <div className="mb-3 flex flex-wrap items-start gap-3">
                     <span className={`${statusBadgeClass(detail.summary.status)} flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-bold`}>
@@ -359,7 +359,7 @@ export default function SquadReviewApp({ aiWorkspace = false, design, projectNam
                     </button>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
               renderEmptyDetail()
             )}

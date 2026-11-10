@@ -1,4 +1,5 @@
 import { useCallback, useId, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
+import { useLayoutMotion } from '../../../lib/useLayoutMotion'
 import AuthModal from '../../../components/AuthModal'
 import MeetingAudioSettings from './MeetingAudioSettings'
 import MeetingParticipantStage from './MeetingParticipantStage'
@@ -31,6 +32,8 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
   }
   const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, minutesInterimTranscript, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
   const demoWorkspace = useDemoWorkspace(workspaceId, Boolean(model.aiWorkspace && isJoined))
+  const participantMotionRef = useRef<HTMLDivElement>(null)
+  useLayoutMotion(participantMotionRef, roomParticipants.map(participant => participant.participantId).join(','))
   const unreadChatCount = useMeetingChatUnread({ channelId: activeChannel?.channelId ?? null, currentUserId: session?.userId, messages: voiceChatMessages, ready: Boolean(isJoined && model.voiceChatLoaded), chatVisible: Boolean(roomSidePanelOpen && roomPanelTab === 'chat') })
   const unreadChatStatusId = useId()
   function renderUnreadChatBadge(className = '') {
@@ -225,6 +228,8 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
     return (
       <div
         key={participant.participantId}
+        data-participant-id={participant.participantId}
+        data-motion-key={`participant-${participant.participantId}`}
         onContextMenu={(event) => { event.preventDefault(); openParticipantAudio(participant, event) }}
         className={`squad-meeting-participant-tile relative isolate flex min-h-[var(--participant-card-height)] items-center justify-center overflow-hidden rounded-[12px] border border-[#374151] bg-[#111827] [box-shadow:0_8px_24px_rgba(0,0,0,0.18)] ${threeParticipantPlacement} ${speaking ? 'is-speaking border-[#00c471] [box-shadow:0_0_0_2px_rgba(0,196,113,0.65),0_0_26px_rgba(0,196,113,0.22)] [&_.squad-meeting-participant-avatar]:border-[#00c471]!' : ''} ${cameraView ? 'has-video bg-[#020617] after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:z-[1] after:h-[44%] after:bg-[linear-gradient(to_top,rgba(0,0,0,0.72),transparent)] after:content-[""]' : ''}`}
       >
@@ -634,7 +639,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
 
         <main className="flex-1 flex overflow-hidden relative">
           <section className={`squad-meeting-room-stage-shell group/room-stage relative flex min-w-0 flex-1 flex-col overflow-hidden p-4 ${model.aiWorkspace ? '' : 'pb-[112px]!'}`}>
-            <div className={`squad-meeting-participant-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 box-border shadow-inner ${model.aiWorkspace ? '' : 'p-4'}`}>
+            <div ref={model.aiWorkspace ? undefined : participantMotionRef} className={`squad-meeting-participant-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 box-border shadow-inner ${model.aiWorkspace ? '' : 'p-4'}`}>
               {model.aiWorkspace ? <MeetingParticipantStage participants={gridParticipants} members={members} currentUserId={session?.userId} getCamera={getParticipantCameraView} screenShares={activeScreenShares} onFullscreenShare={openScreenSharePlayer} onAudioSettings={openParticipantAudio} participantAudio={model.audioControls?.participants} /> : activeScreenShares.length > 0 ? (
                 <div className={`grid h-full min-h-0 w-full gap-3 ${screenShareGridClass}`}>
                   {activeScreenShares.map((screenShare) => (
