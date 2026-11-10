@@ -1,7 +1,11 @@
-import { useLayoutEffect, useRef, type CSSProperties } from 'react'
+import { useCallback, useId, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react'
+import { useLayoutMotion } from '../../../lib/useLayoutMotion'
 import AuthModal from '../../../components/AuthModal'
 import MeetingAudioSettings from './MeetingAudioSettings'
+import MeetingMinutesSummary from './MeetingMinutesSummary'
 import MeetingParticipantStage from './MeetingParticipantStage'
+import MeetingParticipantAudioMenu, { type ParticipantAudioMenuTarget } from './MeetingParticipantAudioMenu'
+import { useMeetingChatUnread } from './useMeetingChatUnread'
 import SquadWorkspaceAside from '../../../components/SquadWorkspaceAside'
 import SquadWorkspaceLoadingView from '../../../components/SquadWorkspaceLoadingView'
 import SquadWorkspaceHeader from '../../../components/SquadWorkspaceHeader'
@@ -16,13 +20,38 @@ import { DEMO_TEXT } from '../../../lib/demo-typing'
 import { useDemoAccount, useDemoTyping } from '../../../lib/useDemoTyping'
 import { useDemoWorkspace } from '../useDemoWorkspace'
 export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorkspacePageProps) {
-  const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
+  const [participantAudioMenu, setParticipantAudioMenu] = useState<ParticipantAudioMenuTarget | null>(null)
+  const closeParticipantAudioMenu = useCallback(() => setParticipantAudioMenu(null), [])
+  function openParticipantAudio(participant: VoiceParticipant, event: MouseEvent<HTMLElement>) {
+    if (participant.userId === model.session?.userId) {
+      setParticipantAudioMenu(null)
+      model.setAudioSettingsOpen(true)
+      return
+    }
+    const bounds = event.currentTarget.getBoundingClientRect()
+    setParticipantAudioMenu({ participant, x: event.clientX || bounds.left, y: event.clientY || bounds.bottom, trigger: event.currentTarget })
+  }
+  const { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, minutesInterimTranscript, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, setAudioSettingsOpen, remoteAudioMuted, micLevel, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, screenSharePlayerUserId, screenShareZoom, screenSharePan, screenShareDragging, floatingReactions, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag } = model
   const demoWorkspace = useDemoWorkspace(workspaceId, Boolean(model.aiWorkspace && isJoined))
+  const participantMotionRef = useRef<HTMLDivElement>(null)
+  useLayoutMotion(participantMotionRef, roomParticipants.map(participant => participant.participantId).join(','))
+  const unreadChatCount = useMeetingChatUnread({ channelId: activeChannel?.channelId ?? null, currentUserId: session?.userId, messages: voiceChatMessages, ready: Boolean(isJoined && model.voiceChatLoaded), chatVisible: Boolean(roomSidePanelOpen && roomPanelTab === 'chat') })
+  const unreadChatStatusId = useId()
+  function renderUnreadChatBadge(className = '') {
+    return unreadChatCount > 0 ? <span aria-hidden="true" className={`meeting-chat-unread-badge inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] leading-none font-extrabold text-white ${className}`}>{unreadChatCount > 99 ? '99+' : unreadChatCount}</span> : null
+  }
   const demoAccount = useDemoAccount('kim.hakseup@devpath.com', demoWorkspace)
   const demoChat = useDemoTyping({ text: DEMO_TEXT.meeting, value: voiceChatInput, onValue: setVoiceChatInput,
     enabled: demoAccount, active: Boolean(isJoined && roomPanelTab === 'chat' && !chatSending),
     scopeKey: activeChannel?.channelId, instant: true })
   const chatInputRef = useRef<HTMLTextAreaElement>(null)
+  const displayedTranscript = voiceMinutes?.recording && minutesInterimTranscript
+    ? [minutesDraft.trimEnd(), minutesInterimTranscript].filter(Boolean).join('\n')
+    : minutesDraft
+  useLayoutEffect(() => {
+    const field = minutesTextareaRef.current
+    if (voiceMinutes?.recording && field) field.scrollTop = field.scrollHeight
+  }, [displayedTranscript, voiceMinutes?.recording, minutesTextareaRef, roomPanelTab, roomSidePanelOpen])
   useLayoutEffect(() => {
     const field = chatInputRef.current
     // 시연처럼 상태로 문구를 채우면 브라우저가 끝 커서를 따라 스크롤하지 않는다. 중간 편집 위치는 유지한다.
@@ -200,15 +229,19 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
     return (
       <div
         key={participant.participantId}
+        data-participant-id={participant.participantId}
+        data-motion-key={`participant-${participant.participantId}`}
+        onContextMenu={(event) => { event.preventDefault(); openParticipantAudio(participant, event) }}
         className={`squad-meeting-participant-tile relative isolate flex min-h-[var(--participant-card-height)] items-center justify-center overflow-hidden rounded-[12px] border border-[#374151] bg-[#111827] [box-shadow:0_8px_24px_rgba(0,0,0,0.18)] ${threeParticipantPlacement} ${speaking ? 'is-speaking border-[#00c471] [box-shadow:0_0_0_2px_rgba(0,196,113,0.65),0_0_26px_rgba(0,196,113,0.22)] [&_.squad-meeting-participant-avatar]:border-[#00c471]!' : ''} ${cameraView ? 'has-video bg-[#020617] after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:z-[1] after:h-[44%] after:bg-[linear-gradient(to_top,rgba(0,0,0,0.72),transparent)] after:content-[""]' : ''}`}
       >
+        <button type="button" onClick={(event) => openParticipantAudio(participant, event)} aria-label={`${participant.userName} 오디오 설정 열기`} className="absolute top-2 right-2 z-[3] flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 p-0! text-xs! text-gray-300 hover:text-white"><i className="fas fa-ellipsis-h" aria-hidden="true" /></button>
         {speaking ? (
           <div className="squad-meeting-participant-pulse absolute aspect-square w-[calc(var(--participant-avatar-size)+28px)] rounded-[9999px] border-[4px] border-[#00c471] opacity-[0.65] [animation:squadMeetingParticipantPulse_1.8s_ease-out_infinite]" aria-hidden="true"></div>
         ) : null}
         {cameraView ? (
           <MediaStreamVideo
             stream={cameraView.stream}
-            muted={cameraView.local}
+            muted
             className={`squad-meeting-participant-video absolute inset-0 z-0 h-full w-full bg-[#020617] object-cover ${cameraView.local ? 'is-local -scale-x-100' : ''}`}
           />
         ) : (
@@ -230,10 +263,10 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
 
   function renderScreenShareView(screenShare: ScreenShareView) {
     return (
-      <div className="squad-meeting-screen-share-view relative flex h-full w-full min-h-0 select-none items-center justify-center overflow-hidden rounded-[12px] bg-[#020617]">
+      <div onContextMenu={(event) => { const participant = roomParticipants.find((item) => item.userId === screenShare.userId); if (participant) { event.preventDefault(); openParticipantAudio(participant, event) } }} className="squad-meeting-screen-share-view relative flex h-full w-full min-h-0 select-none items-center justify-center overflow-hidden rounded-[12px] bg-[#020617]">
         <MediaStreamVideo
           stream={screenShare.stream}
-          muted={screenShare.local}
+          muted
           className="squad-meeting-screen-share-video h-full w-full bg-[#020617] object-contain"
         />
         <button
@@ -323,7 +356,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
         >
           <MediaStreamVideo
             stream={screenShare.stream}
-            muted={screenShare.local}
+            muted
             className="squad-meeting-screen-share-player-video h-full max-h-full w-full max-w-full origin-center bg-[#020617] object-contain transition-[transform] duration-[90ms] ease-out will-change-transform"
             style={videoStyle}
           />
@@ -352,75 +385,84 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
           <button
             type="button"
             onClick={() => setRoomPanelTab('chat')}
+            aria-label="팀 채팅방"
+            aria-describedby={unreadChatCount > 0 ? unreadChatStatusId : undefined}
             className={`squad-meeting-room-tab-button flex h-[44px]! min-h-[44px]! flex-1 items-center justify-center gap-2 border-b-2 p-0! text-[12px]! leading-[16px]! font-bold box-border transition [&_i]:text-[14px]! [&_i]:leading-[16px]! ${roomPanelTab === 'chat' ? 'text-brand border-brand bg-gray-800' : 'text-gray-400 hover:text-gray-200 border-transparent'}`}
           >
-            <i className="fas fa-comments text-sm"></i> 팀 채팅방
+            <i className="fas fa-comments text-sm"></i> 팀 채팅방 {renderUnreadChatBadge()}
+          </button>
+        </div>
+
+        <div className="p-3 border-b border-gray-800 bg-gray-800 flex justify-between items-center shrink-0 shadow-sm">
+          <div className="flex items-center gap-2">
+            {voiceMinutes?.recording ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-red-500 pulse-record"></span>
+                <span className="text-xs font-bold text-red-400 tracking-wide">
+                  {speechRecognitionActive ? '내 마이크 기록 중...' : '직접 입력 중...'}
+                </span>
+              </>
+            ) : (
+              <span className="text-xs font-bold text-gray-400 tracking-wide">기록 대기 중...</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => void toggleMinutesRecording()}
+            disabled={minutesSaving}
+            className={`squad-meeting-room-record-button flex h-[28px]! items-center gap-1.5 whitespace-nowrap rounded-[6px]! px-[12px]! py-0! text-[10px]! leading-[12px]! font-bold text-white box-border transition disabled:opacity-60 ${voiceMinutes?.recording ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'}`}
+          >
+            <div className={`${voiceMinutes?.recording ? 'w-2 h-2 rounded-sm' : 'w-1.5 h-1.5 rounded-full'} bg-white`}></div>
+            {voiceMinutes?.recording ? '기록 중지' : '기록 시작'}
           </button>
         </div>
 
         {roomPanelTab === 'minutes' ? (
-          <div className="flex-1 flex flex-col overflow-hidden bg-gray-900 relative">
-            <div className="p-3 border-b border-gray-800 bg-gray-800 flex justify-between items-center shrink-0 shadow-sm">
-              <div className="flex items-center gap-2">
-                {voiceMinutes?.recording ? (
-                  <>
-                    <span className="w-2 h-2 rounded-full bg-red-500 pulse-record"></span>
-                    <span className="text-xs font-bold text-red-400 tracking-wide">
-                      {speechRecognitionActive ? '내 마이크 기록 중...' : '직접 입력 중...'}
-                    </span>
-                  </>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-gray-900 relative">
+            <div className="meeting-minutes-content min-h-0 flex-1 overflow-y-auto dark-scrollbar p-4 space-y-5">
+              <section aria-label="회의 원문">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold text-gray-200">회의 원문</h3>
+                  <span className="text-xs text-gray-400">{voiceMinutes?.recording ? '실시간 기록' : '직접 수정 가능'}</span>
+                </div>
+                {displayedTranscript.trim() ? (
+                  <textarea
+                    aria-label="회의 원문"
+                    ref={minutesTextareaRef}
+                    value={displayedTranscript}
+                    onChange={(event) => setMinutesDraft(event.target.value)}
+                    onBlur={() => {
+                      if (!voiceMinutes?.recording) {
+                        void saveMinutesDraft(false)
+                      }
+                    }}
+                    readOnly={voiceMinutes?.recording}
+                    className={`dark-scrollbar h-[260px] w-full resize-none rounded-xl border border-gray-700 bg-gray-800/60 p-4 text-sm! leading-7! text-gray-300 outline-none focus:border-brand ${voiceMinutes?.recording ? 'cursor-default' : ''}`}
+                  />
                 ) : (
-                  <span className="text-xs font-bold text-gray-400 tracking-wide">기록 대기 중...</span>
+                  <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-700 px-4 text-center text-gray-400">
+                    <i className="fas fa-microphone-alt text-4xl mb-3"></i>
+                    <p className="text-sm leading-6">기록을 시작하면 내 마이크의 음성이<br />시간·발언자와 함께 여기에 쌓입니다.</p>
+                  </div>
                 )}
-              </div>
-              <button
-                type="button"
-                onClick={() => void toggleMinutesRecording()}
-                disabled={minutesSaving}
-                className={`squad-meeting-room-record-button flex h-[28px]! items-center gap-1.5 whitespace-nowrap rounded-[6px]! px-[12px]! py-0! text-[10px]! leading-[12px]! font-bold text-white box-border transition disabled:opacity-60 ${voiceMinutes?.recording ? 'bg-gray-600 hover:bg-gray-500' : 'bg-red-500 hover:bg-red-600'}`}
-              >
-                <div className={`${voiceMinutes?.recording ? 'w-2 h-2 rounded-sm' : 'w-1.5 h-1.5 rounded-full'} bg-white`}></div>
-                {voiceMinutes?.recording ? '기록 중지' : '기록 시작'}
-              </button>
-            </div>
+              </section>
 
-            <div className="flex-1 overflow-y-auto dark-scrollbar p-5 space-y-5">
-              {minutesDraft.trim() ? (
-                <textarea
-                  ref={minutesTextareaRef}
-                  value={minutesDraft}
-                  onChange={(event) => setMinutesDraft(event.target.value)}
-                  onBlur={() => {
-                    if (!voiceMinutes?.recording) {
-                      void saveMinutesDraft(false)
-                    }
-                  }}
-                  readOnly={voiceMinutes?.recording}
-                  className={`w-full min-h-[260px] resize-none rounded-xl border border-gray-700 bg-gray-800 p-4 text-sm leading-relaxed text-gray-300 outline-none focus:border-brand ${voiceMinutes?.recording ? 'cursor-default' : ''}`}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-gray-500 opacity-70">
-                  <i className="fas fa-microphone-alt text-4xl mb-3"></i>
-                  <p className="text-xs font-bold">[기록 시작] 버튼을 누르면 내 마이크 음성을 회의록에 적습니다.</p>
-                </div>
-              )}
+              {summary ? (
+                <section aria-label="AI 회의 요약" className="rounded-xl border border-gray-700 bg-gray-800/60 p-4">
+                  <h3 className="mb-4 flex items-center gap-2 text-sm font-extrabold text-brand">
+                    <i className="fas fa-magic"></i> AI 회의 요약
+                  </h3>
+                  <MeetingMinutesSummary summary={summary} />
+                  <button
+                    type="button"
+                    onClick={() => setMinutesSummaryReportOpen(true)}
+                    className="squad-meeting-room-report-button mt-3 h-[34px]! w-full rounded-[8px]! bg-gray-700 px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold text-white box-border transition hover:bg-gray-600"
+                  >
+                    요약 리포트 열기
+                  </button>
+                </section>
+              ) : null}
             </div>
-
-            {summary ? (
-              <div className="mx-4 mb-4 rounded-xl border border-gray-700 bg-gray-800 p-4">
-                <div className="mb-2 flex items-center gap-2 text-xs font-extrabold text-brand">
-                  <i className="fas fa-magic"></i> AI 회의 요약
-                </div>
-                <p className="whitespace-pre-line text-sm leading-relaxed text-gray-300">{summary}</p>
-                <button
-                  type="button"
-                  onClick={() => setMinutesSummaryReportOpen(true)}
-                  className="squad-meeting-room-report-button mt-3 h-[34px]! w-full rounded-[8px]! bg-gray-700 px-[12px]! py-0! text-[12px]! leading-[16px]! font-bold text-white box-border transition hover:bg-gray-600"
-                >
-                  요약 리포트 열기
-                </button>
-              </div>
-            ) : null}
 
             <div className="p-4 border-t border-gray-800 bg-gray-800 shrink-0">
               <button
@@ -446,8 +488,8 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
             </div>
 
             {minutesSummaryReportOpen ? (
-              <div className="absolute inset-0 z-10 flex flex-col border-t border-gray-700 bg-gray-800/95 p-6 backdrop-blur-md">
-                <div className="mb-5 flex items-center justify-between border-b border-gray-700 pb-3">
+              <div className="absolute inset-0 z-10 flex min-h-0 flex-col border-t border-gray-700 bg-gray-900 p-4">
+                <div className="mb-4 flex shrink-0 items-center justify-between gap-3 border-b border-gray-700 pb-4">
                   <h3 className="flex items-center gap-2 text-base font-extrabold text-white">
                     <i className="fas fa-robot text-lg text-brand"></i> AI 자동 요약 리포트
                   </h3>
@@ -461,14 +503,14 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
                   </button>
                 </div>
 
-                <div className="dark-scrollbar flex-1 space-y-6 overflow-y-auto pr-2">
+                <div className="meeting-minutes-report-content dark-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto pr-1">
                   <div>
-                    <h4 className="mb-2 border-l-4 border-blue-500 pl-2 text-sm font-bold text-gray-400">
+                    <h4 className="mb-3 text-sm font-bold text-gray-200">
                       <i className="fas fa-thumbtack mr-2 text-blue-400"></i>핵심 요약
                     </h4>
-                    <div className="rounded-xl border border-gray-700 bg-gray-900 p-4 text-sm leading-relaxed text-gray-200">
+                    <div className="rounded-xl border border-gray-700 bg-gray-800/60 p-4">
                       {summary ? (
-                        <p className="whitespace-pre-line">{summary}</p>
+                        <MeetingMinutesSummary summary={summary} />
                       ) : (
                         <p className="text-gray-500">아직 생성된 요약이 없습니다.</p>
                       )}
@@ -476,21 +518,19 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
                   </div>
 
                   <div>
-                    <h4 className="mb-2 border-l-4 border-brand pl-2 text-sm font-bold text-gray-400">
-                      <i className="fas fa-tasks mr-2 text-brand"></i>자동 추출 To-Do List
+                    <h4 className="mb-2 flex items-center justify-between gap-2 text-sm font-bold text-gray-200">
+                      <span><i className="fas fa-tasks mr-2 text-brand"></i>후속 할 일</span>
+                      <span className="text-xs font-medium text-gray-400">{selectedActionItemCount}/{minutesActionItems.length}개 선택</span>
                     </h4>
-                    <div className="space-y-3 rounded-xl border border-gray-700 bg-gray-900 p-4">
+                    <p className="mb-3 text-xs leading-5 text-gray-400">칸반에 등록할 할 일을 선택하세요.</p>
+                    <div className="space-y-3">
                       {minutesActionItems.length > 0 ? (
                         minutesActionItems.map((item, index) => {
                           const checked = selectedMinutesActionItems.includes(index)
-                          const meta = [item.assigneeName ? `담당 ${item.assigneeName}` : null, item.dueDate ? `마감 ${item.dueDate}` : null]
-                            .filter(Boolean)
-                            .join(' · ')
-
                           return (
                             <label
                               key={`${item.title}-${index}`}
-                              className="flex cursor-pointer items-start gap-3 text-sm text-gray-300 transition hover:text-white"
+                              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm transition ${checked ? 'border-brand/40 bg-gray-800' : 'border-gray-700 bg-gray-800/40'} hover:border-gray-500`}
                             >
                               <input
                                 type="checkbox"
@@ -498,11 +538,15 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
                                 onChange={() => toggleMinutesActionItem(index)}
                                 className="mt-1 h-4 w-4 rounded border-gray-600 bg-gray-700 accent-brand"
                               />
-                              <span className="min-w-0">
-                                <span className="block leading-relaxed">{item.title}</span>
-                                {meta ? (
-                                  <span className="mt-1 block text-xs text-gray-500">{meta}</span>
+                              <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                                <span className="block font-semibold leading-6 text-gray-100">{item.title}</span>
+                                {item.description ? (
+                                  <span className="mt-1 block whitespace-pre-line text-xs leading-6 text-gray-400">{item.description}</span>
                                 ) : null}
+                                <span className="mt-3 flex flex-wrap gap-2 text-xs leading-5 text-gray-300">
+                                  <span className="rounded-md bg-gray-700/70 px-2 py-0.5">{item.assigneeName ? `담당 ${item.assigneeName}` : '담당 미정'}</span>
+                                  <span className="rounded-md bg-gray-700/70 px-2 py-0.5">{item.dueDate ? `마감 ${item.dueDate}` : '기한 미정'}</span>
+                                </span>
                               </span>
                             </label>
                           )
@@ -518,7 +562,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
                   type="button"
                   onClick={() => void createKanbanTasksFromMinutes()}
                   disabled={kanbanTaskCreating || selectedActionItemCount === 0}
-                  className="squad-meeting-room-kanban-create-button mt-4 flex h-[46px]! w-full items-center justify-center gap-2 rounded-[12px]! bg-gray-700 px-[14px]! py-0! text-[14px]! leading-[20px]! font-bold text-white box-border shadow-lg transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="squad-meeting-room-kanban-create-button mt-4 flex h-[46px]! w-full shrink-0 items-center justify-center gap-2 rounded-[12px]! bg-brand px-[14px]! py-0! text-[14px]! leading-[20px]! font-bold text-white box-border shadow-lg transition hover:bg-green-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {kanbanTaskCreating ? (
                     <>
@@ -526,7 +570,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
                     </>
                   ) : (
                     <>
-                      <i className="fas fa-tasks"></i> 칸반 보드에 일괄 등록
+                      <i className="fas fa-tasks"></i> 선택한 할 일 {selectedActionItemCount}개 칸반에 등록
                     </>
                   )}
                 </button>
@@ -592,18 +636,21 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
             <button
               type="button"
               onClick={() => setRoomSidePanelOpen((current) => !current)}
-              className="squad-meeting-room-panel-toggle flex h-[36px]! w-[36px]! flex-[0_0_36px] items-center justify-center rounded-[8px]! border border-gray-600 bg-gray-700 p-0! box-border transition hover:bg-gray-600 [&_i]:text-[14px]! [&_i]:leading-[16px]!"
+              className="squad-meeting-room-panel-toggle relative flex h-[36px]! w-[36px]! flex-[0_0_36px] items-center justify-center rounded-[8px]! border border-gray-600 bg-gray-700 p-0! box-border transition hover:bg-gray-600 [&_i]:text-[14px]! [&_i]:leading-[16px]!"
               title="패널 열기/닫기"
+              aria-describedby={unreadChatCount > 0 ? unreadChatStatusId : undefined}
             >
               <i className="fas fa-list-ul"></i>
+              {!roomSidePanelOpen ? renderUnreadChatBadge('absolute -top-2 -right-2') : null}
             </button>
+            <span id={unreadChatStatusId} role="status" aria-live="polite" className="sr-only">{unreadChatCount > 0 ? `읽지 않은 팀 채팅 ${unreadChatCount}개` : ''}</span>
           </div>
         </header>
 
         <main className="flex-1 flex overflow-hidden relative">
           <section className={`squad-meeting-room-stage-shell group/room-stage relative flex min-w-0 flex-1 flex-col overflow-hidden p-4 ${model.aiWorkspace ? '' : 'pb-[112px]!'}`}>
-            <div className={`squad-meeting-participant-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 box-border shadow-inner ${model.aiWorkspace ? '' : 'p-4'}`}>
-              {model.aiWorkspace ? <MeetingParticipantStage participants={gridParticipants} members={members} currentUserId={session?.userId} getCamera={getParticipantCameraView} screenShares={activeScreenShares} onFullscreenShare={openScreenSharePlayer} /> : activeScreenShares.length > 0 ? (
+            <div ref={model.aiWorkspace ? undefined : participantMotionRef} className={`squad-meeting-participant-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 box-border shadow-inner ${model.aiWorkspace ? '' : 'p-4'}`}>
+              {model.aiWorkspace ? <MeetingParticipantStage participants={gridParticipants} members={members} currentUserId={session?.userId} getCamera={getParticipantCameraView} screenShares={activeScreenShares} onFullscreenShare={openScreenSharePlayer} onAudioSettings={openParticipantAudio} participantAudio={model.audioControls?.participants} /> : activeScreenShares.length > 0 ? (
                 <div className={`grid h-full min-h-0 w-full gap-3 ${screenShareGridClass}`}>
                   {activeScreenShares.map((screenShare) => (
                     <div key={screenShare.userId} className="min-h-0 min-w-0 overflow-hidden rounded-[12px]">
@@ -1067,6 +1114,7 @@ export default function SquadMeetingView(model: SquadMeetingViewModel & AiWorksp
       )}
 
       <MeetingAudioSettings model={model} />
+      {participantAudioMenu && isJoined && roomParticipants.some((participant) => participant.userId === participantAudioMenu.participant.userId) ? <MeetingParticipantAudioMenu target={participantAudioMenu} controls={model.audioControls} onClose={closeParticipantAudioMenu} /> : null}
 
       {renderAuthModal()}
     </div>

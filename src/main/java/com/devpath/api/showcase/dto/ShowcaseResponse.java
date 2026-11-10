@@ -13,10 +13,12 @@ public class ShowcaseResponse {
 
   private Long showcaseId;
   private Long userId;
+  private String authorName;
   private String authorProfileImage;
   private String title;
   private String description;
   private String thumbnailUrl;
+  private String techStack;
   private ShowcaseCategory category;
   private boolean isPublic;
   private long viewCount;
@@ -27,21 +29,24 @@ public class ShowcaseResponse {
 
   public static ShowcaseResponse of(
       Showcase showcase, long likeCount, List<ShowcaseLinkResponse> links) {
-    return of(showcase, likeCount, links, null);
+    return of(showcase, likeCount, links, null, null);
   }
 
   public static ShowcaseResponse of(
       Showcase showcase,
       long likeCount,
       List<ShowcaseLinkResponse> links,
-      String authorProfileImage) {
+      String authorProfileImage,
+      String authorName) {
     return ShowcaseResponse.builder()
         .showcaseId(showcase.getId())
         .userId(showcase.getUserId())
+        .authorName(authorName)
         .authorProfileImage(authorProfileImage)
         .title(showcase.getTitle())
         .description(showcase.getDescription())
         .thumbnailUrl(showcase.getThumbnailUrl())
+        .techStack(showcase.getTechStack())
         .category(showcase.getCategory())
         .isPublic(showcase.isPublic())
         .viewCount(showcase.getViewCount())

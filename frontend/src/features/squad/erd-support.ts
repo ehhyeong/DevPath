@@ -528,7 +528,7 @@ export function parseSqlToSchema(sql: string): ErdSchema {
 }
 
 export function getValidationIssues(schema: ErdSchema) {
-  const issues: string[] = []
+  const issues: { target: string; message: string }[] = []
   const tableNameCounts = new Map<string, number>()
 
   schema.tables.forEach((table) => {
@@ -536,7 +536,7 @@ export function getValidationIssues(schema: ErdSchema) {
     tableNameCounts.set(tableName, (tableNameCounts.get(tableName) ?? 0) + 1)
 
     if (!table.columns.some((column) => column.pk)) {
-      issues.push(`${table.name}: primary key is missing.`)
+      issues.push({ target: table.name, message: '행을 구분할 기본 키(PK)가 없습니다.' })
     }
 
     const columnNameCounts = new Map<string, number>()
@@ -546,14 +546,14 @@ export function getValidationIssues(schema: ErdSchema) {
     })
     columnNameCounts.forEach((count, columnName) => {
       if (count > 1) {
-        issues.push(`${table.name}.${columnName}: duplicate column name.`)
+        issues.push({ target: `${table.name}.${columnName}`, message: '같은 이름의 컬럼이 중복되어 있습니다.' })
       }
     })
   })
 
   tableNameCounts.forEach((count, tableName) => {
     if (count > 1) {
-      issues.push(`${tableName}: duplicate table name.`)
+      issues.push({ target: tableName, message: '같은 이름의 테이블이 중복되어 있습니다.' })
     }
   })
 
@@ -562,30 +562,30 @@ export function getValidationIssues(schema: ErdSchema) {
     const toTable = schema.tables.find((table) => table.name === relationship.to)
 
     if (!fromTable) {
-      issues.push(`${relationship.from}: relationship source table is missing.`)
+      issues.push({ target: relationship.from, message: '관계의 기준 테이블을 찾을 수 없습니다.' })
       return
     }
 
     if (!toTable) {
-      issues.push(`${relationship.to}: relationship target table is missing.`)
+      issues.push({ target: relationship.to, message: '관계가 연결될 대상 테이블을 찾을 수 없습니다.' })
       return
     }
 
     if (relationship.type === '}o--o{') {
-      issues.push(`${relationship.from} - ${relationship.to}: N:M needs a join table before physical FK export.`)
+      issues.push({ target: `${relationship.from} ↔ ${relationship.to}`, message: '다대다(N:M) 관계는 중간 테이블이 있어야 외래 키(FK)를 SQL로 내보낼 수 있습니다.' })
     }
 
     if (!relationship.fromColumn || !relationship.toColumn) {
-      issues.push(`${relationship.from} -> ${relationship.to}: FK columns are not linked.`)
+      issues.push({ target: `${relationship.from} → ${relationship.to}`, message: '관계에 연결할 기준 컬럼과 외래 키(FK) 컬럼이 지정되지 않았습니다.' })
       return
     }
 
     if (!fromTable.columns.some((column) => column.name === relationship.fromColumn)) {
-      issues.push(`${relationship.from}.${relationship.fromColumn}: source column is missing.`)
+      issues.push({ target: `${relationship.from}.${relationship.fromColumn}`, message: '관계의 기준 컬럼을 찾을 수 없습니다.' })
     }
 
     if (!toTable.columns.some((column) => column.name === relationship.toColumn)) {
-      issues.push(`${relationship.to}.${relationship.toColumn}: target FK column is missing.`)
+      issues.push({ target: `${relationship.to}.${relationship.toColumn}`, message: '연결할 외래 키(FK) 컬럼을 찾을 수 없습니다.' })
     }
   })
 
@@ -601,11 +601,9 @@ export function schemaStats(schema: ErdSchema) {
 }
 
 export function getErdViewportScale(diagramWidth: number, diagramHeight: number, viewportWidth: number, viewportHeight: number) {
-  // 사용자가 확대한 기준 화면의 도면 배율 0.698에 맞춰 16px 라벨의 읽기 크기를 유지한다.
-  const readableScale = 0.7
   // 도면 둘레에 48px씩 남겨 테이블 테두리와 캔버스 가장자리가 붙지 않게 한다.
   const padding = 96
-  return Math.max(readableScale, Math.min(1, (viewportWidth - padding) / diagramWidth, (viewportHeight - padding) / diagramHeight))
+  return Math.min(1, (viewportWidth - padding) / diagramWidth, (viewportHeight - padding) / diagramHeight)
 }
 
 export function loadMermaid() {

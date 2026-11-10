@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">REST API 설계 모음집 미리보기</title><desc id="desc">예약 생성 요청, 요청 본문과 응답 결과를 함께 확인하는 API 워크벤치 화면이다.</desc>
+  <rect width="1200" height="675" fill="#e5ebf8"/>
+  <g font-family="Arial, Malgun Gothic, sans-serif">
+    <text x="60" y="65" font-size="19" font-weight="700" fill="#425b9b" letter-spacing="3">API WORKBENCH / RESERVATION SERVICE</text>
+    <rect x="50" y="100" width="1100" height="533" rx="18" fill="#121c30"/>
+    <path d="M68 100H1132Q1150 100 1150 118V153H50V118Q50 100 68 100" fill="#1d2b45"/>
+    <circle cx="77" cy="126" r="5" fill="#ee8c90"/><circle cx="94" cy="126" r="5" fill="#e7bd74"/><circle cx="111" cy="126" r="5" fill="#78c5a0"/><text x="150" y="132" font-size="14" fill="#b4c4dc">Reservation API · Development</text><text x="980" y="132" font-size="12" fill="#88b6a6">● Connected</text>
+    <path d="M297 153V633" stroke="#2a3850"/>
+    <g font-size="14" fill="#97a9c6"><text x="76" y="193" fill="#d7e4f9" font-weight="700">COLLECTIONS</text><text x="76" y="238">인증 및 토큰</text><text x="76" y="281">예약 관리</text><text x="91" y="324" fill="#71d6b0">POST  예약 생성</text><text x="91" y="365">GET   예약 목록</text><text x="91" y="406">GET   예약 상세</text><text x="91" y="447">DEL   예약 취소</text><text x="76" y="514" fill="#d7e4f9" font-weight="700">ENVIRONMENTS</text><text x="92" y="552">● local</text><text x="92" y="585">○ staging</text></g>
+    <text x="323" y="195" font-size="21" font-weight="700" fill="#e1ebff">예약 생성</text><text x="1002" y="195" font-size="12" fill="#9bb0d0">OpenAPI 3.1</text>
+    <rect x="323" y="216" width="790" height="52" rx="8" fill="#23324c"/><text x="340" y="248" font-size="15" fill="#76dfb7" font-weight="700">POST</text><text x="410" y="248" font-size="15" fill="#d3def0">{{baseUrl}}/api/reservations</text><rect x="1017" y="222" width="89" height="40" rx="6" fill="#809fec"/><text x="1041" y="247" font-size="14" fill="#0e234a" font-weight="700">Send →</text>
+    <g font-size="13"><text x="326" y="303" fill="#8dacff">Body</text><text x="389" y="303" fill="#8195b6">Headers (3)</text><text x="501" y="303" fill="#8195b6">Authorization</text><text x="635" y="303" fill="#8195b6">Tests</text></g><path d="M323 316H1113" stroke="#2a3850"/>
+    <g font-family="Consolas, monospace" font-size="16"><text x="335" y="350" fill="#647b9b">1</text><text x="372" y="350" fill="#c7d8f3">{</text><text x="335" y="382" fill="#647b9b">2</text><text x="392" y="382" fill="#8fc7ef">"resourceId": <tspan fill="#dfb97d">42,</tspan></text><text x="335" y="414" fill="#647b9b">3</text><text x="392" y="414" fill="#8fc7ef">"reservedAt": <tspan fill="#91d0ad">"2026-10-30T14:00:00",</tspan></text><text x="335" y="446" fill="#647b9b">4</text><text x="392" y="446" fill="#8fc7ef">"quantity": <tspan fill="#dfb97d">1</tspan></text><text x="335" y="478" fill="#647b9b">5</text><text x="372" y="478" fill="#c7d8f3">}</text></g>
+    <rect x="323" y="503" width="790" height="101" rx="9" fill="#192940"/><text x="342" y="532" font-size="14" fill="#7ad8ac" font-weight="700">201 Created</text><text x="526" y="532" font-size="13" fill="#a2b4d0">48 ms · 246 B</text><text x="342" y="573" font-family="Consolas, monospace" font-size="15" fill="#d3e3f5">{ "reservationId": 108, "status": "CONFIRMED" }</text>
+  </g>
+</svg>

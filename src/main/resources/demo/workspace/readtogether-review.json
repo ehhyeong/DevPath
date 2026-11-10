@@ -1,0 +1,65 @@
+{
+  "key": "readtogether-progress-v1#1",
+  "filePath": "src/main/java/com/readtogether/reading/ReadingLogService.java",
+  "title": "feat: ReadTogether 독서 진행 기록 흐름 구현",
+  "description": "POST /api/books/{bookId}/reading-logs 구현과 연결 화면·테스트·DB 인덱스를 함께 검토하는 PR입니다. 현재 페이지는 0 이상 전체 페이지 이하여야 하며 비공개 기록은 작성자 또는 허용된 모임 범위에서만 조회합니다.",
+  "sourceBranch": "feature/readtogether-reading",
+  "diff": "diff --git a/src/main/java/com/readtogether/reading/ReadingLogService.java b/src/main/java/com/readtogether/reading/ReadingLogService.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/readtogether/reading/ReadingLogService.java\n@@ -0,0 +1,19 @@\n+package com.readtogether.reading;\n+\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.stereotype.Service;\n+import org.springframework.transaction.annotation.Transactional;\n+\n+@Service\n+@RequiredArgsConstructor\n+public class ReadingLogService {\n+    private final BookRepository books;\n+    private final ReadingLogRepository logs;\n+\n+    @Transactional\n+    public ReadingLog recordProgress(Long bookId, Long memberId, int currentPage, String memo) {\n+        Book book = books.findById(bookId).orElseThrow();\n+        ReadingLog log = new ReadingLog(book.getId(), memberId, currentPage, memo);\n+        return logs.save(log);\n+    }\n+}\n",
+  "juseungComment": "정상 저장 외에 정상 기록 테스트만 있어 늦은 요청으로 진행률이 되돌아가는 경우를 감지하지 못합니다. 0/마지막/초과 페이지·비소유자·역순 요청을 분리해 검증하세요.",
+  "taehyungComment": "인증 사용자와 book.ownerId를 확인하고 공유 범위 밖의 접근을 거부하세요. 0부터 totalPages까지 허용하고 완독 여부를 같은 규칙으로 계산하세요.",
+  "aiTitle": "ReadTogether 독서 진행 기록 다중 파일 검토",
+  "aiSummary": "독서 진행 기록의 서비스·컨트롤러·화면·테스트·DB 변경을 함께 확인했습니다. 비공개 서재의 기록 작성 권한 확인, 책의 전체 페이지를 초과한 진행률 거부과 경계 테스트를 보완하세요.",
+  "aiComments": [
+    {
+      "category": "보안",
+      "title": "비공개 서재의 기록 작성 권한 확인",
+      "message": "bookId만 조회하므로 다른 회원의 서재 책에도 독서 기록을 저장할 수 있습니다.",
+      "suggestion": "인증 사용자와 book.ownerId를 확인하고 공유 범위 밖의 접근을 거부하세요.",
+      "filePath": "src/main/java/com/readtogether/reading/ReadingLogService.java",
+      "lineNumber": 14
+    },
+    {
+      "category": "입력 검증",
+      "title": "책의 전체 페이지를 초과한 진행률 거부",
+      "message": "currentPage를 검증하지 않아 음수나 전체 페이지를 넘는 기록이 저장됩니다.",
+      "suggestion": "0부터 totalPages까지 허용하고 완독 여부를 같은 규칙으로 계산하세요.",
+      "filePath": "src/main/java/com/readtogether/reading/ReadingLogService.java",
+      "lineNumber": 17
+    },
+    {
+      "category": "테스트",
+      "title": "완독 경계와 역순 요청 테스트",
+      "message": "정상 기록 테스트만 있어 늦은 요청으로 진행률이 되돌아가는 경우를 감지하지 못합니다.",
+      "suggestion": "0/마지막/초과 페이지·비소유자·역순 요청을 분리해 검증하세요.",
+      "filePath": "src/test/java/com/readtogether/reading/ReadingLogServiceTest.java",
+      "lineNumber": 19
+    }
+  ],
+  "files": [
+    {
+      "filePath": "src/main/java/com/readtogether/reading/ReadingLogService.java",
+      "diff": "diff --git a/src/main/java/com/readtogether/reading/ReadingLogService.java b/src/main/java/com/readtogether/reading/ReadingLogService.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/readtogether/reading/ReadingLogService.java\n@@ -0,0 +1,19 @@\n+package com.readtogether.reading;\n+\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.stereotype.Service;\n+import org.springframework.transaction.annotation.Transactional;\n+\n+@Service\n+@RequiredArgsConstructor\n+public class ReadingLogService {\n+    private final BookRepository books;\n+    private final ReadingLogRepository logs;\n+\n+    @Transactional\n+    public ReadingLog recordProgress(Long bookId, Long memberId, int currentPage, String memo) {\n+        Book book = books.findById(bookId).orElseThrow();\n+        ReadingLog log = new ReadingLog(book.getId(), memberId, currentPage, memo);\n+        return logs.save(log);\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/java/com/readtogether/reading/ReadingLogController.java",
+      "diff": "diff --git a/src/main/java/com/readtogether/reading/ReadingLogController.java b/src/main/java/com/readtogether/reading/ReadingLogController.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/readtogether/reading/ReadingLogController.java\n@@ -0,0 +1,19 @@\n+package com.readtogether.reading;\n+\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.web.bind.annotation.*;\n+\n+@RestController\n+@RequiredArgsConstructor\n+public class ReadingLogController {\n+    private final ReadingLogService service;\n+\n+    @PostMapping(\"/api/books/{bookId}/reading-logs\")\n+    public CreatedResponse create(@PathVariable Long bookId, @RequestBody ReadingLogRequest request) {\n+        ReadingLog saved = service.recordProgress(bookId, request.memberId(), request.currentPage(), request.memo());\n+        return new CreatedResponse(saved.getId());\n+    }\n+\n+    public record ReadingLogRequest(Long memberId, int currentPage, String memo) {}\n+    public record CreatedResponse(Long logId) {}\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "frontend/src/features/reading/ReadingProgressPanel.tsx",
+      "diff": "diff --git a/frontend/src/features/reading/ReadingProgressPanel.tsx b/frontend/src/features/reading/ReadingProgressPanel.tsx\n--- a/frontend/src/features/reading/ReadingProgressPanel.tsx\n+++ b/frontend/src/features/reading/ReadingProgressPanel.tsx\n@@ -1,2 +1,26 @@\n-export function FeaturePanel() { return null; }\n-// 화면 구현 예정\n+import { useState } from 'react';\n+import { api } from '../../lib/api';\n+\n+type Props = { bookId: number; memberId: number; reload: () => Promise<void> };\n+\n+export function ReadingProgressPanel({ bookId, memberId, reload }: Props) {\n+  const [currentPage, setCurrentPage] = useState(0);\n+  const [memo, setMemo] = useState('');\n+  const [error, setError] = useState('');\n+  async function submit() {\n+    setError('');\n+    try {\n+      await api.post(`/api/books/${bookId}/reading-logs`, { memberId, currentPage, memo });\n+      await reload();\n+    } catch {\n+      setError('요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');\n+    }\n+  }\n+  return <section>\n+    <h2>독서 진행 기록</h2>\n+    <label>읽은 페이지<input type=\"number\" value={currentPage} onChange={e => setCurrentPage(Number(e.target.value))} /></label>\n+    <label>독서 메모<input value={memo} onChange={e => setMemo(e.target.value)} /></label>\n+    {error && <p role=\"alert\">{error}</p>}\n+    <button onClick={submit}>저장하기</button>\n+  </section>;\n+}\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/test/java/com/readtogether/reading/ReadingLogServiceTest.java",
+      "diff": "diff --git a/src/test/java/com/readtogether/reading/ReadingLogServiceTest.java b/src/test/java/com/readtogether/reading/ReadingLogServiceTest.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/test/java/com/readtogether/reading/ReadingLogServiceTest.java\n@@ -0,0 +1,22 @@\n+package com.readtogether.reading;\n+\n+import java.util.Optional;\n+import org.junit.jupiter.api.Test;\n+import static org.assertj.core.api.Assertions.assertThat;\n+import static org.mockito.Mockito.*;\n+\n+class ReadingLogServiceTest {\n+    @Test\n+    void returnsCreatedRecordForValidRequest() {\n+        var books = mock(BookRepository.class);\n+        var logs = mock(ReadingLogRepository.class);\n+        var resource = mock(Book.class);\n+        when(books.findById(1L)).thenReturn(Optional.of(resource));\n+        when(resource.getId()).thenReturn(1L);\n+        when(logs.save(any(ReadingLog.class))).thenAnswer(invocation -> invocation.getArgument(0));\n+        var service = new ReadingLogService(books, logs);\n+        var saved = service.recordProgress(1L, 7L, 80, \"첫 장을 읽었습니다.\");\n+        assertThat(saved).isNotNull();\n+        verify(logs).save(any(ReadingLog.class));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/resources/db/migration/V2__index_readtogether_reading.sql",
+      "diff": "diff --git a/src/main/resources/db/migration/V2__index_readtogether_reading.sql b/src/main/resources/db/migration/V2__index_readtogether_reading.sql\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/resources/db/migration/V2__index_readtogether_reading.sql\n@@ -0,0 +1,1 @@\n+CREATE INDEX idx_reading_logs_book_member ON reading_logs (book_id, member_id);\n",
+      "changeType": "added"
+    }
+  ]
+}

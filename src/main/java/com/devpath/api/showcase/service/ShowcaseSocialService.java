@@ -8,8 +8,11 @@ import com.devpath.domain.showcase.entity.ShowcaseComment;
 import com.devpath.domain.showcase.entity.ShowcaseLike;
 import com.devpath.domain.showcase.repository.ShowcaseCommentRepository;
 import com.devpath.domain.showcase.repository.ShowcaseLikeRepository;
+import com.devpath.domain.user.entity.User;
 import com.devpath.domain.user.entity.UserProfile;
 import com.devpath.domain.user.repository.UserProfileRepository;
+import com.devpath.domain.user.repository.UserRepository;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,6 +29,7 @@ public class ShowcaseSocialService {
   private final ShowcaseCommentRepository showcaseCommentRepository;
   private final ShowcaseService showcaseService;
   private final UserProfileRepository userProfileRepository;
+  private final UserRepository userRepository;
 
   @Transactional
   public void addLike(Long showcaseId, Long userId) {
@@ -62,7 +66,9 @@ public class ShowcaseSocialService {
             .content(request.getContent())
             .build();
     return ShowcaseCommentResponse.from(
-        showcaseCommentRepository.save(comment), profileImage(userId));
+        showcaseCommentRepository.save(comment),
+        profileImage(userId),
+        userRepository.findById(userId).map(User::getName).orElse(null));
   }
 
   public List<ShowcaseCommentResponse> getComments(Long showcaseId) {
@@ -73,10 +79,17 @@ public class ShowcaseSocialService {
             .stream()
             .toList();
     Map<Long, String> profileImages = profileImages(comments);
+    Map<Long, String> authorNames = new HashMap<>();
+    userRepository
+        .findAllById(comments.stream().map(ShowcaseComment::getUserId).distinct().toList())
+        .forEach(user -> authorNames.put(user.getId(), user.getName()));
     return comments.stream()
         .map(
             comment ->
-                ShowcaseCommentResponse.from(comment, profileImages.get(comment.getUserId())))
+                ShowcaseCommentResponse.from(
+                    comment,
+                    profileImages.get(comment.getUserId()),
+                    authorNames.get(comment.getUserId())))
         .toList();
   }
 

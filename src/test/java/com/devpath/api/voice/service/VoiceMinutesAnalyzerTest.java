@@ -29,6 +29,22 @@ class VoiceMinutesAnalyzerTest {
   }
 
   @Test
+  void analyzePreservesSummarySectionsAndLineBreaks() throws Exception {
+    when(minutes.getTranscript()).thenReturn("결제 화면 논의");
+    String summary = "### 한눈에 보기\n결제 화면을 검토했다.\n\n### 결정 사항\n- 금요일 배포";
+    when(geminiProvider.generate(anyString()))
+        .thenReturn(
+            new ObjectMapper()
+                .writeValueAsString(
+                    java.util.Map.of("summary", summary, "actionItems", List.of())));
+
+    VoiceMinutesAnalyzer.Analysis result = analyzer.analyze(minutes, List.of(), "기본 요약");
+
+    assertThat(result.summary()).isEqualTo(summary);
+    assertThat(result.actionItems()).isEmpty();
+  }
+
+  @Test
   void analyzeUsesFallbackForMalformedResponse() {
     when(minutes.getTranscript()).thenReturn("결제 화면 논의");
     when(geminiProvider.generate(anyString())).thenReturn("JSON 형식이 아닌 응답");

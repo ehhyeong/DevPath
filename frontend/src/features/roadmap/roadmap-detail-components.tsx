@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
+import { useLayoutMotion } from '../../lib/useLayoutMotion'
 import { type ChangeLabelProps, type GhostAddCardProps, type LayoutSlot, type ProofCardBadgeProps, type RoadmapGraphProps, type RoadmapNodeCardProps, type SlotRect, areSlotRectsEqual, changeBadgeStyle, changeTypeIcon, changeTypeLabel, getBranchBadgeMeta, getNodeBoxClass, getNodeLessonProgressPercent, isNodeReadyToClear, isPendingNodeStatus, getEdgeBusY, getLaneGridColumn, makeEdgePath, roadmapCanvasScrollClassName, roadmapEdgeBaseClassName, roadmapEdgeLayerClassName, roadmapEdgeStrokeClassName, roadmapGraphClassName, roadmapNodeBoxClassName, roadmapNodeDescriptionClassName, roadmapNodeHeaderClassName, roadmapNodeMetaClassName, roadmapNodeMetaTagClassName, roadmapNodeTitleGroupClassName, roadmapNodeTitleTextClassName, roadmapProofCardBadgeClassName, roadmapRuleBadgeClassName, roadmapSlotBaseClassName, roadmapSuggestionEdgeClassName } from './roadmap-detail-support'
 
 // Proof 카드를 노드 내부 왼쪽 위(필수 배지와 동일 높이)에 출력해 옆 브랜치 노드와의 겹침을 방지한다.
@@ -30,7 +31,7 @@ export function ChangeLabel({ change }: ChangeLabelProps) {
   )
 }
 
-export function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeClick }: RoadmapNodeCardProps) {
+export function RoadmapNodeCard({ node, newlyAdded, proofCard, pendingChange, badge, onNodeClick }: RoadmapNodeCardProps) {
   const readyToClear = isNodeReadyToClear(node)
   const progressPercent = node.clearProgressPercent ?? getNodeLessonProgressPercent(node)
   const visibleBadge = badge ?? {
@@ -46,7 +47,12 @@ export function RoadmapNodeCard({ node, proofCard, pendingChange, badge, onNodeC
   }
 
   return (
-    <div className={getNodeBoxClass(node, pendingChange)} onClick={handleClick}>
+    <div className={`${getNodeBoxClass(node, pendingChange)}${newlyAdded ? ' roadmap-node-located' : ''}`} aria-current={newlyAdded ? 'true' : undefined} onClick={handleClick}>
+      {newlyAdded && (
+        <span className="roadmap-node-location-label inline-flex self-start items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">
+          <i className="fas fa-location-dot" aria-hidden="true" />추가된 노드
+        </span>
+      )}
       {pendingChange && <ChangeLabel change={pendingChange} />}
       {proofCard && node.status === 'COMPLETED' && (
         <ProofCardBadge card={proofCard} />
@@ -189,6 +195,7 @@ export function GhostAddCard({ change, processing, badge, onApply, onIgnore }: G
 
 export function RoadmapGraph({
   layout,
+  addedNodeId,
   proofCardByNodeId,
   changeByNodeId,
   processing,
@@ -201,6 +208,7 @@ export function RoadmapGraph({
   const slotRefs = useRef(new Map<string, HTMLDivElement>())
   const [slotRects, setSlotRects] = useState<Record<string, SlotRect>>({})
   const [graphSize, setGraphSize] = useState({ width: 0, height: 0 })
+  useLayoutMotion(canvasRef, layout.slots.map(slot => `${slot.id}:${slot.row}:${slot.lane}:${slot.stackOffset ?? 0}`).join('|'))
 
   // 4칸 배치가 화면보다 넓으면 척추가 가운데 오도록 가로 스크롤을 맞춘다.
   useEffect(() => {
@@ -236,14 +244,16 @@ export function RoadmapGraph({
       const nextRects: Record<string, SlotRect> = {}
 
       slotRefs.current.forEach((element, id) => {
-        const rect = element.getBoundingClientRect()
+        // 시각 이동 중의 translate를 제외한 최종 배치로 연결선을 계산한다.
+        const offsetY = Number.parseFloat(getComputedStyle(element).getPropertyValue('--slot-offset-y')) || 0
+        const rect = { left: element.offsetLeft, top: element.offsetTop + offsetY, width: element.offsetWidth, height: element.offsetHeight }
         nextRects[id] = {
-          x: Math.round(rect.left - graphRect.left + rect.width / 2),
-          y: Math.round(rect.top - graphRect.top + rect.height / 2),
-          top: Math.round(rect.top - graphRect.top),
-          right: Math.round(rect.right - graphRect.left),
-          bottom: Math.round(rect.bottom - graphRect.top),
-          left: Math.round(rect.left - graphRect.left),
+          x: Math.round(rect.left + rect.width / 2),
+          y: Math.round(rect.top + rect.height / 2),
+          top: Math.round(rect.top),
+          right: Math.round(rect.left + rect.width),
+          bottom: Math.round(rect.top + rect.height),
+          left: Math.round(rect.left),
           width: Math.round(rect.width),
           height: Math.round(rect.height),
         }
@@ -289,6 +299,7 @@ export function RoadmapGraph({
       return (
         <RoadmapNodeCard
           node={slot.node}
+          newlyAdded={slot.node.customNodeId === addedNodeId}
           proofCard={nodeOriginalId == null ? undefined : proofCardByNodeId[nodeOriginalId]}
           pendingChange={nodeOriginalId == null ? undefined : changeByNodeId[nodeOriginalId]}
           badge={slot.badge}
@@ -341,11 +352,13 @@ export function RoadmapGraph({
           {layout.edges.map((edge) => {
             const path = makeEdgePath(edge, slotRects, edgeBusY[edge.id])
             if (!path) return null
+            // 다른 제안을 수락해 배열 순서가 바뀌어도 남은 연결선의 등장 효과를 다시 시작하지 않는다.
             return (
               <path
-                key={edge.id}
+                key={edge.kind === 'suggestion' ? `${edge.kind}:${edge.from}:${edge.to}` : edge.id}
                 d={path}
-                className={`${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme} ${
+                style={{ d: `path("${path}")` }}
+                className={`ui-roadmap-edge ${roadmapEdgeBaseClassName} roadmap-edge-${edge.kind} roadmap-edge-theme-${edge.theme} ${
                   edge.kind === 'suggestion'
                     ? roadmapSuggestionEdgeClassName
                     : roadmapEdgeStrokeClassName[edge.theme]
@@ -360,6 +373,7 @@ export function RoadmapGraph({
             key={slot.id}
             ref={registerSlot(slot.id)}
             data-slot-id={slot.id}
+            data-motion-key={slot.id}
             className={`${roadmapSlotBaseClassName} roadmap-slot-${slot.kind} roadmap-lane-${slot.lane} ${
               slot.kind === 'official-branch' ||
               slot.kind === 'applied-branch' ||
@@ -390,7 +404,9 @@ export function RoadmapGraph({
               '--slot-offset-y': `${slot.stackOffset ?? 0}px`,
             } as CSSProperties}
           >
-            {renderSlot(slot)}
+            {slot.kind === 'suggested-branch' || slot.kind === 'ghost-add' ? (
+              <div className="roadmap-suggestion-enter">{renderSlot(slot)}</div>
+            ) : renderSlot(slot)}
           </div>
         ))}
       </div>

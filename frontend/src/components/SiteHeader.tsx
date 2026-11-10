@@ -67,7 +67,7 @@ export default function SiteHeader({
   const showHeaderAlerts = Boolean(session && activeNavHref !== '/roadmap-hub')
   const brandLabel = (
     <span className="site-header-brand-label inline-flex items-baseline gap-2 whitespace-nowrap">
-      <span className="site-header-brand-name inline-block">DevPath</span>
+      <span className="site-header-brand-name inline-block bg-[linear-gradient(135deg,#00C471_0%,#0D9488_100%)] bg-clip-text [-webkit-text-fill-color:transparent]">DevPath</span>
       {brandSuffix ? (
         <span className="site-header-brand-suffix text-sm font-semibold text-gray-400">{brandSuffix}</span>
       ) : null}

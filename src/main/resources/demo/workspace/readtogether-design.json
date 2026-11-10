@@ -1,0 +1,444 @@
+{
+  "title": "독서 기록·독서 모임 관리 플랫폼 (ReadTogether)",
+  "summary": "책별 읽은 페이지와 독서 메모를 기록하고 독서 모임에서 읽기 목표와 진행 상황을 공유합니다.",
+  "difficulty": "mvp",
+  "stack": {
+    "frontend": "React + TypeScript",
+    "backend": "Spring Boot",
+    "database": "PostgreSQL",
+    "libraries": [
+      "Spring Security",
+      "Spring Data JPA",
+      "React Query",
+      "Tailwind CSS"
+    ],
+    "selectionReason": "React로 독서 진행 기록과 상태 조회 화면을 구성하고 Spring Boot 인증·트랜잭션과 PostgreSQL의 관계·제약 조건을 활용합니다."
+  },
+  "scenario": {
+    "userFlows": [
+      {
+        "actor": "회원",
+        "action": "로그인하고 개인 서재와 전체 페이지 등록 화면을 확인합니다."
+      },
+      {
+        "actor": "회원",
+        "action": "독서 진행 기록 후 내 처리 결과를 확인합니다."
+      },
+      {
+        "actor": "관리 담당자",
+        "action": "독서 모임 생성과 참여 과정을 관리합니다."
+      }
+    ],
+    "coreFeatures": [
+      "개인 서재와 전체 페이지 등록",
+      "독서 진행률·메모 기록",
+      "책별 독서 이력과 주간 통계",
+      "독서 모임 생성과 참여",
+      "모임별 읽기 목표와 진행 상황 공유"
+    ]
+  },
+  "architecture": {
+    "style": "모놀리식 3계층",
+    "description": "React 웹 클라이언트가 인증된 REST API를 호출하고 서비스 계층의 트랜잭션에서 ReadTogether 데이터를 저장합니다.",
+    "components": [
+      {
+        "name": "React Web",
+        "responsibility": "개인 서재와 전체 페이지 등록 · 독서 진행률·메모 기록 · 책별 독서 이력과 주간 통계 · 독서 모임 생성과 참여 · 모임별 읽기 목표와 진행 상황 공유"
+      },
+      {
+        "name": "Spring Boot API",
+        "responsibility": "현재 페이지는 0 이상 전체 페이지 이하여야 하며 비공개 기록은 작성자 또는 허용된 모임 범위에서만 조회합니다."
+      },
+      {
+        "name": "PostgreSQL",
+        "responsibility": "전체 페이지를 넘는 진행 기록을 거부하고 늦게 도착한 요청이 최신 진행률을 덮어쓰지 않게 합니다."
+      }
+    ],
+    "erdMermaid": "erDiagram\n    MEMBERS {\n        bigint id PK\n        varchar email\n        varchar nickname\n    }\n    BOOKS {\n        bigint id PK\n        bigint owner_id FK\n        varchar title\n        integer total_pages\n    }\n    READING_LOGS {\n        bigint id PK\n        bigint book_id FK\n        bigint member_id FK\n        integer current_page\n        varchar memo\n        timestamp logged_at\n    }\n    BOOK_CLUBS {\n        bigint id PK\n        bigint owner_id FK\n        varchar name\n        integer weekly_goal\n    }\n    CLUB_MEMBERS {\n        bigint id PK\n        bigint club_id FK\n        bigint member_id FK\n        varchar role\n    }\n    MEMBERS ||--o{ BOOKS : \"owner_id\"\n    BOOKS ||--o{ READING_LOGS : \"book_id\"\n    MEMBERS ||--o{ READING_LOGS : \"member_id\"\n    MEMBERS ||--o{ BOOK_CLUBS : \"owner_id\"\n    BOOK_CLUBS ||--o{ CLUB_MEMBERS : \"club_id\"\n    MEMBERS ||--o{ CLUB_MEMBERS : \"member_id\"",
+    "entities": [
+      {
+        "name": "MEMBERS",
+        "purpose": "독서 기록과 모임을 사용하는 회원",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "email",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "로그인 이메일"
+          },
+          {
+            "name": "nickname",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "표시 이름"
+          }
+        ]
+      },
+      {
+        "name": "BOOKS",
+        "purpose": "회원 서재의 책",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "owner_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "서재 소유자"
+          },
+          {
+            "name": "title",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "책 제목"
+          },
+          {
+            "name": "total_pages",
+            "type": "integer",
+            "constraints": "NOT NULL",
+            "description": "전체 페이지 수"
+          }
+        ]
+      },
+      {
+        "name": "READING_LOGS",
+        "purpose": "책별 독서 진행과 메모",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "book_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "읽은 책"
+          },
+          {
+            "name": "member_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "기록 작성자"
+          },
+          {
+            "name": "current_page",
+            "type": "integer",
+            "constraints": "NOT NULL",
+            "description": "읽은 페이지"
+          },
+          {
+            "name": "memo",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "독서 메모"
+          },
+          {
+            "name": "logged_at",
+            "type": "timestamp",
+            "constraints": "NOT NULL",
+            "description": "기록 시각"
+          }
+        ]
+      },
+      {
+        "name": "BOOK_CLUBS",
+        "purpose": "독서 목표를 공유하는 모임",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "owner_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "모임장"
+          },
+          {
+            "name": "name",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "독서 모임 이름"
+          },
+          {
+            "name": "weekly_goal",
+            "type": "integer",
+            "constraints": "NOT NULL",
+            "description": "주간 목표 페이지"
+          }
+        ]
+      },
+      {
+        "name": "CLUB_MEMBERS",
+        "purpose": "독서 모임 참여 관계",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "club_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "참여 독서 모임"
+          },
+          {
+            "name": "member_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "참여 회원"
+          },
+          {
+            "name": "role",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "OWNER/MEMBER"
+          }
+        ]
+      }
+    ],
+    "technicalChallenges": [
+      "전체 페이지를 넘는 진행 기록을 거부하고 늦게 도착한 요청이 최신 진행률을 덮어쓰지 않게 합니다.",
+      "현재 페이지는 0 이상 전체 페이지 이하여야 하며 비공개 기록은 작성자 또는 허용된 모임 범위에서만 조회합니다.",
+      "저장 실패 시 입력값을 보존하고 서버 응답을 기준으로 목록과 통계를 갱신합니다."
+    ]
+  },
+  "apis": [
+    {
+      "group": "AUTH (인증)",
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "description": "회원가입",
+      "auth": "없음",
+      "requestExample": "{\"email\":\"demo@example.com\",\"password\":\"example-password\",\"name\":\"사용자\"}",
+      "responseExample": "{\"memberId\":1}"
+    },
+    {
+      "group": "AUTH (인증)",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "로그인",
+      "auth": "없음",
+      "requestExample": "{\"email\":\"demo@example.com\",\"password\":\"example-password\"}",
+      "responseExample": "{\"accessToken\":\"example-token\"}"
+    },
+    {
+      "group": "BOOKS (서재)",
+      "method": "GET",
+      "path": "/api/books",
+      "description": "내 서재 조회",
+      "auth": "USER",
+      "requestExample": "{}",
+      "responseExample": "{\"items\":[{\"bookId\":1,\"title\":\"함께 읽는 소설\",\"totalPages\":320}]}"
+    },
+    {
+      "group": "BOOKS (서재)",
+      "method": "POST",
+      "path": "/api/books",
+      "description": "책 등록",
+      "auth": "USER",
+      "requestExample": "{\"title\":\"함께 읽는 소설\",\"totalPages\":320}",
+      "responseExample": "{\"bookId\":1}"
+    },
+    {
+      "group": "READING_LOGS (독서 기록)",
+      "method": "POST",
+      "path": "/api/books/{bookId}/reading-logs",
+      "description": "독서 진행 기록",
+      "auth": "USER",
+      "requestExample": "{\"currentPage\":80,\"memo\":\"첫 장을 읽었습니다.\"}",
+      "responseExample": "{\"logId\":1,\"progressRate\":25}"
+    },
+    {
+      "group": "READING_LOGS (독서 기록)",
+      "method": "GET",
+      "path": "/api/books/{bookId}/reading-logs",
+      "description": "독서 기록 목록",
+      "auth": "USER",
+      "requestExample": "{}",
+      "responseExample": "{\"items\":[{\"logId\":1,\"currentPage\":80}]}"
+    },
+    {
+      "group": "BOOK_CLUBS (독서 모임)",
+      "method": "POST",
+      "path": "/api/book-clubs/{clubId}/members",
+      "description": "독서 모임 참여",
+      "auth": "USER",
+      "requestExample": "{}",
+      "responseExample": "{\"memberId\":1,\"role\":\"MEMBER\"}"
+    },
+    {
+      "group": "READING_LOGS (독서 기록)",
+      "method": "PATCH",
+      "path": "/api/reading-logs/{logId}",
+      "description": "독서 메모 수정",
+      "auth": "USER",
+      "requestExample": "{\"memo\":\"등장인물을 정리했습니다.\"}",
+      "responseExample": "{\"logId\":1}"
+    },
+    {
+      "group": "STATS (독서 통계)",
+      "method": "GET",
+      "path": "/api/me/reading-statistics",
+      "description": "주간 독서 통계",
+      "auth": "USER",
+      "requestExample": "{}",
+      "responseExample": "{\"completedBooks\":1,\"readPages\":180}"
+    }
+  ],
+  "roadmap": [
+    {
+      "phase": 1,
+      "title": "인증과 데이터 기반",
+      "goal": "ReadTogether의 데이터 관계와 사용자 권한을 구성합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "서재·기록·모임 ERD와 마이그레이션 구성",
+        "회원 인증과 비공개 서재 권한 구현",
+        "개인 서재와 로그인 화면 구현"
+      ]
+    },
+    {
+      "phase": 2,
+      "title": "핵심 자원 관리",
+      "goal": "개인 서재와 전체 페이지 등록 흐름을 구현합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "책 등록·수정·목록 API 구현",
+        "독서 모임 참여와 중복 가입 방지 구현",
+        "책 추가와 페이지 입력 화면 구현"
+      ]
+    },
+    {
+      "phase": 3,
+      "title": "주요 흐름과 정합성",
+      "goal": "현재 페이지는 0 이상 전체 페이지 이하여야 하며 비공개 기록은 작성자 또는 허용된 모임 범위에서만 조회합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "독서 기록 저장·조회 API 구현",
+        "페이지 범위와 동시 수정 테스트 구현",
+        "주간 통계와 모임 진행률 UI 구현"
+      ]
+    },
+    {
+      "phase": 4,
+      "title": "통합 검증과 배포",
+      "goal": "주요 오류와 실제 사용자 흐름을 확인하고 배포합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "비공개 기록·완독·역순 요청 통합 테스트",
+        "진행률 접근성과 모바일 서재 점검",
+        "Docker 배포와 독서 기록 로그 구성"
+      ]
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "category": "보안",
+      "question": "ReadTogether에서 다른 회원의 데이터를 변경하지 못하게 하려면 무엇을 검증하나요?",
+      "answer": "클라이언트가 보낸 회원 ID를 신뢰하지 않고 인증 사용자와 자원 소유·참여 관계를 서비스에서 함께 확인합니다.",
+      "keywords": [
+        "인증 사용자",
+        "권한",
+        "소유권"
+      ],
+      "tasks": [
+        "회원 인증과 비공개 서재 권한 구현",
+        "독서 기록 저장·조회 API 구현"
+      ],
+      "apis": [
+        "POST /api/books/{bookId}/reading-logs"
+      ],
+      "erd": "BOOKS"
+    },
+    {
+      "category": "동시성",
+      "question": "독서 진행 기록 요청이 동시에 도착하거나 재시도되면 어떻게 처리하나요?",
+      "answer": "전체 페이지를 넘는 진행 기록을 거부하고 늦게 도착한 요청이 최신 진행률을 덮어쓰지 않게 합니다.",
+      "keywords": [
+        "트랜잭션",
+        "중복 요청",
+        "동시성"
+      ],
+      "tasks": [
+        "페이지 범위와 동시 수정 테스트 구현",
+        "비공개 기록·완독·역순 요청 통합 테스트"
+      ],
+      "apis": [
+        "POST /api/books/{bookId}/reading-logs"
+      ],
+      "erd": "READING_LOGS"
+    },
+    {
+      "category": "데이터 정합성",
+      "question": "ReadTogether의 저장 전후에 반드시 지켜야 할 도메인 규칙은 무엇인가요?",
+      "answer": "현재 페이지는 0 이상 전체 페이지 이하여야 하며 비공개 기록은 작성자 또는 허용된 모임 범위에서만 조회합니다.",
+      "keywords": [
+        "입력 검증",
+        "도메인 규칙",
+        "제약 조건"
+      ],
+      "tasks": [
+        "독서 모임 참여와 중복 가입 방지 구현",
+        "독서 기록 저장·조회 API 구현"
+      ],
+      "apis": [
+        "POST /api/books/{bookId}/reading-logs"
+      ],
+      "erd": "READING_LOGS"
+    },
+    {
+      "category": "프론트엔드",
+      "question": "저장 실패나 충돌 응답을 받았을 때 입력값과 화면 상태는 어떻게 유지하나요?",
+      "answer": "저장 중 중복 제출을 막고 실패 원인을 구분합니다. 입력값은 유지하며 성공 응답 이후에 목록과 통계를 갱신합니다.",
+      "keywords": [
+        "중복 제출",
+        "오류 복구",
+        "서버 응답"
+      ],
+      "tasks": [
+        "책 추가와 페이지 입력 화면 구현",
+        "주간 통계와 모임 진행률 UI 구현"
+      ],
+      "apis": [
+        "POST /api/books/{bookId}/reading-logs",
+        "GET /api/books/{bookId}/reading-logs"
+      ],
+      "erd": "READING_LOGS"
+    },
+    {
+      "category": "테스트",
+      "question": "ReadTogether의 정상 흐름 이외에 어떤 통합 시나리오를 검증해야 하나요?",
+      "answer": "0/마지막/초과 페이지·비소유자·역순 요청을 분리해 검증하세요. 실제 DB 제약과 권한 경계를 함께 확인합니다.",
+      "keywords": [
+        "경계값",
+        "통합 테스트",
+        "권한"
+      ],
+      "tasks": [
+        "비공개 기록·완독·역순 요청 통합 테스트",
+        "진행률 접근성과 모바일 서재 점검"
+      ],
+      "apis": [
+        "POST /api/books/{bookId}/reading-logs"
+      ],
+      "erd": "READING_LOGS"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import SquadWorkspaceAside from './SquadWorkspaceAside'
 import { projectApiRequest } from '../features/project/api'
@@ -6,6 +6,18 @@ import { projectApiRequest } from '../features/project/api'
 vi.mock('../features/project/api', () => ({ projectApiRequest: vi.fn(async () => []) }))
 
 describe('시연 워크스페이스 코드 피드백 접근', () => {
+  it('접힌 메뉴의 이름을 제공하고 키보드 포커스로 라벨을 펼친다', () => {
+    render(<SquadWorkspaceAside activePage="dashboard" workspaceId={42} aiWorkspace />)
+    const aside = screen.getByRole('complementary')
+    fireEvent.mouseLeave(aside)
+    const link = screen.getByRole('link', { name: '코드 피드백' })
+    expect(link).toHaveAttribute('title', '코드 피드백')
+    fireEvent.focus(link)
+    expect(aside).toHaveClass('is-expanded')
+    fireEvent.blur(link, { relatedTarget: document.body })
+    expect(aside).not.toHaveClass('is-expanded')
+  })
+
   afterEach(() => vi.mocked(projectApiRequest).mockImplementation(async () => [] as never))
 
   it('서버가 확인한 시연 AI 워크스페이스만 열고 일반 모드와 다른 워크스페이스로 권한을 넘기지 않는다', async () => {
@@ -28,6 +40,33 @@ describe('AI 설계서 사이드바 반영 맵', () => {
   afterEach(() => {
     localStorage.removeItem('sidebarPinned')
     localStorage.removeItem('aiSidebarPinned')
+  })
+
+  it('설계서의 고정·해제를 이미 마운트된 다른 AI 메뉴에도 반영한다', () => {
+    localStorage.setItem('sidebarPinned', 'true')
+    render(<><SquadWorkspaceAside activePage="dashboard" workspaceId={42} aiWorkspace /><SquadWorkspaceAside activePage="blueprint" workspaceId={42} aiWorkspace /><SquadWorkspaceAside activePage="workspace" workspaceId={11} /></>)
+    const [dashboard, blueprint, standard] = screen.getAllByRole('complementary')
+    expect(dashboard).not.toHaveClass('pinned')
+    expect(blueprint).not.toHaveClass('pinned')
+    expect(standard).toHaveClass('pinned')
+    fireEvent.click(within(blueprint).getByTitle('사이드바 고정'))
+    expect(dashboard).toHaveClass('pinned')
+    expect(blueprint).toHaveClass('pinned')
+    fireEvent.click(within(dashboard).getByTitle('사이드바 고정 해제'))
+    expect(dashboard).not.toHaveClass('pinned')
+    expect(blueprint).not.toHaveClass('pinned')
+    expect(standard).toHaveClass('pinned')
+    expect(localStorage.getItem('sidebarPinned')).toBe('true')
+  })
+
+  it('다른 탭에서 바뀐 AI 고정값도 현재 메뉴에 반영한다', () => {
+    render(<SquadWorkspaceAside activePage="blueprint" workspaceId={42} aiWorkspace />)
+    localStorage.setItem('aiSidebarPinned', 'true')
+    fireEvent(window, new StorageEvent('storage', { key: 'aiSidebarPinned', newValue: 'true', storageArea: localStorage }))
+    expect(screen.getByRole('complementary')).toHaveClass('pinned')
+    localStorage.setItem('aiSidebarPinned', 'false')
+    fireEvent(window, new StorageEvent('storage', { key: 'aiSidebarPinned', newValue: 'false', storageArea: localStorage }))
+    expect(screen.getByRole('complementary')).not.toHaveClass('pinned')
   })
 
   it.each([false, true])('AI 여부 %s에서 다른 유형의 고정값을 상속하지 않고 독립적으로 고정·해제한다', (aiWorkspace) => {

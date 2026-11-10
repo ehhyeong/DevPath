@@ -41,6 +41,7 @@ import { useMeetingVoiceInput } from './useMeetingVoiceInput'
 import { useMeetingMediaTracks } from './useMeetingMediaTracks'
 import { useMeetingRemoteMedia } from './useMeetingRemoteMedia'
 import { useMeetingReactions } from './useMeetingReactions'
+import { useMeetingAudioControls } from './useMeetingAudioControls'
 
 const MEETING_ACTIVITY_TOUCH_INTERVAL_MS = 30 * 1000
 
@@ -60,6 +61,8 @@ export function useSquadMeetingController() {
   const remoteScreenSharePendingRef = useRef<Set<number>>(new Set())
   const remoteAudioElementsRef = useRef<Map<number, SinkAudioElement>>(new Map())
   const remoteAudioMutedRef = useRef(false)
+  const audioControls = useMeetingAudioControls(session?.userId, remoteAudioMutedRef)
+  const resumeAudioRef = useLatest(audioControls.resumeRemoteAudio)
   const remoteAudioContainerRef = useRef<HTMLDivElement | null>(null)
   const controlBoxRef = useRef<HTMLDivElement | null>(null)
   const joiningRef = useRef(false)
@@ -88,6 +91,7 @@ export function useSquadMeetingController() {
     micLevel,speakerLevel,micTesting,soundTesting,
     loadAudioDevices,toggleMicTest,playSoundTest,startMicMonitor,
   } = useAudioDeviceDiagnostics({
+    microphoneVolume: audioControls.microphoneVolume, outputVolume: audioControls.outputVolume, noiseGateEnabled: audioControls.noiseGateEnabled,
     accessToken: session?.accessToken,
     activeChannelId,
     audioSettingsOpen,
@@ -188,7 +192,7 @@ export function useSquadMeetingController() {
   const selectedInputLabel =
     audioInputs.find((device) => device.deviceId === selectedInputId)?.label ?? FALLBACK_AUDIO_INPUTS[0].label
   const activeParticipants = participants.filter((participant) => participant.active)
-  const { handlePeersClosed: handleRemotePeersClosed,getVoiceDisplayName,attachRemoteTrack,removeRemotePeer,clearRemoteCameraStream,clearRemoteScreenShare } = useMeetingRemoteMedia({ members, participants, activeParticipants, remoteAudioElementsRef, remoteAudioMutedRef, remoteAudioContainerRef, remoteCameraStreamsRef, remoteCameraPendingRef, remoteScreenShareViewsRef, remoteScreenSharePendingRef, peerConnectionsRef, peerTransceiversRef, makingOffersRef, pendingIceCandidatesRef, setRemoteCameraStreams, setRemoteScreenShares, applySelectedOutputToAudio })
+  const { handlePeersClosed: handleRemotePeersClosed,getVoiceDisplayName,attachRemoteTrack,removeRemotePeer,clearRemoteCameraStream,clearRemoteScreenShare } = useMeetingRemoteMedia({ audioControls, members, participants, activeParticipants, remoteAudioElementsRef, remoteAudioMutedRef, remoteAudioContainerRef, remoteCameraStreamsRef, remoteCameraPendingRef, remoteScreenShareViewsRef, remoteScreenSharePendingRef, peerConnectionsRef, peerTransceiversRef, makingOffersRef, pendingIceCandidatesRef, setRemoteCameraStreams, setRemoteScreenShares, applySelectedOutputToAudio })
   const activeUserIds = new Set(activeParticipants.map((participant) => participant.userId))
   const presentUserIds = new Set(presentUsers.map((presence) => presence.userId))
   const waitingMembers = members.filter(
@@ -212,8 +216,8 @@ export function useSquadMeetingController() {
   const roomParticipants = activeParticipants.length > 0 ? activeParticipants : participants
   const meetingSessionStartedAt = getVoiceMeetingSessionStartedAt(activeParticipants)
   const meetingElapsedLabel = formatElapsedTime(meetingSessionStartedAt, now)
-  const { voiceChatMessages,voiceChatInput,setVoiceChatInput,voiceMinutes,minutesDraft,setMinutesDraft,minutesActionItems,selectedMinutesActionItems,minutesSummaryReportOpen,setMinutesSummaryReportOpen,chatSending,chatClearing,minutesSaving,kanbanTaskCreating,speechRecognitionActive,minutesTextareaRef,appendVoiceChatMessage,applyVoiceMinutes,refreshVoiceMeetingPanel,voiceEventLabel,createVoiceEvent,stopMinutesSpeechRecognition,sendVoiceChatMessage,clearVoiceChatMessages,toggleMinutesRecording,saveMinutesDraft,toggleMinutesActionItem,generateMinutesSummary,createKanbanTasksFromMinutes } = useSquadMeetingMinutes({ workspaceId,activeChannel,isJoined,isMuted,session,broadcastMeetingSync,setRoomPanelTab })
-  const { stopLocalVoiceStream,setLocalVoiceMuted,startLocalVoiceStreamIfAvailable,replaceLocalVoiceInput } = useMeetingVoiceInput({ selectedInputId, micMuted, currentUserId: session?.userId, localVoiceStreamRef, localVoiceRawStreamRef, voiceNoiseGateStopRef, voiceActivityStopRef, localSpeakingRef, peerTransceiversRef, setLocalSpeaking, setParticipants, setAudioProcessingStatus, setAudioDeviceError, setWaitingMicMuted, stopMinutesSpeechRecognition, createVoiceEvent, broadcastSpeakingState })
+  const { voiceChatMessages,voiceChatLoaded,voiceChatInput,setVoiceChatInput,voiceMinutes,minutesDraft,minutesInterimTranscript,setMinutesDraft,minutesActionItems,selectedMinutesActionItems,minutesSummaryReportOpen,setMinutesSummaryReportOpen,chatSending,chatClearing,minutesSaving,kanbanTaskCreating,speechRecognitionActive,minutesTextareaRef,appendVoiceChatMessage,applyVoiceMinutes,applyTranscriptPreview,refreshVoiceMeetingPanel,voiceEventLabel,createVoiceEvent,stopMinutesSpeechRecognition,sendVoiceChatMessage,clearVoiceChatMessages,toggleMinutesRecording,saveMinutesDraft,toggleMinutesActionItem,generateMinutesSummary,createKanbanTasksFromMinutes } = useSquadMeetingMinutes({ workspaceId,activeChannel,isJoined,isMuted,session,broadcastMeetingSync,setRoomPanelTab })
+  const { stopLocalVoiceStream,setLocalVoiceMuted,startLocalVoiceStreamIfAvailable,replaceLocalVoiceInput } = useMeetingVoiceInput({ microphoneVolume: audioControls.microphoneVolume, noiseGateEnabled: audioControls.noiseGateEnabled, selectedInputId, micMuted, currentUserId: session?.userId, localVoiceStreamRef, localVoiceRawStreamRef, voiceNoiseGateStopRef, voiceActivityStopRef, localSpeakingRef, peerTransceiversRef, setLocalSpeaking, setParticipants, setAudioProcessingStatus, setAudioDeviceError, setWaitingMicMuted, stopMinutesSpeechRecognition, createVoiceEvent, broadcastSpeakingState })
   const { clearLocalCameraStream,clearLocalScreenShareStream,attachLocalVoiceTrackToPeers,toggleCamera,toggleScreenShare } = useMeetingMediaTracks({ workspaceId, activeChannel, isJoined, currentUserName: session?.name, localCameraStreamRef, localScreenShareStreamRef, peerTransceiversRef, setLocalCameraStream, setLocalScreenShareStream, ensurePeerConnections: ensurePeerConnectionsForCurrentParticipants, broadcastCameraState, broadcastScreenShareState })
 
   useEffect(() => {
@@ -244,11 +248,7 @@ export function useSquadMeetingController() {
     }
 
     function resumeRemoteAudio() {
-      remoteAudioElementsRef.current.forEach((audio) => {
-        if (audio.paused) {
-          void audio.play().catch(() => undefined)
-        }
-      })
+      resumeAudioRef.current()
     }
 
     window.addEventListener('pointerdown', resumeRemoteAudio, { capture: true })
@@ -258,7 +258,7 @@ export function useSquadMeetingController() {
       window.removeEventListener('pointerdown', resumeRemoteAudio, { capture: true })
       window.removeEventListener('keydown', resumeRemoteAudio, { capture: true })
     }
-  }, [isJoined])
+  }, [isJoined, resumeAudioRef])
 
   useEffect(() => {
     if (!isJoined) {
@@ -347,28 +347,11 @@ export function useSquadMeetingController() {
     setAudioProcessingStatus(readAudioProcessingStatus(stream, noiseGate))
   }
 
-  function applyRemoteAudioMuted(muted: boolean) {
-    remoteAudioElementsRef.current.forEach((audio) => {
-      audio.muted = muted
-    })
-  }
-
-  async function resumeRemoteAudioPlayback() {
-    await Promise.all(
-      Array.from(remoteAudioElementsRef.current.values())
-        .filter((audio) => audio.paused)
-        .map((audio) => audio.play().catch(() => undefined)),
-    )
-  }
-
   function toggleRemoteAudioMuted() {
     const nextMuted = !remoteAudioMutedRef.current
 
     remoteAudioMutedRef.current = nextMuted
-    applyRemoteAudioMuted(nextMuted)
-    if (!nextMuted) {
-      void resumeRemoteAudioPlayback()
-    }
+    audioControls.resumeRemoteAudio()
     setRemoteAudioMuted(nextMuted)
     showAuthToast({
       message: nextMuted ? '회의 듣기를 껐습니다.' : '회의 듣기를 켰습니다.',
@@ -494,6 +477,7 @@ export function useSquadMeetingController() {
 
     peerConnection.onconnectionstatechange = () => {
       if (['failed', 'closed'].includes(peerConnection.connectionState)) {
+          applyTranscriptPreview(peer.userId, '')
         removeRemotePeer(peer.userId)
       }
     }
@@ -678,6 +662,7 @@ export function useSquadMeetingController() {
         break
       case 'peer-left':
         if (message.fromUserId) {
+          applyTranscriptPreview(message.fromUserId, '')
           departedPeerIdsRef.current.add(message.fromUserId)
           removeRemotePeer(message.fromUserId)
           if (activeChannel) {
@@ -716,9 +701,12 @@ export function useSquadMeetingController() {
       case 'minutes-updated': {
         const payload = message.payload as VoiceMeetingSyncPayload | null | undefined
 
+        if (typeof payload?.transcriptPreview === 'string' && message.fromUserId) {
+          applyTranscriptPreview(message.fromUserId, payload.transcriptPreview)
+        }
         if (payload?.minutes) {
           applyVoiceMinutes(payload.minutes)
-        } else if (activeChannel) {
+        } else if (payload?.transcriptPreview === undefined && activeChannel) {
           void refreshVoiceMeetingPanel(activeChannel.channelId).catch(() => undefined)
         }
         break
@@ -1035,7 +1023,7 @@ export function useSquadMeetingController() {
     }
   }
 
-  return { workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, audioSettingsOpen, setAudioSettingsOpen, audioInputs, audioOutputs, selectedInputId, setSelectedInputId, selectedOutputId, setSelectedOutputId, remoteAudioMuted, audioDeviceError, setAudioDeviceError, audioProcessingStatus, micLevel, speakerLevel, micTesting, soundTesting, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, setScreenSharePlayerOpen, screenSharePlayerUserId, setScreenSharePlayerUserId, screenShareZoom, setScreenShareZoom, screenSharePan, setScreenSharePan, screenShareDragging, setScreenShareDragging, floatingReactions, localVoiceStreamRef, screenShareDragRef, remoteAudioContainerRef, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, loadAudioDevices, replaceLocalVoiceInput, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, toggleMicTest, playSoundTest, startMicMonitor, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag }
+  return { audioControls, workspaceId, session, authView, setAuthView, channels, activeChannel, participants, roomPanelTab, setRoomPanelTab, roomSidePanelOpen, setRoomSidePanelOpen, voiceChatMessages, voiceChatLoaded, voiceChatInput, setVoiceChatInput, voiceMinutes, minutesDraft, minutesInterimTranscript, setMinutesDraft, minutesActionItems, selectedMinutesActionItems, minutesSummaryReportOpen, setMinutesSummaryReportOpen, chatSending, chatClearing, minutesSaving, kanbanTaskCreating, speechRecognitionActive, loading, error, joining, audioSettingsOpen, setAudioSettingsOpen, audioInputs, audioOutputs, selectedInputId, setSelectedInputId, selectedOutputId, setSelectedOutputId, remoteAudioMuted, audioDeviceError, setAudioDeviceError, audioProcessingStatus, micLevel, speakerLevel, micTesting, soundTesting, networkStatus, voiceConnectionStatus, voiceConnectionError, localCameraStream, remoteCameraStreams, localScreenShareStream, remoteScreenShares, screenSharePlayerOpen, setScreenSharePlayerOpen, screenSharePlayerUserId, setScreenSharePlayerUserId, screenShareZoom, setScreenShareZoom, screenSharePan, setScreenSharePan, screenShareDragging, setScreenShareDragging, floatingReactions, localVoiceStreamRef, screenShareDragRef, remoteAudioContainerRef, controlBoxRef, minutesTextareaRef, members, projectName, currentParticipant, isJoined, isMuted, micMuted, selectedInputLabel, waitingMembers, networkBadgeClass, networkIconClass, securityStatus, securityBadgeClass, securityIconClass, voiceConnectionLabel, roomParticipants, meetingElapsedLabel, handleLogout, handleAuthenticated, loadAudioDevices, replaceLocalVoiceInput, toggleRemoteAudioMuted, toggleCamera, toggleScreenShare, sendRoomReaction, toggleMicTest, playSoundTest, startMicMonitor, selectChannel, sendVoiceChatMessage, clearVoiceChatMessages, toggleMinutesRecording, saveMinutesDraft, toggleMinutesActionItem, generateMinutesSummary, createKanbanTasksFromMinutes, toggleWaitingMic, handleJoinedNavigation, joinChannel, handleJoinPointerDown, leaveChannel, sendVoiceEvent, resetScreenSharePlayer, openScreenSharePlayer, closeScreenSharePlayer, updateScreenShareZoom, handleScreenShareWheel, handleScreenSharePointerDown, handleScreenSharePointerMove, endScreenShareDrag }
 }
 
 export type SquadMeetingViewModel = ReturnType<typeof useSquadMeetingController>

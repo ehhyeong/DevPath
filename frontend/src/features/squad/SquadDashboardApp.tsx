@@ -322,9 +322,8 @@ export default function SquadDashboardApp({ aiWorkspace = false, design }: AiWor
         activePage="dashboard"
         workspaceId={workspaceId}
         projectName={sideProjectName}
-        pinned={sidebarPinned}
-        onTogglePinned={toggleSidebarPin}
-        reviewBadgeCount={aiWorkspace ? 0 : hasAnyDashboardData ? 1 : 0}
+        pinned={aiWorkspace ? undefined : sidebarPinned}
+        onTogglePinned={aiWorkspace ? undefined : toggleSidebarPin}
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">

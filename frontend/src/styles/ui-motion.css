@@ -1,0 +1,47 @@
+.ui-content-enter {
+  animation: ui-content-in 180ms ease-out;
+}
+
+@keyframes ui-content-in {
+  from { opacity: 0; translate: 0 6px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.ui-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms cubic-bezier(.22, 1, .36, 1);
+}
+.ui-collapse[data-open="true"] { grid-template-rows: 1fr; }
+.ui-collapse > div { min-height: 0; overflow: hidden; }
+
+.ui-chat-panel {
+  opacity: 1;
+  translate: 0 0;
+  visibility: visible;
+  transition: translate 220ms cubic-bezier(.22, 1, .36, 1), opacity 180ms ease, visibility 0s;
+}
+.ui-chat-panel[data-open="false"] {
+  opacity: 0;
+  translate: 24px 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: translate 180ms ease, opacity 160ms ease, visibility 0s 180ms;
+}
+.ui-chat-backdrop {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 180ms ease, visibility 0s;
+}
+.ui-chat-backdrop[data-open="false"] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, visibility 0s 180ms;
+}
+.ui-roadmap-edge { transition: d 220ms cubic-bezier(.22, 1, .36, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-content-enter { animation: none; }
+  .ui-collapse, .ui-chat-panel[data-open], .ui-chat-backdrop[data-open], .ui-roadmap-edge { transition: none; }
+}

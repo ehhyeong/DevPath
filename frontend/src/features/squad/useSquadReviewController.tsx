@@ -4,9 +4,11 @@ import { type AuthView } from '../../components/AuthModal'
 
 
 import UserAvatar from '../../components/UserAvatar'
+import SquadReviewLoadingContent from './SquadReviewLoadingContent'
+import { findAiReviewLine, parseReviewDiff, reviewFindingPresentation } from './review-diff'
 import { clearStoredAuthSession, getPostLoginRedirect, readStoredAuthSession } from '../../lib/auth-session'
 import { projectApiRequest } from '../project/api'
-import { useWorkspaceDataVersion } from '../../lib/workspace-events'
+import { useWorkspaceDataVersion, WORKSPACE_DATA_CHANGED_EVENT } from '../../lib/workspace-events'
 import { createSquadNotification, squadActorName } from './notifications'
 import { readWorkspaceIdFromLocation as getWorkspaceIdFromUrl } from '../../lib/location-state'
 
@@ -69,32 +71,14 @@ function statusBadgeClass(status: CodeReviewSummary['status']) {
 
 function statusLabel(status: CodeReviewSummary['status']) {
   if (status === 'OPEN') {
-    return 'Open'
+    return '검토 중'
   }
 
   if (status === 'MERGED') {
-    return 'Merged'
+    return '병합 완료'
   }
 
-  return 'Closed'
-}
-
-function categoryIconClass(category: string) {
-  const normalized = category.toUpperCase()
-
-  if (normalized.includes('SECURITY') || normalized.includes('BUG')) {
-    return 'fas fa-exclamation-triangle text-orange-500'
-  }
-
-  if (normalized.includes('TEST')) {
-    return 'fas fa-vial text-blue-500'
-  }
-
-  if (normalized.includes('PERFORMANCE')) {
-    return 'fas fa-bolt text-yellow-500'
-  }
-
-  return 'fas fa-check-circle text-green-500'
+  return '닫힘'
 }
 
 function resolveReviewFiles(detail: CodeReviewDetail | null): CodeReviewFile[] {
@@ -149,6 +133,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM)
   const [commentDraft, setCommentDraft] = useState('')
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null)
+  const [focusedDiffLine, setFocusedDiffLine] = useState<{ filePath: string; rawLineNumber: number } | null>(null)
   const [openFileMenu, setOpenFileMenu] = useState<'diff' | 'comment' | null>(null)
   const [commentSaving, setCommentSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -186,7 +171,20 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
 
   useEffect(() => {
     setCommentDraft('')
+    setFocusedDiffLine(null)
   }, [selectedReviewId])
+
+  useEffect(() => {
+    if (!focusedDiffLine || focusedDiffLine.filePath !== selectedFilePath || !detail) return
+    const element = document.getElementById(`review-${detail.summary.reviewId}-${encodeURIComponent(focusedDiffLine.filePath)}-${focusedDiffLine.rawLineNumber}`)
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    element?.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'instant' : 'smooth' })
+    element?.focus({ preventScroll: true })
+    if (element?.animate && !reduceMotion) {
+      const animation = element.animate([{ backgroundColor: '#FEF3C7' }, { backgroundColor: getComputedStyle(element).backgroundColor }], { duration: 850, easing: 'ease-out' })
+      return () => animation.cancel()
+    }
+  }, [detail, focusedDiffLine, selectedFilePath])
 
   const selectedFileStorageKey = useCallback((reviewId: number) => {
     return `devpath.squadReview.${workspaceId ?? 'unknown'}.${reviewId}.selectedFilePath`
@@ -309,6 +307,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
       'required',
     )
     setBoard(boardData)
+    window.dispatchEvent(new Event(WORKSPACE_DATA_CHANGED_EVENT))
 
     const nextId =
       preferredReviewId ??
@@ -557,45 +556,46 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
           setSelectedFilePath(null)
           void loadDetail(review.reviewId)
         }}
-        className={`pr-card min-h-[110px] w-full text-left p-4 rounded-xl cursor-pointer transition ${
+        className={`pr-card min-h-[110px] w-full cursor-pointer rounded-xl p-4 text-left transition ${
           active
-            ? 'bg-blue-50 border border-blue-200 shadow-sm'
+            ? 'border border-green-300 bg-green-50 shadow-sm'
             : closed
               ? 'bg-gray-50 border border-gray-200 opacity-80 hover:opacity-100'
               : 'bg-white border border-gray-100 hover:border-blue-200 hover:shadow-sm'
         }`}
       >
         <div className="flex justify-between items-start mb-2">
-          <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded border ${statusBadgeClass(review.status)}`}>
+          <span className={`rounded border px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(review.status)}`}>
             {closed ? <i className="fas fa-times-circle mr-1"></i> : null}
             {review.status === 'OPEN' ? review.issueKey : statusLabel(review.status)}
           </span>
-          <span className="text-[10px] text-gray-400 font-bold">{formatRelativeTime(review.createdAt)}</span>
+          <span className="shrink-0 text-xs text-gray-500">{formatRelativeTime(review.createdAt)}</span>
         </div>
-        <h3 className={`font-bold text-sm mb-3 leading-snug ${closed ? 'text-gray-600 line-through' : 'text-gray-900'}`}>
+        <h3 className={`mb-3 break-words text-base font-semibold leading-6 ${closed ? 'text-gray-700' : 'text-gray-900'}`}>
           {review.title}
         </h3>
-        <div className="mb-3 flex items-center gap-2 text-[10px] font-bold text-gray-400">
+        <div className="mb-3 flex items-center justify-between gap-2 text-xs text-gray-600">
           <span className="inline-flex min-w-0 items-center gap-1 truncate" title={review.filePath}>
             <i className="fas fa-file-code"></i>
             <span className="truncate">{review.filePath}</span>
           </span>
-          <span className="shrink-0">{review.fileCount ?? 1} files</span>
+          <span className="shrink-0">{review.fileCount ?? 1}개 파일</span>
         </div>
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-1.5 min-w-0">
             <UserAvatar
               name={review.authorName ?? '팀원'}
+              fallback="initials"
               imageUrl={review.authorProfileImage}
-              className={`w-5 h-5 rounded-full border bg-gray-50 ${closed ? 'border-gray-300 grayscale' : 'border-gray-200'}`}
+              className={`w-7 h-7 rounded-full border bg-gray-50 ${closed ? 'border-gray-300 grayscale' : 'border-gray-200'}`}
               iconClassName="text-[9px]"
             />
-            <span className={`text-[10px] font-bold truncate ${closed ? 'text-gray-500' : 'text-gray-600'}`}>
+            <span className="truncate text-xs font-medium text-gray-700">
               {review.authorName ?? '팀원'} ({review.authorRole ?? 'BE'})
             </span>
           </div>
           {review.aiCommentCount > 0 ? (
-            <span className="text-[10px] font-bold text-indigo-500 flex items-center gap-1">
+            <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-indigo-700">
               <i className="fas fa-robot"></i> {review.aiCommentCount}
             </span>
           ) : null}
@@ -641,11 +641,11 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
           aria-label="리뷰 파일 선택"
           aria-expanded={menuOpen}
           onClick={() => setOpenFileMenu(menuOpen ? null : menuId)}
-          className="inline-flex w-full min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-xs font-bold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 focus:border-gray-400 focus:outline-none"
+          className="inline-flex w-full min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left text-sm font-medium text-gray-800 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 focus:border-gray-400 focus:outline-none"
         >
           <i className="fas fa-file-code shrink-0 text-xs text-gray-400"></i>
           <span className="min-w-0 flex-1 truncate">{activeFile.filePath}</span>
-          <span className="shrink-0 text-[10px] font-black text-gray-400">
+          <span className="shrink-0 text-xs font-semibold text-gray-500">
             +{activeFile.additions} -{activeFile.deletions}
           </span>
           <i className={`fas fa-chevron-down shrink-0 text-[10px] text-gray-400 transition ${menuOpen ? 'rotate-180' : ''}`}></i>
@@ -687,19 +687,16 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
       reviewFiles.find((file) => file.filePath === selectedFilePath) ?? reviewFiles[0] ?? null
 
     return (
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 shadow-sm p-6 relative overflow-hidden" id="aiReviewCard">
-        <div className="absolute -right-10 -top-10 text-indigo-500/10 text-9xl">
-          <i className="fas fa-robot"></i>
-        </div>
-
-        <div className="flex justify-between items-start relative z-10 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+      <div className="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 shadow-sm lg:p-6" id="aiReviewCard">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-8 text-9xl text-indigo-500/10"><i className="fas fa-robot" /></div>
+        <div className="relative z-10 mb-5 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-lg text-white shadow-lg shadow-indigo-200">
               <i className="fas fa-magic"></i>
             </div>
-            <div>
-              <h3 className="ai-gradient-text bg-[linear-gradient(90deg,#4F46E5,#9333EA)] bg-clip-text [-webkit-background-clip:text] text-transparent font-extrabold text-lg tracking-tight">AI 시니어 멘토의 자동 리뷰</h3>
-              <p className="text-xs text-indigo-800 font-medium">
+            <div className="min-w-0">
+              <h3 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent sm:text-xl">AI 시니어 멘토의 자동 리뷰</h3>
+              <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-7 text-indigo-800">
                 {aiReview ? aiReview.summary : 'Gemini가 머지 전 잠재적인 문제와 해결책을 분석합니다.'}
               </p>
             </div>
@@ -709,7 +706,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
               type="button"
               onClick={requestAiReview}
               disabled={aiLoading}
-              className="origin-top-right scale-90 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 text-xs font-bold rounded-lg hover:bg-indigo-50 transition shadow-sm disabled:opacity-50"
+              className="shrink-0 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50 disabled:opacity-50"
             >
               {aiLoading ? '분석 중' : 'AI 리뷰 실행'}
             </button>
@@ -717,48 +714,55 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
         </div>
 
         {reviewFiles.length ? (
-          <div className="relative z-10 mb-4 rounded-xl border border-indigo-100 bg-white/70 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500">Review scope</span>
-              <span className="text-[10px] font-bold text-indigo-700">{reviewFiles.length} files</span>
+          <div className="relative z-10 mb-4 rounded-xl border border-indigo-100 bg-white/75 p-4">
+            <div className="flex items-center justify-between gap-3 text-xs text-indigo-700">
+              <span className="font-extrabold tracking-wide">리뷰 범위</span>
+              <span>{reviewFiles.length}개 파일</span>
             </div>
             {activeFile ? (
-                <p className="mt-2 truncate text-[10px] font-bold text-indigo-700" title={activeFile.filePath}>
-                  기본 표시 파일. {activeFile.filePath}
+                <p className="mt-2 break-all text-xs leading-5 text-indigo-800" title={activeFile.filePath}>
+                  선택 파일 · <span className="font-mono">{activeFile.filePath}</span>
                 </p>
             ) : null}
           </div>
         ) : null}
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-indigo-100 relative z-10 space-y-3">
+        <div className="relative z-10 divide-y divide-indigo-100 rounded-xl border border-indigo-100 bg-white/85 px-4 py-1 lg:px-5">
           {aiReview?.comments.length ? (
-            aiReview.comments.map((comment, index) => (
-              <div key={comment.commentId}>
-                {index > 0 ? <div className="h-px w-full bg-indigo-100 my-3"></div> : null}
-                <div className="flex items-start gap-2">
-                  <i className={`${categoryIconClass(comment.category)} mt-0.5`}></i>
-                  <div>
-                    <p className="text-sm font-bold text-gray-900">
-                      {comment.lineNumber ? `Line ${comment.lineNumber}. ` : ''}
+            aiReview.comments.map((comment) => {
+              const presentation = reviewFindingPresentation(comment)
+              const target = detail ? findAiReviewLine(reviewFiles, detail.summary.filePath, comment, aiReview.providerName) : null
+              const codeLine = target?.line.newLineNumber ?? target?.line.oldLineNumber
+              return (
+              <div key={comment.commentId} className="py-4">
+                <div className="flex items-start gap-3">
+                  <i aria-hidden="true" className={`${presentation.icon} ${presentation.color} mt-1 w-5 shrink-0 text-center`}></i>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <h4 className="break-words text-base font-bold leading-6 text-gray-900">
+                      {target ? <button type="button" aria-label={`${target.filePath} ${codeLine}행으로 이동`} title={`${target.filePath} · ${codeLine}행 (AI 입력 ${comment.lineNumber}행)`} onClick={() => { selectReviewFile(target.filePath); setFocusedDiffLine({ filePath: target.filePath, rawLineNumber: target.line.rawLineNumber }) }} className="mr-2 inline-flex w-20! shrink-0 items-center justify-center whitespace-nowrap rounded border border-blue-200 bg-blue-50 px-2 py-1 text-xs! font-semibold tabular-nums text-blue-800 hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-blue-600">{codeLine}행 ↗</button> : comment.lineNumber ? <span title="AI 응답에 정확한 파일·코드 위치 정보가 없습니다." className="mr-2 inline-flex min-w-20 justify-center rounded border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600">위치 확인 필요</span> : null}
                       {comment.title}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">{comment.message}</p>
+                    </h4>
+                    <p className={`shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-semibold ${presentation.color}`}>{presentation.label}</p>
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-7 text-gray-700">{comment.message}</p>
                     {comment.suggestion ? (
-                      <p className="text-xs text-indigo-700 mt-2 leading-relaxed bg-indigo-50 border border-indigo-100 rounded-lg p-2">
-                        해결책. {comment.suggestion}
+                      <p className="mt-3 inline-block max-w-full whitespace-pre-wrap break-words rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-sm leading-7 text-indigo-700">
+                        <span className="mr-1 font-semibold">개선 제안.</span>
+                        {comment.suggestion}
                       </p>
                     ) : null}
                   </div>
                 </div>
               </div>
-            ))
+            )})
           ) : (
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2 py-4">
               <i className="fas fa-info-circle text-indigo-500 mt-0.5"></i>
               <div>
-                <p className="text-sm font-bold text-gray-900">아직 AI 리뷰가 실행되지 않았습니다</p>
-                <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                  코드 변경 사항을 머지하기 전에 Gemini 기반 시니어 멘토 리뷰를 실행해 문제점과 해결책을 확인하세요.
+                <p className="text-sm font-bold text-gray-900">{aiReview ? 'AI가 추가 지적사항을 남기지 않았습니다' : '아직 AI 리뷰가 실행되지 않았습니다'}</p>
+                <p className="mt-2 text-sm leading-7 text-gray-600">
+                  {aiReview ? 'AI 분석 결과와 변경 코드를 함께 확인하고 팀원들과 최종 검토하세요.' : 'AI 리뷰를 실행해 코드 변경의 문제점과 개선 제안을 확인하세요.'}
                 </p>
               </div>
             </div>
@@ -776,16 +780,13 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
     return (
       <div className="space-y-4" id="codeDiffSection">
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h3 className="text-sm font-extrabold text-gray-900">파일별 변경 diff</h3>
+              <div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-bold text-gray-900">코드 변경 내역</h3><span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">변경 파일 {reviewFiles.length}개</span></div>
               <p className="mt-1 text-xs font-medium text-gray-500">
-                PR 전체는 하나의 리뷰로 유지하고, 변경 파일은 아래 목록에서 선택해 확인합니다.
+                파일을 선택해 변경된 코드를 확인하세요.
               </p>
             </div>
-            <span className="rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-[10px] font-black text-gray-600">
-              변경 파일 {reviewFiles.length}개
-            </span>
             {detail?.prUrl ? (
               <a
                 href={detail.prUrl}
@@ -793,11 +794,11 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 rounded border border-gray-300 bg-white px-3 py-1.5 text-[10px] font-bold text-gray-500 shadow-sm transition hover:border-brand hover:text-brand"
               >
-                <i className="fas fa-external-link-alt"></i> View PR
+                <i className="fas fa-external-link-alt"></i> GitHub에서 보기
               </a>
             ) : (
-              <span className="rounded border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-bold text-gray-400 shadow-sm">
-                Manual Diff
+              <span className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                <i className="fas fa-file-code" aria-hidden="true" /> 직접 등록한 코드
               </span>
             )}
           </div>
@@ -817,12 +818,12 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
         </div>
 
         {activeFile ? (() => {
-          const lines = (activeFile.diffText ?? '').split(/\r?\n/)
+          const lines = parseReviewDiff(activeFile.diffText ?? '')
 
           return (
-            <div id="selectedReviewFile" key={`${activeFile.fileId ?? activeFile.filePath}-selected`} className="scroll-mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div id="selectedReviewFile" key={`${activeFile.fileId ?? activeFile.filePath}-selected`} className="ui-content-enter scroll-mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 p-3">
-                <span className="min-w-0 truncate text-xs font-bold text-gray-700" title={activeFile.filePath}>
+                <span className="min-w-0 break-all font-mono text-xs font-semibold leading-5 text-gray-700" title={activeFile.filePath}>
                   <i className="fas fa-file-code mr-1 text-gray-400"></i> {activeFile.filePath}
                 </span>
                 <span className="shrink-0 rounded border border-gray-200 bg-white px-2 py-1 text-[10px] font-black text-gray-500">
@@ -831,20 +832,24 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
               </div>
 
               <div className="relative overflow-x-auto">
-                {lines.map((line, index) => {
-                  const lineClass = line.startsWith('+')
+                <div aria-hidden="true" className="grid grid-cols-[48px_48px_minmax(0,1fr)] border-b border-gray-200 bg-gray-50 text-center text-[10px] leading-7 text-gray-500"><span>이전</span><span>변경</span><span className="px-4 text-left">코드</span></div>
+                {lines.map((line) => {
+                  const lineClass = line.kind === 'add'
                     ? 'line-add bg-[#ECFDF5] text-[#047857] [&_.code-num]:bg-[#D1FAE5] [&_.code-num]:text-[#059669]'
-                    : line.startsWith('-')
+                    : line.kind === 'remove'
                       ? 'line-remove bg-[#FEF2F2] text-[#B91C1C] [&_.code-num]:bg-[#FEE2E2] [&_.code-num]:text-[#DC2626]'
                       : 'text-gray-500 hover:bg-gray-50'
 
+                  const focused = focusedDiffLine?.filePath === activeFile.filePath && focusedDiffLine.rawLineNumber === line.rawLineNumber
                   return (
-                    <div key={`${activeFile.filePath}-${index}-${line}`} className={`code-line group relative grid min-h-[28px] grid-cols-[48px_minmax(0,1fr)] font-['JetBrains_Mono','Consolas',monospace] text-[13px] leading-[28px] ${lineClass}`}>
-                      <div className="code-num select-none border-r border-r-[#F3F4F6] bg-[rgba(249,250,251,0.72)] pr-[12px] text-right text-[#9CA3AF]">{index + 1}</div>
-                      <div className="px-[16px] whitespace-pre">{line || ' '}</div>
+                    <div id={`review-${detail?.summary.reviewId}-${encodeURIComponent(activeFile.filePath)}-${line.rawLineNumber}`} tabIndex={-1} data-old-line={line.oldLineNumber} data-new-line={line.newLineNumber} key={line.rawLineNumber} className={`code-line group relative grid min-h-[30px] grid-cols-[48px_48px_minmax(0,1fr)] font-['JetBrains_Mono','Consolas',monospace] text-sm leading-[30px] focus:outline-none ${lineClass} ${focused ? 'ring-2 ring-inset ring-amber-400' : ''}`}>
+                      <div className="code-num select-none border-r border-gray-200 pr-3 text-right tabular-nums text-gray-500">{line.oldLineNumber ?? ''}</div>
+                      <div className="code-num select-none border-r border-gray-200 pr-3 text-right tabular-nums text-gray-500">{line.newLineNumber ?? ''}</div>
+                      <div className="whitespace-pre px-4">{line.text || ' '}</div>
                     </div>
                   )
                 })}
+                {lines.length === 0 ? <p className="p-5 text-sm text-gray-600">표시할 코드 변경 내용이 없습니다.</p> : null}
               </div>
             </div>
           )
@@ -871,13 +876,7 @@ function resolveDefaultFilePath(detail: CodeReviewDetail, preferredFilePath?: st
   }
 
   function renderDetailLoading() {
-    return (
-      <div className="flex h-full flex-1 flex-col items-center justify-center p-8 text-center">
-        <div className="mb-4 h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-gray-700"></div>
-        <p className="text-sm font-bold text-gray-700">리뷰 상세를 불러오는 중입니다</p>
-        <p className="mt-1 text-xs font-medium text-gray-400">목록은 먼저 사용할 수 있습니다.</p>
-      </div>
-    )
+    return <SquadReviewLoadingContent detailOnly />
   }
   return { workspaceId, session, setSession, authView, setAuthView, board, setBoard, detail, setDetail, activeTab, setActiveTab, selectedReviewId, setSelectedReviewId, loading, setLoading, detailLoading, setDetailLoading, saving, setSaving, aiLoading, setAiLoading, statusLoading, setStatusLoading, modalOpen, setModalOpen, form, setForm, commentDraft, setCommentDraft, selectedFilePath, setSelectedFilePath, openFileMenu, setOpenFileMenu, commentSaving, setCommentSaving, toast, setToast, error, setError, commentInputRef, selectedFileStorageKey, applyDetail, loadDetail, selectReviewFile, reloadBoard, handleLogout, handleAuthenticated, openCreateModal, closeCreateModal, submitCreate, requestAiReview, updateReviewStatus, insertCommentFormat, submitComment, members, projectName, openReviews, closedReviews, visibleReviews, hasAnyReviews, currentMember, currentUserName, currentProfileImage, currentReviewFiles, selectedReviewFile, renderReviewCard, renderFileSelector, renderAiReviewCard, renderDiff, renderEmptyDetail, renderDetailLoading }
 }

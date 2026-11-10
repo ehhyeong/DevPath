@@ -2,6 +2,8 @@ import { useEffect, useState, useSyncExternalStore, type MouseEvent } from 'reac
 import { showAuthToast } from '../lib/auth-toast'
 import { projectApiRequest } from '../features/project/api'
 import { useWorkspaceDataVersion } from '../lib/workspace-events'
+import { readWorkspaceIdFromLocation } from '../lib/location-state'
+import type { CodeReviewBoard } from '../features/squad/review-types'
 
 export type SquadWorkspaceAsidePage =
   | 'dashboard'
@@ -22,7 +24,6 @@ type SquadWorkspaceAsideProps = {
   projectName?: string | null
   pinned?: boolean
   onTogglePinned?: (event: MouseEvent<HTMLButtonElement>) => void
-  reviewBadgeCount?: number | null
   aiWorkspace?: boolean
   onNavigate?: (event: MouseEvent<HTMLAnchorElement>, href: string) => void
 }
@@ -66,7 +67,11 @@ function setSquadWorkspaceAsideExpanded(expanded: boolean) {
 
 function subscribeSquadWorkspaceAside(listener: () => void) {
   squadWorkspaceAsideListeners.add(listener)
-  return () => squadWorkspaceAsideListeners.delete(listener)
+  window.addEventListener('storage', listener)
+  return () => {
+    squadWorkspaceAsideListeners.delete(listener)
+    window.removeEventListener('storage', listener)
+  }
 }
 
 function preserveSquadWorkspaceAsideForNavigation() {
@@ -111,6 +116,7 @@ function storeSidebarPinned(storageKey: string, value: boolean) {
   }
 
   window.localStorage.setItem(storageKey, value ? 'true' : 'false')
+  squadWorkspaceAsideListeners.forEach((listener) => listener())
 }
 
 function navHref(path: string, workspaceId: number | null, aiWorkspace = false) {
@@ -129,25 +135,26 @@ export default function SquadWorkspaceAside({
   projectName,
   pinned,
   onTogglePinned,
-  reviewBadgeCount,
   aiWorkspace = false,
   onNavigate,
 }: SquadWorkspaceAsideProps) {
   const [reviewAccess, setReviewAccess] = useState<{ workspaceId: number; aiWorkspace: boolean; allowed: boolean } | null>(null)
-  // 일반 스쿼드의 기존 고정값을 보존하고 AI 워크스페이스는 별도 설정을 사용한다.
-  const [localPinned, setLocalPinned] = useState(() => ({
-    standard: readSidebarPinned(SIDEBAR_PINNED_STORAGE_KEY),
-    ai: readSidebarPinned(AI_SIDEBAR_PINNED_STORAGE_KEY),
-  }))
-  const pinMode = aiWorkspace ? 'ai' : 'standard'
+  const [reviewCount, setReviewCount] = useState<{ workspaceId: number; count: number } | null>(null)
+  // 메뉴를 숨긴 채 보존해도 다른 메뉴의 핀 변경을 즉시 반영한다. 일반/AI 설정은 분리한다.
+  const storedPinned = useSyncExternalStore(
+    subscribeSquadWorkspaceAside,
+    () => readSidebarPinned(aiWorkspace ? AI_SIDEBAR_PINNED_STORAGE_KEY : SIDEBAR_PINNED_STORAGE_KEY),
+    () => false,
+  )
   const expanded = useSyncExternalStore(
     subscribeSquadWorkspaceAside,
     () => squadWorkspaceAsideExpanded,
     () => false,
   )
-  const sidebarPinned = pinned ?? localPinned[pinMode]
+  const sidebarPinned = pinned ?? storedPinned
   const sidebarOpen = sidebarPinned || expanded
   const activeGithubLinked = reviewAccess?.workspaceId === workspaceId && reviewAccess?.aiWorkspace === aiWorkspace && reviewAccess?.allowed
+  const reviewBadgeCount = activeGithubLinked && reviewCount?.workspaceId === workspaceId ? reviewCount.count : 0
   const dataVersion = useWorkspaceDataVersion()
   const projectLabel = projectName?.trim() || '스쿼드 프로젝트'
   const standardSections: NavSection[] = [
@@ -262,6 +269,37 @@ export default function SquadWorkspaceAside({
     }
   }, [workspaceId, aiWorkspace, dataVersion])
 
+  useEffect(() => {
+    if (!workspaceId || activeGithubLinked !== true) return
+    const controller = new AbortController()
+    let pending = false
+    const refresh = async () => {
+      // 보존된 숨은 메뉴/다른 프로젝트는 폴링하지 않고 현재 보이는 메뉴에서만 최신 PR 수를 조회한다.
+      if (document.hidden || window.location.pathname !== `/squad-${activePage}` || readWorkspaceIdFromLocation() !== workspaceId || pending) return
+      pending = true
+      try {
+        const board = await projectApiRequest<Pick<CodeReviewBoard, 'openReviews'>>(
+          `/api/workspaces/${workspaceId}/code-reviews`, { signal: controller.signal }, 'required', { cache: false },
+        )
+        if (!controller.signal.aborted) setReviewCount({ workspaceId, count: board.openReviews.length })
+      } catch {
+        // 일시적인 조회 실패에는 마지막 정상 PR 수를 유지한다.
+      } finally {
+        pending = false
+      }
+    }
+    void refresh()
+    const intervalId = window.setInterval(refresh, 5000)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      controller.abort()
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [workspaceId, activeGithubLinked, activePage, dataVersion])
+
   useEffect(() => () => {
     // 로딩 화면의 사이드바가 교체될 때 새 사이드바의 펼침 상태까지 초기화하지 않는다.
     if (!squadWorkspaceAsideNavigationPending && !document.querySelector('.squad-workspace-aside')) {
@@ -299,17 +337,18 @@ export default function SquadWorkspaceAside({
       return
     }
 
-    setLocalPinned((current) => {
-      const next = !current[pinMode]
-      storeSidebarPinned(aiWorkspace ? AI_SIDEBAR_PINNED_STORAGE_KEY : SIDEBAR_PINNED_STORAGE_KEY, next)
-      return { ...current, [pinMode]: next }
-    })
+    const storageKey = aiWorkspace ? AI_SIDEBAR_PINNED_STORAGE_KEY : SIDEBAR_PINNED_STORAGE_KEY
+    storeSidebarPinned(storageKey, !readSidebarPinned(storageKey))
   }
 
   return (
     <aside
       className={`${sidebarPinned ? 'pinned w-[256px]! ' : ''}${expanded ? 'is-expanded w-[256px]! ' : ''}${aiWorkspace ? 'ai-squad-aside ' : ''}squad-workspace-aside w-20 hover:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 z-50 transition-all duration-300 ease-in-out group shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}
       onMouseEnter={() => setSquadWorkspaceAsideExpanded(true)}
+      onFocus={() => setSquadWorkspaceAsideExpanded(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null) && !event.currentTarget.matches(':hover')) setSquadWorkspaceAsideExpanded(false)
+      }}
       onMouseLeave={() => {
         if (!squadWorkspaceAsideNavigationPending) {
           setSquadWorkspaceAsideExpanded(false)
@@ -356,15 +395,18 @@ export default function SquadWorkspaceAside({
                   <a
                     key={item.key}
                     href={href}
+                    title={item.label}
+                    aria-label={item.label}
                     onClick={(event) => handleNavigate(event, href, item)}
-                    className={`workspace-nav-item flex box-border items-center rounded-[12px]! px-[16px]! ${aiWorkspace ? '' : 'mb-[4px] min-h-[48px]! py-[14px]!'} [transition:all_0.2s_ease-in-out]! ${aiWorkspace ? 'hover:translate-x-0!' : 'hover:translate-x-[4px]!'} ${activePage === item.key ? 'active bg-[#EBFDF5]! font-bold! text-[#00C471]! hover:bg-[#EBFDF5]! hover:text-[#00C471]!' : 'font-semibold! text-[#6B7280]! hover:bg-[#F3F4F6]! hover:text-[#111827]!'} ${blocked ? 'cursor-not-allowed opacity-50 hover:translate-x-0!' : ''}`}
+                    className={`workspace-nav-item relative flex box-border items-center rounded-[12px]! px-[16px]! ${aiWorkspace ? '' : 'mb-[4px] min-h-[48px]! py-[14px]!'} [transition:all_0.2s_ease-in-out]! ${aiWorkspace ? 'hover:translate-x-0!' : 'hover:translate-x-[4px]!'} ${activePage === item.key ? 'active bg-[#EBFDF5]! font-bold! text-[#00C471]! hover:bg-[#EBFDF5]! hover:text-[#00C471]!' : 'font-semibold! text-[#6B7280]! hover:bg-[#F3F4F6]! hover:text-[#111827]!'} ${blocked ? 'cursor-not-allowed opacity-50 hover:translate-x-0!' : ''}`}
                     aria-disabled={blocked}
                   >
                     <i className={`${item.icon} w-6 shrink-0 grow-0 basis-[24px] text-center text-lg leading-[28px]!`}></i>
+                    {!sidebarOpen && badgeCount > 0 ? <span role="status" aria-label={`열린 PR ${badgeCount}개`} className="squad-dashboard-review-badge absolute top-0 right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] leading-4 font-black text-white">{badgeCount}</span> : null}
                     <span className={`sidebar-text squad-dashboard-review-link w-0 flex-1 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ease-[ease] group-hover:ml-[12px] group-hover:flex group-hover:w-auto group-hover:min-w-0 group-hover:flex-auto group-hover:items-center group-hover:justify-between group-hover:gap-[8px] group-hover:opacity-100 ${sidebarOpen ? 'ml-[12px]! flex! w-auto! min-w-0 flex-auto items-center justify-between gap-[8px] opacity-100!' : ''}`}>
                       <span className="min-w-0"><span className={`block truncate ${aiWorkspace ? 'text-[13px] leading-[18px]' : ''}`}>{item.label}</span>{sidebarOpen && item.description ? <span className="ai-squad-menu-description mt-0.5 block truncate text-[10px] leading-tight font-medium text-gray-400">{item.description}</span> : null}</span>
-                      {badgeCount > 0 ? (
-                        <span className="squad-dashboard-review-badge inline-flex h-[16px] w-[16px] shrink-0 basis-[16px] items-center justify-center rounded-full bg-red-500 p-0! text-[9px] leading-[16px]! font-black text-white">
+                      {sidebarOpen && badgeCount > 0 ? (
+                        <span role="status" aria-label={`열린 PR ${badgeCount}개`} className="squad-dashboard-review-badge inline-flex h-[16px] min-w-[16px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] leading-[16px]! font-black text-white">
                           {badgeCount}
                         </span>
                       ) : null}

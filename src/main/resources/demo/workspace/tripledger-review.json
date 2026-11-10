@@ -1,0 +1,65 @@
+{
+  "key": "tripledger-expenses-v1#1",
+  "filePath": "src/main/java/com/tripledger/expense/ExpenseService.java",
+  "title": "feat: TripLedger 여행 지출 등록 흐름 구현",
+  "description": "POST /api/trips/{tripId}/expenses 구현과 연결 화면·테스트·DB 인덱스를 함께 검토하는 PR입니다. 각 지출의 분담 합계는 원래 금액과 같아야 하며 통화가 다른 지출을 같은 정산에 섞지 않습니다.",
+  "sourceBranch": "feature/tripledger-expense",
+  "diff": "diff --git a/src/main/java/com/tripledger/expense/ExpenseService.java b/src/main/java/com/tripledger/expense/ExpenseService.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/tripledger/expense/ExpenseService.java\n@@ -0,0 +1,20 @@\n+package com.tripledger.expense;\n+\n+import java.math.BigDecimal;\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.stereotype.Service;\n+import org.springframework.transaction.annotation.Transactional;\n+\n+@Service\n+@RequiredArgsConstructor\n+public class ExpenseService {\n+    private final TripRepository trips;\n+    private final ExpenseRepository expenses;\n+\n+    @Transactional\n+    public Expense addExpense(Long tripId, Long memberId, BigDecimal amount, String memo) {\n+        Trip trip = trips.findById(tripId).orElseThrow();\n+        if (amount.signum() <= 0) throw new InvalidAmountException();\n+        return expenses.save(new Expense(trip.getId(), memberId, amount, memo));\n+    }\n+}\n",
+  "juseungComment": "정상 저장 외에 정상 저장 외에 나누어떨어지지 않는 금액과 지출 수정 후 정산 잔액은 확인하지 않습니다. 분담 합계 일치·마지막 멤버 잔액 배분·비참여자·재시도 테스트를 추가하세요.",
+  "taehyungComment": "인증 사용자가 해당 여행의 참여자인지 확인하고 결제자 선택 범위도 제한하세요. 요청 키와 여행 ID에 유일성을 부여하고 분담 합계 검증을 한 트랜잭션에서 처리하세요.",
+  "aiTitle": "TripLedger 여행 지출 등록 다중 파일 검토",
+  "aiSummary": "여행 지출 등록의 서비스·컨트롤러·화면·테스트·DB 변경을 함께 확인했습니다. 여행 참여 관계와 결제자 권한 검증, 재시도된 지출 등록의 중복 반영 방지과 경계 테스트를 보완하세요.",
+  "aiComments": [
+    {
+      "category": "보안",
+      "title": "여행 참여 관계와 결제자 권한 검증",
+      "message": "tripId가 존재하는지만 조회하므로 여행에 참여하지 않은 사용자도 지출을 등록할 수 있습니다.",
+      "suggestion": "인증 사용자가 해당 여행의 참여자인지 확인하고 결제자 선택 범위도 제한하세요.",
+      "filePath": "src/main/java/com/tripledger/expense/ExpenseService.java",
+      "lineNumber": 15
+    },
+    {
+      "category": "데이터 정합성",
+      "title": "재시도된 지출 등록의 중복 반영 방지",
+      "message": "네트워크 재시도로 동일한 등록 요청이 두 번 오면 같은 지출이 두 건 저장됩니다.",
+      "suggestion": "요청 키와 여행 ID에 유일성을 부여하고 분담 합계 검증을 한 트랜잭션에서 처리하세요.",
+      "filePath": "src/main/java/com/tripledger/expense/ExpenseService.java",
+      "lineNumber": 18
+    },
+    {
+      "category": "테스트",
+      "title": "분담 합계와 반올림 잔액 테스트",
+      "message": "정상 저장 외에 나누어떨어지지 않는 금액과 지출 수정 후 정산 잔액은 확인하지 않습니다.",
+      "suggestion": "분담 합계 일치·마지막 멤버 잔액 배분·비참여자·재시도 테스트를 추가하세요.",
+      "filePath": "src/test/java/com/tripledger/expense/ExpenseServiceTest.java",
+      "lineNumber": 20
+    }
+  ],
+  "files": [
+    {
+      "filePath": "src/main/java/com/tripledger/expense/ExpenseService.java",
+      "diff": "diff --git a/src/main/java/com/tripledger/expense/ExpenseService.java b/src/main/java/com/tripledger/expense/ExpenseService.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/tripledger/expense/ExpenseService.java\n@@ -0,0 +1,20 @@\n+package com.tripledger.expense;\n+\n+import java.math.BigDecimal;\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.stereotype.Service;\n+import org.springframework.transaction.annotation.Transactional;\n+\n+@Service\n+@RequiredArgsConstructor\n+public class ExpenseService {\n+    private final TripRepository trips;\n+    private final ExpenseRepository expenses;\n+\n+    @Transactional\n+    public Expense addExpense(Long tripId, Long memberId, BigDecimal amount, String memo) {\n+        Trip trip = trips.findById(tripId).orElseThrow();\n+        if (amount.signum() <= 0) throw new InvalidAmountException();\n+        return expenses.save(new Expense(trip.getId(), memberId, amount, memo));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/java/com/tripledger/expense/ExpenseController.java",
+      "diff": "diff --git a/src/main/java/com/tripledger/expense/ExpenseController.java b/src/main/java/com/tripledger/expense/ExpenseController.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/tripledger/expense/ExpenseController.java\n@@ -0,0 +1,20 @@\n+package com.tripledger.expense;\n+\n+import java.math.BigDecimal;\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.web.bind.annotation.*;\n+\n+@RestController\n+@RequiredArgsConstructor\n+public class ExpenseController {\n+    private final ExpenseService service;\n+\n+    @PostMapping(\"/api/trips/{tripId}/expenses\")\n+    public CreatedResponse create(@PathVariable Long tripId, @RequestBody ExpenseRequest request) {\n+        Expense saved = service.addExpense(tripId, request.memberId(), request.amount(), request.memo());\n+        return new CreatedResponse(saved.getId());\n+    }\n+\n+    public record ExpenseRequest(Long memberId, BigDecimal amount, String memo) {}\n+    public record CreatedResponse(Long expenseId) {}\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "frontend/src/features/expense/ExpenseCreatePanel.tsx",
+      "diff": "diff --git a/frontend/src/features/expense/ExpenseCreatePanel.tsx b/frontend/src/features/expense/ExpenseCreatePanel.tsx\n--- a/frontend/src/features/expense/ExpenseCreatePanel.tsx\n+++ b/frontend/src/features/expense/ExpenseCreatePanel.tsx\n@@ -1,2 +1,26 @@\n-export function FeaturePanel() { return null; }\n-// 화면 구현 예정\n+import { useState } from 'react';\n+import { api } from '../../lib/api';\n+\n+type Props = { tripId: number; memberId: number; reload: () => Promise<void> };\n+\n+export function ExpenseCreatePanel({ tripId, memberId, reload }: Props) {\n+  const [amount, setAmount] = useState(45000);\n+  const [memo, setMemo] = useState('');\n+  const [error, setError] = useState('');\n+  async function submit() {\n+    setError('');\n+    try {\n+      await api.post(`/api/trips/${tripId}/expenses`, { memberId, amount, memo });\n+      await reload();\n+    } catch {\n+      setError('요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');\n+    }\n+  }\n+  return <section>\n+    <h2>여행 지출 등록</h2>\n+    <label>금액<input type=\"number\" value={amount} onChange={e => setAmount(Number(e.target.value))} /></label>\n+    <label>설명<input value={memo} onChange={e => setMemo(e.target.value)} /></label>\n+    {error && <p role=\"alert\">{error}</p>}\n+    <button onClick={submit}>저장하기</button>\n+  </section>;\n+}\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/test/java/com/tripledger/expense/ExpenseServiceTest.java",
+      "diff": "diff --git a/src/test/java/com/tripledger/expense/ExpenseServiceTest.java b/src/test/java/com/tripledger/expense/ExpenseServiceTest.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/test/java/com/tripledger/expense/ExpenseServiceTest.java\n@@ -0,0 +1,23 @@\n+package com.tripledger.expense;\n+\n+import java.math.BigDecimal;\n+import java.util.Optional;\n+import org.junit.jupiter.api.Test;\n+import static org.assertj.core.api.Assertions.assertThat;\n+import static org.mockito.Mockito.*;\n+\n+class ExpenseServiceTest {\n+    @Test\n+    void returnsCreatedRecordForValidRequest() {\n+        var trips = mock(TripRepository.class);\n+        var expenses = mock(ExpenseRepository.class);\n+        var resource = mock(Trip.class);\n+        when(trips.findById(1L)).thenReturn(Optional.of(resource));\n+        when(resource.getId()).thenReturn(1L);\n+        when(expenses.save(any(Expense.class))).thenAnswer(invocation -> invocation.getArgument(0));\n+        var service = new ExpenseService(trips, expenses);\n+        var saved = service.addExpense(1L, 7L, new BigDecimal(\"45000\"), \"저녁 식사\");\n+        assertThat(saved).isNotNull();\n+        verify(expenses).save(any(Expense.class));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/resources/db/migration/V2__index_tripledger_expense.sql",
+      "diff": "diff --git a/src/main/resources/db/migration/V2__index_tripledger_expense.sql b/src/main/resources/db/migration/V2__index_tripledger_expense.sql\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/resources/db/migration/V2__index_tripledger_expense.sql\n@@ -0,0 +1,1 @@\n+CREATE INDEX idx_expenses_trip_payer ON expenses (trip_id, payer_id);\n",
+      "changeType": "added"
+    }
+  ]
+}

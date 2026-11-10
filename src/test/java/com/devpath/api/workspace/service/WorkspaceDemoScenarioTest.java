@@ -15,11 +15,16 @@ import com.devpath.domain.workspace.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.embedded.*;
@@ -30,6 +35,7 @@ class WorkspaceDemoScenarioTest {
   private final WorkspaceRepository workspaces = mock(WorkspaceRepository.class);
   private final WorkspaceMemberRepository members = mock(WorkspaceMemberRepository.class);
   private final WorkspaceAiDesignRepository designs = mock(WorkspaceAiDesignRepository.class);
+  private final WorkspaceTaskRepository tasks = mock(WorkspaceTaskRepository.class);
   private final ObjectMapper mapper = new ObjectMapper();
   private EmbeddedDatabase database;
   private JdbcTemplate jdbc;
@@ -69,7 +75,7 @@ class WorkspaceDemoScenarioTest {
         .set(false);
     store = new WorkspaceCodeReviewStore(jdbc);
     store.initializeSchema();
-    demo = new WorkspaceDemoScenario(users, workspaces, members, designs, store, mapper);
+    demo = new WorkspaceDemoScenario(users, workspaces, members, designs, store, tasks, mapper);
     User owner = user(7L, WorkspaceDemoScenario.OWNER_EMAIL);
     when(users.findById(7L)).thenReturn(Optional.of(owner));
     when(users.findByEmail("park.juseung@devpath.com"))
@@ -113,12 +119,28 @@ class WorkspaceDemoScenarioTest {
     assertThat(demo.supports(7L, request)).isFalse();
   }
 
-  @Test
-  void persistsOneOpenPrAndRequestedMembersAndKeepsAccessScopedToItsOwner() throws Exception {
-    demo.initialize(workspace, fixture());
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "routinecare",
+        "studymate",
+        "pantryshare",
+        "sprintdesk",
+        "toolshare",
+        "tripledger",
+        "eventpass",
+        "readtogether"
+      })
+  void persistsOneOpenPrAndRequestedMembersAndKeepsAccessScopedToItsOwner(String preset)
+      throws Exception {
+    var design = fixture(preset);
+    var review =
+        mapper.readTree(
+            getClass().getResourceAsStream("/demo/workspace/" + preset + "-review.json"));
+    demo.initialize(workspace, design);
     when(members.existsByWorkspaceIdAndLearnerId(42L, 8L)).thenReturn(true);
     when(members.existsByWorkspaceIdAndLearnerId(42L, 9L)).thenReturn(true);
-    demo.initialize(workspace, fixture());
+    demo.initialize(workspace, design);
     var captor = ArgumentCaptor.forClass(WorkspaceMember.class);
     verify(members, times(2)).save(captor.capture());
     assertThat(captor.getAllValues())
@@ -130,7 +152,8 @@ class WorkspaceDemoScenarioTest {
             row -> {
               assertThat(row.status()).isEqualTo("OPEN");
               assertThat(row.issueKey()).isEqualTo("#PR-1");
-              assertThat(row.title()).contains("RoutineCare");
+              assertThat(row.title()).isEqualTo(review.path("title").asText());
+              assertThat(row.filePath()).isEqualTo(review.path("filePath").asText());
               assertThat(row.aiCodeReviewId()).isNull();
             });
     assertThat(demo.isDemoWorkspace(42L)).isTrue();
@@ -142,24 +165,173 @@ class WorkspaceDemoScenarioTest {
     assertThat(store.findComments(42L, reviewId))
         .extracting(comment -> comment.body())
         .containsExactly(
-            WorkspaceDemoScenario.JUSEUNG_COMMENT, WorkspaceDemoScenario.TAEHYUNG_COMMENT);
+            review.path("juseungComment").asText(), review.path("taehyungComment").asText());
     assertThat(store.findComments(42L, reviewId))
         .allSatisfy(
-            comment -> assertThat(comment.filePath()).isEqualTo(WorkspaceDemoScenario.FILE_PATH));
+            comment -> assertThat(comment.filePath()).isEqualTo(review.path("filePath").asText()));
+    var row = store.findDetailRow(42L, reviewId);
+    assertThat(row.files()).hasSize(5);
+    assertThat(row.files()).extracting(file -> file.filePath()).doesNotHaveDuplicates();
+    assertThat(row.summary().fileCount()).isEqualTo(5);
+    assertThat(row.summary().additions())
+        .isEqualTo(row.files().stream().mapToInt(file -> file.additions()).sum());
+    assertThat(row.summary().deletions())
+        .isEqualTo(row.files().stream().mapToInt(file -> file.deletions()).sum());
+    for (var file : row.files()) {
+      assertThat(file.diffText()).contains("diff --git", "@@");
+      assertThat(file.additions()).isGreaterThan(0);
+    }
+    assertThat(row.externalId()).isEqualTo(review.path("key").asText());
+    assertThat(demo.isDemoReview(42L, row)).isTrue();
     assertThat(demo.isDemoWorkspace(43L)).isFalse();
     when(users.findById(7L)).thenReturn(Optional.of(user(7L, "other@devpath.com")));
     assertThat(demo.isDemoWorkspace(42L)).isFalse();
   }
 
-  @Test
-  void returnsDesignAfterSevenAndHalfSecondsAndStoresReviewAfterFiveAndHalfWithoutAiNetwork()
-      throws Exception {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "routinecare",
+        "studymate",
+        "pantryshare",
+        "sprintdesk",
+        "toolshare",
+        "tripledger",
+        "eventpass",
+        "readtogether"
+      })
+  void assignsAllPresetTasksToTeamRolesAndPreservesLaterEdits(String preset) throws Exception {
+    var design = fixture(preset);
+    var owner = WorkspaceMember.builder().workspaceId(42L).learnerId(7L).build();
+    when(members.findByWorkspaceIdAndLearnerId(42L, 7L)).thenReturn(Optional.of(owner));
+    var board =
+        design.roadmap().stream()
+            .flatMap(phase -> phase.tasks().stream())
+            .map(
+                title ->
+                    WorkspaceTask.builder().workspaceId(42L).title(title).createdById(7L).build())
+            .toList();
+    var preassigned =
+        WorkspaceTask.builder()
+            .workspaceId(42L)
+            .title(board.getFirst().getTitle())
+            .createdById(7L)
+            .assigneeId(8L)
+            .build();
+    var moved =
+        WorkspaceTask.builder()
+            .workspaceId(42L)
+            .title(board.getFirst().getTitle())
+            .createdById(7L)
+            .status(WorkspaceTaskStatus.IN_PROGRESS)
+            .build();
+    var teammateTask =
+        WorkspaceTask.builder()
+            .workspaceId(42L)
+            .title(board.getFirst().getTitle())
+            .createdById(8L)
+            .build();
+    var manualTask =
+        WorkspaceTask.builder().workspaceId(42L).title("직접 추가한 작업").createdById(7L).build();
+    var allTasks = new ArrayList<>(board);
+    allTasks.addAll(List.of(preassigned, moved, teammateTask, manualTask));
+    when(tasks.findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(42L)).thenReturn(allTasks);
+
+    demo.initialize(workspace, design);
+
+    assertThat(owner.getPositionLabel()).isEqualTo("Frontend 개발자");
+    assertThat(preassigned.getAssigneeId()).isEqualTo(8L);
+    assertThat(preassigned.getStatus()).isEqualTo(WorkspaceTaskStatus.TODO);
+    assertThat(moved.getAssigneeId()).isNull();
+    assertThat(moved.getStatus()).isEqualTo(WorkspaceTaskStatus.IN_PROGRESS);
+    assertThat(teammateTask.getAssigneeId()).isNull();
+    assertThat(manualTask.getAssigneeId()).isNull();
+    var invitations = ArgumentCaptor.forClass(WorkspaceMember.class);
+    verify(members, times(2)).save(invitations.capture());
+    assertThat(invitations.getAllValues())
+        .extracting(WorkspaceMember::getPositionLabel)
+        .containsExactly("QA·테스트", "Backend·인프라");
+    assertThat(board).allSatisfy(task -> assertThat(task.getAssigneeId()).isIn(7L, 8L, 9L));
+    assertThat(board)
+        .filteredOn(task -> task.getAssigneeId().equals(7L))
+        .extracting(WorkspaceTask::getTitle)
+        .containsExactly(
+            design.roadmap().get(0).tasks().get(2),
+            design.roadmap().get(1).tasks().get(2),
+            design.roadmap().get(2).tasks().get(2),
+            design.roadmap().get(3).tasks().get(1));
+    var qaTasks =
+        board.stream()
+            .filter(task -> task.getAssigneeId().equals(8L))
+            .map(WorkspaceTask::getTitle)
+            .toList();
+    if (preset.equals("sprintdesk")) {
+      assertThat(qaTasks).containsExactly(design.roadmap().get(3).tasks().get(0));
+      assertThat(board.get(7).getAssigneeId()).isEqualTo(9L);
+    } else {
+      assertThat(qaTasks)
+          .containsExactly(
+              design.roadmap().get(2).tasks().get(1), design.roadmap().get(3).tasks().get(0));
+    }
+    assertThat(board).filteredOn(task -> task.getStatus() == WorkspaceTaskStatus.DONE).hasSize(5);
+    assertThat(board)
+        .filteredOn(task -> task.getStatus() == WorkspaceTaskStatus.IN_REVIEW)
+        .hasSize(2);
+    assertThat(board)
+        .filteredOn(task -> task.getStatus() == WorkspaceTaskStatus.IN_PROGRESS)
+        .hasSize(2);
+    assertThat(board).filteredOn(task -> task.getStatus() == WorkspaceTaskStatus.TODO).hasSize(3);
+    var custom = board.getFirst();
+    custom.changeAssignee(7L);
+    custom.changeStatus(WorkspaceTaskStatus.IN_PROGRESS);
+    owner.assignPositionLabel("프론트 리드");
+    when(members.existsByWorkspaceIdAndLearnerId(42L, 8L)).thenReturn(true);
+    when(members.existsByWorkspaceIdAndLearnerId(42L, 9L)).thenReturn(true);
+
+    demo.initialize(workspace, design);
+
+    assertThat(custom.getAssigneeId()).isEqualTo(7L);
+    assertThat(custom.getStatus()).isEqualTo(WorkspaceTaskStatus.IN_PROGRESS);
+    assertThat(owner.getPositionLabel()).isEqualTo("프론트 리드");
+    verify(tasks, times(1)).findAllByWorkspaceIdAndIsDeletedFalseOrderByCreatedAtDesc(42L);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, 1, 2, 3, 4, 5, 6, 7})
+  void returnsDesignAfterSevenAndHalfSecondsAndStoresReviewAfterFiveAndHalfWithoutAiNetwork(
+      int presetIndex) throws Exception {
     WorkspaceAiDesignClient client = mock(WorkspaceAiDesignClient.class);
-    Instant started = Instant.now();
-    WorkspaceAiDesignResponse design =
-        new WorkspaceAiDesignService(client, demo)
-            .generate(7L, new WorkspaceAiDesignRequest("mvp", "auto", null, null, null, null));
-    assertThat(Duration.between(started, Instant.now()).toMillis()).isGreaterThanOrEqualTo(7500L);
+    var request = new WorkspaceAiDesignRequest("mvp", "auto", null, null, null, null);
+    var service = new WorkspaceAiDesignService(client, demo);
+    WorkspaceAiDesignResponse design;
+    ThreadLocalRandom random = mock(ThreadLocalRandom.class);
+    try (var selection = mockStatic(ThreadLocalRandom.class)) {
+      selection.when(ThreadLocalRandom::current).thenReturn(random);
+      when(random.nextInt(8)).thenReturn(presetIndex);
+      Instant started = Instant.now();
+      design = service.generate(7L, request);
+      assertThat(Duration.between(started, Instant.now()).toMillis()).isGreaterThanOrEqualTo(7500L);
+      assertThat(design)
+          .isEqualTo(
+              fixture(
+                  List.of(
+                          "routinecare",
+                          "studymate",
+                          "pantryshare",
+                          "sprintdesk",
+                          "toolshare",
+                          "tripledger",
+                          "eventpass",
+                          "readtogether")
+                      .get(presetIndex)));
+      if (presetIndex == 0) {
+        started = Instant.now();
+        assertThat(service.generate(7L, request)).isEqualTo(design);
+        assertThat(Duration.between(started, Instant.now()).toMillis())
+            .isGreaterThanOrEqualTo(7500L);
+      }
+      verify(random, times(presetIndex == 0 ? 2 : 1)).nextInt(8);
+    }
     verifyNoInteractions(client);
     assertThat(design.architecture().entities()).hasSize(5);
     assertThat(design.apis()).hasSize(9);
@@ -169,20 +341,47 @@ class WorkspaceDemoScenarioTest {
       assertThat(mapper.readTree(api.requestExample())).isNotNull();
       assertThat(mapper.readTree(api.responseExample())).isNotNull();
     }
+    var tasks = design.roadmap().stream().flatMap(phase -> phase.tasks().stream()).toList();
+    var apiNames = design.apis().stream().map(api -> api.method() + " " + api.path()).toList();
+    for (var question : design.interviewQuestions()) {
+      assertThat(tasks).containsAll(question.tasks());
+      assertThat(apiNames).containsAll(question.apis());
+    }
     demo.initialize(workspace, design);
     long reviewId = store.findSummaries(42L).getFirst().reviewId();
     var assistant = mock(CodeReviewAssistant.class);
     var reviewer = new WorkspaceCodeReviewAiReviewer(store, assistant, demo);
-    started = Instant.now();
+    Instant started = Instant.now();
     reviewer.createReview(42L, reviewId, 7L, null, store.findDetailRow(42L, reviewId));
     assertThat(Duration.between(started, Instant.now()).toMillis()).isGreaterThanOrEqualTo(5500L);
     var row = store.findDetailRow(42L, reviewId);
     assertThat(row.summary().aiCodeReviewId()).isNotNull();
     assertThat(row.summary().aiCommentCount()).isEqualTo(3);
     assertThat(jdbc.queryForObject("SELECT provider_name FROM ai_code_reviews", String.class))
-        .isEqualTo("DEMO");
+        .isEqualTo("DEMO_MULTI_FILE");
     assertThat(jdbc.queryForObject("SELECT count(*) FROM ai_review_comments", Integer.class))
         .isEqualTo(3);
+    String reviewInput = jdbc.queryForObject("SELECT diff_text FROM ai_code_reviews", String.class);
+    String[] reviewLines = reviewInput.split("\\R");
+    var lineNumbers =
+        jdbc.queryForList(
+            "SELECT line_number FROM ai_review_comments ORDER BY ai_review_comment_id",
+            Integer.class);
+    assertThat(lineNumbers).allSatisfy(line -> assertThat(line).isBetween(1, reviewLines.length));
+    assertThat(reviewLines[lineNumbers.get(2) - 1]).contains("assertThat(saved)");
+    assertThat(reviewInput).contains("frontend/src/features/", "src/test/java/", "db/migration/");
+    assertThat(jdbc.queryForObject("SELECT title FROM ai_code_reviews", String.class))
+        .contains(
+            List.of(
+                    "RoutineCare",
+                    "StudyMate",
+                    "PantryShare",
+                    "SprintDesk",
+                    "ToolShare",
+                    "TripLedger",
+                    "EventPass",
+                    "ReadTogether")
+                .get(presetIndex));
     reviewer.createReview(42L, reviewId, 7L, null, row);
     assertThat(jdbc.queryForObject("SELECT count(*) FROM ai_code_reviews", Integer.class))
         .isEqualTo(1);
@@ -201,7 +400,11 @@ class WorkspaceDemoScenarioTest {
   }
 
   private WorkspaceAiDesignResponse fixture() throws Exception {
-    try (var input = getClass().getResourceAsStream("/demo/workspace/routinecare-design.json")) {
+    return fixture("routinecare");
+  }
+
+  private WorkspaceAiDesignResponse fixture(String preset) throws Exception {
+    try (var input = getClass().getResourceAsStream("/demo/workspace/" + preset + "-design.json")) {
       return mapper.readValue(input, WorkspaceAiDesignResponse.class);
     }
   }

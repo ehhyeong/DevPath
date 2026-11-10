@@ -1,0 +1,65 @@
+{
+  "key": "routinecare-records-v1#1",
+  "filePath": "src/main/java/com/routinecare/record/DailyRecordService.java",
+  "title": "feat: RoutineCare 일별 식단·복약 기록 저장 API",
+  "description": "POST /api/daily-records 구현 PR입니다. 같은 날짜의 기록 갱신, 사용자별 접근 권한, 중복 저장을 검토해 주세요.\n서비스·컨트롤러·React 화면·회귀 테스트·DB 인덱스 총 5개 변경 파일을 함께 검토합니다.",
+  "sourceBranch": "feature/daily-records",
+  "diff": "diff --git a/src/main/java/com/routinecare/record/DailyRecordService.java b/src/main/java/com/routinecare/record/DailyRecordService.java\n--- a/src/main/java/com/routinecare/record/DailyRecordService.java\n+++ b/src/main/java/com/routinecare/record/DailyRecordService.java\n@@ -1,5 +1,15 @@\n package com.routinecare.record;\n\n @Service\n @RequiredArgsConstructor\n public class DailyRecordService {\n+    private final DailyRecordRepository records;\n+\n+    @Transactional\n+    public DailyRecord record(Long memberId, LocalDate date, String meal, boolean medicationTaken) {\n+        DailyRecord record = records.findByMemberIdAndDate(memberId, date)\n+            .orElseGet(() -> new DailyRecord(memberId, date));\n+        record.update(meal, medicationTaken);\n+        return records.save(record);\n+    }\n+\n }\n",
+  "juseungComment": "동일 날짜 재저장, 비소유자 접근, 자정 전후 날짜 경계와 복약 상태만 변경하는 경우를 통합 테스트로 확인하겠습니다.",
+  "taehyungComment": "memberId는 요청 본문 대신 인증된 사용자 정보에서 가져오면 좋겠습니다. 같은 사용자가 같은 날짜에 동시에 저장해도 기록이 중복되지 않도록 member_id·record_date 유니크 제약도 확인해 주세요.",
+  "aiTitle": "RoutineCare 식단·복약 기록 API 검토",
+  "aiSummary": "일별 기록 생성과 수정 흐름은 명확합니다. 사용자 권한 검증, 동시 저장 시 중복 방지, 날짜 경계 테스트를 보완하면 안전하게 운영할 수 있습니다.",
+  "aiComments": [
+    {
+      "category": "보안",
+      "lineNumber": 9,
+      "title": "사용자 ID는 인증 정보에서 확인",
+      "message": "요청의 memberId만 신뢰하면 다른 사용자의 복약 기록을 변경할 수 있습니다.",
+      "suggestion": "컨트롤러에서 인증된 사용자 ID를 전달하고 서비스에서 기록 소유권을 검증하세요.",
+      "filePath": "src/main/java/com/routinecare/record/DailyRecordService.java"
+    },
+    {
+      "category": "데이터 정합성",
+      "lineNumber": 10,
+      "title": "같은 날짜의 동시 저장 방지",
+      "message": "조회 후 생성 사이에 요청이 겹치면 같은 사용자의 일별 기록이 중복 생성될 수 있습니다.",
+      "suggestion": "daily_records의 member_id와 record_date에 UNIQUE 제약을 두고 충돌 정책을 정의하세요.",
+      "filePath": "src/main/java/com/routinecare/record/DailyRecordService.java"
+    },
+    {
+      "category": "테스트",
+      "lineNumber": 17,
+      "title": "복약 상태 갱신과 날짜 경계 검증",
+      "message": "기존 식단 기록에서 복약 상태만 바꾸는 경우와 자정 전후의 기록 날짜를 확인해야 합니다.",
+      "suggestion": "동일 날짜 재저장, 다른 사용자 접근 거부, 시간대별 날짜 경계 테스트를 추가하세요.",
+      "filePath": "src/test/java/com/routinecare/record/DailyRecordServiceTest.java"
+    }
+  ],
+  "files": [
+    {
+      "filePath": "src/main/java/com/routinecare/record/DailyRecordService.java",
+      "diff": "diff --git a/src/main/java/com/routinecare/record/DailyRecordService.java b/src/main/java/com/routinecare/record/DailyRecordService.java\n--- a/src/main/java/com/routinecare/record/DailyRecordService.java\n+++ b/src/main/java/com/routinecare/record/DailyRecordService.java\n@@ -1,5 +1,15 @@\n package com.routinecare.record;\n\n @Service\n @RequiredArgsConstructor\n public class DailyRecordService {\n+    private final DailyRecordRepository records;\n+\n+    @Transactional\n+    public DailyRecord record(Long memberId, LocalDate date, String meal, boolean medicationTaken) {\n+        DailyRecord record = records.findByMemberIdAndDate(memberId, date)\n+            .orElseGet(() -> new DailyRecord(memberId, date));\n+        record.update(meal, medicationTaken);\n+        return records.save(record);\n+    }\n+\n }\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/main/java/com/routinecare/record/DailyRecordController.java",
+      "diff": "diff --git a/src/main/java/com/routinecare/record/DailyRecordController.java b/src/main/java/com/routinecare/record/DailyRecordController.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/routinecare/record/DailyRecordController.java\n@@ -0,0 +1,20 @@\n+package com.routinecare.record;\n+\n+import java.time.LocalDate;\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.web.bind.annotation.*;\n+\n+@RestController\n+@RequiredArgsConstructor\n+public class DailyRecordController {\n+    private final DailyRecordService service;\n+\n+    @PostMapping(\"/api/daily-records\")\n+    public CreatedResponse create(@RequestBody DailyRecordRequest request) {\n+        DailyRecord saved = service.record(request.memberId(), request.recordDate(), request.meal(), request.medicationTaken());\n+        return new CreatedResponse(saved.getId());\n+    }\n+\n+    public record DailyRecordRequest(Long memberId, LocalDate recordDate, String meal, boolean medicationTaken) {}\n+    public record CreatedResponse(Long id) {}\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "frontend/src/features/record/DailyRecordPanel.tsx",
+      "diff": "diff --git a/frontend/src/features/record/DailyRecordPanel.tsx b/frontend/src/features/record/DailyRecordPanel.tsx\n--- a/frontend/src/features/record/DailyRecordPanel.tsx\n+++ b/frontend/src/features/record/DailyRecordPanel.tsx\n@@ -1,2 +1,28 @@\n-export function FeaturePanel() { return null; }\n-// 화면 구현 예정\n+import { useState } from 'react';\n+import { api } from '../../lib/api';\n+\n+type Props = { memberId: number; reload: () => Promise<void> };\n+\n+export function DailyRecordPanel({ memberId, reload }: Props) {\n+  const [recordDate, setRecordDate] = useState('2026-11-16');\n+  const [meal, setMeal] = useState('');\n+  const [medicationTaken, setMedicationTaken] = useState(false);\n+  const [error, setError] = useState('');\n+  async function submit() {\n+    setError('');\n+    try {\n+      await api.post(`/api/daily-records`, { memberId, recordDate, meal, medicationTaken });\n+      await reload();\n+    } catch {\n+      setError('요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');\n+    }\n+  }\n+  return <section>\n+    <h2>일별 식단·복약 기록</h2>\n+    <label>기록 날짜<input type=\"date\" value={recordDate} onChange={e => setRecordDate(e.target.value)} /></label>\n+    <label>식단<input value={meal} onChange={e => setMeal(e.target.value)} /></label>\n+    <label>복약 확인<input type=\"checkbox\" checked={medicationTaken} onChange={e => setMedicationTaken(e.target.checked)} /></label>\n+    {error && <p role=\"alert\">{error}</p>}\n+    <button onClick={submit}>저장하기</button>\n+  </section>;\n+}\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/test/java/com/routinecare/record/DailyRecordServiceTest.java",
+      "diff": "diff --git a/src/test/java/com/routinecare/record/DailyRecordServiceTest.java b/src/test/java/com/routinecare/record/DailyRecordServiceTest.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/test/java/com/routinecare/record/DailyRecordServiceTest.java\n@@ -0,0 +1,20 @@\n+package com.routinecare.record;\n+\n+import java.time.LocalDate;\n+import java.util.Optional;\n+import org.junit.jupiter.api.Test;\n+import static org.assertj.core.api.Assertions.assertThat;\n+import static org.mockito.Mockito.*;\n+\n+class DailyRecordServiceTest {\n+    @Test\n+    void returnsCreatedRecordForValidRequest() {\n+        var records = mock(DailyRecordRepository.class);\n+        when(records.findByMemberIdAndDate(7L, LocalDate.of(2026, 11, 16))).thenReturn(Optional.empty());\n+        when(records.save(any(DailyRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));\n+        var service = new DailyRecordService(records);\n+        var saved = service.record(7L, LocalDate.of(2026, 11, 16), \"샐러드\", true);\n+        assertThat(saved).isNotNull();\n+        verify(records).save(any(DailyRecord.class));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/resources/db/migration/V2__index_routinecare_record.sql",
+      "diff": "diff --git a/src/main/resources/db/migration/V2__index_routinecare_record.sql b/src/main/resources/db/migration/V2__index_routinecare_record.sql\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/resources/db/migration/V2__index_routinecare_record.sql\n@@ -0,0 +1,1 @@\n+CREATE INDEX idx_daily_records_member_date ON daily_records (member_id, record_date);\n",
+      "changeType": "added"
+    }
+  ]
+}

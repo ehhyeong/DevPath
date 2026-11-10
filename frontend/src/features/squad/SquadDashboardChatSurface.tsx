@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { useEffect, useState } from 'react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import UserAvatar from '../../components/UserAvatar'
 import { showAuthToast } from '../../lib/auth-toast'
@@ -40,8 +41,37 @@ type Props = {
   sendPlusMessage: (type: 'code' | 'meeting' | 'remind') => void
 }
 
+function readLastChatMessageId(scope: string) {
+  try {
+    return Number(localStorage.getItem(`devpath.workspace-chat-read.${scope}`)) || 0
+  } catch {
+    // 저장소를 차단한 브라우저에서는 현재 화면의 읽음 상태만 유지한다.
+    return 0
+  }
+}
+
 export default function SquadDashboardChatSurface(props: Props) {
   const { sessionUserId, dashboard, messages, directMessages, dmMembers, memberById, selectedDmMember, currentProfileImage, chatInPip, chatPipContainer, chatOpen, chatTab, plusMenuOpen, messageInput, directInput, directLoading, chatScrollRef, directScrollRef, pipChatScrollRef, pipDirectScrollRef, setChatTab, setPlusMenuOpen, setMessageInput, setDirectInput, setSelectedDmMember, setDirectMessages, openChatSurface, closeChatSurface, openDirectRoom, sendTeamMessage, sendDirectMessage, sendPlusMessage } = props
+  const scope = `${dashboard?.workspaceId}:${sessionUserId}`
+  const [readState, setReadState] = useState(() => ({ scope, messageId: readLastChatMessageId(scope) }))
+  const lastReadId = readState.scope === scope ? readState.messageId : readLastChatMessageId(scope)
+  const readingTeamChat = chatOpen && chatTab === 'team'
+  const latestMessageId = messages.reduce((latest, message) => Math.max(latest, message.messageId), 0)
+
+  // DB에서 증가하는 메시지 ID를 기준으로 읽음을 기억해 폴링으로 같은 기록을 받아도 알림을 되살리지 않는다.
+  if (readState.scope !== scope || (readingTeamChat && latestMessageId > lastReadId)) {
+    setReadState({ scope, messageId: readingTeamChat ? Math.max(lastReadId, latestMessageId) : lastReadId })
+  }
+  const hasUnreadTeamMessages = !readingTeamChat && messages.some((message) => !message.isMine && message.senderId !== sessionUserId && message.messageId > lastReadId)
+
+  useEffect(() => {
+    if (!readState.messageId) return
+    try {
+      localStorage.setItem(`devpath.workspace-chat-read.${readState.scope}`, String(readState.messageId))
+    } catch {
+      // 영구 저장이 막혀도 현재 열린 워크스페이스의 읽음 처리는 유지한다.
+    }
+  }, [readState])
 
   function renderMemberAvatar(member: WorkspaceMember, className: string, iconClassName = 'text-sm') {
     const imageUrl = member.learnerId === sessionUserId ? currentProfileImage : member.profileImage
@@ -304,12 +334,12 @@ export default function SquadDashboardChatSurface(props: Props) {
         title={window.documentPictureInPicture ? 'PiP 채팅 열기' : '채팅 열기'}
       >
         <i className="fas fa-comment-dots text-2xl group-hover:animate-bounce"></i>
-        {messages.length > 0 ? <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span> : null}
+        {hasUnreadTeamMessages ? <span role="status" aria-label="읽지 않은 팀 채팅" className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 border-2 border-white rounded-full"></span> : null}
       </button>
 
-      <div className={`${showChatPanel ? '' : 'hidden'} fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-[900] transition-opacity`} onClick={closeChatSurface}></div>
+      <div data-open={showChatPanel} className="ui-chat-backdrop fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-[900]" onClick={closeChatSurface}></div>
 
-      <div className={`${showChatPanel ? 'translate-x-0' : 'translate-x-full'} fixed top-0 right-0 w-full sm:w-[400px] h-full bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-[1000] transform transition-transform duration-300 flex flex-col`}>
+      <div data-open={showChatPanel} inert={!showChatPanel} className="ui-chat-panel fixed top-0 right-0 w-full sm:w-[400px] h-full bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.1)] z-[1000] flex flex-col">
         <div className="h-16 border-b border-gray-100 flex items-center justify-between px-5 bg-white shrink-0">
           <h2 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
             <i className="fas fa-comments text-brand"></i> 스쿼드 소통방

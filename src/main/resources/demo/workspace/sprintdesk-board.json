@@ -1,0 +1,62 @@
+[
+  {
+    "title": "프로젝트·스프린트·이슈 ERD 설계",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "회원 인증과 프로젝트 참여 권한 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "프로젝트 목록·로그인 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "팀원 초대와 중복 참여 방지 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "스프린트 생성과 기간 검증",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "스프린트 계획 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "이슈 등록·담당자 검증 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "상태 전이와 낙관적 잠금 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "드래그 보드와 충돌 복구 UI 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "동시 수정·비참여자·종료 스프린트 테스트",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "키보드로 조작 가능한 보드 점검",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "Docker 배포와 운영 로그 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "TODO"
+  }
+]

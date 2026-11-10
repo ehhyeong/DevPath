@@ -1,0 +1,65 @@
+{
+  "key": "eventpass-reservations-v1#1",
+  "filePath": "src/main/java/com/eventpass/reservation/ReservationService.java",
+  "title": "feat: EventPass 행사 좌석 예약 흐름 구현",
+  "description": "POST /api/events/{eventId}/reservations 구현과 연결 화면·테스트·DB 인덱스를 함께 검토하는 PR입니다. 예약 인원은 양수이고 잔여 좌석을 넘지 않아야 하며 취소되거나 이미 사용된 티켓은 입장할 수 없습니다.",
+  "sourceBranch": "feature/eventpass-reservation",
+  "diff": "diff --git a/src/main/java/com/eventpass/reservation/ReservationService.java b/src/main/java/com/eventpass/reservation/ReservationService.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/eventpass/reservation/ReservationService.java\n@@ -0,0 +1,20 @@\n+package com.eventpass.reservation;\n+\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.stereotype.Service;\n+import org.springframework.transaction.annotation.Transactional;\n+\n+@Service\n+@RequiredArgsConstructor\n+public class ReservationService {\n+    private final EventRepository events;\n+    private final ReservationRepository reservations;\n+\n+    @Transactional\n+    public Reservation reserve(Long eventId, Long memberId, int quantity) {\n+        Event event = events.findById(eventId).orElseThrow();\n+        if (event.getRemainingSeats() < quantity) throw new SoldOutException();\n+        event.decreaseSeats(quantity);\n+        return reservations.save(new Reservation(event.getId(), memberId, quantity));\n+    }\n+}\n",
+  "juseungComment": "정상 저장 외에 예약 성공만 확인하므로 취소 후 입장이나 같은 티켓의 두 번째 입장이 허용될 수 있습니다. 마지막 좌석 경합·예약 취소·반복 입장·마감 이후 요청 테스트를 추가하세요.",
+  "taehyungComment": "요청 DTO와 서비스에서 인원을 1 이상으로 검증하고 최대 예약 인원도 정의하세요. 행사 좌석을 잠그거나 조건부 차감 쿼리를 사용하고 실패를 품절 응답으로 구분하세요.",
+  "aiTitle": "EventPass 행사 좌석 예약 다중 파일 검토",
+  "aiSummary": "행사 좌석 예약의 서비스·컨트롤러·화면·테스트·DB 변경을 함께 확인했습니다. 예약 인원은 양수로 제한, 마지막 좌석의 초과 예약 방지과 경계 테스트를 보완하세요.",
+  "aiComments": [
+    {
+      "category": "입력 검증",
+      "title": "예약 인원은 양수로 제한",
+      "message": "수량이 0이나 음수이면 좌석 검사를 통과하고 잔여 좌석이 증가할 수 있습니다.",
+      "suggestion": "요청 DTO와 서비스에서 인원을 1 이상으로 검증하고 최대 예약 인원도 정의하세요.",
+      "filePath": "src/main/java/com/eventpass/reservation/ReservationService.java",
+      "lineNumber": 14
+    },
+    {
+      "category": "동시성",
+      "title": "마지막 좌석의 초과 예약 방지",
+      "message": "수량 조회와 차감 사이에 다른 요청이 들어오면 같은 마지막 좌석을 중복 예약할 수 있습니다.",
+      "suggestion": "행사 좌석을 잠그거나 조건부 차감 쿼리를 사용하고 실패를 품절 응답으로 구분하세요.",
+      "filePath": "src/main/java/com/eventpass/reservation/ReservationService.java",
+      "lineNumber": 18
+    },
+    {
+      "category": "테스트",
+      "title": "취소 티켓과 반복 입장 검증",
+      "message": "예약 성공만 확인하므로 취소 후 입장이나 같은 티켓의 두 번째 입장이 허용될 수 있습니다.",
+      "suggestion": "마지막 좌석 경합·예약 취소·반복 입장·마감 이후 요청 테스트를 추가하세요.",
+      "filePath": "src/test/java/com/eventpass/reservation/ReservationServiceTest.java",
+      "lineNumber": 20
+    }
+  ],
+  "files": [
+    {
+      "filePath": "src/main/java/com/eventpass/reservation/ReservationService.java",
+      "diff": "diff --git a/src/main/java/com/eventpass/reservation/ReservationService.java b/src/main/java/com/eventpass/reservation/ReservationService.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/eventpass/reservation/ReservationService.java\n@@ -0,0 +1,20 @@\n+package com.eventpass.reservation;\n+\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.stereotype.Service;\n+import org.springframework.transaction.annotation.Transactional;\n+\n+@Service\n+@RequiredArgsConstructor\n+public class ReservationService {\n+    private final EventRepository events;\n+    private final ReservationRepository reservations;\n+\n+    @Transactional\n+    public Reservation reserve(Long eventId, Long memberId, int quantity) {\n+        Event event = events.findById(eventId).orElseThrow();\n+        if (event.getRemainingSeats() < quantity) throw new SoldOutException();\n+        event.decreaseSeats(quantity);\n+        return reservations.save(new Reservation(event.getId(), memberId, quantity));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/java/com/eventpass/reservation/ReservationController.java",
+      "diff": "diff --git a/src/main/java/com/eventpass/reservation/ReservationController.java b/src/main/java/com/eventpass/reservation/ReservationController.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/eventpass/reservation/ReservationController.java\n@@ -0,0 +1,19 @@\n+package com.eventpass.reservation;\n+\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.web.bind.annotation.*;\n+\n+@RestController\n+@RequiredArgsConstructor\n+public class ReservationController {\n+    private final ReservationService service;\n+\n+    @PostMapping(\"/api/events/{eventId}/reservations\")\n+    public CreatedResponse create(@PathVariable Long eventId, @RequestBody ReservationRequest request) {\n+        Reservation saved = service.reserve(eventId, request.memberId(), request.quantity());\n+        return new CreatedResponse(saved.getId());\n+    }\n+\n+    public record ReservationRequest(Long memberId, int quantity) {}\n+    public record CreatedResponse(Long reservationId) {}\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "frontend/src/features/reservation/EventReservationPanel.tsx",
+      "diff": "diff --git a/frontend/src/features/reservation/EventReservationPanel.tsx b/frontend/src/features/reservation/EventReservationPanel.tsx\n--- a/frontend/src/features/reservation/EventReservationPanel.tsx\n+++ b/frontend/src/features/reservation/EventReservationPanel.tsx\n@@ -1,2 +1,24 @@\n-export function FeaturePanel() { return null; }\n-// 화면 구현 예정\n+import { useState } from 'react';\n+import { api } from '../../lib/api';\n+\n+type Props = { eventId: number; memberId: number; reload: () => Promise<void> };\n+\n+export function EventReservationPanel({ eventId, memberId, reload }: Props) {\n+  const [quantity, setQuantity] = useState(1);\n+  const [error, setError] = useState('');\n+  async function submit() {\n+    setError('');\n+    try {\n+      await api.post(`/api/events/${eventId}/reservations`, { memberId, quantity });\n+      await reload();\n+    } catch {\n+      setError('요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');\n+    }\n+  }\n+  return <section>\n+    <h2>행사 좌석 예약</h2>\n+    <label>예약 인원<input type=\"number\" value={quantity} onChange={e => setQuantity(Number(e.target.value))} /></label>\n+    {error && <p role=\"alert\">{error}</p>}\n+    <button onClick={submit}>저장하기</button>\n+  </section>;\n+}\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/test/java/com/eventpass/reservation/ReservationServiceTest.java",
+      "diff": "diff --git a/src/test/java/com/eventpass/reservation/ReservationServiceTest.java b/src/test/java/com/eventpass/reservation/ReservationServiceTest.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/test/java/com/eventpass/reservation/ReservationServiceTest.java\n@@ -0,0 +1,23 @@\n+package com.eventpass.reservation;\n+\n+import java.util.Optional;\n+import org.junit.jupiter.api.Test;\n+import static org.assertj.core.api.Assertions.assertThat;\n+import static org.mockito.Mockito.*;\n+\n+class ReservationServiceTest {\n+    @Test\n+    void returnsCreatedRecordForValidRequest() {\n+        var events = mock(EventRepository.class);\n+        var reservations = mock(ReservationRepository.class);\n+        var resource = mock(Event.class);\n+        when(events.findById(1L)).thenReturn(Optional.of(resource));\n+        when(resource.getId()).thenReturn(1L);\n+        when(resource.getRemainingSeats()).thenReturn(3);\n+        when(reservations.save(any(Reservation.class))).thenAnswer(invocation -> invocation.getArgument(0));\n+        var service = new ReservationService(events, reservations);\n+        var saved = service.reserve(1L, 7L, 2);\n+        assertThat(saved).isNotNull();\n+        verify(reservations).save(any(Reservation.class));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/resources/db/migration/V2__index_eventpass_reservation.sql",
+      "diff": "diff --git a/src/main/resources/db/migration/V2__index_eventpass_reservation.sql b/src/main/resources/db/migration/V2__index_eventpass_reservation.sql\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/resources/db/migration/V2__index_eventpass_reservation.sql\n@@ -0,0 +1,1 @@\n+CREATE INDEX idx_reservations_event_status ON reservations (event_id, status);\n",
+      "changeType": "added"
+    }
+  ]
+}

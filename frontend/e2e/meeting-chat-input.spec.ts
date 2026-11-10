@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Request } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { DEMO_TEXT } from '../src/lib/demo-typing'
 
@@ -8,8 +8,12 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720
   test.describe(`${viewport.width}px 회의 채팅 입력`, () => {
     test.use({ viewport })
 
-    test('기본 세 줄과 시연·붙여넣기의 마지막 줄을 표시하고 여러 줄을 전송한다', async ({ page, context }, testInfo) => {
+    test('팀 채팅에서 회의를 기록하고 기본 세 줄과 여러 줄 전송을 유지한다', async ({ page, context }, testInfo) => {
       const messages: object[] = []
+      let minutes = { channelId: 11, recording: false, transcript: '' }
+      const recordingChanges: boolean[] = []
+      let releaseRecordingSave!: () => void
+      const recordingSave = new Promise<void>((resolve) => { releaseRecordingSave = resolve })
       const participant = { participantId: 1, channelId: 11, userId: 7, userName: '김학습', active: true, muted: true, speaking: false }
       await page.addInitScript(() => {
         const exp = Math.floor(Date.now() / 1000) + 3600
@@ -30,7 +34,15 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720
         }
         else if (path === '/api/workspaces/42/voice-channels') data = [{ channelId: 11, workspaceId: 42, name: 'RoutineCare 회의', activeParticipantCount: 1 }]
         else if (path === '/api/voice-channels/11/participants') data = [participant]
-        else if (path === '/api/voice-channels/11/minutes') data = { channelId: 11, recording: false, transcript: '' }
+        else if (path === '/api/voice-channels/11/minutes') {
+          if (route.request().method() === 'PATCH') {
+            const payload = route.request().postDataJSON()
+            recordingChanges.push(payload.recording)
+            if (recordingChanges.length === 1) await recordingSave
+            minutes = { ...minutes, ...payload }
+          }
+          data = minutes
+        }
         else if (path === '/api/users/me/profile') data = { userId: 7, name: '김학습', email: 'kim.hakseup@devpath.com' }
         else if (path === '/api/voice-channels/11/chat-messages') {
           if (route.request().method() === 'POST') {
@@ -57,6 +69,28 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720
         bottomVisible: field.scrollHeight - field.clientHeight - field.scrollTop <= 1,
       }))).toEqual({ caretAtEnd: true, bottomVisible: true })
       await page.screenshot({ path: testInfo.outputPath('meeting-demo-chat.png') })
+
+      const recordingRequest = (request: Request) => new URL(request.url()).pathname === '/api/voice-channels/11/minutes' && request.method() === 'PATCH'
+      const started = page.waitForRequest(recordingRequest)
+      await page.getByRole('button', { name: '기록 시작', exact: true }).click()
+      expect((await started).postDataJSON()).toEqual({ recording: true })
+      await expect(page.getByRole('button', { name: '기록 시작', exact: true })).toBeDisabled()
+      await page.getByRole('button', { name: /AI 회의록$/ }).click()
+      await expect(page.getByRole('button', { name: '기록 시작', exact: true })).toBeDisabled()
+      await page.getByRole('button', { name: /팀 채팅방$/ }).click()
+      await expect(input).toHaveValue(DEMO_TEXT.meeting)
+      releaseRecordingSave()
+      await expect(page.getByRole('button', { name: '기록 중지', exact: true })).toBeEnabled()
+      await page.getByRole('button', { name: /AI 회의록$/ }).click()
+      await expect(page.getByRole('button', { name: '기록 중지', exact: true })).toHaveCount(1)
+      await page.getByRole('button', { name: /팀 채팅방$/ }).click()
+      await expect(input).toHaveValue(DEMO_TEXT.meeting)
+      await page.screenshot({ path: testInfo.outputPath('meeting-chat-recording.png') })
+      const stopped = page.waitForRequest(recordingRequest)
+      await page.getByRole('button', { name: '기록 중지', exact: true }).click()
+      expect((await stopped).postDataJSON()).toEqual({ recording: false })
+      await expect(page.getByRole('button', { name: '기록 시작', exact: true })).toBeEnabled()
+      expect(recordingChanges).toEqual([true, false])
 
       await context.grantPermissions(['clipboard-read', 'clipboard-write'])
       const pasted = Array.from({ length: 10 }, (_, i) => `붙여넣기 ${i + 1}번째 줄의 회의 내용입니다.`).join('\n')

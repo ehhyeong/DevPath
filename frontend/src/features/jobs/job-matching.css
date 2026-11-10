@@ -1,0 +1,39 @@
+@media (min-width: 1024px) {
+  .job-matching-setup .job-matching-page {
+    padding-block: 16px;
+  }
+
+  .job-matching-setup .job-matching-intro {
+    margin-bottom: 16px;
+  }
+
+  .job-matching-setup .job-matching-controls > * {
+    padding: 20px;
+  }
+
+  .job-matching-setup .job-matching-controls > :not(:last-child) {
+    margin-block-end: 20px;
+  }
+
+  .job-matching-setup .job-matching-profile-heading,
+  .job-matching-setup .job-matching-filter-card h3,
+  .job-matching-setup .job-matching-profile-metrics {
+    margin-bottom: 12px;
+  }
+
+  .job-matching-setup .job-matching-profile-metrics {
+    padding: 12px;
+  }
+
+  .job-matching-setup .job-matching-keywords {
+    margin-bottom: 12px;
+  }
+
+  .job-matching-setup .job-matching-filter-fields > :not(:last-child) {
+    margin-block-end: 12px;
+  }
+
+  .job-matching-setup .job-matching-scan-button {
+    margin-top: 20px;
+  }
+}

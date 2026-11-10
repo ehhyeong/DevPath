@@ -7,8 +7,12 @@ import {
   useLatest,
 } from './meeting-support'
 import type { AudioDeviceOption, AudioProcessingStatus, SinkAudioElement } from './meeting-types'
+import { createNoiseGatedVoiceStream, createVolumeControlledStream } from './meeting-media'
 
 type AudioDeviceDiagnosticsOptions = {
+  microphoneVolume: number
+  outputVolume: number
+  noiseGateEnabled: boolean
   accessToken?: string
   activeChannelId: number | null
   audioSettingsOpen: boolean
@@ -21,6 +25,7 @@ type AudioDeviceDiagnosticsOptions = {
 }
 
 export function useAudioDeviceDiagnostics({
+  microphoneVolume, outputVolume, noiseGateEnabled,
   accessToken,
   activeChannelId,
   audioSettingsOpen,
@@ -42,6 +47,11 @@ export function useAudioDeviceDiagnostics({
   const [micTesting, setMicTesting] = useState(false)
   const [soundTesting, setSoundTesting] = useState(false)
   const micStreamRef = useRef<MediaStream | null>(null)
+  const micMonitorGenerationRef = useRef(0)
+  const micRawStreamRef = useRef<MediaStream | null>(null)
+  const micProcessingRef = useRef<ReturnType<typeof createNoiseGatedVoiceStream> | null>(null)
+  const loopbackProcessingRef = useRef<ReturnType<typeof createVolumeControlledStream> | null>(null)
+  const volumesRef = useLatest({ microphoneVolume, outputVolume, noiseGateEnabled })
   const audioContextRef = useRef<AudioContext | null>(null)
   const micLoopbackAudioRef = useRef<SinkAudioElement | null>(null)
   const soundTestAudioRef = useRef<SinkAudioElement | null>(null)
@@ -57,6 +67,16 @@ export function useAudioDeviceDiagnostics({
   const loadAudioDevicesRef = useLatest(loadAudioDevices)
   const stopMicMonitorRef = useLatest(stopMicMonitor)
   const startMicMonitorRef = useLatest(startMicMonitor)
+
+  useEffect(() => {
+    micProcessingRef.current?.setVolume(microphoneVolume)
+    micProcessingRef.current?.setNoiseGateEnabled(noiseGateEnabled)
+    if (micProcessingRef.current) setAudioProcessingStatus((current) => ({ ...current, noiseGate: noiseGateEnabled }))
+    loopbackProcessingRef.current?.setVolume(outputVolume)
+    if (soundTestGainRef.current && soundTestContextRef.current) {
+      soundTestGainRef.current.gain.setTargetAtTime(0.11 * outputVolume / 100, soundTestContextRef.current.currentTime, 0.015)
+    }
+  }, [microphoneVolume, outputVolume, noiseGateEnabled])
 
   useEffect(() => {
     const stopCurrentMicMonitor = stopMicMonitorRef.current
@@ -162,6 +182,7 @@ export function useAudioDeviceDiagnostics({
   }
 
   function stopMicMonitor() {
+    micMonitorGenerationRef.current += 1
     if (animationFrameRef.current != null) {
       window.cancelAnimationFrame(animationFrameRef.current)
       animationFrameRef.current = null
@@ -170,12 +191,18 @@ export function useAudioDeviceDiagnostics({
     stopMicLoopback()
     micStreamRef.current?.getTracks().forEach((track) => track.stop())
     micStreamRef.current = null
+    micRawStreamRef.current?.getTracks().forEach((track) => track.stop())
+    micRawStreamRef.current = null
+    micProcessingRef.current?.stop()
+    micProcessingRef.current = null
     void audioContextRef.current?.close().catch(() => undefined)
     audioContextRef.current = null
     setMicLevel(0)
   }
 
   function stopMicLoopback() {
+    loopbackProcessingRef.current?.stop()
+    loopbackProcessingRef.current = null
     if (!micLoopbackAudioRef.current) {
       setMicTesting(false)
       return
@@ -224,9 +251,12 @@ export function useAudioDeviceDiagnostics({
     stopMicLoopback()
     try {
       const audio = new Audio() as SinkAudioElement
-      audio.srcObject = stream
+      await micProcessingRef.current?.resume()
+      const processing = createVolumeControlledStream(stream, volumesRef.current.outputVolume)
+      loopbackProcessingRef.current = processing
+      audio.srcObject = processing.stream
       audio.autoplay = true
-      audio.volume = 0.85
+      audio.volume = 1
       micLoopbackAudioRef.current = audio
       await applySelectedOutputToAudioRef.current(audio, '선택한 스피커로 마이크 테스트 출력을 전환하지 못했습니다.')
       await audio.play()
@@ -272,16 +302,17 @@ export function useAudioDeviceDiagnostics({
       const audio = new Audio() as SinkAudioElement
       oscillator.type = 'sine'
       oscillator.frequency.value = 880
-      gain.gain.setValueAtTime(0.11, testAudioContext.currentTime)
+      gain.gain.setValueAtTime(0.11 * volumesRef.current.outputVolume / 100, testAudioContext.currentTime)
       oscillator.connect(gain)
       gain.connect(destination)
       audio.srcObject = destination.stream
       audio.autoplay = true
-      audio.volume = 0.85
+      audio.volume = 1
       soundTestAudioRef.current = audio
       soundTestContextRef.current = testAudioContext
       soundTestOscillatorRef.current = oscillator
       soundTestGainRef.current = gain
+      await testAudioContext.resume()
       await applySelectedOutputToAudioRef.current(audio, '선택한 스피커로 테스트음을 전환하지 못했습니다.')
       oscillator.start()
       await audio.play()
@@ -304,10 +335,19 @@ export function useAudioDeviceDiagnostics({
     }
 
     stopMicMonitor()
+    const generation = micMonitorGenerationRef.current
     try {
-      const stream = await getUserMediaWithTimeout(getAudioConstraintsRef.current(deviceId))
-      await applyAudioProcessingConstraintsRef.current(stream)
-      updateAudioProcessingStatusRef.current(stream, audioProcessingStatus.noiseGate)
+      const rawStream = await getUserMediaWithTimeout(getAudioConstraintsRef.current(deviceId))
+      // 장치 전환·모달 닫기 후 늦게 허용된 마이크가 다시 켜지지 않게 한다.
+      if (generation !== micMonitorGenerationRef.current) { rawStream.getTracks().forEach((track) => track.stop()); return }
+      micRawStreamRef.current = rawStream
+      await applyAudioProcessingConstraintsRef.current(rawStream)
+      if (generation !== micMonitorGenerationRef.current) return
+      const settings = volumesRef.current
+      const processing = createNoiseGatedVoiceStream(rawStream, settings.microphoneVolume, settings.noiseGateEnabled)
+      micProcessingRef.current = processing
+      const stream = processing.stream
+      updateAudioProcessingStatusRef.current(rawStream, settings.noiseGateEnabled)
       const AudioContextClass = window.AudioContext
         || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
       if (!AudioContextClass) {
@@ -319,11 +359,11 @@ export function useAudioDeviceDiagnostics({
       const audioContext = new AudioContextClass()
       const source = audioContext.createMediaStreamSource(stream)
       const analyser = audioContext.createAnalyser()
-      const data = new Uint8Array(analyser.frequencyBinCount)
       let ambientRms = 0.006
       let peakSignal = 0.035
       let smoothedMeterLevel = 0
       analyser.fftSize = 256
+      const data = new Uint8Array(analyser.fftSize)
       source.connect(analyser)
       micStreamRef.current = stream
       audioContextRef.current = audioContext
@@ -357,6 +397,8 @@ export function useAudioDeviceDiagnostics({
       }
       setAudioDeviceError(null)
     } catch {
+      if (generation !== micMonitorGenerationRef.current) return
+      stopMicMonitor()
       setAudioDeviceError('선택한 마이크를 열 수 없습니다. 브라우저 권한과 장치 연결 상태를 확인해 주세요.')
     }
   }

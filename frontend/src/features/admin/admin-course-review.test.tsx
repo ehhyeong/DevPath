@@ -1,4 +1,4 @@
-import { act, fireEvent, render, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AdminCourseReviewDetail } from '../../types/admin'
 import {
@@ -78,6 +78,61 @@ const reviewDetail: AdminCourseReviewDetail = {
 }
 
 describe('강의 검수 상세 모달', () => {
+  it('퀴즈와 과제 상세를 읽기 전용으로 제공하고 영상 없음은 영상 차시에만 표시한다', () => {
+    const detail = {
+      ...reviewDetail,
+      lessonCount: 3,
+      sections: [{ ...reviewDetail.sections[0], lessons: [reviewDetail.sections[0].lessons[0], {
+        ...reviewDetail.sections[0].lessons[0], lessonId: 10, lessonType: 'READING', title: '개념 퀴즈', durationSeconds: 0,
+        quiz: { quizId: 81, title: '렌더링 퀴즈', description: '개념을 확인하세요.', totalScore: 10, passScore: 5,
+          timeLimitMinutes: 10, exposeAnswer: false, exposeExplanation: false, questions: [{ questionId: 1,
+            questionType: 'MULTIPLE_CHOICE', questionText: '<script>문항</script>', points: 10, displayOrder: 1,
+            explanation: '렌더링 해설', options: [{ optionId: 1, optionText: '상태 변경', isCorrect: true, displayOrder: 1 }],
+          }] },
+      }, {
+        ...reviewDetail.sections[0].lessons[0], lessonId: 11, lessonType: 'CODING', title: '실습 과제', durationSeconds: 0,
+        assignment: { assignmentId: 91, title: '상태 관리 실습', description: '컴포넌트를 구현하세요.',
+          submissionRuleDescription: '실행 방법을 작성하세요.', totalScore: 100, passScore: 80, submissionType: 'MULTIPLE',
+          aiReviewEnabled: true, allowTextSubmission: true, allowFileSubmission: true, allowUrlSubmission: false,
+          allowedFileFormats: 'zip,md', readmeRequired: true, testRequired: false, lintRequired: false,
+          allowLateSubmission: false, dueAt: null,
+          rubrics: [{ rubricId: 1, criteriaName: '상태 관리', criteriaDescription: '상태 변경을 검증한다.', maxPoints: 100, displayOrder: 1 }],
+        },
+      }] }],
+    }
+    const { container } = render(<AdminCourseReviewModal />)
+    installCourseReviewModalBindings(vi.fn())
+    openCourseReviewModal(detail)
+
+    expect(screen.getAllByRole('button', { name: /영상 없음/ })).toHaveLength(1)
+    const section = container.querySelector<HTMLDetailsElement>('.admin-course-review-section')!
+    if (!section.open) fireEvent.click(section.querySelector('summary')!)
+    fireEvent.click(screen.getByText('퀴즈 상세보기', { exact: true }).closest('summary')!)
+    expect(screen.getByText('<script>문항</script>', { exact: true })).toBeVisible()
+    expect(screen.getByText('렌더링 해설', { exact: true })).toBeVisible()
+    expect(screen.getByText('정답', { exact: true })).toBeVisible()
+    fireEvent.click(screen.getByText('과제 상세보기', { exact: true }).closest('summary')!)
+    expect(screen.getByText('컴포넌트를 구현하세요.', { exact: true })).toBeVisible()
+    expect(screen.getByText('상태 변경을 검증한다.', { exact: true })).toBeVisible()
+    expect(container.querySelector('script')).toBeNull()
+    expect(container.querySelectorAll('textarea')).toHaveLength(1)
+    closeCourseReviewModal()
+  })
+
+  it('연결된 평가가 없으면 유형별 콘텐츠 미등록을 안내한다', () => {
+    const detail = { ...reviewDetail, sections: [{ ...reviewDetail.sections[0], lessons: ['READING', 'CODING'].map((lessonType, index) => ({
+      ...reviewDetail.sections[0].lessons[0], lessonId: 20 + index, lessonType, quiz: null, assignment: null,
+    })) }] }
+    render(<AdminCourseReviewModal />)
+    installCourseReviewModalBindings(vi.fn())
+    openCourseReviewModal(detail)
+
+    expect(screen.getByText('등록된 퀴즈가 없습니다.', { exact: true })).toBeInTheDocument()
+    expect(screen.getByText('등록된 과제가 없습니다.', { exact: true })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /영상 없음/ })).not.toBeInTheDocument()
+    closeCourseReviewModal()
+  })
+
   it('계정 전환이나 화면 제거 후 검수 메모 타이핑을 계속하지 않는다', async () => {
     vi.mocked(readStoredAuthSession).mockReturnValue({ userId: 1, role: 'ROLE_ADMIN' } as never)
     vi.spyOn(userApi, 'getMyProfile').mockResolvedValue({ userId: 1, email: 'admin@devpath.com' } as never)

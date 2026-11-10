@@ -1,0 +1,450 @@
+{
+  "title": "동네 공구·생활용품 대여 플랫폼 (ToolShare)",
+  "summary": "가끔 쓰는 공구와 생활용품을 이웃에게 빌리고 대여 기간·인수·반납 상태를 함께 관리합니다.",
+  "difficulty": "mvp",
+  "stack": {
+    "frontend": "React + TypeScript",
+    "backend": "Spring Boot",
+    "database": "PostgreSQL",
+    "libraries": [
+      "Spring Security",
+      "Spring Data JPA",
+      "React Query",
+      "Tailwind CSS"
+    ],
+    "selectionReason": "React로 대여 요청과 상태 조회 화면을 구성하고 Spring Boot 인증·트랜잭션과 PostgreSQL의 관계·제약 조건을 활용합니다."
+  },
+  "scenario": {
+    "userFlows": [
+      {
+        "actor": "회원",
+        "action": "로그인하고 공구 등록과 대여 가능 상태 화면을 확인합니다."
+      },
+      {
+        "actor": "회원",
+        "action": "대여 요청 후 내 처리 결과를 확인합니다."
+      },
+      {
+        "actor": "관리 담당자",
+        "action": "인수와 반납 확인 과정을 관리합니다."
+      }
+    ],
+    "coreFeatures": [
+      "공구 등록과 대여 가능 상태",
+      "날짜별 대여 가능 구간 조회",
+      "대여 요청·승인·취소",
+      "인수와 반납 확인",
+      "완료 거래 후기와 내 대여 목록"
+    ]
+  },
+  "architecture": {
+    "style": "모놀리식 3계층",
+    "description": "React 웹 클라이언트가 인증된 REST API를 호출하고 서비스 계층의 트랜잭션에서 ToolShare 데이터를 저장합니다.",
+    "components": [
+      {
+        "name": "React Web",
+        "responsibility": "공구 등록과 대여 가능 상태 · 날짜별 대여 가능 구간 조회 · 대여 요청·승인·취소 · 인수와 반납 확인 · 완료 거래 후기와 내 대여 목록"
+      },
+      {
+        "name": "Spring Boot API",
+        "responsibility": "종료일은 시작일 이후여야 하며 승인된 대여의 인수·반납 순서만 허용합니다."
+      },
+      {
+        "name": "PostgreSQL",
+        "responsibility": "동일 공구의 겹치는 날짜에 승인된 대여가 하나만 존재하도록 트랜잭션과 잠금을 설계합니다."
+      }
+    ],
+    "erdMermaid": "erDiagram\n    MEMBERS {\n        bigint id PK\n        varchar email\n        varchar nickname\n    }\n    TOOLS {\n        bigint id PK\n        bigint owner_id FK\n        varchar name\n        boolean available\n    }\n    LOANS {\n        bigint id PK\n        bigint tool_id FK\n        bigint borrower_id FK\n        date start_date\n        date end_date\n        varchar status\n    }\n    HANDOVERS {\n        bigint id PK\n        bigint loan_id FK\n        timestamp picked_up_at\n        timestamp returned_at\n    }\n    REVIEWS {\n        bigint id PK\n        bigint loan_id FK\n        bigint author_id FK\n        integer rating\n        varchar content\n    }\n    MEMBERS ||--o{ TOOLS : \"owner_id\"\n    TOOLS ||--o{ LOANS : \"tool_id\"\n    MEMBERS ||--o{ LOANS : \"borrower_id\"\n    LOANS ||--o{ HANDOVERS : \"loan_id\"\n    LOANS ||--o{ REVIEWS : \"loan_id\"\n    MEMBERS ||--o{ REVIEWS : \"author_id\"",
+    "entities": [
+      {
+        "name": "MEMBERS",
+        "purpose": "공구를 빌리고 빌려주는 회원",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "email",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "로그인 이메일"
+          },
+          {
+            "name": "nickname",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "이웃 표시 이름"
+          }
+        ]
+      },
+      {
+        "name": "TOOLS",
+        "purpose": "공유 가능한 공구와 소유자",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "owner_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "소유 회원"
+          },
+          {
+            "name": "name",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "공구 이름"
+          },
+          {
+            "name": "available",
+            "type": "boolean",
+            "constraints": "NOT NULL",
+            "description": "대여 가능 여부"
+          }
+        ]
+      },
+      {
+        "name": "LOANS",
+        "purpose": "기간별 대여 요청",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "tool_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "대여 공구"
+          },
+          {
+            "name": "borrower_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "빌리는 회원"
+          },
+          {
+            "name": "start_date",
+            "type": "date",
+            "constraints": "NOT NULL",
+            "description": "대여 시작일"
+          },
+          {
+            "name": "end_date",
+            "type": "date",
+            "constraints": "NOT NULL",
+            "description": "반납 예정일"
+          },
+          {
+            "name": "status",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "REQUESTED/APPROVED/RETURNED"
+          }
+        ]
+      },
+      {
+        "name": "HANDOVERS",
+        "purpose": "대여 인수와 반납 확인",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "loan_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "대여 요청"
+          },
+          {
+            "name": "picked_up_at",
+            "type": "timestamp",
+            "constraints": "NOT NULL",
+            "description": "인수 시각"
+          },
+          {
+            "name": "returned_at",
+            "type": "timestamp",
+            "constraints": "NOT NULL",
+            "description": "반납 확인 시각"
+          }
+        ]
+      },
+      {
+        "name": "REVIEWS",
+        "purpose": "반납 후 거래 후기",
+        "columns": [
+          {
+            "name": "id",
+            "type": "bigint",
+            "constraints": "PK",
+            "description": "고유 ID"
+          },
+          {
+            "name": "loan_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "완료 대여"
+          },
+          {
+            "name": "author_id",
+            "type": "bigint",
+            "constraints": "FK, NOT NULL",
+            "description": "후기 작성자"
+          },
+          {
+            "name": "rating",
+            "type": "integer",
+            "constraints": "NOT NULL",
+            "description": "1~5점 평점"
+          },
+          {
+            "name": "content",
+            "type": "varchar(120)",
+            "constraints": "NOT NULL",
+            "description": "거래 후기"
+          }
+        ]
+      }
+    ],
+    "technicalChallenges": [
+      "동일 공구의 겹치는 날짜에 승인된 대여가 하나만 존재하도록 트랜잭션과 잠금을 설계합니다.",
+      "종료일은 시작일 이후여야 하며 승인된 대여의 인수·반납 순서만 허용합니다.",
+      "저장 실패 시 입력값을 보존하고 서버 응답을 기준으로 목록과 통계를 갱신합니다."
+    ]
+  },
+  "apis": [
+    {
+      "group": "AUTH (인증)",
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "description": "회원가입",
+      "auth": "없음",
+      "requestExample": "{\"email\":\"demo@example.com\",\"password\":\"example-password\",\"name\":\"사용자\"}",
+      "responseExample": "{\"memberId\":1}"
+    },
+    {
+      "group": "AUTH (인증)",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "로그인",
+      "auth": "없음",
+      "requestExample": "{\"email\":\"demo@example.com\",\"password\":\"example-password\"}",
+      "responseExample": "{\"accessToken\":\"example-token\"}"
+    },
+    {
+      "group": "TOOLS (공구)",
+      "method": "GET",
+      "path": "/api/tools",
+      "description": "공유 공구 목록",
+      "auth": "USER",
+      "requestExample": "{}",
+      "responseExample": "{\"items\":[{\"id\":1,\"name\":\"전동 드릴\"}]}"
+    },
+    {
+      "group": "TOOLS (공구)",
+      "method": "POST",
+      "path": "/api/tools",
+      "description": "공구 등록",
+      "auth": "USER",
+      "requestExample": "{\"name\":\"전동 드릴\"}",
+      "responseExample": "{\"id\":1}"
+    },
+    {
+      "group": "LOANS (대여)",
+      "method": "POST",
+      "path": "/api/tools/{toolId}/loans",
+      "description": "대여 요청",
+      "auth": "USER",
+      "requestExample": "{\"startDate\":\"2026-11-16\",\"endDate\":\"2026-11-18\"}",
+      "responseExample": "{\"loanId\":1,\"status\":\"REQUESTED\"}"
+    },
+    {
+      "group": "LOANS (대여)",
+      "method": "GET",
+      "path": "/api/me/loans",
+      "description": "내 대여 목록",
+      "auth": "USER",
+      "requestExample": "{}",
+      "responseExample": "{\"items\":[{\"loanId\":1,\"status\":\"REQUESTED\"}]}"
+    },
+    {
+      "group": "LOANS (대여)",
+      "method": "PATCH",
+      "path": "/api/loans/{loanId}/return",
+      "description": "반납 확인",
+      "auth": "USER",
+      "requestExample": "{}",
+      "responseExample": "{\"status\":\"RETURNED\"}"
+    },
+    {
+      "group": "LOANS (대여)",
+      "method": "POST",
+      "path": "/api/loans/{loanId}/reviews",
+      "description": "완료 거래 후기",
+      "auth": "USER",
+      "requestExample": "{\"rating\":5,\"content\":\"약속 시간에 반납했습니다.\"}",
+      "responseExample": "{\"reviewId\":1}"
+    },
+    {
+      "group": "TOOLS (공구)",
+      "method": "GET",
+      "path": "/api/tools/{toolId}/availability",
+      "description": "기간별 가능 여부",
+      "auth": "USER",
+      "requestExample": "{\"startDate\":\"2026-11-16\",\"endDate\":\"2026-11-18\"}",
+      "responseExample": "{\"available\":true}"
+    }
+  ],
+  "roadmap": [
+    {
+      "phase": 1,
+      "title": "인증과 데이터 기반",
+      "goal": "ToolShare의 데이터 관계와 사용자 권한을 구성합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "공구·대여·인수 ERD와 마이그레이션 구성",
+        "회원 인증과 공구 소유자 권한 구현",
+        "로그인 및 공구 목록 화면 구현"
+      ]
+    },
+    {
+      "phase": 2,
+      "title": "핵심 자원 관리",
+      "goal": "공구 등록과 대여 가능 상태 흐름을 구현합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "공구 등록·상태 조회 API 구현",
+        "대여 기간 겹침 조회 구현",
+        "날짜 선택과 대여 요청 화면 구현"
+      ]
+    },
+    {
+      "phase": 3,
+      "title": "주요 흐름과 정합성",
+      "goal": "종료일은 시작일 이후여야 하며 승인된 대여의 인수·반납 순서만 허용합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "대여 요청·승인·취소 API 구현",
+        "동시 대여와 기간 겹침 테스트 구현",
+        "인수·반납 현황과 오류 복구 UI 구현"
+      ]
+    },
+    {
+      "phase": 4,
+      "title": "통합 검증과 배포",
+      "goal": "주요 오류와 실제 사용자 흐름을 확인하고 배포합니다.",
+      "estimatedWeeks": 1,
+      "tasks": [
+        "소유자·기간 경계·반납 통합 테스트",
+        "모바일 날짜 선택과 접근성 점검",
+        "Docker 배포와 대여 이력 로그 구성"
+      ]
+    }
+  ],
+  "interviewQuestions": [
+    {
+      "category": "보안",
+      "question": "ToolShare에서 다른 회원의 데이터를 변경하지 못하게 하려면 무엇을 검증하나요?",
+      "answer": "클라이언트가 보낸 회원 ID를 신뢰하지 않고 인증 사용자와 자원 소유·참여 관계를 서비스에서 함께 확인합니다.",
+      "keywords": [
+        "인증 사용자",
+        "권한",
+        "소유권"
+      ],
+      "tasks": [
+        "회원 인증과 공구 소유자 권한 구현",
+        "대여 요청·승인·취소 API 구현"
+      ],
+      "apis": [
+        "POST /api/tools/{toolId}/loans"
+      ],
+      "erd": "TOOLS"
+    },
+    {
+      "category": "동시성",
+      "question": "대여 요청 요청이 동시에 도착하거나 재시도되면 어떻게 처리하나요?",
+      "answer": "동일 공구의 겹치는 날짜에 승인된 대여가 하나만 존재하도록 트랜잭션과 잠금을 설계합니다.",
+      "keywords": [
+        "트랜잭션",
+        "중복 요청",
+        "동시성"
+      ],
+      "tasks": [
+        "동시 대여와 기간 겹침 테스트 구현",
+        "소유자·기간 경계·반납 통합 테스트"
+      ],
+      "apis": [
+        "POST /api/tools/{toolId}/loans"
+      ],
+      "erd": "LOANS"
+    },
+    {
+      "category": "데이터 정합성",
+      "question": "ToolShare의 저장 전후에 반드시 지켜야 할 도메인 규칙은 무엇인가요?",
+      "answer": "종료일은 시작일 이후여야 하며 승인된 대여의 인수·반납 순서만 허용합니다.",
+      "keywords": [
+        "입력 검증",
+        "도메인 규칙",
+        "제약 조건"
+      ],
+      "tasks": [
+        "대여 기간 겹침 조회 구현",
+        "대여 요청·승인·취소 API 구현"
+      ],
+      "apis": [
+        "POST /api/tools/{toolId}/loans"
+      ],
+      "erd": "LOANS"
+    },
+    {
+      "category": "프론트엔드",
+      "question": "저장 실패나 충돌 응답을 받았을 때 입력값과 화면 상태는 어떻게 유지하나요?",
+      "answer": "저장 중 중복 제출을 막고 실패 원인을 구분합니다. 입력값은 유지하며 성공 응답 이후에 목록과 통계를 갱신합니다.",
+      "keywords": [
+        "중복 제출",
+        "오류 복구",
+        "서버 응답"
+      ],
+      "tasks": [
+        "날짜 선택과 대여 요청 화면 구현",
+        "인수·반납 현황과 오류 복구 UI 구현"
+      ],
+      "apis": [
+        "POST /api/tools/{toolId}/loans",
+        "GET /api/me/loans"
+      ],
+      "erd": "LOANS"
+    },
+    {
+      "category": "테스트",
+      "question": "ToolShare의 정상 흐름 이외에 어떤 통합 시나리오를 검증해야 하나요?",
+      "answer": "동시 승인·기간 경계·승인 전 반납 거부 테스트를 추가하세요. 실제 DB 제약과 권한 경계를 함께 확인합니다.",
+      "keywords": [
+        "경계값",
+        "통합 테스트",
+        "권한"
+      ],
+      "tasks": [
+        "소유자·기간 경계·반납 통합 테스트",
+        "모바일 날짜 선택과 접근성 점검"
+      ],
+      "apis": [
+        "POST /api/tools/{toolId}/loans"
+      ],
+      "erd": "LOANS"
+    }
+  ]
+}

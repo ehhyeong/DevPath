@@ -1,0 +1,65 @@
+{
+  "key": "studymate-attendance-v1#1",
+  "filePath": "src/main/java/com/studymate/attendance/AttendanceService.java",
+  "diff": "diff --git a/src/main/java/com/studymate/attendance/AttendanceService.java b/src/main/java/com/studymate/attendance/AttendanceService.java\n--- a/src/main/java/com/studymate/attendance/AttendanceService.java\n+++ b/src/main/java/com/studymate/attendance/AttendanceService.java\n@@ -1,6 +1,17 @@\n package com.studymate.attendance;\n\n @Service\n @RequiredArgsConstructor\n public class AttendanceService {\n+    private final AttendanceRepository attendances;\n+    private final SessionRepository sessions;\n+\n+    @Transactional\n+    public Attendance checkIn(Long sessionId, Long memberId) {\n+        Session session = sessions.findById(sessionId).orElseThrow();\n+        Attendance attendance = attendances.findBySessionIdAndMemberId(sessionId, memberId)\n+            .orElseGet(() -> new Attendance(sessionId, memberId));\n+        attendance.checkIn(Instant.now());\n+        return attendances.save(attendance);\n+    }\n }\n",
+  "title": "feat: StudyMate 모임 출석 체크 API",
+  "description": "PUT /api/sessions/{sessionId}/attendance 구현 PR입니다. 참여자 권한, 중복 체크인과 모임 시간 경계를 검토해 주세요.\n서비스·컨트롤러·React 화면·회귀 테스트·DB 인덱스 총 5개 변경 파일을 함께 검토합니다.",
+  "sourceBranch": "feature/session-attendance",
+  "juseungComment": "스터디 비참여자, 반복 체크인, 모임 시작 전·종료 후의 출석 거부를 테스트하겠습니다. Clock을 고정해 경계 시각도 재현하겠습니다.",
+  "taehyungComment": "memberId는 인증 정보에서 가져오고 해당 스터디 참여자인지 검증해 주세요. session_id·member_id 유니크 제약과 출석 가능 시간도 함께 확인하면 좋겠습니다.",
+  "aiTitle": "StudyMate 출석 체크 API 검토",
+  "aiSummary": "모임별 출석 저장 흐름은 단순합니다. 스터디 참여 권한, 중복 체크인의 멱등 처리와 시간 경계를 보완하세요.",
+  "aiComments": [
+    {
+      "category": "보안",
+      "lineNumber": 11,
+      "title": "스터디 참여자만 출석 허용",
+      "message": "모임을 조회하지만 인증 회원의 스터디 참여 여부는 확인하지 않습니다.",
+      "suggestion": "인증된 회원 ID로 STUDY_MEMBERS를 조회해 참여 관계를 검증하세요.",
+      "filePath": "src/main/java/com/studymate/attendance/AttendanceService.java"
+    },
+    {
+      "category": "데이터 정합성",
+      "lineNumber": 12,
+      "title": "중복 체크인 유일성 보장",
+      "message": "동시 요청이 조회를 함께 통과하면 출석이 중복 생성될 수 있습니다.",
+      "suggestion": "session_id·member_id UNIQUE 제약과 기존 결과 반환 정책을 적용하세요.",
+      "filePath": "src/main/java/com/studymate/attendance/AttendanceService.java"
+    },
+    {
+      "category": "테스트",
+      "lineNumber": 18,
+      "title": "출석 시간 경계 테스트",
+      "message": "모임 시작 전이나 종료 후에도 현재 구현으로는 출석할 수 있습니다.",
+      "suggestion": "Clock을 주입해 모임 시작·종료 경계와 반복 체크인을 테스트하세요.",
+      "filePath": "src/test/java/com/studymate/attendance/AttendanceServiceTest.java"
+    }
+  ],
+  "files": [
+    {
+      "filePath": "src/main/java/com/studymate/attendance/AttendanceService.java",
+      "diff": "diff --git a/src/main/java/com/studymate/attendance/AttendanceService.java b/src/main/java/com/studymate/attendance/AttendanceService.java\n--- a/src/main/java/com/studymate/attendance/AttendanceService.java\n+++ b/src/main/java/com/studymate/attendance/AttendanceService.java\n@@ -1,6 +1,17 @@\n package com.studymate.attendance;\n\n @Service\n @RequiredArgsConstructor\n public class AttendanceService {\n+    private final AttendanceRepository attendances;\n+    private final SessionRepository sessions;\n+\n+    @Transactional\n+    public Attendance checkIn(Long sessionId, Long memberId) {\n+        Session session = sessions.findById(sessionId).orElseThrow();\n+        Attendance attendance = attendances.findBySessionIdAndMemberId(sessionId, memberId)\n+            .orElseGet(() -> new Attendance(sessionId, memberId));\n+        attendance.checkIn(Instant.now());\n+        return attendances.save(attendance);\n+    }\n }\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/main/java/com/studymate/attendance/AttendanceController.java",
+      "diff": "diff --git a/src/main/java/com/studymate/attendance/AttendanceController.java b/src/main/java/com/studymate/attendance/AttendanceController.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/java/com/studymate/attendance/AttendanceController.java\n@@ -0,0 +1,19 @@\n+package com.studymate.attendance;\n+\n+import lombok.RequiredArgsConstructor;\n+import org.springframework.web.bind.annotation.*;\n+\n+@RestController\n+@RequiredArgsConstructor\n+public class AttendanceController {\n+    private final AttendanceService service;\n+\n+    @PostMapping(\"/api/sessions/{sessionId}/attendance\")\n+    public CreatedResponse create(@PathVariable Long sessionId, @RequestBody CheckInRequest request) {\n+        Attendance saved = service.checkIn(sessionId, request.memberId());\n+        return new CreatedResponse(saved.getId());\n+    }\n+\n+    public record CheckInRequest(Long memberId) {}\n+    public record CreatedResponse(Long attendanceId) {}\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "frontend/src/features/attendance/AttendancePanel.tsx",
+      "diff": "diff --git a/frontend/src/features/attendance/AttendancePanel.tsx b/frontend/src/features/attendance/AttendancePanel.tsx\n--- a/frontend/src/features/attendance/AttendancePanel.tsx\n+++ b/frontend/src/features/attendance/AttendancePanel.tsx\n@@ -1,2 +1,24 @@\n-export function FeaturePanel() { return null; }\n-// 화면 구현 예정\n+import { useState } from 'react';\n+import { api } from '../../lib/api';\n+\n+type Props = { sessionId: number; memberId: number; reload: () => Promise<void> };\n+\n+export function AttendancePanel({ sessionId, memberId, reload }: Props) {\n+\n+  const [error, setError] = useState('');\n+  async function submit() {\n+    setError('');\n+    try {\n+      await api.post(`/api/sessions/${sessionId}/attendance`, { memberId });\n+      await reload();\n+    } catch {\n+      setError('요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');\n+    }\n+  }\n+  return <section>\n+    <h2>모임 출석 체크</h2>\n+    <p>모임의 출석을 확인해주세요.</p>\n+    {error && <p role=\"alert\">{error}</p>}\n+    <button onClick={submit}>저장하기</button>\n+  </section>;\n+}\n",
+      "changeType": "modified"
+    },
+    {
+      "filePath": "src/test/java/com/studymate/attendance/AttendanceServiceTest.java",
+      "diff": "diff --git a/src/test/java/com/studymate/attendance/AttendanceServiceTest.java b/src/test/java/com/studymate/attendance/AttendanceServiceTest.java\nnew file mode 100644\n--- /dev/null\n+++ b/src/test/java/com/studymate/attendance/AttendanceServiceTest.java\n@@ -0,0 +1,21 @@\n+package com.studymate.attendance;\n+\n+import java.util.Optional;\n+import org.junit.jupiter.api.Test;\n+import static org.assertj.core.api.Assertions.assertThat;\n+import static org.mockito.Mockito.*;\n+\n+class AttendanceServiceTest {\n+    @Test\n+    void returnsCreatedRecordForValidRequest() {\n+        var attendances = mock(AttendanceRepository.class);\n+        var sessions = mock(SessionRepository.class);\n+        when(sessions.findById(1L)).thenReturn(Optional.of(mock(Session.class)));\n+        when(attendances.findBySessionIdAndMemberId(1L, 7L)).thenReturn(Optional.empty());\n+        when(attendances.save(any(Attendance.class))).thenAnswer(invocation -> invocation.getArgument(0));\n+        var service = new AttendanceService(attendances, sessions);\n+        var saved = service.checkIn(1L, 7L);\n+        assertThat(saved).isNotNull();\n+        verify(attendances).save(any(Attendance.class));\n+    }\n+}\n",
+      "changeType": "added"
+    },
+    {
+      "filePath": "src/main/resources/db/migration/V2__index_studymate_attendance.sql",
+      "diff": "diff --git a/src/main/resources/db/migration/V2__index_studymate_attendance.sql b/src/main/resources/db/migration/V2__index_studymate_attendance.sql\nnew file mode 100644\n--- /dev/null\n+++ b/src/main/resources/db/migration/V2__index_studymate_attendance.sql\n@@ -0,0 +1,1 @@\n+CREATE INDEX idx_attendances_session_member ON attendances (session_id, member_id);\n",
+      "changeType": "added"
+    }
+  ]
+}

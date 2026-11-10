@@ -21,7 +21,7 @@ for (const hasTouch of [false, true]) {
           courseId: 73, title: '렌더링 강의', isEnrolled: true, status: 'PUBLISHED',
           sections: [{ sectionId: 1, title: '렌더링', isPublished: true, sortOrder: 1, lessons: [{
             lessonId: 701, title: '브라우저 렌더링', lessonType: 'VIDEO', sortOrder: 1,
-            materials: [], isPublished: true, durationSeconds: 60, videoUrl: '/samples/sample-intro.mp4',
+            materials: [], isPublished: true, durationSeconds: 60, videoUrl: '/samples/sample-intro.mp4', watermarkEnabled: true,
           }] }],
         }
         else if (path.includes('/api/learning/sessions/')) data = {
@@ -34,6 +34,7 @@ for (const hasTouch of [false, true]) {
       await page.goto('/learning?courseId=73&lessonId=701')
       const video = page.locator('video.learning-player-video-element')
       await expect.poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState)).toBeGreaterThanOrEqual(2)
+      await expect(page.locator('.learning-player-video-stage').getByText(/DevPath · 회원 #/)).toHaveCount(0)
     })
 
     test('일시정지·재생·설정·전체화면에서 영상 컨트롤을 사용할 수 있다', async ({ page }, testInfo) => {
@@ -67,6 +68,7 @@ for (const hasTouch of [false, true]) {
       await expect(controls).toHaveCSS('opacity', '1')
       await page.getByRole('button', { name: '전체화면', exact: true }).click()
       await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true)
+      await expect(page.locator('.learning-player-video-stage').getByText(/DevPath · 회원 #/)).toHaveCount(0)
       await page.mouse.move(1270, 10)
       await expect(controls).toHaveCSS('opacity', '1')
       await page.getByRole('button', { name: '전체화면 종료', exact: true }).click()
@@ -103,10 +105,8 @@ for (const hasTouch of [false, true]) {
       await page.mouse.up()
       const request = await ocrRequest
       expect(request.postDataJSON().imageBase64).toMatch(/^iVBOR/)
-      await expect(page.getByText('클립보드에 복사가 완료되었습니다.', { exact: true })).toBeVisible()
-      const copiedText = await page.evaluate(() => navigator.clipboard.readText())
       // Windows 클립보드가 반환하는 CRLF를 정규화해 코드 본문을 비교한다.
-      expect(copiedText.replace(/\r\n/g, '\n')).toBe(code)
+      await expect.poll(async () => (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, '\n')).toBe(code)
       await expect(copyButton).toBeEnabled()
       await page.mouse.move(1270, 10)
       await expect(copyOverlay).toHaveCSS('opacity', '0')

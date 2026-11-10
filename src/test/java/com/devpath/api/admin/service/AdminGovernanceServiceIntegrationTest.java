@@ -42,6 +42,15 @@ import com.devpath.domain.course.repository.CourseRepository;
 import com.devpath.domain.course.repository.CourseSectionRepository;
 import com.devpath.domain.course.repository.CourseTagMapRepository;
 import com.devpath.domain.course.repository.LessonRepository;
+import com.devpath.domain.learning.entity.Assignment;
+import com.devpath.domain.learning.entity.QuestionType;
+import com.devpath.domain.learning.entity.Quiz;
+import com.devpath.domain.learning.entity.QuizQuestion;
+import com.devpath.domain.learning.entity.QuizQuestionOption;
+import com.devpath.domain.learning.entity.Rubric;
+import com.devpath.domain.learning.entity.SubmissionType;
+import com.devpath.domain.learning.repository.AssignmentRepository;
+import com.devpath.domain.learning.repository.QuizRepository;
 import com.devpath.domain.notification.service.InstructorNotificationPublisher;
 import com.devpath.domain.roadmap.entity.BranchKind;
 import com.devpath.domain.roadmap.entity.NodeCompletionRule;
@@ -110,6 +119,8 @@ class AdminGovernanceServiceIntegrationTest {
   @Autowired private CourseRepository courseRepository;
   @Autowired private CourseSectionRepository courseSectionRepository;
   @Autowired private LessonRepository lessonRepository;
+  @Autowired private QuizRepository quizRepository;
+  @Autowired private AssignmentRepository assignmentRepository;
   @Autowired private CourseTagMapRepository courseTagMapRepository;
   @Autowired private CourseReviewHistoryRepository courseReviewHistoryRepository;
   @Autowired private CourseNodeMappingRepository courseNodeMappingRepository;
@@ -230,6 +241,197 @@ class AdminGovernanceServiceIntegrationTest {
     assertThat(response.getReviewHistory())
         .extracting("action", "reason")
         .containsExactly(org.assertj.core.groups.Tuple.tuple("REJECTED", "영상 설명을 보완해 주세요"));
+  }
+
+  @Test
+  @DisplayName("검수는 비공개 평가의 정답과 해설 및 과제 채점 기준을 차시에 맞춰 반환한다")
+  void getCourseReviewIncludesUnpublishedAssessments() {
+    User instructor = saveUser("assessment-review@devpath.com", UserRole.ROLE_INSTRUCTOR);
+    Course course = saveCourse(instructor, "평가 검수 강의", CourseStatus.IN_REVIEW);
+    CourseSection section =
+        courseSectionRepository.save(
+            CourseSection.builder()
+                .course(course)
+                .title("평가 섹션")
+                .orderIndex(1)
+                .isPublished(true)
+                .build());
+    Roadmap roadmap = saveOfficialRoadmap("평가 검수 로드맵");
+    RoadmapNode quizNode = saveNode(roadmap, "퀴즈 노드", "COURSE_QUIZ", 1);
+    RoadmapNode assignmentNode = saveNode(roadmap, "과제 노드", "COURSE_ASSIGNMENT", 2);
+    lessonRepository.save(
+        Lesson.builder()
+            .section(section)
+            .title("개념 퀴즈")
+            .lessonType(LessonType.READING)
+            .quizRoadmapNode(quizNode)
+            .orderIndex(1)
+            .build());
+    lessonRepository.save(
+        Lesson.builder()
+            .section(section)
+            .title("실습 과제")
+            .lessonType(LessonType.CODING)
+            .assignmentRoadmapNode(assignmentNode)
+            .orderIndex(2)
+            .build());
+    lessonRepository.save(
+        Lesson.builder()
+            .section(section)
+            .title("미등록 퀴즈")
+            .lessonType(LessonType.READING)
+            .orderIndex(3)
+            .build());
+
+    Quiz quiz =
+        Quiz.builder()
+            .roadmapNode(quizNode)
+            .title("검수 퀴즈")
+            .totalScore(10)
+            .passScore(5)
+            .timeLimitMinutes(10)
+            .isPublished(false)
+            .isActive(false)
+            .exposeAnswer(false)
+            .exposeExplanation(false)
+            .questions(
+                List.of(
+                    QuizQuestion.builder()
+                        .questionType(QuestionType.SHORT_ANSWER)
+                        .questionText("두 번째 문항")
+                        .explanation("주관식 해설")
+                        .displayOrder(2)
+                        .points(5)
+                        .options(
+                            List.of(
+                                QuizQuestionOption.builder()
+                                    .optionText("모범 답안")
+                                    .isCorrect(true)
+                                    .displayOrder(1)
+                                    .build()))
+                        .build(),
+                    QuizQuestion.builder()
+                        .questionType(QuestionType.MULTIPLE_CHOICE)
+                        .questionText("첫 번째 문항")
+                        .explanation("비공개 해설")
+                        .displayOrder(1)
+                        .points(5)
+                        .options(
+                            List.of(
+                                QuizQuestionOption.builder()
+                                    .optionText("둘째 선택지")
+                                    .isCorrect(false)
+                                    .displayOrder(2)
+                                    .build(),
+                                QuizQuestionOption.builder()
+                                    .optionText("정답 선택지")
+                                    .isCorrect(true)
+                                    .displayOrder(1)
+                                    .build(),
+                                QuizQuestionOption.builder()
+                                    .optionText("삭제 선택지")
+                                    .isDeleted(true)
+                                    .displayOrder(3)
+                                    .build()))
+                        .build(),
+                    QuizQuestion.builder()
+                        .questionType(QuestionType.TRUE_FALSE)
+                        .questionText("삭제 문항")
+                        .displayOrder(3)
+                        .isDeleted(true)
+                        .build()))
+            .build();
+    quizRepository.saveAndFlush(quiz);
+    quizRepository.saveAndFlush(
+        Quiz.builder().roadmapNode(quizNode).title("삭제된 최신 퀴즈").isDeleted(true).build());
+
+    Assignment assignment =
+        Assignment.builder()
+            .roadmapNode(assignmentNode)
+            .title("검수 과제")
+            .description("실습 요구사항")
+            .submissionType(SubmissionType.FILE)
+            .allowedFileFormats("zip,pdf")
+            .submissionRuleDescription("실행 방법을 포함하세요.")
+            .totalScore(100)
+            .passScore(80)
+            .isPublished(false)
+            .isActive(false)
+            .readmeRequired(true)
+            .testRequired(true)
+            .lintRequired(false)
+            .aiReviewEnabled(false)
+            .allowTextSubmission(false)
+            .allowFileSubmission(true)
+            .allowUrlSubmission(false)
+            .rubrics(
+                List.of(
+                    Rubric.builder()
+                        .criteriaName("테스트")
+                        .criteriaDescription("회귀 검증")
+                        .maxPoints(40)
+                        .displayOrder(2)
+                        .build(),
+                    Rubric.builder()
+                        .criteriaName("구현")
+                        .criteriaDescription("요구사항 충족")
+                        .maxPoints(60)
+                        .displayOrder(1)
+                        .build(),
+                    Rubric.builder()
+                        .criteriaName("삭제 기준")
+                        .maxPoints(10)
+                        .displayOrder(3)
+                        .isDeleted(true)
+                        .build()))
+            .build();
+    assignmentRepository.saveAndFlush(assignment);
+    assignmentRepository.saveAndFlush(
+        Assignment.builder()
+            .roadmapNode(assignmentNode)
+            .title("삭제된 최신 과제")
+            .description("삭제")
+            .isDeleted(true)
+            .build());
+    flushAndClear();
+
+    List<CourseReviewDetailResponse.LessonItem> lessons =
+        adminCourseGovernanceService
+            .getCourseReview(course.getCourseId(), 77L)
+            .getSections()
+            .getFirst()
+            .getLessons();
+    CourseReviewDetailResponse.QuizItem resultQuiz = lessons.get(0).getQuiz();
+    assertThat(resultQuiz.getQuizId()).isEqualTo(quiz.getId());
+    assertThat(resultQuiz.getPassScore()).isEqualTo(5);
+    assertThat(resultQuiz.getTimeLimitMinutes()).isEqualTo(10);
+    assertThat(resultQuiz.getExposeAnswer()).isFalse();
+    assertThat(resultQuiz.getQuestions())
+        .extracting("questionText")
+        .containsExactly("첫 번째 문항", "두 번째 문항");
+    assertThat(resultQuiz.getQuestions().getFirst().getExplanation()).isEqualTo("비공개 해설");
+    assertThat(resultQuiz.getQuestions().getFirst().getOptions())
+        .extracting("optionText", "isCorrect")
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("정답 선택지", true),
+            org.assertj.core.groups.Tuple.tuple("둘째 선택지", false));
+    assertThat(resultQuiz.getQuestions().get(1).getOptions().getFirst().getOptionText())
+        .isEqualTo("모범 답안");
+    assertThat(lessons.get(0).getAssignment()).isNull();
+    CourseReviewDetailResponse.AssignmentItem resultAssignment = lessons.get(1).getAssignment();
+    assertThat(resultAssignment.getAssignmentId()).isEqualTo(assignment.getId());
+    assertThat(resultAssignment.getDescription()).isEqualTo("실습 요구사항");
+    assertThat(resultAssignment.getPassScore()).isEqualTo(80);
+    assertThat(resultAssignment.getAllowFileSubmission()).isTrue();
+    assertThat(resultAssignment.getReadmeRequired()).isTrue();
+    assertThat(resultAssignment.getAllowedFileFormats()).isEqualTo("zip,pdf");
+    assertThat(resultAssignment.getRubrics())
+        .extracting("criteriaName", "maxPoints")
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple("구현", 60),
+            org.assertj.core.groups.Tuple.tuple("테스트", 40));
+    assertThat(lessons.get(1).getQuiz()).isNull();
+    assertThat(lessons.get(2).getQuiz()).isNull();
   }
 
   @Test

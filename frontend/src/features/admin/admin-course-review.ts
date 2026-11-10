@@ -59,8 +59,66 @@ function renderHistory(detail: AdminCourseReviewDetail) {
   `).join('')
 }
 
+function renderQuiz(lesson: AdminCourseReviewLesson) {
+  const quiz = lesson.quiz
+  if (!quiz) return '<p class="admin-course-review-empty">등록된 퀴즈가 없습니다.</p>'
+  const questionTypes: Record<string, string> = { MULTIPLE_CHOICE: '객관식', TRUE_FALSE: 'OX', SHORT_ANSWER: '주관식' }
+  return `<details class="admin-course-review-assessment">
+    <summary><span>퀴즈 상세보기</span><i class="fas fa-chevron-down"></i></summary>
+    <div class="admin-course-review-assessment-content">
+      <h5>${escapeHtml(quiz.title)}</h5>
+      <p>${escapeHtml(quiz.description || '퀴즈 설명이 없습니다.')}</p>
+      <dl>
+        <div><dt>총점 / 통과 점수</dt><dd>${quiz.totalScore}점 / ${quiz.passScore === null ? '미설정' : `${quiz.passScore}점`}</dd></div>
+        <div><dt>제한 시간</dt><dd>${quiz.timeLimitMinutes ? `${quiz.timeLimitMinutes}분` : '제한 없음'}</dd></div>
+        <div><dt>응시 후 공개</dt><dd>정답 ${quiz.exposeAnswer ? '공개' : '비공개'} · 해설 ${quiz.exposeExplanation ? '공개' : '비공개'}</dd></div>
+      </dl>
+      ${quiz.questions.length ? quiz.questions.map((question, index) => `<div class="admin-course-review-question">
+        <div class="admin-course-review-question-heading"><strong>문항 ${index + 1}</strong><span>${escapeHtml(questionTypes[question.questionType] || question.questionType)} · ${question.points}점</span></div>
+        <p>${escapeHtml(question.questionText)}</p>
+        <ol>${question.options.map((option) => `<li${option.isCorrect ? ' class="is-correct"' : ''}><span>${escapeHtml(option.optionText)}</span>${option.isCorrect ? '<b>정답</b>' : ''}</li>`).join('')}</ol>
+        <h6>해설</h6><p>${escapeHtml(question.explanation || '등록된 해설이 없습니다.')}</p>
+      </div>`).join('') : '<p>등록된 문항이 없습니다.</p>'}
+    </div>
+  </details>`
+}
+
+function renderAssignment(lesson: AdminCourseReviewLesson) {
+  const assignment = lesson.assignment
+  if (!assignment) return '<p class="admin-course-review-empty">등록된 과제가 없습니다.</p>'
+  const hasSubmissionFlags = [assignment.allowTextSubmission, assignment.allowFileSubmission, assignment.allowUrlSubmission].some((value) => value !== null)
+  const submissionMethods = [
+    [hasSubmissionFlags ? assignment.allowTextSubmission : ['TEXT', 'MULTIPLE'].includes(assignment.submissionType), '텍스트'],
+    [hasSubmissionFlags ? assignment.allowFileSubmission : ['FILE', 'MULTIPLE'].includes(assignment.submissionType), '파일'],
+    [hasSubmissionFlags ? assignment.allowUrlSubmission : ['URL', 'MULTIPLE'].includes(assignment.submissionType), 'URL'],
+  ].filter(([enabled]) => enabled).map(([, label]) => label).join(', ')
+  const requirements = [[assignment.readmeRequired, 'README'], [assignment.testRequired, '테스트'], [assignment.lintRequired, '린트']]
+    .filter(([required]) => required).map(([, label]) => label).join(', ')
+  return `<details class="admin-course-review-assessment">
+    <summary><span>과제 상세보기</span><i class="fas fa-chevron-down"></i></summary>
+    <div class="admin-course-review-assessment-content">
+      <h5>${escapeHtml(assignment.title)}</h5><p>${escapeHtml(assignment.description || '과제 설명이 없습니다.')}</p>
+      <dl>
+        <div><dt>총점 / 통과 점수</dt><dd>${assignment.totalScore}점 / ${assignment.passScore === null ? '미설정' : `${assignment.passScore}점`}</dd></div>
+        <div><dt>제출 방식</dt><dd>${escapeHtml(submissionMethods || '미설정')}</dd></div>
+        <div><dt>허용 파일 형식</dt><dd>${escapeHtml(assignment.allowedFileFormats || '제한 없음')}</dd></div>
+        <div><dt>필수 제출 조건</dt><dd>${escapeHtml(requirements || '없음')}</dd></div>
+        <div><dt>마감 / 지각 제출</dt><dd>${assignment.dueAt ? escapeHtml(formatDateTime(assignment.dueAt)) : '마감 없음'} · ${assignment.allowLateSubmission ? '허용' : '미허용'}</dd></div>
+        <div><dt>AI 리뷰</dt><dd>${assignment.aiReviewEnabled === false ? '미사용' : '사용'}</dd></div>
+      </dl>
+      <h6>제출 규칙</h6><p>${escapeHtml(assignment.submissionRuleDescription || '추가 제출 규칙이 없습니다.')}</p>
+      <h6>채점 기준</h6>
+      ${assignment.rubrics.length ? assignment.rubrics.map((rubric) => `<div class="admin-course-review-rubric">
+        <div class="admin-course-review-question-heading"><strong>${escapeHtml(rubric.criteriaName)}</strong><span>${rubric.maxPoints}점</span></div>
+        <p>${escapeHtml(rubric.criteriaDescription || '상세 기준이 없습니다.')}</p>
+      </div>`).join('') : '<p>등록된 채점 기준이 없습니다.</p>'}
+    </div>
+  </details>`
+}
+
 function renderSections(detail: AdminCourseReviewDetail) {
   if (!detail.sections.length) return '<p class="admin-course-review-empty">등록된 커리큘럼이 없습니다.</p>'
+  const lessonTypes: Record<string, string> = { VIDEO: '영상', READING: '퀴즈', CODING: '과제' }
   return detail.sections.map((section, sectionIndex) => `
     <details class="admin-course-review-section" ${sectionIndex === 0 ? 'open' : ''}>
       <summary>
@@ -74,10 +132,12 @@ function renderSections(detail: AdminCourseReviewDetail) {
             <div class="admin-course-review-lesson-order">${lessonIndex + 1}</div>
             <div class="admin-course-review-lesson-copy">
               <strong>${escapeHtml(lesson.title)}</strong>
-              <small>${escapeHtml(lesson.lessonType || '유형 미등록')} · ${escapeHtml(formatDuration(lesson.durationSeconds))} · ${lesson.preview ? '미리보기' : '수강 전용'} · ${lesson.published ? '공개' : '비공개'}</small>
+              <small>${escapeHtml(lessonTypes[lesson.lessonType ?? ''] || lesson.lessonType || '유형 미등록')}${lesson.lessonType === 'VIDEO' ? ` · ${escapeHtml(formatDuration(lesson.durationSeconds))}` : ''} · ${lesson.preview ? '미리보기' : '수강 전용'} · ${lesson.published ? '공개' : '비공개'}</small>
               ${lesson.description ? `<p>${escapeHtml(lesson.description)}</p>` : ''}
             </div>
-            <button data-admin-click="previewCourseReviewLesson(${lesson.lessonId})" type="button" ${lesson.playbackUrl ? '' : 'disabled'}><i class="fas fa-play"></i>${lesson.playbackUrl ? '영상 확인' : '영상 없음'}</button>
+            ${lesson.lessonType === 'VIDEO' ? `<button data-admin-click="previewCourseReviewLesson(${lesson.lessonId})" type="button" ${lesson.playbackUrl ? '' : 'disabled'}><i class="fas fa-play"></i>${lesson.playbackUrl ? '영상 확인' : '영상 없음'}</button>` : ''}
+            ${lesson.lessonType === 'READING' || lesson.quiz ? renderQuiz(lesson) : ''}
+            ${lesson.lessonType === 'CODING' || lesson.assignment ? renderAssignment(lesson) : ''}
           </article>
         `).join('') : '<p class="admin-course-review-empty">이 섹션에는 차시가 없습니다.</p>'}
       </div>
@@ -150,7 +210,7 @@ function renderReview(detail: AdminCourseReviewDetail) {
       <div class="admin-course-review-checklist">
         <label><input class="course-review-check" type="checkbox" /><span><strong>기본 정보 확인</strong><small>제목, 소개, 가격과 강사 정보를 확인했습니다.</small></span></label>
         <label><input class="course-review-check" type="checkbox" /><span><strong>커리큘럼 확인</strong><small>섹션과 차시 구성, 공개 범위를 확인했습니다.</small></span></label>
-        <label><input class="course-review-check" type="checkbox" /><span><strong>학습 콘텐츠 확인</strong><small>등록된 차시 영상과 설명을 확인했습니다.</small></span></label>
+        <label><input class="course-review-check" type="checkbox" /><span><strong>학습 콘텐츠 확인</strong><small>등록된 영상, 퀴즈 문항·정답·해설과 과제·채점 기준을 확인했습니다.</small></span></label>
       </div>
       <label class="admin-course-review-reason"><span>검수 메모 또는 반려 사유</span><textarea id="courseReviewReason" maxlength="1000" placeholder="최소 5자 이상 입력하세요."></textarea><small>승인 메모는 강사 알림과 처리 이력에 함께 기록됩니다.</small></label>
     </section>

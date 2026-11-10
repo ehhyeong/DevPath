@@ -149,12 +149,12 @@ export default function CourseQuizEditorOverlay({
   const demoQuestionText = useDemoTyping({
     text: DEMO_TEXT.quizQuestion, value: demoQuestion?.questionText ?? '',
     onValue: (value) => { if (demoQuestion) updateQuestion(demoQuestion.localId, 'questionText', value) },
-    enabled: demoAccount, active: demoActive, scopeKey: demoQuestion?.localId, replaceExisting: true,
+    enabled: demoAccount, active: demoActive, scopeKey: demoQuestion?.localId, replaceExisting: true, instant: true,
   })
   const demoExplanation = useDemoTyping({
     text: DEMO_TEXT.quizExplanation, value: demoQuestion?.explanation ?? '',
     onValue: (value) => { if (demoQuestion) updateQuestion(demoQuestion.localId, 'explanation', value) },
-    enabled: demoAccount, active: demoActive, scopeKey: demoQuestion?.localId, replaceExisting: true,
+    enabled: demoAccount, active: demoActive, scopeKey: demoQuestion?.localId, replaceExisting: true, instant: true,
   })
   const demoTyping = demoQuestionText.typing || demoExplanation.typing
 

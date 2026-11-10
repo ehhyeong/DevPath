@@ -23,6 +23,7 @@ type SquadWorkspaceHeaderProps = {
   currentUserName?: string | null
   onLogout: () => void
   aiWorkspace?: boolean
+  projectNameLoading?: boolean
 }
 
 function navHref(path: string, workspaceId: number | null) {
@@ -41,6 +42,7 @@ export default function SquadWorkspaceHeader({
   statusActive = true,
   onLogout,
   aiWorkspace = false,
+  projectNameLoading = false,
 }: SquadWorkspaceHeaderProps) {
   const [notificationOpen, setNotificationOpen] = useState(false)
   const [notifications, setNotifications] = useState<SquadHeaderNotification[]>([])
@@ -109,7 +111,7 @@ export default function SquadWorkspaceHeader({
           <span className={`${statusActive ? 'animate-pulse bg-brand' : 'bg-gray-400'} h-1.5 w-1.5 rounded-full`}></span>
           {statusLabel}
         </span>
-        <span className="truncate tracking-tight">{projectName}</span>
+        {projectNameLoading ? <span data-workspace-project-name aria-label="프로젝트 이름을 불러오는 중입니다" className="inline-block h-5 w-32 animate-pulse rounded bg-gray-100" /> : <span data-workspace-project-name className="truncate tracking-tight">{projectName}</span>}
       </div>
 
       <div className="relative flex items-center gap-5">

@@ -1,8 +1,10 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
 import type { VoicePeerTransceivers } from './meeting-support'
 import type { CameraView, ScreenShareView, SinkAudioElement, VoiceParticipant, WorkspaceMember } from './meeting-types'
+import type { MeetingAudioControls } from './useMeetingAudioControls'
 
 type Props = {
+  audioControls: MeetingAudioControls
   members: WorkspaceMember[]
   participants: VoiceParticipant[]
   activeParticipants: VoiceParticipant[]
@@ -23,9 +25,11 @@ type Props = {
 }
 
 export function useMeetingRemoteMedia(props: Props) {
+  const { audioControls } = props
   const { members, participants, activeParticipants, remoteAudioElementsRef, remoteAudioMutedRef, remoteAudioContainerRef, remoteCameraStreamsRef, remoteCameraPendingRef, remoteScreenShareViewsRef, remoteScreenSharePendingRef, peerConnectionsRef, peerTransceiversRef, makingOffersRef, pendingIceCandidatesRef, setRemoteCameraStreams, setRemoteScreenShares, applySelectedOutputToAudio } = props
 
   function stopRemoteAudioElements() {
+    audioControls.stopRemoteAudio()
     remoteAudioElementsRef.current.forEach((audio) => {
       audio.pause()
       audio.srcObject = null
@@ -122,12 +126,12 @@ export function useMeetingRemoteMedia(props: Props) {
       return
     }
     const audio = createRemoteAudioElement(userId)
-    audio.muted = remoteAudioMutedRef.current
-    audio.srcObject = stream
+    audioControls.attachRemoteAudio(userId, new MediaStream([track]), audio)
     void audio.play().catch(() => undefined)
   }
 
   function removeRemotePeer(userId: number) {
+    audioControls.detachRemoteAudio(userId)
     peerConnectionsRef.current.get(userId)?.close()
     peerConnectionsRef.current.delete(userId)
     peerTransceiversRef.current.delete(userId)

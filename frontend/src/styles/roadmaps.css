@@ -23,6 +23,50 @@
   padding-right: 24px;
 }
 
+.roadmap-node-located {
+  outline: 3px solid #10b981;
+  outline-offset: 4px;
+  animation: roadmap-node-locate 900ms ease-out 3;
+}
+
+@keyframes roadmap-node-locate {
+  from { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.35); }
+  to { box-shadow: 0 0 0 18px rgba(16, 185, 129, 0); }
+}
+
+.roadmap-edge-suggestion {
+  animation: roadmap-suggestion-connect 360ms ease-out both;
+}
+
+/* 내부 카드의 테두리 펄스와 슬롯의 배치 이동은 유지하고 새 제안의 등장만 분리한다. */
+.roadmap-suggestion-enter {
+  animation: roadmap-suggestion-enter 560ms cubic-bezier(.22, 1, .36, 1) 120ms both;
+}
+
+:is(.roadmap-lane-left, .roadmap-lane-side-left) > .roadmap-suggestion-enter {
+  --suggestion-enter-x: 20px;
+  transform-origin: right center;
+}
+
+:is(.roadmap-lane-right, .roadmap-lane-side-right) > .roadmap-suggestion-enter {
+  --suggestion-enter-x: -20px;
+  transform-origin: left center;
+}
+
+@keyframes roadmap-suggestion-connect {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes roadmap-suggestion-enter {
+  from { opacity: 0; translate: var(--suggestion-enter-x, 0px) 8px; scale: .97; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roadmap-node-located, .roadmap-suggestion-enter, .roadmap-edge-suggestion { animation: none; }
+}
+
 /* ── 헤더 ── */
 .roadmap-page-toolbar {
   position: fixed;
@@ -189,18 +233,6 @@
   }
 }
 
-
-/* Consolidated from my-roadmap.css. */
-@keyframes builderStepPop {
-  0% {
-    opacity: 0;
-    transform: scale(0.9) translateX(-20px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateX(0);
-  }
-}
 
 /* Consolidated from roadmap-hub.css. */
 .hub-main {

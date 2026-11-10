@@ -1,0 +1,62 @@
+[
+  {
+    "title": "여행·지출·분담 ERD와 마이그레이션 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "회원 인증과 여행 참여 권한 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "여행 목록과 로그인 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "여행 생성·멤버 초대 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "지출 금액과 분담 합계 검증 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "지출 입력과 멤버별 분담 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "지출 등록·수정·삭제 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "멱등 요청과 반올림 테스트 구현",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "정산 잔액과 송금 방향 UI 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "비참여자·잔액 합계·재시도 통합 테스트",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "금액 입력 접근성과 모바일 표 점검",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "Docker 배포와 지출 변경 로그 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "TODO"
+  }
+]

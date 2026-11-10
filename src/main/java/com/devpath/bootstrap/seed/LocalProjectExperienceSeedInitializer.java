@@ -82,10 +82,11 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
         .forEach(
             seed ->
                 seedShowcase(
-                    usersByEmail.get(seed.ownerEmail()),
+                    userRepository.findByEmail(seed.ownerEmail()).orElseThrow(),
                     seed.title(),
                     seed.description(),
                     seed.thumbnailUrl(),
+                    seed.techStack(),
                     seed.category(),
                     seed.initialViews(),
                     users));
@@ -200,6 +201,7 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
       String title,
       String description,
       String thumbnailUrl,
+      String techStack,
       ShowcaseCategory category,
       int initialViews,
       List<User> users) {
@@ -214,6 +216,7 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
                           .title(title)
                           .description(description)
                           .thumbnailUrl(thumbnailUrl)
+                          .techStack(techStack)
                           .category(category)
                           .isPublic(true)
                           .build();
@@ -223,8 +226,12 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
                   return showcaseRepository.save(created);
                 });
     showcase.update(title, description, thumbnailUrl, category, true);
-    ensureShowcaseLinks(showcase);
-    ensureShowcaseSocial(showcase, owner, users);
+    showcase.updateTechStack(techStack);
+    // 레거시 쇼케이스의 링크·댓글·좋아요는 기존 SQL이 관리하므로 콘텐츠만 보강한다.
+    if (!"learner@devpath.com".equals(owner.getEmail())) {
+      ensureShowcaseLinks(showcase);
+      ensureShowcaseSocial(showcase, owner, users);
+    }
   }
 
   private void ensureShowcaseLinks(Showcase showcase) {
@@ -306,6 +313,7 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
                 resultSet.getString("title"),
                 resultSet.getString("description"),
                 resultSet.getString("thumbnail_url"),
+                resultSet.getString("tech_stack"),
                 ShowcaseCategory.valueOf(resultSet.getString("category")),
                 resultSet.getInt("initial_views")));
   }
@@ -330,6 +338,7 @@ public class LocalProjectExperienceSeedInitializer implements CommandLineRunner 
       String title,
       String description,
       String thumbnailUrl,
+      String techStack,
       ShowcaseCategory category,
       int initialViews) {}
 }

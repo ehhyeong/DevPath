@@ -1,6 +1,6 @@
 import { aiWorkspacePageHref } from './ai-workspace-navigation'
 import { useAuthSession } from '../../lib/useAuthSession'
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from 'react'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import SquadWorkspaceAside from '../../components/SquadWorkspaceAside'
 import SquadWorkspaceLoadingView from '../../components/SquadWorkspaceLoadingView'
@@ -210,6 +210,14 @@ function taskToForm(task: WorkspaceTask): TaskFormState {
   }
 }
 
+function placeTask(list: WorkspaceTask[], task: WorkspaceTask, beforeTaskId: number | null) {
+  const next = list.filter(item => item.taskId !== task.taskId)
+  const beforeIndex = beforeTaskId == null ? -1 : next.findIndex(item => item.taskId === beforeTaskId)
+  const lastInColumn = next.findLastIndex(item => item.status === task.status)
+  next.splice(beforeIndex >= 0 ? beforeIndex : lastInColumn + 1, 0, task)
+  return next
+}
+
 export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWorkspacePageProps = {}) {
   const workspaceId = useMemo(() => getWorkspaceIdFromUrl(), [])
   const dataVersion = useWorkspaceDataVersion()
@@ -225,12 +233,76 @@ export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWor
   const [form, setForm] = useState<TaskFormState>(createEmptyForm)
   const [saving, setSaving] = useState(false)
   const [draggingTaskId, setDraggingTaskId] = useState<number | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ status: TaskStatus; beforeTaskId: number | null } | null>(null)
+  const [draggedCardHeight, setDraggedCardHeight] = useState(160)
+  const boardRef = useRef<HTMLDivElement>(null)
+  const dragRef = useRef<{ taskId: number; offsetX: number; offsetY: number } | null>(null)
+  const cardPositionsRef = useRef(new Map<number, { left: number; top: number }>())
   const [linkedApis, setLinkedApis] = useState<AiApi[]>([])
   const [apiLinkError, setApiLinkError] = useState('')
   const [apiLinksLoaded, setApiLinksLoaded] = useState(false)
   const [selectedApiIds, setSelectedApiIds] = useState<string[] | null>(null)
   const [saveError, setSaveError] = useState('')
   const taskApiIds = selectedApiIds ?? linkedApis.filter((api) => editingTask && findApiTask(api.task, [editingTask])).map((api) => api.id)
+
+  function rememberCardPositions() {
+    const cards = boardRef.current?.querySelectorAll<HTMLElement>('[data-task-id]') ?? []
+    cardPositionsRef.current = new Map(Array.from(cards, card => [Number(card.dataset.taskId), card.getBoundingClientRect()]))
+    for (const card of cards) for (const animation of card.getAnimations()) animation.cancel()
+  }
+
+  useLayoutEffect(() => {
+    const previous = cardPositionsRef.current
+    cardPositionsRef.current = new Map()
+    if (!previous.size || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    for (const card of boardRef.current?.querySelectorAll<HTMLElement>('[data-task-id]') ?? []) {
+      const from = previous.get(Number(card.dataset.taskId))
+      if (!from) continue
+      const to = card.getBoundingClientRect()
+      const x = from.left - to.left, y = from.top - to.top
+      if (Math.abs(x) < 1 && Math.abs(y) < 1) continue
+      // DOM 순서는 즉시 반영하고 이전 화면 위치에서 이동시켜 카드 사이 삽입 시 레이아웃 점프를 줄인다.
+      card.animate([{ transform: `translate(${x}px, ${y}px)` }, { transform: 'translate(0, 0)' }], { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' })
+    }
+  })
+
+  function finishTaskDrag() {
+    if (!dragRef.current) return
+    rememberCardPositions()
+    dragRef.current = null
+    setDraggingTaskId(null)
+    setDropTarget(null)
+  }
+
+  function previewTaskDrop(event: DragEvent<HTMLDivElement>, status: TaskStatus) {
+    if (!dragRef.current) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    const placeholder = event.currentTarget.querySelector('[data-kanban-drop-placeholder]')?.getBoundingClientRect()
+    if (placeholder && event.clientY >= placeholder.top && event.clientY <= placeholder.bottom) return
+    const cards = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[data-task-id]')).filter(card => Number(card.dataset.taskId) !== dragRef.current?.taskId)
+    const before = cards.find(card => {
+      const rect = card.getBoundingClientRect()
+      return event.clientY < rect.top + rect.height / 2
+    })
+    const beforeTaskId = before ? Number(before.dataset.taskId) : null
+    if (dropTarget?.status === status && dropTarget.beforeTaskId === beforeTaskId) return
+    rememberCardPositions()
+    setDropTarget({ status, beforeTaskId })
+  }
+
+  function dropTask(event: DragEvent<HTMLDivElement>, status: TaskStatus) {
+    event.preventDefault()
+    const drag = dragRef.current
+    if (!drag) return
+    rememberCardPositions()
+    // 열 이동은 DOM 요소가 새로 생기므로 포인터의 카드 위치에서 안착 애니메이션을 시작한다.
+    cardPositionsRef.current.set(drag.taskId, { left: event.clientX - drag.offsetX, top: event.clientY - drag.offsetY })
+    dragRef.current = null
+    setDraggingTaskId(null)
+    setDropTarget(null)
+    void moveTask(drag.taskId, status, dropTarget?.status === status ? dropTarget.beforeTaskId : null)
+  }
 
   useEffect(() => {
     if (!aiWorkspace || !workspaceId) return
@@ -500,18 +572,20 @@ export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWor
     }
   }
 
-  async function moveTask(taskId: number, status: TaskStatus) {
+  async function moveTask(taskId: number, status: TaskStatus, beforeTaskId: number | null) {
     if (!workspaceId) {
       return
     }
 
     const current = tasks.find((task) => task.taskId === taskId)
 
-    if (!current || current.status === status) {
+    if (!current) {
       return
     }
 
-    setTasks((list) => list.map((task) => (task.taskId === taskId ? { ...task, status } : task)))
+    const originalNextId = tasks[tasks.indexOf(current) + 1]?.taskId ?? null
+    setTasks((list) => placeTask(list, { ...current, status }, beforeTaskId))
+    if (current.status === status) return
 
     try {
       const updated = await projectApiRequest<WorkspaceTask>(
@@ -530,7 +604,8 @@ export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWor
         targetPath: '/squad-workspace',
       })
     } catch {
-      updateTaskInState(current)
+      rememberCardPositions()
+      setTasks((list) => placeTask(list, current, originalNextId))
     }
   }
 
@@ -565,11 +640,19 @@ export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWor
     return (
       <div
         key={task.taskId}
+        data-task-id={task.taskId}
         draggable
-        onDragStart={() => setDraggingTaskId(task.taskId)}
-        onDragEnd={() => setDraggingTaskId(null)}
+        onDragStart={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect()
+          event.dataTransfer.effectAllowed = 'move'
+          event.dataTransfer.setData('text/plain', String(task.taskId))
+          dragRef.current = { taskId: task.taskId, offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top }
+          setDraggedCardHeight(rect.height)
+          setDraggingTaskId(task.taskId)
+        }}
+        onDragEnd={finishTaskDrag}
         onClick={() => openEditModal(task)}
-        className={`kanban-card cursor-grab bg-white p-4 rounded-xl shadow-sm border-l-4 [transition:all_0.2s_cubic-bezier(0.4,0,0.2,1)] active:cursor-grabbing active:[transform:scale(0.98)] hover:[transform:translateY(-3px)] hover:[box-shadow:0_10px_20px_-5px_rgba(0,0,0,0.08)] hover:border-[#00C471]! ${statusAccent(task.status)}`}
+        className={`kanban-card cursor-grab bg-white p-4 rounded-xl shadow-sm border-l-4 transition-[box-shadow,border-color,opacity] duration-200 motion-reduce:transition-none active:cursor-grabbing hover:[box-shadow:0_10px_20px_-5px_rgba(0,0,0,0.08)] hover:border-[#00C471]! ${draggingTaskId === task.taskId ? 'opacity-30' : ''} ${statusAccent(task.status)}`}
       >
         <div className="flex justify-between items-start mb-2">
           <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded border ${tag.className}`}>{tag.label}</span>
@@ -616,6 +699,10 @@ export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWor
     )
   }
 
+  function renderDropPlaceholder() {
+    return <div data-kanban-drop-placeholder role="status" aria-label="카드가 들어갈 위치" style={{ height: draggedCardHeight }} className="pointer-events-none flex shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-brand/50 bg-green-50/80 text-xs font-bold text-brand">여기에 놓기</div>
+  }
+
   if (loading) {
     if (aiWorkspace) return <SquadWorkspaceLoadingView activePage="workspace" workspaceId={workspaceId} projectName={design?.title ?? projectName} />
     return (
@@ -646,7 +733,6 @@ export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWor
         activePage="workspace"
         workspaceId={workspaceId}
         projectName={projectName}
-        reviewBadgeCount={aiWorkspace ? 0 : tasks.length > 0 ? 1 : 0}
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#F9FAFB]">
@@ -689,7 +775,7 @@ export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWor
           </div>
 
           <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar p-6 bg-[#F3F4F6]">
-            <div className="flex gap-6 h-full min-w-max pb-4">
+            <div ref={boardRef} className="flex gap-6 h-full min-w-max pb-4">
               {TASK_COLUMNS.map((column) => {
                 const columnTasks = visibleTasks.filter((task) => task.status === column.id)
 
@@ -707,16 +793,14 @@ export default function SquadWorkspaceApp({ aiWorkspace = false, design }: AiWor
                       id={`col-${column.id === 'TODO' ? 'todo' : column.id === 'IN_PROGRESS' ? 'progress' : column.id === 'IN_REVIEW' ? 'review' : 'done'}`}
                       className={`kanban-col relative min-h-[150px] flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 empty:after:absolute empty:after:inset-[12px] empty:after:flex empty:after:items-center empty:after:justify-center empty:after:border-[2px] empty:after:border-dashed empty:after:border-[#E5E7EB] empty:after:rounded-[0.75rem] empty:after:text-[12px] empty:after:font-bold empty:after:text-[#9CA3AF] empty:after:pointer-events-none empty:after:content-[attr(data-empty)] ${column.id === 'TODO' ? 'empty:after:bg-[rgba(249,250,251,0.5)]' : ''}`}
                       data-empty={column.id === 'TODO' ? '첫 작업을 추가해보세요!' : '여기로 드래그하여 이동'}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => {
-                        event.preventDefault()
-
-                        if (draggingTaskId != null) {
-                          void moveTask(draggingTaskId, column.id)
-                        }
-                      }}
+                      onDragOver={(event) => previewTaskDrop(event, column.id)}
+                      onDrop={(event) => dropTask(event, column.id)}
                     >
-                      {columnTasks.map(renderTaskCard)}
+                      {columnTasks.map((task) => <Fragment key={task.taskId}>
+                        {dropTarget?.status === column.id && dropTarget.beforeTaskId === task.taskId ? renderDropPlaceholder() : null}
+                        {renderTaskCard(task)}
+                      </Fragment>)}
+                      {dropTarget?.status === column.id && dropTarget.beforeTaskId === null ? renderDropPlaceholder() : null}
                     </div>
                   </div>
                 )

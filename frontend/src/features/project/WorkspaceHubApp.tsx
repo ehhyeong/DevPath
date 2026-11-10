@@ -1,6 +1,7 @@
 import { useAuthSession } from '../../lib/useAuthSession'
 import axios from 'axios'
-import { useEffect, useMemo, useState, type MouseEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useLayoutMotion } from '../../lib/useLayoutMotion'
 import { getCurrentLocationKey, navigateTo, SPA_NAVIGATION_EVENT } from '../../lib/spa-navigation'
 import AuthModal, { type AuthView } from '../../components/AuthModal'
 import ProjectAside, { type ProjectAsideSquad } from '../../components/ProjectAside'
@@ -132,39 +133,68 @@ export default function WorkspaceHubApp() {
     const controller = new AbortController()
     const currentSession = readStoredAuthSession()
     setSession(currentSession)
-    async function load() {
-      setLoading(true)
+    let refreshing = false
+    async function load(silent = false) {
+      if (refreshing) return
+      refreshing = true
+      if (!silent) setLoading(true)
       try {
         const [shell, nextProjects] = await Promise.all([
           projectApiRequest<LoungeShellResponse>(
             '/api/lounge/shell',
             { signal: controller.signal },
             'optional',
+            { cache: false },
           ).catch(() => null),
           projectApiRequest<WorkspaceHubProject[]>(
             '/api/workspaces/hub/projects',
             { signal: controller.signal },
             'required',
+            { cache: false },
           ),
         ])
 
-        setAsideSquads(shell?.mySquads ?? [])
-        setProfileImage(shell?.user?.profileImage ?? null)
+        if (controller.signal.aborted) return
+        if (shell) {
+          setAsideSquads(shell.mySquads ?? [])
+          setProfileImage(shell.user?.profileImage ?? null)
+        }
         setProjects(nextProjects)
+        setSettingsProject(current => current && !nextProjects.some(project => project.projectId === current.projectId) ? null : current)
+        setMembersProject(current => current && !nextProjects.some(project => project.projectId === current.projectId) ? null : current)
       } catch (error) {
-        if ((error as Error).name !== 'CanceledError') {
+        if (!controller.signal.aborted && (error as Error).name !== 'CanceledError') {
           console.error(error)
         }
       } finally {
-        if (!controller.signal.aborted) {
+        refreshing = false
+        if (!controller.signal.aborted && !silent) {
           setLoading(false)
         }
       }
     }
 
-    void load()
+    // 생성·삭제 후 재조회에서는 기존 카드를 유지해야 빈자리를 채우는 이동이 끊기지 않는다.
+    void load(dataReloadKey > 0)
 
-    return () => controller.abort()
+    const refresh = () => {
+      if (document.hidden || window.location.pathname !== '/workspace-hub' || !readStoredAuthSession()?.accessToken) return
+      void load(true)
+    }
+    // 다른 팀원이 삭제/탈퇴한 목록도 갱신하고, 화면 복귀 시에는 주기 갱신을 기다리지 않는다.
+    const intervalId = window.setInterval(refresh, 5000)
+    window.addEventListener('focus', refresh)
+    window.addEventListener(SPA_NAVIGATION_EVENT, refresh)
+    window.addEventListener('popstate', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      controller.abort()
+      window.clearInterval(intervalId)
+      window.removeEventListener('focus', refresh)
+      window.removeEventListener(SPA_NAVIGATION_EVENT, refresh)
+      window.removeEventListener('popstate', refresh)
+      document.removeEventListener('visibilitychange', refresh)
+    }
   }, [dataReloadKey, setSession])
 
   useEffect(() => {
@@ -249,6 +279,8 @@ export default function WorkspaceHubApp() {
       }),
     [projects, statusFilter, typeFilter],
   )
+  const projectGridRef = useRef<HTMLDivElement>(null)
+  useLayoutMotion(projectGridRef, `${loading}:${visibleProjects.map(project => project.domId).join(',')}`)
 
   const showCreateCard = (statusFilter === 'all' || statusFilter === 'progress') && typeFilter === 'all'
 
@@ -368,6 +400,7 @@ export default function WorkspaceHubApp() {
       if (membersProject?.projectId === project.projectId) {
         setMembersProject(null)
       }
+      setDataReloadKey((current) => current + 1)
       showAuthToast({
         message: deleting ? '워크스페이스를 삭제했습니다.' : '워크스페이스에서 나갔습니다.',
         durationMs: 2200,
@@ -433,7 +466,7 @@ export default function WorkspaceHubApp() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div ref={projectGridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {!loading &&
                 visibleProjects.map((project) => (
                   <WorkspaceProjectCard
@@ -531,7 +564,7 @@ function WorkspaceProjectCard({
 
   if (project.type === 'mentoring') {
     return (
-      <div id={project.domId} className="project-card bg-white rounded-xl p-5 cursor-pointer relative group flex flex-col" data-type={project.type} data-status={project.status} onClick={goToProject}>
+      <div id={project.domId} data-motion-key={project.domId} className="project-card bg-white rounded-xl p-5 cursor-pointer relative group flex flex-col" data-type={project.type} data-status={project.status} onClick={goToProject}>
         <div>
           <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
             <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap w-5/6">
@@ -601,7 +634,7 @@ function WorkspaceProjectCard({
   }
 
   return (
-    <div id={project.domId} className={`project-card ${isAiSquad ? 'workspace-ai-card' : 'bg-white'} rounded-xl p-5 cursor-pointer relative group flex flex-col`} data-type={project.type} data-status={project.status} onClick={goToProject} onPointerEnter={prepareProjectEntry} onFocus={prepareProjectEntry} role="link" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { prepareProjectEntry(); navigateTo(project.dashboardUrl) } }}>
+    <div id={project.domId} data-motion-key={project.domId} className={`project-card ${isAiSquad ? 'workspace-ai-card' : 'bg-white'} rounded-xl p-5 cursor-pointer relative group flex flex-col`} data-type={project.type} data-status={project.status} onClick={goToProject} onPointerEnter={prepareProjectEntry} onFocus={prepareProjectEntry} role="link" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' && event.target === event.currentTarget) { prepareProjectEntry(); navigateTo(project.dashboardUrl) } }}>
       <div>
         <div className="flex min-h-[44px] justify-between items-start mb-3 relative">
           <div className="flex min-h-[44px] content-start items-center gap-1 flex-wrap">

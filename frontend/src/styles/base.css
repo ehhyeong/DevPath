@@ -439,22 +439,21 @@ pre {
 .site-header-navigation {
   position: relative;
   display: inline-grid;
-  /* 상단 링크와 하위 목록이 같은 열 너비를 사용하고 펼침이 고정 헤더 높이를 바꾸지 않도록 한다. */
-  grid-template-rows: auto 0;
   align-items: center;
   column-gap: 40px;
 }
 
-.site-header-mega-menu {
+.site-header-nav-group {
   position: relative;
-  display: grid;
-  grid-column: 1 / -1;
-  grid-row: 2;
-  grid-template-columns: subgrid;
-  column-gap: inherit;
-  align-self: start;
-  /* 테두리 1px과 안쪽 여백 16px만 바깥으로 빼서 하위 글자의 시작선을 상단 링크에 맞춘다. */
-  margin-inline: -17px;
+}
+
+.site-header-mega-menu {
+  position: absolute;
+  top: 100%;
+  left: -25px;
+  width: max-content;
+  min-width: calc(100% + 50px);
+  /* 테두리 1px과 좌우 안쪽 여백 24px만 바깥으로 빼서 하위 항목의 시작선을 상단 링크에 맞춘다. */
   z-index: 1001;
   padding-top: 12px;
   opacity: 0;
@@ -462,8 +461,9 @@ pre {
   pointer-events: none;
 }
 
-.site-header-navigation:hover .site-header-mega-menu,
-.site-header-navigation:focus-within .site-header-mega-menu {
+.site-header-nav-group:hover > .site-header-mega-menu,
+/* 다른 메뉴에 마우스를 올리면 이전 키보드 포커스의 패널이 함께 열리지 않도록 한다. */
+.site-header-navigation:not(:has(.site-header-nav-group:hover)) .site-header-nav-group:focus-within > .site-header-mega-menu {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -471,11 +471,6 @@ pre {
 
 .site-header-mega-panel {
   position: relative;
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  align-items: start;
-  column-gap: inherit;
   max-height: calc(100dvh - var(--app-header-height) - 24px);
   overflow-x: hidden;
   overflow-y: auto;
@@ -486,27 +481,23 @@ pre {
     0 28px 70px rgba(15, 23, 42, 0.16),
     0 8px 24px rgba(15, 23, 42, 0.08),
     0 1px 0 rgba(255, 255, 255, 0.95) inset;
-  padding: 16px;
+  padding: 14px 24px;
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
   backdrop-filter: blur(20px);
 }
 
-.site-header-mega-panel > [role='menu'] {
-  /* 하위 글자 길이가 상단 메뉴의 열 너비와 간격을 늘리지 않도록 한다. */
-  contain: inline-size;
-}
-
 .site-header-mega-links {
   display: grid;
   width: max-content;
-  gap: 2px;
+  gap: 4px;
 }
 
 .site-header-mega-link {
   display: flex;
   min-height: 32px;
   align-items: center;
+  gap: 12px;
   padding: 6px 0;
   color: #6b7280;
   font-size: 13px;
@@ -523,9 +514,16 @@ pre {
   white-space: nowrap;
 }
 
+.site-header-mega-link-icon {
+  /* 아이콘 글리프 폭이 달라도 라벨 시작선이 항목마다 어긋나지 않도록 폭을 고정한다. */
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
 .site-header-mega-link:hover,
 .site-header-mega-link:focus-visible {
-  color: #000;
+  color: #00c471;
   outline: none;
 }
 
@@ -933,16 +931,20 @@ aside:hover .sidebar-text {
 
 /* --- 패널 열림/닫힘 인터랙션 --- */
 .ai-panel {
-  transform-origin: center center;
-  transition: transform .26s cubic-bezier(.16, 1, .3, 1), opacity .18s ease;
+  transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+  transition: transform .22s cubic-bezier(.22, 1, .36, 1), opacity .18s ease, visibility 0s;
 }
 .ai-panel.hidden-panel {
-  transform: scale(0.94);
+  transform: translateY(12px);
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
+  transition: transform .18s ease, opacity .16s ease, visibility 0s .18s;
 }
 @media (prefers-reduced-motion: reduce) {
-  .ai-panel { transition: opacity .18s ease; }
+  .ai-panel, .ai-panel.hidden-panel { transition: none; }
   .ai-panel.hidden-panel { transform: none; }
 }
 .ai-chat-body {

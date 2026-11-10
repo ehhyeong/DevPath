@@ -1,0 +1,62 @@
+[
+  {
+    "title": "행사·예약·티켓 ERD와 마이그레이션 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "회원 인증과 주최자 권한 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "행사 목록과 로그인 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "행사 등록·잔여 좌석 조회 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "티켓 발급과 취소 상태 전이 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "DONE"
+  },
+  {
+    "title": "인원 선택과 행사 예약 화면 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "좌석 예약과 티켓 검증 API 구현",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "IN_REVIEW"
+  },
+  {
+    "title": "마지막 좌석 동시 예약 테스트 구현",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "모바일 티켓과 입장 현황 UI 구현",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "IN_PROGRESS"
+  },
+  {
+    "title": "취소·중복 입장·시간 경계 통합 테스트",
+    "assigneeEmail": "park.juseung@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "모바일 티켓 대비와 접근성 점검",
+    "assigneeEmail": "kim.hakseup@devpath.com",
+    "status": "TODO"
+  },
+  {
+    "title": "Docker 배포와 입장 이력 로그 구성",
+    "assigneeEmail": "kim.taehyung@devpath.com",
+    "status": "TODO"
+  }
+]

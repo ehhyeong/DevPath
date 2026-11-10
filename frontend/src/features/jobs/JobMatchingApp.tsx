@@ -9,6 +9,7 @@ import { AUTH_SESSION_SYNC_EVENT,clearStoredAuthSession,getPostLoginRedirect,rea
 import { showAuthToast } from '../../lib/auth-toast'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import { projectApiRequest } from '../project/api'
+import './job-matching.css'
 import { type ActivityProfile,buildQuery,type CareerFilter,careerOptions,clearJobMatchingSnapshot,extractStretchJobs,filterDbJobs,type GeminiAnalysis,initials,type JobkoreaResult,type JobMatchingSnapshot,type LoadingStep,loadJobMatchingSnapshot,mapJobkoreaPosting,mapRecommendedJob,type MatchingJob,optionOf,type RecommendedJob,type RegionFilter,regionOptions,type RoleFilter,roleOptions,isExcellentKeyword,keywordEvidenceLabel,saveJobMatchingSnapshot,type SkillSuggestionResult,sortJobs,STEP_MESSAGES,toDisplayDate,type UserProfile } from './job-matching-model'
 
 
@@ -426,22 +427,22 @@ export default function JobMatchingApp() {
         activeNavHref="/job-matching"
       />
 
-      <main className="app-main min-h-screen bg-gray-50 text-gray-800">
+      <main className={`app-main min-h-screen bg-gray-50 text-gray-800 ${!scanned ? 'job-matching-setup' : ''}`}>
         <div className="job-matching-page max-w-7xl mx-auto px-6 py-10 font-['Pretendard',sans-serif] text-[16px] leading-[24px] [&_.text-sm]:text-[14px] [&_.text-sm]:leading-[20px] [&_.text-xs]:text-[12px] [&_.text-xs]:leading-[16px] [&_button]:font-['Pretendard',sans-serif]! [&_button]:text-[14px]! [&_button]:leading-[20px]! [&_input]:font-['Pretendard',sans-serif]! [&_input]:text-[14px]! [&_input]:leading-[20px]! [&_select]:font-['Pretendard',sans-serif]! [&_select]:text-[14px]! [&_select]:leading-[1.2]! [&_textarea]:font-['Pretendard',sans-serif]! [&_textarea]:text-[14px]! [&_textarea]:leading-[20px]!">
-          <div className="mb-8">
+          <div className="job-matching-intro mb-8">
             <h1 className="text-2xl font-bold text-gray-900">학습 기반 자동 매칭</h1>
             <p className="text-sm text-gray-500 mt-1">DevPath에서 증명한 스킬과 채용공고 데이터를 분석하여 가장 적합한 기업을 찾아줍니다.</p>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-8">
-            <aside className="w-full lg:w-1/3 space-y-6">
+          <div className="job-matching-layout flex flex-col lg:flex-row gap-8">
+            <aside className="job-matching-controls w-full lg:w-1/3 space-y-6">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative overflow-hidden">
-                <div className="flex justify-between items-center mb-4">
+                <div className="job-matching-profile-heading flex justify-between items-center mb-4">
                   <h2 className="font-bold text-lg">내 분석 프로필</h2>
                   <span className="text-[10px] leading-[14px] bg-green-100 text-primary px-2 py-1 rounded font-bold">실시간 데이터</span>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100">
+                <div className="job-matching-profile-metrics bg-gray-50 rounded-lg p-4 mb-4 border border-gray-100">
                   <div className="text-xs text-gray-500 mb-2">분석 기준 데이터</div>
                   <ul className="space-y-2">
                     <li className="flex justify-between text-sm">
@@ -459,10 +460,10 @@ export default function JobMatchingApp() {
                   </ul>
                 </div>
 
-                <div className="mb-6">
+                <div className="job-matching-keywords mb-6">
                   <div className="text-xs text-gray-500 mb-2">추출된 핵심 키워드</div>
                   {displayedKeywords.length ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="job-matching-keyword-list flex flex-wrap gap-2">
                       {displayedKeywords.map((keyword) => (
                         <span
                           key={keyword.name}
@@ -486,9 +487,9 @@ export default function JobMatchingApp() {
 
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="job-matching-filter-card bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h3 className="font-bold text-sm mb-4">매칭 필터</h3>
-                <div className="space-y-4">
+                <div className="job-matching-filter-fields space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1">희망 직무</label>
                     <select
@@ -540,7 +541,7 @@ export default function JobMatchingApp() {
                 <button
                   type="button"
                   onClick={() => scanJobs()}
-                  className="w-full mt-6 bg-primary hover:bg-green-600 text-white py-3 rounded-lg font-bold text-sm transition shadow-lg shadow-green-500/20 flex justify-center items-center gap-2"
+                  className="job-matching-scan-button w-full mt-6 bg-primary hover:bg-green-600 text-white py-3 rounded-lg font-bold text-sm transition shadow-lg shadow-green-500/20 flex justify-center items-center gap-2"
                 >
                   <i className="fas fa-magic"></i> AI 맞춤 공고 스캔하기
                 </button>

@@ -12,10 +12,12 @@ import com.devpath.domain.workspace.entity.WorkspaceTask;
 import com.devpath.domain.workspace.entity.WorkspaceTaskPriority;
 import com.devpath.domain.workspace.repository.WorkspaceTaskRepository;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,7 +31,10 @@ public class VoiceMeetingMinutesService {
   private static final int ACTION_ITEM_LIMIT = 20;
   private static final int TRANSCRIPT_LIMIT = 20000;
   private static final int TRANSCRIPT_LINE_LIMIT = 1000;
-  private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+  // UTC로 실행되는 배포 서버에서도 회의 기록은 한국 시각으로 표시한다.
+  private static final ZoneId MEETING_TIME_ZONE = ZoneId.of("Asia/Seoul");
+  private static final DateTimeFormatter TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("a h:mm", Locale.KOREAN);
 
   private final VoiceChannelAccess voiceChannelAccess;
   private final VoiceMeetingMinutesRepository voiceMeetingMinutesRepository;
@@ -148,7 +153,7 @@ public class VoiceMeetingMinutesService {
   }
 
   private String buildTranscriptLine(User user, String text) {
-    String time = LocalTime.now().format(TIME_FORMATTER);
+    String time = LocalTime.now(MEETING_TIME_ZONE).format(TIME_FORMATTER);
     String speakerName = normalizeText(user.getName());
     String transcript = shorten(normalizeText(text), TRANSCRIPT_LINE_LIMIT);
 
@@ -179,10 +184,16 @@ public class VoiceMeetingMinutesService {
 
   private String buildSummary(VoiceMeetingMinutes minutes, List<VoiceChatMessage> messages) {
     List<String> parts = new ArrayList<>();
-    String transcript = normalizeText(minutes.getTranscript());
+    String transcript = normalizeMultiline(minutes.getTranscript());
 
     if (!transcript.isBlank()) {
-      parts.add("회의 기록: " + shorten(transcript, 700));
+      String transcriptLines =
+          shorten(transcript, 700)
+              .lines()
+              .filter(line -> !line.isBlank())
+              .map(line -> "- " + line.trim())
+              .collect(Collectors.joining("\n"));
+      parts.add("### 회의 기록 발췌\n" + transcriptLines);
     }
 
     if (!messages.isEmpty()) {
@@ -191,18 +202,19 @@ public class VoiceMeetingMinutesService {
               .limit(12)
               .map(
                   message ->
-                      message.getSender().getName()
+                      "- "
+                          + message.getSender().getName()
                           + ": "
                           + shorten(normalizeText(message.getContent()), 120))
-              .collect(Collectors.joining(" / "));
-      parts.add("회의 채팅: " + chatLines);
+              .collect(Collectors.joining("\n"));
+      parts.add("### 회의 채팅 발췌\n" + chatLines);
     }
 
     if (parts.isEmpty()) {
       return "아직 요약할 회의 기록이나 채팅이 없습니다.";
     }
 
-    return String.join("\n", parts);
+    return "AI 요약을 생성하지 못해 원문 일부를 표시합니다.\n\n" + String.join("\n\n", parts);
   }
 
   private String normalizeText(String value) {

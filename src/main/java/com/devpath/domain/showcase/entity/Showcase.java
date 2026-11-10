@@ -43,6 +43,9 @@ public class Showcase {
 
   private String thumbnailUrl;
 
+  @Column(length = 500)
+  private String techStack;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
   private ShowcaseCategory category;
@@ -72,6 +75,10 @@ public class Showcase {
 
   public void delete() {
     this.isDeleted = true;
+  }
+
+  public void updateTechStack(String techStack) {
+    this.techStack = techStack;
   }
 
   public void incrementView() {

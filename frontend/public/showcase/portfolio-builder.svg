@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">DevPath 포트폴리오 빌더 미리보기</title><desc id="desc">프로젝트 경험을 편집하며 오른쪽에서 포트폴리오 문서를 미리 보는 화면이다.</desc>
+  <rect width="1200" height="675" fill="#f4ede4"/>
+  <g font-family="Arial, Malgun Gothic, sans-serif">
+    <text x="60" y="65" font-size="19" font-weight="700" fill="#96734c" letter-spacing="3">PORTFOLIO STUDIO / YOUR WORK, WELL TOLD</text>
+    <rect x="50" y="100" width="1100" height="533" rx="18" fill="#f8f7f5" stroke="#e2d5c7"/>
+    <path d="M68 100H1132Q1150 100 1150 118V163H50V118Q50 100 68 100" fill="#fff"/><text x="78" y="140" font-size="22" font-weight="700" fill="#3d433c">portfolio<tspan fill="#a88e64">.</tspan></text><text x="247" y="138" font-size="13" fill="#9c9c92">나의 프로젝트를 하나의 이야기로</text><rect x="919" y="116" width="92" height="32" rx="6" fill="#f4f1e9"/><text x="943" y="137" font-size="12" fill="#82714f">공유하기</text><rect x="1022" y="116" width="102" height="32" rx="6" fill="#3f5144"/><text x="1040" y="137" font-size="12" fill="#fff">PDF 내보내기</text>
+    <rect x="73" y="188" width="414" height="418" rx="12" fill="#fff" stroke="#e6e1d9"/><text x="95" y="224" font-size="18" font-weight="700" fill="#414d43">프로젝트 경험</text><text x="95" y="252" font-size="13" fill="#9a9d93">결과보다 그 결과를 만든 과정을 기록해 보세요.</text>
+    <g font-size="12" fill="#7d897e"><text x="95" y="289">프로젝트 이름</text><text x="95" y="372">담당한 역할</text><text x="95" y="455">문제 해결 경험</text></g>
+    <rect x="95" y="302" width="370" height="43" rx="6" fill="#fafbf8" stroke="#dce2d7"/><text x="108" y="329" font-size="15" fill="#354c3e">DevPath 포트폴리오 빌더</text>
+    <rect x="95" y="385" width="370" height="43" rx="6" fill="#fafbf8" stroke="#dce2d7"/><text x="108" y="412" font-size="14" fill="#354c3e">프론트엔드 · 문서 편집 및 미리보기</text>
+    <rect x="95" y="468" width="370" height="95" rx="6" fill="#fafbf8" stroke="#dce2d7"/><text x="108" y="495" font-size="14" fill="#657a69">긴 내용이 PDF 페이지 경계에서 잘리는 문제를</text><text x="108" y="520" font-size="14" fill="#657a69">재현하고, 섹션별 페이지 나눔 규칙을</text><text x="108" y="545" font-size="14" fill="#657a69">조정해 문서 가독성을 개선했습니다.</text><text x="96" y="589" font-size="12" fill="#8aa38c">✓ 변경 사항이 임시 저장되었습니다.</text>
+    <rect x="512" y="188" width="613" height="418" rx="10" fill="#e8e7e1"/><rect x="554" y="206" width="529" height="400" rx="2" fill="#fff"/>
+    <text x="592" y="249" font-size="11" letter-spacing="3" fill="#8b9c8b">FRONTEND DEVELOPER</text><text x="592" y="291" font-size="30" font-weight="700" fill="#2e4436">이서준</text><text x="592" y="322" font-size="14" fill="#7c8b7d">복잡한 흐름을 이해하기 쉬운 화면으로 만듭니다.</text><path d="M592 342H1041" stroke="#dbe3d8"/>
+    <text x="592" y="377" font-size="12" letter-spacing="2" fill="#738870">SELECTED PROJECT</text><text x="592" y="412" font-size="21" font-weight="700" fill="#344a3a">학습 기록을 설득력 있는 경험으로</text><text x="592" y="441" font-size="13" fill="#889386">React · TypeScript · Spring Boot · PostgreSQL</text>
+    <text x="592" y="481" font-size="13" font-weight="700" fill="#405940">나의 기여</text><text x="592" y="508" font-size="13" fill="#7b8a7b">실시간 미리보기와 PDF 발행 흐름 구현</text><text x="592" y="534" font-size="13" fill="#7b8a7b">편집 내용과 공개 문서의 상태 분리</text><text x="592" y="576" font-size="11" fill="#a9b1a6">PROJECT 01                                              PORTFOLIO / 2026</text>
+  </g>
+</svg>

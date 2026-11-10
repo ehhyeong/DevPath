@@ -66,6 +66,10 @@ for (const firstField of ['question', 'explanation']) {
     await page.screenshot({ path: testInfo.outputPath('quiz-demo-selected.png') })
     await expect(question).toHaveValue(firstField === 'question' ? DEMO_TEXT.quizQuestion : questions[2].questionText)
     await expect(explanation).toHaveValue(firstField === 'explanation' ? DEMO_TEXT.quizExplanation : questions[2].explanation)
+    await expect(page.getByRole('button', { name: /저장 완료$/ })).toBeEnabled()
+    await expect(firstField === 'question' ? explanation : question).toHaveValue(
+      firstField === 'question' ? questions[2].explanation : questions[2].questionText,
+    )
     await expect(third.getByRole('button', { name: '거짓', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await (firstField === 'question' ? explanation : question).click()
     await expect(question).toHaveValue(DEMO_TEXT.quizQuestion)
