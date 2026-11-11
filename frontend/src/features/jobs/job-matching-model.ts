@@ -342,6 +342,16 @@ export function resolveAreaCode(areaCode?: string | null): string | null {
   return labels.length > 0 ? labels.join(' · ') : null
 }
 
+const AREA_LABEL_VISIBLE_COUNT = 2
+
+export function formatAreaLabel(areaCode?: string | null): string | null {
+  const full = resolveAreaCode(areaCode)
+  if (!full) return null
+  const labels = full.split(' · ')
+  if (labels.length <= AREA_LABEL_VISIBLE_COUNT) return full
+  return `${labels.slice(0, AREA_LABEL_VISIBLE_COUNT).join(' · ')} 외 ${labels.length - AREA_LABEL_VISIBLE_COUNT}곳`
+}
+
 export function splitSkills(value?: string | null) {
   return (value ?? '')
     .split(/[,/|·\s]+/)
@@ -510,7 +520,7 @@ export function mapJobkoreaPosting(
     source: 'jobkorea',
     title,
     companyName,
-    regionLabel: regionKorean,
+    regionLabel: formatAreaLabel(posting.areaCode) ?? region.label,
     careerLabel: careerKorean,
     skills: skills.length > 0 ? skills : role.skills.slice(0, 3),
     url: posting.jobkoreaUrl,
