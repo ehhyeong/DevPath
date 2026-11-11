@@ -1,3 +1,5 @@
+import { INSTRUCTOR_PAGE_ROUTES, normalizePathname } from '../routes'
+
 type HeaderSubLink = {
   href: string
   label: string
@@ -54,6 +56,26 @@ export const instructorDashboardLinks: HeaderSubLink[] = [
   { href: '/instructor-revenue', label: '\uC815\uC0B0 \uAD00\uB9AC', icon: 'fas fa-wallet' },
   { href: '/instructor-marketing', label: '\uB9C8\uCF00\uD305 \uAD00\uB9AC', icon: 'fas fa-bullhorn' },
 ]
+
+const headerSectionPaths: Record<string, string> = {
+  '/roadmap': '/roadmap-hub',
+  '/my-roadmap': '/roadmap-hub',
+  '/course-detail': '/lecture-list',
+  '/learning': '/lecture-list',
+  '/instructor-channel': '/lecture-list',
+  '/instructor-profile': '/lecture-list',
+  '/instructor-course-detail': '/lecture-list',
+  '/project-create': '/lounge-dashboard',
+  '/community-write': '/community-list',
+}
+
+export function getHeaderActiveHref(href: string) {
+  const pathname = normalizePathname(href.split(/[?#]/)[0])
+  if (INSTRUCTOR_PAGE_ROUTES.has(pathname)) return '/instructor-dashboard'
+  return headerSectionPaths[pathname]
+    ?? siteHeaderLinks.find(item => item.href === pathname || item.children?.some(child => child.href.split('?')[0] === pathname))?.href
+    ?? pathname
+}
 
 // Edit only this object when you want pixel-level header tuning.
 export const siteHeaderTuning = {

@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { getHeaderActiveHref } from './site-header-config'
 
 type MegaMenuItem = {
   href: string
@@ -12,16 +13,18 @@ type SiteHeaderMegaMenuProps = {
 }
 
 export default function SiteHeaderMegaMenu({ links, activeHref, style }: SiteHeaderMegaMenuProps) {
+  const currentHref = getHeaderActiveHref(activeHref ?? window.location.pathname)
   return (
     <div className="site-header-navigation" style={{ ...style, gridTemplateColumns: `repeat(${links.length}, max-content)` }}>
       {links.map((item) => {
-        const active = activeHref === item.href || item.children?.some((child) => activeHref === child.href.split('?')[0])
+        const active = currentHref === item.href || item.children?.some((child) => currentHref === child.href.split('?')[0])
 
         return (
           <div key={item.href} className="site-header-nav-group">
             <a
               href={item.href}
               className={`site-header-nav-link${active ? ' site-header-nav-link--active' : ''}`}
+              aria-current={active ? 'true' : undefined}
               aria-haspopup={item.children?.length ? 'menu' : undefined}
             >
               {item.label}

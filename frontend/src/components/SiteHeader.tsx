@@ -3,7 +3,7 @@ import type { AuthSession } from '../types/auth'
 import AccountUserMenu from './AccountUserMenu'
 import HeaderAlerts from './HeaderAlerts'
 import SiteHeaderMegaMenu from './SiteHeaderMegaMenu'
-import { instructorDashboardLinks, siteHeaderLinks, siteHeaderTuning } from './site-header-config'
+import { getHeaderActiveHref, instructorDashboardLinks, siteHeaderLinks, siteHeaderTuning } from './site-header-config'
 
 function getMoveStyle(offset: { x: number; y: number }): CSSProperties {
   return {
@@ -37,6 +37,7 @@ export default function SiteHeader({
   endOverlay,
 }: SiteHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const currentNavHref = getHeaderActiveHref(activeNavHref ?? window.location.pathname)
   const showInstructorDashboard = session?.role === 'ROLE_INSTRUCTOR'
   const instructorHeaderLinks = showInstructorDashboard
     ? [{ href: '/instructor-dashboard', label: '\uAC15\uC0AC \uB300\uC2DC\uBCF4\uB4DC', children: instructorDashboardLinks }]
@@ -113,7 +114,7 @@ export default function SiteHeader({
           </div>
 
           <div className="hidden flex-1 items-center justify-center text-sm font-bold text-gray-500 lg:flex">
-            <SiteHeaderMegaMenu links={mobileMenuLinks} activeHref={activeNavHref} style={navStyle} />
+            <SiteHeaderMegaMenu links={mobileMenuLinks} activeHref={currentNavHref} style={navStyle} />
           </div>
 
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2 lg:ml-0 lg:w-60 lg:flex-none">
@@ -176,14 +177,15 @@ export default function SiteHeader({
                   {mobileMenuLinks.map((item) => {
                     const children = item.children ?? []
                     const isActive =
-                      activeNavHref === item.href ||
-                      children.some((child) => activeNavHref === child.href.split('?')[0])
+                      currentNavHref === item.href ||
+                      children.some((child) => currentNavHref === child.href.split('?')[0])
 
                     return (
                       <div key={item.href} className="site-header-mobile-menu-group">
                         <a
                           href={item.href}
                           className={isActive ? 'site-header-mobile-menu-link active' : 'site-header-mobile-menu-link'}
+                          aria-current={isActive ? 'true' : undefined}
                           onClick={() => setMobileMenuOpen(false)}
                         >
                           <span>{item.label}</span>

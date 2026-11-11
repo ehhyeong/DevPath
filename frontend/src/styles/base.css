@@ -412,8 +412,7 @@ pre {
 }
 
 .site-header-nav-link:hover,
-.site-header-nav-link:focus-visible,
-.site-header-nav-link--active {
+.site-header-nav-link:focus-visible {
   color: #111827;
 }
 
@@ -434,6 +433,12 @@ pre {
 .site-header-nav-link:hover .site-header-nav-chevron,
 .site-header-nav-link:focus-visible .site-header-nav-chevron {
   color: #4b5563;
+}
+
+/* 현재 메뉴는 호버 중에도 선택 상태를 유지한다. */
+.site-header-nav-link.site-header-nav-link--active,
+.site-header-nav-link.site-header-nav-link--active .site-header-nav-chevron {
+  color: #00c471;
 }
 
 .site-header-navigation {
