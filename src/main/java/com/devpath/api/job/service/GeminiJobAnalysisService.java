@@ -33,8 +33,7 @@ public class GeminiJobAnalysisService {
 
   // 추천 이유에 들어가면 안 되는 감점 사유·채점 기준 용어 (소문자 비교)
   private static final List<String> REASON_BLOCKED_TERMS =
-      List.of(
-          "미매칭", "불일치", "미흡", "낮음", "부족", "없음", "미반영", "무관", "proof", "카드", "점수");
+      List.of("미매칭", "불일치", "미흡", "낮음", "부족", "없음", "미반영", "무관", "proof", "카드", "점수");
 
   // 성장공고 보완 스킬(missingSkills)에서 비개발 태그(바이오/화학/회계/마케팅 등)를 걸러내기 위한 개발 스킬 화이트리스트.
   // 공고 키워드를 소문자화한 값이 아래 토큰 중 하나라도 포함하면 개발 스킬로 인정한다. (목록은 필요 시 보강)
@@ -382,7 +381,8 @@ public class GeminiJobAnalysisService {
         p.jobkoreaUrl(),
         score,
         (reason == null || reason.isBlank()) ? null : reason,
-        missingSkills);
+        missingSkills,
+        p.companyUrl());
   }
 
   private List<GeminiScore> parseScores(String raw, List<JobkoreaJobResponse.Posting> postings) {

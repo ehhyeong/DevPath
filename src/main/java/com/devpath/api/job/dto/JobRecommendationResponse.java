@@ -30,7 +30,8 @@ public class JobRecommendationResponse {
       @Schema(description = "추천 점수", example = "35") Integer recommendationScore,
       @Schema(description = "매칭된 기술 태그 목록", example = "[\"Java\", \"Spring Boot\"]")
           List<String> matchedSkillTags,
-      @Schema(description = "추천 사유", example = "보유/검증/로드맵 스킬과 2개 기술이 일치합니다.") String reason) {
+      @Schema(description = "추천 사유", example = "보유/검증/로드맵 스킬과 2개 기술이 일치합니다.") String reason,
+      @Schema(description = "등록된 기업 로고 URL") String companyLogoUrl) {
 
     public static Recommendation from(
         JobPosting jobPosting, Integer recommendationScore, List<String> matchedSkillTags) {
@@ -49,7 +50,8 @@ public class JobRecommendationResponse {
           jobPosting.getDeadline(),
           recommendationScore,
           matchedSkillTags,
-          buildReason(matchedSkillTags));
+          buildReason(matchedSkillTags),
+          jobPosting.getCompany().getLogoUrl());
     }
 
     private static String buildReason(List<String> matchedSkillTags) {

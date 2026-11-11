@@ -31,5 +31,6 @@ public class GeminiJobAnalysisResponse {
       @Schema(description = "AI 추천 이유", example = "Java·Spring Boot 역량이 공고 요건과 일치합니다.")
           String aiReason,
       @Schema(description = "부족한 스킬 목록 (성장 공고 전용, 1~3개)", example = "[\"Docker\",\"AWS\"]")
-          List<String> missingSkills) {}
+          List<String> missingSkills,
+      @Schema(description = "등록 로고 조회에 사용하는 잡코리아 기업정보 URL") String companyUrl) {}
 }

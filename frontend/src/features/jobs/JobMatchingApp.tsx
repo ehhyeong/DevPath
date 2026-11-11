@@ -10,7 +10,8 @@ import { showAuthToast } from '../../lib/auth-toast'
 import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import { projectApiRequest } from '../project/api'
 import './job-matching.css'
-import { type ActivityProfile,buildQuery,type CareerFilter,careerOptions,clearJobMatchingSnapshot,extractStretchJobs,filterDbJobs,type GeminiAnalysis,initials,type JobkoreaResult,type JobMatchingSnapshot,type LoadingStep,loadJobMatchingSnapshot,mapJobkoreaPosting,mapRecommendedJob,type MatchingJob,optionOf,type RecommendedJob,type RegionFilter,regionOptions,type RoleFilter,roleOptions,isExcellentKeyword,keywordEvidenceLabel,saveJobMatchingSnapshot,type SkillSuggestionResult,sortJobs,STEP_MESSAGES,toDisplayDate,type UserProfile } from './job-matching-model'
+import CompanyLogo from './CompanyLogo'
+import { type ActivityProfile,buildQuery,type CareerFilter,careerOptions,clearJobMatchingSnapshot,extractStretchJobs,filterDbJobs,type GeminiAnalysis,type JobkoreaResult,type JobMatchingSnapshot,type LoadingStep,loadJobMatchingSnapshot,mapJobkoreaPosting,mapRecommendedJob,type MatchingJob,optionOf,type RecommendedJob,type RegionFilter,regionOptions,type RoleFilter,roleOptions,isExcellentKeyword,keywordEvidenceLabel,saveJobMatchingSnapshot,type SkillSuggestionResult,sortJobs,STEP_MESSAGES,toDisplayDate,type UserProfile } from './job-matching-model'
 
 
 export default function JobMatchingApp() {
@@ -219,6 +220,7 @@ export default function JobMatchingApp() {
           source: 'jobkorea',
           title: rec.title ?? '채용공고',
           companyName: rec.companyName ?? '기업명 미공개',
+          companyUrl: rec.companyUrl,
           regionLabel: rec.areaCode ?? selectedRegion.label,
           careerLabel: rec.careerCode ?? '상세 조건 확인',
           skills: rec.keywords ?? [],
@@ -241,6 +243,7 @@ export default function JobMatchingApp() {
           source: 'jobkorea' as const,
           title: rec.title ?? '채용공고',
           companyName: rec.companyName ?? '기업명 미공개',
+          companyUrl: rec.companyUrl,
           regionLabel: rec.areaCode ?? selectedRegion.label,
           careerLabel: rec.careerCode ?? '상세 조건 확인',
           skills: rec.keywords ?? [],
@@ -614,7 +617,7 @@ export default function JobMatchingApp() {
                         </div>
 
                         <div className="flex items-start gap-4 mb-4 pr-24">
-                          <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center font-bold text-gray-400 shrink-0">{initials(job.companyName)}</div>
+                          <CompanyLogo companyName={job.companyName} companyLogoUrl={job.companyLogoUrl} companyUrl={job.companyUrl} className="w-12 h-12 bg-gray-100 rounded border border-gray-200 flex items-center justify-center font-bold text-gray-400 shrink-0" />
                           <div className="min-w-0">
                             <h3 className="font-bold text-lg text-gray-900 group-hover:text-primary transition">{job.title}</h3>
                             <p className="text-sm text-gray-500 font-bold">{job.companyName} · {job.regionLabel}</p>
@@ -689,7 +692,7 @@ export default function JobMatchingApp() {
                             </div>
 
                             <div className="flex items-start gap-4 mb-4 pr-32">
-                              <div className="w-12 h-12 bg-amber-50 rounded border border-amber-100 flex items-center justify-center font-bold text-amber-400 shrink-0">{initials(job.companyName)}</div>
+                              <CompanyLogo companyName={job.companyName} companyLogoUrl={job.companyLogoUrl} companyUrl={job.companyUrl} className="w-12 h-12 bg-amber-50 rounded border border-amber-100 flex items-center justify-center font-bold text-amber-400 shrink-0" />
                               <div className="min-w-0">
                                 <h3 className="font-bold text-lg text-gray-900 group-hover:text-amber-600 transition">{job.title}</h3>
                                 <p className="text-sm text-gray-500 font-bold">{job.companyName} · {job.regionLabel}</p>

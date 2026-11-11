@@ -5,6 +5,7 @@ export type ApiJob = {
   jobId: number
   companyId: number
   companyName: string
+  companyLogoUrl?: string | null
   title: string
   jobRole?: string | null
   requiredSkills?: string | null
@@ -85,6 +86,7 @@ export type RecommendedJob = ApiJob & {
 export type GeminiRecommendation = {
   externalId?: string | null
   companyName?: string | null
+  companyUrl?: string | null
   title?: string | null
   keywords?: string[] | null
   areaCode?: string | null
@@ -197,6 +199,8 @@ export type MatchingJob = {
   source: 'internal' | 'jobkorea'
   title: string
   companyName: string
+  companyLogoUrl?: string | null
+  companyUrl?: string | null
   regionLabel: string
   careerLabel: string
   skills: string[]
@@ -445,6 +449,7 @@ export function mapDbJob(
     source: 'internal',
     title: job.title,
     companyName: job.companyName,
+    companyLogoUrl: job.companyLogoUrl,
     regionLabel: job.region ?? region.label,
     careerLabel: job.careerLevel ?? '경력 무관',
     skills,
@@ -510,6 +515,7 @@ export function mapJobkoreaPosting(
     source: 'jobkorea',
     title,
     companyName,
+    companyUrl: posting.companyUrl,
     regionLabel: regionKorean,
     careerLabel: careerKorean,
     skills: skills.length > 0 ? skills : role.skills.slice(0, 3),
