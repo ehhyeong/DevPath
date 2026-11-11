@@ -11,7 +11,7 @@ import { useInternalPageScroll } from '../../lib/useInternalPageScroll'
 import { projectApiRequest } from '../project/api'
 import './job-matching.css'
 import CompanyLogo from './CompanyLogo'
-import { type ActivityProfile,buildQuery,type CareerFilter,careerOptions,clearJobMatchingSnapshot,extractStretchJobs,filterDbJobs,type GeminiAnalysis,type JobkoreaResult,type JobMatchingSnapshot,type LoadingStep,loadJobMatchingSnapshot,mapJobkoreaPosting,mapRecommendedJob,type MatchingJob,optionOf,type RecommendedJob,type RegionFilter,regionOptions,type RoleFilter,roleOptions,isExcellentKeyword,keywordEvidenceLabel,saveJobMatchingSnapshot,type SkillSuggestionResult,sortJobs,STEP_MESSAGES,toDisplayDate,type UserProfile } from './job-matching-model'
+import { type ActivityProfile,buildQuery,type CareerFilter,careerOptions,clearJobMatchingSnapshot,extractStretchJobs,filterDbJobs,formatAreaLabel,type GeminiAnalysis,type JobkoreaResult,type JobMatchingSnapshot,type LoadingStep,loadJobMatchingSnapshot,mapJobkoreaPosting,mapRecommendedJob,type MatchingJob,optionOf,type RecommendedJob,type RegionFilter,regionOptions,resolveCareerCode,type RoleFilter,roleOptions,isExcellentKeyword,keywordEvidenceLabel,saveJobMatchingSnapshot,type SkillSuggestionResult,sortJobs,STEP_MESSAGES,toDisplayDate,type UserProfile } from './job-matching-model'
 
 
 export default function JobMatchingApp() {
@@ -221,8 +221,8 @@ export default function JobMatchingApp() {
           title: rec.title ?? '채용공고',
           companyName: rec.companyName ?? '기업명 미공개',
           companyUrl: rec.companyUrl,
-          regionLabel: rec.areaCode ?? selectedRegion.label,
-          careerLabel: rec.careerCode ?? '상세 조건 확인',
+          regionLabel: formatAreaLabel(rec.areaCode) ?? selectedRegion.label,
+          careerLabel: resolveCareerCode(rec.careerCode),
           skills: rec.keywords ?? [],
           url: rec.jobkoreaUrl,
           deadline: rec.deadline,
@@ -244,8 +244,8 @@ export default function JobMatchingApp() {
           title: rec.title ?? '채용공고',
           companyName: rec.companyName ?? '기업명 미공개',
           companyUrl: rec.companyUrl,
-          regionLabel: rec.areaCode ?? selectedRegion.label,
-          careerLabel: rec.careerCode ?? '상세 조건 확인',
+          regionLabel: formatAreaLabel(rec.areaCode) ?? selectedRegion.label,
+          careerLabel: resolveCareerCode(rec.careerCode),
           skills: rec.keywords ?? [],
           url: rec.jobkoreaUrl,
           deadline: rec.deadline,

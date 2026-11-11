@@ -31,8 +31,10 @@ describe('기업 로고', () => {
   })
 
   it('외부 기본 매칭과 내부 추천의 이미지 정보를 카드에 전달한다', () => {
-    const external = mapJobkoreaPosting({ companyName: '외부 기업', companyUrl: 'https://www.jobkorea.co.kr/Company/1/Info' }, 0, roleOptions[0], regionOptions[0], careerOptions[0])
+    const external = mapJobkoreaPosting({ companyName: '외부 기업', companyUrl: 'https://www.jobkorea.co.kr/Company/1/Info', areaCode: 'I010,I020,I030', careerCode: '3' }, 0, roleOptions[0], regionOptions[0], careerOptions[0])
     expect(external.companyUrl).toBe('https://www.jobkorea.co.kr/Company/1/Info')
+    expect(external.regionLabel).toBe('강남구 · 강동구 외 1곳')
+    expect(external.careerLabel).toBe('신입/경력')
     const internal = mapRecommendedJob({ jobId: 1, companyId: 1, companyName: '내부 기업', companyLogoUrl: 'https://cdn.example.com/logo.png', title: '개발자' }, roleOptions[0], regionOptions[0], careerOptions[0])
     expect(internal.companyLogoUrl).toBe('https://cdn.example.com/logo.png')
   })
